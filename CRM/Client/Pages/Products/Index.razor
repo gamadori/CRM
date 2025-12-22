@@ -1,0 +1,129 @@
+﻿@page "/Products"
+@page "/Products/Index"
+@using Radzen
+@using Radzen.Blazor
+@using BlazoringComponents.DropDownButton
+@using CRM.Client.Shared
+
+<div class="container-fluid px-4 py-3">
+    
+    @if (IdParent == null)
+    {
+        <PageHeader 
+        Title="@Localize["Catalogo Prodotti"]"
+        Subtitle="Gestisci il catalogo prodotti"
+        BreadcrumbItems="@_breadcrumbItems">
+    </PageHeader>
+    }
+    <!-- Products Grid -->
+    @if (_products != null)
+    {
+        <div class="card border-0 shadow-sm">
+            
+            <div class="card-body p-0">
+                <RadzenDataGrid @ref="grdProducts" 
+                                Responsive="true" 
+                                IsLoading="@_isLoading" 
+                                Count="@_paging.TotalCount" 
+                                Data="@_products" 
+                                LoadData="@LoadData" 
+                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" 
+                                FilterMode="FilterMode.Advanced" 
+                                AllowSorting="true" 
+                                AllowFiltering="true" 
+                                AllowPaging="true" 
+                                PageSize="@_productPageSize" 
+                                PagerHorizontalAlign="Radzen.HorizontalAlign.Center" 
+                                TItem="Product"
+                                class="modern-grid">
+                    <HeaderTemplate>
+                        <div class="d-flex align-items-center gap-5">
+                            <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
+                            <RedGTextBox @bind-Value="@_filter.Name" Label="@Localize["search..."]" @oninput="@OnChangeNameFilter" Style="width: 300px; margin-left: 10px;">
+                                <End>
+                                    <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
+                                </End>
+                            </RedGTextBox>
+                        </div>
+            
+                    </HeaderTemplate>
+
+                    <Columns>
+                        
+                        <RadzenDataGridColumn TItem="Product" 
+                                            Property="@nameof(Product.Name)" 
+                                            Title="@Localize["Name"]"
+                                            Width="250px">
+                            <Template Context="item">
+                                <div class="d-flex align-items-center py-2">
+                                    <div class="product-icon bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                        <span class="material-icons text-primary" style="font-size: 20px;">@MaterialIcons.Catalogo</span>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold text-dark">@item.Name</div>
+                                    </div>
+                                </div>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Product" 
+                                            Property="@nameof(Product.Description)" 
+                                            Title="@Localize["Description"]">
+                            <Template Context="item">
+                                <span class="text-muted">@item.Description</span>
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn TItem="Product" 
+                                            Property="ProductType.Name" 
+                                            Title="@Localize["ProductType"]"
+                                            Width="180px">
+                            <Template Context="item">
+                                @if (item.ProductType != null)
+                                {
+                                    <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
+                                        <span class="material-icons me-1" style="font-size: 14px; vertical-align: middle;">@MaterialIcons.ProductType</span>
+                                        @item.ProductType.Name
+                                    </span>
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+
+                        <RadzenDataGridColumn Context="item" 
+                                            TItem="Product"  
+                                            Filterable="false" 
+                                            Sortable="false" 
+                                            TextAlign="Radzen.TextAlign.Center"
+                                            Width="200px"
+                                            Title="Azioni">
+                            <Template Context="item">
+                                    <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
+                                    <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
+                                    <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item))></RedGButton>
+                                   
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <Waiting></Waiting>
+                <p class="text-muted mt-3">Caricamento prodotti in corso...</p>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    
+</style>
+
+
+
+
+

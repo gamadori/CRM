@@ -1,0 +1,38 @@
+﻿@page "/Settings/Products"
+@using CRM.Client.Services;
+@using Microsoft.Extensions.Localization;
+
+<BlazorHeader Header="Settings"></BlazorHeader>
+
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+<content class="p-4">
+    <div class="row">
+
+        <BlazorIcon href="Settings/ProductsTypes/Index" Icon="category" Text="@Localize["Product Types"]" />
+        <BlazorIcon href="Settings/AccessoryTypes" Icon="type_specimen" Text="@Localize["Accessory Type"]" />
+     
+        
+        
+ 
+    </div>
+
+</content>
+@code {
+    [Inject]
+    IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
+
+    [Inject]
+    IBreadCrumbService Bread { get; set; }
+
+
+    private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _bread = await Bread.ProductSettings(false);
+
+        await base.OnInitializedAsync();
+    }
+
+}
+

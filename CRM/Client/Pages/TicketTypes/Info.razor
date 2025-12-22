@@ -1,0 +1,71 @@
+﻿@page "/Settings/TicketTypes/Info/{Id:int}"
+@page "/Settings/TicketTypes/{Id:int}"
+
+@using Radzen
+@using Radzen.Blazor
+
+
+
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+
+@if (_ticketType == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <BlazorHeader Header="@_ticketType.Desc"></BlazorHeader>
+     
+    
+    <RadzenSelectBar @bind-Value="_selectView" TValue="TicketTypeViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+        <Items>
+            <RadzenSelectBarItem Text="Dati Tipo Ticket" Value="TicketTypeViews.Ticket" />
+            <RadzenSelectBarItem Text="Utenti" Value="TicketTypeViews.Users" />
+            <RadzenSelectBarItem Text="Gruppi" Value="TicketTypeViews.Groups" />
+
+        </Items>
+    </RadzenSelectBar>
+
+    @if (_selectView == TicketTypeViews.Ticket)
+    {
+        if (_partialView == PartialViews.Details)
+        {
+            <Details Id="@Id" OnClickEdit="EditTicketType" OnClickCancel="CancelTicketType"></Details>
+        }
+        else
+        {
+            <Edit Id="@Id" OnClickSave="(async () => await SaveTicketType())" OnClickCancel="CancelTicketType"></Edit>
+        }
+    }
+    else if (_selectView == TicketTypeViews.Users)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Settings.Users.Index @ref="_pageUsersIndex" IdTicketType="@Id" CmdDetails="false" CmdEdit="false" OnClickEdit="@(async(s)=>await OnClickNew(s))"
+                                                   OnClickDelete="@(async (s)=> await OnClickDelete(s))"
+                                                   MessagePrepareDelete="@_messagePrepareDelete" BreadCrumbVisible=false></CRM.Client.Pages.Settings.Users.Index>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Settings.Users.Details Id="@_idUser" CloseForm="UsersCloseForm" OnClickEdit="DetailsEditUser"></CRM.Client.Pages.Settings.Users.Details>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Settings.Users.Edit Id="@_idUser" CloseForm="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Settings.Users.Edit>
+        }
+
+
+
+    }
+    else if (_selectView == TicketTypeViews.Groups)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Groups.Index @ref="_pageGroupsIndex" IdTicketType="@Id" CmdDetails="false" CmdEdit="false" BreadCrumbVisible=false OnClickEdit="@(async (s)=>await OnClickGroupNew(s))"
+                               OnClickDelete="@(async (s)=> await OnClickGroupDelete(s))"
+                                                   MessagePrepareDelete="@_messagePrepareDelete"></CRM.Client.Pages.Groups.Index>
+        }
+        
+    }
+    
+}

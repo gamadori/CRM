@@ -1,0 +1,21 @@
+﻿.rowWeek {
+    border: 1px solid;
+    border-color: dimgray;
+}
+
+.rowWeek + .rowWeek {
+    border-top: 0;
+}
+
+.colDay + .colDay
+{
+   
+    border-left: 1px solid;
+    border-color: dimgray;
+    margin: 4px;
+   
+}
+
+
+
+ 

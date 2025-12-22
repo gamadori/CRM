@@ -1,0 +1,66 @@
+﻿@page "/ProductParameters/Edit"
+@page "/ProductParameters/Edit/{Id:int}"
+@using Radzen
+@using Radzen.Blazor
+
+<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog)>@_header</BlazorHeader>
+
+@if (_item == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    
+    <div class="containerleft">
+        <EditForm Model="@_item" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="container m-3">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <DisplayName For="@(()=>_item.IdProduct)" />
+                        <RadzenDropDownDataGrid class="form-control" @bind-value="@_item.IdProduct" TValue="int" AllowFiltering="true"
+                                                AllowClear="true" PageSize=@ConstHelper.PageSize
+                                                Data="@_products" Count="@_products.Count" TextProperty="Name" ValueProperty="Id" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" ShowPagingSummary=true PagingSummaryFormat="@Localize[ConstHelper.PagingSummaryFormatShort]" />
+                        <ValidationMessage For="@(() => _item.IdProduct)" />
+                    </div>
+                    <div class="col-md-6 mb-3">            
+                        <DisplayName For="@(()=>_item.Name)" />
+                        <input class="form-control" @bind-value="@_item.Name" />
+                        <ValidationMessage For="@(() => _item.Name)" />
+                    </div>
+                    <div class="col-md-6 mb-3">            
+                        <DisplayName For="@(()=>_item.Description)" />
+                        <input class="form-control" @bind-value="@_item.Description" />
+                        <ValidationMessage For="@(() => _item.Description)" />
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <DisplayName For="@(()=>_item.ValueDefault)" />
+                        <input id="Descrizione" class="form-control" @bind-value="@_item.ValueDefault" />
+                        <ValidationMessage For="@(() => _item.ValueDefault)" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <DisplayName For="@(()=>_item.Min)" />
+                        <input id="Descrizione" class="form-control" @bind-value="@_item.Min" />
+                        <ValidationMessage For="@(() => _item.Min)" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <DisplayName For="@(()=>_item.Max)" />
+                        <input id="Descrizione" class="form-control" @bind-value="@_item.Max" />
+                        <ValidationMessage For="@(() => _item.Max)" />
+                    </div>
+                    
+
+                </div>
+                
+            </div>
+
+
+            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+            <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+        </EditForm>
+    </div>
+}

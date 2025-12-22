@@ -1,0 +1,42 @@
+﻿@using Models
+@typeparam TItem
+
+<div class="container">
+    <div class="row">
+   
+        <div class="col border @_dayTickets.BgBody">
+
+            <div>
+                @*<div class="row border-bottom mb-3 @_dayTickets.BgHead text-white text-center border-secondary">
+
+                    <label>@_dayTickets.NameDay</label>
+                    <label>@_dayTickets.Date.ToShortDateString()</label>
+
+
+                </div>*@
+                <AGDayHead Day="@_dayTickets" OnSelect="OnSelect"></AGDayHead>
+                @if (_dayTickets.Tickets.Any())
+                {
+                    @foreach (var t in _dayTickets.Tickets)
+                    {
+                        <div class="row">
+                            <div class="col">
+                                <CascadingValue Value="t" TValue="SchedulerTicket">
+                                    <AGTicketScheduler OpenModal="OpenModal"></AGTicketScheduler>
+                                </CascadingValue>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <AGEmptyScheduler IsHoliday="@_dayTickets.IsHoliday"></AGEmptyScheduler>
+                }
+            </div>
+        </div>
+
+    
+    </div>
+</div>
+
+

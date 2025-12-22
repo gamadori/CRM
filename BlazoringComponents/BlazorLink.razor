@@ -1,0 +1,11 @@
+﻿@inherits BlazorButton
+
+<a class="m-2 @GetStyle()" @onclick="OnClick" href="@Href">
+    <i class="material-icons middle">@GetIcon()</i>
+    
+    @if (_text != null && _text.Length > 0)
+    {
+        <span class="ps-2">@_text</span>
+    }
+</a>
+

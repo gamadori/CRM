@@ -1,0 +1,185 @@
+@* Modern Page Header Component *@
+
+<div class="page-header-wrapper mb-4">
+    <div class="container-fluid px-0">
+        <!-- Breadcrumb -->
+        @if (BreadcrumbItems != null && BreadcrumbItems.Any())
+        {
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="/" class="text-decoration-none">
+                            <span class="material-icons" style="font-size: 16px; vertical-align: middle;">home</span>
+                        </a>
+                    </li>
+                    @foreach (var item in BreadcrumbItems)
+                    {
+                        @if (item == BreadcrumbItems.Last())
+                        {
+                            <li class="breadcrumb-item active" aria-current="page">@item.Text</li>
+                        }
+                        else
+                        {
+                            <li class="breadcrumb-item">
+                                @if (!string.IsNullOrEmpty(item.Url))
+                                {
+                                    <a href="@item.Url" class="text-decoration-none">@item.Text</a>
+                                }
+                                else
+                                {
+                                    <span>@item.Text</span>
+                                }
+                            </li>
+                        }
+                    }
+                </ol>
+            </nav>
+        }
+
+        <!-- Header Section -->
+        <div class="row align-items-center">
+            <div class="col">
+                <div class="d-flex align-items-center">
+                    @if (!string.IsNullOrEmpty(Icon))
+                    {
+                        <div class="header-icon-box bg-primary bg-opacity-10 rounded-3 p-3 me-3">
+                            <span class="material-icons text-primary" style="font-size: 32px;">@Icon</span>
+                        </div>
+                    }
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">@Title</h4>
+                        @if (!string.IsNullOrEmpty(Subtitle))
+                        {
+                            <p class="text-muted mb-0">@Subtitle</p>
+                        }
+                    </div>
+                </div>
+            </div>
+            
+            @if (Actions != null)
+            {
+                <div class="col-auto">
+                    @Actions
+                </div>
+            }
+        </div>
+
+        @if (Filters != null)
+        {
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-3">
+                            @Filters
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .page-header-wrapper {
+        animation: fadeInDown 0.4s ease-out;
+    }
+
+    .header-icon-box {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 64px;
+        min-height: 64px;
+    }
+
+    .breadcrumb {
+        background-color: transparent;
+        padding: 0.5rem 0;
+        font-size: 0.875rem;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+        font-size: 1.2rem;
+        color: #6c757d;
+    }
+
+    .breadcrumb-item a {
+        color: #667eea;
+        transition: color 0.2s ease;
+    }
+
+    .breadcrumb-item a:hover {
+        color: #5a67d8;
+    }
+
+    .breadcrumb-item.active {
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    @@keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .header-icon-box {
+            min-width: 48px;
+            min-height: 48px;
+            padding: 0.75rem !important;
+        }
+
+        .header-icon-box .material-icons {
+            font-size: 24px !important;
+        }
+
+        .page-header-wrapper h2 {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// Titolo principale della pagina
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Sottotitolo opzionale
+    /// </summary>
+    [Parameter]
+    public string? Subtitle { get; set; }
+
+    /// <summary>
+    /// Icona Material Icons (es: "inventory_2", "people", "support_agent")
+    /// </summary>
+    [Parameter]
+    public string? Icon { get; set; }
+
+    /// <summary>
+    /// Lista di elementi breadcrumb
+    /// </summary>
+    [Parameter]
+    public List<BreadcrumbItem>? BreadcrumbItems { get; set; }
+
+    /// <summary>
+    /// Render Fragment per azioni (pulsanti, dropdown, etc.)
+    /// </summary>
+    [Parameter]
+    public RenderFragment? Actions { get; set; }
+
+    /// <summary>
+    /// Render Fragment per filtri di ricerca
+    /// </summary>
+    [Parameter]
+    public RenderFragment? Filters { get; set; }
+}

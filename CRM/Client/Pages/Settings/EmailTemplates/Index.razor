@@ -1,0 +1,45 @@
+﻿@page "/Settings/EmailTemplates"
+@page "/Settings/EmailTemplates/Index"
+
+
+@if (_templates != null)
+{
+    <div class=row>
+        <div class="col">
+            <BlazorButton Template="TemplateButton.New" OnClick="NewTemplate" Label=true></BlazorButton>
+        </div>
+    </div>
+    <RadzenDataGrid @ref="grdEmails" IsLoading="@_isLoading" Count="@_paging.TotalCount" Responsive=true Data="@_templates" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                    PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="EmailTemplate">
+        <Columns>
+            <RadzenDataGridColumn Context="item" TItem="EmailTemplate" Title=@TranslateHelper.GetDisplayName(nameof(EmailTemplate.Tipo), typeof(EmailTemplate)) Property=@nameof(Company.RagioneSociale)>
+                <Template>
+                    <RadzenLabel Text=@EnumService.Get(typeof(EmailsTypes), item.Tipo)></RadzenLabel>
+                </Template>
+            </RadzenDataGridColumn>
+
+        
+            <RadzenDataGridColumn TItem="EmailTemplate" Property="@nameof(EmailTemplate.Subject)" Title=@TranslateHelper.GetDisplayName(nameof(EmailTemplate.Subject), typeof(EmailTemplate)) />
+
+
+
+            <RadzenDataGridColumn Context="item" TItem="EmailTemplate" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                    <Template Context="item">
+                    
+                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" title="Edit" Click="@(args => Edit(item.Id))">
+                        </RadzenButton>
+                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" title="Elimina" Click="@(async (args) => await Delete(item))">
+                        </RadzenButton>
+
+
+                    </Template>
+                </RadzenDataGridColumn>
+        
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}

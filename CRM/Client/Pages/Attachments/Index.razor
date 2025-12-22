@@ -1,0 +1,66 @@
+﻿@page "/Attachments"
+@page "/Attachments/Index"
+@using CRM.Client.Shared.Filters
+@if (_attachments == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+  
+    <RadzenDataGrid @ref="_grdAttachment" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_attachments?.Items" Responsive="true" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
+            AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                    PageSize="@_pageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Attachment" EmptyText="@Localize["Nessun Allegato"]">
+
+        <HeaderTemplate>
+
+            <div class="d-flex align-items-center gap-5">
+                @if (!ReadOnly)
+                {
+                    <RedGButton RGButtonType="RGButtonType.New" Click="@NewAttachment"></RedGButton>
+                }
+                @* <RedGTextBox @bind-Value="@_filter.Name" Label="@Localize["search..."]" @oninput="@OnChangeNameFilter" Style="width: 300px; margin-left: 10px;">
+                    <End>
+                        <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
+                    </End>
+                </RedGTextBox> *@
+            </div>
+
+        </HeaderTemplate>
+        <Columns>
+
+
+            <RadzenDataGridColumn TItem="Attachment" Property="@nameof(Attachment.Name)" Title="@Localize["Nome"]" TextAlign="Radzen.TextAlign.Left" />
+
+            <RadzenDataGridColumn TItem="Attachment" Property="@nameof(Attachment.Description)" Title="@Localize["Descrizione"]" TextAlign="Radzen.TextAlign.Left" />
+
+            <RadzenDataGridColumn  TItem="Attachment" Property="@nameof(Attachment.CreatedOn)" Title="@Localize["Data"]"  FormatString="{0:d}" TextAlign="Radzen.TextAlign.Left" />
+
+            <RadzenDataGridColumn TItem="Attachment" Property="@nameof(Attachment.IdUser)" Title="@Localize["User"]" FilterProperty="@nameof(Attachment.IdUser)" FilterValue="@_userFilter" FilterOperator="FilterOperator.Equals">
+                <Template Context="item">
+                    <UserData IdUser="@item.IdUser"></UserData>
+                </Template> 
+                <FilterTemplate>
+                    @* <UserDropDown @bind-Value="@_userFilter" Changed="OnFilterUserChanged"></UserDropDown> *@
+                    <FilterDropDown Items="@_users" TItem="ApplicationUser" TValue="string" @bind-Value=@_userFilter OnClickClose="OnCloseFilter" UniqueID="@_grdAttachment.UniqueID" Property=@nameof(Attachment.IdUser) TextProperty="@nameof(ApplicationUser.NameComplete)"
+                                    ValueProperty="Id"></FilterDropDown>
+                </FilterTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn Context="item"
+                                  TItem="Attachment"
+                                  Filterable="false"
+                                  Sortable="false"
+                                  TextAlign="Radzen.TextAlign.Center"
+                                  Width="200px"
+                                  >
+                <Template Context="item">
+                    <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item.Id))></RedGButton>
+
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+ }   

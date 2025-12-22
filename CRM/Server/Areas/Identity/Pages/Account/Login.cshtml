@@ -1,0 +1,143 @@
+﻿@page
+@using Microsoft.Extensions.Localization
+@model LoginModel
+
+@inject IStringLocalizer<CRM.Server.Areas.Identity.Pages.Account.LoginModel> _localize
+@{
+    ViewData["Title"] = "Log in";
+    Layout = "_LayoutIdentity";
+}
+
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/identity-login.css" asp-append-version="true" />
+}
+
+<div class="login-wrapper">
+    <div class="login-card">
+        <div class="login-grid">
+            <aside class="login-aside">
+                <div class="login-aside-inner">
+                    <div class="login-aside-content">
+                        <div class="login-logo">
+                            <img src="/img/CRMLogin.png" alt="CRM Logo" />
+                        </div>
+                        <h1 class="login-aside-title">@_localize["Login"]</h1>
+                        <p class="login-aside-subtitle">@_localize["Access your account to manage tickets, customers and activities."]</p>
+                    </div>
+                </div>
+            </aside>
+
+            <div class="login-form-pane">
+                <div class="login-header">
+                    <div class="login-logo">
+                        <img src="/img/CRMLogin.png" alt="CRM Logo" />
+                    </div>
+                    <h1 class="login-title">@_localize["Login"]</h1>
+                </div>
+
+                <div class="login-body">
+                    <form id="account" method="post">
+                        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+
+                        <div class="form-group">
+                            <label class="input-label" for="inputEmail">
+                                <span class="material-symbols-outlined label-icon">mail</span>
+                                <span>@_localize["Email Address"]</span>
+                            </label>
+                            <div class="input-wrapper">
+                                <input type="email"
+                                       asp-for="Input.Email"
+                                       id="inputEmail"
+                                       class="form-control"
+                                       placeholder="@_localize["Email Address"]"
+                                       required
+                                       autofocus>
+                            </div>
+                            <span asp-validation-for="Input.Email" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="input-label" for="inputPassword">
+                                <span class="material-symbols-outlined label-icon">lock</span>
+                                <span>@_localize["Password"]</span>
+                            </label>
+                            <div class="input-wrapper has-toggle">
+                                <input type="password"
+                                       asp-for="Input.Password"
+                                       id="inputPassword"
+                                       class="form-control"
+                                       placeholder="@_localize["Password"]"
+                                       required>
+                                <button type="button"
+                                        class="toggle-password"
+                                        onclick="togglePassword()"
+                                        aria-label="Toggle password visibility">
+                                    <span class="material-symbols-outlined" id="toggleIcon">visibility</span>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Input.Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="remember-me-container">
+                            <label class="custom-checkbox">
+                                <input type="checkbox" asp-for="Input.RememberMe">
+                                <span class="checkmark">
+                                    <span class="material-symbols-outlined">check</span>
+                                </span>
+                                <span class="checkbox-label">@_localize["Remember me"]</span>
+                            </label>
+                        </div>
+
+                        <button class="btn-login" type="submit">
+                            <span class="material-symbols-outlined">login</span>
+                            <span>@_localize["Login"]</span>
+                        </button>
+                    </form>
+
+                    <div class="divider">
+                        <span>@_localize["or"]</span>
+                    </div>
+
+                    <div class="login-links">
+                        <a class="login-link" asp-page="./ForgotPassword">
+                            <span class="material-symbols-outlined">key</span>
+                            <span>@_localize["Forgot Password"]</span>
+                        </a>
+                        <a class="login-link" asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">
+                            <span class="material-symbols-outlined">person_add</span>
+                            <span>@_localize["Sign in"]</span>
+                        </a>
+                        <a class="login-link" asp-page="./ResendEmailConfirmation">
+                            <span class="material-symbols-outlined">forward_to_inbox</span>
+                            <span>@_localize["Resend Email Confirmation"]</span>
+                        </a>
+                    </div>
+
+                    <div class="footer-text">
+                        © 2025 CRM System
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('inputPassword');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.textContent = 'visibility_off';
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.textContent = 'visibility';
+        }
+    }
+</script>
+
+
+

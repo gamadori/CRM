@@ -1,0 +1,57 @@
+﻿@page "/TicketStates/Edit"
+@page "/TicketStates/Edit/{Id:int}"
+
+@using Radzen
+@using Radzen.Blazor
+
+<h3>@_header</h3>
+<hr />
+@if (_state == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <EditForm Model="@_state" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="row">
+            <div class="col-md-4">
+
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.Description)" />
+                    <input id="Descrizione" class="form-control" @bind-value="@_state.Description" />
+                    <ValidationMessage For="@(() => _state.Description)" />
+                </div>
+
+
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.State)" />
+                    <InputSelectEnum class="form-select" TValue="eTicketStates" @bind-Value="@(_state.State)" />
+                    <ValidationMessage For="@(() => _state.State)" />
+                </div>
+                @*<InputSelect @bind-Value="@_state.State" class="form-control">
+
+                    @foreach (var s in _stateList)
+                    {
+                        <option value="@s.Id">@s.Text</option>
+                    }
+                    </InputSelect>*@
+
+
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.Color)" />
+                    <RadzenColorPicker @bind-Value=@_state.Color ShowHSV=true ShowRGBA=true ShowColors=true />
+                    <ValidationMessage For="@(() => _state.Color)" />
+                </div>
+
+
+
+
+                <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+                <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+            </div>
+        </div>
+    </EditForm>
+}

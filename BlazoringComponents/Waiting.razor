@@ -1,0 +1,81 @@
+﻿@using Faso.Blazor.SpinKit
+@* Spinner moderno e minimalista *@
+<div class="waiting-container">
+    <div class="waiting-content">
+        <!-- Logo o icona principale -->
+        <div class="waiting-logo mb-4">
+            <div class="spinner-modern"></div>
+        </div>
+        
+        <!-- Testo -->
+        <h4 class="waiting-title mb-2">CRM</h4>
+        <p class="waiting-message text-muted">@Message</p>
+    </div>
+</div>
+
+<style>
+    .waiting-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        width: 100%;
+    }
+
+    .waiting-content {
+        text-align: center;
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    .waiting-logo {
+        position: relative;
+        display: inline-block;
+    }
+
+    /* Spinner moderno con anello gradiente */
+    .spinner-modern {
+        width: 64px;
+        height: 64px;
+        border: 4px solid #f3f4f6;
+        border-top: 4px solid #667eea;
+        border-right: 4px solid #764ba2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        box-shadow: 0 4px 6px rgba(102, 126, 234, 0.1);
+    }
+
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .waiting-title {
+        font-weight: 700;
+        color: #1f2937;
+        letter-spacing: 0.5px;
+        margin: 0;
+    }
+
+    .waiting-message {
+        font-size: 0.95rem;
+        color: #6b7280;
+        margin: 0;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+</style>
+
+@code
+{
+    [Parameter]
+    public string Message { get; set; } = "Caricamento in corso...";
+}

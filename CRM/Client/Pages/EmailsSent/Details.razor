@@ -1,0 +1,110 @@
+﻿@page "/EmailSent/Details/{Id:int}"
+@page "/EmailSent/{Id:int}"
+@using Syncfusion.Blazor.SplitButtons
+@using BlazoringComponents.DropDownButton
+@using CRM.Shared.Helper
+
+<h3>Email</h3>
+<hr />
+@if (_email == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    
+    <div class="row rounded-3 bg-light">
+        <div class="col-md-8">
+
+            <div class="row g-3">
+                <div class="col">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th scope="col"></th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <tr>
+                                <th scope="row">
+                                    <DisplayName For="@(() => _email.DateSent)" />
+                                </th>
+                                <td>
+                                    <span>@_email.DateSent</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <DisplayName For="@(() => _email.IdUser)" />
+                                </th>
+                                <td>
+                                    <span>@($"{_user?.UserName} ({_user?.NameComplete})")</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <DisplayName For="@(() => _email.To)" />
+                                </th>
+                                <td>
+                                    <span>@_email.To</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <DisplayName For="@(() => _email.CC)" />
+                                </th>
+
+                                <td>
+                                    <span>@_email.CC</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <DisplayName For="@(() => _email.Subject)" />
+                                </th>
+
+                                <td>
+                                    <span>@_email.Subject</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <DisplayName For="@(() => _email.Message)" />
+                                </th>
+
+                                <td>
+                                    <pre>@_email.Message</pre>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <DisplayName For="@(() => _email.Result)" />
+                                </th>
+
+                                <td>
+                                    <span>@_email.Result</span>
+                                </td>
+                            </tr>
+                            
+
+                        </tbody>
+                    </table>
+                   
+                   
+
+                    <br>
+
+                    <div>
+                        <BlazorButton Template="TemplateButton.Back" OnClick="Annulla" Text="Emails" />
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+  
+}

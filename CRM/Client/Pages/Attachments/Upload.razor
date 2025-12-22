@@ -1,0 +1,92 @@
+﻿@page "/Attachments/Upload/{Id:int}"
+@using System.IO
+
+<style>
+    #uploadWithDragAndDrop {
+        left: 0;
+        --rz-upload-button-bar-background-color: transparent;
+        --rz-upload-button-bar-padding: 0;
+    }
+
+        #uploadWithDragAndDrop .rz-fileupload-buttonbar .rz-fileupload-choose {
+            width: 100%;
+            text-align: center;
+            font-size: 16px;
+            padding: 100px 0;
+        }
+
+        #uploadWithDragAndDrop .rz-fileupload-content {
+            display: none;
+        }
+
+    .file-list-card {
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    .e-upload-actions {
+        display: none;
+    }
+</style>
+
+<h3>Aggiungi File</h3>
+
+@if (_attachment == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-8">
+            <div class="mb-3">
+                <DisplayName For="@(() => _attachment.Name)" />
+                <span>@_attachment.Name</span>
+            </div>
+            <div class="mb-3">
+                <DisplayName For="@(() => _attachment.Description)" />
+                <span>@_attachment.Description</span>
+            </div>
+            <div class="mb-3">
+                <RadzenCard Variant="Variant.Outlined">
+                    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Drag and drop files to upload</RadzenText>
+                    <RadzenUpload id="uploadWithDragAndDrop" ChooseText="Drag and drop qui or click Selezionare Files" Change="OnChange"
+                        Auto="false" Multiple="true" InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "select file" } })"
+                              Style="width: 100%" />
+                </RadzenCard>
+            </div>
+
+            @if (_filesWithNames != null && _filesWithNames.Any())
+            {
+                <div class="mb-3">
+                    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3" class="mb-2">File selezionati</RadzenText>
+                    @foreach (var fileItem in _filesWithNames)
+                    {
+                        <RadzenCard class="file-list-card">
+                            <div class="row align-items-center g-1">
+                                <div class="col-md-6">
+                                    <RadzenTextBox @bind-Value="fileItem.NewName" Style="width: 100%" Placeholder="Nome file" />
+                                </div>
+                                <div class="col-md-4">
+                                    <RadzenText TextStyle="TextStyle.Body2">@fileItem.Extension</RadzenText>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" 
+                                                  Click="@(() => RemoveFile(fileItem))" />
+                                </div>
+                            </div>
+                        </RadzenCard>
+                    }
+                </div>
+            }
+                
+            <BlazorButton Type="BtnType.Button" Style="BtnStyle.Primary" Text="Salva" Icon="save" Disabled="_waitingUpload" LabelWaiting="Upload..." OnClick="HandleValidSubmit"> </BlazorButton>
+            <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger mt-3">@_errorMessage</div>
+            }
+        </div>
+    </div>
+}

@@ -1,0 +1,61 @@
+﻿@page "/ProductAccTypes/Edit"
+@page "/ProductAccTypes/Edit/{Id:int}"
+
+@using Radzen
+@using Radzen.Blazor
+
+<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog)>@_header</BlazorHeader>
+
+@if (_productTypeAccessory == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    
+    <div class="container m-3">
+        <EditForm Model="@_productTypeAccessory" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+           
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <DisplayName For="@(()=>_productTypeAccessory.Name)" />
+                    <input class="form-control" @bind-value="@_productTypeAccessory.Name" />
+                    <ValidationMessage For="@(() => _productTypeAccessory.Name)" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <DisplayName For="@(()=>_productTypeAccessory.IdAccessoryType)" />
+                    <div class="input-group mb-3">
+                        <RadzenDropDown @ref="_ddAccessoryTypes" class="form-control" @bind-Value=@_productTypeAccessory.IdAccessoryType Data=@_accessoryTypes AllowFiltering=true FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive
+                                    AllowClear="true" TextProperty="Name" ValueProperty="Id" PageSize="10">
+
+                        </RadzenDropDown>
+                        <BtnAccessoryTypes OnGetItem="OnGetAccessoryType"></BtnAccessoryTypes>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="form-check form-switch">
+                    <DisplayName For="@(()=>_productTypeAccessory.Necessary)" />
+                    <input class="form-check-input" type="checkbox" @bind="@_productTypeAccessory.Necessary" />
+                    <ValidationMessage For="@(() => _productTypeAccessory.Necessary)" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="form-check form-switch">
+                    <DisplayName For="@(()=>_productTypeAccessory.Enabled)" />
+                    <input class="form-check-input" type="checkbox" @bind="@_productTypeAccessory.Enabled" />
+                    <ValidationMessage For="@(() => _productTypeAccessory.Enabled)" />
+                </div>
+            </div>
+            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+            <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+        </EditForm>
+    </div>
+}

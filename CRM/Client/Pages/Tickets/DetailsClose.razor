@@ -1,0 +1,74 @@
+﻿@page "/Tickets/DetailsClose/{Id:int}"
+
+@using CRM.Shared.Helper
+
+<h3>Ticket</h3>
+<hr />
+@if (_ticket == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row rounded-3 bg-light">
+        <div class="col-md-8">
+
+            <div class="row g-3">
+                <div class="alert alert-warning" role="alert">
+                    <h4 class="alert-heading">Descrizione</h4>
+                     <p class="note-report">@_ticket.CloseDescription</p>  
+                </div>
+                @if (_ticket.Permits.InternalData())
+                {
+                    <div class="mb-3">
+                        <div>
+                        <a class="btn btn-light" data-bs-toggle="collapse" href="#collapseNote" role="button" aria-expanded="false" aria-controls="collapseNote">
+                            Note Interne
+                        </a>
+                    </div>
+                    <div class="mb-3 collapse" id="collapseNote">
+
+                        <div class="alert alert-secondary" role="alert">
+                            <p class="note-report">@_ticket.CloseNote</p>  
+                        </div>
+                    </div>
+
+                </div>
+                }
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.IdUserClosed)" /></th>
+                                <td><span>@_userClosed?.NameComplete</span></td>
+                            </tr>
+                           
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.DateClosed)" /></th>
+                                <td><span>@_ticket.DateClosed?.ToString("g") </span></td>
+                            </tr>
+                        
+                    </tbody>
+                </table>
+
+
+
+                <div>
+
+                    @if (_ticket.Closed && _ticket.Permits.Close())
+                    {
+                        <BlazorButton OnClick="@PrepareTicketReOpen" Style="@BtnStyle.Secondary" Icon="upload" Text="@Localize["Riapri Ticket"]"></BlazorButton>
+                    }
+                   
+                </div>
+                
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,142 @@
+﻿@page "/Companies/Info/{Id:int}"
+@page "/Companies/{Id:int}"
+@page "/Companies/{Id:int}/{SelectViewValue:int}"
+@using Radzen
+@using Radzen.Blazor
+@using CRM.Shared.Helper
+
+@if (_company == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <BlazorBreadCrumb Model="@_breadCrumb"></BlazorBreadCrumb>
+
+  @*  <div class="page-header">
+
+           <h2> @_company.RagioneSociale</h2>
+    </div>*@
+    
+
+    <RadzenSelectBar @bind-Value="_selectView" TValue="CompanyViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+        <Items>
+            <RadzenSelectBarItem Text=@Localize["Dati Azienda"] Value="CompanyViews.Company" />
+            <RadzenSelectBarItem Text=@Localize["Utenti"] Value="CompanyViews.Users" />
+            <RadzenSelectBarItem Text=@Localize["Contacts"] Value="CompanyViews.Contacts" />
+            <RadzenSelectBarItem Text=@Localize["Articles"] Value="CompanyViews.Articles" />
+            <RadzenSelectBarItem Text=@Localize["Tickets"] Value="CompanyViews.Ticket" />
+            <RadzenSelectBarItem Text=@Localize["Contracts"] Value="CompanyViews.Contracts" />
+            @if (_company.CompanyType == CompanyTypes.Reseller)
+            {
+                <RadzenSelectBarItem Text=@Localize["Customers"] Value="CompanyViews.Customers" />
+            }
+        </Items>
+    </RadzenSelectBar>
+
+    @if (_selectView == CompanyViews.Company)
+    {
+        if (_partialView == PartialViews.Details)
+        {
+            <Details Id="@Id" OnClickEdit="EditCompany" OnClickCancel="CancelCompany"></Details>
+        }
+        else
+        {
+            <Edit Id="@Id" OnClickSave="SaveCompany" OnClickCancel="CancelCompany"></Edit>
+        }
+    }
+    else if (_selectView == CompanyViews.Users)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Settings.Users.Index IdCompany="@Id" OnClickEdit="IndexEditUser" OnClickDetails="DetailsUser" BreadCrumbVisible=false></CRM.Client.Pages.Settings.Users.Index>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Settings.Users.Details Id="@_idUser" CloseForm="UsersCloseForm" OnClickEdit="DetailsEditUser"></CRM.Client.Pages.Settings.Users.Details>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Settings.Users.Edit Id="@_idUser" CloseForm="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Settings.Users.Edit>
+        }
+
+
+    }
+    else if (_selectView == CompanyViews.Articles)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Articles.Index IdCompany="@Id" OnClickEdit="IndexEditProduct" OnClickDetails="DetailsProduct">
+
+            </CRM.Client.Pages.Articles.Index>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+           <CRM.Client.Pages.Articles.Info Id="@_idProduct.GetValueOrDefault()" OnGotoIndex="IndexTicket"></CRM.Client.Pages.Articles.Info>
+           @*<CRM.Client.Pages.Products.Details Id="@_idProduct.GetValueOrDefault()" OnClickCancel="ProductCloseForm" OnClickEdit="DetailsEditProduct"></CRM.Client.Pages.Products.Details>*@
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Articles.Edit Id="@_idProduct" IdCompany="@Id" OnClickSave="ProductCloseForm" OnClickCancel="ProductCloseForm"></CRM.Client.Pages.Articles.Edit>
+        }
+        
+    }
+    else if (_selectView == CompanyViews.Ticket)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Tickets.Index IdCompany="@Id" OnClickEdit="IndexEditTicket">
+
+            </CRM.Client.Pages.Tickets.Index>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Tickets.Info Id="@_idTicket.GetValueOrDefault()" IdCompany="Id" OnGotoIndex="IndexTicket"></CRM.Client.Pages.Tickets.Info>
+           @* <CRM.Client.Pages.Tickets.Details Id="@_idTicket.GetValueOrDefault()" OnClickCancel="TicketCloseForm" OnClickEdit="DetailsEditTicket"></CRM.Client.Pages.Tickets.Details>*@
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Tickets.Edit Id="@_idTicket" IdCompany="@Id" OnClickSave="TicketCloseForm" OnClickCancel="TicketCloseForm"></CRM.Client.Pages.Tickets.Edit>
+        }
+    }
+    else if (_selectView == CompanyViews.Contacts)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Contacts.Index IdCompany="@Id" OnClickDetails="DetailsContact" OnClickEdit="IndexEditContact" OnClickNew="IndexNewContact"></CRM.Client.Pages.Contacts.Index>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Contacts.Details Id="@_idContact.GetValueOrDefault()" OnClickEdit="@(()=>EditContact(_idContact))" OnClickCancel="ContactCloseForm"></CRM.Client.Pages.Contacts.Details>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Contacts.Edit Id="@_idContact" IdCompany="@Id" OnClickSave="ContactCloseForm" OnClickCancel="ContactCloseForm"></CRM.Client.Pages.Contacts.Edit>
+        }
+    }
+    else if (_selectView == CompanyViews.Contracts)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.CompanyContracts.Index IdCompany="@Id" OnClickDetails="DetailsContract" OnClickEdit="IndexEditContract" OnNewItem="NewContract"></CRM.Client.Pages.CompanyContracts.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.CompanyContracts.Edit Id="@_idContract" IdCompany="@Id" OnClickSave="ContractCloseForm" OnClickCancel="ContractCloseForm"></CRM.Client.Pages.CompanyContracts.Edit>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.CompanyContracts.Details Id="@((int)_idContract)" OnClickCancel="ContractCloseForm" OnClickEdit="@(()=>EditContract(_idContract))"></CRM.Client.Pages.CompanyContracts.Details>
+        }
+    }
+    else if (_selectView == CompanyViews.Customers)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Companies.Index IdReseller="@Id" OnSelectCompany="DetailsCustomer" OnEditCompany="EditCustomer" OnRemoveCompany="RemoveCustomer" OnAddCustomer="AddCustomer" IdCompanyParent="@Id"></CRM.Client.Pages.Companies.Index>
+        }
+       
+    }
+
+
+}

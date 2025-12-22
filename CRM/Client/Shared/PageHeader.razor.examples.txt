@@ -1,0 +1,169 @@
+@* ESEMPIO DI UTILIZZO DEL COMPONENTE PageHeader *@
+
+@*
+CASO 1: Header Semplice (solo titolo)
+*@
+<PageHeader Title="Dashboard" />
+
+@*
+CASO 2: Header con Icona e Sottotitolo
+*@
+<PageHeader 
+    Title="Gestione Ticket"
+    Subtitle="Visualizza e gestisci tutti i ticket di supporto"
+    Icon="support_agent" />
+
+@*
+CASO 3: Header con Breadcrumb
+*@
+<PageHeader 
+    Title="Dettaglio Prodotto"
+    Subtitle="Visualizza i dettagli del prodotto selezionato"
+    Icon="inventory_2"
+    BreadcrumbItems="@_breadcrumbItems">
+</PageHeader>
+
+@code {
+    // Nel code block della pagina:
+    private List<BreadcrumbItem> _breadcrumbItems = new()
+    {
+        new BreadcrumbItem("Prodotti", "/Products"),
+        new BreadcrumbItem("Dettaglio")
+    };
+}
+
+@*
+CASO 4: Header con Azioni (pulsanti, dropdown, etc.)
+*@
+<PageHeader 
+    Title="Elenco Clienti"
+    Subtitle="Gestisci i tuoi clienti"
+    Icon="people"
+    BreadcrumbItems="@_breadcrumbItems">
+    
+    <Actions>
+        <button class="btn btn-primary" @onclick="NuovoCliente">
+            <span class="material-icons me-2" style="font-size: 18px;">add</span>
+            Nuovo Cliente
+        </button>
+        <button class="btn btn-outline-secondary ms-2" @onclick="Esporta">
+            <span class="material-icons me-2" style="font-size: 18px;">download</span>
+            Esporta
+        </button>
+    </Actions>
+</PageHeader>
+
+@*
+CASO 5: Header con Filtri di Ricerca
+*@
+<PageHeader 
+    Title="Ricerca Avanzata"
+    Icon="search"
+    BreadcrumbItems="@_breadcrumbItems">
+    
+    <Filters>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Nome</label>
+                <input type="text" class="form-control" @bind="_filter.Name" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Categoria</label>
+                <select class="form-select" @bind="_filter.Category">
+                    <option value="">Tutte</option>
+                    <option value="A">Categoria A</option>
+                    <option value="B">Categoria B</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Data Da</label>
+                <input type="date" class="form-control" @bind="_filter.DateFrom" />
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-primary w-100" @onclick="Cerca">
+                    <span class="material-icons me-2" style="font-size: 18px;">search</span>
+                    Cerca
+                </button>
+            </div>
+        </div>
+    </Filters>
+</PageHeader>
+
+@*
+CASO 6: Header Completo (tutto insieme)
+*@
+<PageHeader 
+    Title="@Localize["Tickets"]"
+    Subtitle="Gestisci i ticket di supporto"
+    Icon="support_agent"
+    BreadcrumbItems="@_breadcrumbItems">
+    
+    <Actions>
+        <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+            <Authorized>
+                <button class="btn btn-primary" @onclick="NuovoTicket">
+                    <span class="material-icons me-2" style="font-size: 18px;">add</span>
+                    Nuovo Ticket
+                </button>
+            </Authorized>
+        </AuthorizeView>
+        <button class="btn btn-outline-secondary ms-2" @onclick="EsportaExcel">
+            <span class="material-icons me-2" style="font-size: 18px;">table_view</span>
+            Excel
+        </button>
+    </Actions>
+
+    <Filters>
+        <div class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label class="text-muted mb-0">
+                    <span class="material-icons me-1" style="font-size: 16px; vertical-align: middle;">search</span>
+                    Cerca:
+                </label>
+            </div>
+            <div class="col-md-4">
+                <input type="text" 
+                       class="form-control form-control-sm" 
+                       @bind="_filter.SearchText" 
+                       placeholder="Cerca per titolo, descrizione..." />
+            </div>
+            <div class="col-md-3">
+                <select class="form-select form-select-sm" @bind="_filter.Status">
+                    <option value="">Tutti gli stati</option>
+                    <option value="Open">Aperti</option>
+                    <option value="Closed">Chiusi</option>
+                </select>
+            </div>
+        </div>
+    </Filters>
+</PageHeader>
+
+@code {
+    // Breadcrumb personalizzato
+    private List<BreadcrumbItem> _breadcrumbItems = new()
+    {
+        new BreadcrumbItem("Dashboard", "/"),
+        new BreadcrumbItem("Supporto", "/Support"),
+        new BreadcrumbItem("Tickets")
+    };
+}
+
+@*
+ICONE MATERIAL ICONS CONSIGLIATE:
+- inventory_2: Prodotti
+- people / contacts: Clienti/Contatti
+- support_agent: Ticket/Supporto
+- domain: Aziende
+- apps: Progetti
+- schedule: Calendario/Schedule
+- forum: Chat/Talks
+- psychology: AI/Ricerca Intelligente
+- settings: Impostazioni
+- dashboard: Dashboard
+- analytics: Statistiche
+- receipt_long: Fatture
+- description: Documenti
+- attach_money: Vendite
+- trending_up: Report
+- notifications: Notifiche
+*@

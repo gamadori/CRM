@@ -1,0 +1,81 @@
+﻿@using Syncfusion.Blazor.Data
+@using Models
+@using Services
+@using Syncfusion.Blazor
+
+@inherits DataAdaptor<TaskData>
+
+@inject IAGRestClientService RestClientService  
+
+    @code {
+
+        [Parameter]
+        public int? IdProject { get; set; }
+
+        // Performs data Read operation
+        public override async Task<object> ReadAsync(DataManagerRequest dm, string key = null)
+        {
+
+
+            TaskDataFilter filter = new TaskDataFilter();
+
+            if (IdProject != null)
+                filter.IdProject = IdProject;
+
+            var resp = await RestClientService.Get<TaskData, TaskDataFilter>(filter, ConstHelper.TasksDataPath);
+
+            IEnumerable<object> data;
+
+            if (resp.Items.Count == 0)
+            {
+                List<TaskData> list = new List<TaskData>();
+
+                list.Add(new TaskData());
+                data = list;
+            }
+            else
+                data = resp.Items;
+
+
+            return dm.RequiresCounts ? new DataResult() { Result = data, Count = data.Count() } : (object)data;
+
+        }
+
+
+        // Performs CRUD operation
+        public override async Task<object> BatchUpdateAsync(DataManager dm, object changedRecords, object addedRecords, object deletedRecords, string keyField, string key, int? dropIndex)
+        {
+            List<TaskData> addRecord = addedRecords as List<TaskData>;
+            List<TaskData> changed = changedRecords as List<TaskData>;
+            List<TaskData> deleteRecord = deletedRecords as List<TaskData>;
+
+            if (changed != null)
+            {
+                for (var i = 0; i < changed.Count(); i++)
+                {
+                    var value = changed[i];
+                    await RestClientService.Post<TaskData, int>(value, ConstHelper.TasksDataPath);
+
+                }
+            }
+            if (deleteRecord != null)
+            {
+                for (var i = 0; i < deleteRecord.Count(); i++)
+                {
+                    await RestClientService.Delete<int>(deleteRecord[i].Id, ConstHelper.TasksDataPath);
+                   
+                }
+            }
+            if (addRecord != null)
+            {
+                for (var i = 0; i < addRecord.Count(); i++)
+                {
+                    addRecord[i].Id = 0;
+                    addRecord[i].IdProject = IdProject;
+                    addRecord[i] =( await RestClientService.Post<TaskData, int>( addRecord[i], ConstHelper.TasksDataPath)).Data;
+                }
+            }
+            return (new { addedRecords = addRecord, changedRecords = changed, deletedRecords = deleteRecord });
+        }
+    }
+    

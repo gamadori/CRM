@@ -1,0 +1,40 @@
+﻿@page "/Tickets/Schedule"
+@using Models
+@using Radzen
+@using Radzen.Blazor
+
+<div class="row">
+    <div class="col p-4">
+        <CascadingValue Value="_maxNumMonthlyTicket" TValue="int" Name="MaxNumDaylyTicket">
+            
+            <BlazoringComponents.Scheduler.AGScheduler @ref="schedulerTickets" TItem="TicketSchedulerViewModel" @bind-DateCurrent="@DateCurrent" @bind-CurrentView="@_viewMode"  Loader="LoadTickets" UpdatePeriod="UpdatePeriod"
+                                                       DateProperty="Date" TimeProperty="Time" DateEndProperty="DateEnd" CompanyProperty="Company" UserProperty="User" BackColorProperty="BackColor"
+                                                       DescriptionProperty="Description" OnNewTicket="NewTicket" ViewMode=@ViewMode Loading=@_loading>
+
+                <Filter>
+                
+                    <div class="form-floating">
+                        
+                        <RadzenDropDownDataGrid class="form-control" @bind-value="@IdUserAssigned" TValue="string" AllowFiltering="true" AllowClear="true" Change="OnChangeIdUser" FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive
+                                                Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id">
+                            <Columns>
+                                <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
+                                <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
+
+                            </Columns>
+                        </RadzenDropDownDataGrid>
+
+                        <label>@Localize["User"]</label>
+
+                    </div>
+                </Filter>
+                <Details>
+
+                    <CRM.Client.Pages.Tickets.Preview IdTicket=context ViewCommands="false"></CRM.Client.Pages.Tickets.Preview>
+
+                </Details>
+            </BlazoringComponents.Scheduler.AGScheduler>
+        </CascadingValue>
+    </div>
+</div>
+

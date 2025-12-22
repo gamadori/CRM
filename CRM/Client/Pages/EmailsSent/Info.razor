@@ -1,0 +1,12 @@
+﻿
+@page "/EmailsSent"
+@page "/EmailsSent/info"
+
+@if (_partialViews == PartialViews.Index)
+{
+    <CRM.Client.Pages.EmailsSent.Index OnDetails="OnClickDetails"></CRM.Client.Pages.EmailsSent.Index>
+}
+else
+{
+    <Details OnClickCancel="OnDetailsClose" Id=@_idEmail></Details>
+}

@@ -1,0 +1,163 @@
+﻿@page "/Products/Info/{Id:int}"
+@page "/Products/{Id:int}"
+@using Radzen
+@using Radzen.Blazor
+
+
+
+@if (_product == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    
+    <PageHeader Title="@_product.Name"
+                Subtitle=@Localize["Product"]
+               
+                BreadcrumbItems="@_breadcrumbItems">
+    </PageHeader>
+    <!-- Desktop: SelectBar -->
+    <div class="d-none d-md-block mb-3">
+        <RadzenSelectBar @bind-Value="_selectView" TValue="GroupViews" Change="@((args) => Change(args, "SelectBar with single selection"))" >
+            <Items>
+                <RadzenSelectBarItem Text=@Localize["Data Product"] Value="GroupViews.ProductType" />
+                <RadzenSelectBarItem Text=@Localize["Attachments"] Value="GroupViews.Attachments" />
+                <RadzenSelectBarItem Text=@Localize["Accessories"] Value="GroupViews.ProductAccessories" />
+                <RadzenSelectBarItem Text=@Localize["Parameters"] Value="GroupViews.Parameters" />
+                <RadzenSelectBarItem Text=@Localize["Sotto Parti"] Value="GroupViews.ProductTypeChilds" />
+            </Items>
+        </RadzenSelectBar>
+    </div>
+    
+    <!-- Mobile: Dropdown -->
+    <div class="d-md-none mb-3">
+        <RadzenDropDown @bind-Value="_selectView" TValue="GroupViews" 
+                        Change="@((args) => Change(args, "SelectBar with single selection"))"
+                        Data="@_viewOptions" 
+                        TextProperty="Text" 
+                        ValueProperty="Value"
+                        Style="width: 100%;" 
+                        Placeholder="Seleziona vista..." />
+    </div>
+
+    @if (_selectView == GroupViews.ProductType)
+    {
+        if (_partialView == PartialViews.Details)
+        {
+            <Details Id="@Id" OnClickEdit="EditCommand" OnClickCancel="CancelCommand"></Details>
+        }
+        else
+        {
+            <Edit Id="@Id" OnClickSave="(async () => await SaveCommand())" OnClickCancel="CancelCommand"></Edit>
+        }
+    }
+    else if (_selectView == GroupViews.ProductDxf)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Attachments.Index IdParent="@Id" AttachmentType=@AttachmentTypes.DXF OnClickEdit="IndexEditDxf" OnClickDetails="IndexDetailsDxf"></CRM.Client.Pages.Attachments.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Attachments.Edit Id="@_idAttachment" IdParent="@Id" AttachmentType=@AttachmentTypes.DXF OnClickClose="CloseDxf"></CRM.Client.Pages.Attachments.Edit>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Attachments.Details Id="@_idAttachment" OnClickCancel="CloseDxf"
+                                      OnClickEdit="DetailsEditDxf" OnClickAddFile="AddFileDxf"></CRM.Client.Pages.Attachments.Details>
+        }
+        else if (_partialView == PartialViews.AddFiles)
+        {
+            <CRM.Client.Pages.Attachments.Upload Id="@_idAttachment.Value" OnClickClose="CloseDxf"></CRM.Client.Pages.Attachments.Upload>
+        }
+        else if (_partialView == PartialViews.View)
+        {
+            <CRM.Client.Pages.DxfViewer.Index Id="@_idAttachment.Value"></CRM.Client.Pages.DxfViewer.Index>
+        }
+    }
+    else if (_selectView == GroupViews.Attachments)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Attachments.Index IdParent="@Id" AttachmentType=@AttachmentTypes.Product OnClickEdit="IndexEditAttachment" OnClickDetails="IndexDetailsAttachment"></CRM.Client.Pages.Attachments.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Attachments.Edit Id="@_idAttachment" IdParent="@Id" AttachmentType=@AttachmentTypes.Product OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Edit>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Attachments.Details Id="@_idAttachment" OnClickCancel="CloseAttachment"
+                                                  OnClickEdit="DetailsEditAttachment" OnClickAddFile="AddFileAttachment"></CRM.Client.Pages.Attachments.Details>
+        }
+        else if (_partialView == PartialViews.AddFiles)
+        {
+            <CRM.Client.Pages.Attachments.Upload Id="@_idAttachment.Value" OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Upload>
+        }
+       
+    }
+    else if (_selectView == GroupViews.ProductAccessories)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.ProductAccTypes.Index IdProductType="Id" OnClickDetails="OnClickAccessoryDetails" OnClickEdit="OnClickAccessoryEdit" OnNewItem="OnClickAccessoryNew" BreadCrumbVisible=false></CRM.Client.Pages.ProductAccTypes.Index>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.ProductAccTypes.Details Id=@_idAccessory OnClickCancel="@OnClickAccessoryClose" OnClickEdit="OnClickAccessoryEditFromDetails"></CRM.Client.Pages.ProductAccTypes.Details>
+        }
+        else if (_partialView == PartialViews.New)
+        {
+            <CRM.Client.Pages.ProductAccTypes.Edit IdProduct=@Id OnClickCancel="OnClickAccessoryClose" OnClickSave="OnClickAccessoryClose"></CRM.Client.Pages.ProductAccTypes.Edit>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.ProductAccTypes.Edit Id=@_idAccessory OnClickCancel="OnClickAccessoryClose" OnClickSave="OnClickAccessoryClose"></CRM.Client.Pages.ProductAccTypes.Edit>
+        }
+        else if (_partialView == PartialViews.Translate)
+        {
+            
+        }
+    }
+    else if (_selectView == GroupViews.ProductTypeChilds)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Products.Index IdParent="@Id" CmdDetails="false" CmdEdit="false" OnClickEdit="@((s)=> OnClickNew(s))"
+                                                 OnClickDelete="@(async (s)=> await OnClickDelete(s))"
+                                                 MessagePrepareDelete="@_messagePrepareDelete"></CRM.Client.Pages.Products.Index>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Products.Details Id="@_idChild" CloseForm="UsersCloseForm" OnClickEdit="EditCommand"></CRM.Client.Pages.Products.Details>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Products.Edit Id="@_idChild" CloseForm="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Products.Edit>
+        }
+        else if (_partialView == PartialViews.New)
+        {
+
+        }
+
+
+    }
+    else if (_selectView == GroupViews.Parameters)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.ProductParameters.Index IdProduct="@Id" CmdDetails="false" CmdEdit="false" OnClickEdit="@((s)=> OnClickNew(s))"
+                                             OnClickDelete="@(async (s)=> await OnClickDelete(s))"
+                                             MessagePrepareDelete="@_messagePrepareDelete"></CRM.Client.Pages.ProductParameters.Index>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Products.Details Id="@_idChild" CloseForm="UsersCloseForm" OnClickEdit="EditCommand"></CRM.Client.Pages.Products.Details>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.ProductParameters.Edit Id="@_idChild" CloseForm="UsersCloseForm" IdProduct="@Id"></CRM.Client.Pages.ProductParameters.Edit>
+        }
+    }
+}

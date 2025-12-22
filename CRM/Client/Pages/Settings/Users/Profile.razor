@@ -1,0 +1,83 @@
+﻿@page "/Settings/Users/Profile"
+
+@using Radzen
+@using Radzen.Blazor
+
+<BlazorHeader Header="@Localize["Profilo Utente"]">
+</BlazorHeader>
+
+
+@if (_user == null)
+{
+    <Waiting></Waiting>
+}
+else
+{   <EditForm Model="@_user" OnValidSubmit="HandleValidSubmit" class="mb-3">
+     <div class="row rounded-3 bg-light">
+        <div class="col-md-8">
+
+            <div class="row g-3">
+                
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><DisplayName For="@(()=>_user.Name)" /></td>
+                            <td>@_user.Name</td>
+                        </tr>
+                        <tr>
+                            <td><DisplayName For="@(()=>_user.Surname)" /></td>
+                            <td>@_user.Surname</td>
+                        </tr>
+                         <tr>
+                            <td><DisplayName For="@(()=>_user.Email)" /></td>
+                            <td>@_user.Email</td>
+                        </tr>
+                         <tr>
+                            <td><DisplayName For="@(()=>_user.PhoneNumber)" /></td>
+                            <td>@_user.PhoneNumber</td>
+                        </tr>
+                         <tr>
+                            <td><DisplayName For="@(()=>_user.Company)" /></td>
+                            <td>@_user.Company</td>
+                        </tr>
+                        
+                        <tr>
+                            <td><DisplayName For="@(()=>_user.LanguageCode)" /></td>
+                            <td>
+                                <LanguageSelectorDb Languages="@_languages"  @bind-Value="@_user.LanguageCode" /> @_user.LanguageCode
+                            </td>
+                        </tr>
+                         <tr>
+                            <td><DisplayName For="@(()=>_user.Photo)" /></td>
+                            <td>
+                                <div id="div-avatar" class="e-avatar e-avatar-xlarge e-avatar-circle image">
+                                    <img src="@_user.Photo" alt="avatar" /> 
+                                </div>  
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><DisplayName For="@(()=>_user.Photo)" /></td>
+                            <td>
+                                            
+                                <RadzenFileInput  Accept="Image/*" ImageStyle="max-width:400px" @bind-Value="@_user.Photo" @onchange="PhotoChange" TValue="string" ChooseText="@Localize["Seleziona"]" />
+                                
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <BlazorButton Style="BtnStyle.Primary"  Template="TemplateButton.Submit" Label="true" Text="@Localize["Save Changes"]"></BlazorButton>
+    </EditForm>
+     
+    
+    
+    
+}

@@ -1,0 +1,18 @@
+﻿    <div class="container flex-fill overflow-scroll bg-chat" id="divChat">
+        
+        <Virtualize ItemsProvider="LoadChats"  @ref="_chatContainer"   Context="chat" ItemSize="50" OverscanCount="3">
+            <ItemContent>
+                
+
+               <ChatMessage TicketChat="chat" Loaded="MsgLoaded"></ChatMessage>
+
+              
+    
+           
+
+                
+            
+            </ItemContent>
+            
+        </Virtualize>
+    </div>

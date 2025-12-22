@@ -1,0 +1,95 @@
+﻿
+@using System.Reflection
+@using System.Linq.Expressions
+@using System.ComponentModel.DataAnnotations
+@using System.Globalization
+@using System.Resources
+
+@typeparam T
+
+@if (link)
+{
+    <span class="label-floating @CssClass">@label</span>
+}
+else if (ChildContent == null)
+{
+
+
+    <RadzenFormField Text="@label" Variant="@Variant" AllowFloatingLabel=@AllowFloatingLabel>
+        
+       
+    </RadzenFormField>
+}
+else
+{
+    <RadzenFormField Text="@label" Variant="@Variant" class="remove-border" AllowFloatingLabel=@AllowFloatingLabel>
+        <ChildContent>
+            @ChildContent
+        </ChildContent>
+        <Helper>
+            @Helper
+        </Helper>
+        <End>
+            @End
+        </End>
+    </RadzenFormField>
+    
+}
+@code {
+    [Parameter] 
+    public Expression<Func<T>> For { get; set; } = default!;
+    [Parameter] 
+    public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter]
+    public RenderFragment Helper { get; set; } = default!;
+
+    [Parameter]
+    public RenderFragment End { get; set; } = default!;
+
+
+    [Parameter] public string? Floating { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+    [Parameter] public bool link { get; set; } = false;
+    [Parameter] public Variant Variant { get; set; } = Variant.Text;
+    [Parameter] public string? Text { get; set; } = null;
+    [Parameter] public bool AllowFloatingLabel { get; set; } = true;
+
+    private string label => GetDisplayName();
+
+
+    private string GetDisplayName()
+    {
+        if (For == null)
+        {
+            return Text ?? "";
+        }
+
+        MemberExpression? expression = For.Body as MemberExpression;
+        
+        if (expression == null && For.Body is UnaryExpression unary)
+        {
+            expression = unary.Operand as MemberExpression;
+        }
+        if (expression == null)
+        {
+            return Text ?? "";
+        }
+
+        var value = expression.Member.GetCustomAttribute(typeof(DisplayAttribute)) as DisplayAttribute;
+
+
+        if (value?.ResourceType != null)
+        {
+            return GetDisplayNameFromResource(value);
+        }
+        return value?.Name ?? expression.Member.Name ?? "";
+    }
+
+    private static string GetDisplayNameFromResource(DisplayAttribute mPropAttr)
+    {
+        ResourceManager rm = new ResourceManager(mPropAttr.ResourceType);
+        var dispName = rm.GetString(mPropAttr.Name, CultureInfo.CurrentCulture);
+        return dispName ?? mPropAttr.Name;
+    }
+
+}

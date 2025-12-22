@@ -1,0 +1,42 @@
+﻿@page "/authentication/{action}"
+@using CRM.Client.Services
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject HttpClient HttpClient;
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Nav
+
+<RemoteAuthenticatorView  Action="@Action"  OnLogInSucceeded="OnLoginSucceeded" >
+     <LogOutSucceeded>
+        @InvokeAsync(() => Nav.NavigateTo("/"))
+    </LogOutSucceeded>
+    <LoggingIn>
+       <SystemMessage Message="Redirect to Login..."></SystemMessage>
+    </LoggingIn>
+    
+</RemoteAuthenticatorView>
+
+
+@code{
+    [Parameter] public string Action { get; set; }
+
+    private async void OnLoginSucceeded() 
+    {
+
+        var user = await HttpClient.GetFromJsonAsync<ApplicationUser>(ConstHelper.UserSignedPath);
+
+        if (user != null)
+        {
+            var js = (IJSInProcessRuntime)JSRuntime;
+            var appLanguage = await js.InvokeAsync<string>("appCulture.get");
+
+            if (appLanguage != user.LanguageCode)
+            {
+                js.InvokeVoid("appCulture.set", user.LanguageCode);
+
+                Nav.NavigateTo(Nav.Uri, forceLoad: true);
+            }
+        }
+        Console.WriteLine("Evento Login Succeded");
+   
+    }
+}

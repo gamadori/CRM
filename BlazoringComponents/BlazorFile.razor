@@ -1,0 +1,106 @@
+﻿@using CRM.Shared.Helper
+
+
+<div class="col-md-4">
+    <div class="card m-3 shadow h-100 py-2">
+        <div class="row g-0">
+            <div class="col">
+
+                <div class="p-3 py-4  bg-light text-center rounded">
+                    <i class="\bi @_icon" style="font-size: 2rem;"></i>
+                    
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card-body">
+                    <span class="card-text"><small>@Name</small></span>
+                    <p class="card-text"><small class="text-muted">@_size</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-transparent">
+           
+            <BlazorButton Template="TemplateButton.Download" OnClick="@OnClickDownload" />
+            @if (!ReadOnly)
+            {
+                <BlazorButton Template="TemplateButton.Delete"  OnClick="@OnClickDelete" />
+            }
+        </div>
+    </div>
+    
+</div>
+    @code
+{
+        [Parameter]
+        public string Value { get; set; }
+
+        [Parameter]
+        public int IdFile { get; set; }
+
+        [Parameter]
+        public string Name { get; set; }
+
+        [Parameter]
+        public bool Selected { get; set; }
+
+        [Parameter]
+        public double Size { get; set; }
+
+        [Parameter]
+        public bool ReadOnly { get; set; } = false;
+
+
+        [Parameter]
+        public EventCallback<bool> OnSelectedChanged { get; set; }
+
+        [Parameter]
+        public EventCallback<int> OnDownload { get; set; }
+
+        [Parameter]
+        public EventCallback<int> OnDelete { get; set; }
+
+        private string _icon;
+
+        private string _size;
+
+        protected void CheckBoxOnClick()
+        {
+            Selected = !Selected;
+            StateHasChanged();
+            OnSelectedChanged.InvokeAsync(Selected);
+        }
+
+        protected void OnClickDelete()
+        {
+            OnDelete.InvokeAsync(IdFile);
+        }
+
+        protected void OnClickDownload()
+        {
+            OnDownload.InvokeAsync(IdFile);
+        }
+        protected override void OnParametersSet()
+        {
+            switch (Value.ToLower())
+            {
+                case "pdf":
+                    _icon = "bi-file-earmark-pdf";
+                    break;
+
+                case "zip":
+                    _icon = "bi-file-earmark-zip";
+                    break;
+
+                case "doc":
+                    _icon = "bi-file-earmark-word";
+                    break;
+
+                default:
+                    _icon = "bi-file-text";
+                    break;
+            }
+
+            _size = FileHelper.FormatToHumanReadableFileSize(Size);
+
+        }
+    }

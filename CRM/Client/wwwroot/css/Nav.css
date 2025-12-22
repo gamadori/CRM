@@ -1,0 +1,16 @@
+﻿.hamburger {
+    position: relative
+}
+
+    .hamburger:before {
+        top: -7.5px;
+        width: 24px;
+        position: absolute
+    }
+
+    .hamburger:after {
+        bottom: -7.5px;
+        width: 16px;
+        position: absolute
+    }
+

@@ -1,0 +1,156 @@
+﻿@typeparam TItem
+@using Radzen
+@using Radzen.Blazor
+
+<h3>Scheduler</h3>
+
+<nav class="navbar navbar-fill navbar-light" style="overflow:scroll">
+    <div class="container-fluid">
+
+        @Filter
+
+        <div class="form-floating">
+           
+            <input type="date" @onchange="OnChangeDate" class="form-control" id="dataCurrent" value="@DateCurrent.Date.ToString("yyyy-MM-dd")" disabled="@DateLocked" />
+            <label for="dataCurrent">@Localize["Date"]</label>
+        </div>
+        
+        <div class="d-flex justify-content-center">
+            <h4 class="color-primary">@_period</h4>
+        </div>
+
+
+        <div class="btn-group" role="group" aria-label="Basic example">
+            @*<RadzenButton ButtonStyle="ButtonStyle.Secondary" Disabled=@DateLocked ButtonType="ButtonType.Button" Click="Previous">&lt;</RadzenButton>
+            <RadzenButton ButtonStyle="ButtonStyle.Primary" Disabled=@DateLocked ButtonType="ButtonType.Button" Click="Next">&gt;</RadzenButton>*@
+            <button type="button" class="btn btn-primary" @onclick="Previous">&lt;</button>
+            <button type="button" class="btn btn-primary" @onclick="Next">&gt;</button>
+        </div>
+        
+        <Radzen.Blazor.RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Disabled=@DateLocked ButtonType="Radzen.ButtonType.Button" Click="Today">@Localize["Today"]</Radzen.Blazor.RadzenButton>
+        
+        <div class="d-flex justify-content-end">
+           @* <ul class="nav nav-pills">
+                 <li class="nav-item">
+                    <button type="button" class="nav-link @_activeMonth" @onclick="()=>ViewSelected(SchedulerViews.Month)">@Localize["Month"]</button>
+                    
+                </li>
+
+                <li class="nav-item">
+                    <button type="button" class="nav-link @_activeWeek" @onclick="()=>ViewSelected(SchedulerViews.Week)">@Localize["Week"]</button>
+                </li>
+               
+
+                <li class="nav-item">
+                    <button type="button" class="nav-link @_activeDay" aria-current="page" @onclick="()=>ViewSelected(SchedulerViews.Day)">@Localize["Day"]</button>
+                </li>
+                
+
+            </ul>*@
+            <RadzenSelectBar @bind-Value="CurrentView" Change="ViewChanged" TValue="SchedulerViews">
+                <Items>
+
+                    <RadzenSelectBarItem Text=@Localize["Month"] Icon="calendar_view_month" Value="SchedulerViews.Month" />
+                    <RadzenSelectBarItem Text=@Localize["Week"] Icon="calendar_view_week" Value="SchedulerViews.Week" />
+                    <RadzenSelectBarItem Text=@Localize["Day"] Icon="calendar_view_day" Value="SchedulerViews.Day" />
+
+                </Items>
+            </RadzenSelectBar>
+        </div>
+       
+    </div>
+</nav>
+
+<CascadingValue Value="Items" TValue="IEnumerable<TItem>" Name="Tickets">
+    <CascadingValue Value="DateCurrent.Date" TValue="DateTime" Name="DateCurrent">
+        <CascadingValue Value="DateProperty" TValue="string" Name="DateProperty">
+            <CascadingValue Value="TimeProperty" TValue="string" Name="TimeProperty">
+                <CascadingValue Value="DateEndProperty" TValue="string" Name="DateEndProperty">
+                    <CascadingValue Value="CompanyProperty" TValue="string" Name="CompanyProperty">
+                        <CascadingValue Value="UserProperty" TValue="string" Name="UserProperty">
+                            <CascadingValue Value="BackColorProperty" TValue="string" Name="BackColorProperty">
+                                <CascadingValue Value="DescriptionProperty" TValue="string" Name="DescriptionProperty">
+                                    <CascadingValue Value="DateLocked" TValue="bool" Name="DateLocked">
+                                        <CascadingValue Value="CurrentView" TValue="SchedulerViews" Name="CurrentView">
+                                            <CascadingValue Value="OnNewTicket" TValue="EventCallback<DateTime>" Name="OnNewTicket">
+                                                <CascadingValue Value="ViewMode" TValue="SchedulerViewMode" Name="ViewMode">
+
+                                                    @if (Loading)
+                                                    {
+                                                        <WaitingSpinner></WaitingSpinner>
+                                                    }
+                                                    else
+                                                    {
+                                                        @if (CurrentView == SchedulerViews.Week)
+                                                        {
+                                                            <AGWeekScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal"></AGWeekScheduler>
+                                                        }
+                                                        else if (CurrentView == SchedulerViews.Day)
+                                                        {
+                                                            <AGDayScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal"></AGDayScheduler>
+                                                        }
+                                                        else
+                                                        {
+                                                            <AGMonthScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal" OpenDaylyScheduler="OpenDaylyScheduler"></AGMonthScheduler>
+
+                                                        }
+                                                    }
+                                                </CascadingValue>
+                                            </CascadingValue>
+                                        </CascadingValue>
+                                    </CascadingValue>
+                                </CascadingValue>
+                            </CascadingValue>
+                        </CascadingValue>
+                    </CascadingValue>
+                </CascadingValue>
+            </CascadingValue>
+        </CascadingValue>
+    </CascadingValue>
+</CascadingValue>
+
+
+@*<div class="modal modal-fullscreen fade" id="modalDetails" tabindex="-1" aria-labelledby="" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:1024px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                </button>
+            </div>
+            <div class="modal-body" style="width:auto">
+                @if (_id != null && Details != null)
+                {
+                    @Details(_id)
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@Localize["Close"]</button>
+                <button type="button" class="btn btn-primary" @onclick="()=>OpenTicket(_id)">@Localize["Open"]</button>
+            </div>
+        </div>
+    </div>
+</div>*@
+
+<div class="offcanvas offcanvas-top h-auto"  tabindex="-1" id="modalDetails" aria-labelledby="offcanvasTopLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasTopLabel">@($"{Localize["Ticket"]} #{_id}")</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+
+    <div class="offcanvas-body h-auto">
+        @if (_id != null && Details != null)
+        {
+            @Details(_id)
+            
+        }
+    </div>
+
+    <div class="offcanvas-footer">
+        <div class="container">
+            <div class="m-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">@Localize["Close"]</button>
+                <button type="button" class="btn btn-primary" @onclick="()=>OpenTicket(_id)">@Localize["Open"]</button>
+            </div>
+        </div>
+    </div>
+</div>

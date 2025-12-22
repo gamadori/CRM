@@ -1,0 +1,64 @@
+﻿@page "/Settings/Smtp"
+
+
+<BlazorHeader>@Localize["SMTP Settings"]</BlazorHeader>
+
+<AGBreadCrumb Type="AGBreadCrumb.BreadCrumbTypes.SMTP"></AGBreadCrumb>
+
+@if (_smtp == null)
+{
+    <Waiting></Waiting>
+}
+else if (_saving)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <EditForm Model="@_smtp" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="Server">Server</label>
+                    <input class="form-control" @bind-value="@_smtp.Server" />
+                    <ValidationMessage For="@(() => _smtp.Server)" />
+                </div>
+                <div class="mb-3">
+                    <label for="Server">Porta</label>
+                    <input class="form-control" @bind-value="@_smtp.Port" />
+                    <ValidationMessage For="@(() => _smtp.Port)" />
+                </div>
+                <div class="mb-3">
+                    <label for="Server" class="form-check-label">Ssl</label>
+                    <input type="checkbox" class="form-check" @bind="@_smtp.Ssl" />
+                    <ValidationMessage For="@(() => _smtp.Ssl)" />
+                </div>
+                <div class="mb-3">
+                    <label for="Server">Nome Mittente</label>
+                    <input class="form-control" @bind-value="@_smtp.SenderName" />
+                    <ValidationMessage For="@(() => _smtp.SenderName)" />
+                </div>
+                <div class="mb-3">
+                    <label for="Server">Email Mittente</label>
+                    <input class="form-control" @bind-value="@_smtp.SenderEmail" />
+                    <ValidationMessage For="@(() => _smtp.SenderEmail)" />
+                </div>
+                <div class="mb-3">
+                    <label for="Server">User Name</label>
+                    <input autocomplete="new-UserName" class="form-control" @bind-value="@_smtp.Username" />
+                    <ValidationMessage For="@(() => _smtp.Username)" />
+                </div>
+                <div class="mb-3">
+                    <label for="Server">Password</label>
+                    <InputText autocomplete="new-password" type="password" class="form-control" @bind-Value="@_smtp.Password" />
+                    <ValidationMessage For="@(() => _smtp.Password)" />
+                </div>
+
+                <button type="submit" class="btn btn-primary">Salva</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="Annulla">Annulla</button>
+            </div>
+        </div>
+    </EditForm>
+}

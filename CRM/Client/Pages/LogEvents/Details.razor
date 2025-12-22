@@ -1,0 +1,55 @@
+﻿@page "/LogEvents/Details/{Id:int}"
+
+<h3>Dettagli Evento</h3>
+<hr />
+@if (_logEvent == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+
+    <dl class="row">
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_logEvent.DateEvent)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@_logEvent.DateEvent</span>
+        </dd>
+
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_logEvent.Module)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@_logEvent.Module</span>
+        </dd>
+
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_logEvent.Subroutine)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@_logEvent.Subroutine</span>
+        </dd>
+         <dt class="col-sm-2">
+            <DisplayName For="@(()=>_logEvent.User)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@_logEvent.User</span>
+        </dd>
+
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_logEvent.EventType)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@_logEvent.EventType</span>
+        </dd>
+        <dd class="col-sm-10">
+            
+            <p class="note-report">@_logEvent.Message</p> 
+        </dd>
+    </dl>
+    <div>
+        <BlazorButton Template="TemplateButton.Back" Text="Lista Eventi" OnClick="Annulla" />
+
+    </div>
+}

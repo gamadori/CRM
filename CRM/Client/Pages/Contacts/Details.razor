@@ -1,0 +1,74 @@
+﻿@page "/Contacts/Details/{Id:int}"
+@page "/Contacts/{Id:int}"
+@using CRM.Shared.Helper
+
+<h3>@Localize["Dettagli Contatto"]</h3>
+<hr />
+@if (_contact == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row rounded-3 bg-light">
+        <div class="col-md-8">
+
+            <div class="row g-3">
+                
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _contact.Name)" /></th>
+                            <td>@_contact.Name</td>
+                        </tr>
+                         <tr>
+                            <th scope="row"><DisplayName For="@(() => _contact.Surname)" /></th>
+                            <td>@_contact.Surname</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _contact.IdCompany)" /></th>
+                            <td>@_contact.Company?.RagioneSociale</td>
+                        </tr>
+
+                         <tr>
+                            <th scope="row"><DisplayName For="@(() => _contact.Phone)" /></th>
+                            <td>@_contact.Phone</td>
+                        </tr>
+
+                         <tr>
+                            <th scope="row"><DisplayName For="@(() => _contact.Mobile)" /></th>
+                            <td>@_contact.Mobile</td>
+                        </tr>
+
+                         <tr>
+                            <th scope="row"><DisplayName For="@(() => _contact.Email)" /></th>
+                            <td>@_contact.Email</td>
+                        </tr>
+
+
+                        
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+    </div>
+    
+     <div>
+                    
+        
+        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Lista Contatti"]" OnClick="Annulla" />
+
+        
+        <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+        
+        
+        
+    </div>
+}

@@ -1,0 +1,45 @@
+﻿ <div class="row mb-1">
+        <div class="col-auto">
+            <BlazorButton Template="TemplateButton.Filter" OnClick="OnFilterClick">
+
+            </BlazorButton>
+        </div>
+        <div class="col">
+        @if (FilterState)
+            {
+                <div class="row">
+                    <div class="col-12">
+
+                        @Filter
+
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+@code {
+    [Parameter] public Action<bool> OnChangeFilter { get; set; }
+    [Parameter] public RenderFragment Filter { get; set; }
+    [Parameter]
+    public bool FilterState
+    {
+        get; set;
+    } = false;
+
+    [Parameter]
+    public EventCallback<bool> FilterStateChanged { get; set; }
+
+
+    protected async void OnFilterClick()
+    {
+        FilterState = !FilterState;
+        await FilterStateChanged.InvokeAsync(FilterState);
+        StateHasChanged();
+        OnChangeFilter?.Invoke(FilterState);
+       
+
+        
+    }
+
+    
+}

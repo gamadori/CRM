@@ -1,0 +1,17 @@
+﻿@using Radzen
+@using Radzen.Blazor
+
+<RadzenCard Class="alert p-1" Style="@_styleTicket" MouseLeave="CloseTooltip" MouseEnter=@(args => ShowTooltip(args, $"<pre>{@Ticket.Description}</pre>", new TooltipOptions(){ Style="background-color: yellow; color: black", Duration = null }))
+         @onclick="()=>OpenModal?.Invoke(Ticket.Id)">
+    <div class="row">
+        <span style="mix-blend-mode: difference; color: white">
+            <small class="fw-bold">
+                @Ticket.Company
+            </small>
+        </span>
+    </div>
+    <div class="row">
+        <span style="mix-blend-mode: difference; color: white">
+            @Ticket.User</span>
+    </div>
+</RadzenCard>

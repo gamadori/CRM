@@ -1,0 +1,98 @@
+﻿@page "/Articles/Info/{Id:int}"
+@page "/Articles/{Id:int}"
+@page "/Articles/Info/{Id:int}/{Root}"
+@page "/Articles/{Id:int}/{Root}"
+
+@using Radzen
+@using Radzen.Blazor
+
+@if (_article == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <PageHeader Title="@_article.SerialNumber"
+                Subtitle=@Localize["Article"]
+                BreadcrumbItems="@_breadcrumbItems">
+    </PageHeader>
+
+    <RadzenSelectBar @bind-Value="selectView" TValue="ProductViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+        <Items>
+            <RadzenSelectBarItem Text="@Localize["Product data"]" Value="ProductViews.Product" />
+            <RadzenSelectBarItem Text="@Localize["Documenti Macchina"]" Value="ProductViews.Attachments" />
+            <RadzenSelectBarItem Text="@($"{Localize["Documenti"]} {_article.Product?.Name}")" Value="ProductViews.ProductAttachments" />
+            <RadzenSelectBarItem Text="@Localize["Tickets"]" Value="ProductViews.Ticket" />
+            @* <RadzenSelectBarItem Text="@Localize["Backups"]" Value="ProductViews.Backups" /> *@
+        </Items>
+    </RadzenSelectBar>
+
+    @if (selectView == ProductViews.Product)
+    {
+        if (_partialView == PartialViews.Details)
+        {
+
+            <Details Id="@Id" OnClickEdit="EditProduct" OnClickCancel="OnGotoIndex"></Details>
+        }
+        else
+        {
+            <Edit Id="@Id" OnClickSave="(async () => await SaveProduct())" OnClickCancel="CancelProduct"></Edit>
+        }
+    }
+    else if (selectView == ProductViews.Attachments)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Attachments.Index IdParent="@Id" AttachmentType=@AttachmentTypes.Article OnClickEdit="IndexEditAttachment" OnClickDetails="IndexDetailsAttachment"></CRM.Client.Pages.Attachments.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Attachments.Edit Id="@_idAttachment" IdParent="@Id" AttachmentType=@AttachmentTypes.Article OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Edit>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Attachments.Details Id="@_idAttachment" OnClickCancel="CloseAttachment"
+                                      OnClickEdit="DetailsEditAttachment" OnClickAddFile="AddFileAttachment"></CRM.Client.Pages.Attachments.Details>
+        }
+        else if (_partialView == PartialViews.AddFiles)
+        {
+            <CRM.Client.Pages.Attachments.Upload Id="@_idAttachment.Value" OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Upload>
+        }
+    }
+    else if (selectView == ProductViews.ProductAttachments)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Attachments.Index ReadOnly="true" IdParent="@Id" AttachmentType=@AttachmentTypes.Product  OnClickDetails="IndexProductDetailsAttachment"></CRM.Client.Pages.Attachments.Index>
+        }
+        else
+        {
+            <CRM.Client.Pages.Attachments.Details ReadOnly="true" Id="@_idAttachment" OnClickCancel="CloseProductAttachment"
+                                                  OnClickEdit="DetailsEditAttachment" ></CRM.Client.Pages.Attachments.Details>
+        }
+        
+    }
+    else if (selectView == ProductViews.Ticket)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Tickets.Index IdArticle="@Id" OnClickEdit="EditTicket" OnClickDetails="DetailsTicket">
+
+            </CRM.Client.Pages.Tickets.Index>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+             <CRM.Client.Pages.Tickets.Info Id="@_idTicket.GetValueOrDefault()" OnGotoIndex="IndexTicket"></CRM.Client.Pages.Tickets.Info>
+            @*<CRM.Client.Pages.Tickets.Details Id="@_idTicket.GetValueOrDefault()" OnClickCancel="TicketCloseForm" OnClickEdit="DetailsEditTicket"></CRM.Client.Pages.Tickets.Details>*@
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Tickets.Edit Id="@_idTicket" IdCompany="@_article?.IdCompany" IdArticle=@Id  OnClickSave="TicketCloseForm" OnClickCancel="TicketCloseForm"></CRM.Client.Pages.Tickets.Edit>
+        }
+    }
+    @* else if (selectView == ProductViews.Backups)
+    {
+        <CRM.Client.Pages.ArticleBackups.Index IdArticle="@Id"></CRM.Client.Pages.ArticleBackups.Index>
+    } *@
+
+}

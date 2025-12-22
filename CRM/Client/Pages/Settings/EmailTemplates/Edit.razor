@@ -1,0 +1,53 @@
+﻿@page "/Settings/EmailTemplates/Edit"
+@page "/Settings/EmailTemplates/Edit/{Id:int}"
+@using Radzen
+@using Radzen.Blazor
+
+<h3>Email Template</h3>
+
+@if (_template == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="containerleft">
+        <EditForm Model="@_template" OnValidSubmit="HandleValidSubmit">
+           
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row">
+                <div class="col">
+                    <div class="mb-3">
+                        <label for="Codice">Tipo</label>
+                        <RadzenDropDown class="form-control" TValue="CRM.Shared.EmailsTypes" Data="@(EnumGetList())" TextProperty="Text" ValueProperty="Value" @bind-Value="_template.Tipo" />
+
+                        <ValidationMessage For="@(() => _template.Tipo)" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="Descrizione">Oggetto</label>
+                        <input id="Descrizione" class="form-control" @bind-value="@_template.Subject" />
+                        <ValidationMessage For="@(() => _template.Subject)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Descrizione">Testo</label>
+                        <InputTextArea rows="8" id="Descrizione" class="form-control" @bind-Value="@_template.Body" />
+                        <ValidationMessage For="@(() => _template.Body)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Codice">Logo</label>
+                        <RadzenDropDown class="form-control" TValue="int?" Data="@_loghi" TextProperty="Codice" ValueProperty="Id" @bind-Value="_template.IdLogo" />
+
+                        <ValidationMessage For="@(() => _template.IdLogo)" />
+                    </div>
+
+                    <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+                    <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+                </div>
+            </div>
+        </EditForm>
+    </div>
+}

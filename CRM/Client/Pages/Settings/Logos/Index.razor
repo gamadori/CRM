@@ -1,0 +1,41 @@
+﻿@page "/Settings/Logos"
+@page "/Settings/Logos/Index"
+
+
+    
+<BlazorTable Loader="@LoadData" TableClass="table table-striped" NewItem="NewLogo" PageTitle="Loghi">
+
+    <Loading>Loading...</Loading>
+    <Empty>
+        <p>
+            <h3>Nessun Logo inserito</h3>
+        </p>
+        <button class="btn btn-outline" @onclick="(()=>LoadData())">
+            <i class="material-icons middle">update</i><span class="pl-2">update</span>
+        </button>
+
+    </Empty>
+    <Header>
+
+        <tr>
+            <th>Codice</th>
+            <th>Descrizione</th>
+            <th></th>
+        </tr>
+    </Header>
+    <Item Context="item">
+        <tr>
+            <td>@item.Codice</td>
+            <td>@item.Descrizione</td>
+            <td>
+                    
+                <BlazorLink Icon="create" Style="BtnStyle.Primary" Href="@($"/Settings/Logos/Edit/{item.Id}")" Text="Edit" />
+                <BlazorButton Icon="delete" Style="BtnStyle.Danger" OnClick="()=>PrepareDelete(item)" Text="Elimina"/>
+                    
+            </td>
+        </tr>
+    </Item>
+    </BlazorTable>
+
+
+<MsgBoxConfirm Id="dlgDelete" LabelBtnNo="No" LabelBtnYes="Yes" Header="Eliminazione Logo" Message="@_messageDelete" OnClick="Delete"></MsgBoxConfirm>

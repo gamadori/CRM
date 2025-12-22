@@ -1,0 +1,134 @@
+﻿ @page "/Settings/Users/Edit/"
+@page "/Settings/Users/Edit/{Id}"
+@page "/Company/Users/Edit/{IdCompany:int?}"
+@page "/Company/Users/Edit/{Id}"
+
+@using CRM.Client.Components
+@using Radzen
+@using Radzen.Blazor
+
+
+<BlazorHeader Header="@Localize[_header]" Visible=@(PageMode != PageHelper.PageModality.Dialog)>
+</BlazorHeader>
+
+<BlazorBreadCrumb Model="@_bread" Visible=@(PageMode != PageHelper.PageModality.Dialog)></BlazorBreadCrumb>
+
+@if (_user == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-8">
+            <EditForm Model="@_user" OnValidSubmit="HandleValidSubmit" class="mb-3">
+          
+                <div  class="form-group row g-3">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+       
+                    <div class="col-md-6  mb-3">
+
+                        <RequiredLabel TModel="UserModel" For="@(x => x.Name)" />
+                        <input id="Name" class="form-control" @bind-value="@_user.Name"/>
+                        <ValidationMessage For="@(() => _user.Name)" />
+                    </div>
+
+                   
+
+                    <div class="col-md-6  mb-3">
+                       <RequiredLabel TModel="UserModel" For="@(x => x.Surname)"  />
+                        <input id="Surname" class="form-control" @bind-value="@_user.Surname"  />
+                        <ValidationMessage For="@(() => _user.Surname)" />
+                    </div>
+
+                    <div class="col-md-6  mb-3">
+                        <RequiredLabel TModel="UserModel" For="@(x => x.Email)"  />
+                        @if (readOnly)
+                        {
+                            <input id="Email" class="form-control" @bind-value="@_user.Email" readonly/>
+                        }
+                        else
+                        {
+                            <input id="Email" class="form-control" @bind-value="@_user.Email" />
+                            
+                        }                                      
+                        <ValidationMessage For="@(() => _user.Email)" />
+                    </div>
+
+                    <div class="col-md-6  mb-3">
+                        <RequiredLabel TModel="UserModel" For="@(x => x.PhoneNumber)"  />
+                        <input class="form-control" @bind-value="@_user.PhoneNumber"/>
+                                               
+                        <ValidationMessage For="@(() => _user.PhoneNumber)" />
+                    </div>
+
+
+                    <div class="col-md-6  mb-3">
+                        <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                            <Authorized Context="AuthorizeRole">
+                                <RequiredLabel TModel="UserModel" For="@(x => x.IdCompany)"  />
+                                <RadzenDropDownDataGrid class="form-control" @bind-value="@_user.IdCompany" TValue="int?" AllowFiltering="true" FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive AllowClear="true" PageSize="10"
+                                                    Data="@_companies" Count="@_companies.Count" TextProperty="RagioneSociale"  ValueProperty="Id" Style="margin-bottom: 20px" />
+
+                                <ValidationMessage For="@(() => _user.IdCompany)" />
+                        
+                            </Authorized>
+                            <NotAuthorized Context="AuthorizeRole">
+                                <RequiredLabel TModel="UserModel" For="@(x => x.IdCompany)"  />
+                                <input class="form-control" value="@_user.Company" readonly/>   
+                                        
+                            </NotAuthorized>
+                        </AuthorizeView>
+                    </div>
+                    @if (_user.IdCompany == null)
+                    {
+                         <div class="col-md-6  mb-3">
+                            <RequiredLabel TModel="UserModel" For="@(x => x.CompanyPreview)"  />
+                            <input class="form-control" value="@_user.CompanyPreview" readonly />
+                        </div>
+                    }
+                    <div class="col-12">
+                        <div class="row g-3">
+                            <AuthorizeView Policy="@ePolicy.SuperUserRole.ToString()">
+                                <Authorized Context="AuthorizeRole">
+                                    <div class="form-check form-switch col-md-3">
+                                        <input class="form-check-input" id="checkbox1" @bind="_user.Enabled" type="checkbox">
+                                        <RequiredLabel TModel="UserModel" For="@(x => x.Enabled)"  />
+                                    </div>
+                                </Authorized>                    
+                            </AuthorizeView>
+                            <AuthorizeView Policy="@ePolicy.SuperUserRole.ToString()">
+                                <Authorized Context="AuthorizeRole">
+                                    <div class="col-md-3">
+                                        <RequiredLabel TModel="UserModel" For="@(x => x.Color)"  />
+                                        <RadzenColorPicker @bind-Value=@_user.Color ShowHSV=true ShowRGBA=true ShowColors=true />                                
+                                        <ValidationMessage For="@(() => _user.Color)" />
+                                    </div> 
+                                </Authorized>                    
+                            </AuthorizeView>
+                        </div>
+                    </div>
+                    <div class="mb-3 col-md-6">
+                        <RadzenCard Style="width:600px;margin-bottom: 20px; height:auto">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <RequiredLabel TModel="UserModel" For="@(x => x.Photo)" />
+                                    <br />
+                                    <RadzenFileInput  Accept="Image/*" ImageStyle="max-width:400px"  @bind-Value="@_user.Photo"  TValue="string" ChooseText="@Localize["Seleziona"]" />
+                                </div>
+                            </div>
+                        </RadzenCard>
+                    </div>
+                
+                    <div class="mb-3">
+                        <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="@Localize["Salva"]" Icon="save"></BlazorButton>
+                        <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="@Localize["Cancel"]" Icon="cancel"></BlazorButton>
+                    </div>
+                </div>        
+            </EditForm>
+    </div>
+    </div>
+    <MsgBoxConfirm Id="dlgDelete" @ref="msgBox" LabelBtnNo="@_labelNo" LabelBtnYes="@_labelYes" Header="@Localize["Invio Invito"]" Message="@_message" OnClick="msgBoxEvent"></MsgBoxConfirm>
+    
+}

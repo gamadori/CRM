@@ -1,0 +1,13 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+
+
+@inherits InputBase<bool?>
+
+<select class="form-select @CssClass" @bind="CurrentValueAsString">
+
+    <option value="">Nessuno</option>
+    <option value="True">Si</option>
+    <option value="False">No</option>
+</select>
+
+

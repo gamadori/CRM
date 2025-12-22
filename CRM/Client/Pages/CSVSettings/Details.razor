@@ -1,0 +1,12 @@
+﻿@page "/CSVSettings/Details/{TableName}"
+
+@using BlazoringComponents.ImportDataFile
+
+<div class="row">
+    <div class="mb-3">
+        <CSVTableDetails TableName="@TableName" Url="@ConstHelper.CSVPath"></CSVTableDetails>
+    </div>
+    <div class="mb-3">
+        <BlazorLink Template="TemplateButton.Edit" Text="Modifica" Href="@($"CSVSettings/CSV/{TableName}")"></BlazorLink>
+    </div>
+</div>

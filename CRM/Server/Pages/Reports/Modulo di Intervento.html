@@ -1,0 +1,368 @@
+﻿<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <style>
+        table, tr, td {
+              border: none;
+              font-family: Arial, Helvetica, sans-serif;
+            }
+            table.center {
+              margin-left: auto; 
+              margin-right: auto;
+            }
+
+        body {
+            height: 297mm;
+            width: 210mm;
+            /* to centre page on screen*/
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .center {
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .left {
+            margin-left: auto;
+            }
+        .auto-style3 {
+            width: 166px;
+        }
+        .row {
+            width: 750px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10px;
+        }
+        .form-check-inline {
+            display: inline;
+            align-items: center;
+            padding-left: 0; 
+            }
+        .form-check-input {
+            position: static;
+            margin-top: auto;
+            margin-right: auto;
+            margin-left: auto;
+            }
+        }
+        .auto-style4 {
+            text-align: left;
+        }
+        .auto-style5 {
+            height: 23px;
+        }
+        .auto-style6 {
+            text-decoration: underline;
+        }
+    </style>
+    <meta charset="utf-8" />
+    <title>Verbale di Intervento / Minute of Intervention</title>
+</head>
+<body>
+    <div id="container">
+        <div class="center">
+            <div id="header">
+                <table style="font-family: Arial, Helvetica, sans-serif; width: 100%">
+                    <tr>
+                        <td>
+                            <img src="./logoCrm.png" style="height: 59px; width: 295px"></img>
+                        </td>
+                        <td style="font-family: Arial, Helvetica, sans-serif; font-size: 14px" class="auto-style4">
+                            Via Selva, 23/25 - 47122 Forlì - Italy
+                            <br />
+                            Tel. +39 0543 481142 / Fax. +39 0543 480770
+                            <br />
+                            info@a-plusautomation.com.com
+                            www.a-plusautomation.com
+                        </td>
+                    </tr>
+                </table>
+                <hr style="color:#0066FF" />
+            </div>
+            <div id="content">
+                <table style="width: 100%">
+                    <tr>
+                        <td style="font-size: 16px; font-weight: bold;vertical-align: middle; text-align: center; width:50% ">
+                           Verbale di Intervento
+                        </td>
+                        <td style="font-size: 16px; font-weight: bold;vertical-align: middle; text-align: center; width:50% ">
+                            Minute of Intervention
+                        </td>
+                    </tr>
+                </table>
+                <table style="width: 100%;">
+                    <tr>
+                        <td style="font-size: 14px; font-weight: bold; font-style: normal; font-variant: normal; vertical-align: middle; text-align: Center" class="auto-style3">
+                            Cliente  /Client:
+                        </td>
+                        <td>
+                            <table class="left">
+                                <tr>
+                                    <td class="auto-style5" style="font-family: Arial, Helvetica, sans-serif; font-size: 8px; color: #C0C0C0; list-style-type: none; vertical-align: middle; vertical-align:central; text-align:left;">Ragione Sociale / Company name
+                                    </td>
+                                    <td>
+                                        <input type="text" required="required" size="100px" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle" title="ragione_sociale"  />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="auto-style5" style="font-family: Arial, Helvetica, sans-serif; font-size: 8px; color: #C0C0C0; list-style-type: none; vertical-align: middle; vertical-align:central" text-align: left;">Indirizzo / Address>
+                                    </td>
+                                    <td style="text-align:left" class="auto-style5">
+                                        <input type="text" required="required" size="100px" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle" title="indirizzo"  />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="auto-style5" style="font-family: Arial, Helvetica, sans-serif; font-size: 8px; color: #C0C0C0; list-style-type: none; vertical-align: middle; vertical-align:central; text-align:left ">CAP / ZIP
+                                    </td>
+                                    <td class="left">
+                                        <input type="text" required="required" size="30px" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle;" title="CAP"  />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="auto-style5" style="font-family: Arial, Helvetica, sans-serif; font-size: 8px; color: #C0C0C0; list-style-type: none; vertical-align: middle; vertical-align:central; text-align:left;">Città / City
+                                    </td>
+                                    <td class="left">
+                                        <input type="text" required="required" size="50px" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle" title="città"  />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="auto-style5" style="font-family: Arial, Helvetica, sans-serif; font-size: 8px; color: #C0C0C0; list-style-type: none; vertical-align: middle; vertical-align:central; text-align:left;">Paese / Country
+                                    </td>
+                                    <td class="auto-style5">
+                                        <input type="text" required="required" size="50px" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle"; title="paese"  />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="auto-style5" style="font-family: Arial, Helvetica, sans-serif; font-size: 8px; color: #C0C0C0; list-style-type: none; vertical-align: middle; vertical-align:central; text-align:left;">P.IVA / VAT Id.
+                                    </td>
+                                    <td class="left">
+                                        <input type="text" size="50px" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle" title="p_iva"  />
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    </table>
+                    <div style="width:700px; margin:0 auto;">
+                        <table>
+                            <tr>
+                                <td style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; vertical-align: middle; vertical-align:central; text-align:left;">
+                                    <P>Il nostro tecnico, Sig. &nbsp; &nbsp;&nbsp;&nbsp;</P>
+                                    <p>Our Technician, Mr. &nbsp; &nbsp;&nbsp;&nbsp;</p>
+                                </td>
+                                <td>
+                                    <input type="text" required="required" size="70px" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle; height: 27px; margin-top: 0px;" title="tecnico"  /> 
+                                 </td>
+                                <td style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; vertical-align: middle; vertical-align:central">
+                                    <p>&nbsp; &nbsp;&nbsp;&nbsp;è intervenuto presso la Vs. Sede per:</p>
+                                    <p>&nbsp; &nbsp;&nbsp;&nbsp;has intervened at your premises for:</p>
+                                </td>
+                            </tr>
+                        </table>
+                        <table style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; width:100%;">
+                            <tr>
+                                <td>
+                                    <div style="align-content:center;" >
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="Checkbox2" value="option1" />
+                                            <label class="form-check-label" for="inlineCheckbox1">Installare / To install</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                           <input class="form-check-input" type="checkbox" id="Checkbox3" value="option2" />
+                                            <label class="form-check-label" for="inlineCheckbox2">Collaudare / To test</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="Checkbox4" value="option3" />
+                                            <label class="form-check-label" for="inlineCheckbox3">Verificare / To check</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" id="Checkbox5" value="option4" />
+                                            <label class="form-check-label" for="inlineCheckbox3">Riparare / To repair</label>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                     </div>
+                <hr />
+                <table style="width: 100%">
+                    <tr>
+                        <td style="font-size: 14px; vertical-align: middle; text-align: center; width:50% ">
+                            <p>Macchine&nbsp; / Dispositivi:</p>
+                        </td>
+                        <td style="font-size: 14px; vertical-align: middle; text-align: center; width:50% ">
+                            <p>Machines / Devices:</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="font-size: 12px; vertical-align: middle; text-align: center;">
+                            <div class="form-check form-check-inline">
+                                   <input class="form-check-input" type="checkbox" id="Checkbox6" value="option1" />
+                                   <label class="form-check-label" for="inlineCheckbox1">Modello / Model: ____________________&nbsp;&nbsp; S/N: ___________________&nbsp;&nbsp; Year: __________</label>
+                            </div><br />
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="Checkbox7" value="option1" />
+                                <label class="form-check-label" for="inlineCheckbox1">Modello / Model: ____________________&nbsp;&nbsp; S/N: ___________________&nbsp;&nbsp; Year: __________</label>
+                            </div><br />
+                                                <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="Checkbox1" value="option1" />
+                                <label class="form-check-label" for="inlineCheckbox1">Modello / Model: ____________________&nbsp;&nbsp; S/N: ___________________&nbsp;&nbsp; Year: __________</label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <hr />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-size: 16px; vertical-align: middle; text-align: center; width:50% ">
+                            <p style="font-weight:bold;">Descrizione dell'intervento</p>
+                        </td>
+                        <td style="font-size: 16px; vertical-align: middle; text-align: center; width:50% ">
+                            <p style="font-weight:bold;">Description of Intervention</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000000;text-align: right;">
+                            <p>Servizio iniziato alle / Service began on; &nbsp;</p>
+                            <p>Servizio terminato alle / Service ended on. &nbsp;</p>
+                        </td>
+                        <td style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; text-align: left;">
+                            <p>&nbsp;___:___ ____/____/_________</p>
+                            <p>&nbsp;___:___ ____/____/_________</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="text-align: left">
+                            <label for="doneactivities">Attività svolte: / Activities:</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="text-align:center;">
+                            <textarea id="doneactivities" name="doneactivities" rows="12" cols="80">&nbsp; 
+                            </textarea>
+                        </td>
+                    </tr>
+                </table>
+                <hr />
+                <table style="width:100%;">
+                    <tr>
+                        <td style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; text-align: left; width:50%;">
+                            Al termine dell’intervento, <span class="auto-style6"><strong>il cliente</strong></span> dichiara:
+                        </td>
+                        <td style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; text-align: left; width:50%;">
+                            At the end of the intervention, <span class="auto-style6"><strong>the customer</strong></span> declares:
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; text-align: left; width:50%;">
+                            <ol>
+                                <li>Che le funzioni delle macchine/dispositivi sono tutte operative;</li>
+                                <li>Che il funzionamento delle stesse è regolare;</li>
+                                <li>Che le protezioni di sicurezza sono operative;</li>
+                                <li>Che in vista di quanto sopra evidenziato, nulla osta al saldo di quanto dovuto secondo gli accordi presi.</li>
+                            </ol>
+                        </td>
+                        <td style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; text-align: left; width:50%;">
+                            <ol>
+                                <li>That the functions of the machines / devices are all working;</li>
+                                <li>That the operation of the same is regular;</li>
+                                <li>That security guards are operational;</li>
+                                <li>That in view of the above, nothing shall prevent the payment of the amount due in accordance with the agreements.</li>
+                            </ol>
+                        </td>
+                        </tr>
+                </table>
+                <hr />
+                <table style="width:100%;">
+                    <tr>
+                        <td style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; text-align: left; width:50%;">
+                            Parti Sostituite e/o Montate:
+                        </td>
+                        <td style="font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #000000; text-align: left; width:50%;">
+                            Replaced and/or Mounted Parts:
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left;">
+                            <input type="text" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle; width: 80%;" title="part_001;"  />
+                        </td>
+                        <td style="text-align: left;">
+                            <input type="text" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle; width: 80%;" title="part_002"  />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left;">
+                            <input type="text" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle; width: 80%;" title="part_003"  />
+                        </td>
+                        <td style="text-align: left;">
+                           <input type="text" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle; width: 80%;" title="part_004"  />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left;">
+                            <input type="text" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle; width: 80%;" title="part_005"  />
+                        </td>
+                        <td style="text-align: left;">
+                            <input type="text" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle; width: 80%;" title="part_006"  />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left;">
+                            <input type="text" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle; width: 80%;" title="part_007"  />
+                        </td>
+                        <td style="text-align: left;">
+                            <input type="text" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle; width: 80%;" title="part_008"  />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left;">
+                            <input type="text" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle; width: 80%;" title="part_009"  />
+                        </td>
+                        <td style="text-align: left;">
+                            <input type="text" style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; vertical-align: middle; width: 80%;" title="part_010"  />
+                        </td>
+                    </tr>
+                </table>
+                     <hr />
+                <table style="width:100%;">
+                    <tr>
+                        <td colspan="2" style="text-align: center; font-weight:bold;">
+                            <label for="notes_reserves">Note e/o riserve - Notes and/or reserves</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="font-family: Arial, Helvetica, sans-serif; font-size: 9px; text-align:center;">
+                            Scrivere "nessuna" in assenza / Write "none" if no reserves
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="font-family: Arial, Helvetica, sans-serif; font-size: 9px; text-align:center;">
+                            <textarea id="Textarea2" name="notes_reserves" rows="10" cols="80">&nbsp; 
+                            </textarea>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div id="footer">
+                <table style="width:100%;">
+                    <tr>
+                        <td style="width:100%;">
+                            <hr />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; text-align: center; font-weight:bold;">A-Plus Automation s.r.l.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-family: Arial, Helvetica, sans-serif; font-size: 10px; text-align: center;">C.F. e P.IVA IT 04349600405 – REA: FO-404194
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

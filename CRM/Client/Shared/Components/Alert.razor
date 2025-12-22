@@ -1,0 +1,136 @@
+﻿@using Radzen
+@using System.Threading
+@inherits ComponentBase
+
+@if (Show)
+{
+    <div class="@CssClass" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex align-items-start">
+            <div class="me-2">@IconMarkup</div>
+            <div class="flex-grow-1">
+                @if (!string.IsNullOrEmpty(Title))
+                {
+                    <h4 class="alert-heading mb-1">@Title</h4>
+                }
+                @if (ChildContent != null)
+                {
+                    @ChildContent
+                }
+                else if (!string.IsNullOrEmpty(Message))
+                {
+                    <div>@Message</div>
+                }
+            </div>
+            @if (Dismissible)
+            {
+                <button type="button" class="btn-close ms-2" aria-label="Close" @onclick="Close"></button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private DialogService? DialogService { get; set; }
+
+    [Parameter] public bool Show { get; set; } = true;
+    [Parameter] public AlertType Variant { get; set; } = AlertType.Info;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool Dismissible { get; set; } = true;
+    [Parameter] public int AutoCloseMs { get; set; } = 0;
+    [Parameter] public EventCallback OnCloseCallback { get; set; }
+
+    CancellationTokenSource? _cts;
+
+    string CssClass => $"alert alert-{Variant.ToString().ToLower()} {(Dismissible ? "alert-dismissible" : "")}";
+
+    RenderFragment IconMarkup => builder =>
+    {
+        var icon = Variant switch
+        {
+            AlertType.Success => "✅",
+            AlertType.Danger => "⚠️",
+            AlertType.Warning => "⚠️",
+            AlertType.Primary => "ℹ️",
+            _ => "ℹ️"
+        };
+        builder.AddContent(0, icon);
+    };
+
+    protected override void OnParametersSet()
+    {
+        if (AutoCloseMs > 0 && Show)
+        {
+            StartAutoClose(AutoCloseMs);
+        }
+        else
+        {
+            _cts?.Cancel();
+            _cts = null;
+        }
+    }
+
+    void StartAutoClose(int ms)
+    {
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(ms, token);
+                if (!token.IsCancellationRequested)
+                {
+                    await InvokeAsync(Close);
+                }
+            }
+            catch (TaskCanceledException) { }
+        }, token);
+    }
+
+    async Task Close()
+    {
+        _cts?.Cancel();
+        _cts = null;
+
+        // Se il componente è stato aperto come dialog di Radzen, chiudi la dialog e passa risultato true
+        if (DialogService != null)
+        {
+            try
+            {
+                DialogService.Close(true);
+                return;
+            }
+            catch
+            {
+                // se per qualche motivo non si può chiudere tramite DialogService,
+                // continua con la chiusura normale (ad es. uso inline)
+            }
+        }
+
+        Show = false;
+        if (OnCloseCallback.HasDelegate)
+        {
+            await OnCloseCallback.InvokeAsync(null);
+        }
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+
+    public enum AlertType
+    {
+        Primary,
+        Info,
+        Success,
+        Warning,
+        Danger,
+        Secondary
+    }
+}

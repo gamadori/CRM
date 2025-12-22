@@ -1,0 +1,44 @@
+﻿@page "/Settings/AccessoryTypes/Edit"
+@page "/Settings/AccessoryTypes/Edit/{Id:int}"
+@using Radzen
+@using Radzen.Blazor
+
+<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog)>@_header</BlazorHeader>
+
+@if (_accessoryType == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    
+    <div class="container m-3">
+        <EditForm Model="@_accessoryType" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+           
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <DisplayName For="@(()=>_accessoryType.Name)" />
+                    <input class="form-control" @bind-value="@_accessoryType.Name" />
+                    <ValidationMessage For="@(() => _accessoryType.Name)" />
+                </div>
+            </div>
+            
+
+            <div class="row mb-3">    
+                <div class="col-md-12">
+                    <DisplayName For="@(()=>_accessoryType.Description)" />
+                    <InputTextArea rows="8" class="form-control" @bind-Value="@_accessoryType.Description" />
+                    <ValidationMessage For="@(() => _accessoryType.Description)" />
+                </div>
+            </div>
+
+            
+
+            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+            <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+        </EditForm>
+    </div>
+}

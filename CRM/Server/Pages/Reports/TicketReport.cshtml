@@ -1,0 +1,162 @@
+﻿@page
+@using CRM.Server.Services
+@model CRM.Server.Pages.Reports.TicketReportModel
+@inject TranslateService _translate;
+
+
+@{
+    Layout = null;
+}
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+   
+        <style>
+            pre {
+                font-size: 1em;
+                font-family: Arial, Helvetica, sans-serif;
+    
+            }
+            textarea
+             {
+               line-height:1.5em;
+               background-image:linear-gradient(transparent, transparent calc(1.5em - 1px), #E7EFF8 0px);
+               background-size:100% 1.5em;
+            }
+            .wrapper {
+                display: inline-block;
+                width: 100%;
+                padding: 0.2em;
+                border: 1px solid gray;
+                overflow: auto;
+         
+            }
+
+            .paper {
+                min-height: 8em;
+                line-height: 1em;
+                vertical-align: bottom;
+                background-size: 1px 1em;
+                background-repeat: repeat;
+                background-position: 0 0;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1em'%3E%3Crect id='background' height='1em' width='1' y='0' x='0' fill='%23f1faf7'/%3E %3Cline id='underline' y2='1em' x2='0' y1='1em' x1='1' stroke='%23008000' fill='none'/%3E %3C/svg%3E");
+                /*for placeholder, see https://codepen.io/flesler/pen/AEIFc */
+            }
+            .text-col1
+            {
+                font-size: 14px;
+                font-family:Verdana,Arial, Helvetica, sans-serif;
+                font-weight: bold;
+                font-style: normal;
+                font-variant: normal;
+                vertical-align: middle;
+                text-align: left;
+                
+            }
+
+            .text-col2 {
+                font-size: 14px;
+                font-family: Verdana,Arial, Helvetica, sans-serif;
+                font-weight: normal;
+                font-style: normal;
+                font-variant: normal;
+                vertical-align: middle;
+                text-align: left
+            }
+            .text-heder-desc
+            {
+                font-size: 14px;
+                font-family: Verdana,Arial, Helvetica, sans-serif;
+                font-weight: bold;
+                font-style: normal;
+                font-variant: normal;
+                vertical-align: middle;
+                text-align: center
+            }
+            .text-row
+            {
+                
+            }
+
+            .textarea {
+                width: 100%;
+                min-height: 150px;
+                padding: 12px 20px;
+                box-sizing: border-box;
+                border: 2px solid #ccc;
+                border-radius: 4px;
+                background-color: #f8f8f8;
+                font-size: 16px;
+                text-align:justify;
+                
+            }
+        
+        </style>     
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
+
+        <meta charset="utf-8" />
+        <title>Verbale di Intervento / Minute of Intervention</title>
+    </head>
+    <body class="m-3">
+        <div class="container-fluid">
+
+            <table style="width: 100%;" class="table table-striped">
+                
+                <tr class="text-row">
+                   
+
+                    <td class="text-col1">
+                        Cliente / Client:
+                    </td>
+                    <td class="text-col2">
+                        @Model.Ticket?.Company
+                    </td>
+                </tr>
+                <tr class="text-row">
+                    <td class="text-col1">
+                        Contatto / Contact:
+                    </td>
+                    <td class="text-col2">
+                        @Model.Ticket?.ContactName
+                    </td>
+                </tr>
+                <tr class="text-row">
+                    <td class="text-col1">
+                        Tipo Ticket / Ticket Type:
+                    </td>
+                    <td class="text-col2">
+                        @Model.Ticket?.DescType
+                    </td>
+                </tr>
+                <tr class="text-row">
+                    <td class="text-col1">
+                        Aperto Da / Opened:
+                    </td>
+                    <td class="text-col2">
+                        @Model.Ticket?.UserOpened
+                    </td>
+                </tr>
+                <tr class="text-row">
+                    <td class="text-col1">
+                        Assegnato A / Assigned:
+                    </td>
+                    <td class="text-col2">
+                        @Model.Ticket?.UserAssigned
+                    </td>
+                </tr>
+            </table>
+        
+         
+            <hr />
+            <div class="row text-center mb-3 text-col1">
+                <label for="doneactivities">Descrizione: / Description:</label>
+            </div>
+            <div class="row mb-3 text-center text-col2">
+                <div id="doneactivities" class="textarea">@Model.Ticket?.Description
+                </div>
+                
+            </div>
+        
+        
+        </div>
+    </body>
+</html>

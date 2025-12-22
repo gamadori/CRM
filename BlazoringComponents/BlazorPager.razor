@@ -1,0 +1,138 @@
+﻿@using System
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Components
+<style>
+    .sort-link {
+        cursor: pointer;
+        color: #007bff !important;
+    }
+
+    .noselect {
+        -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+        user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+    }
+</style>
+
+@if (PageCount > 1)
+{
+<p>
+    <ul class="pagination justify-content-start">
+        @if (ShowFirstLast)
+        {
+            if (CurrentPage == 1)
+            {
+                <li class="page-item disabled noselect"><a class="page-link" tabindex="-1"><span aria-hidden="true">&laquo;</span><span class="sr-only">@FirstText</span></a></li>
+            }
+            else
+            {
+                <li class="page-item noselect"><a class="page-link sort-link" @onclick="@(() => PagerButtonClicked(1))"><span aria-hidden="true">&laquo;</span><span class="sr-only">@FirstText</span></a></li>
+            }
+        }
+        @if (HasPrevious)
+        {
+            <li class="page-item noselect"><a class="page-link sort-link" @onclick="@(() => PagerButtonClicked(CurrentPage - 1))"><span aria-hidden="true">@PreviousText</span><span class="sr-only">Go to previous page</span></a></li>
+        }
+        else
+        {
+            <li class="page-item disabled noselect"><a class="page-link" tabindex="-1"><span aria-hidden="true">@PreviousText</span><span class="sr-only">Go to previous page</span></a></li>
+        }
+        @if (ShowPageNumbers)
+        {
+            for (var i = Start; i <= Finish; i++)
+            {
+                var currentIndex = i;
+                if (i == CurrentPage)
+                {
+                    <li class="page-item active noselect"><a class="page-link">@i</a></li>
+                }
+                else
+                {
+                    <li class="page-item noselect"><a class="page-link sort-link" @onclick="@(() => PagerButtonClicked(currentIndex))">@currentIndex</a></li>
+                }
+            }
+        }
+        @if (HasNext)
+        {
+            <li class="page-item"><a class="page-link sort-link" @onclick="@(() => PagerButtonClicked(CurrentPage + 1))"><span aria-hidden="true">@NextText</span><span class="sr-only">Go to next page</span></a></li>
+        }
+        else
+        {
+            <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1"><span aria-hidden="true">@NextText</span><span class="sr-only">Go to next page</span></a></li>
+        }
+        @if (ShowFirstLast)
+        {
+            if (CurrentPage == PageCount)
+            {
+                <li class="page-item disabled"><a class="page-link" href="#" tabindex="-1"><span aria-hidden="true">@LastText</span><span class="sr-only">>Go to last page</span></a></li>
+            }
+            else
+            {
+                <li class="page-item"><a class="page-link sort-link" @onclick="@(() => PagerButtonClicked(PageCount))"><span aria-hidden="true">@LastText</span><span class="sr-only">Go to last page</span></a></li>
+            }
+        }
+    </ul>
+</p>
+}
+
+@code {
+
+    [Parameter] public int PageCount { get; set; }
+
+    [Parameter] public int CurrentPage { get; set; }
+
+    [Parameter] public Action<int> OnPageChanged { get; set; } = null;
+
+    [Parameter] public bool ShowFirstLast { get; set; } = false;
+
+    [Parameter] public bool ShowPageNumbers { get; set; } = true;
+
+    [Parameter] public string FirstText { get; set; } = "First";
+
+    [Parameter] public string LastText { get; set; } = "Last";
+
+    [Parameter] public string PreviousText { get; set; } = "Previous";
+
+    [Parameter] public string NextText { get; set; } = "Next";
+
+    [Parameter] public int VisiblePages { get; set; } = 5;
+
+    private int Start { get; set; }
+    private int Finish { get; set; }
+
+
+    protected override void OnParametersSet()
+    {
+        var half = (int)Math.Floor(VisiblePages / 2d);
+        Start = Math.Max(CurrentPage - half, 1);
+        Finish = Math.Min(CurrentPage + half, PageCount);
+
+        VisiblePages = Math.Min(VisiblePages, PageCount);
+
+        if (Start == 1)
+        {
+            Finish = VisiblePages;
+        }
+
+        if (Finish >= PageCount)
+        {
+            Start = PageCount - VisiblePages;
+
+            if (Start == 0)
+                Start = 1;
+        }
+        base.OnParametersSet();
+    }
+
+    private bool HasPrevious => CurrentPage > 1 && PageCount > 1;
+    private bool HasNext => CurrentPage < PageCount;
+
+    private void PagerButtonClicked(int page)
+    {
+        OnPageChanged?.Invoke(page);
+    }
+}

@@ -1,0 +1,8 @@
+﻿@if (!_insertCompany)
+{
+    <CRM.Client.Pages.Companies.Index  PageMode="PageHelper.PageModality.Dialog" IdCompanyParent=@IdCompanyParent OnSelectCompany="OnSelectComapany" ></CRM.Client.Pages.Companies.Index>
+}
+else
+{
+    <CRM.Client.Pages.Companies.Edit></CRM.Client.Pages.Companies.Edit>
+}

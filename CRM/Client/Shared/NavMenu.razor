@@ -1,0 +1,160 @@
+﻿@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+<!-- Modern Top Bar -->
+<div class="top-row navbar navbar-dark modern-topbar">
+    <div class="container-fluid px-3">
+        <div class="d-flex justify-content-center align-items-center w-100">
+            <a class="navbar-brand d-flex align-items-center" href="">
+                <img src="/img/logoCrm.png?v=4" height="32" alt="CRM Logo" style="filter: brightness(1.2);" />
+            </a>
+        </div>
+        <button class="navbar-toggler border-0 position-absolute end-0 me-3" @onclick="ToggleNavMenu">
+            <span class="material-icons">@(collapseNavMenu ? "menu" : "close")</span>
+        </button>
+    </div>
+</div>
+
+<!-- Modern Navigation Menu -->
+<div class="@NavMenuCssClass nav-scrollable modern-nav">
+    <nav class="flex-column">
+        
+        <!-- Home Section -->
+        <div class="nav-section">
+            <div class="nav-item" @onclick="MenuHomeClicked">
+                <div class="nav-link @(_expandHome ? "active" : "")">
+                    <span class="material-icons nav-icon">home</span>
+                    <span class="nav-text">Home</span>
+                    <span class="material-icons expand-icon">@(_expandHome ? "expand_less" : "expand_more")</span>
+                </div>
+            </div>
+
+            @if (_expandHome)
+            {
+                <div class="nav-submenu">
+                    <!-- Aziende -->
+                    <NavLink class="nav-link submenu-link" href="Companies" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">domain</span>
+                        <span class="nav-text">@Localize["Aziende"]</span>
+                    </NavLink>
+
+                    <!-- Contacts -->
+                    <NavLink class="nav-link submenu-link" href="Contacts" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">contacts</span>
+                        <span class="nav-text">@Localize["Contacts"]</span>
+                    </NavLink>
+
+                    <!-- Prodotti (with sub-submenu) -->
+                    <div class="nav-item">
+                        <div class="nav-link submenu-link" @onclick="()=>_expandMenuProdotti = !_expandMenuProdotti">
+                            <span class="material-icons nav-icon">layers</span>
+                            <span class="nav-text">@Localize["Prodotti"]</span>
+                            <span class="material-icons expand-icon-small">@(_expandMenuProdotti ? "expand_less" : "expand_more")</span>
+                        </div>
+
+                        @if (_expandMenuProdotti)
+                        {
+                            <div class="nav-submenu-2">
+                                <NavLink class="nav-link submenu-link-2" href="Products" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">category</span>
+                                    <span class="nav-text">@Localize["Catalogo"]</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="Articles" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">inventory</span>
+                                    <span class="nav-text">@Localize["Articles"]</span>
+                                </NavLink>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Tickets -->
+                    <NavLink class="nav-link submenu-link" href="Tickets" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">support_agent</span>
+                        <span class="nav-text">@Localize["Tickets"]</span>
+                    </NavLink>
+
+                    <!-- Schedule -->
+                    <NavLink class="nav-link submenu-link" href="Tickets/Schedule" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">schedule</span>
+                        <span class="nav-text">@Localize["Schedule"]</span>
+                    </NavLink>
+
+                    <!-- Projects -->
+                    <NavLink class="nav-link submenu-link" href="Projects" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">apps</span>
+                        <span class="nav-text">@Localize["Progetti"]</span>
+                    </NavLink>
+
+                    <!-- Talks -->
+                    <NavLink class="nav-link submenu-link" href="Talks" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">forum</span>
+                        <span class="nav-text">@Localize["Talks"]</span>
+                    </NavLink>
+
+                    <!-- AI Search -->
+                    <NavLink class="nav-link submenu-link highlight-ai" href="Tickets/Search" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">psychology</span>
+                        <span class="nav-text">@Localize["Search"] AI</span>
+                        <span class="badge bg-primary ms-auto">AI</span>
+                    </NavLink>
+                </div>
+            }
+        </div>
+
+        <!-- Settings Section -->
+        <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+            <div class="nav-section">
+                <NavLink class="nav-link" href="Settings" @onclick="@(() => { MenuSettingsClicked(); CloseNavMenu(); })">
+                    <span class="material-icons nav-icon">settings</span>
+                    <span class="nav-text">@Localize["Settaggi"]</span>
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+        <!-- About Section -->
+        <div class="nav-section">
+            <NavLink class="nav-link" href="About" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                <span class="material-icons nav-icon">info</span>
+                <span class="nav-text">@Localize["About"]</span>
+            </NavLink>
+        </div>
+
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private bool _expandedSettings = false;
+
+    private bool _expandHome = false;
+
+    private bool _hasPageName = true;
+
+    private bool _expandMenuProdotti = false;
+
+    private void MenuHomeClicked()
+    {
+        _expandedSettings = false;
+        _expandHome = !_expandHome;
+    }
+
+    private void MenuSettingsClicked()
+    {
+        _expandHome = false;
+        _expandedSettings = !_expandedSettings;
+    }
+
+    private void ToggleNavMenu()
+    {
+        if (_hasPageName)
+            collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void CloseNavMenu()
+    {
+        collapseNavMenu = true;
+    }
+}

@@ -1,0 +1,43 @@
+﻿<div class="row m-3">
+    
+
+    @if (TicketChat.TypeMessage == TypeMessage.Receved)
+    {
+        <div class="alert alert-info me-auto col-auto" role="alert" style="max-width:75%;">
+            <div class=" d-flex justify-content-between mb-3">
+                @*<div class="quadrato" style="background-color: @TicketChat.Color"></div>*@
+                
+                <RedGAvatar IdUser="@TicketChat.IdUser"></RedGAvatar>
+                <h6 class="alert-heading my-auto ms-2 " style="color: black;">@TicketChat.UserName</h6>
+                    
+            </div>
+            
+            <p class="msg-chat"><pre>@TicketChat.Message</pre></p>
+            <hr>
+            <p class="mb-0"><small>@TicketChat.Date.ToString("g")</small></p>
+        </div>
+    }
+    else if (TicketChat.TypeMessage == TypeMessage.Sended)
+    {
+        <div class="alert alert-success ms-auto col-auto" style="max-width:75%;" role="alert">
+            
+            <h6 class="alert-heading" style="color: black;">@TicketChat.UserName</h6>
+            <p class="msg-chat"><pre>@TicketChat.Message</pre></p>
+            <hr>
+            <p class="mb-0"><small>@TicketChat.Date.ToString("g")</small></p>
+        </div>
+    }
+    else if (TicketChat.TypeMessage == TypeMessage.TicketMsg)
+    {
+        
+        <div class="alert alert-warning mx-auto col-auto " role="alert">
+
+            <h6 class="alert-heading" style="color: black;">@TicketChat.UserName</h6>
+            <p class="msg-chat"><pre>@TicketChat.Message</pre></p>
+            <hr>
+            <p class="mb-0"><small>@TicketChat.Date.ToString("g")</small></p>
+        </div>
+    }
+   
+    
+</div>

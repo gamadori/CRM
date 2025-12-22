@@ -1,0 +1,29 @@
+﻿
+@using Radzen
+@using Radzen.Blazor
+
+<div  class="row border-bottom border-1 border-secondary mb-3 @Day.BgHead text-center no-gutters ">
+    <div class="col scheduler-day" @onclick="(async()=>await OnSelectDate(Day.Date))">
+        @if (CurrentView == SchedulerViews.Week)
+        {
+            <label>@Day.NameDay</label>
+            <label>@Day.Date.ToShortDateString()</label>
+
+        }
+        else if (CurrentView == SchedulerViews.Month)
+        {
+            <label>@Day.Date.ToShortDateString()</label>
+        }
+        else
+        {
+            <label>@Day.NameDay</label>
+            <label>@Day.Date.ToShortDateString()</label>
+        }
+    </div>
+    @if (ViewMode == SchedulerViewMode.Sheduler)
+    {
+        <div class="col-auto">
+            <RadzenLink Icon="add_circle_outline"  Style="@_color" Path="javascript:void(0)"  @onclick=@(async ()=>await OnClickNewTicket(Day.Date))  />
+    </div>
+    }
+</div>

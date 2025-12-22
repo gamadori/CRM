@@ -1,0 +1,82 @@
+﻿@page "/ProductParameters"
+@page "/ProductParameters/Index"
+
+@using Radzen
+@using Radzen.Blazor
+@using BlazoringComponents.DropDownButton
+
+@* <BlazorHeader Header="@Localize["Article"]" Visible=@(PageMode != PageHelper.PageModality.Dialog)></BlazorHeader> *@
+@if (IdProduct == null)
+{
+    <BlazorBreadCrumb Model="@_breadCrumb"></BlazorBreadCrumb>
+}
+
+<BlazorFilter OnChangeFilter="OnChangeFilter">
+    <Filter>
+
+        <div class="row">                
+            <div class="col-7">
+                <div class="form-floating mb-3">
+                    <input type="text" value="@_filter.Name" @oninput="@OnChangeNameFilter" class="form-control" placeholder="Nome" />
+                    <DisplayName For="@(()=>_filter.Name)" />
+                </div>
+            </div>
+        </div>
+    </Filter>
+</BlazorFilter>
+
+    
+<div class=row>
+    <div class="col">
+        <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewItem"></BlazorButton>
+        <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+            <DropDownBtn Text="@Localize["Utility"]" CssClass="btn-light" IconMaterial="settings">
+                <DropDownBrnItem Text="@Localize["CSV Import"]" IconMaterial="folder_zip" OnClickEvent="ImportData" />
+            </DropDownBtn>
+        </AuthorizeView>
+        @if (_isMobile)
+        {
+            <Responsable @bind-Value=@_isResponsable></Responsable>
+        }
+    </div>
+</div>
+
+
+<RadzenDataGrid @ref="grdItems" IsLoading="@_isLoading" Responsive=@_isResponsable Count="@_paging.TotalCount" Data="@_parameters" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode=@_filterMode 
+    AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ProductParameter" PagingSummaryFormat="@pagingSummaryFormat" ShowPagingSummary=true>
+    <Columns>
+        <RadzenDataGridColumn Context="item" TItem="ProductParameter" Title=@TranslateHelper.GetDisplayName(nameof(ProductParameter.Name), typeof(ProductParameter)) Property="@nameof(ProductParameter.Name)"
+                                FilterProperty="@nameof(ProductParameter.Name)">
+            <Template>
+                <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OnClickSerialNumber(item?.Id)">@item?.Name</a>
+            </Template>
+        </RadzenDataGridColumn>
+
+
+
+        <RadzenDataGridColumn TItem="ProductParameter" Property="" Title="@TranslateHelper.GetDisplayName(nameof(Article.Product), typeof(Article))" />
+        <RadzenDataGridColumn TItem="ProductParameter" Property="Company.RagioneSociale" Title="@TranslateHelper.GetDisplayName(nameof(Company.RagioneSociale), typeof(Company))" />
+
+            
+        @if (PageMode != PageHelper.PageModality.Dialog)
+        {
+            <RadzenDataGridColumn TItem="ProductParameter" Property="" Title="@TranslateHelper.GetDisplayName(nameof(ProductParameter.ValueDefault), typeof(ProductParameter))" />
+
+            <RadzenDataGridColumn Context="item" TItem="ProductParameter" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                <Template Context="item">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
+                    </RadzenButton>
+
+                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" Click="@(args => Edit(item.Id))">
+                        </RadzenButton>
+                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" Click="@(args => Delete(item))">
+                        </RadzenButton>
+                        
+
+                </Template>
+            </RadzenDataGridColumn>
+        }
+    </Columns>
+</RadzenDataGrid>
+

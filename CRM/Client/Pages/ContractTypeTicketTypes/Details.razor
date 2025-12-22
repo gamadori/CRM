@@ -1,0 +1,66 @@
+﻿@page "/Settings/ContractTypeTicketTypes/Details/{Id:int}"
+@using CRM.Shared.Helper
+
+<h3>@_header</h3>
+<hr />
+@if (_item == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row rounded-3 bg-light">
+        <div class="col-md-8">
+
+            <div class="row g-3">
+                
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _item.TicketTypeName)" /></th>
+                            <td>@_item.TicketTypeName</td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _item.NumIntervention)" /></th>
+                            <td>
+                                @if (_item.Unlimited)
+                                {
+                                    <span>@Localize["Unlimited"]</span>
+                                }
+                                else
+                                {
+                                    <span>@_item.NumIntervention</span>
+                                }
+                            </td>
+                        </tr>
+
+                        
+                       
+
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+    </div>
+    
+     <div>
+                    
+        
+        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Contracts Details"]" OnClick="Annulla" />
+
+        @if (_item.Permits.Edit())
+        {
+            <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+        }
+        
+        
+    </div>
+}

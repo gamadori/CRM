@@ -1,0 +1,20 @@
+﻿
+
+
+<button type="@GetButtonType()" class="m-2 @GetStyle() @CssClass" title="@_title" data-bs-toggle="tooltip" data-bs-placement="top" disabled="@Disabled" @onclick="OnClick">
+
+    @if (Waiting)
+    {
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        <span class="ps-2">@LabelWaiting</span>
+    }
+    else
+    {
+        <i class="material-icons middle">@GetIcon()</i>
+
+        if (_text != null && _text.Length > 0)
+        {
+            <span class="ps-2">@_text</span>
+        }
+    }
+</button>

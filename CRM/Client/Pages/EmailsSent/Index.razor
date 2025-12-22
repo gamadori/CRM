@@ -1,0 +1,38 @@
+﻿
+@page "/EmailsSent/Index"
+
+@using BlazoringComponents.DropDownButton
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+
+<BlazorHeader Header="@Localize["Email inviate"]"></BlazorHeader>
+
+@if (_emails != null)
+{
+    <RadzenDataGrid @ref="grdEmail" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_emails" Responsive=true LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
+                    AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                    PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="EmailSent">
+        <Columns>
+            <RadzenDataGridColumn TItem="EmailSent" Property="@nameof(EmailSent.DateSent)" Title="@Localize["Data"]"  />
+            <RadzenDataGridColumn TItem="EmailSent" Property="@nameof(EmailSent.To)" Title="@Localize["Destinatario"]" />
+       
+            <RadzenDataGridColumn TItem="EmailSent" Property="@nameof(EmailSent.Subject)" Title="@Localize["Oggetto"]" />
+
+            <RadzenDataGridColumn Context="item" TItem="EmailSent" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                <Template Context="item">
+                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" title="Dettagli"  Size="Radzen.ButtonSize.Medium" Click="@(async args => await Details(item.Id))">
+                        </RadzenButton>
+                        
+                </Template>
+            </RadzenDataGridColumn>
+       
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}
+
+

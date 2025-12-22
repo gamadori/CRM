@@ -1,0 +1,170 @@
+﻿@page "/Tickets/Details/{Id:int}"
+@page "/Tickets/{Id:int}"
+@page "/Tickets/{Id:int}/{BackUrl}"
+@using CRM.Shared.Helper
+
+<BlazorHeader Header="Ticket" Visible=@HeaderVisible></BlazorHeader>
+@if (_ticket == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row rounded-3 bg-light">
+        <div class="col-md-8">
+
+            <div class="row g-3">
+                <div class="alert alert-warning" role="alert">
+                    <h4 class="alert-heading">Descrizione</h4>
+                     <p class="note-report">@_ticket.Description</p>  
+                </div>
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _ticket.State)" /></th>
+                            <td style="background-color:@_ticket.StateColor"><span style="mix-blend-mode: difference;color:white">@_ticket.State</span></td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _ticket.DateOpened)" /></th>
+                            <td>@_ticket.DateOpened.ToString("G")</td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _ticket.Company)" /></th>
+                            <td><span>@_ticket.Company</span></td>
+
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _ticket.ContactName)" /></th>
+                            <td><span>@_ticket.ContactName</span></td>
+
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _ticket.DescType)" /></th>
+                            <td><span>@_ticket.DescType</span></td>
+                        </tr>
+
+                        @if (_ticket.TicketType.Date != (int)PropertyStates.No)
+                        {
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.Date)" /></th>
+                                <td><span>@_ticket.Date?.ToShortDateString()</span></td>
+                            </tr>
+
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.Time)" /></th>
+                                <td><span>@_ticket.Time?.ToShortTimeString()</span></td>
+                            </tr>
+
+                           
+                        }
+                        @if (_ticket.TicketType.DateEnd != (int)PropertyStates.No)
+                        {
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.DateEnd)" /></th>
+                                <td><span>@_ticket.DateEnd?.ToShortDateString()</span></td>
+                            </tr>
+                        }
+                        @if (_ticket.TicketType.IdArticolo != (int)PropertyStates.No)
+                        {
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.Article)" /></th>
+                                <td><span>@_ticket.Article</span></td>
+                            </tr>
+
+
+                        }
+                        @if (_ticket.Project != null && _ticket.Project.Any())
+                        {
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.Project)" /></th>
+                                <td><span>@_ticket.Project</span></td>
+                            </tr>
+                        }
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _ticket.MinuteWorkFormatted)" /></th>
+                            <td><span>@DateTimeHelper.MinuteFormat(_ticket.MinuteWork)</span></td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _ticket.IdUserOpened)" /></th>
+                            <td><span>@_ticket.UserOpened</span></td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">
+                                @if (_ticket.Permits.Assign())
+                                {
+                                    <a href="#" class="link-primary" @onclick=@PrepareAssign @onclick:preventDefault> 
+                                        <DisplayName link=true CssClass="link-primary" For="@(() => _ticket.IdUserAssigned)" />
+
+                                    </a>
+                                }
+                                else
+                                {
+                                    <DisplayName For="@(() => _ticket.IdUserAssigned)" />
+                                }
+                            </th>
+                            <td>
+                                @if (_panelAssign)
+                                {
+                                    <Assign OnClose="OnAssignClose" id="@_ticket.Id"></Assign>
+                                }
+                                else
+                                {
+                                <span>@_ticket.UserAssigned</span>
+                                }
+                            </td>
+                        </tr>
+
+                        @if (_ticket.Closed)
+                        {
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.UserClosed)" /></th>
+                                <td><span>@_ticket.UserClosed</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.DateClosed)" /></th>
+                                <td><span>@_ticket.DateClosed?.ToString("g") </span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+
+
+                <div>
+                   
+                    @if (ViewCommands)
+                    {
+                        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Lista Tickets"]" OnClick="Annulla" />
+
+                        @if (_ticket.Permits.Edit())
+                        {
+                            <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+                        }
+                        if (_ticket.IdUserAssigned == null && _ticket.Permits.Assign())
+                        {
+                            <BlazorButton OnClick="PrepareAssign" Style="@BtnStyle.Danger" Icon="assignment_ind" Text=@Localize["Assign"]></BlazorButton>
+                        }
+
+                        @if (!_ticket.Closed == null && _ticket.Permits.Close())
+                        {
+                            <BlazorButton OnClick="@TicketClose" Style="@BtnStyle.Warning" Icon="archive" Text="Chiudi"></BlazorButton>
+                        }
+                        <AGButton ButtonStyle="AGButton.ButtonStyles.ButtonPrint" OnClickEvent="TicketPrint"></AGButton>
+                    }
+                </div>
+                
+            </div>
+        </div>
+    </div>
+}

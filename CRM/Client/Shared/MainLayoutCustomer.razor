@@ -1,0 +1,38 @@
+﻿@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Microsoft.AspNetCore.SignalR.Client
+@inherits LayoutComponentBase
+
+
+<div class="page">
+    <AuthorizeView>
+        <div class="sidebarMain">             
+            <NavMenuClient />             
+        </div>
+    </AuthorizeView>
+    <div class="main" >
+        <div class="top-row px-2 auth" >
+            @* <img src="/img/logo.png" width="200px" /> *@
+            @if (_logo != null)
+            {
+                <img class="logo" src="@_logo" />
+            }
+            else
+            {
+                <img src="/img/logoCrm.png" class="logo" />
+                
+            }
+            <LoginDisplay />
+            
+
+        </div>
+        
+        <div class="content px-4">
+
+            @Body
+        </div>
+    </div>
+</div>
+<RadzenDialog/>
+<RadzenNotification/>
+<RadzenContextMenu/>
+<RadzenTooltip/>

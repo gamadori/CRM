@@ -1,0 +1,30 @@
+﻿
+@page "/Settings/InterventionTypes/Edit/{Id:int}"
+
+@if (_interventionType != null)
+{
+    <EditForm Model="@_interventionType" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="containerleft">
+            <div class="form-group row g-3">
+                @foreach (var item in _interventionType.InterventionTypeLanguages)
+                {
+                    <div class="mb-3 col-6">
+                        <DisplayName For="@(()=>item.Language.Name)" />
+                        <input id="Name" class="form-control" @bind-value="@item.Name" placeholder="Name" />
+                        <ValidationMessage For="@(() => item.Name)" />
+                    </div>
+                }
+                 <div>
+                    <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+                    <BlazorButton Style="BtnStyle.Secondary" OnClick="Cancel" Text="Annulla" Icon="cancel"></BlazorButton>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+}
+else
+{
+    <Waiting></Waiting>
+}

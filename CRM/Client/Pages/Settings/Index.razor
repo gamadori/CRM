@@ -1,0 +1,45 @@
+﻿
+@page "/Settings"
+@using Microsoft.AspNetCore.Authorization;
+@using Microsoft.Extensions.Localization;
+
+@attribute [Authorize(Policy = "AdminRole")]
+
+@* <BlazorHeader Header="Settings"></BlazorHeader>
+ *@
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+<div class="container">
+    <div class="row d-flex justify-content-around">
+
+        <BlazorIcon href="Settings/Users" Icon="person" Text="Utenti" />
+        <BlazorIcon href="Settings/Groups" Icon="groups" Text="Gruppi" />
+        <BlazorIcon href="Settings/ContractTypes" Icon="gavel" Text="@Localize["Contratti"]" />
+        <BlazorIcon href="Settings/Smtp" Icon="send" Text="SMTP" />
+        <BlazorIcon href="Settings/Logos" Icon="image" Text="Loghi" />
+        <BlazorIcon href="Settings/EmailTemplates" Icon="email" Text="Emails Templates" />
+        <BlazorIcon href="Settings/TicketTypes" Icon="class" Text="Tipi Ticket" />
+        <BlazorIcon href="TicketStates" Icon="traffic" Text="Ticket Stati" />
+        <BlazorIcon href="Settings/InterventionTypes" Icon="home_repair_service" Text="Tipi di Intervento" />
+        <BlazorIcon href="GlobalSettings" Icon="settings" Text="Settaggi Globali" />
+        @*<BlazorIcon href="Settings/ProductsTypes/Index" Icon="category" Text="Product Types" />*@
+        <BlazorIcon href="@ConstHelper.ClientProductsSettings" Icon="precision_manufacturing" Text="@Localize["Products Settings"]" />
+        <BlazorIcon href="Settings/Languages" Icon="language" Text="Lingue" />
+        <BlazorIcon href="LogEvents" Icon="event_note" Text="Log e Eventi" />
+        <BlazorIcon href="CSVSettings/Index" Icon="folder_zip" Text="CSV" />
+        <BlazorIcon href="AzureSettings" Icon="settings_applications" Text="Azure" />
+        <BlazorIcon href="Settings/Telegram" Icon="send" Text="Telegram" />
+    </div>
+    
+</div>
+@code {
+    [Inject]
+    IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
+    private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+
+    protected override void OnInitialized()
+    {
+        _bread.Add(new BreadcrumbModel() { Title = $"Settings", Url = null });
+        base.OnInitialized();
+    }
+   
+}

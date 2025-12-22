@@ -1,0 +1,76 @@
+﻿@page "/Projects/Info/{Id:int}"
+@page "/Projects/{Id:int}"
+@page "/Projects/{Id:int}/{SelectView:int}"
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+
+@if (_project == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+
+    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
+   
+    <RadzenSelectBar @bind-Value="_selectView" TValue="ProjectViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+        <Items>
+            <RadzenSelectBarItem Text="@Localize["Dati Progetto"]" Value="ProjectViews.Project" />
+            <RadzenSelectBarItem Text="@Localize["Allegati"]" Value="ProjectViews.Attachments" />
+            <RadzenSelectBarItem Text="@Localize["Tickets"]" Value="ProjectViews.Tickets" />
+            <RadzenSelectBarItem Text="@Localize["Users"]" Value="ProjectViews.User" />
+        </Items>
+    </RadzenSelectBar>
+
+    @if (_selectView == ProjectViews.Project)
+    {
+        if (_partialView == PartialViews.Details)
+        {
+            <Details Id="@Id" OnClickEdit="EditProject" OnClickCancel="GotoIndex"></Details>
+        }
+        else
+        {
+            <Edit Id="@Id"  OnClickSave="(async () => await SaveProject())" OnClickCancel="CancelProject"></Edit>
+        }
+    }
+    else if (_selectView == ProjectViews.Attachments)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Attachments.Index IdParent="@Id" AttachmentType=@AttachmentTypes.Project OnClickEdit="IndexEditAttachment" OnClickDetails="IndexDetailsAttachment"></CRM.Client.Pages.Attachments.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Attachments.Edit Id="@_idAttachment" IdParent="@Id" AttachmentType=@AttachmentTypes.Project OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Edit>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Attachments.Details Id="@_idAttachment" OnClickCancel="CloseAttachment"
+                                                  OnClickEdit="DetailsEditAttachment" OnClickAddFile="AddFileAttachment"></CRM.Client.Pages.Attachments.Details>
+        }
+        else if (_partialView == PartialViews.AddFiles)
+        {
+            <CRM.Client.Pages.Attachments.Upload Id="@_idAttachment.Value" OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Upload>
+        }
+
+
+    }
+    else if (_selectView == ProjectViews.Tickets)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Tickets.Index IdProject="@Id" OnClickEdit="TicketEdit"></CRM.Client.Pages.Tickets.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Tickets.Edit Id="@_idTicket" IdProject="@Id" OnClickSave="TicketsIndex" OnClickCancel="TicketsIndex"></CRM.Client.Pages.Tickets.Edit>
+        }
+    }
+    else if (_selectView == ProjectViews.User)
+    {
+        <CRM.Client.Pages.Settings.Users.Index IdProject="@Id" OnClickDelete="RemoveUser" OnClickEdit="AddUser"></CRM.Client.Pages.Settings.Users.Index>
+    }
+
+
+}

@@ -1,0 +1,83 @@
+﻿
+@using System.Reflection
+@using System.Linq.Expressions
+@using System.ComponentModel.DataAnnotations
+@using System.Globalization
+@using System.Resources
+
+@* @if (!ReadOnly)
+{
+ *@
+<RtzDisplayName For="For" Text="@Label" Variant="@_variant" AllowFloatingLabel=@(!ReadOnly) >
+    <ChildContent>
+        <RadzenTextBox Value="@Value" @rendermode="renderMode" 
+                           ValueChanged="@ValueChanged" Change="Change" Style="@Style" Name="@Name"  Placeholder="@Placeholder" @oninput="OnInput" class="@($"{CssClass} remove-border")" ReadOnly="@ReadOnly"  />
+    </ChildContent>
+    <Helper>
+        @if (For != null && !ReadOnly)
+        {
+            <ValidationMessage For="@For" />
+        }
+    </Helper>
+    <End>@End</End>
+</RtzDisplayName>
+@* }
+else
+{
+<RtzDisplayName For="For" Variant="Variant.Filled">
+    <ChildContent>
+       <RadzenTextBox Value="@Value" ReadOnly=true></RadzenTextBox>
+       
+    </ChildContent>
+    <Helper>
+        <ValidationMessage For="@For" />
+    </Helper>
+    <End>@End</End>
+</RtzDisplayName>
+}
+ *@
+@code {
+
+    [Parameter] 
+    public string? Value { get; set; } = default!;
+    [Parameter] 
+    public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] 
+    public string Style { get; set; } = string.Empty;
+    [Parameter] 
+    public string Name { get; set; } = string.Empty;
+    [Parameter] 
+    public string Placeholder { get; set; } = string.Empty;
+    [Parameter] 
+    public IComponentRenderMode renderMode { get; set; } = RenderMode.InteractiveAuto;
+    [Parameter] 
+    public Expression<Func<object>> For { get; set; } = default!;
+    [Parameter] 
+    public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter]
+    public RenderFragment Helper { get; set; } = default!;
+    [Parameter]
+    public RenderFragment? End { get; set; } = default!;
+    [Parameter] 
+    public string CssClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool ReadOnly { get; set; } = false;
+    [Parameter]
+    public EventCallback Change { get; set; }
+
+    [Parameter]
+    public EventCallback<ChangeEventArgs> OnInput { get; set; }
+
+    [Parameter]
+    public string? Label { get; set; } = "";
+
+   
+
+    private Variant _variant;
+
+    protected override void OnInitialized()
+    {
+        _variant = ReadOnly ? Variant.Filled : Variant.Text;
+    }
+}

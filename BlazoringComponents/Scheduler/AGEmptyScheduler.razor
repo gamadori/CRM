@@ -1,0 +1,11 @@
+﻿@using Microsoft.Extensions.Localization
+
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize 
+
+<RadzenCard>
+    <div class="row">
+        <span class="text-center text-secondary p-2">
+            @Localize["Nessun Ticket"]
+        </span>
+    </div>
+</RadzenCard>

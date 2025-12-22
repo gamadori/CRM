@@ -1,0 +1,18 @@
+﻿@model CRM.Shared.Company
+
+<div class="row p-1">
+
+    <img src="~/Images/Icons/logoCrm.png" height="30"/>
+</div>
+<div class="row p-1">
+    <div class="col col-12 bg-info text-white">
+        <div class="small">@Model.Indirizzo</div>
+        <div class="small">@($"Tel.{Model.Telefono}/Fax {Model.Fax}")</div>
+        <div class="small">@Model.Email</div>
+        <div class="small">@Model.Web</div>
+    </div>
+</div>
+
+
+
+

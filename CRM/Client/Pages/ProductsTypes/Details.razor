@@ -1,0 +1,35 @@
+﻿@page "/Settings/ProductsTypes/Details/{Id:int}"
+
+
+<BlazorHeader Header="@Localize["Tipo Prodotto"]" />
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+
+@if (_productType == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+
+<dl class="row">
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_productType.Name)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_productType.Name</span>
+    </dd>
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_productType.Description)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_productType.Description</span>
+    </dd>
+    
+</dl>
+
+<div>
+    <BlazorLink Href="/Settings/ProductsTypes" Template="TemplateButton.Back" Text="@Localize["Lista Tipo Prodotti"]" />
+    <BlazorButton OnClick="EditProductType" Template="TemplateButton.Edit" Text="@Localize["Edit"]" Label="true" />
+    
+</div>
+}

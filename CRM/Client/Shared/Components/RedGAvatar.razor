@@ -1,0 +1,48 @@
+﻿@using CRM.Client.Services
+
+@if (!string.IsNullOrEmpty(ImageUrl))
+{
+    <img class="rounded-circle" style="width: 2.5rem; height: 2.5rem; object-fit: cover;" src="@ImageUrl" alt="Avatar">
+}
+else if (!string.IsNullOrEmpty(Initials))
+{
+    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-secondary text-white fw-medium" style="width: 2.5rem; height: 2.5rem;">
+        @Initials
+    </div>
+}
+
+@code {
+    [Inject]
+    IUserService UserService { get; set; } = default!;
+    [Inject]
+    HttpClient HttpClient { get; set; } = default!;
+
+    [Parameter]
+    public string? IdUser { get; set; }
+
+    [Parameter]
+    public string? Initials { get; set; }
+    
+    [Parameter]
+    public string? ImageUrl { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        UserModel? user = null;
+
+        user = await HttpClient.GetFromJsonAsync<UserModel>($"{ConstHelper.UsersPath}/Profile/{IdUser}");
+
+        if (user != null)
+        {
+            Initials = user.AvatarTxt; 
+            ImageUrl = user.Photo;
+        }
+        else
+        {
+            Initials = "RG";
+            ImageUrl = null;
+        }
+
+        await base.OnInitializedAsync();
+    }
+}

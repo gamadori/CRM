@@ -1,0 +1,23 @@
+﻿@_msg    
+    <div class="container flex-fill overflow-scroll bg-chat" id="divChat">
+
+        @foreach (var chat in ChatList)
+        {
+            <ChatMessage TicketChat="chat" Loaded="MsgLoaded"></ChatMessage>
+        }
+    </div>
+    <footer id="bottom" class=" text-center mt-auto p-3 container bg-chat">
+       
+            <EditForm Model="@_ticketChat" OnValidSubmit="HandleValidSubmit">
+                <div class="row">
+                    <div class="col">
+                        <RadzenTextArea @bind-Value="@_ticketChat.Message" Placeholder="Scrivi messaggio..." Class="w-100" />
+                    </div>
+                    <div class="col-auto">
+                        <RadzenButton Icon="send"  ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium"></RadzenButton>
+                    
+                    </div>
+                </div>
+         
+            </EditForm>
+    </footer>

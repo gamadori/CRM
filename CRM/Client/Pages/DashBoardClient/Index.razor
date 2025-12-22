@@ -1,0 +1,131 @@
+﻿@page "/DashBoardClient"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@*@layout  MainLayoutCustomer*@
+
+@if (_tickets == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+
+<div class="container">
+        <div class="row m-3 d-flex justify-content-around">
+            <div class="card shadow h-100 m-3" style="width: 320px;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+
+                                <a @onclick="AddTicket" class="stretched-link text-decoration-none" style="cursor: pointer;">@Localize["Nuovo Ticket"]</a>
+                            </div>
+                            
+                        </div>
+                        <div class="col-auto">
+
+                            <i class="material-icons md-48 text-warning">
+                                add_comment
+                            </i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow h-100 m-3" style="width: 320px;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                <a @onclick="TicketWorking" class="stretched-link text-decoration-none" style="cursor: pointer;">@Localize["TICKETS in Lavorazione"]</a>
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold badge bg-success">@_tickets.TicketsWorking</div>
+                        </div>
+                        <div class="col-auto">
+
+                            <i class="material-icons md-48 text-success">
+                                support_agent
+                            </i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow h-100 m-3" style="width: 320px;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                <a @onclick="Tickets" class="stretched-link text-decoration-none" style="cursor: pointer;">@Localize["Storico TICKETS"]</a>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+
+                            <i class="material-icons md-48 text-primary">
+                                support_agent
+                            </i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow h-100 py-2" style="width: 320px;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+
+                                <a @onclick="TicketsNewMessage" class="stretched-link text-decoration-none" style="cursor: pointer;">CHAT Clienti NUOVI MESSAGGI</a>
+                            </div>
+                            <div class="badge bg-info">@_tickets.ChatMessageToRead</div>
+                        </div>
+                        <div class="col-auto">
+
+                            <i class="material-icons md-48 text-info">
+                                chat
+                            </i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow h-100 m-3" style="width: 320px;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+
+                                <a @onclick="Articles" class="stretched-link text-decoration-none" style="cursor: pointer;">@Localize["Prodotti"]</a>
+                            </div>
+                            
+                        </div>
+                        <div class="col-auto">
+
+                            <i class="material-icons md-48 text-warning">
+                                camera
+                            </i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow h-100 m-3" style="width: 320px;">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+
+                                <a @onclick="ComapanyDetails" class="stretched-link text-decoration-none" style="cursor: pointer;">@Localize["Dati Azienda"]</a>
+                            </div>
+                            
+                        </div>
+                        <div class="col-auto">
+
+                            <i class="material-icons md-48 text-warning">
+                                apartment
+                            </i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+           
+        </div>
+    </div>
+
+}

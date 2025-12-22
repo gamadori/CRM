@@ -1,0 +1,122 @@
+﻿@page "/Companies/Details/{Id:int}"
+
+<BlazorHeader Header="@Localize["Azienda"]" Visible="HeaderVisible" />
+
+@if (_company == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+
+<dl class="row">
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.RagioneSociale)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_company.RagioneSociale</span>
+    </dd>
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.Master)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_company.Master</span>
+    </dd>
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.PIva)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_company.PIva</span>
+    </dd>
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.Indirizzo)" />
+
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_company.Indirizzo</span>
+    </dd>
+
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.Cap)" />
+
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_company.Cap</span>
+    </dd>
+
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.Citta)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_company.Citta</span>
+    </dd>
+
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.Stato)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_company.Stato</span>
+    </dd>
+
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.CompanyType)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@LocalizeCompanyTypes[_company.CompanyType.ToString()]</span>
+    </dd>
+
+    @if (_company.IdReseller != null && _company.IdReseller > 0)
+    {
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_company.IdReseller)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@_company.ResellerName</span>
+        </dd>
+    }
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.Telefono)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_company.Telefono</span>
+    </dd>
+     <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.Fax)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_company.Fax</span>
+    </dd>
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.Email)" />
+    </dt>
+    <dd class="col-sm-10">
+        <a href="mailto:@_company.Email">@_company.Email</a>
+    </dd>
+
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.Stato)" />
+    </dt>
+    <dd class="col-sm-10">
+        <a target="_blank" href="@_company.Web">@_company.Web</a>
+    </dd>
+     <dt class="col-sm-2">
+        <DisplayName For="@(()=>_company.Logo)" />
+    </dt>
+    <dd class="col-sm-10">
+        <img src="@_company.Logo" style="max-width: 500px" /> 
+    </dd>
+</dl>
+
+<div>
+    <BlazorLink Href="/Companies" Template="TemplateButton.Back" Text="@Localize["Lista Aziende"]" />
+    <AuthorizeView Policy="@ePolicy.SuperUserRole.ToString()">
+        <Authorized Context="AuthorizeRole">
+            
+            <BlazorButton OnClick="EditCompany" Template="TemplateButton.Edit" Text="@LocalizeBtn["Modifica"]" Label="true" />
+                        
+        </Authorized>
+       
+   </AuthorizeView> 
+    
+</div>
+}

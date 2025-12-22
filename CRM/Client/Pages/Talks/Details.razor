@@ -1,0 +1,86 @@
+﻿@page "/AccessoryTypes/Details/{Id:int}"
+@using CRM.Shared.Helper
+
+<BlazorHeader Header="@_header"></BlazorHeader>
+
+@if (_talk == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row rounded-3 bg-light">
+        <div class="col-md-8">
+
+            <div class="row g-3">
+                
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _talk.Name)" /></th>
+                            <td>@_talk.Name</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _talk.Date)" /></th>
+                            <td>@_talk.Date.ToString("d")</td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _talk.Company)" /></th>
+                            <td>@_talk.Company</td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _talk.Contact)" /></th>
+                            <td>@_talk.Contact</td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _talk.Amount)" /></th>
+                            <td>@_talk.Amount.ToString("###,##0.00")</td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _talk.Target)" /></th>
+                            <td>@_talk.Target.ToString("###,##0.00")</td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _talk.State)" /></th>
+                            <td><pre>@EnumService.Get(typeof(TalkStates), _talk.State)</pre></td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(()=>_talk.Phase)" /></th>
+                            <td>@EnumService.Get(typeof(TalkPhases), _talk.Phase)</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(()=>_talk.IdUser)" /></th>
+                            <td>@_talk.User</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+    </div>
+    
+     <div>
+                    
+        
+        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Lista Talks"]" OnClick="Annulla" />
+
+        @if (_talk.Permits.Edit())
+        {
+            <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+        }
+        
+        
+    </div>
+}

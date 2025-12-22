@@ -1,0 +1,40 @@
+﻿@using Models
+ 
+
+@typeparam TItem
+
+<div>
+    
+    <div class="row">
+        @foreach (var day in _weekTickets)
+        {
+            <div class="col border @day.BgBody">
+
+                <div>
+                    
+                    <AGDayHead Day="@day" OnSelect="OnSelect"></AGDayHead>
+                    @if (day.Tickets.Count() > 0)
+                    {
+                        @foreach (var t in day.Tickets)
+                        {
+                            <div class="row">
+                                <div class="col">
+                                    <CascadingValue Value="t" TValue="SchedulerTicket">
+                                        <AGTicketScheduler OpenModal="OpenModal"></AGTicketScheduler>
+                                    </CascadingValue>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <AGEmptyScheduler IsHoliday="day.IsHoliday"></AGEmptyScheduler>
+                    }
+                </div>
+            </div>
+            
+        }
+    </div>
+</div>
+
+           

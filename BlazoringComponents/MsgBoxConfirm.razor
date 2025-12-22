@@ -1,0 +1,39 @@
+﻿<div class="modal fade" id=@Id tabindex="-1" aria-labelledby="" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@Header</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="modal-body">
+                @Message
+            </div>
+            <div class="modal-footer">
+
+                @if (LabelBtnNo != null && LabelBtnNo.Length > 0)
+                {
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"  @onclick="@OnClickNo">@LabelBtnNo</button>
+                }
+
+                @if (LabelBtnYes != null && LabelBtnYes.Length > 0)
+                {
+                    <button type="button" class="btn btn-primary" @onclick="OnClick">@LabelBtnYes</button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; }
+    [Parameter] public string LabelBtnNo { get; set; }
+    [Parameter] public string LabelBtnYes { get; set; }
+    [Parameter] public string Header { get; set; }
+    [Parameter] public string Message { get; set; }
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClickNo { get; set; }
+}

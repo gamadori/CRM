@@ -1,0 +1,63 @@
+﻿
+@using System.Reflection
+@using System.Linq.Expressions
+@using System.ComponentModel.DataAnnotations
+@using System.Globalization
+@using System.Resources
+
+@typeparam TItem
+@typeparam TValue
+
+<RtzDisplayName For="For" Text="@Label">
+    <ChildContent>
+    
+        <RadzenDropDown @rendermode="renderMode" TValue="TValue" Data="@Data" TextProperty="@TextProperty" AllowClear="true"
+                        ValueProperty="@ValueProperty" Value="@Value" ValueChanged="ValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"  />
+    </ChildContent>
+    <Helper>
+        @if (For != null)
+        {
+            <ValidationMessage For="@For" />
+        }
+    </Helper>
+    <End>@End</End>
+</RtzDisplayName>
+
+
+@code {
+
+    [Parameter] 
+    public TValue Value { get; set; } = default!;
+    [Parameter] 
+    public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] 
+    public string Style { get; set; } = string.Empty;
+    [Parameter] 
+    public string Name { get; set; } = string.Empty;
+    [Parameter] 
+    public string Placeholder { get; set; } = string.Empty;
+    [Parameter] 
+    public IComponentRenderMode renderMode { get; set; } = RenderMode.InteractiveAuto;
+    [Parameter] 
+    public Expression<Func<TValue>> For { get; set; } = default!;
+    [Parameter] 
+    public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter]
+    public RenderFragment Helper { get; set; } = default!;
+    [Parameter]
+    public RenderFragment? End { get; set; } = default!;
+    [Parameter] 
+    public string CssClass { get; set; } = string.Empty;
+    [Parameter]
+    public IEnumerable<TItem> Data { get; set; } = Enumerable.Empty<TItem>();
+    [Parameter]
+    public string TextProperty { get; set; } = "Text";
+    [Parameter]
+    public string ValueProperty { get; set; } = "Value";
+
+    [Parameter]
+    public bool AllowFiltering { get; set; } = false;
+   
+    [Parameter]
+    public string? Label { get; set; }
+}

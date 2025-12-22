@@ -1,0 +1,52 @@
+﻿@page "/TicketStates"
+@page "/TicketStates/Index"
+
+    
+<BlazorTable Loader="@LoadData" TableClass="table table-striped" PageTitle="@_header" BtnNewLabel="Nuovo Stato" NewItem="NewItem">
+
+    <Loading>Loading...</Loading>
+    <Filter>
+            <div class="form-row">
+                <div class="col-4">
+                    <input type="text" value="@_filter.Description" @oninput="@OnChangeDescriptionsFilter" class="form-control" placeholder="Nome" />
+
+                </div>
+
+            </div>
+    </Filter>
+    <Empty>
+        <p>
+            <h4>Nessun Stato inserito</h4>
+        </p>
+        <button class="btn btn-outline" @onclick="(()=>StateHasChanged())">
+            <i class="material-icons middle">update</i><span class="pl-2">update</span>
+        </button>
+
+    </Empty>
+    <Header>
+
+        <tr>
+            <th>Descrizione</th>
+            <th>Stato</th>
+            <th>Colore</th>
+            <th></th>
+        </tr>
+    </Header>
+    <Item Context="item">
+        <tr>
+            <td>@item.Description</td>
+            <td>@(UtilityHelper.GetDisplayName<eTicketStates>((eTicketStates)item.State))</td>
+            <td><div class="alert" style="width:200px; background-color:@item.Color"></div> </td>
+            <td>
+
+                
+                <BlazorButton Template="TemplateButton.Edit" OnClick="()=>Edit(item.Id)"></BlazorButton>
+                <BlazorButton Template="TemplateButton.Delete" OnClick="()=>PrepareDelete(item)"></BlazorButton>
+
+            </td>
+        </tr>
+    </Item>
+</BlazorTable>
+
+
+<MsgBoxConfirm Id="dlgDelete" LabelBtnNo="No" LabelBtnYes="Yes" Header="Eliminazione dello Stato" Message="@_messageDelete" OnClick="Delete"></MsgBoxConfirm>

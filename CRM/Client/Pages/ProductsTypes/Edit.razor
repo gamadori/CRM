@@ -1,0 +1,45 @@
+﻿@page "/Settings/ProductsTypes/Edit"
+@page "/Settings/ProductsTypes/Edit/{Id:int}"
+@using Radzen
+@using Radzen.Blazor
+
+
+<BlazorHeader Header="@Localize["Tipo Prodotto"]">
+
+</BlazorHeader>
+
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+
+
+@if (_productType == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <EditForm Model="@_productType" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="containerleft">
+            <div  class="form-group row g-3">
+                <div class="col-md-8">
+                    <div class="form-floating mb-3">                    
+                        <input id="Name" class="form-control" @bind-value="@_productType.Name" placeholder="Name" />
+                        <DisplayName For="@(()=>_productType.Name)" />
+                        <ValidationMessage For="@(() => _productType.Name)" />
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input id="Description" class="form-control" @bind-value="@_productType.Description" placeholder="Description" />
+                        <DisplayName For="@(()=>_productType.Description)" />
+                        <ValidationMessage For="@(() => _productType.Description)" />
+                    </div>
+                
+                    <div class=" mb-3">
+                        <BlazorButton Template="TemplateButton.Submit" Text="Salva" />
+                        <BlazorButton Template="TemplateButton.Cancel" OnClick="Annulla" Text="Annulla" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+}

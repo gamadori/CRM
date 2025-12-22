@@ -1,0 +1,53 @@
+﻿<EditForm Model="@_email" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="container">
+        <div class="form-group row g-3">
+
+             <div class="mb-3">
+                <DisplayName For="@(()=>_email.To)" />
+                <RadzenAutoComplete Data=@_addresses TextProperty="CompanyName" LoadData=@OnLoadData Style="width: 100%;" @bind-Value="@_email.To" />
+                <ValidationMessage For="@(() => _email.To)" />
+            </div>
+
+            <div class="mb-3">
+                <DisplayName For="@(()=>_email.CC)" />
+                <RadzenAutoComplete Data=@_addresses TextProperty="CompanyName" LoadData=@OnLoadData Style="width: 100%;" @bind-Value="@_email.CC" />
+                <ValidationMessage For="@(() => _email.CC)" />
+            </div>
+
+            <div class="mb-3 col-6">                
+                <DisplayName For="@(()=>_email.Subject)" />
+                <input id="Name" class="form-control" @bind-value="@_email.Subject"  />
+                <ValidationMessage For="@(() => _email.Subject)" />
+            </div>
+
+           
+            <div class="mb-3">
+                <DisplayName For="@(()=>_email.Message)" />
+                <InputTextArea rows="8" class="form-control" @bind-Value="@_email.Message" />
+                <ValidationMessage For="@(() => _email.Message)" />
+            </div>
+
+
+            
+            <div>
+                @if (!_sending)
+                {
+                <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text=@Localize["Invia"] Icon="send"></BlazorButton>
+                
+                }
+                else
+                {
+                    <button class="btn btn-primary" type="button" disabled>
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        @Localize["Invio in corso..."]
+                    </button>
+                }
+                <BlazorButton Style="BtnStyle.Secondary" OnClick="Cancel" Text=@Localize["Cancel"] Icon="cancel"></BlazorButton>
+            </div>
+        </div>
+    </div>
+
+</EditForm>

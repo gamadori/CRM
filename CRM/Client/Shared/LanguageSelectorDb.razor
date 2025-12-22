@@ -1,0 +1,183 @@
+﻿@using  System.Globalization
+@using CRM.Shared.Models
+@using Syncfusion.Blazor.DropDowns
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Nav
+@inject HttpClient http
+
+@if (_dropdownItems?.Any() == true)
+{
+    <RedGImageSelect T="string" 
+                     @bind-SelectedItem="_selectedItem" 
+                     @bind-SelectedItem:after="ApplySelectedCultureAsync" 
+                     Items="@_dropdownItems" 
+                     Placeholder="Select Language" />
+}
+else
+{
+    <p>Loading languages...</p>
+}
+
+@code {
+    private string _value;    
+    string _languageCode = CultureInfo.CurrentCulture?.Name;
+
+    private BasicImageDropdownItem<string> _selectedItem;
+    private List<BasicImageDropdownItem<string>> _dropdownItems = new List<BasicImageDropdownItem<string>>();
+
+    [Parameter]
+    public List<Language> Languages { get; set; } = new List<Language>();
+
+    [Parameter]
+    public bool AutoSetting { get; set; } = false;
+    private string code = CultureInfo.CurrentCulture.Name;
+    [Parameter]
+    public string Value
+    {
+        get => _value;
+        set
+        {
+            if (_value != value)
+            {
+                _value = value;
+                UpdateSelectedItem();
+                if (ValueChanged.HasDelegate)
+                {
+                    ValueChanged.InvokeAsync(value);
+                }
+            }
+        }
+    }
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    private void UpdateSelectedItem()
+    {
+        if (_dropdownItems?.Any() == true)
+        {
+            if (!string.IsNullOrEmpty(_value))
+            {
+                _selectedItem = _dropdownItems.FirstOrDefault(x => x.Value == _value);
+            }
+            if (_selectedItem == null)
+            {
+                code = CultureInfo.CurrentCulture.Name;
+                _selectedItem = _dropdownItems.FirstOrDefault();
+            }
+        }
+        else
+        {
+            _selectedItem = null;
+        }
+    }
+
+    private async Task OnChange(SelectEventArgs<Language> args)
+    {
+        if (AutoSetting)
+        {
+            var code = args.ItemData.LanguageCode;
+            await http.PostAsJsonAsync<string>($"{ConstHelper.UserSignedPath}/Language", code);
+            Culture = new CultureInfo(code);
+        }
+    }
+
+    private async Task OnComboChange(string code)
+    {
+        if (AutoSetting)
+        {
+            await http.PostAsJsonAsync<string>($"{ConstHelper.UserSignedPath}/Language", code);
+            Culture = new CultureInfo(code);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (AutoSetting)
+            {
+                Languages = await http.GetFromJsonAsync<List<Language>>(ConstHelper.LanguagesPath) ?? new List<Language>();
+                // Populate items whenever Languages are loaded here
+               
+                if (string.IsNullOrEmpty(_value))
+                {
+                    _value = Culture.Name;
+                }
+                BuildDropdownItemsFromLanguages();
+                UpdateSelectedItem();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading languages: {ex.Message}");
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        // Sempre sincronizza _dropdownItems se Languages viene impostato esternamente
+        if (Languages != null && Languages.Any())
+        {
+            BuildDropdownItemsFromLanguages();
+
+            if (!string.IsNullOrEmpty(_value))
+            {
+                UpdateSelectedItem();
+            }
+            else
+            {
+                // Impostazione interna senza scatenare callback esterni
+                _value = Culture.Name;
+                UpdateSelectedItem();
+            }
+        }
+    }
+
+    private void BuildDropdownItemsFromLanguages()
+    {
+        _dropdownItems = Languages.Select(lang => new BasicImageDropdownItem<string>
+        {
+            Value = lang?.LanguageCode ?? "",
+            Text = lang?.Name ?? "",
+            ImageUrl = lang?.Flag
+        }).ToList();
+    }
+
+    private CultureInfo Culture
+    {
+        get => CultureInfo.CurrentCulture;
+        set
+        {
+            if (CultureInfo.CurrentCulture != value)
+            {
+                var js = (IJSInProcessRuntime)JSRuntime;
+                js.InvokeVoid("appCulture.set", value.Name);
+                Nav.NavigateTo(Nav.Uri, forceLoad: true);
+            }
+        }
+    }
+
+    private async Task ApplySelectedCultureAsync()
+    {
+        if (_selectedItem == null)
+            return;
+
+        string cultureCode = _selectedItem.Value ?? CultureInfo.CurrentCulture.Name;
+
+        if (CultureInfo.CurrentCulture.Name != cultureCode)
+        {
+            await JSRuntime.InvokeVoidAsync("appCulture.set", cultureCode);
+            
+            if (AutoSetting)
+            {
+                await http.PostAsJsonAsync<string>($"{ConstHelper.UserSignedPath}/Language", cultureCode);
+            }
+            
+            Culture = new CultureInfo(cultureCode);
+            Nav.NavigateTo(Nav.Uri, forceLoad: true);
+        }
+    }
+}

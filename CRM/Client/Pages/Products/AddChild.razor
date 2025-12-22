@@ -1,0 +1,46 @@
+﻿@page "/Products/AddChild"
+@using Radzen
+@using Radzen.Blazor
+<h3>Aggiungi Sotto Parte al Prodotto</h3>
+<hr />
+@if (_parentChild == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <EditForm Model="@_parentChild" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="row">
+            <div class="col">
+
+                <div class="mb-3">
+
+                    <DisplayName For="@(()=>_parentChild.IdChild)" />
+                    <RadzenDropDownDataGrid class="form-control" @bind-value="@_parentChild.IdChild" TValue="int" LoadData="@LoadsChilds" AllowFiltering="true" AllowClear="true"
+                                            Data="@_products" Count="@_products.Count()" TextProperty="Name" ValueProperty="Id" Style="margin-bottom: 20px" />
+
+                    <ValidationMessage For="@(() => _parentChild.IdChild)" />
+                </div>
+
+
+            </div>
+        </div>
+        <hr />
+        <div class="row">
+            <div class="col">
+                <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+                <BlazorButton Style="BtnStyle.Secondary" OnClick="Cancel" Text="Annulla" Icon="cancel"></BlazorButton>
+            </div>
+        </div>
+    </EditForm>
+
+
+
+
+
+
+
+
+}

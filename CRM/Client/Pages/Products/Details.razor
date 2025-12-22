@@ -1,0 +1,86 @@
+﻿@page "/Products/Details/{Id:int}"
+@using Microsoft.Extensions.Localization
+@using RedG.Client.Components
+@inject NavigationManager Nav
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+@if (_product == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+   
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <!-- Nome Prodotto -->
+            <div class="mb-4">
+                <h6 class="text-dark fw-semibold mb-3 d-flex align-items-center">
+                    <span class="material-icons me-2 text-primary" style="font-size: 20px;">badge</span>
+                    <DisplayName For="@(() => _product.Name)" />
+                </h6>
+                <div class="p-3 bg-light rounded border-start border-primary border-4">
+                    <p class="mb-0 text-dark">@_product.Name</p>
+                </div>
+            </div>
+
+            <!-- Tipo Prodotto -->
+            <div class="mb-4">
+                <h6 class="text-dark fw-semibold mb-3 d-flex align-items-center">
+                    <span class="material-icons me-2 text-primary" style="font-size: 20px;">category</span>
+                    <DisplayName For="@(() => _product.IdProductType)" />
+                </h6>
+                <div class="p-3 bg-light rounded border-start border-primary border-4">
+                    <p class="mb-0 text-dark">@_product.ProductType?.Name</p>
+                </div>
+            </div>
+
+            <!-- Prezzo -->
+            <div class="mb-4">
+                <h6 class="text-dark fw-semibold mb-3 d-flex align-items-center">
+                    <span class="material-icons me-2 text-primary" style="font-size: 20px;">euro</span>
+                    <DisplayName For="@(()=>_product.Price)" />
+                </h6>
+                <div class="p-3 bg-light rounded border-start border-primary border-4">
+                    <p class="mb-0 text-dark">
+                        @if (decimal.TryParse(Convert.ToString(_product.Price), out var p))
+                        {
+                            @p.ToString("C")
+                        }
+                        else
+                        {
+                            <span>@_product.Price</span>
+                        }
+                    </p>
+                </div>
+            </div>
+
+            <!-- Descrizione -->
+            <div class="mb-3">
+                <h6 class="text-dark fw-semibold mb-3 d-flex align-items-center">
+                    <span class="material-icons me-2 text-primary" style="font-size: 20px;">description</span>
+                    <DisplayName For="@(()=>_product.Description)" />
+                </h6>
+                <div class="p-3 bg-light rounded border-start border-primary border-4">
+                    @if (!string.IsNullOrWhiteSpace(_product.Description))
+                    {
+                        <p class="mb-0 text-dark">@_product.Description</p>
+                    }
+                    else
+                    {
+                        <p class="mb-0 text-muted fst-italic">Nessuna descrizione disponibile</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <RedGButton RGButtonType="RGButtonType.Back" Click="@(() => Nav.NavigateTo("/Products"))" Text="@Localize["Lista Prodotti"]" />
+                <RedGButton RGButtonType="RGButtonType.Edit" Click="Edit" Text="@Localize["Modifica"]"></RedGButton>
+            </div>
+        </div>
+    </div>
+}

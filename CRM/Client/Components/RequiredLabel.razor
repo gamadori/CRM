@@ -1,0 +1,60 @@
+﻿@using System.Linq.Expressions
+@using System.ComponentModel.DataAnnotations
+@typeparam TModel
+
+@inject Microsoft.Extensions.Localization.IStringLocalizer<TModel> ModelLocalizer
+
+<label>
+    @GetDisplayName()
+    @if (IsRequired)
+    {
+        <span style="color:red" title="@RequiredMarkerTooltip">*</span>
+    }
+</label>
+
+@code {
+    [Parameter] public Expression<Func<TModel, object>> For { get; set; }
+    [Parameter] public string RequiredMarkerTooltip { get; set; } = "Required field";
+
+    private bool IsRequired => For != null && IsPropertyRequired();
+
+    private string GetDisplayName()
+    {
+        var member = GetMemberInfo();
+        if (member == null) return "";
+
+        // Try [Display(Name = "...")]
+        var displayAttribute = member.GetCustomAttributes(typeof(DisplayAttribute), true)
+            .OfType<DisplayAttribute>()
+            .FirstOrDefault();
+
+        if (displayAttribute?.Name != null)
+        {
+            // Try resource-based display name
+            if (displayAttribute.ResourceType != null)
+            {
+                var resourceManager = new System.Resources.ResourceManager(displayAttribute.ResourceType);
+                return resourceManager.GetString(displayAttribute.Name) ?? displayAttribute.Name;
+            }
+            return displayAttribute.Name;
+        }
+
+        // Fallback: Use localizer for property name
+        return ModelLocalizer[member.Name];
+    }
+
+    private System.Reflection.MemberInfo? GetMemberInfo()
+    {
+        if (For?.Body is MemberExpression member)
+            return member.Member;
+        if (For?.Body is UnaryExpression unary && unary.Operand is MemberExpression innerMember)
+            return innerMember.Member;
+        return null;
+    }
+
+    private bool IsPropertyRequired()
+    {
+        var member = GetMemberInfo();
+        return member != null && Attribute.IsDefined(member, typeof(RequiredAttribute));
+    }
+}

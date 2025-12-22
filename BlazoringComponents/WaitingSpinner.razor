@@ -1,0 +1,23 @@
+﻿@using Radzen.Blazor
+
+
+
+<div class="alert alert-success text-center" role="alert">
+    <h4 class="alert-heading">@Header</h4>
+    <hr />
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="sr-only"></span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; }
+    [Parameter] public string LabelBtnStop { get; set; }
+    [Parameter] public string Header { get; set; }
+    [Parameter] public int Progress { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClickStop { get; set; }
+}

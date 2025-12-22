@@ -1,0 +1,67 @@
+﻿
+@page "/Settings/Languages"
+@page "/Settings/Languages/Index"
+
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor
+
+<h3>Lingue</h3>
+<hr />
+<div class="btn-toolbar" role="toolbar" aria-label="Comandi">
+    <div class="btn-group mr-2" role="group" aria-label="First group">
+        <BlazorButton Template="TemplateButton.New" OnClick="NewItem"></BlazorButton>
+    </div>
+</div>
+
+
+<SfGrid @ref="GridLanguages" AllowPaging="true" TValue="Language">
+
+    <SfDataManager Key="Id" Url="/api/Languages" Adaptor="Adaptors.WebApiAdaptor"></SfDataManager>
+
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
+    <GridPageSettings CurrentPage="1" EnableQueryString="true" PageSize="10" PageSizes="true"></GridPageSettings>
+
+    <GridColumns>
+        <GridColumn Field="@nameof(Language.Id)" IsPrimaryKey="true" Visible="false"></GridColumn>
+        <GridColumn Field=@nameof(Language.Index) HeaderText="Index"></GridColumn>
+        <GridColumn Width="120">
+            <Template>
+                @{
+                    var language = (context as Language);
+                    <div class="image">
+                        <img src="@language.Flag" /> 
+                    </div>
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Field=@nameof(Language.Name) HeaderText="Nome"></GridColumn>
+        <GridColumn Field=@nameof(Language.Description) HeaderText="Descrizione"></GridColumn>
+        <GridColumn HeaderText="Navigation" Width="180">
+            <GridCommandColumns>
+                
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss="e-icons e-edit", CssClass="e-flat" })"></GridCommandColumn>
+                <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss="e-icons e-delete", CssClass="e-flat" })"></GridCommandColumn>
+
+
+            </GridCommandColumns>
+        </GridColumn>
+    </GridColumns>
+    <GridEvents TValue="Language" CommandClicked="CommandClickHandler" OnActionFailure="ActionFailure" OnActionComplete="ActionComplete"></GridEvents>
+</SfGrid>
+<MsgBoxConfirm Id="dlgDelete" LabelBtnNo="No" LabelBtnYes="Yes" Header="Eliminazione del Progetto" Message="@_messageDelete" OnClick="Delete"></MsgBoxConfirm>
+
+<style>
+    .ulstyle {
+        margin: 0px;
+        padding-left: 20px;
+        display: inline-block;
+    }
+
+    .list {
+        float: left;
+        line-height: 20px;
+        margin: 10px;
+        min-width: 200px;
+    }
+</style>

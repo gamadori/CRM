@@ -1,0 +1,37 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace CRM.Server.Services
+{
+    public enum ArchiveTypes
+    {
+        Attachments,
+        Interventions,
+        Pdf,
+        Photo,
+        Temp
+    }
+
+    public interface IArchiveService
+    {
+        ArchiveTypes TypeArchive { get; set; }
+
+        string GetPath();
+
+        string GetPath(int id, string ext);
+
+        string GetPath(string name);
+
+        bool SaveAttachments(int id, string ext, byte[] content);
+
+        int SaveAttachments(int id, string ext, string content);
+
+        int Save(string name, string content);
+
+        string GetAttachment64(int id, string ext);
+
+        byte[] GetAttachment(int id, string ext);
+    }
+}

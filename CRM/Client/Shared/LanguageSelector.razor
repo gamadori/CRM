@@ -1,0 +1,110 @@
+﻿@using System.Globalization
+@using Syncfusion.Blazor;
+@using Syncfusion.Blazor.DropDowns;
+
+@inject IJSRuntime JSRuntime
+@inject NavigationManager Nav
+@inject HttpClient http
+
+<div class="col-auto">
+    @*<select class="form-control" @bind="Culture">
+        @foreach (var language in _languages)
+        {
+            <option value="@(new CultureInfo(language.LanguageCode))">@language.Description</option>
+        }
+    </select>*@
+
+        <SfDropDownList TValue="string" TItem="Language" CssClass="nav-item dropdown" @bind-Value="@_languageCode" DataSource="@_languages" PopupWidth="auto" Width="auto" >
+            <DropDownListTemplates TItem="Language">
+                <ItemTemplate>
+                    <div class="row m-2 d-flex align-items-center">
+                        <div class="col-md-3"><img src="@((context as Language).Flag)" /></div>
+                             
+                        <div class="col-md-3"> @((context as Language).Name) </div>
+                    </div>
+                </ItemTemplate>
+                    
+                <ValueTemplate>
+                    <div class="row m-2 d-flex align-items-center">
+                        <div class="col-auto"><img src="@((context as Language).Flag)" alt="@((context as Language).LanguageCode)" /></div>
+                    </div>
+                </ValueTemplate>
+            </DropDownListTemplates>
+            <DropDownListEvents TItem="Language" TValue="string" ValueChange="OnChange"/>
+            <DropDownListFieldSettings Value="LanguageCode"></DropDownListFieldSettings>
+        </SfDropDownList>
+
+</div>
+
+<div class="col" id="navbarNavDarkDropdown">
+    <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <img src="@_language.Flag" alt="@_language.LanguageCode" />
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark" style="width:auto!important" >
+                @foreach (var lang in _languages)
+                {
+                    <li><a class="dropdown-item" onclick="return reloadPage('@lang.LanguageCode');" href="#"><img  src="@lang.Flag"/></a></li>
+
+
+                }
+               
+            </ul>
+        </li>
+    </ul>
+</div>
+
+
+@code {
+
+    private List<Language> _languages = new List<Language>();
+
+
+    public CultureInfo Culture
+    {
+        get => CultureInfo.CurrentCulture;
+        set
+        {
+            if (CultureInfo.CurrentCulture != value)
+            {
+                var js = (IJSInProcessRuntime)JSRuntime;
+                js.InvokeVoid("appCulture.set", value.Name);
+                Nav.NavigateTo(Nav.Uri, forceLoad: true);
+            }
+        }
+    }
+
+    string _languageCode = CultureInfo.CurrentCulture?.Name;
+    Language _language;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        _languages = await http.GetFromJsonAsync<List<Language>>(ConstHelper.LanguagesPath);
+
+        _language = _languages.Where(x => x.LanguageCode == _languageCode).FirstOrDefault();
+
+        if (_language == null)
+            _language = _languages.FirstOrDefault();
+        //  _user = await http.GetFromJsonAsync<ApplicationUser>(ConstHelper.UserSigned);
+       // _languageCode = CultureInfo.CurrentCulture?.Name;
+
+    }
+
+    public void OnChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, Language> args)
+    {
+        try
+        {
+            if (args != null && args.ItemData != null)
+            {
+                Culture = new CultureInfo(args.ItemData.LanguageCode);
+            }
+        }
+        catch
+        {
+            
+        }
+
+    }
+}

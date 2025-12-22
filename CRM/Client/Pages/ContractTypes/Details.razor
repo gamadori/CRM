@@ -1,0 +1,85 @@
+﻿@page "/Settings/ContractTypes/Details/{Id:int}"
+@using CRM.Shared.Helper
+
+
+<BlazorHeader Header=@_title></BlazorHeader>
+
+<BlazorBreadCrumb Model=@_bread Visible=@(_bread != null)></BlazorBreadCrumb>
+
+@if (_item == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row rounded-3 bg-light">
+        <div class="col-md-8">
+
+            <div class="row g-3">
+                
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _item.Name)" /></th>
+                            <td>@_item.Name</td>
+                        </tr>
+                         <tr>
+                            <th scope="row"><DisplayName For="@(() => _item.Enabled)" /></th>
+                            <td><pre>@_item.Enabled</pre></td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _item.Price)" /></th>
+                            <td><pre>@_item.Price</pre></td>
+
+                        </tr>
+                         <tr>
+                            <th scope="row"><DisplayName For="@(() => _item.Discount)" /></th>
+                            <td><pre>@_item.Discount</pre></td>
+
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _item.DiscountedPrice)" /></th>
+                            <td><pre>@_item.DiscountedPrice</pre></td>
+
+                        </tr>
+
+                         <tr>
+                            <th scope="row"><DisplayName For="@(() => _item.Duration)" /></th>
+                            <td><pre>@_item.Duration</pre></td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _item.Description)" /></th>
+                            <td><pre>@_item.Description</pre></td>
+
+                        </tr>
+                       
+
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+    </div>
+    
+     <div>
+                    
+        
+        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Lista Contract"]" OnClick="Annulla" />
+
+        @if (_item.Permits.Edit())
+        {
+            <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+        }
+        
+        
+    </div>
+}

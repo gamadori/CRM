@@ -1,0 +1,11 @@
+﻿@using Syncfusion.Blazor.DropDowns
+@using System.Reflection
+
+
+@typeparam TItem
+
+<SfDropDownList TValue="string" TItem="string"  @bind-Value="@_fieldName"  AllowFiltering="true" DataSource="@_fields" PopupWidth="auto">
+   
+    <DropDownListEvents TItem="string" TValue="string" ValueChange=OnChange></DropDownListEvents>
+</SfDropDownList>
+

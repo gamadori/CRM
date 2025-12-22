@@ -1,0 +1,54 @@
+﻿
+@page "/Settings/ContractTypes"
+@page "/Settings/ContractTypes/Index"
+
+@using CRM.Shared.Helper
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor
+
+<BlazorHeader Header="@Localize["Contract Types"]"></BlazorHeader>
+
+
+
+@if (_items != null)
+{
+    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
+
+    <div class="btn-toolbar" role="toolbar" aria-label="Comandi">
+        <div class="btn-group mr-2" role="group" aria-label="First group">
+            <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewItem"></BlazorButton>
+        </div>
+
+    </div>
+
+    <RadzenDataGrid @ref="_grdContractTypes" IsLoading="@_isLoading" Count="@_paging.TotalCount" Responsive=true Data="@_items" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
+                    AllowSorting="true" AllowFiltering="true" AllowPaging="true" PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ContractType" PagingSummaryFormat="@_pagingSummaryFormat">
+        <Columns>
+            <RadzenDataGridColumn TItem="ContractType" Property="@nameof(ContractType.Name)" Title="@TranslateHelper.GetDisplayName(nameof(ContractType.Name), typeof(ContractType))" />
+
+
+
+            <RadzenDataGridColumn Context="item" TItem="ContractType" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                <Template Context="item">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
+                    </RadzenButton>
+                    <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                    
+                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" Click="@(args => Edit(item.Id))">
+                        </RadzenButton>
+                    
+                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" Click="@(args => Delete(item))">
+                        </RadzenButton>
+                    </AuthorizeView>
+                                   
+                </Template>
+            </RadzenDataGridColumn>
+       
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}

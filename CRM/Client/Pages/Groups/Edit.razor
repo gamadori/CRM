@@ -1,0 +1,39 @@
+﻿@page "/Settings/Groups/Edit"
+@page "/Settings/Groups/Edit/{Id:int}"
+
+<BlazorHeader Header="@_header"></BlazorHeader>
+
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+
+
+@if (_group == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+<EditForm Model="@_group" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="row">
+        <div class="col-md-4">
+            
+            <div class="mb-3">
+                <DisplayName For="@(()=>_group.Name)" />
+                <input id="Descrizione" class="form-control" @bind-value="@_group.Name" />
+                <ValidationMessage For="@(() => _group.Name)" />
+            </div>
+
+            <div class="mb-3">
+                <DisplayName For="@(()=>_group.Description)" />
+                <InputTextArea rows="8" class="form-control" @bind-Value="@_group.Description" />
+                <ValidationMessage For="@(() => _group.Description)" />
+            </div>
+
+            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+            <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+        </div>
+    </div>
+</EditForm>
+}

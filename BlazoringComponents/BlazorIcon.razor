@@ -1,0 +1,22 @@
+﻿
+    <a class="btn m-3" href="@href" style="width: 128px; height: 128px">
+        <div><i class="material-icons md-48" role="button" style="color:#222e3c">@Icon</i></div>
+        <div style="text-align:center"><span style="word-wrap: break-word;">@Text</span></div>
+    </a>
+
+@code {
+    [Parameter]
+    public string Icon { get; set; }
+
+    [Parameter]
+    public string Text { get; set; }
+
+    [Parameter]
+    public string href { get; set; }
+}
+
+
+
+
+
+

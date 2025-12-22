@@ -1,0 +1,109 @@
+﻿@page "/Articles"
+@page "/Articles/Index"
+
+@using Radzen
+@using Radzen.Blazor
+@using BlazoringComponents.DropDownButton
+
+@* <BlazorHeader Header="@Localize["Article"]" Visible=@(PageMode != PageHelper.PageModality.Dialog)></BlazorHeader> *@
+@if (IdCompany == null)
+{
+   
+    <PageHeader Title="@Localize["Articles"]"
+                Subtitle="@Localize["Gestisci gli articoli venduti"]"
+                BreadcrumbItems="@_breadcrumbItems">
+    </PageHeader>
+}   
+
+
+@if (_articles != null)
+{
+    <RadzenDataGrid @ref="grdArticles" IsLoading="@_isLoading" Responsive=@_isResponsable Count="@_paging.TotalCount" Data="@_articles" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode=@_filterMode 
+        AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                    PageSize="@_articletPageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Article" PagingSummaryFormat="@pagingSummaryFormat" ShowPagingSummary=true>
+        <HeaderTemplate>
+            <div class="d-flex align-items-center gap-5">
+                <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
+                <RedGTextBox @bind-Value="@_filter.SerialNumber" Label="@Localize["search serial..."]" @oninput="@OnChangeSerialNumberFilter" Style="width: 300px; margin-left: 10px;">
+                    <End>
+                        <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
+                    </End>
+                </RedGTextBox>
+               <RedGDropDown TItem="@CompanyFilter" Label="@Localize["search company..."]" TValue="int?" ValueChanged="OnChangeCompany" Data="@_companies" ValueProperty="Id" TextProperty="RagioneSociale" AllowFiltering="true">
+                    <End>
+                        <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
+                    </End>
+                </RedGDropDown>
+                <RedGDropDown TItem="ProductFilter" Label="@Localize["search product..."]" TValue="int?" Data="@_products" ValueChanged="OnChangeProduct" ValueProperty="Id" TextProperty="Name" AllowFiltering="true">
+                    <End>
+                        <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
+                    </End>
+                </RedGDropDown>
+            </div>
+
+        </HeaderTemplate>
+        <Columns>
+            @* <RadzenDataGridColumn Context="item" TItem="Article" Title=@TranslateHelper.GetDisplayName(nameof(Article.SerialNumber), typeof(Article)) Property="@nameof(Article.SerialNumber)" FilterProperty="SerialNumber">
+                <Template>
+                    <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OnClickSerialNumber(item?.Id)">@item?.SerialNumber</a>
+                </Template>
+            </RadzenDataGridColumn> *@
+
+            <RadzenDataGridColumn TItem="Article"
+                                  Property="@nameof(Article.SerialNumber)"
+                                  Title="@Localize["Serial Number"]"
+                                  Width="250px">
+                <Template Context="item">
+                    <div class="d-flex align-items-center py-2">
+                        <div class="product-icon bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                            <span class="material-icons text-primary" style="font-size: 20px;">@MaterialIcons.Article</span>
+                        </div>
+                        <div>
+                            <a href="#" class="link-primary" @onclick:preventDefault @onclick="async () => await OnClickSerialNumber(item?.Id)">@item?.SerialNumber</a>
+                        </div>
+                    </div>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="Article"
+                                  Property="Product.Name"
+                                  Title="@Localize["Product"]"
+                                  Width="180px">
+                <Template Context="item">
+                    @if (item.Product != null)
+                    {
+                        <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
+                            <span class="material-icons me-1" style="font-size: 14px; vertical-align: middle;">@MaterialIcons.Catalogo</span>
+                            @item.Product.Name
+                        </span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+       
+            
+            <RadzenDataGridColumn TItem="Article" Property="Company.RagioneSociale" Title="@TranslateHelper.GetDisplayName(nameof(Company.RagioneSociale), typeof(Company))" />
+
+           
+            @if (PageMode != PageHelper.PageModality.Dialog)
+            {
+                <RadzenDataGridColumn Context="item"
+                                      TItem="Article"
+                                      Filterable="false"
+                                      Sortable="false"
+                                      TextAlign="Radzen.TextAlign.Center"
+                                      Width="200px"
+                                      Title="">
+                    <Template Context="item">
+                        <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
+                        <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
+                        <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item))></RedGButton>
+
+                    </Template>
+                </RadzenDataGridColumn>
+           }
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}

@@ -1,0 +1,71 @@
+﻿@page "/UsersGroups/{IdGroup:int}"
+@page "/UsersGroups/Index/{IdGroup:int}"
+
+@using Pages.Groups
+
+ 
+<h2>Utenti Gruppi</h2>
+
+@if (_users == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+
+
+    <BlazorButton OnClick="PrepareAdd" Text="Nuovo Gruppo" Template="TemplateButton.New"></BlazorButton>
+
+
+    <BlazorTable Loader="@LoadData" TableClass="table table-striped">
+
+        <Loading>Loading...</Loading>
+        <Empty>
+            <p>
+                <h3>Nessun Gruppo inserito</h3>
+            </p>
+            <button class="btn btn-outline" @onclick="(()=>LoadData())">
+                <i class="material-icons middle">update</i><span class="pl-2">update</span>
+            </button>
+
+        </Empty>
+        <Header>
+
+            <tr>
+                <th>Nome</th>
+                <th>Cognome</th>
+                <th></th>
+            </tr>
+        </Header>
+        <Item Context="item">
+            <tr>
+                <td>@item.Name</td>
+                <td>@item.Surname</td>
+                <td>@item.Email</td>
+                <td>
+                    <BlazorLink Template="TemplateButton.Details" Href="@($"/Settings/Groups/{item.Id}")" />
+                    <BlazorButton Template="TemplateButton.Delete" OnClick="()=>PrepareDelete(item)"></BlazorButton>
+
+                </td>
+            </tr>
+        </Item>
+    </BlazorTable>
+
+}
+<MsgBoxConfirm Id="dlgDelete" LabelBtnNo="No" LabelBtnYes="Yes" Header="Eliminazione Gruppo" Message="@_messageDelete" OnClick="Delete"></MsgBoxConfirm>
+<div class="modal fade" id="modalAddUser" tabindex="-1" role="dialog" aria-labelledby="AddUser" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Aggiunta Utente al gruppo: </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <CRM.Client.Pages.Groups.AddUser></CRM.Client.Pages.Groups.AddUser>
+            </div>
+           
+        </div>
+    </div>
+</div>

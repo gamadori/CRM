@@ -1,0 +1,81 @@
+﻿@page "/Settings/ContractTypes/Edit"
+@page "/Settings/ContractTypes/Edit/{Id:int}"
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Calendars
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.Popups 
+
+
+<BlazorHeader Header=@_title></BlazorHeader>
+
+<BlazorBreadCrumb Visible=@(_bread != null) Model=@_bread></BlazorBreadCrumb>
+
+@if (_item == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="container m-3">
+        <EditForm Model="@_item" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <DisplayName For="@(()=>_item.Name)" />
+                    <input id="Name" class="form-control" @bind-value="@_item.Name" />
+                    <ValidationMessage For="@(() => _item.Name)" />
+                </div>
+            
+            </div>
+            <div class="row mb-3">
+                <div class="form-check form-switch">
+                    <DisplayName For="@(()=>_item.Enabled)" />
+                    <input class="form-check-input" type="checkbox" @bind="@_item.Enabled" />
+                    <ValidationMessage For="@(() => _item.Enabled)" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <DisplayName For="@(()=>_item.Price)" />
+                    <input id="Name" class="form-control" @bind-value="@_item.Price" />
+                    <ValidationMessage For="@(() => _item.Price)" />
+                </div>            
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <DisplayName For="@(()=>_item.Discount)" />
+                    <input id="Name" class="form-control" @bind-value="@_item.Discount" />
+                    <ValidationMessage For="@(() => _item.Discount)" />
+                </div>
+
+            </div>
+            
+
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <DisplayName For="@(()=>_item.Duration)" />
+                    <input id="Name" class="form-control" @bind-value="@_item.Duration" />
+                    <ValidationMessage For="@(() => _item.Duration)" />
+                </div>
+
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <DisplayName For="@(()=>_item.Description)" />
+                    <RadzenTextArea class="form-control" @bind-Value=@_item.Description Rows="4"></RadzenTextArea>
+                    <ValidationMessage For="@(() => _item.Description)" />
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <BlazorButton Template="TemplateButton.Submit" Text="Salva" />
+                    <BlazorButton Template="TemplateButton.Cancel" OnClick="Cancel" Text="Annulla" />
+                </div>
+            </div>
+        </EditForm>
+    </div>
+    
+}

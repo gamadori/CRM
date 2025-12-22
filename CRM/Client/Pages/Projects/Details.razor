@@ -1,0 +1,66 @@
+﻿@page "/Projects/Details/{Id:int}"
+@using CRM.Shared.Helper
+
+<h3>Dettagli Progetto</h3>
+<hr />
+@if (_project == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row rounded-3 bg-light">
+        <div class="col-md-8">
+
+            <div class="row g-3">
+                
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _project.Name)" /></th>
+                            <td>@_project.Name</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _project.StartDate)" /></th>
+                            <td>@_project.StartDate.ToString("d")</td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _project.Description)" /></th>
+                            <td><pre>@_project.Description</pre></td>
+
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(()=>_project.IdUserCreate)" /></th>
+                            <td>@_project.UserCreate?.NameComplete</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(()=>_project.IdUserLeader)" /></th>
+                            <td>@_project.UserLeader?.NameComplete</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+    </div>
+    
+     <div>
+                    
+        
+        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Lista Progetti"]" OnClick="Annulla" />
+
+        @if (_project.Permits.Edit())
+        {
+            <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+        }
+        
+        
+    </div>
+}

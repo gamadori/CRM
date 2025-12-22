@@ -1,0 +1,65 @@
+﻿
+@using System.Reflection
+@using System.Linq.Expressions
+@using System.ComponentModel.DataAnnotations
+@using System.Globalization
+@using System.Resources
+
+
+@typeparam TValue
+
+
+<RtzDisplayName For="For">
+    <ChildContent>
+        <RadzenDatePicker TValue="TValue" Value="@Value" DateFormat="@DateFormat" ShowTime="ShowTime" ValueChanged="@ValueChanged" @rendermode="renderMode" class="@($"{CssClass} remove-border")" Min="@Min" Max="@Max">
+            <FooterTemplate>
+                @if (TodayButton)
+                {
+                    <RadzenButton Click=@(args => Value = DateTime.Now) Text="Today" Style="width: 100%;" class="rz-my-4" />
+                }
+            </FooterTemplate>
+        </RadzenDatePicker>
+    </ChildContent>
+    <Helper>
+        <ValidationMessage For="@For" />
+    </Helper>
+    <End>@End</End>
+</RtzDisplayName>
+
+@code {
+
+    [Parameter] 
+    public object Value { get; set; } = default!;
+    [Parameter] 
+    public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] 
+    public string Style { get; set; } = string.Empty;
+    [Parameter] 
+    public string Name { get; set; } = string.Empty;
+    [Parameter] 
+    public string Placeholder { get; set; } = string.Empty;
+    [Parameter] 
+    public IComponentRenderMode renderMode { get; set; } = RenderMode.InteractiveAuto;
+    [Parameter] 
+    public Expression<Func<TValue?>> For { get; set; } = default!;
+    [Parameter] 
+    public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter]
+    public RenderFragment Helper { get; set; } = default!;
+    [Parameter]
+    public RenderFragment? End { get; set; } = default!;
+    [Parameter] 
+    public string CssClass { get; set; } = string.Empty;
+    [Parameter]
+    public bool ReadOnly { get; set; } = false;
+    [Parameter]
+    public DateTime? Min { get; set; } = null;
+    [Parameter]
+    public DateTime? Max { get; set; } = null;
+    [Parameter]
+    public string DateFormat { get; set; } = "d";
+    [Parameter]
+    public bool TodayButton { get; set; } = true;
+    [Parameter]
+    public bool ShowTime { get; set; } = false;
+}

@@ -1,0 +1,55 @@
+﻿@page "/Settings/AccessoryTypes/Details/{Id:int}"
+@using CRM.Shared.Helper
+
+
+@if (_accessoryType == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="container m-2">
+        <div class="row rounded-3 bg-light">
+
+            <div class="row g-3">
+                
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _accessoryType.Name)" /></th>
+                            <td>@_accessoryType.Name</td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _accessoryType.Description)" /></th>
+                            <td><span class="note-report">@_accessoryType.Description</span></td>
+
+                        </tr>
+                       
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+    
+         <div>
+                    
+        
+            <BlazorButton Template="TemplateButton.Back" Text="@Localize["Back"]" OnClick="Annulla" />
+
+            @if (_accessoryType.Permits.Edit())
+            {
+                <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+            }
+        
+        
+        </div>
+    </div>
+
+}

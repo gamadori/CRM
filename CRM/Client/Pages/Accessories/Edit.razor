@@ -1,0 +1,72 @@
+﻿@page "/Settings/Accessories/Edit"
+@page "/Settings/Accessories/Edit/{Id:int}"
+@using Radzen
+@using Radzen.Blazor
+
+<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog && IdAccessoryType == null)>@_header</BlazorHeader>
+
+@if (_accessory == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    
+    <div class="container m-3">
+        <EditForm Model="@_accessory" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+           
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <DisplayName For="@(()=>_accessory.Name)" />
+                    <input class="form-control" @bind-value="@_accessory.Name" />
+                    <ValidationMessage For="@(() => _accessory.Name)" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <DisplayName For="@(()=>_accessory.IdAccessoryType)" />
+                    <div class="input-group mb-3">
+                        <RadzenDropDown @ref="_ddAccessoryTypes" class="form-control" @bind-Value=@_accessory.IdAccessoryType Data=@_accessoryTypes AllowFiltering=true FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive 
+                            AllowClear="true" TextProperty="Language" ValueProperty="Id" PageSize="10">
+
+                        </RadzenDropDown>
+                        <BtnAccessoryTypes OnGetItem="OnGetAccessoryType"></BtnAccessoryTypes>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <DisplayName For="@(()=>_accessory.Code)" />
+                    <input  class="form-control" @bind-value="@_accessory.Code" />
+                    <ValidationMessage For="@(() => _accessory.Code)" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <DisplayName For="@(()=>_accessory.SupplierCode)" />
+                    <input class="form-control" @bind-value="@_accessory.SupplierCode" />
+                    <ValidationMessage For="@(() => _accessory.SupplierCode)" />
+                </div>
+            </div>
+
+            <div class="row mb-3">    
+                <div class="col-md-12">
+                    <DisplayName For="@(()=>_accessory.Description)" />
+                    <InputTextArea rows="8" class="form-control" @bind-Value="@_accessory.Description" />
+                    <ValidationMessage For="@(() => _accessory.Description)" />
+                </div>
+            </div>
+
+            
+
+            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+            <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+        </EditForm>
+    </div>
+}

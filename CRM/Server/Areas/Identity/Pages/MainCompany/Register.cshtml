@@ -1,0 +1,69 @@
+﻿@page
+@model CRM.Server.Areas.Identity.Pages.MainCompany.RegisterModel
+@{
+    Layout = "_LayoutIdentity";
+    ViewData["Title"] = "Registra Account";
+}
+
+
+    <div class="container">
+        <div class="card">
+            <div class="row">
+                <div class="col">
+                    <form method="post">
+                        <h2>Primo Accesso - Inserimento Azienda Principale</h2>
+                        <hr />
+                        <div asp-validation-summary="All" class="text-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Company.RagioneSociale"></label>
+                            <input asp-for="Company.RagioneSociale" class="form-control" />
+                            <span asp-validation-for="Company.RagioneSociale" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Company.Indirizzo"></label>
+                            <input asp-for="Company.Indirizzo" class="form-control" />
+                            <span asp-validation-for="Company.Indirizzo" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Company.Cap"></label>
+                            <input asp-for="Company.Cap" class="form-control" />
+                            <span asp-validation-for="Company.Cap" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Company.Citta"></label>
+                            <input asp-for="Company.Citta" class="form-control" />
+                            <span asp-validation-for="Company.Citta" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Company.Stato"></label>
+                            <input asp-for="Company.Stato" class="form-control" />
+                            <span asp-validation-for="Company.Stato" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Company.Telefono"></label>
+                            <input asp-for="Company.Telefono" class="form-control" />
+                            <span asp-validation-for="Company.Telefono" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Company.Email"></label>
+                            <input asp-for="Company.Email" class="form-control" />
+                            <span asp-validation-for="Company.Email" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Company.Web"></label>
+                            <input asp-for="Company.Web" class="form-control" />
+                            <span asp-validation-for="Company.Web" class="text-danger"></span>
+                        </div>
+                        <a class="btn btn-secondary" href="/">Annulla</a>
+                        <button type="submit" class="btn btn-primary">Registra</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>

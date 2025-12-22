@@ -1,0 +1,63 @@
+﻿@page "/CompanuContracts/Edit"
+@page "/CompanuContracts/Edit/{Id:int}"
+
+@using Radzen
+@using Radzen.Blazor
+
+<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog)>@_header</BlazorHeader>
+
+@if (_item == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    
+    <div class="container m-3">
+        <EditForm Model="@_item" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+           
+            
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <DisplayName For="@(()=>_item.IdContractType)" />
+                    <div class="input-group mb-3">
+                        <RadzenDropDown @ref="_ddContractType" class="form-control" Change="OnChangeContract" @bind-Value=@_item.IdContractType Data=@_contractTypes AllowFiltering=true FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive
+                                    AllowClear="true" TextProperty="Name" ValueProperty="Id" PageSize="10">
+
+                        </RadzenDropDown>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="form-check form-switch">
+                    <DisplayName For="@(()=>_item.Suspended)" />
+                    <input class="form-check-input" type="checkbox" @bind="@_item.Suspended" />
+                    <ValidationMessage For="@(() => _item.Suspended)" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <DisplayName For="@(()=>_item.DateFrom)" />
+
+                <InputDate class="form-control"  @bind-Value=@_item.DateFrom></InputDate>
+                <ValidationMessage For="@(() => _item.DateFrom)" />
+            </div>
+            <div class="row mb-3">
+                <DisplayName For="@(()=>_item.DateTo)" />
+                <InputDate class="form-control" @bind-Value=@_item.DateTo></InputDate>
+                <ValidationMessage For="@(() => _item.DateTo)" />
+            </div>
+            <div class="row mb-3">
+                <DisplayName For="@(()=>_item.Price)" />
+                <input  class="form-control" @bind-value="@_item.Price" />
+                <ValidationMessage For="@(() => _item.Price)" />
+            </div>
+            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+            <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+        </EditForm>
+    </div>
+}

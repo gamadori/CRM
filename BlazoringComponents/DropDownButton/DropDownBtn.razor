@@ -1,0 +1,16 @@
+﻿<div class="btn-group">
+    
+    <button class="btn @CssClass dropdown-toggle m-2" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+        @if (IconMaterial != null && IconMaterial.Length > 0)
+        {
+            <i class="material-icons middle">@IconMaterial</i>
+        }
+        @if (Text != null && Text.Length > 0)
+        {
+            <span class="ps-2">@Text</span>
+        }
+    </button>
+    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        @ChildContent
+    </ul>
+</div>

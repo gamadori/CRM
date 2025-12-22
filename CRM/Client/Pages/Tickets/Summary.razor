@@ -1,0 +1,92 @@
+﻿@page "/Ticket/Summary/{Id:int}"
+
+
+<BlazorHeader Header=@Localize["Ticket Details"] />
+
+@if (_ticket != null)
+{
+    <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading">@Localize["Ticket Description"]</h4>
+        <p class="note-report">@_ticket.Description</p>
+    </div>
+
+    <div class="alert alert-success" role="alert">
+        <h4 class="alert-heading">@Localize["Description Close"]</h4>
+        <p class="note-report">@_ticket.CloseDescription</p>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col"></th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th scope="row"><DisplayName For="@(() => _ticket.State)" /></th>
+                <td style="background-color:@_ticket.StateColor"><span style="mix-blend-mode: difference;color:white">@_ticket.State</span></td>
+            </tr>
+            <tr>
+                <th scope="row"><DisplayName For="@(() => _ticket.DateOpened)" /></th>
+                <td>@_ticket.DateOpened.ToString("G")</td>
+
+            </tr>
+            <tr>
+                <th scope="row"><DisplayName For="@(() => _ticket.Company)" /></th>
+                <td><span>@_ticket.Company</span></td>
+
+            </tr>
+
+            <tr>
+                <th scope="row"><DisplayName For="@(() => _ticket.ContactName)" /></th>
+                <td><span>@_ticket.ContactName</span></td>
+
+            </tr>
+
+            <tr>
+                <th scope="row"><DisplayName For="@(() => _ticket.DescType)" /></th>
+                <td><span>@_ticket.DescType</span></td>
+            </tr>
+
+            @if (_ticket.TicketType.Date != (int)PropertyStates.No)
+            {
+                <tr>
+                    <th scope="row"><DisplayName For="@(() => _ticket.Date)" /></th>
+                    <td><span>@_ticket.Date?.ToShortDateString()</span></td>
+                </tr>
+
+                <tr>
+                    <th scope="row"><DisplayName For="@(() => _ticket.Time)" /></th>
+                    <td><span>@_ticket.Time?.ToShortTimeString()</span></td>
+                </tr>
+
+
+            }
+            @if (_ticket.TicketType.DateEnd != (int)PropertyStates.No)
+            {
+                <tr>
+                    <th scope="row"><DisplayName For="@(() => _ticket.DateEnd)" /></th>
+                    <td><span>@_ticket.DateEnd?.ToShortDateString()</span></td>
+                </tr>
+            }
+            @if (_ticket.TicketType.IdArticolo != (int)PropertyStates.No)
+            {
+                <tr>
+                    <th scope="row"><DisplayName For="@(() => _ticket.Article)" /></th>
+                    <td><span>@_ticket.Article</span></td>
+                </tr>
+
+
+            }
+        </tbody>
+    </table>
+    <p>
+        <button type="button" class="btn btn-primary" @onclick="()=>OpenTicket()">@Localize["Open"]</button>
+
+    </p>
+}
+else
+{
+    <Waiting></Waiting>
+}

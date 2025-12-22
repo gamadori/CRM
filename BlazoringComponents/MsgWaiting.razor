@@ -1,0 +1,36 @@
+﻿<div class="modal fade" id=@Id tabindex="-1" aria-labelledby="" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@Header</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    
+                </button>
+            </div>
+            <div class="modal-body">
+               <div class="progress">
+                   <div class="progress-bar" role="progressbar" style="width: @Progress;" aria-valuenow="@Progress" aria-valuemin="0" aria-valuemax="100">Progress%</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+
+                
+
+                @if (LabelBtnStop != null && LabelBtnStop.Length > 0)
+                {
+                    <button type="button" class="btn btn-primary" @onclick="OnClickStop">@LabelBtnStop</button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; }
+    [Parameter] public string LabelBtnStop { get; set; }
+    [Parameter] public string Header { get; set; }
+    [Parameter] public int Progress { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClickStop { get; set; }
+}

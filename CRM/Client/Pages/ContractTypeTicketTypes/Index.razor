@@ -1,0 +1,71 @@
+﻿@page "/Settings/ContractTypeTicketTypes"
+@page "/Settings/ContractTypeTicketTypes/Index"
+
+
+@using CRM.Shared.Helper
+@using CRM.Client.Shared.Filters
+
+
+
+<BlazorHeader Header="@_header" Visible="@(PageMode != PageHelper.PageModality.Dialog)"></BlazorHeader>
+
+
+
+
+@if (_items != null)
+{
+
+   
+    <div class=row>
+        <div class="col">
+            <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewItem"></BlazorButton>
+        
+        </div>
+    </div>
+
+    <RadzenDataGrid @ref="_grdContractTypeTicket" IsLoading="@_isLoading" Count="@_items.Items.Count" Data="@_items.Items" Responsive=true LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode=@_filterMode
+                AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                    PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ContractTypeTicketTypeModel" EmptyText=@Localize["No Accessory"]>
+        <Columns>
+
+
+           
+            <RadzenDataGridColumn TItem="ContractTypeTicketTypeModel" Property=@nameof(ContractTypeTicketTypeModel.TicketTypeName) Title="@TranslateHelper.GetDisplayName(nameof(ContractTypeTicketTypeModel.TicketTypeName), typeof(ContractTypeTicketTypeModel))" />
+            @*<RadzenDataGridColumn TItem="ContractTypeTicketTypeModel" Property=@nameof(ContractTypeTicketTypeModel.NumIntervention) Title="@TranslateHelper.GetDisplayName(nameof(ContractTypeTicketTypeModel.NumIntervention), typeof(ContractTypeTicketTypeModel))" />*@
+            <RadzenDataGridColumn Context="item" TItem="ContractTypeTicketTypeModel" Title=@TranslateHelper.GetDisplayName(nameof(ContractTypeTicketTypeModel.NumIntervention), typeof(ContractTypeTicketTypeModel)) 
+                Property="@nameof(ContractTypeTicketTypeModel.NumIntervention)">
+                <Template>
+                    @if (item.Unlimited)
+                    {
+                        <span>@Localize["Unlimited"]</span>
+                    }
+                    else
+                    {
+                        <span>@item.NumIntervention </span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn Context="item" TItem="ContractTypeTicketTypeModel" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                <Template Context="item">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" title="Dettagli"  Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
+                    </RadzenButton>
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" title="Edit"  Click="@(args => Edit(item.Id))">
+                    </RadzenButton>
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" title="Elimina" Click="@(args => Delete(item.Id))">
+                    </RadzenButton>
+                   
+                </Template>
+           
+            </RadzenDataGridColumn>
+       
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}
+
+    
+    

@@ -1,0 +1,15 @@
+﻿@typeparam TItem
+ <div class="m-3">
+<EditForm Model="@_filter">
+    <div class="m-3">
+        <div class="mb-3">
+            <InputSelectEnum class="form-select" TValue="TItem" @bind-Value="@(_filter.Value)" />
+        </div>
+        <div class="mb-3">
+            <RadzenButton Click="OnClickCancel"  Text="Annulla" Icon="close"  ButtonStyle="ButtonStyle.Secondary"></RadzenButton>
+            <RadzenButton Click="OnClickOk" Text="Ok" Icon="check" Size="ButtonSize.Medium" ButtonStyle="ButtonStyle.Primary"></RadzenButton>
+        </div>
+    </div>
+
+</EditForm>
+</div>

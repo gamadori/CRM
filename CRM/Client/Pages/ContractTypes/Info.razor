@@ -1,0 +1,81 @@
+﻿@page "/Settings/ContractTypes/Info/{Id:int}"
+@page "/Settings/ContractTypes/{Id:int}"
+@page "/Settings/ContractTypes/{Id:int}/{SelectView:int}"
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+
+@if (_item == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="page-header">
+        @_item.Name
+    </div>
+    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
+   
+    <RadzenSelectBar @bind-Value="_selectView" TValue="ContractViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+        <Items>
+            <RadzenSelectBarItem Text="@Localize["Contract Type"]" Value="ContractViews.ContractType" />
+            <RadzenSelectBarItem Text="@Localize["Attachments"]" Value="ContractViews.Attachments" />
+            <RadzenSelectBarItem Text="@Localize["Ticket Types"]" Value="ContractViews.TicketsTypes" />
+        </Items>
+    </RadzenSelectBar>
+
+    @if (_selectView == ContractViews.ContractType)
+    {
+        if (_partialView == PartialViews.Details)
+        {
+            <Details Id="@Id" OnClickEdit="EditContractType" OnClickCancel="GotoIndex"></Details>
+        }
+        else
+        {
+            <Edit Id="@Id"  OnClickSave="(async () => await SaveContractType())" OnClickCancel="CancelContractType"></Edit>
+        }
+    }
+    else if (_selectView == ContractViews.Attachments)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Attachments.Index IdParent="@Id" AttachmentType=AttachmentTypes.ContractType OnClickEdit="IndexEditAttachment" OnClickDetails="IndexDetailsAttachment"></CRM.Client.Pages.Attachments.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Attachments.Edit Id="@_idAttachment" IdParent="@Id" AttachmentType="AttachmentTypes.ContractType" OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Edit>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Attachments.Details Id="@_idAttachment" OnClickCancel="CloseAttachment"
+                                                  OnClickEdit="DetailsEditAttachment" OnClickAddFile="AddFileAttachment"></CRM.Client.Pages.Attachments.Details>
+        }
+        else if (_partialView == PartialViews.AddFiles)
+        {
+            <CRM.Client.Pages.Attachments.Upload Id="@_idAttachment.Value" OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Upload>
+        }
+
+
+    }
+    else if (_selectView == ContractViews.TicketsTypes)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.ContractTypeTicketTypes.Index IdContractType=@Id OnNewItem="TicketNew" OnClickEdit=@TicketIndexEdit OnClickDetails="TicketDetails"></CRM.Client.Pages.ContractTypeTicketTypes.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.ContractTypeTicketTypes.Edit Id=@_idTicketType OnClickSave="@TicketCloseForm" OnClickCancel="TicketCloseForm"></CRM.Client.Pages.ContractTypeTicketTypes.Edit>
+        }
+        else if (_partialView == PartialViews.New)
+        {
+            <CRM.Client.Pages.ContractTypeTicketTypes.Edit IdContractType=@Id OnClickSave="@TicketCloseForm" OnClickCancel="TicketCloseForm"></CRM.Client.Pages.ContractTypeTicketTypes.Edit>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.ContractTypeTicketTypes.Details Id="@_idTicketType.Value" OnClickCancel="TicketCloseForm" OnClickEdit="TicketDetailsEdit"></CRM.Client.Pages.ContractTypeTicketTypes.Details>
+        }
+    }
+    
+    
+}

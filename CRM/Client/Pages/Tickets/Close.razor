@@ -1,0 +1,56 @@
+﻿@page "/Tickets/Close/{Id:int}"
+@using Radzen
+@using Radzen.Blazor
+@using CRM.Shared.Helper
+
+
+<h3>Chiudi Ticket</h3>
+
+@if (_ticket != null && Id > 0)
+{
+ 
+
+    <hr />
+    <EditForm Model="@_ticketClose" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="container m-3">
+
+            <div class="row mb-3">
+                <div class="col-md-8">
+
+                    <DisplayName For="@(()=>_ticketClose.Description)" />
+                    <RadzenTextArea class="form-control" @bind-value="@_ticketClose.Description" Rows="8" />
+                    <ValidationMessage For="@(() => _ticketClose.Description)" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <div>
+                        <a class="btn btn-light" data-bs-toggle="collapse" href="#collapseNote" role="button" aria-expanded="false" aria-controls="collapseNote">
+                            Note Interne
+                        </a>
+                    </div>
+                    <div class="mb-3 collapse" id="collapseNote">
+
+                        <RadzenTextArea class="form-control" @bind-value="@_ticketClose.Note" Rows="8" />
+                        <ValidationMessage For="@(() => _ticketClose.Note)" />
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <hr />
+        
+        <div class="row" >
+            <div class="col">
+                @if (_ticket != null && !_ticket.Closed && _ticket.Permits.Close())
+                {
+                    <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Chiudi Ticket" Icon="save"></BlazorButton>
+                    <BlazorButton Style="BtnStyle.Secondary" Text="Annulla" Icon="cancel" OnClick="Cancel"></BlazorButton>
+                }
+            </div>
+        </div>
+    </EditForm>
+
+}

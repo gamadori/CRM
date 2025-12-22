@@ -1,0 +1,25 @@
+﻿@using Syncfusion.Blazor.Inputs
+@using CRM.Shared
+
+@typeparam TItem
+
+
+<SfUploader  ID="UploadFiles" AutoUpload="false">
+    <UploaderEvents  ValueChange="OnChange"></UploaderEvents>
+</SfUploader>
+
+@if (_preview)
+{
+    @if (Mapping)
+    {
+        <BlazorButton Template="TemplateButton.Submit"  Text="Salva Mapping" @onclick="OnClick"></BlazorButton>
+    }
+    else
+    {
+        <BlazorButton Template="TemplateButton.Upload"  Text="Importa i Dati" @onclick="UploadData"></BlazorButton>
+    }
+    
+    <CSVView TItem="TItem" CSVFile="@_csvFile" OnChange="UpdateMapping"></CSVView>
+        
+    
+}

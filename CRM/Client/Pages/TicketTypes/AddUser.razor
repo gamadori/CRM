@@ -1,0 +1,48 @@
+﻿@page "/TicketTypes/AddUser"
+
+@using Radzen
+@using Radzen.Blazor
+
+<h4>Aggiungi Utente</h4>
+<hr />
+@if (_ticketTypeUser == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+<EditForm Model="@_ticketTypeUser" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="row">
+        <div class="col">
+
+            <div class="mb-3">
+
+                <DisplayName For="@(()=>_ticketTypeUser.IdUser)" />
+                <RadzenDropDownDataGrid class="form-control" @bind-value="@_ticketTypeUser.IdUser" TValue="string" LoadData="@LoadUsers" AllowFiltering="true" AllowClear="true"
+                                        Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id" Style="margin-bottom: 20px" />
+
+                <ValidationMessage For="@(() => _ticketTypeUser.IdUser)" />
+            </div>
+            
+
+        </div>
+    </div>
+    <hr/>
+    <div class="row">
+        <div class="col">
+            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+            <BlazorButton Style="BtnStyle.Secondary" OnClick="Cancel" Text="Annulla" Icon="cancel"></BlazorButton>
+        </div>
+    </div>
+</EditForm>   
+
+
+           
+
+
+
+   
+   
+}

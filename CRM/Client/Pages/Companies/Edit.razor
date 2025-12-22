@@ -1,0 +1,131 @@
+﻿@page "/Companies/Edit"
+@page "/Companies/Edit/{Id:int}"
+@using Radzen
+@using Radzen.Blazor
+
+<BlazorHeader Header="@Localize["Azienda"]" Visible=@(PageMode != PageHelper.PageModality.Dialog)>
+
+</BlazorHeader>
+
+@if (_company == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <EditForm Model="@_company" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="containerleft">
+            <div  class="form-group row g-3">
+            
+                <div class="col-md-8  mb-3">                    
+                    <DisplayName For="@(()=>_company.RagioneSociale)" />
+                    <input id="RagioneSociale" class="form-control" @bind-value="@_company.RagioneSociale" />                    
+                    <ValidationMessage For="@(() => _company.RagioneSociale)" />
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <div hidden="@_hidden">
+                        a
+                    </div>
+                </div>
+
+
+                <div class="col-12 mb-3" hidden="@_hidden">
+                    <DisplayName For="@(()=>_company.Indirizzo)" />
+                    <input id="Indirizzo" class="form-control" @bind-value="@_company.Indirizzo" />
+                    <ValidationMessage For="@(() => _company.Indirizzo)" />
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <DisplayName For="@(()=>_company.Cap)" />
+                    <input id="Cap" class="form-control" @bind-value="@_company.Cap" />
+                    <ValidationMessage For="@(() => _company.Cap)" />
+                </div>
+                <div class="col-md-8 mb-3">
+                    <DisplayName For="@(()=>_company.Citta)" />
+                    <input id="Citta" class="form-control" @bind-value="@_company.Citta" />
+                    <ValidationMessage For="@(() => _company.Citta)" />
+                </div>
+                <div class="col-12 mb-3">                    
+                    <DisplayName For="@(()=>_company.Stato)" />
+                    <input id="Stato" class="form-control" @bind-value="@_company.Stato" />
+                    <ValidationMessage For="@(() => _company.Stato)" />
+                </div>
+                <div class="col-12 mb-3">                    
+                    <DisplayName For="@(()=>_company.Email)" />
+                    <input id="Stato" class="form-control" @bind-value="@_company.Email" />
+                    <ValidationMessage For="@(() => _company.Email)" />
+                </div>
+                <div class="col-12 mb-3" hidden="@_hidden">
+                    <DisplayName For="@(()=>_company.Web)" />
+                    <input id="Stato" class="form-control" @bind-value="@_company.Web" />
+                    <ValidationMessage For="@(() => _company.Web)" />
+                </div>
+
+                <div class="col-6 mb-3">                    
+                    <DisplayName For="@(()=>_company.Telefono)" />
+                    <input id="Stato" class="form-control" @bind-value="@_company.Telefono" />
+                    <ValidationMessage For="@(() => _company.Telefono)" />
+                </div>
+                <div class="col-6 mb-3" hidden="@_hidden">
+                    <DisplayName For="@(()=>_company.Fax)" />                    
+                    <input id="Stato" class="form-control" @bind-value="@_company.Fax" />
+                    <ValidationMessage For="@(() => _company.Fax)" />
+                </div>
+                 <div class="col-md-6">
+                    <DisplayName For="@(()=>_company.CompanyType)" />
+
+                    <div class="input-group mb-3">
+                        <RadzenDropDown class="form-control" @bind-value="@_company.CompanyType" TValue="CompanyTypes" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            AllowClear="true" PageSize="@ConstHelper.PageSize"
+                                    Data="@_companyTypesFields" Count="@_companyTypesFields.Count()" TextProperty="Text" ValueProperty="Value">
+
+                           
+                        </RadzenDropDown>
+
+                    </div>
+                    <ValidationMessage For="@(() => _company.CompanyType)" />
+                </div>
+                @if (_company.CompanyType == CompanyTypes.Customer || _company.CompanyType == CompanyTypes.Reseller)
+                {
+                    <div class="col-md-6">
+                        <DisplayName For="@(()=>_company.IdReseller)" />
+
+                        <div class="input-group mb-3">
+                            <RadzenDropDown class="form-control" @bind-value="@_company.IdReseller" TValue="int?" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                    AllowClear="true" PageSize="@ConstHelper.PageSize"
+                                    Data="@_companies" Count="@_companies.Count()" TextProperty="@nameof(CompanyItem.RagioneSociale)" ValueProperty="@nameof(CompanyItem.Id)" Disabled=@_resellerDisabled>
+
+
+                            </RadzenDropDown>
+
+                        </div>
+                        <ValidationMessage For="@(() => _company.CompanyType)" />
+                    </div>
+                }
+                <div class="col-12 mb-3" hidden="@_hidden">
+                    <div>
+                        <RadzenCard Style="width:600px;margin-bottom: 20px; height:auto">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div style="margin-top:20px">File Logo:</div>
+
+                                    <br />
+                                    <RadzenFileInput @ref="inputImage" Accept="Image/*" @bind-Value="@_company.Logo" Style="width:400px;" TValue="string" ChooseText="Seleziona"
+                                                     Change="@(args => Change(args, "FileInput"))" Error="@(args => Error(args, "FileInput"))" />
+                                </div>
+                            </div>
+                        </RadzenCard>
+                    </div>
+                </div>
+                <div class="col-12 mb-3">
+                    <BlazorButton Template="TemplateButton.Submit" Text=@LocalizeBtn["Salva"] />
+                    <BlazorButton Template="TemplateButton.Cancel" OnClick="Annulla" Text=@LocalizeBtn["Annulla"] />
+                </div>
+            
+            </div>
+        </div>
+    </EditForm>
+}

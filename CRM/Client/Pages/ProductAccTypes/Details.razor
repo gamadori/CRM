@@ -1,0 +1,69 @@
+﻿@page "/ProductAccTypes/Details/{Id:int}"
+@using CRM.Shared.Helper
+
+<h3>@_header</h3>
+<hr />
+@if (_productAccessory == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row rounded-3 bg-light">
+        <div class="col-md-8">
+
+            <div class="row g-3">
+                
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _productAccessory.Name)" /></th>
+                            <td>@_productAccessory.Name</td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _productAccessory.ProdName)" /></th>
+                            <td>@_productAccessory.ProdName</td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _productAccessory.AccTypeName)" /></th>
+                            <td>@_productAccessory.AccTypeName</td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _productAccessory.Necessary)" /></th>
+                            <td>@_productAccessory.Necessary</td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _productAccessory.Enabled)" /></th>
+                            <td>@_productAccessory.Enabled</td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+    </div>
+    
+     <div>
+                    
+        
+        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Product Accessory List"]" OnClick="Annulla" />
+
+        @if (_productAccessory.Permits.Edit())
+        {
+            <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+        }
+        
+        
+    </div>
+}

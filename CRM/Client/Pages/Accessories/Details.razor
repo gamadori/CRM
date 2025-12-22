@@ -1,0 +1,69 @@
+﻿@page "/Settings/Accessories/Details/{Id:int}"
+@using CRM.Shared.Helper
+
+<h3>@_header</h3>
+<hr />
+@if (_accessory == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row rounded-3 bg-light">
+        <div class="col-md-8">
+
+            <div class="row g-3">
+                
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _accessory.Name)" /></th>
+                            <td>@_accessory.Name</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _accessory.AccessoryType)" /></th>
+                            <td>@_accessory.Type</td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _accessory.Code)" /></th>
+                            <td>@_accessory.Code</td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _accessory.SupplierCode)" /></th>
+                            <td>@_accessory.SupplierCode</td>
+                        </tr>
+                      
+
+                        <tr>
+                            <th scope="row"><DisplayName For="@(() => _accessory.Description)" /></th>
+                            <td><span class="note-report">@_accessory.Description</span></td>
+
+                        </tr>
+                       
+                    </tbody>
+                </table>
+            </div>    
+        </div>
+    </div>
+    
+     <div>
+                    
+        
+        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Accessory List"]" OnClick="Annulla" />
+
+        @if (_accessory.Permits.Edit())
+        {
+            <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+        }
+        
+        
+    </div>
+}

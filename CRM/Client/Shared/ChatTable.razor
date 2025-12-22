@@ -1,0 +1,24 @@
+﻿
+<Virtualize ItemsProvider="LoadChats"  Context="chat" ItemSize="300" >
+    <ItemContent>
+        <tr>
+            <td>
+                @chat.UserName
+            </td>
+            <td class="align-middle" style="max-width:100px">
+                @chat.Message
+            </td>
+            <td class="align-middle" style="max-width:200px">
+                @chat.Date
+            </td>
+            
+        </tr>
+    </ItemContent>
+    <Placeholder>
+        <tr>
+            <td>
+                Loading item...
+            </td>
+        </tr>
+    </Placeholder>
+</Virtualize>

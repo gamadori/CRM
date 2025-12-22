@@ -1,0 +1,18 @@
+﻿@using static CRM.Client.Helpers.PageHelper
+@if (Type == DialogType.None)
+{
+    <Waiting></Waiting>
+   
+}
+else if (Type == DialogType.Companies)
+{
+    @if (Mode == DialogMode.Selection)
+    {
+        <CRM.Client.Pages.Companies.Index OnSelectItem="OnSelect" OnAddNewItem=OnAddNew PageMode="PageModality.Dialog"></CRM.Client.Pages.Companies.Index>
+    }
+    else if (Mode == DialogMode.Addition)
+    {
+        <CRM.Client.Pages.Companies.Edit OnSaving="OnSaving" OnCancel="OnAddingCancel" PageMode="PageModality.Dialog" ></CRM.Client.Pages.Companies.Edit>
+    }
+    
+}

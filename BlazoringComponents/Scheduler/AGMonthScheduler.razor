@@ -1,0 +1,62 @@
+﻿@using BlazoringComponents.Helpers
+@using Models
+@typeparam TItem
+
+<div class="container-fluid bg-success" style="min-width: 900px;">
+
+    <div class="row">
+        @foreach (var weekDay in _weekDays)
+        {
+            <div class="col border @DayHelper.GetBgHeader(weekDay.IsHoliday)  text-center">
+                    @weekDay.Name
+                </div>
+            
+        }
+    </div>
+    
+    @foreach (var week in _monthTickets)
+    {
+        
+        <div class="row">
+           
+            @foreach (var day in week)
+            {
+                <div class="col border  @day.BgBody">
+
+                    <div>
+                        <AGDayHead Day="@day" OnSelect="OnSelect"></AGDayHead>
+                       
+                        @if (day.Tickets.Count() > 0)
+                        {
+                            @for (int i = 0; i < day.Tickets.Count && i < MaxNumDaylyTicket; ++i)
+                            {
+                                <div class="row">
+                                    <div class="col">
+                                        <CascadingValue Value="day.Tickets[i]" TValue="SchedulerTicket">
+                                            <AGTicketScheduler OpenModal="OpenModal"></AGTicketScheduler>
+                                        </CascadingValue>
+                                    </div>
+                                </div>
+                            }
+                            if (day.Tickets.Count > MaxNumDaylyTicket)
+                            {
+                                <div class="row">
+                                    <div class="col">
+                                            <AGTicketOthersScheduler Day="@day.Date" Desc="@day.DescOthers" 
+                                                                    OpenDaylyScheduler="OpenDaylyScheduler"></AGTicketOthersScheduler>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <AGEmptyScheduler IsHoliday="day.IsHoliday"></AGEmptyScheduler>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+    }
+
+</div>

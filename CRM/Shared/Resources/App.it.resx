@@ -1,0 +1,405 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Allega Documento" xml:space="preserve">
+    <value>Allega Documento</value>
+  </data>
+  <data name="Allegati" xml:space="preserve">
+    <value>Allegati</value>
+  </data>
+  <data name="Articles" xml:space="preserve">
+    <value>Articoli</value>
+  </data>
+  <data name="Assign" xml:space="preserve">
+    <value>Assegna</value>
+  </data>
+  <data name="Assegna il ticked a un Utente" xml:space="preserve">
+    <value>Assegna il Ticket a un utente</value>
+  </data>
+  <data name="Assigned" xml:space="preserve">
+    <value>Assegnati</value>
+  </data>
+  <data name="AttentionReportAlreadyPresent" xml:space="preserve">
+    <value>Attenzione report di intervento già presente: vuoi sostituirlo?</value>
+  </data>
+  <data name="Azienda" xml:space="preserve">
+    <value>Azienda</value>
+  </data>
+  <data name="Aziende" xml:space="preserve">
+    <value>Aziende</value>
+  </data>
+  <data name="ButtonCancel" xml:space="preserve">
+    <value>Annulla</value>
+  </data>
+  <data name="ButtonConfirm" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ButtonDelete" xml:space="preserve">
+    <value>Elimina</value>
+  </data>
+  <data name="ButtonDetails" xml:space="preserve">
+    <value>Dettagli</value>
+  </data>
+  <data name="ButtonDownload" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="ButtonEdit" xml:space="preserve">
+    <value>Modifica</value>
+  </data>
+  <data name="ButtonNew" xml:space="preserve">
+    <value>Nuovo</value>
+  </data>
+  <data name="ButtonPrint" xml:space="preserve">
+    <value>Stampa</value>
+  </data>
+  <data name="Cancella Azienda" xml:space="preserve">
+    <value>Cancella Azienda</value>
+  </data>
+  <data name="Categorie" xml:space="preserve">
+    <value>Categorie</value>
+  </data>
+  <data name="Chat" xml:space="preserve">
+    <value>Chat</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Chiudi</value>
+  </data>
+  <data name="Closed" xml:space="preserve">
+    <value>Chiusi</value>
+  </data>
+  <data name="Conferma" xml:space="preserve">
+    <value>Conferma</value>
+  </data>
+  <data name="Conferma Dati" xml:space="preserve">
+    <value>Conferma Dati</value>
+  </data>
+  <data name="Conferma dati Nuovo Ticket" xml:space="preserve">
+    <value>Conferma dati Nuovo Ticket</value>
+  </data>
+  <data name="Contacts" xml:space="preserve">
+    <value>Contatti</value>
+  </data>
+  <data name="Create Report" xml:space="preserve">
+    <value>Crea Report</value>
+  </data>
+  <data name="Create Report?" xml:space="preserve">
+    <value>Creare il Report?</value>
+  </data>
+  <data name="Data di Scadenza" xml:space="preserve">
+    <value>Data Scadenza</value>
+  </data>
+  <data name="Data e Ora" xml:space="preserve">
+    <value>Data e Ora</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="Dati Azienda" xml:space="preserve">
+    <value>Dati Azienda</value>
+  </data>
+  <data name="Dati Ticket" xml:space="preserve">
+    <value>Dati Ticket</value>
+  </data>
+  <data name="Day" xml:space="preserve">
+    <value>Giorno</value>
+  </data>
+  <data name="Dettagli Contatto" xml:space="preserve">
+    <value>Dettagli Contatto</value>
+  </data>
+  <data name="Edit User" xml:space="preserve">
+    <value>Modifica Utente</value>
+  </data>
+  <data name="Eliminare definitivamente l'azienda" xml:space="preserve">
+    <value>Eliminare definitivamente l'azienda</value>
+  </data>
+  <data name="Expired" xml:space="preserve">
+    <value>Scaduti</value>
+  </data>
+  <data name="From" xml:space="preserve">
+    <value>Da</value>
+  </data>
+  <data name="Il Ticket è stato Creato." xml:space="preserve">
+    <value>Il Ticket è stato Creato.</value>
+  </data>
+  <data name="Interventi" xml:space="preserve">
+    <value>Interventi</value>
+  </data>
+  <data name="Lista Aziende" xml:space="preserve">
+    <value>Lista Aziende</value>
+  </data>
+  <data name="Modifica" xml:space="preserve">
+    <value>Modifica</value>
+  </data>
+  <data name="Month" xml:space="preserve">
+    <value>Mese</value>
+  </data>
+  <data name="Nazione" xml:space="preserve">
+    <value>Nazione</value>
+  </data>
+  <data name="Nessun Ticket" xml:space="preserve">
+    <value>Nessun Ticket</value>
+  </data>
+  <data name="Nessuna azienda inserita" xml:space="preserve">
+    <value>Nessuna azienda inserita</value>
+  </data>
+  <data name="New Message" xml:space="preserve">
+    <value>Nuovo Messaggio</value>
+  </data>
+  <data name="New Message From" xml:space="preserve">
+    <value>Nuovo Messaggio da {0}</value>
+  </data>
+  <data name="New User" xml:space="preserve">
+    <value>Nuovo Utente</value>
+  </data>
+  <data name="NotAssigned" xml:space="preserve">
+    <value>Da Assegnare</value>
+  </data>
+  <data name="Nuovo Ticket" xml:space="preserve">
+    <value>Nuovo Ticket</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Apri</value>
+  </data>
+  <data name="Partita IVA" xml:space="preserve">
+    <value>Partita IVA</value>
+  </data>
+  <data name="Prodotti" xml:space="preserve">
+    <value>Prodotti</value>
+  </data>
+  <data name="Product data" xml:space="preserve">
+    <value>Dati Prodotto</value>
+  </data>
+  <data name="Progetti" xml:space="preserve">
+    <value>Progetti</value>
+  </data>
+  <data name="Prosegui" xml:space="preserve">
+    <value>Prosegui</value>
+  </data>
+  <data name="Ragione Sociale" xml:space="preserve">
+    <value>Ragione Sociale</value>
+  </data>
+  <data name="Save Changes" xml:space="preserve">
+    <value>Salva Modifiche</value>
+  </data>
+  <data name="Scelta del prodotto" xml:space="preserve">
+    <value>Scelta del prodotto</value>
+  </data>
+  <data name="Scelta del Tipo di ticket" xml:space="preserve">
+    <value>Scelta del Tipo di ticket</value>
+  </data>
+  <data name="Scelta della ditta" xml:space="preserve">
+    <value>Scelta della ditta</value>
+  </data>
+  <data name="SelectProduct" xml:space="preserve">
+    <value>Seleziona un Prodotto</value>
+  </data>
+  <data name="Seleziona" xml:space="preserve">
+    <value>Seleziona</value>
+  </data>
+  <data name="Seleziona la Ditta..." xml:space="preserve">
+    <value>Seleziona la Ditta...</value>
+  </data>
+  <data name="Settaggi" xml:space="preserve">
+    <value>Settaggi</value>
+  </data>
+  <data name="Storico TICKETS" xml:space="preserve">
+    <value>Storico TICKETS</value>
+  </data>
+  <data name="The description must be at least 10 characters long" xml:space="preserve">
+    <value>La descrizione deve avere almento una lunghezza di 10 caratteri</value>
+  </data>
+  <data name="Ticket #" xml:space="preserve">
+    <value>Ticket Numero</value>
+  </data>
+  <data name="Tickets" xml:space="preserve">
+    <value>Ticket</value>
+  </data>
+  <data name="TICKETS in Lavorazione" xml:space="preserve">
+    <value>TICKET in Lavorazione</value>
+  </data>
+  <data name="To" xml:space="preserve">
+    <value>A</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>Oggi</value>
+  </data>
+  <data name="Total Intervention Time" xml:space="preserve">
+    <value>Tempo (hh:mm)</value>
+  </data>
+  <data name="User" xml:space="preserve">
+    <value>Utente</value>
+  </data>
+  <data name="View Report" xml:space="preserve">
+    <value>Visualizza Report</value>
+  </data>
+  <data name="Week" xml:space="preserve">
+    <value>Settimana</value>
+  </data>
+  <data name="Working" xml:space="preserve">
+    <value>In Lavorazione</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annulla</value>
+  </data>
+  <data name="Check your mailbox to confirm your account" xml:space="preserve">
+    <value>Controlla la tua casella di posta per confermare il tuo account</value>
+  </data>
+  <data name="Confirm email" xml:space="preserve">
+    <value>Conferma email</value>
+  </data>
+  <data name="Displaying page {0} of {1} (total {2} records)" xml:space="preserve">
+    <value>Pagina {0} di {1} (totale {2} records)</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Nome</value>
+  </data>
+  <data name="New Ticket" xml:space="preserve">
+    <value>Nuovo Ticket</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Salva</value>
+  </data>
+  <data name="Select the article" xml:space="preserve">
+    <value>Selezionare l'articolo</value>
+  </data>
+  <data name="Select the Client" xml:space="preserve">
+    <value>Seleziona il Cliente</value>
+  </data>
+  <data name="Select the type of Ticket" xml:space="preserve">
+    <value>Seleziona il Tipo di Ticket</value>
+  </data>
+  <data name="Set the date of the event" xml:space="preserve">
+    <value>Imposta la data dell'evento</value>
+  </data>
+  <data name="Set the time of the event" xml:space="preserve">
+    <value>Imposta l'orario dell'evento</value>
+  </data>
+  <data name="Surname" xml:space="preserve">
+    <value>Cognome</value>
+  </data>
+  <data name="Ticket Edit" xml:space="preserve">
+    <value>Modifica Ticket</value>
+  </data>
+  <data name="ToBeInvoiced" xml:space="preserve">
+    <value>Da Fatturare</value>
+  </data>
+  <data name="Article" xml:space="preserve">
+    <value>Articolo</value>
+  </data>
+</root>

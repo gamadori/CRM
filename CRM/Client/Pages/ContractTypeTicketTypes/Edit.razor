@@ -1,0 +1,57 @@
+﻿@page "/Settings/ContractTypeTicketTypes/Edit"
+@page "/Settings/ContractTypeTicketTypes/Edit/{Id:int}"
+
+@using Radzen
+@using Radzen.Blazor
+
+<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog)>@_header</BlazorHeader>
+
+@if (_item == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    
+    <div class="container m-3">
+        <EditForm Model="@_item" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+           
+         
+
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <DisplayName For="@(()=>_item.IdTicketType)" />
+                    <div class="input-group mb-3">
+                        <RadzenDropDown @ref="_ddTicketTypes" class="form-control" @bind-Value=@_item.IdTicketType Data=@_ticketTypes AllowFiltering=true FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive
+                                    AllowClear="true" TextProperty="Desc" ValueProperty="Id" PageSize="10">
+
+                        </RadzenDropDown>
+                       @* <BtnAccessoryTypes OnGetItem="OnGetTicketType"></BtnAccessoryTypes>*@
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="form-check form-switch">
+                    <DisplayName For="@(()=>_item.Unlimited)" />
+                    <input class="form-check-input" type="checkbox" @bind="@_item.Unlimited" />
+                    <ValidationMessage For="@(() => _item.Unlimited)" />
+                </div>
+            </div>
+            @if (!_item.Unlimited)
+            {
+                <div class="col-md-4 mb-3">
+                    <DisplayName For="@(()=>_item.NumIntervention)" />
+                <input id="Cap" class="form-control" @bind-value="@_item.NumIntervention" />
+                <ValidationMessage For="@(() => _item.NumIntervention)" />
+            </div>
+            }
+           
+            
+            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+            <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+        </EditForm>
+    </div>
+}

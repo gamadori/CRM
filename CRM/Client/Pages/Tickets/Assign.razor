@@ -1,0 +1,44 @@
+﻿@page "/Tickets/Assign/{Id:int}"
+
+@using Radzen
+@using Radzen.Blazor
+
+   
+    @if (_ticket != null)
+    {
+   
+
+        <EditForm Model="@_ticket" OnValidSubmit="HandleValidSubmit">
+        
+           
+        
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+                    
+            <div class="row">
+                <div class="col">
+                    <div class="input-group mb-3">
+                        <RadzenDropDownDataGrid @ref="_userDropDown" class="form-control" @bind-Value="@_ticket.IdUserAssigned" TValue="string" AllowFiltering="true" PageSize="@ConstHelper.PageSize" AllowClear="true"
+                                    Data="@_users" Count="@_users.Count"  TextProperty="NameComplete" ValueProperty="Id" />
+                        <RadzenButton Click="OpenScheduler" Icon="calendar_month"></RadzenButton>
+                    </div>
+                    <ValidationMessage For="@(() => _ticket.IdUserAssigned)" />
+                </div>
+                
+                <div class="col-auto ms-4">
+                    <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Secondary" Icon="done"></RadzenButton>
+                    <RadzenButton Click="Cancel" ButtonStyle="ButtonStyle.Danger" Icon="close"></RadzenButton>
+                </div>
+            </div>
+                   
+
+
+        
+        </EditForm>
+
+    }
+    else
+    {
+        <SpinnerCircle></SpinnerCircle>
+    }

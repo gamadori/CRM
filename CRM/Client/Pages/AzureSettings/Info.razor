@@ -1,0 +1,37 @@
+﻿@page "/Settings/AzureSettings"
+@using CRM.Client.Services;
+@using Microsoft.AspNetCore.Authorization;
+@using Microsoft.Extensions.Localization;
+
+@attribute [Authorize(Policy = "AdminRole")]
+
+<BlazorHeader Header="Azure Settings"></BlazorHeader>
+
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+<div class="container">
+    <div class="row d-flex justify-content-around">
+
+       
+        <BlazorIcon href="AzureSettings/Translator" Icon="translate" Text=@Localize["Traduttore"] />
+        <BlazorIcon href="AzureSettings/OCR" Icon="menage_search" Text=@Localize["OCR"] />
+       
+    </div>
+
+</div>
+@code {
+    [Inject]
+    IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
+    [Inject]
+    IBreadCrumbService Bread { get; set; }
+
+
+    private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+
+    protected async override Task OnInitializedAsync()
+    {
+        _bread = await Bread.ProductSettings(false);
+
+        await base.OnInitializedAsync();
+    }
+
+}

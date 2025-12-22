@@ -1,0 +1,54 @@
+﻿
+@using System.Reflection
+@using System.Linq.Expressions
+@using System.ComponentModel.DataAnnotations
+@using System.Globalization
+@using System.Resources
+
+@typeparam T
+
+@if (link)
+{
+    <span class="label-floating @CssClass">@label</span>
+}
+else if (ChildContent == null)
+{
+    <label for="@Floating" class="label-floating @CssClass">@label</label>
+}
+else
+{
+    <label for="@Floating" class="label-floating @CssClass">
+        @label
+        @ChildContent
+    </label>
+}
+@code {
+    [Parameter] public Expression<Func<T>> For { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public string Floating { get; set; }
+    [Parameter] public string CssClass { get; set; }
+    [Parameter] public bool link { get; set; } = false;
+    private string label => GetDisplayName();
+
+
+    private string GetDisplayName()
+    {
+        var expression = (MemberExpression)For.Body;
+        var value = expression.Member.GetCustomAttribute(typeof(DisplayAttribute)) as DisplayAttribute;
+
+
+        if (value?.ResourceType != null)
+        {
+            return GetDisplayNameFromResource(value);
+        }
+        return value?.Name ?? expression.Member.Name ?? "";
+    }
+
+    private static string GetDisplayNameFromResource(DisplayAttribute mPropAttr)
+    {
+        ResourceManager rm = new ResourceManager(mPropAttr.ResourceType);
+        var dispName = rm.GetString(mPropAttr.Name, CultureInfo.CurrentCulture);
+        return dispName ?? mPropAttr.Name;
+    }
+
+}

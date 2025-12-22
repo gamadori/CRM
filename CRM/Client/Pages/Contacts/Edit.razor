@@ -1,0 +1,70 @@
+﻿@page "/Contacts/Edit"
+@page "/Contacts/Edit/{Id:int}"
+<BlazorHeader>@_header</BlazorHeader>
+
+@if (_contact == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    @using Radzen
+    @using Radzen.Blazor
+
+    <EditForm Model="@_contact" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="containerleft">
+            <div class="row">
+                <div class="col-md-6 mb-3">            
+                    <DisplayName For="@(()=>_contact.Surname)" />
+                    <input class="form-control" @bind-value="@_contact.Surname" />
+                    <ValidationMessage For="@(() => _contact.Surname)" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <DisplayName For="@(()=>_contact.Name)" />
+                    <input id="Descrizione" class="form-control" @bind-value="@_contact.Name"  />
+                    <ValidationMessage For="@(() => _contact.Name)" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <DisplayName For="@(()=>_contact.IdCompany)" />
+                    <div class="input-group mb-3">
+                        <RadzenDropDownDataGrid @ref="_ddCompany" class="form-control" @bind-value="@_contact.IdCompany" TValue="int?" AllowFiltering="true"
+                                                AllowClear="true" PageSize="@ConstHelper.PageSize"
+                                                Data="@_companies" Count="@_companiesCount" TextProperty="RagioneSociale" ValueProperty="Id" 
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" 
+                                                Disabled="@(IdCompany != null)"  />
+                        <BtnCompanies OnGetCompany="OnGetCompany"></BtnCompanies>
+                    </div>
+                    <ValidationMessage For="@(() => _contact.IdCompany)" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <DisplayName For="@(()=>_contact.Mobile)" />
+                    <input id="Descrizione" class="form-control" @bind-value="@_contact.Mobile" />
+                    <ValidationMessage For="@(() => _contact.Mobile)" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <DisplayName For="@(()=>_contact.Phone)" />
+                    <input id="Descrizione" class="form-control" @bind-value="@_contact.Phone" />
+                    <ValidationMessage For="@(() => _contact.Phone)" />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <DisplayName For="@(()=>_contact.Email)" />
+                    <input class="form-control" @bind-value="@_contact.Email" />
+                    <ValidationMessage For="@(() => _contact.Email)" />
+                </div>
+                <div class="col-md-12 mb-3">
+                    <DisplayName For="@(()=>_contact.Note)" />
+                    <RadzenTextArea Rows="5" class="form-control" @bind-value="@_contact.Note" />
+                    <ValidationMessage For="@(() => _contact.Note)" />
+                </div>
+            </div>
+        </div>
+
+
+        <BlazorButton Template="TemplateButton.Submit" Type="BtnType.Submit" Style="BtnStyle.Primary" Label=true></BlazorButton>
+        <BlazorButton Template="TemplateButton.Cancel" Style="BtnStyle.Secondary" OnClick="Annulla"  Label=true></BlazorButton>
+
+    </EditForm>
+}

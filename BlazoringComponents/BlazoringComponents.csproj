@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="AGSearch.razor" />
+    <Content Remove="DisplayName.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Scheduler\AGDayScheduler.razor~RF2ab0296.TMP" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Faso.Blazor.SpinKit" Version="1.0.1" />
+    <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Localization" Version="9.0.4" />
+    <PackageReference Include="QLNet" Version="1.13.1" />
+    <PackageReference Include="Radzen.Blazor" Version="5.7.4" />
+    <PackageReference Include="Syncfusion.Blazor.Core" Version="23.1.40" />
+    <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="23.1.40" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\AGUtility\AGUtility.csproj" />
+    <ProjectReference Include="..\CRM\Shared\CRM.Shared.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="AGSearch.razor" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="AGSearch.razor" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <None Include="Searching\AGSearch.razor" />
+  </ItemGroup>
+
+</Project>

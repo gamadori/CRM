@@ -1,0 +1,27 @@
+﻿@page
+@model ConfirmEmailModel
+@{
+    Layout = "_LayoutIdentity";
+    ViewData["Title"] = "Email Confermata";
+}
+
+@if ((bool?)ViewData["Status"] == true)
+{
+<div class="alert alert-success" role="alert">
+    <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Success:"><use xlink:href="#check-circle-fill" /></svg>
+    <h4 class="alert-heading">@ViewData["Title"]</h4>
+    <p>@ViewData["StatusMessage"]</p>
+    <hr>
+    <p class="mb-0"></p>
+</div>
+}
+else
+{
+<div class="alert alert-danger" role="alert">
+    <svg class="bi flex-shrink-0 me-2" width="24" height="24" role="img" aria-label="Danger:"><use xlink:href="#exclamation-triangle-fill" /></svg>
+    <h4 class="alert-heading">Errore Conferma Email</h4>
+    <p>@ViewData["StatusMessage"]"</p>
+    <hr>
+    <p class="mb-0"></p>
+</div>
+}

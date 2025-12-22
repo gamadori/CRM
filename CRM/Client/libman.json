@@ -1,0 +1,20 @@
+{
+  "version": "1.0",
+  "defaultProvider": "unpkg",
+  "libraries": [
+    {
+      "library": "imgcheckbox@0.5.3",
+      "destination": "wwwroot/lib/imgcheckbox/"
+    },
+    {
+      "provider": "cdnjs",
+      "library": "bootstrap@5.1.0",
+      "destination": "wwwroot/lib/bootstrap/"
+    }
+    {
+      "provider": "unpkg",
+      "library": "three@0.160.0",
+      "destination": "wwwroot/lib/three/"
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+﻿@page "/Contacts"
+@page "/Contacts/Index"
+
+@using Radzen
+@using Radzen.Blazor
+@using BlazoringComponents.DropDownButton
+@* 
+<BlazorHeader Header="@Localize["Contacts"]" Visible="@(PageMode != PageHelper.PageModality.Dialog)"></BlazorHeader> *@
+
+
+@if (IdCompany == null)
+{
+    <BlazorBreadCrumb Model="@_breadCrumb"></BlazorBreadCrumb>
+}
+    
+
+@if (_contacts != null)
+{
+    <div class=row>
+        <div class="col-auto">
+            <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewItem"></BlazorButton>
+            
+        </div>
+        <div class="col">
+
+            <RadzenTextBox class="form-control m-2" @bind-Value="@_search" @oninput=@(args => FilterChanged(args?.Value?.ToString())) Placeholder="@Localize["Cerca..."]"></RadzenTextBox>
+
+        </div>
+    </div>
+
+    <RadzenDataGrid @ref="grdContacts" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_contacts" Responsive=true LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="@_filterMode"
+                    AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                    PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Contact" PagingSummaryFormat="@pagingSummaryFormat">
+        <Columns>
+            <RadzenDataGridColumn Context="item" TItem="Contact" Property="@nameof(Contact.Surname)" Title=@TranslateHelper.GetDisplayName(nameof(Contact.NameComplete), typeof(Contact)) FilterProperty="Surname">
+                <Template>
+                    <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OnClickName(item.Id)">@item.NameComplete</a>
+                </Template>
+            </RadzenDataGridColumn>
+           @* <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Surname)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Surname), typeof(Contact))  />
+            <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Name)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Name), typeof(Contact)) />*@
+            <RadzenDataGridColumn TItem="Contact" Property="Company.RagioneSociale" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.IdCompany), typeof(Contact)) />
+            <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Mobile)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Mobile), typeof(Contact)) />
+            <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Phone)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Phone), typeof(Contact)) />
+            <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Email)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Email), typeof(Contact)) />
+
+            <RadzenDataGridColumn TItem="Article" Property="Product.Name" Title="Prodotto" />
+            <RadzenDataGridColumn TItem="Article" Property="Company.RagioneSociale" Title="Ragione Sociale"/>
+
+            <RadzenDataGridColumn TItem="Article" Property="Year" Title="Anno"/>
+
+            @if (PageMode == PageHelper.PageModality.Visualization)
+            {
+                <RadzenDataGridColumn Context="item" TItem="Contact"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                    <Template Context="item">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
+                    </RadzenButton>
+                     <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" Click="@(args => Edit(item.Id))">
+                    </RadzenButton>
+                     <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" Click="@(args => Delete(item))">
+                    </RadzenButton>
+
+                                   
+                    </Template>
+                </RadzenDataGridColumn>
+            }
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}

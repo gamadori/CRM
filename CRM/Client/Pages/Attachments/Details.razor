@@ -1,0 +1,137 @@
+﻿@page "/Attachments/Details/{Id:int}"
+@page "/Attachments/{Id:int}"
+
+
+<div class="containerleft">
+ 
+    @if (_attachment == null)
+    {
+        @if (!_notFound)
+        {
+            <NotFound Text="Allegato non trovato. Probabilmente è stato eliminato"></NotFound>
+        }
+        else
+        {
+            <Waiting></Waiting>
+        }
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <!-- Nome Allegato -->
+                <div class="mb-3">
+                    <h6 class="text-dark fw-semibold mb-2 d-flex align-items-center">
+                        <span class="material-icons me-2 text-primary" style="font-size: 20px;">label</span>
+                        <DisplayName For="@(()=>_attachment.Name)" />
+                    </h6>
+                    <div class="p-3 bg-light rounded border-start border-primary border-4">
+                        <p class="mb-0 text-dark">@_attachment.Name</p>
+                    </div>
+                </div>
+
+                <!-- Descrizione -->
+                <div class="mb-3">
+                    <h6 class="text-dark fw-semibold mb-2 d-flex align-items-center">
+                        <span class="material-icons me-2 text-primary" style="font-size: 20px;">description</span>
+                        <DisplayName For="@(()=>_attachment.Description)" />
+                    </h6>
+                    <div class="p-3 bg-light rounded border-start border-primary border-4">
+                        @if (!string.IsNullOrWhiteSpace(_attachment.Description))
+                        {
+                            <p class="mb-0 text-dark">@_attachment.Description</p>
+                        }
+                        else
+                        {
+                            <p class="mb-0 text-muted fst-italic">Nessuna descrizione disponibile</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Files Section -->
+                <div class="mt-4">
+                    @if (_attachment.Files == null || !_attachment.Files.Any())
+                    {
+                        <div class="text-muted fst-italic">Nessun File</div>
+                    }
+                    else
+                    {
+                        @if (AnySelected())
+                        {
+                            <div class="mb-3 d-flex gap-2">
+                                <BlazorButton Template="TemplateButton.Delete" Text="Elimina Allegati" OnClick="PrepareDelete" />
+                                <BlazorButton Template="TemplateButton.Download" Label="true" OnClick="PrepareDownload" />
+                            </div>
+                        }
+                        
+                        <!-- Desktop: Grid view -->
+                        <div class="d-none d-md-block">
+                            <div class="row">
+                                @foreach (var file in _attachment.Files)
+                                {
+                                    <RedGFile Value="@file.ContentType" IdFile="@file.Id" ReadOnly="@ReadOnly" OnDelete="@OnDelete" OnDownload="@OnDownload" Selected="file.Selected" 
+                                                Name="@file.Name" Size="@file.Size" OnSelectedChanged="@((e)=>file.Selected = e)" />
+                                }
+                            </div>
+                        </div>
+                        
+                        <!-- Mobile: Carousel con swipe (Bootstrap) -->
+                        <div class="d-md-none">
+                            <div id="fileCarousel" class="carousel slide" data-bs-ride="false" data-bs-touch="true">
+                                <div class="carousel-indicators">
+                                    @for (int i = 0; i < _attachment.Files.Count; i++)
+                                    {
+                                        var index = i;
+                                        <button type="button" data-bs-target="#fileCarousel" data-bs-slide-to="@index" 
+                                                class="@(index == 0 ? "active" : "")" aria-current="@(index == 0 ? "true" : "false")" 
+                                                aria-label="File @(index + 1)"></button>
+                                    }
+                                </div>
+                                <div class="carousel-inner">
+                                    @{
+                                        var filesList = _attachment.Files.ToList();
+                                        for (int i = 0; i < filesList.Count; i++)
+                                        {
+                                            var file = filesList[i];
+                                            <div class="carousel-item @(i == 0 ? "active" : "")">
+                                                <div class="p-2">
+                                                    <RedGFile Value="@file.ContentType" IdFile="@file.Id" ReadOnly="@ReadOnly" OnDelete="@OnDelete" OnDownload="@OnDownload" Selected="file.Selected" 
+                                                                Name="@file.Name" Size="@file.Size" OnSelectedChanged="@((e)=>file.Selected = e)" />
+                                                    <div class="text-center text-muted mt-3">
+                                                        <small>@(i + 1) di @filesList.Count</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#fileCarousel" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Precedente</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#fileCarousel" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Successivo</span>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Footer con azioni -->
+            <div class="card-footer bg-light border-top py-3">
+                <div class="d-flex gap-2">
+                    <RedGButton RGButtonType="RGButtonType.Back" Click="Annulla" Text="Allegati" />
+                    @if (!ReadOnly)
+                    {
+                        <RedGButton RGButtonType="RGButtonType.Edit" Click="EditAttachment" Text="Modifica" />
+                        <RedGButton RGButtonType="RGButtonType.New" Click="AddFile" Text="Aggiungi File"></RedGButton>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <MsgBoxConfirm Id="dlgDelete" LabelBtnNo="No" LabelBtnYes="Yes" Header="@_messageHeader" Message="@_message" OnClick="OnClickOk"></MsgBoxConfirm>
+    }
+</div>

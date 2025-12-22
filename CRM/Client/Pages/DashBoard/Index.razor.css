@@ -1,0 +1,67 @@
+/* Dashboard (Index) scoped styles */
+
+.dashboard-page {
+    --dash-surface: rgba(255, 255, 255, 0.85);
+    --dash-border: rgba(0, 0, 0, 0.06);
+    --dash-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-hero {
+    background: radial-gradient(1200px 500px at 10% 0%, rgba(74, 144, 226, 0.18) 0%, rgba(74, 144, 226, 0.06) 35%, transparent 70%),
+        radial-gradient(900px 420px at 90% 20%, rgba(53, 122, 189, 0.16) 0%, rgba(53, 122, 189, 0.05) 35%, transparent 70%);
+    border: 1px solid var(--dash-border);
+    border-radius: 18px;
+    padding: 1.25rem 1.25rem;
+    box-shadow: var(--dash-shadow);
+}
+
+.dashboard-title {
+    letter-spacing: -0.02em;
+}
+
+.dashboard-subtitle {
+    margin-bottom: 0;
+}
+
+.dashboard-toolbar {
+    border: 1px solid var(--dash-border);
+    border-radius: 18px;
+    background: var(--dash-surface);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.06);
+}
+
+.dashboard-toolbar .btn {
+    border-radius: 12px;
+}
+
+.dashboard-toolbar .btn .material-icons {
+    line-height: 1;
+}
+
+.dashboard-card {
+    border-radius: 18px;
+}
+
+.dashboard-card .card-body {
+    padding: 1.35rem 1.35rem;
+}
+
+.dashboard-card .icon-box {
+    min-width: 60px;
+    min-height: 60px;
+}
+
+.dashboard-card p {
+    letter-spacing: 0.04em;
+}
+
+@media (min-width: 992px) {
+    .dashboard-hero {
+        padding: 1.6rem 1.75rem;
+    }
+
+    .dashboard-card .card-body {
+        padding: 1.6rem 1.6rem;
+    }
+}

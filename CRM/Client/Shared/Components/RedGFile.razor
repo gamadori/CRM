@@ -1,0 +1,168 @@
+﻿@using CRM.Shared.Helper
+@using Microsoft.Extensions.Localization
+
+
+@if (IdFile == null)
+{
+    <div><SpinnerCircle></SpinnerCircle></div>
+    return;
+}
+
+<div class="col-md-3">
+    <div class="card m-3 shadow h-100 py-2">
+        <div class="row g-0">
+            <div class="col">
+                
+                <div class="p-3 py-4  bg-light text-center rounded">
+                    <span class="material-icons" style="font-size:32px;color:#1976d2;">
+                        @_icon
+                    </span>
+                </div>
+                
+            </div>
+            <div class="col-md-8">
+                <div class="card-body">
+                    <span class="card-text"><small>@Name</small></span>
+                    <p class="card-text"><small class="text-muted">@_size</small></p>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-transparent">
+           
+            <RedGButton class="mx-1" RGButtonType="RGButtonType.Download" Text="" Click="@OnClickDownload"></RedGButton>
+            <RedGButton class="mx-1" RGButtonType="RGButtonType.View" Text="" Click="@OnClickView"></RedGButton>
+            @if (!ReadOnly)
+            {
+                <RedGButton class="mx-1" RGButtonType="RGButtonType.Delete" Click="@OnClickDelete"></RedGButton>
+            }
+        </div>
+    </div>
+    
+</div>
+
+@code
+{
+    [Inject]
+    DialogService DialogService { get; set; }
+
+    [Inject]
+    IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
+
+    [Inject]
+    NavigationManager NavigationManager { get; set; }   
+
+    [Parameter]
+    public string Value { get; set; }
+
+    [Parameter]
+    public int? IdFile { get; set; } = null;
+
+    [Parameter]
+    public string Name { get; set; }
+
+    [Parameter]
+    public bool Selected { get; set; }
+
+    [Parameter]
+    public double Size { get; set; }
+
+    [Parameter]
+    public bool ReadOnly { get; set; } = false;
+
+
+    [Parameter]
+    public EventCallback<bool> OnSelectedChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<int?> OnDownload { get; set; }
+
+    [Parameter]
+    public EventCallback<int?> OnDelete { get; set; }
+
+    private string _icon;
+
+    private string _size;
+
+    private FileTypes _fileTypes;
+
+    protected void CheckBoxOnClick()
+    {
+        Selected = !Selected;
+        StateHasChanged();
+        OnSelectedChanged.InvokeAsync(Selected);
+    }
+
+    protected void OnClickDelete()
+    {
+        OnDelete.InvokeAsync(IdFile);
+    }
+
+    protected void OnClickDownload()
+    {
+        OnDownload.InvokeAsync(IdFile);
+    }
+
+    protected async Task OnClickView()
+    {
+        
+        // var returnUrl = Uri.EscapeDataString(NavigationManager.Uri);
+
+        // NavigationManager.NavigateTo($"/DxfViewer/Viewer/{IdFile}?returnUrl={returnUrl}");
+
+        var id = await DialogService.OpenSideAsync<CRM.Client.Pages.DxfViewer.Viewer>(Localize["Preview Documento"], new Dictionary<string, object>() { { "Id", IdFile } },
+                new SideDialogOptions { Position = DialogPosition.Top, ShowMask = false, Height = "100vh" });
+
+
+        
+        // DialogService.OpenAsync<CRM.Client.Pages.DxfViewer.Viewer>("View File", new Dictionary<string, object>() { { "Id", IdFile } },
+        //     new DialogOptions() { Width = "800px", Height = "600px", Resizable = true, Draggable = true });
+    }
+
+    protected override void OnParametersSet()
+    {
+        switch (Value.ToLower())
+        {
+            case ".pdf":
+                _icon = "picture_as_pdf";
+                _fileTypes = FileTypes.Document;
+                break;
+
+            case ".zip":
+                _icon = "folder_zip";
+                _fileTypes = FileTypes.Zip;
+                break;
+            case ".docx":
+            case ".doc":
+                _icon = "description";
+                _fileTypes = FileTypes.Document;
+                break;
+            case ".dxf":
+                _icon = "architecture";
+                _fileTypes = FileTypes.CAD;
+                break;
+            case ".xlsx":
+            case ".xls":
+                _icon = "grid_on";
+                _fileTypes = FileTypes.Spreadsheet;
+                break;
+            case ".jpg":
+            case ".png":
+            case ".jpeg":
+            case ".gif":
+            case ".bmp":
+            case ".tiff":
+            case ".svg":
+            
+                _fileTypes = FileTypes.Image;
+                _icon = "image";
+            break;
+            default:
+                _icon = "article";
+                _fileTypes = FileTypes.Other;
+                break;
+        }
+
+        _size = FileHelper.FormatToHumanReadableFileSize(Size);
+
+    }
+}

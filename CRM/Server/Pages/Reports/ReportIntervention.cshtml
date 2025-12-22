@@ -1,0 +1,128 @@
+﻿@page 
+
+
+@using CRM.Server.Services
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<CRM.Server.Pages.Reports.ReportInterventionModel> _localize
+@inject TranslateService _translate;
+
+@model CRM.Server.Pages.Reports.ReportInterventionModel
+@{
+    Layout = "~/Pages/Shared/_LayoutReport.cshtml";
+}
+@{
+
+}
+P: @_localize["prova"]
+<br />
+t: @await _translate.GetTxtAsync(1, "report", "header")
+<div>
+    <h4 class="text-center">Verbale di Intervento</h4>
+    <div class="row">
+        <div class="col-4">
+            <small>Cliente</small>
+        </div>
+        <div class="col-8">
+            <p>
+                    @Model.TicketIntervention.Ticket.Company.RagioneSociale<br />
+                    @Model.Company.FormatIndirizzo<br />
+                    @Model.Company.Email<br />
+                    @Model.Company.Web<br />
+                    VAT Id: @Model.Company.PIva<br />
+            </p>
+        </div>
+        
+    </div>   
+    <hr />
+    <p>Il nostro Tecnico, Sig. @Model.TicketIntervention.User.NameComplete, è intervenuto presso la vostra Sede per</p>
+    <div class="row">
+        @foreach (var row in @Model.ListInterventionTypes)
+        {
+            <div class="col-2"></div>
+            @foreach (var item in row)
+            {
+                <div class="col-2">
+                    <div class="form-check">
+                        <input asp-for="@item.Value" class="form-check-input" />
+                    <label class="form-check-label" for="flexCheckDefault">
+                        @item.Key
+                    </label>
+                    </div>
+                </div>
+            }
+            <div class="col-2"></div>
+        }
+    </div>
+    
+    <h6 class="text-center">Macchine/Dispositivi</h6>
+    <div class="row">
+        <div class="col-4 text-center">
+            <input asp-for="Product.Selected" class="form-check-input" />
+            
+        </div>
+        <div class="col-8">
+            @($"S/N: {Model.Product.SerialNumber} Year: {Model.Product.Year}")
+        </div>
+    </div>
+    <div>
+        <p>Descrizione dell'Intervento</p>
+        <div class="border">
+            <div class="row">
+                <div class="col-7">Servizio iniziato alle</div><div class="col-5">@Model.TicketIntervention.StartDateTime.ToString("g")</div>
+            </div>
+            <div class="row">
+                <div class="col-7">Servizio terminato alle</div><div class="col-5">@Model.TicketIntervention.EndDateTime.ToString("g")</div>
+            </div>
+            <div class="row">
+                <div class="col-12 m-1">
+                    <label for="text-content">Attività svolte</label>
+                    <p>
+                        <pre>@Model.TicketIntervention.Activities</pre>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <p>
+        Al termine dell’intervento, il cliente dichiara:<br />
+    1.	Che le funzioni delle macchine/dispositivi sono tutte operative;<br />
+    2.	Che il funzionamento delle stesse è regolare;<br/>
+    3.	Che le protezioni di sicurezza sono operative;<br />
+    4.	Che in vista di quanto sopra evidenziato, nulla osta al saldo di quanto dovuto secondo gli accordi presi.<br />
+    </p>
+
+    <h6 class="text-center">Parti Sostituite e/o Montate</h6>
+    <div class="border">
+        @if (Model.TicketIntervention.MountedParts != null && Model.TicketIntervention.MountedParts.Trim().Length > 0)
+        {
+            <p style="white-space: pre-line;">@Model.TicketIntervention.MountedParts</p>
+        }
+        else
+        {
+            <p>Nessuna</p>
+        }
+    </div>
+
+
+    <h6 class="text-center">Note</h6>
+    <div class="border">
+        @if (Model.TicketIntervention.Note != null && Model.TicketIntervention.Note.Trim().Length > 0)
+        {
+            <p style="white-space: pre-line;">@Model.TicketIntervention.Note</p>
+        }
+        else
+        {
+            <p>Nessuna.</p>
+        }
+    </div>
+
+    <div class="row">
+        <div class="col-6 text-center">
+            @($"Accettato il {DateTime.Today.ToString("d")}")
+        </div>
+        <div class="col-6 text-center">
+            <small>Firma</small>
+        </div>
+    </div>
+</div>

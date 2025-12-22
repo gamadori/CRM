@@ -1,0 +1,50 @@
+﻿@using BlazoringComponents.Scheduler;
+@using Models
+@using Radzen
+@using Radzen.Blazor
+
+@if (_ticket != null)
+{
+<BlazorHeader Header="@_header"></BlazorHeader>
+
+    @*<div class="row">
+        <div class="col p-4">
+            <CascadingValue Value="_maxNumMonthlyTicket" TValue="int" Name="MaxNumDaylyTicket">
+                <BlazoringComponents.Scheduler.AGScheduler @ref="_schedulerTickets" TItem="TicketSchedulerViewModel" @bind-DateCurrent="@UserDate.Date"
+                                                           CurrentView="BlazoringComponents.Scheduler.SchedulerViews.Week"
+                                                           Loader="LoadTickets" DateProperty="Date" TimeProperty="Time" CompanyProperty="Company" UserProperty="User" BackColorProperty="BackColor"
+                                                           DescriptionProperty="Description" DateLocked=@_dateLocked>
+
+                    <Filter>
+
+                        <div class="form-floating">
+
+                            <RadzenDropDownDataGrid class="form-control" @bind-value="@UserDate.IdUser" TValue="string" AllowFiltering="true" AllowClear="true" Change="OnChangeIdUser"
+                                                    Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id">
+                                <Columns>
+                                    <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
+                                    <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
+
+                                </Columns>
+                            </RadzenDropDownDataGrid>
+
+                            <label>@Localize["User"]</label>
+
+                        </div>
+                    </Filter>
+
+                </BlazoringComponents.Scheduler.AGScheduler>
+            </CascadingValue>
+        </div>
+    </div>*@
+    <Scheduler @bind-DateCurrent=@Date @bind-IdUserAssigned=@IdUser ViewMode=@SchedulerViewMode.Calendar IdTicket=@IdTicket IdTicketType=@IdTicketType ></Scheduler>
+    <div class="mb-3">
+        <BlazorButton Template="TemplateButton.Submit" Type=BtnType.Button Text="@Localize["OK"]" OnClick="HandleValidSubmit" />
+        <BlazorButton Template="TemplateButton.Cancel" OnClick="Cancel" Text=@Localize["Cancel"] />
+        
+    </div>
+}
+else
+{
+    <Waiting></Waiting>
+}

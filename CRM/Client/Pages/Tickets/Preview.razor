@@ -1,0 +1,92 @@
+﻿@page "/Tickets/Preview/{Id:int}"
+
+<div class="container">
+
+    @if (_ticket == null)
+    {
+        <Waiting></Waiting>
+    }
+    else
+    {
+       @* <BlazorHeader Header="@($"{Localize["Ticket #"]} {_ticket.Id}")"></BlazorHeader>
+*@
+    
+        <div class="row rounded-3 bg-light">
+            <div class="co">
+
+                <div class="row g-3">
+                    <div class="alert alert-warning" role="alert">
+                        <h4 class="alert-heading">Descrizione</h4>
+                         <p class="note-report">@_ticket.Description</p>  
+                    </div>
+
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th scope="col"></th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.State)" /></th>
+                                <td style="background-color:@_ticket.StateColor"><span style="mix-blend-mode: difference;color:white">@_ticket.StateDesc</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.DateOpened)" /></th>
+                                <td>@_ticket.DateOpened.ToString("G")</td>
+
+                            </tr>
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.Company)" /></th>
+                                <td><span>@_ticket.Company.RagioneSociale</span></td>
+
+                            </tr>
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.IdType)" /></th>
+                                <td><span>@_ticket.TicketType.Desc</span></td>
+                            </tr>
+
+                            @if (_ticket.TicketType.Date != (int)PropertyStates.No)
+                            {
+                                <tr>
+                                    <th scope="row"><DisplayName For="@(() => _ticket.Date)" /></th>
+                                    <td><span>@_ticket.Date?.ToShortDateString()</span></td>
+                                </tr>
+
+                                <tr>
+                                    <th scope="row"><DisplayName For="@(() => _ticket.DateEnd)" /></th>
+                                    <td><span>@_ticket.DateEnd?.ToShortTimeString()</span></td>
+                                </tr>
+
+                                <tr>
+                                    <th scope="row"><DisplayName For="@(() => _ticket.Date)" /></th>
+                                    <td><span>@_ticket.Date?.ToShortDateString()</span></td>
+                                </tr>
+                            }
+                            @if (_ticket.TicketType.IdArticolo != (int)PropertyStates.No)
+                            {
+                                <tr>
+                                    <th scope="row"><DisplayName For="@(() => _ticket.IdArticle)" /></th>
+                                    <td><span>@_ticket.Article?.NameComplete</span></td>
+                                </tr>
+
+
+                            }
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.IdUserOpened)" /></th>
+                                <td><span>@_userOpened?.NameComplete</span></td>
+                            </tr>
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _ticket.IdUserAssigned)" /></th>
+                                <td><span>@_userAssigned?.NameComplete</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+               
+                </div>
+            </div>
+        </div>
+    }
+</div>

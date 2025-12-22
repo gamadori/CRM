@@ -1,0 +1,65 @@
+﻿@page "/ProductAccTypes"
+@page "/ProductAccTypes/Index"
+
+
+@using CRM.Shared.Helper
+@using CRM.Client.Shared.Filters
+
+
+
+<BlazorHeader Header="@_header" Visible="@(PageMode != PageHelper.PageModality.Dialog)"></BlazorHeader>
+
+
+
+
+@if (_prodTypeAccs != null)
+{
+
+    <BlazorBreadCrumb Model=@_bread Visible=@(PageMode != PageHelper.PageModality.Dialog && BreadCrumbVisible)></BlazorBreadCrumb>
+    
+    
+    <div class=row>
+        <div class="col">
+            <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewItem"></BlazorButton>
+        
+        </div>
+    </div>
+
+    <RadzenDataGrid @ref="_grdProductTypeAccType" Responsive=true IsLoading="@_isLoading" Count="@_prodTypeAccs.Items.Count" Data="@_prodTypeAccs.Items" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode=@_filterMode
+                AllowSorting="true" AllowFiltering="true" AllowPaging="true" 
+        PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ProductAccessoryTypeModel" EmptyText=@Localize["No Accessory"]>
+        <Columns>
+
+
+            <RadzenDataGridColumn Context="item" TItem="ProductAccessoryTypeModel" Title="@TranslateHelper.GetDisplayName(nameof(ProductAccessoryType.Name), typeof(ProductAccessoryType))" Property="@nameof(ProductAccessoryTypeModel.Name)" FilterProperty="Language">
+                <Template>
+                    <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OnClickName(item?.Id)">@item?.Name</a>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="ProductAccessoryTypeModel" Property=@nameof(ProductAccessoryTypeModel.ProdName) Title="@TranslateHelper.GetDisplayName(nameof(ProductAccessoryType.IdProduct), typeof(ProductAccessoryType))" />
+            <RadzenDataGridColumn TItem="ProductAccessoryTypeModel" Property=@nameof(ProductAccessoryTypeModel.AccTypeName) Title="@TranslateHelper.GetDisplayName(nameof(ProductAccessoryType.IdAccessoryType), typeof(ProductAccessoryType))" />
+            
+            <RadzenDataGridColumn Context="item" TItem="ProductAccessoryTypeModel" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                <Template Context="item">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" title="Dettagli"  Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
+                    </RadzenButton>
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" title="Edit" Visible=@_user.ArticlePermits.Edit() Click="@(args => Edit(item.Id))">
+                    </RadzenButton>
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" title="Elimina" Visible=@_user.ArticlePermits.Delete() Click="@(args => Delete(item.Id))">
+                    </RadzenButton>
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Warning" Icon="translate" Class="m-1" Click="@(args => LanguageRow(item.Id))" @onclick:stopPropagation="true">
+                    </RadzenButton>
+                </Template>
+           
+            </RadzenDataGridColumn>
+       
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}
+
+    
+    

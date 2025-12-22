@@ -1,0 +1,49 @@
+﻿
+@page "/LogEvents"
+@page "/LogEvents/Index"
+
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor
+
+<h3>Log e Eventi</h3>
+<hr />
+<div class="btn-toolbar" role="toolbar" aria-label="Comandi">
+    <div class="btn-group mr-2" role="group" aria-label="First group">
+        <BlazorButton Template="TemplateButton.New" OnClick="NewItem"></BlazorButton>
+    </div>
+
+</div>
+<SfGrid TValue="LogEvent" AllowPaging="true" AllowSorting="true" AllowFiltering="true">
+
+    <GridEvents OnActionBegin="ActionBegin" CommandClicked="CommandClickHandler" TValue="LogEvent"></GridEvents>
+    <SfDataManager Url="@ConstHelper.LogEventsPath" Adaptor="Adaptors.WebApiAdaptor"></SfDataManager>
+    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
+    <GridPageSettings PageSize="10"></GridPageSettings>
+
+    <GridColumns>
+
+        <GridColumn Field=@nameof(LogEvent.DateEvent) HeaderText="Data Evento"></GridColumn>
+        <GridColumn Field=@nameof(LogEvent.Module) HeaderText="Modulo"></GridColumn>
+        <GridColumn Field=@nameof(LogEvent.Subroutine) HeaderText="Funzione"></GridColumn>
+        <GridColumn Field=@nameof(LogEvent.User) HeaderText="User"></GridColumn>
+        <GridColumn Field=@nameof(LogEvent.EventType) HeaderText="Tipo"></GridColumn>
+        <GridColumn HeaderText="Navigation" Width="180">
+            <GridCommandColumns>
+                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss="e-icons e-edit", CssClass="e-flat" })"></GridCommandColumn>
+                <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss="e-icons e-delete", CssClass="e-flat" })"></GridCommandColumn>
+
+                <GridCommandColumn Type="CommandButtonType.None"
+                                   ButtonOption="@(new CommandButtonOptions() { IconCss="e-icons e-details", CssClass = "e-flat"})"
+                                   Title="Dettagli" ID="details"></GridCommandColumn>
+
+                
+
+               
+
+
+            </GridCommandColumns>
+        </GridColumn>
+    </GridColumns>
+</SfGrid>
+<MsgBoxConfirm Id="dlgDelete" LabelBtnNo="No" LabelBtnYes="Yes" Header="Eliminazione del Progetto" Message="@_messageDelete" OnClick="Delete"></MsgBoxConfirm>

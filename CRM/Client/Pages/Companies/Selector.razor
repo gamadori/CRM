@@ -1,0 +1,51 @@
+﻿
+
+@using Radzen
+@using Radzen.Blazor
+
+<div class="row">
+                
+    <div class="col-7">
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" value="@_filter.RagioneSociale" @oninput="@OnChangeRagioneSocialeFilter" id="searchRagioneSociale" placeholder="@Localize["Ragione Sociale"]">
+            <label for="searchRagioneSociale">@Localize["Ragione Sociale"]</label>
+        </div>
+    </div>
+    <div class="col">
+        <div class="form-floating mb-3">
+            <input type="text" class="form-control" id="searchNazione" value="@_filter.Stato" @oninput="@OnChangeStatoFilter" placeholder="@Localize["Nazione"]">
+            <label for="searchNazione">@Localize["Nazione"]</label>
+        </div>
+    </div>
+</div>
+
+@if (_companies != null)
+{
+    <RadzenDataGrid @ref="grdCompanies" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_companies" Responsive=true LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
+                    AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                    PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Company">
+    <Columns>
+        <RadzenDataGridColumn TItem="Company" Property="@nameof(Company.RagioneSociale)" Title="@Localize["BusinessName"]" Width="50%"  />
+       
+        <RadzenDataGridColumn TItem="Company" Property="@nameof(Company.Citta)" Title="@Localize["City"]" Width="20%" />
+        <RadzenDataGridColumn TItem="Company" Property="@nameof(Company.Stato)" Title="@Localize["Country"]" Width="20%"/>
+
+
+
+        <RadzenDataGridColumn Context="item" TItem="Company"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+            <Template Context="item">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="arrow_forward_ios" Size="Radzen.ButtonSize.Medium" Click="@(args => SelectCompany(item.Id))">
+                    </RadzenButton>
+                    
+                    
+                                   
+            </Template>
+        </RadzenDataGridColumn>
+       
+    </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}

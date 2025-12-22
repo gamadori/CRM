@@ -1,0 +1,64 @@
+﻿@using CRM.Client.Services
+@using CRM.Shared.Helper
+@using Radzen.Blazor
+@inject HttpClient HttpClient
+
+@* @if (_user != null)
+{
+ *@    
+ <div class="user-avatar d-inline-flex align-items-center">
+    <RedGAvatar></RedGAvatar>
+ </div>
+    @* @if (_user.Photo != null)
+    {
+        <div class="e-avatar @_cssAvatar e-avatar-circle image"><img src=@_user.Photo alt="avatar" /></div>
+    }
+    else
+    {
+
+        <span class="e-avatar @_cssAvatar e-avatar-circle green">@AvatarsHelper.AvatarTxt(_user.Surname, _user.Name)</span>
+    } *@
+@* }
+ *@
+@* @code {
+    [Parameter]
+    public string? IdUser { get; set; } = null;
+
+    [Parameter]
+    public bool Small { get; set; } = false;
+
+    private UserModel _user;
+
+    private string _cssAvatar = "e-avatar-large";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+        await base.OnParametersSetAsync();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+
+            _user = await HttpClient.GetFromJsonAsync<UserModel>($"{ConstHelper.UsersPath}/Profile/{IdUser}");
+
+            if (Small)
+                _cssAvatar = "e-avatar-small";
+            else
+                _cssAvatar = "e-avatar-large";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+}
+ *@

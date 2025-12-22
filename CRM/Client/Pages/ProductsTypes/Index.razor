@@ -1,0 +1,51 @@
+﻿
+@page "/Settings/ProductsTypes"
+@page "/Settings/ProductsTypes/Index"
+
+@using BlazoringComponents.DropDownButton
+@using Radzen
+@using Radzen.Blazor
+
+
+<BlazorHeader Header="@Localize["Tipi Prodotti"]"></BlazorHeader>
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+
+
+<div class=row>
+    <div class="col">
+        <BlazorButton Template="TemplateButton.New" Text="Nuovo" OnClick="NewItem"></BlazorButton>
+        <DropDownBtn Text="@Localize["Utility"]" CssClass="btn-light" IconMaterial="settings">
+            <DropDownBrnItem Text="@Localize["CSV Import"]" IconMaterial="folder_zip" OnClickEvent="ImportData" />
+        </DropDownBtn>
+    </div>
+</div>
+
+@if (_productTypes != null)
+{
+    <RadzenDataGrid @ref="grdItems" Responsive=true IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_productTypes" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
+                    AllowSorting="true" AllowFiltering="true" AllowPaging="true" PageSize=@_pageSize PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ProductType" PagingSummaryFormat=@_pagingSummaryFormat>
+        <Columns>
+            <RadzenDataGridColumn TItem="ProductType" Property="@nameof(ProductType.Name)" Title=@TranslateHelper.GetDisplayName(nameof(ProductType.Name), typeof(ProductType)) />
+
+            <RadzenDataGridColumn TItem="ProductType" Property="@nameof(ProductType.Description)" Title=@TranslateHelper.GetDisplayName(nameof(ProductType.Description), typeof(ProductType)) />
+
+            <RadzenDataGridColumn Context="item" TItem="ProductType" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+            <Template Context="item">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted"  Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
+                    </RadzenButton>
+                     <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" title="Edit" Click="@(args => Edit(item.Id))">
+                    </RadzenButton>
+                     <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" title="Elimina" Click="@(args => Delete(item))">
+                    </RadzenButton>
+                    
+                                   
+            </Template>
+        </RadzenDataGridColumn>
+       
+    </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}

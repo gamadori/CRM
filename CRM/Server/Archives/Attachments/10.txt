@@ -1,0 +1,6 @@
+
+Numero carta: 5246943237911478
+Data scadenza: 11.2023
+Circuito: Mastercard
+Codice CVV: 126
+Importo massimo: 150,00 €

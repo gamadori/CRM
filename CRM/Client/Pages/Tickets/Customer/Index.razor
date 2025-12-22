@@ -1,0 +1,47 @@
+﻿@page "/Tickets/Customer"
+@page "/Tickets/Customer/Index"
+@page "/Tickets/Customer/Index/{TypeSearch:int}"
+
+@*@layout MainLayoutCustomer*@
+
+@using Radzen
+@using Radzen.Blazor
+
+
+@if (_tickets != null)
+{
+    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
+
+    <BlazorHeader Header="@_header"></BlazorHeader>
+
+    <RadzenDataGrid @ref="grdTickets" IsLoading="@_isLoading" Count="@_tickets.MetaData.TotalCount" Data="@_tickets.Items" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced" 
+        AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                    PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Ticket" EmptyText="Nessun Ticket">
+    <Columns>
+        <RadzenDataGridColumn TItem="Ticket" Property="@nameof(Ticket.Numero)" Title="@Localize["Numero"]" />
+        <RadzenDataGridColumn TItem="Ticket" Property="@nameof(Ticket.DateOpened)" FormatString="{0:dd/MM/yyyy}" Title="@Localize["Data Apertura"]"  />
+       
+        <RadzenDataGridColumn TItem="Ticket" Property="Company?.RagioneSociale" Title="@Localize["Company"]" />
+        <RadzenDataGridColumn TItem="Ticket" Property="Product?.Product.Name" Title="@Localize["Prodotto"]" />
+        <RadzenDataGridColumn TItem="Ticket" Property="Product?.SerialNumber" Title="@Localize["Numero Seriale"]" />
+        <RadzenDataGridColumn TItem="Ticket" Property="@nameof(Ticket.StateDesc)" Title="@Localize["Stato"]" />
+        <RadzenDataGridColumn TItem="Ticket" Property="@nameof(Ticket.DateClosed)" FormatString="{0:d}" Title="@Localize["Data Chiusura"]" />
+
+        <RadzenDataGridColumn Context="item" TItem="Ticket"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+            <Template Context="item">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" title="Dettagli"  Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
+                    </RadzenButton>
+                                   
+            </Template>
+        </RadzenDataGridColumn>
+       
+    </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}
+
+    
+    

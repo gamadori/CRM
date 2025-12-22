@@ -1,0 +1,63 @@
+﻿
+@page "/Settings/InterventionTypes"
+@page "/Settings/InterventionTypes/Index"
+
+
+<BlazorHeader Header="@Localize["Tipi di Intervento"]"></BlazorHeader>
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+
+<div class=row>
+    <div class="col">
+        <RadzenButton Icon="add_circle_outline" style="margin-bottom: 10px" Text="@Localize["Nuovo Tipo"]" Click="@InsertRow" Disabled=@(_interventionType != null) />
+    </div>
+</div>
+
+<RadzenDataGrid @ref="_interventionGrid" AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true" Responsive=true EditMode="DataGridEditMode.Single" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                Data="@_interventions" TItem="InterventionType" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow">
+    <Columns>
+        <RadzenDataGridColumn TItem="InterventionType" Property="Id" Title="ID" Width="120px" />
+        <RadzenDataGridColumn TItem="InterventionType" Property="@nameof(InterventionType.Name)" Title="@Localize["Nome"]">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.Name" Style="width:100%; display: block" Name="Name" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="InterventionType" Property="@nameof(InterventionType.Description)" Title="@Localize["Description"]">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.Description" Style="width:100%; display: block" Name="Description" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        
+        <RadzenDataGridColumn TItem="InterventionType" Context="interventions" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="120px">
+            <Template Context="item">
+                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Class="m-1" Click="@(args => EditRow(item))" @onclick:stopPropagation="true">
+                </RadzenButton>
+            </Template>
+            <EditTemplate Context="item">
+                <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Primary" Class="m-1" Click="@((args) => SaveRow(item))">
+                </RadzenButton>
+                <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Class="m-1" Click="@((args) => CancelEdit(item))">
+                </RadzenButton>
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="InterventionType" Context="interventions" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="60px">
+            <Template Context="item">
+                <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium" Class="m-1" Click="@(args => DeleteRow(item))" @onclick:stopPropagation="true">
+                </RadzenButton>
+            </Template>
+            <EditTemplate Context="item">
+            </EditTemplate>
+            
+        </RadzenDataGridColumn>
+         <RadzenDataGridColumn TItem="InterventionType" Context="interventions" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="60px">
+            <Template Context="item">
+                <RadzenButton ButtonStyle="ButtonStyle.Warning" Icon="translate" Class="m-1" Click="@(args => LanguageRow(item))" @onclick:stopPropagation="true">
+                </RadzenButton>
+            </Template>
+            <EditTemplate Context="item">
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+
+    </Columns>
+</RadzenDataGrid>

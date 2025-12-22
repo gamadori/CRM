@@ -1,0 +1,80 @@
+﻿@page "/Settings/TicketTypes/Details/{Id:int}"
+<h3>Dettagli Tipo Ticket</h3>
+<hr />
+@if (_ticketType == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+
+    <dl class="row">
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_ticketType.Desc)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@_ticketType.Desc</span>
+        </dd>
+
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_ticketType.CustomerEnabled)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@_ticketType.CustomerEnabled</span>
+        </dd>
+
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_ticketType.Date)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.Date)</span>
+        </dd>
+
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_ticketType.Time)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.Time)</span>
+        </dd>
+
+         <dt class="col-sm-2">
+            <DisplayName For="@(()=>_ticketType.DateEnd)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.DateEnd)</span>
+        </dd>
+
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_ticketType.IdProdotto)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.IdProdotto)</span>
+        </dd>
+
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_ticketType.IdArticolo)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.IdArticolo)</span>
+        </dd>
+
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_ticketType.ExpiredDate)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.ExpiredDate)</span>
+        </dd>
+
+        <dt class="col-sm-2">
+            <DisplayName For="@(()=>_ticketType.Price)" />
+        </dt>
+        <dd class="col-sm-10">
+            <span>@_ticketType.Price</span>
+        </dd>
+    </dl>
+    <div>
+        <BlazorLink Href="/Settings/TicketTypes" Template="TemplateButton.Back" Text="Lista Tipi di Ticket" />
+        <BlazorButton OnClick="EditTicketType" Template="TemplateButton.Edit" Label="true" />
+    
+    </div>
+}

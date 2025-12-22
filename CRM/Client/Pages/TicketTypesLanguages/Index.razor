@@ -1,0 +1,73 @@
+﻿@page "/Settings/TicketTypesLanguages/{IdTicketType:int}"
+@page "/Settings/TicketTypesLanguages/Index/{IdTicketType:int}"
+
+<BlazorHeader Header="@Localize["Tipo di Ticket Traduzioni"]"></BlazorHeader>
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+
+@if (_ticketTypeLangs != null)
+{
+    <div class=row>
+        <div class="col">
+            <RadzenButton Icon="add_circle_outline" style="margin-bottom: 10px" Text="@Localize["Aggiungi Lingua"]" Click="@InsertRow" Disabled=@(_ticketTypeLang != null) />
+        </div>
+    </div>
+
+    <RadzenDataGrid @ref="_ticketTypeGrid" Responsive=true AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true" EditMode="DataGridEditMode.Single" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    Data="@_ticketTypeLangs" TItem="TicketTypeLanguage" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" IsLoading=@_isLoading>
+        <Columns>
+            <RadzenDataGridColumn TItem="TicketTypeLanguage" Property="Id" Title="ID" Width="120px" />
+        
+                <RadzenDataGridColumn TItem="TicketTypeLanguage" Property="Language.Name" Title="@Localize["Lingua"]" Width="220px">
+                <Template Context="item">
+                    @if (item.Language != null)
+                        {
+                            <RadzenImage Path="@(item.Language.Flag)" style="width: 32px; height: 32px; border-radius: 16px; margin-right: 6px;" />
+                            @item?.Language?.Name
+                        }
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenDropDown @bind-Value="item.IdLanguage" Data="@_languages" ValueProperty="Id"  Style="width:100%; display: block;">
+                        <Template>
+                            <RadzenImage Path="@((context as Language).Flag)" style="width: 20px; height: 20px; border-radius: 16px; margin-right: 6px;" />
+                             @((context as Language).Name)
+                        </Template>
+                    </RadzenDropDown>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="TicketTypeLanguage" Property="@nameof(TicketTypeLanguage.Name)" Title="@Localize["Nome"]">
+                <EditTemplate Context="item">
+                    <RadzenTextBox @bind-Value="item.Name" Style="width:100%; display: block" Name="Name" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+       
+        
+                <RadzenDataGridColumn TItem="TicketTypeLanguage" Context="ticketType" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="120px">
+                <Template Context="item">
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Class="m-1" Click="@(args => EditRow(item))" @onclick:stopPropagation="true">
+                    </RadzenButton>
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Primary" Class="m-1" Click="@((args) => SaveRow(item))">
+                    </RadzenButton>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Class="m-1" Click="@((args) => CancelEdit(item))">
+                    </RadzenButton>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="TicketTypeLanguage" Context="ticketType" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="60px">
+                <Template Context="item">
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium" Class="m-1" Click="@(args => DeleteRow(item))" @onclick:stopPropagation="true">
+                    </RadzenButton>
+                </Template>
+                <EditTemplate Context="order">
+               
+                </EditTemplate>
+            </RadzenDataGridColumn>
+        
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}

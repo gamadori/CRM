@@ -1,0 +1,87 @@
+﻿
+@page "/Companies"
+@page "/Companies/Index"
+
+@using BlazoringComponents.DropDownButton
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+
+
+@* <BlazorHeader Header="@_header" Visible="@(PageMode != PageHelper.PageModality.Dialog)"></BlazorHeader> *@
+<BlazorBreadCrumb Model="@_breadCrumb"></BlazorBreadCrumb>
+
+@if (_user != null && _user.CompanyPermits.Insert())
+{
+    <div class="row mb-3">
+        <div class="col-auto">
+
+            @if (IdReseller == null)
+            {
+                <BlazorButton Template="TemplateButton.New" OnClick="NewCompany" Label=true></BlazorButton>
+                @if (PageMode == PageHelper.PageModality.Visualization)
+                {
+                    <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                        <DropDownBtn Text="@Localize["Utility"]" CssClass="btn-light" IconMaterial="settings">
+                            <DropDownBrnItem Text="@Localize["CSV Import"]" IconMaterial="folder_zip" OnClickEvent="ImportData" />
+                        </DropDownBtn>
+                    </AuthorizeView>
+                }
+            }
+            else
+            {
+                <BtnCompanies OnGetCompany="OnGetCustomer" IdCompanyParent="@IdCompanyParent" Text=@Localize["Add Customer"]></BtnCompanies>
+            }
+
+        </div>
+        <div class="col">
+            
+            <RadzenTextBox class="form-control m-2" @bind-Value="@_search" @oninput=@(args => FilterChanged(args?.Value?.ToString())) Placeholder="@Localize["Cerca..."]"></RadzenTextBox>
+              
+        </div>
+    </div>
+}
+@if (_companies != null)
+{
+    
+
+    <RadzenDataGrid @ref="grdCompanies" IsLoading="@_isLoading" Count="@_paging.TotalCount" Responsive=true Data="@_companies" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode=@_filterMode
+                    AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                    PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Company">
+        <Columns>
+            <RadzenDataGridColumn Context="item" TItem="Company" Title="@Localize["BusinessName"]" Property="@nameof(Company.RagioneSociale)" FilterProperty="RagioneSociale">
+                <Template>
+                       <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OnClickName(item?.Id)">@item?.RagioneSociale</a>
+                </Template>
+            </RadzenDataGridColumn>
+       
+            <RadzenDataGridColumn TItem="Company" Property="@nameof(Company.PIva)" Title="@Localize["VAT"]" />
+            <RadzenDataGridColumn TItem="Company" Property="@nameof(Company.Telefono)" Title="@Localize["Phone"]" />
+            <RadzenDataGridColumn TItem="Company" Property="@nameof(Company.Citta)" Title="@Localize["City"]" />
+            <RadzenDataGridColumn TItem="Company" Property="@nameof(Company.Stato)" Title="@Localize["Country"]" />
+
+
+            @if (PageMode == PageHelper.PageModality.Visualization)
+            {
+                <RadzenDataGridColumn Context="item" TItem="Company"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                    <Template Context="item">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" title="Dettagli"  Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
+                    </RadzenButton>
+                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" title="Edit" Click="@(args => Edit(item.Id))">
+                    </RadzenButton>
+                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" title="Elimina" Click="@(async (args) => await Delete(item))">
+                    </RadzenButton>
+                    
+                                   
+                </Template>
+            </RadzenDataGridColumn>
+           }
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}
+
+

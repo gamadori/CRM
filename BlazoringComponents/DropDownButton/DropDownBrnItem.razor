@@ -1,0 +1,28 @@
+﻿<li>
+    <button class="dropdown-item" type="button" @onclick="OnClickEvent">
+
+        @if (IconMaterial != null && IconMaterial.Length > 0)
+        {
+            <i class="material-icons middle">@IconMaterial</i>
+        }
+        @if (Text != null && Text.Length > 0)
+        {
+            <span class="ps-2">@Text</span>
+        }
+    </button>
+</li>
+
+@code {
+   
+
+    [Parameter]
+    public string Text { get; set; }
+
+    [Parameter]
+    public string IconMaterial { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClickEvent { get; set; }
+    }
+
+    

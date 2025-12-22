@@ -1,0 +1,74 @@
+﻿@using CRM.Shared.Helper;
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using CRM.Client.Services
+@using Microsoft.Extensions.Localization
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@inject NavigationManager Navigation
+@inject SignOutSessionStateManager SignOutManager
+
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+@inject HttpClient HttpClient
+
+<AuthorizeView>
+    <Authorized>
+        <LanguageSelectorDb AutoSetting=@true />
+     
+        <button class="ms-2 nav-link btn btn-outline-light dropdown-toggle d-flex align-items-center justify-content-center"
+                type="button"
+                id="dropdownUser"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+            
+            <UserAvatar></UserAvatar>
+            
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="dropdownUser">
+            <li><button class="dropdown-item" @onclick=OnClick>@Localize["Il tuo profilo"]</button></li>
+            <li><button class="dropdown-item" @onclick="BeginSignOut">Log out</button></li>
+        </ul>
+
+         
+        
+      
+    </Authorized>
+    <NotAuthorized>
+        <a class="nav-link link-dark" href="authentication/register">Register</a>
+        <a class="nav-link link-dark" href="authentication/login">Log in</a>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code{
+    
+
+    private UserModel _user;
+
+    protected override async Task OnParametersSetAsync()
+    {
+
+        try
+        {
+          
+            _user = await HttpClient.GetFromJsonAsync<UserModel>($"{ConstHelper.UserSignedPath}/Profile");
+        }
+        catch
+        {
+
+        }
+
+    }
+
+
+    private async Task BeginSignOut(MouseEventArgs args)
+    {
+        await SignOutManager.SetSignOutState();
+        Navigation.NavigateTo("authentication/logout");
+    }
+
+    private void OnClick(MouseEventArgs item)
+    {
+        Navigation.NavigateTo("/Settings/Users/Profile");
+    }
+}

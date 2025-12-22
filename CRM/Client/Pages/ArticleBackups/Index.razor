@@ -1,0 +1,53 @@
+﻿@page "/ArticleBackups"
+@page "/ArticleBackups/Index"
+
+@using Radzen
+@using Radzen.Blazor
+@using BlazoringComponents.DropDownButton
+
+@* <BlazorHeader Header="@Localize["Article"]" Visible=@(PageMode != PageHelper.PageModality.Dialog)></BlazorHeader> *@
+
+
+    
+<div class=row>
+    <div class="col">
+        <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewItem"></BlazorButton>
+        
+        @if (_isMobile)
+        {
+            <Responsable @bind-Value=@_isResponsable></Responsable>
+        }
+    </div>
+</div>
+
+
+<RadzenDataGrid @ref="grdArticles" IsLoading="@_isLoading" Responsive=@_isResponsable Count="@_paging.TotalCount" Data="@_articleBackups" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode=@_filterMode
+                AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                PageSize="@_itemsPageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ArticleBackup" PagingSummaryFormat="@pagingSummaryFormat" ShowPagingSummary=true>
+    <Columns>
+
+
+        <RadzenDataGridColumn TItem="ArticleBackup" Property="TimeStamp" Title="@TranslateHelper.GetDisplayName(nameof(ArticleBackup.TimeStamp), typeof(ArticleBackup))" />
+        <RadzenDataGridColumn TItem="ArticleBackup" Property="@nameof(ArticleBackup.Description)" Title="@TranslateHelper.GetDisplayName(nameof(ArticleBackup.Description), typeof(ArticleBackup))" />
+           
+        @if (PageMode != PageHelper.PageModality.Dialog)
+        {
+            <RadzenDataGridColumn Context="item" TItem="ArticleBackup" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                <Template Context="item">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
+                    </RadzenButton>
+
+                    @if (ColVisible())
+                    {
+                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" Click="@(args => Edit(item.Id))">
+                        </RadzenButton>
+                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" Click="@(args => Delete(item))">
+                        </RadzenButton>
+                    }
+
+                </Template>
+            </RadzenDataGridColumn>
+        }
+    </Columns>
+</RadzenDataGrid>
+

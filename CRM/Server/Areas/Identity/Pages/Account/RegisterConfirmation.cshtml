@@ -1,0 +1,29 @@
+﻿@page
+@using Microsoft.Extensions.Localization
+@model RegisterConfirmationModel
+@inject IStringLocalizer<CRM.Server.Areas.Identity.Pages.Account.RegisterConfirmationModel> _localize
+
+@{
+    Layout = "_LayoutIdentity";
+    ViewData["Title"] = _localize["Conferma Registrazione"];
+}
+
+<h1>@ViewData["Title"]</h1>
+@{
+    if (@Model.DisplayConfirmAccountLink)
+    {
+        <p>
+            This app does not currently have a real email sender registered, see <a href="https://aka.ms/aspaccountconf">these docs</a> for how to configure a real email sender.
+            Normally this would be emailed: <a id="confirm-link" href="@Model.EmailConfirmationUrl">Click here to confirm your account</a>
+        </p>
+    }
+    else
+    {
+        <div class="alert alert-success" role="alert">
+            <h4 class="alert-heading">@_localize["Conferma Email"]</h4>
+            <p>@_localize["Controlla la tua casella di posta per confermare il tuo account"]</p>
+            <hr>
+            <p class="mb-0"></p>
+        </div>
+    }
+}

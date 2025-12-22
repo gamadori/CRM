@@ -1,0 +1,79 @@
+﻿@page "/CompanuContracts/Details/{Id:int}"
+@using CRM.Shared.Helper
+
+<BlazorHeader Header="@_header"></BlazorHeader>
+
+<div class="container m-3">
+    @if (_item == null)
+    {
+        <Waiting></Waiting>
+    }
+    else
+    {
+    
+        <div class="row rounded-3 bg-light">
+            <div class="row">
+
+                <div class="row g-3">
+                
+
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th scope="col"></th>
+                                <th scope="col"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _item.ContractName)" /></th>
+                                <td>@_item.ContractName</td>
+                            </tr>
+
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _item.DateFrom)" /></th>
+                                <td>@_item.DateFrom</td>
+                            </tr>
+
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _item.DateTo)" /></th>
+                                <td>@_item.DateTo</td>
+                            </tr>
+
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _item.Suspended)" /></th>
+                                <td>@_item.Suspended</td>
+                            </tr>
+
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _item.Active)" /></th>
+                                <td>@_item.Active</td>
+                            </tr>
+
+                            <tr>
+                                <th scope="row"><DisplayName For="@(() => _item.Price)" /></th>
+                                <td>@_item.Price</td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+                </div>    
+            </div>
+        </div>
+        
+         <div>
+                    
+        
+            <BlazorButton Template="TemplateButton.Back" Text="@Localize["Contracts List"]" OnClick="Annulla" />
+
+            @if (_item.Permits.Edit())
+            {
+                <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+            }
+        
+        
+        </div>
+    
+    }
+
+</div>

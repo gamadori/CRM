@@ -1,0 +1,58 @@
+﻿@using Microsoft.Extensions.Localization
+
+<div class="top-row ps-4 navbar navbar-dark align-content-center">
+    <a class="navbar-brand" href=""><img src="/img/logoCrm.png" height="30" /></a>
+    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</div>
+
+
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <ul class="nav flex-column">
+        <li class="nav-item px-2">
+            <NavLink class="nav-link" href="DashBoardClient" Match="NavLinkMatch.All">
+                <i class="material-icons">home</i><span class="px-2">@Localize["Home"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="Companies/Customer/Details" Match="NavLinkMatch.Prefix">
+                <i class="material-icons">domain</i><span class="px-2">@Localize["Azienda"]</span>
+            </NavLink>
+             <NavLink class="nav-link" href="Articles" Match="NavLinkMatch.Prefix">
+                <i class="material-icons">precision_manufacturing</i><span class="px-2">@Localize["Prodotti"]</span>
+            </NavLink>
+            <NavLink class="nav-link" href="Tickets" Match="NavLinkMatch.Prefix">
+                <i class="material-icons">support_agent</i><span class="px-2">@Localize["Tickets"]</span>
+            </NavLink>
+        
+            <NavLink class="nav-link align-bottom" href="About" Match=@NavLinkMatch.All>
+
+                <i class="material-icons">info</i><span class="px-3">@Localize["About"]</span>
+            </NavLink>
+
+        </li>
+    </ul>
+</div>
+
+@code {
+    [Inject]
+    IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
+
+    private bool collapseNavMenu = true;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+
+    private bool _hasPageName = true;
+
+
+   
+
+    private void ToggleNavMenu()
+    {
+        if (_hasPageName)
+            collapseNavMenu = !collapseNavMenu;
+    }
+
+
+}

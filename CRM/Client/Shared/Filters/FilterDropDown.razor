@@ -1,0 +1,30 @@
+﻿@typeparam TItem
+@typeparam TValue
+
+
+@if (Items != null)
+{
+    <div class="m-3">
+        <EditForm Model="@_filter">
+            <div class="m-3">
+                <div class="mb-3">
+
+                    <RadzenDropDownDataGrid class="form-control" @bind-Value="@_filter.Value" TValue="TValue" AllowFiltering="true" PageSize="@ConstHelper.PageSize" AllowClear="true"
+                                Data="@Items" Count="@Items.Count" TextProperty="@TextProperty" ValueProperty="@ValueProperty" Change="OnSelectedUserChange" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                   
+                </div>
+                <div class="mb-3">
+                    <RadzenButton Click="OnClickCancel" Text="Annulla" Icon="close" ButtonStyle="ButtonStyle.Secondary"></RadzenButton>
+                    <RadzenButton Click="OnClickOk" Text="Ok" Icon="check" Size="ButtonSize.Medium" ButtonStyle="ButtonStyle.Primary"></RadzenButton>
+                </div>
+            </div>
+
+        </EditForm>
+
+    </div>
+}
+ 
+else
+{
+    <SpinnerComponent></SpinnerComponent>
+}

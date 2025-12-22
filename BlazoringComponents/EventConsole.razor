@@ -1,0 +1,10 @@
+﻿<h3>@Text</h3>
+@code {
+    [Parameter]
+    public string Text { get; set; } = string.Empty;
+
+    public void Log(string message)
+    {
+        Text = message;
+    }
+}

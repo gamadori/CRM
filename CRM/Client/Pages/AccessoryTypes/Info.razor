@@ -1,0 +1,60 @@
+﻿@page "/Settings/AccessoryTypes/Info/{Id:int}"
+@page "/Settings/AccessoryTypes/{Id:int}"
+@page "/Settings/AccessoryTypes/{Id:int}/{SelectView:int}"
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+
+@if (_accessoryType == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+
+    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
+   
+    <RadzenSelectBar @bind-Value="_selectView" TValue="PageViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+        <Items>
+            <RadzenSelectBarItem Text="@Localize["Accessory Type"]" Value="PageViews.AccessoryType" />
+            <RadzenSelectBarItem Text="@Localize["Translations"]" Value="PageViews.Translate" />
+            <RadzenSelectBarItem Text="@Localize["Accessories"]" Value="PageViews.Accessory" />
+            
+        </Items>
+    </RadzenSelectBar>
+
+    @if (_selectView == PageViews.AccessoryType)
+    {
+        if (_partialView == PartialViews.Details)
+        {
+            <Details Id="@Id" OnClickEdit="EditAccessoryType" OnClickCancel="GotoIndex"></Details>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <Edit Id="@Id"  OnClickSave="(async () => await SaveAccessoryType())" OnClickCancel="CancelAccessoryType"></Edit>
+        }
+    }
+   
+    else if (_selectView == PageViews.Accessory)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Accessories.Index IdAccessoryType="@Id" OnClickEdit="AccessoryEdit" OnClickDetails="AccessoryDetails" ></CRM.Client.Pages.Accessories.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Accessories.Edit Id="@_idAccessory" IdAccessoryType="@Id" OnClickSave="AccessoriesIndex" OnClickCancel="AccessoriesIndex"></CRM.Client.Pages.Accessories.Edit>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Accessories.Details Id="@((int)_idAccessory)" OnClickEdit="AccessoryDetailsEdit" OnClickCancel="AccessoryCloseForm"></CRM.Client.Pages.Accessories.Details>
+        }
+    }
+    else if (_selectView == PageViews.Translate)
+    {
+        <CRM.Client.Pages.AccessoryTypeLangs.Index IdAccessoryType="Id"></CRM.Client.Pages.AccessoryTypeLangs.Index>
+
+    }
+
+
+}

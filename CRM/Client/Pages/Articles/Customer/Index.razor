@@ -1,0 +1,38 @@
+﻿@page "/Articles/Customer"
+@page "/Articles/Customer/Index"
+
+@using Radzen
+@using Radzen.Blazor
+@using BlazoringComponents.DropDownButton
+
+<BlazorHeader Header="@Localize["Article"]"></BlazorHeader>
+
+@if (_articles != null)
+{
+    <RadzenDataGrid @ref="grdArticles" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_articles.Items" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced" 
+        AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                    PageSize="@_articletPageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Article">
+    <Columns>
+        <RadzenDataGridColumn TItem="Article" Property="SerialNumber" Filterable="false" Title="Serial Numbert"  />
+       
+        <RadzenDataGridColumn TItem="Article" Property="Product.Name" Title="Prodotto" />
+        <RadzenDataGridColumn TItem="Article" Property="Company.RagioneSociale" Title="Ragione Sociale"/>
+
+        <RadzenDataGridColumn TItem="Article" Property="Year" Title="Anno"/>
+
+        <RadzenDataGridColumn Context="item" TItem="Article"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+            <Template Context="item">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
+                    </RadzenButton>
+                     
+                                   
+            </Template>
+        </RadzenDataGridColumn>
+       
+    </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}

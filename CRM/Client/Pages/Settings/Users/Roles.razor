@@ -1,0 +1,58 @@
+﻿@page "/Settings/Users/Roles/{Id}"
+<h3>Roles</h3>
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+<hr />
+<dl class="row">
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_user.Name)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_user.Name</span>
+    </dd>
+
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_user.Surname)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_user.Surname</span>
+    </dd>
+
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_user.Email)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_user.Email</span>
+    </dd>
+
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_user.PhoneNumber)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_user.PhoneNumber</span>
+    </dd>
+
+    <dt class="col-sm-2">
+        <DisplayName For="@(()=>_user.Company)" />
+    </dt>
+    <dd class="col-sm-10">
+        <span>@_user.Company</span>
+    </dd>
+</dl>
+<hr />
+<EditForm Model="@_roles" OnValidSubmit="HandleValidSubmit">
+    <div>
+        @foreach (var item in _roles)
+        {
+
+            <div class="form-check form-switch">
+                <input class="form-check-input" id="checkbox1" @bind="item.Selected" type="checkbox">
+                <label class="form-check-label" for="checkbox1">@item.RoleName</label>
+            </div>
+        }
+    </div>
+    <hr />
+    <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+    <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+</EditForm>
+

@@ -1,0 +1,192 @@
+﻿using CRM.Client.Helpers;
+using CRM.Client.Services;
+using CRM.Shared;
+using CRM.Shared.Helper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.Extensions.Localization;
+using Microsoft.JSInterop;
+using Radzen.Blazor;
+using Radzen;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
+using CRM.Shared.Resources.Models;
+using System.Threading;
+
+namespace CRM.Client.Pages.ProductsTypes
+{
+    [Authorize]
+    public partial class Index: ComponentBase
+    {
+
+        [Inject]
+        private NavigationManager NavigationManager { get; set; }
+
+        [Inject]
+        private IJSRuntime JSRuntime { get; set; }
+
+        [Inject]
+        IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
+
+        
+        [Inject]
+        IAGRestClientService RestClientService { get; set; }
+
+        [Inject]
+        DialogService DialogService { get; set; }
+
+        [Inject]
+        NotificationService NotificationService { get; set; }   
+
+        private IList<ProductType> _productTypes = null;
+
+
+        private PagingHeaderModel _paging = new PagingHeaderModel();
+
+        private ProductTypeFilter _filter = new ProductTypeFilter() { PageSize = 10, Skip = 0, Top = 10 };
+
+        private ProductType _productType;
+
+        private string _pagingSummaryFormat;
+
+        private int _pageSize = 10;
+
+        private bool _isLoading = false;
+
+        private RadzenDataGrid<ProductType> grdItems;
+
+        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+
+        protected override async Task OnInitializedAsync()
+        {
+            _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "/Settings" });
+            _bread.Add(new BreadcrumbModel() { Title = Localize["Tipo Prodotto"], Url = null });
+
+            _pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
+            await LoadData();
+
+        }
+
+        public async Task LoadData(LoadDataArgs args = null)
+        {
+            _isLoading = true;
+
+            try
+            {
+                await GetItems(args);
+            }
+
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, ex.Message, ex.InnerException.Message);
+            }
+            finally
+            {
+                if (_productTypes == null)
+                    _productTypes = Enumerable.Empty<ProductType>().ToList();
+
+
+            }
+
+        }
+
+
+
+
+
+        public async Task GetItems(LoadDataArgs args = null)
+        {
+            try
+            {
+
+
+
+                if (args != null)
+                {
+                    _filter.Skip = args?.Skip;
+                    _filter.Top = args?.Top;
+
+                    _filter.OrderBy = args?.OrderBy;
+                    _filter.Filter = args?.Filter;
+
+                }
+
+                PagingResponse<ProductType> pagingResponse = await RestClientService.Get<ProductType, ProductTypeFilter>(_filter, ConstHelper.ProductTypesPath); //await _serviceProductType.Get(_filter);
+
+                if (pagingResponse != null)
+                {
+                    _productTypes = pagingResponse.Items;
+                    _paging = pagingResponse.MetaData;
+                }
+                else
+                    NotificationService.Notify(NotificationSeverity.Error, Localize["Errore"], Localize["Errore durante il download dei dati"]);
+
+
+
+            }
+            catch (AccessTokenNotAvailableException exception)
+            {
+                exception.Redirect();
+            }
+            catch (HttpRequestException ex)
+            {
+
+                NotificationService.Notify(NotificationSeverity.Error, ex.Message, ex.InnerException.Message);
+
+            }
+
+            catch (Exception ex)
+            {
+                NotificationService.Notify(NotificationSeverity.Error, ex.Message, ex.InnerException.Message);
+
+            }
+            finally
+            {
+                _isLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+
+        protected void Details(int id)
+        {
+            NavigationManager.NavigateTo($"/Settings/ProductsTypes/Details/{id}");
+        }
+
+        protected void Edit(int id)
+        {
+            NavigationManager.NavigateTo($"/Settings/ProductsTypes/Edit/{id}");
+        }
+        protected void NewItem()
+        {
+            NavigationManager.NavigateTo("/Settings/ProductsTypes/Edit");
+        }
+
+        protected async Task Delete(ProductType item)
+        {
+            if (await DialogService.Confirm($"{Localize["Eliminare il Tipo Prodotto:"]} {item.Name}") == true)
+            {
+                await RestClientService.Delete<int>(item.Id, ConstHelper.ProductTypesPath);   // _serviceProductType.Delete(item.Id);
+
+                await LoadData();
+            }
+
+            
+        }
+
+       
+
+        protected void ImportData()
+        {
+            NavigationManager.NavigateTo($"/CSVSettings/CSVData/{CSVTable.Company.ToString()}");
+        }
+
+        
+       
+    }
+}

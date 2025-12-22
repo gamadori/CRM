@@ -1,0 +1,168 @@
+﻿@page "/Attachments/Edit"
+@page "/Attachments/Edit/{Id:int}"
+
+
+@using System.IO
+
+<style>
+    #uploadWithDragAndDrop {
+        left: 0;
+        --rz-upload-button-bar-background-color: transparent;
+        --rz-upload-button-bar-padding: 0;
+    }
+
+        #uploadWithDragAndDrop .rz-fileupload-buttonbar .rz-fileupload-choose {
+            width: 100%;
+            text-align: center;
+            font-size: 16px;
+            padding: 100px 0;
+        }
+
+        #uploadWithDragAndDrop .rz-fileupload-content {
+            display: none;
+        }
+
+    .file-list-card {
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+    }
+
+    .e-upload-actions {
+        display: none;
+    }
+</style>
+<div class="containerleft">
+    @if (Id != null)
+    {
+        <BlazorHeader>@Localize["Edit Attachment"]</BlazorHeader>
+    }
+    @if (_attachment == null)
+    {
+        <Waiting></Waiting>
+    }
+    else
+    {
+        @if (_errorMessage != null)
+        {
+        <div class="alert alert-danger" role="alert">
+           @_errorMessage
+        </div>
+        }
+        <EditForm Model="@_attachment" OnValidSubmit="HandleValidSubmit">
+            <RadzenStack Gap="1rem" class="mb-3">
+                <RadzenColumn Size="12" SizeSM="6">
+                    <RadzenStack>
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeSM="6">
+                                <RadzenStack>
+                                        <RedGTextBox @bind-Value="@_attachment.Name" For="@(() => _attachment.Name)" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeSM="6">
+                                <RadzenStack>
+                                    <RedGTextArea @bind-Value="@_attachment.Description" For="@(() => _attachment.Description)" Rows="3" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeSM="6">
+                                <RadzenStack Orientation="Orientation.Vertical">
+                                    <RadzenCard Variant="Variant.Outlined">
+                                        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Drag and drop files to upload</RadzenText>
+                                        <RadzenUpload id="uploadWithDragAndDrop" ChooseText="Drag and drop qui o click Selezionare Files" Change="OnChange"
+                                                      Auto="false" Multiple="true" InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "select file" } })"
+                                                      Style="width: 100%" />
+                                    </RadzenCard>
+                                    @if (_filesWithNames != null && _filesWithNames.Any())
+                                    {
+                                        <div class="mb-3">
+                                            <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3" class="mb-2">File selezionati</RadzenText>
+                                            @foreach (var fileItem in _filesWithNames)
+                                            {
+                                                <RadzenCard class="file-list-card">
+                                                    <div class="row align-items-center g-2">
+                                                        <div class="col-md-6">
+                                                            <RadzenTextBox @bind-Value="fileItem.NewName" Style="width: 100%" Placeholder="Nome file" />
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <RadzenText TextStyle="TextStyle.Body2">@fileItem.Extension</RadzenText>
+                                                        </div>
+                                                        <div class="col-md-2 text-end">
+                                                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                                                          Click="@(() => RemoveFile(fileItem))" />
+                                                        </div>
+                                                    </div>
+                                                </RadzenCard>
+                                            }
+                                        </div>
+                                    }
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenStack>
+            <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" />
+            <RedGButton RGButtonType="RGButtonType.Submit" />
+        </EditForm>
+        @* <EditForm Model="@_attachment" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="row">
+                <div class="col">
+                    <div class="mb-3">
+                        <DisplayName For="@(() => _attachment.Name)" />
+                        <input id="Codice" class="form-control" @bind-value="@_attachment.Name" />
+                        <ValidationMessage For="@(() => _attachment.Name)" />
+                    </div>
+                    <div class="mb-3">
+                        <DisplayName For="@(() => _attachment.Description)" />
+                        <input id="Descrizione" class="form-control" @bind-value="@_attachment.Description" />
+                        <ValidationMessage For="@(() => _attachment.Description)" />
+                    </div>
+                    <div class="mb-3">
+                        <RadzenCard Variant="Variant.Outlined">
+                            <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Drag and drop files to upload</RadzenText>
+                            <RadzenUpload id="uploadWithDragAndDrop" ChooseText="Drag and drop qui o click Selezionare Files" Change="OnChange"
+                                          Auto="false" Multiple="true" InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "select file" } })"
+                                          Style="width: 100%" />
+                        </RadzenCard>
+                    </div>
+
+                    @if (_filesWithNames != null && _filesWithNames.Any())
+                    {
+                        <div class="mb-3">
+                            <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3" class="mb-2">File selezionati</RadzenText>
+                            @foreach (var fileItem in _filesWithNames)
+                            {
+                                <RadzenCard class="file-list-card">
+                                    <div class="row align-items-center g-2">
+                                        <div class="col-md-6">
+                                            <RadzenTextBox @bind-Value="fileItem.NewName" Style="width: 100%" Placeholder="Nome file" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <RadzenText TextStyle="TextStyle.Body2">@fileItem.Extension</RadzenText>
+                                        </div>
+                                        <div class="col-md-2 text-end">
+                                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" 
+                                                          Click="@(() => RemoveFile(fileItem))" />
+                                        </div>
+                                    </div>
+                                </RadzenCard>
+                            }
+                        </div>
+                    }
+                
+                    <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save" Disabled="_waitingUpload" LabelWaiting="Upload..."> </BlazorButton>
+                    <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+                </div>
+            </div>
+            <div class=""></div>
+         </EditForm>*@
+    }
+</div>

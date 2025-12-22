@@ -1,0 +1,1202 @@
+﻿@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css");
+
+:root {
+    --light: 80;
+    /* the threshold at which colors are considered "light." Range: integers from 0 to 100,
+recommended 50 - 70 */
+    --threshold: 60;
+    
+}
+
+
+
+html, body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    
+    background-color: white;
+    font-size: 14px;
+   
+}
+
+a, .btn-link {
+    color: #0366d6;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #1b6ec2;
+    border-color: #1861ac;
+}
+
+.content {
+    padding-top: 1.1rem;
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+    
+}
+
+.invalid {
+    outline: 1px solid red;
+}
+
+.validation-message {
+    color: red;
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
+
+.loading-bar {
+    position: absolute;
+    top: calc(50% - 3px);
+    left: calc(50% - 250px);
+    width: 500px;
+    height: 6px;
+    background-color: white;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2)
+}
+
+.loading-bar::after {
+    content: '';
+    display: block;
+    width: 200px;
+    height: 100%;
+    background-color: #dc105a;
+    animation: progressbar-slide 1s infinite;
+    animation-timing-function: ease-in-out;
+}
+
+button.mat-button .mat-icon,
+a.mat-button .mat-icon,
+a.mat-raised-button .mat-icon,
+a.mat-flat-button .mat-icon,
+a.mat-stroked-button .mat-icon {
+    vertical-align: top;
+    font-size: 1.25em;
+}
+
+/* Rules for sizing the icon. */
+.material-icons.md-18 {
+    font-size: 18px;
+    vertical-align: middle;
+}
+
+.material-icons.md-24 {
+    font-size: 24px;
+    vertical-align: middle;
+}
+
+.material-icons.md-36 {
+    font-size: 36px;
+    vertical-align:  middle;
+}
+
+.material-icons.md-48 {
+    font-size: 48px;
+    vertical-align: middle;
+}
+
+
+.page-header {
+    /*background-color: #f7f7f7;*/
+    background-color:transparent;
+    border-bottom: 1px solid #d6d5d5;
+    justify-content: center;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    font-size: medium
+}
+
+/* Rules for using icons as black on a light background. */
+.material-icons.md-dark {
+    color: rgba(0, 0, 0, 0.54);
+}
+
+    .material-icons.md-dark.md-inactive {
+        color: rgba(0, 0, 0, 0.26);
+    }
+
+/* Rules for using icons as white on a dark background. */
+.material-icons.md-light {
+    color: rgba(255, 255, 255, 1);
+}
+
+.material-icons.md-light.md-inactive {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.material-icons.middle {
+    vertical-align: middle;
+}
+
+.material-icons.orange600 {
+    color: #FB8C00;
+}
+
+.material-icons.blue {
+    color: cornflowerblue;
+}
+
+.alert-custom {
+    background-color: rgba(255, 255, 255, 0.3)
+    color: #fff;
+}
+
+.icon-txt {
+    font-size: 10px;
+    text-align: center;
+}
+
+
+.holiday {
+    background-color: lightcoral;
+    color: dimgray;
+}
+
+.weekdays {
+    
+    background-color: #79a0e6;
+    color: darkgray;
+}
+
+.textDay
+{
+    font-size: small;
+
+}
+
+.e-details:before {
+    content: '\e79b';
+}
+
+.e-3DBar2:before {
+    content: '\e880';
+}
+
+
+.control-wrapper {
+    
+    width: 350px;
+    
+}
+
+@@media (max-width: 900px) {
+    .control-wrapper {
+        width: 300px;
+    }
+
+   
+}
+
+
+
+.rz-button-text {
+    font-size: smaller;
+    margin: 0px;
+    padding: 0px;
+}
+
+.column-width {
+    width: 75px;
+}
+
+.note-report {
+    white-space: pre-line;
+}
+
+.edocument-accordion-control {
+    width: 250px;
+    background-color: white;
+    /*    border-right: solid 4px #d1dbe7;*/
+    /*    margin-bottom: 10px;*/
+    overflow-y: auto;
+    margin-top: 0px;
+    top: 80px;
+    bottom: 10px;
+    position: absolute;
+    z-index: 2;
+}
+
+.edocument-accordion-content {
+    position: absolute;
+    top: 251px;
+    bottom: 50px;
+    left: 529px;
+    right: 20px;
+    z-index: 1;
+}
+
+.edocument-accordion-content-full {
+    position: absolute;
+    top: 251px;
+    bottom: 50px;
+    left: 275px;
+    right: 20px;
+    z-index: 1;
+}
+
+.sf-icon-ArrowheadRight {
+    font-family: 'ArrowheadRight' !important;
+    speak: none;
+    font-size: 22px;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding-left: 0px;
+}
+
+.sf-icon-ArrowheadRight::before {
+    content: "\e700";
+    font-size: 8px;
+}
+
+/* Style the list */
+ul.breadcrumb {
+  padding: 10px 16px;
+  list-style: none;
+  background-color: #eee;
+}
+
+/* Display list items side by side */
+ul.breadcrumb li {
+  display: inline;
+  font-size: 18px;
+}
+
+/* Add a slash symbol (/) before/behind each list item */
+ul.breadcrumb li+li:before {
+  padding: 8px;
+  color: black;
+  content: "/\00a0";
+}
+
+/* Add a color to all links inside the list */
+ul.breadcrumb li a {
+  color: #0275d8;
+  text-decoration: none;
+}
+
+/* Add a color on mouse-over */
+ul.breadcrumb li a:hover {
+  color: #01447e;
+  text-decoration: underline;
+}
+
+.avatar {
+    vertical-align: middle;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 3px solid black;
+    margin: 10px;
+}
+
+td {
+    vertical-align: middle;
+}
+
+
+.containerleft {
+    width: 100%;
+    padding-right: 15px;
+    padding-left: 15px;
+}
+
+@media (min-width: 576px) {
+    .containerleft {
+        width: 540px;
+    }
+}
+
+@media (min-width: 768px) {
+    .containerleft {
+        width: 720px;
+    }
+}
+
+@media (min-width: 992px) {
+    .containerleft {
+        width: 960px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .containerleft {
+        width: 1140px;
+    }
+}
+
+@media (max-width: 768px) {
+    .rz-datatable-reflow table,
+    .rz-datatable-reflow tbody,
+    .rz-datatable-reflow tr {
+        display: block;
+    }
+    html {
+        font-size: 12px;
+    }
+    
+    .rz-datatable-data td .rz-cell-data {
+        font-size: 11px;
+    }
+
+}
+
+/*#div-avatar {
+    display: flex;
+    width: 400px;
+    margin: 100px auto;
+    border-radius: 3px;
+    justify-content: center;
+}
+*/
+.e-avatar {
+    margin: 2px;
+}
+
+.e-avatar.green {
+    background-color: #87eb87;
+}
+
+.e-avatar.violet {
+    background-color: #ee82ee;
+}
+
+.e-avatar.blue {
+    background-color: #7171e4;
+}
+
+.e-avatar.red {
+    background-color: #d86e6e;
+}
+
+.e-avatar.rose {
+    background-color: #bc8f8f;
+}
+
+
+
+
+.label-floating {
+    color: #222e3c;
+    font-size: medium;
+}
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48
+}
+
+.bg-chat {
+    background-image: url('../img/chat-bg2.png');
+}
+
+.text-visible {
+    /* Any lightness value below the threshold will result in white, any above will result in black */
+    
+    mix-blend-mode: difference;
+    color: white;
+}
+
+pre {
+    font-size: 1em;
+    font-family: Arial, Times, serif;
+    white-space: pre-line;
+}
+
+.msg-chat {
+   /* max-height: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis !important;
+    word-break: break-all !important;
+    white-space: normal !important;*/
+}
+
+.pdf-box {
+    position: absolute;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    
+}
+
+.tooltip-box
+{
+    background-color: yellow;
+    color: dimgray;
+}
+
+.scheduler-day {
+    cursor: pointer;
+}
+
+.scheduler-day:hover {
+    text-decoration: underline;
+}
+
+.scheduler-day:active {
+    text-decoration: underline;
+}
+
+.scheduler-day label
+{
+    cursor: pointer;
+}
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48
+}
+
+.offcanvas {
+    bottom: initial;
+}
+
+
+.text-overlay {
+    background-color:gray;
+    opacity: .5;
+    color: white;
+}
+
+.quadrato {
+    width: 25px;
+    height: 25px;
+}
+
+.DayWork {
+    background-color:#b6cff5;
+    color: #131313;
+
+}
+
+.DayHoliday {
+    background-color: #fcbcbc;
+    color: #131313;
+
+}
+
+.Note {
+    background-color: #ffffcc;
+    border-left: 6px solid #ffeb3b;
+    min-height: 300px;
+    
+}
+
+
+.container-scheduler {
+    min-width: 800px;
+}
+
+pre {
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-radius: 5px;
+    overflow: auto;
+}
+
+.uploadWithDragAndDrop {
+    left: 0;
+    --rz-upload-button-bar-background-color: transparent;
+    --rz-upload-button-bar-padding: 0;
+}
+
+.uploadWithDragAndDrop .rz-fileupload-buttonbar .rz-fileupload-choose {
+    width: 100%;
+    text-align: center;
+    font-size: 16px;
+    padding: 100px 0;
+}
+
+.file-preview img {
+    max-width: 32px;
+    height: auto;
+}
+
+.avatar-circolare {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eee;
+    font-size: 1.5rem;
+    color: #555;
+}
+
+    .avatar-circolare img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+
+.lnk-text {
+    color: inherit;
+    text-decoration: none;
+}
+
+input[readonly] {
+    background-color: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+#dropdownUser .position-relative {
+    position: static !important;
+}
+
+#dropdownUser .stretched-link {
+    position: static !important;
+    pointer-events: none;
+}
+
+#dropdownUser .d-inline-flex {
+    margin: 0 auto;
+}
+
+/* File Carousel Mobile Styling */
+@media (max-width: 767px) {
+    #fileCarousel .carousel-control-prev,
+    #fileCarousel .carousel-control-next {
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    
+    #fileCarousel .carousel-control-prev {
+        left: 10px;
+    }
+    
+    #fileCarousel .carousel-control-next {
+        right: 10px;
+    }
+    
+    #fileCarousel .carousel-indicators {
+        margin-bottom: 0.5rem;
+    }
+    
+    #fileCarousel .carousel-indicators button {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin: 0 4px;
+    }
+}
+
+/* Dashboard Modern Styling */
+.dashboard-card {
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+    border-color: rgba(0, 0, 0, 0.05);
+}
+
+.icon-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 64px;
+    min-height: 64px;
+}
+
+.dashboard-card .card-body {
+    position: relative;
+}
+
+.dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.05), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.dashboard-card:hover::before {
+    opacity: 1;
+}
+
+/* ================================
+   🌓 DARK THEME STYLES
+   ================================ */
+
+/* Dark Theme Variables */
+body.dark-theme {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #3a3a3a;
+    --text-primary: #e4e4e4;
+    --text-secondary: #b0b0b0;
+    --border-color: #404040;
+    --card-bg: #2d2d2d;
+    --input-bg: #3a3a3a;
+    --hover-bg: #404040;
+}
+
+/* Base Elements */
+body.dark-theme {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .content {
+    background-color: var(--bg-primary);
+}
+
+/* Cards */
+body.dark-theme .card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .card-header {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .card-body {
+    color: var(--text-primary) !important;
+}
+
+/* Forms */
+body.dark-theme .form-control,
+body.dark-theme .form-select {
+    background-color: var(--input-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .form-control:focus,
+body.dark-theme .form-select:focus {
+    background-color: var(--bg-tertiary) !important;
+    border-color: #667eea !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .form-control::placeholder {
+    color: var(--text-secondary) !important;
+}
+
+body.dark-theme .form-label {
+    color: var(--text-primary) !important;
+}
+
+/* Tables */
+body.dark-theme table {
+    color: var(--text-primary) !important;
+}
+
+/* Logo Styling */
+.logo {
+    height: 48px;
+    width: auto;
+    margin-right: 1rem;
+    transition: all 0.3s ease;
+}
+
+.logo:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}
+
+/* Logo SVG Animation */
+@keyframes logo-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+.logo-animated {
+    animation: logo-pulse 3s ease-in-out infinite;
+}
+
+/* Dark Theme Logo */
+body.dark-theme .logo {
+    filter: brightness(1.2);
+}
+
+/* Radzen Components */
+body.dark-theme .rz-grid {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-state-default {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .rz-paginator {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Radzen Buttons Dark Theme */
+body.dark-theme .rz-button {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-button-icon-only {
+    background-color: var(--bg-tertiary) !important;
+}
+
+body.dark-theme .rz-button:hover {
+    background-color: var(--hover-bg) !important;
+}
+
+body.dark-theme .rz-button.rz-button-sm {
+    background-color: var(--bg-tertiary) !important;
+}
+
+/* Radzen Inputs Dark Theme */
+body.dark-theme .rz-textbox,
+body.dark-theme .rz-dropdown,
+body.dark-theme .rz-multiselect {
+    background-color: var(--input-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .rz-textbox:focus,
+body.dark-theme .rz-dropdown:focus {
+    background-color: var(--bg-tertiary) !important;
+    border-color: #667eea !important;
+}
+
+/* Radzen Dropdown Items */
+body.dark-theme .rz-dropdown-items {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-dropdown-item {
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .rz-dropdown-item:hover {
+    background-color: var(--hover-bg) !important;
+}
+
+/* Radzen Dialog Dark Theme */
+body.dark-theme .rz-dialog {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-dialog-titlebar {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-dialog-content {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Radzen Notification Dark Theme */
+body.dark-theme .rz-notification {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .rz-notification-summary {
+    color: var(--text-primary) !important;
+}
+
+/* Radzen Tooltip Dark Theme */
+body.dark-theme .rz-tooltip {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Radzen Context Menu Dark Theme */
+body.dark-theme .rz-context-menu {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-menu-item {
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .rz-menu-item:hover {
+    background-color: var(--hover-bg) !important;
+}
+
+/* Radzen Panel Dark Theme */
+body.dark-theme .rz-panel {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-panel-titlebar {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Radzen Card Dark Theme */
+body.dark-theme .rz-card {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-card-title {
+    color: var(--text-primary) !important;
+}
+
+/* Radzen Fieldset Dark Theme */
+body.dark-theme .rz-fieldset {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-fieldset-legend {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Radzen TabView Dark Theme */
+body.dark-theme .rz-tabview-nav {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-tabview-nav li a {
+    color: var(--text-secondary) !important;
+}
+
+body.dark-theme .rz-tabview-nav li.rz-tabview-selected a {
+    color: var(--text-primary) !important;
+    background-color: var(--card-bg) !important;
+}
+
+body.dark-theme .rz-tabview-panels {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Radzen Chart Dark Theme */
+body.dark-theme .rz-chart {
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .rz-chart text {
+    fill: var(--text-primary) !important;
+}
+
+/* Radzen Checkbox/Radio Dark Theme */
+body.dark-theme .rz-chkbox-box,
+body.dark-theme .rz-radiobutton-box {
+    background-color: var(--input-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-chkbox-box:hover,
+body.dark-theme .rz-radiobutton-box:hover {
+    border-color: #667eea !important;
+}
+
+/* Radzen ProgressBar Dark Theme */
+body.dark-theme .rz-progressbar {
+    background-color: var(--bg-tertiary) !important;
+}
+
+/* Radzen Tree Dark Theme */
+body.dark-theme .rz-tree {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .rz-treenode-content {
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .rz-treenode-content:hover {
+    background-color: var(--hover-bg) !important;
+}
+
+/* Badges */
+body.dark-theme .badge {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Smooth Transition */
+body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Navigation Menu Dark Theme */
+body.dark-theme .modern-nav {
+    background-color: var(--bg-secondary) !important;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.dark-theme .modern-nav .nav-link {
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .modern-nav .nav-link:hover {
+    background-color: var(--hover-bg) !important;
+    color: #8b9dff !important;
+}
+
+body.dark-theme .modern-nav .nav-link.active {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%) !important;
+    color: #8b9dff !important;
+}
+
+body.dark-theme .nav-section {
+    border-bottom-color: var(--border-color) !important;
+}
+
+body.dark-theme .nav-icon {
+    color: #8b9dff !important;
+}
+
+body.dark-theme .nav-icon-small {
+    color: #8b9dff !important;
+}
+
+body.dark-theme .expand-icon,
+body.dark-theme .expand-icon-small {
+    color: var(--text-secondary) !important;
+}
+
+body.dark-theme .modern-nav::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+}
+
+body.dark-theme .modern-nav::-webkit-scrollbar-thumb {
+    background: #8b9dff;
+}
+
+body.dark-theme .modern-nav::-webkit-scrollbar-thumb:hover {
+    background: #a5b4ff;
+}
+
+/* Modern TopBar Dark Theme */
+body.dark-theme .modern-topbar {
+    background: linear-gradient(135deg, #4a5bb5 0%, #5a3c7a 100%);
+}
+
+/* Radzen DataGrid Dark Theme - Force Styles */
+body.dark-theme .rz-datatable,
+body.dark-theme .rz-grid,
+body.dark-theme .rz-datatable-scrollable-wrapper {
+    background-color: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .rz-datatable-header,
+body.dark-theme .rz-datatable-thead {
+    background-color: var(--bg-tertiary) !important;
+}
+
+body.dark-theme .rz-datatable-header th,
+body.dark-theme .rz-datatable-thead th,
+body.dark-theme th.rz-sortable-column {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-datatable-data,
+body.dark-theme .rz-datatable-tbody {
+    background-color: var(--card-bg) !important;
+}
+
+body.dark-theme .rz-datatable-data tr,
+body.dark-theme .rz-datatable-tbody tr,
+body.dark-theme tr.rz-datatable-even {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+body.dark-theme .rz-datatable-data tr:hover,
+body.dark-theme .rz-datatable-tbody tr:hover {
+    background-color: var(--hover-bg) !important;
+}
+
+body.dark-theme .rz-datatable-data td,
+body.dark-theme .rz-datatable-tbody td,
+body.dark-theme td.rz-cell-data {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-paginator,
+body.dark-theme .rz-paginator-bottom {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-paginator-page,
+body.dark-theme .rz-paginator-pages button {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-paginator-page:hover,
+body.dark-theme .rz-paginator-pages button:hover {
+    background-color: var(--hover-bg) !important;
+}
+
+body.dark-theme .rz-paginator-page.rz-state-active,
+body.dark-theme .rz-paginator-pages button.rz-state-active {
+    background-color: #667eea !important;
+    color: white !important;
+}
+
+/* Radzen Filter Row Dark Theme */
+body.dark-theme .rz-datatable-filter-row th {
+    background-color: var(--bg-tertiary) !important;
+    border-color: var(--border-color) !important;
+}
+
+body.dark-theme .rz-datatable-filter-row input {
+    background-color: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* Tables */
+body.dark-theme table {
+    color: var(--text-primary) !important;
+}
+
+.logo {
+    height: 48px;
+    width: auto;
+    margin-right: 1rem;
+    transition: all 0.3s ease;
+}
+
+.logo:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}
+
+@keyframes logo-pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+.logo-animated {
+    animation: logo-pulse 3s ease-in-out infinite;
+}
+
+body.dark-theme .logo {
+    filter: brightness(1.2);
+}
+
+
+/* Product Icon */
+.product-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Modern Grid Styles */
+.modern-grid .rz-datatable-data tr:hover {
+    background-color: #f8f9fa !important;
+}
+
+.modern-grid .rz-datatable-data td {
+    vertical-align: middle;
+    padding: 12px 16px;
+}
+
+.modern-grid .rz-datatable-header th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    padding: 12px 16px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+
+
+/* Badge Improvements */
+.badge {
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+/* Card Hover Effects */
+.card {
+    transition: all 0.3s ease;
+}
+
+    .card:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+    }
+
+/* Responsive adjustments */
+@@media (max-width: 768px) {
+    .product-icon {
+        width: 32px;
+        height: 32px;
+    }
+}

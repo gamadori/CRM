@@ -1,0 +1,62 @@
+﻿@page "/DxfViewer/{Id:int}"
+
+<BlazorHeader Header="@Localize["Attachments"]"></BlazorHeader>
+    @if (_loading)
+    {
+        @if (!_notFound)
+        {
+            <NotFound Text="Allegato non trovato. Probabilmente è stato eliminato"></NotFound>
+        }
+        else
+        {
+            <Waiting></Waiting>
+        }
+    }
+    else
+    {
+        
+        <dl class="row">
+            <dt class="col-sm-2">
+                <DisplayName For="@(()=>_attachment.Name)" />
+            </dt>
+            <dd class="col-sm-10">
+                <span>@_attachment.Name</span>
+            </dd>
+            <dt class="col-sm-2">
+
+                <DisplayName For="@(()=>_attachment.Description)" />
+            </dt>
+            <dd class="col-sm-10">
+                <span>@_attachment.Description</span>
+            </dd>
+            <dt class="col-sm-2">
+
+                <DisplayName For="@(()=>_attachment.CreatedOn)" />
+            </dt>
+            <dd class="col-sm-10">
+                <span>@_attachment.CreatedOn</span>
+            </dd>
+        </dl>
+        <div class="p-4">
+            <div class="row">
+                <div class="col m-3">
+                    @if (_attachment.Files == null || !_attachment.Files.Any())
+                    {
+                        <div>Nessun File</div>
+                    }
+                    else
+                    {
+                        @foreach (var file in _attachment.Files)
+                        {
+                            <Viewer Id="file.Id"></Viewer>
+                        }
+                    }
+               </div>
+            </div>
+
+        </div>
+
+        <hr />
+
+       
+    }

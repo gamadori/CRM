@@ -1,0 +1,88 @@
+﻿@page "/Settings/TicketTypes/Edit"
+@page "/Settings/TicketTypes/Edit/{Id:int}"
+<h3>@_header</h3>
+<hr />
+@if (_state== null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <EditForm Model="@_state" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="row">
+            <div class="col-md-4">
+
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.Desc)" />
+                    <input id="Descrizione" class="form-control" @bind-value="@_state.Desc" />
+                    <ValidationMessage For="@(() => _state.Desc)" />
+                </div>
+
+                 <div class="form-check form-switch col-md-3">
+                    <input class="form-check-input" id="checkbox1" @bind="_state.CustomerEnabled" type="checkbox">
+                    <DisplayName For="@(()=>_state.CustomerEnabled)" />
+                </div>
+
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.Date)" />
+                    <InputSelectEnum class="form-select" TValue="PropertyStates" @bind-Value="@(_state.Date)" />
+                    <ValidationMessage For="@(() => _state.Date)" />
+                </div>
+
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.Time)" />
+                    <InputSelectEnum class="form-select" TValue="PropertyStates" @bind-Value="@_state.Time" />
+                    <ValidationMessage For="@(() => _state.Time)" />
+                </div>
+
+                 <div class="mb-3">
+                    <DisplayName For="@(()=>_state.DateEnd)" />
+                    <InputSelectEnum class="form-select" TValue="PropertyStates" @bind-Value="@(_state.DateEnd)" />
+                    <ValidationMessage For="@(() => _state.DateEnd)" />
+                </div>
+
+
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.IdProdotto)" />
+                        <InputSelectEnum class="form-select" TValue="PropertyStates" @bind-Value="@(_state.IdProdotto)" />
+                        <ValidationMessage For="@(() => _state.IdProdotto)" />
+                </div>
+
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.IdArticolo)" />
+                    <InputSelectEnum class="form-select" TValue="PropertyStates" @bind-Value="@(_state.IdArticolo)" />
+                    <ValidationMessage For="@(() => _state.IdArticolo)" />
+                </div>
+
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.ExpiredDate)" />
+                    <InputSelectEnum class="form-select" TValue="PropertyStates" @bind-Value="@(_state.ExpiredDate)" />
+                    <ValidationMessage For="@(() => _state.ExpiredDate)" />
+                </div>
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.Project)" />
+                        <InputSelectEnum class="form-select" TValue="PropertyStates" @bind-Value="@(_state.Project)" />
+                    <ValidationMessage For="@(() => _state.Project)" />
+                </div>
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.MaxHoursLife)" />
+                    <input id="MaxHoursLife" class="form-control" @bind-value="@_state.MaxHoursLife" />
+                    <ValidationMessage For="@(() => _state.MaxHoursLife)" />
+                </div>
+
+                <div class="mb-3">
+                    <DisplayName For="@(()=>_state.Price)" />
+                    <input id="MaxHoursLife" class="form-control" @bind-value="@_state.Price" />
+                    <ValidationMessage For="@(() => _state.Price)" />
+                </div>
+
+
+                <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+                <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+            </div>
+        </div>
+    </EditForm>
+}

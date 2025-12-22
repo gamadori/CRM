@@ -1,0 +1,16 @@
+﻿@if (Visible)
+{
+    <h5 class="mt-2 text-secondary">@Header@ChildContent</h5>
+ 
+}
+@code {
+    [Parameter]
+    public bool Visible { get; set; } = true;
+
+    [Parameter]
+    public string Header { get; set; }
+    
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+}

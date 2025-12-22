@@ -1,0 +1,48 @@
+﻿@page "/TicketTypes/AddGroup"
+
+@using Radzen
+@using Radzen.Blazor
+
+<h4>Aggiungi Gruppo</h4>
+<hr />
+@if (_ticketTypeGroup == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+<EditForm Model="@_ticketTypeGroup" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="row">
+        <div class="col">
+
+            <div class="mb-3">
+
+                <DisplayName For="@(()=>_ticketTypeGroup.IdGroup)" />
+                <RadzenDropDownDataGrid class="form-control" @bind-value="@_ticketTypeGroup.IdGroup" TValue="int" LoadData="@LoadGroups" AllowFiltering="true" AllowClear="true"
+                                        Data="@_groups" Count="@_groups.Count" TextProperty="Name" ValueProperty="Id" Style="margin-bottom: 20px" />
+
+                <ValidationMessage For="@(() => _ticketTypeGroup.IdGroup)" />
+            </div>
+            
+
+        </div>
+    </div>
+    <hr/>
+    <div class="row">
+        <div class="col">
+            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+            <BlazorButton Style="BtnStyle.Secondary" OnClick="Cancel" Text="Annulla" Icon="cancel"></BlazorButton>
+        </div>
+    </div>
+</EditForm>   
+
+
+           
+
+
+
+   
+   
+}

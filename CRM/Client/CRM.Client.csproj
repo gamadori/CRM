@@ -1,0 +1,66 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <DebugType>portable</DebugType>
+	<BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
+	  <VersionPrefix Condition="'$(RELEASE_VERSION)' == ''">2.0.1</VersionPrefix> 
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Services\ILogosService.cs" />
+    <Compile Remove="Services\LogosService.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="compilerconfig.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+	  <PackageReference Include="Humanizer.Core" Version="2.14.1" />
+	  <PackageReference Include="MediatR" Version="12.4.1" />
+	  <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.4" />
+	  <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.4" PrivateAssets="all" />
+	  <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="9.0.4" />
+	  <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.4" />
+	  <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="9.0.11" />
+	  <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.4" />
+	  <PackageReference Include="Microsoft.Extensions.Features" Version="9.0.4" />
+	  <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.4" />
+	  <PackageReference Include="Microsoft.Extensions.Localization" Version="9.0.4" />
+	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	  <PackageReference Include="QLNet" Version="1.13.1" />
+	  <PackageReference Include="Radzen.Blazor" Version="8.4.0" />
+	  <PackageReference Include="Syncfusion.Blazor.Core" Version="23.1.40" />
+	  <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="23.1.40" />
+	  <PackageReference Include="Syncfusion.Blazor.Grid" Version="23.1.40" />
+	  <PackageReference Include="Syncfusion.Blazor.Inputs" Version="23.1.40" />
+	  <PackageReference Include="Syncfusion.Blazor.PdfViewer" Version="23.1.40" />
+	  <PackageReference Include="Syncfusion.Blazor.SfPdfViewer" Version="23.1.40" />
+	  <PackageReference Include="Syncfusion.Licensing" Version="23.1.40" />
+	  <PackageReference Include="System.Net.Http" Version="4.3.4" />
+	  <PackageReference Include="System.Net.Http.Json" Version="9.0.4" />
+	  
+    <PackageReference Include="Faso.Blazor.SpinKit" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BlazoringComponents\BlazoringComponents.csproj" />
+    <ProjectReference Include="..\Shared\CRM.Shared.csproj" />
+  </ItemGroup>
+
+	
+	
+  <ItemGroup>
+    <Folder Include="Pages\ChatsTickets\" />
+    <Folder Include="Pages\Customers\" />
+    <Folder Include="wwwroot\Archive\" />
+    <Folder Include="wwwroot\js\" />
+  </ItemGroup>
+	<PropertyGroup>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<RunAnalyzersDuringBuild>False</RunAnalyzersDuringBuild>
+		<RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
+		<EnableNETAnalyzers>False</EnableNETAnalyzers>
+	</PropertyGroup>
+
+  
+
+</Project>

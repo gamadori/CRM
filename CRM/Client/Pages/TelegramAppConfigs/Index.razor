@@ -1,0 +1,35 @@
+﻿@page "/Settings/Telegram"
+
+<BlazorHeader Header="Telegram">
+
+</BlazorHeader>
+
+<div class="container">
+    @if (_status == null)
+    {
+        <Waiting></Waiting>
+    }
+    else 
+    {
+
+
+        switch (_status.State)
+        {
+            case TelegramButState.Connected:
+
+            <div class="alert alert-success" role="alert">Connesso come: @_status.User</div>
+                break;
+
+            case TelegramButState.Connecting:
+                <div class="alert alert-info" role="alert">Connectiong...</div>
+                break;
+
+            case TelegramButState.ConfigNeed:
+            
+                <label class="form-label">@_status.Desc</label>
+                <input class="form-control" @bind-value=_configNeed>
+                <button class="btn-primary" @onclick=SetConfig>Invia</button>
+                break;
+        }
+    }
+</div>

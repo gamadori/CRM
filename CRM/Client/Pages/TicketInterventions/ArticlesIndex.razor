@@ -1,0 +1,83 @@
+﻿@page "/TicketInterventionArticless/{IdIntervention:int}"
+@page "/TicketInterventionArticless/Index/{IdIntervention:int}"
+
+<div class=row>
+    <div class="col">
+        <RadzenButton Icon="add_circle_outline" style="margin-bottom: 10px" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" Click="@InsertRow" Disabled=@(_interventionArticle != null)  />
+    </div>
+</div>
+
+@if (InterventionArticles != null)
+{
+    <RadzenDataGrid @ref="_articlesGrid" AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true" EditMode="DataGridEditMode.Single" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                Data="@InterventionArticles" TItem="TicketInterventionArticleModel" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" IsLoading=@_isLoading>
+        <Columns>
+            
+
+            <RadzenDataGridColumn TItem="TicketInterventionArticleModel"  Property=@nameof(TicketInterventionArticleModel.IdProduct) Title="@Localize["Prodotto"]" Width="20%">
+                <Template Context="item">
+                    @item.Product
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenDropDown AllowClear=true AllowFiltering=true @bind-Value="item.IdProduct" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Change="@(async ()=> await OnChangeProduct(item))" 
+                        Data="@_products" ValueProperty="Id" TextProperty="Name" Style="width:100%; display: block;">
+
+                    </RadzenDropDown>
+                </EditTemplate>
+                
+            </RadzenDataGridColumn>
+
+
+            <RadzenDataGridColumn TItem="TicketInterventionArticleModel" Property=@nameof(TicketInterventionArticleModel.IdArticle) Title="@Localize["Articolo"]" Width="20%">
+                
+                 <Template Context="item">
+                    @item.Article
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenDropDown AllowClear=true AllowFiltering=true @bind-Value="item.IdArticle" Data=@_articles  ValueProperty="Id" TextProperty="SerialNumber" Style="width:100%; display: block;">
+                      
+                    </RadzenDropDown>
+                    
+                </EditTemplate>
+                
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="TicketInterventionArticleModel" Property=@nameof(TicketInterventionArticleModel.Description) Title="@Localize["Descrizione"]">
+                <Template Context="item">
+                    @item.Description
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenTextBox  @bind-Value=@item.Description  Style="width:100%; display: block;"></RadzenTextBox>
+                </EditTemplate>
+
+            </RadzenDataGridColumn>
+
+
+            <RadzenDataGridColumn TItem="TicketInterventionArticleModel" Context="interventions" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="120px">
+                 <Template Context="item">
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Class="m-1" Click="@(args => EditRow(item))" @onclick:stopPropagation="true">
+                    </RadzenButton>
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Primary" Class="m-1" Click="@((args) => SaveRow(item))">
+                    </RadzenButton>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Class="m-1" Click="@((args) => CancelEdit(item))">
+                    </RadzenButton>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="TicketInterventionArticleModel" Context="interventions" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="60px">
+                <Template Context="item">
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium" Class="m-1" Click="@(args => DeleteRow(item))" @onclick:stopPropagation="true">
+                    </RadzenButton>
+                </Template>
+                <EditTemplate Context="order">
+
+                </EditTemplate>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}

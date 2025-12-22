@@ -1,0 +1,115 @@
+﻿@page "/Tickets/Info/{Id:int}"
+@page "/Tickets/Info/{Id:int}/{IdProject:int}"
+@page "/Tickets/Info/Company/{Id:int}/{IdCompany:int}"
+@page "/Tickets/info/{Id:int}/{TypeSearch:int}/{IdUser}"
+@page "/Tickets/info/attachment/{id:int}/{IdAttachment:int}"
+@page "/Tickets/Info/chat/{Id:int}/{IdChat:int}"
+@page "/Tickets/Info/filter/{Id:int}/{TypeSearch:int}"
+
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+
+@if (_ticket == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+
+    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
+   
+    <RadzenSelectBar Size="@_buttonSize"   @bind-Value="selectView" TValue="TicketViews" Change="@((args) => Change(args, "SelectBar with single selection"))" >
+        <Items>
+            <RadzenSelectBarItem  Text=@(_isMobile ? "": Localize["Dati Ticket"]) Icon="format_list_bulleted"  Value="TicketViews.Ticket" />
+            <RadzenSelectBarItem Text=@(_isMobile ? "": Localize["Allegati"]) Icon = "attach_file" Value="TicketViews.Allegati" />
+            <RadzenSelectBarItem Text=@(_isMobile ? "":Localize["Chat"]) Icon="chat" Value="TicketViews.Chat" />
+            <RadzenSelectBarItem Text=@(_isMobile ? "":Localize["Interventi"]) Icon="construction" Value="TicketViews.Interventi" />
+            @if (_ticket.Permits.Close() || _ticket.Closed)
+            {
+                <RadzenSelectBarItem Text=@(_isMobile ? "": Localize["Chiusura"]) Icon="done" Value="TicketViews.Chiusura" />
+            }
+            <RadzenSelectBarItem Text=@(_isMobile ? "":Localize["Print"]) Icon="print" Value="TicketViews.Print" />
+        </Items>
+
+    </RadzenSelectBar>
+
+    @if (selectView == TicketViews.Ticket)
+    {
+        if (_partialView == PartialViews.Details)
+        {
+            <Details Id="@Id" OnClickEdit="EditTicket" OnClickCancel="GotoIndex" OnClickTicketClose="CloseTicket" OnClickPrint="PrintTicket"></Details>
+        }
+        else
+        {
+            <Edit Id="@Id"  OnClickSave="(async () => await SaveTicket())" OnClickCancel="CancelTicket"></Edit>
+        }
+    }
+    else if (selectView == TicketViews.Chat)
+    {
+        <CRM.Client.Pages.TicketChats.Index IdTicket="@Id"></CRM.Client.Pages.TicketChats.Index>
+    }
+    else if (selectView == TicketViews.Chiusura)
+    {
+        @if (_ticket.Closed)
+        {
+            <DetailsClose  Id="@Id" OnClickTicketReOpen="@OnRefresh"></DetailsClose>
+
+        }
+        else if (_ticket.Permits.Close())
+        {
+            <CRM.Client.Pages.Tickets.Close Id="@Id" OnClickCancel="ClosingCloseForm" OnClickSave="UpdateForm"></CRM.Client.Pages.Tickets.Close>
+        }
+    }
+    else if (selectView == TicketViews.Allegati)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Attachments.Index OnClickEdit="IndexEditAttachment" OnClickDetails="IndexDetailsAttachment" IdParent="@Id" AttachmentType="AttachmentTypes.Ticket"></CRM.Client.Pages.Attachments.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Attachments.Edit Id="@_idAttachment" IdParent="@Id" AttachmentType=AttachmentTypes.Ticket OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Edit>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Attachments.Details Id="@_idAttachment"  OnClickCancel="CloseAttachment" 
+                                                  OnClickEdit="DetailsEditAttachment" OnClickAddFile="AddFileAttachment"></CRM.Client.Pages.Attachments.Details>
+        }
+        else if (_partialView == PartialViews.AddFiles)
+        {
+            <CRM.Client.Pages.Attachments.Upload Id="@_idAttachment.Value" OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Upload>
+        }
+
+
+    }
+    else if (selectView == TicketViews.Interventi)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.TicketInterventions.Index OnClickEdit="InterventionIndexEdit" OnClickDetails="InterventionDetails" IdTicket="@Id"></CRM.Client.Pages.TicketInterventions.Index>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.TicketInterventions.Details Id="@_idIntervention" OnClickEdit="InterventionDetailsEdit"
+                                                          OnClickCancel="InterventionIndex" OnClickPdfViewer="InterventionPDFViewer"></CRM.Client.Pages.TicketInterventions.Details>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.TicketInterventions.Edit Id="@_idIntervention" IdTicket="@Id" OnClickSave="InterventionCloseForm" OnClickCancel="InterventionCloseForm"></CRM.Client.Pages.TicketInterventions.Edit>
+        }
+        else if (_partialView == PartialViews.PDFViewer)
+        {
+            <CRM.Client.Pages.TicketInterventions.PDFLoading Id="@_idIntervention.Value" OnUpdatePdfViewer="InterventionPDFViewerUpdate" OnClickDetails="InterventionDetails" ></CRM.Client.Pages.TicketInterventions.PDFLoading>
+        }
+        else if (_partialView == PartialViews.Null)
+        {
+            <Waiting></Waiting>
+        }
+    }
+    else if (selectView == TicketViews.Print)
+    {
+        <CRM.Client.Pages.Tickets.Report Id="@Id"></CRM.Client.Pages.Tickets.Report>
+    }
+
+}

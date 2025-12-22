@@ -1,0 +1,26 @@
+﻿@page "/DashBoard/Tickets/{TypeSearch:int}"
+@page "/DashBoard/Tickets/{TypeSearch:int}/{IdUser}"
+
+<div class="row mb-3">
+    <div class="col-4">
+        <button type="button" class="btn btn-light" @onclick="Home">
+            <i class="material-icons middle  text-secondary">home</i>
+            <span class="pl-2 text-secondary">@Localize["Home"]</span>
+        </button>
+        <button type="button" class="btn btn-light" @onclick="AddTicket">
+            <i class="material-icons middle text-secondary">add_box</i>
+            <span class="pl-2 text-secondary">@Localize["Nuovo Ticket"]</span>
+        </button>
+
+        <button type="button" class="btn btn-light" @onclick="Schedule">
+            <i class="material-icons middle text-secondary">schedule</i>
+            <span class="pl-2 text-secondary">@Localize["Scheduler"]</span>
+        </button>
+
+    </div>
+</div>
+
+
+
+
+<CRM.Client.Pages.Tickets.Index PageTitle="@_header"  IdUser="@IdUser" TypeSearch="@TypeSearch"></CRM.Client.Pages.Tickets.Index>

@@ -1,0 +1,195 @@
+﻿@using CRM.Shared.Models
+@using System.Linq
+
+@typeparam T 
+<div class="imagedropdown-container">
+    <div class="imagedropdown-header @(_isOpen ? "active" : "")" @onclick="ToggleDropdown">
+        @if (SelectedItem != null)
+        {
+            <div class="imagedropdown-selected-item">
+                @if (SelectedItem.ImageUrl != null)
+                {
+                    <img src="@SelectedItem.ImageUrl" alt="@SelectedItem.Text" />
+                }
+                else
+                {
+                    <span class="material-icons">@SelectedItem.Icon</span>
+                }
+                <span>@SelectedItem.Text</span>
+            </div>
+        }
+        else
+        {
+            <span>@Placeholder</span>
+        }
+        <span class="imagedropdown-arrow">▼</span>
+    </div>
+    @if (_isOpen)
+    {
+        <div class="imagedropdown-menu">
+            @foreach (var item in Items ?? Enumerable.Empty<BasicImageDropdownItem<T>>())
+            {
+                <div class=@($"imagedropdown-item {(object.Equals(SelectedItem is null ? null : (object)SelectedItem.Value, (object)item.Value) ? "selected" : "")}") @onclick="() => SelectItem(item)">
+                    @if (item.ImageUrl != null)
+                    {
+                        <img src="@item.ImageUrl" alt="@item.Text" />
+                    }
+                    else
+                    {
+                        <span class="material-icons me-2">@item ?.Icon</span>
+                    }
+                    <span>@item?.Text</span>
+                </div>
+            }
+        </div>
+    }
+</div>
+@code 
+{
+    [Parameter]
+    public List<BasicImageDropdownItem<T>> Items { get; set; } = new List<BasicImageDropdownItem<T>>();
+    
+    // SelectedItem può essere null quando il parent non imposta nulla
+    [Parameter]
+    public BasicImageDropdownItem<T>? SelectedItem { get; set; }
+
+    [Parameter]
+    public EventCallback<BasicImageDropdownItem<T>> SelectedItemChanged { get; set; }
+
+    [Parameter]
+    public string Placeholder { get; set; } = "Select an item";
+
+    private bool _isOpen = false;
+
+    private void ToggleDropdown() => _isOpen = !_isOpen;
+
+    private async Task SelectItem(BasicImageDropdownItem<T>? item)
+    {
+        if (item == null)
+            return;
+
+        SelectedItem = item;
+        _isOpen = false;
+        await SelectedItemChanged.InvokeAsync(item);
+    }
+}
+
+<style>
+    .imagedropdown-container {
+        position: relative;
+        width: 100%;
+        max-width: 200px;
+        font-family: Arial, sans-serif;
+    }
+
+    .imagedropdown-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #fff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .imagedropdown-header:hover {
+        border-color: #999;
+    }
+
+    .imagedropdown-header.active {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .imagedropdown-selected-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .imagedropdown-selected-item img {
+        width: 24px;
+        height: 24px;
+        object-fit: cover;
+        border-radius: 2px;
+    }
+
+    .imagedropdown-selected-item .material-icons {
+        font-size: 24px;
+    }
+
+    .imagedropdown-arrow {
+        margin-left: auto;
+        font-size: 12px;
+        transition: transform 0.3s ease;
+    }
+
+    .imagedropdown-header.active .imagedropdown-arrow {
+        transform: rotate(180deg);
+    }
+
+    .imagedropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 5px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+    }
+
+    .imagedropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 15px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+
+    .imagedropdown-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .imagedropdown-item.selected {
+        background-color: #e7f3ff;
+        font-weight: 600;
+    }
+
+    .imagedropdown-item img {
+        width: 24px;
+        height: 24px;
+        object-fit: cover;
+        border-radius: 2px;
+    }
+
+    .imagedropdown-item .material-icons {
+        font-size: 24px;
+    }
+
+    /* Scrollbar personalizzata per il menu */
+    .imagedropdown-menu::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .imagedropdown-menu::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .imagedropdown-menu::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .imagedropdown-menu::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>

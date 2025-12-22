@@ -1,0 +1,69 @@
+﻿@using System.Reflection
+@using System.Linq.Expressions
+@using System.ComponentModel.DataAnnotations
+@using System.Globalization
+@using System.Resources
+
+
+
+@* <RtzDisplayName For="For" Variant="_variant">
+    <ChildContent>
+        <RadzenTextArea Placeholder="@Placeholder" @rendermode="renderMode" ValueChanged="@ValueChanged" Value="@Value" Style="width: 100%"  
+            ReadOnly="ReadOnly" />
+        
+    </ChildContent>
+    <Helper>
+        @if (!ReadOnly)
+        {
+            <ValidationMessage For="@For" />
+        }
+    </Helper>
+    <End>@End</End>
+</RtzDisplayName> *@
+<DisplayName For="For">
+    <RadzenTextArea Value="@Value" ValueChanged="@ValueChanged" @rendermode="renderMode" Placeholder="@Placeholder" Style="width: 100%" Rows="@Rows" Cols="@Cols"
+    ReadOnly="ReadOnly" />
+</DisplayName>
+@code {
+
+   
+    [Parameter] 
+    public string? Value { get; set; } = default!;
+    [Parameter] 
+    public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] 
+    public int Rows { get; set; } = 5;
+
+    [Parameter]
+    public int Cols { get; set; } = 5;
+
+    [Parameter] 
+    public string Placeholder { get; set; } = string.Empty;
+    [Parameter] 
+    public IComponentRenderMode renderMode { get; set; } = RenderMode.InteractiveAuto;
+    [Parameter] 
+    public Expression<Func<string?>> For { get; set; } = default!;
+    [Parameter] 
+    public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter]
+    public RenderFragment Helper { get; set; } = default!;
+    [Parameter]
+    public RenderFragment? End { get; set; } = default!;
+    [Parameter] 
+    public string CssClass { get; set; } = string.Empty;
+    [Parameter]
+    public bool ReadOnly { get; set; } = false;
+
+    private Variant _variant = Variant.Text;
+
+    protected override void OnInitialized()
+    {
+        @if (ReadOnly)
+            _variant = Variant.Filled;
+        
+        
+        base.OnInitialized();
+    }
+    
+    
+}
