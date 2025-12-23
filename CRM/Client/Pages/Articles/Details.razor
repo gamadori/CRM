@@ -6,84 +6,61 @@
 }
 else
 {
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
 
-    <div class="mb-4">
-        <h6 class="text-dark fw-semibold mb-3 d-flex align-items-center">
-            <span class="material-icons me-2 text-primary" style="font-size: 20px;">badge</span>
-            <DisplayName For="@(() => _article.SerialNumber)" />
-        </h6>
-        <div class="p-3 bg-light rounded border-start border-primary border-4">
-            <p class="mb-0 text-dark">@_article.SerialNumber</p>
-        </div>
-    </div>
-    @if (_article.SaleDate != null)
-    {
-    
-    <div class="mb-4">
-        <h6 class="text-dark fw-semibold mb-3 d-flex align-items-center">
-            <span class="material-icons me-2 text-primary" style="font-size: 20px;">badge</span>
-            <DisplayName For="@(() => _article.SaleDate)" />
-        </h6>
-        <div class="p-3 bg-light rounded border-start border-primary border-4">
-            <p class="mb-0 text-dark">@_article.SaleDate?.ToString("d")</p>
-        </div>
-    </div>
-    }
-    @if (_article.DeliveryDate != null)
-    {
-    <div class="mb-4">
-        <h6 class="text-dark fw-semibold mb-3 d-flex align-items-center">
-            <span class="material-icons me-2 text-primary" style="font-size: 20px;">badge</span>
-            <DisplayName For="@(() => _article.DeliveryDate)" />
-        </h6>
-        <div class="p-3 bg-light rounded border-start border-primary border-4">
-            <p class="mb-0 text-dark">@_article.DeliveryDate?.ToString("d")</p>
-        </div>
-    </div>
-    }
-    @if (_article.TestDate != null)
-    {
-    <div class="mb-4">
-        <h6 class="text-dark fw-semibold mb-3 d-flex align-items-center">
-            <span class="material-icons me-2 text-primary" style="font-size: 20px;">badge</span>
-            <DisplayName For="@(() => _article.TestDate)" />
-        </h6>
-        <div class="p-3 bg-light rounded border-start border-primary border-4">
-                <p class="mb-0 text-dark">@_article.TestDate?.ToString("d")</p>
-        </div>
-    </div>
-    }
-    <div class="mb-4">
-        <h6 class="text-dark fw-semibold mb-3 d-flex align-items-center">
-            <span class="material-icons me-2 text-primary" style="font-size: 20px;">badge</span>
-            <DisplayName For="@(() => _article.IdProduct)" />
-        </h6>
-        <div class="p-3 bg-light rounded border-start border-primary border-4">
-            <p class="mb-0 text-dark">@_article.Product?.Name</p>
-        </div>
-    </div>
-    <div class="mb-4">
-        <h6 class="text-dark fw-semibold mb-3 d-flex align-items-center">
-            <span class="material-icons me-2 text-primary" style="font-size: 20px;">badge</span>
-            <DisplayName For="@(() => _article.IdCompany)" />
-        </h6>
-        <div class="p-3 bg-light rounded border-start border-primary border-4">
-            <p class="mb-0 text-dark">@_article.Company?.RagioneSociale</p>
-        </div>
-    </div>
-    <div class="mb-4">
-        <h6 class="text-dark fw-semibold mb-3 d-flex align-items-center">
-            <span class="material-icons me-2 text-primary" style="font-size: 20px;">badge</span>
-            <DisplayName For="@(() => _article.Description)" />
-        </h6>
-        <div class="p-3 bg-light rounded border-start border-primary border-4">
-            <p class="mb-0 text-dark">@_article.Description</p>
-        </div>
-    </div>
+            <RedGDetailField Icon="confirmation_number" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _article.SerialNumber)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_article.SerialNumber</p></ChildContent>
+            </RedGDetailField>
 
-<div>
-    <BlazorButton  Template="TemplateButton.Back" Text="Lista Tipo Prodotti" OnClick="Annulla" />
-    <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
-    
-</div>
+            @if (_article.SaleDate != null)
+            {
+                <RedGDetailField Icon="shopping_cart" ContainerClass="mb-4">
+                    <LabelContent><DisplayName For="@(() => _article.SaleDate)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_article.SaleDate?.ToString("d")</p></ChildContent>
+                </RedGDetailField>
+            }
+
+            @if (_article.DeliveryDate != null)
+            {
+                <RedGDetailField Icon="local_shipping" ContainerClass="mb-4">
+                    <LabelContent><DisplayName For="@(() => _article.DeliveryDate)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_article.DeliveryDate?.ToString("d")</p></ChildContent>
+                </RedGDetailField>
+            }
+
+            @if (_article.TestDate != null)
+            {
+                <RedGDetailField Icon="verified" ContainerClass="mb-4">
+                    <LabelContent><DisplayName For="@(() => _article.TestDate)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_article.TestDate?.ToString("d")</p></ChildContent>
+                </RedGDetailField>
+            }
+
+            <RedGDetailField Icon="inventory" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _article.IdProduct)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_article.Product?.Name</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="business" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _article.IdCompany)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_article.Company?.RagioneSociale</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="description">
+                <LabelContent><DisplayName For="@(() => _article.Description)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_article.Description</p></ChildContent>
+            </RedGDetailField>
+
+        </div>
+
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorButton Template="TemplateButton.Back" Text="Lista Articoli" OnClick="Annulla" />
+                <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+            </div>
+        </div>
+    </div>
 }

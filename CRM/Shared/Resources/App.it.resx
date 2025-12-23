@@ -147,9 +147,6 @@
   <data name="ButtonCancel" xml:space="preserve">
     <value>Annulla</value>
   </data>
-  <data name="ButtonConfirm" xml:space="preserve">
-    <value>OK</value>
-  </data>
   <data name="ButtonDelete" xml:space="preserve">
     <value>Elimina</value>
   </data>
@@ -218,6 +215,9 @@
   </data>
   <data name="Day" xml:space="preserve">
     <value>Giorno</value>
+  </data>
+  <data name="Descrizione del Ticket" xml:space="preserve">
+    <value>Descrizione del Ticket</value>
   </data>
   <data name="Dettagli Contatto" xml:space="preserve">
     <value>Dettagli Contatto</value>
@@ -399,7 +399,19 @@
   <data name="ToBeInvoiced" xml:space="preserve">
     <value>Da Fatturare</value>
   </data>
+  <data name="AddFiles" xml:space="preserve">
+    <value>Aggiungi File</value>
+  </data>
   <data name="Article" xml:space="preserve">
     <value>Articolo</value>
+  </data>
+  <data name="ButtonConfirm" xml:space="preserve">
+    <value>Conferma</value>
+  </data>
+  <data name="Companies" xml:space="preserve">
+    <value>Aziende</value>
+  </data>
+  <data name="Manage Companies" xml:space="preserve">
+    <value>Gestione delle Aziende registrate</value>
   </data>
 </root>

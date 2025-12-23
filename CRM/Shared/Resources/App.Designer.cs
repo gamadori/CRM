@@ -61,6 +61,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Add Files.
+        /// </summary>
+        public static string AddFiles {
+            get {
+                return ResourceManager.GetString("AddFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Attach Document.
         /// </summary>
         public static string Allega_Documento {
@@ -160,7 +169,7 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a OK.
+        ///   Cerca una stringa localizzata simile a Confirm.
         /// </summary>
         public static string ButtonConfirm {
             get {
@@ -282,6 +291,15 @@ namespace CRM.Shared.Resources {
         public static string Closed {
             get {
                 return ResourceManager.GetString("Closed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Companies.
+        /// </summary>
+        public static string Companies {
+            get {
+                return ResourceManager.GetString("Companies", resourceCulture);
             }
         }
         
@@ -412,7 +430,7 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a Details Contact.
+        ///   Cerca una stringa localizzata simile a Contact Details.
         /// </summary>
         public static string Dettagli_Contatto {
             get {
@@ -421,7 +439,7 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a .
+        ///   Cerca una stringa localizzata simile a Página{0} de {1} (total {2} registros.
         /// </summary>
         public static string Displaying_page__0__of__1___total__2__records_ {
             get {
@@ -489,6 +507,15 @@ namespace CRM.Shared.Resources {
         public static string Lista_Aziende {
             get {
                 return ResourceManager.GetString("Lista Aziende", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Management of registered companies.
+        /// </summary>
+        public static string Manage_Companies {
+            get {
+                return ResourceManager.GetString("Manage Companies", resourceCulture);
             }
         }
         

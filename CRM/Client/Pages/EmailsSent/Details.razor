@@ -4,107 +4,59 @@
 @using BlazoringComponents.DropDownButton
 @using CRM.Shared.Helper
 
-<h3>Email</h3>
-<hr />
+<BlazorHeader Header="Dettagli Email" />
+
 @if (_email == null)
 {
     <Waiting></Waiting>
 }
 else
 {
-    
-    <div class="row rounded-3 bg-light">
-        <div class="col-md-8">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
 
-            <div class="row g-3">
-                <div class="col">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th scope="col"></th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
+            <RedGDetailField Icon="schedule" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _email.DateSent)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_email.DateSent</p></ChildContent>
+            </RedGDetailField>
 
-                            <tr>
-                                <th scope="row">
-                                    <DisplayName For="@(() => _email.DateSent)" />
-                                </th>
-                                <td>
-                                    <span>@_email.DateSent</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">
-                                    <DisplayName For="@(() => _email.IdUser)" />
-                                </th>
-                                <td>
-                                    <span>@($"{_user?.UserName} ({_user?.NameComplete})")</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">
-                                    <DisplayName For="@(() => _email.To)" />
-                                </th>
-                                <td>
-                                    <span>@_email.To</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">
-                                    <DisplayName For="@(() => _email.CC)" />
-                                </th>
+            <RedGDetailField Icon="person">
+                <LabelContent><DisplayName For="@(() => _email.IdUser)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@($"{_user?.UserName} ({_user?.NameComplete})")</p></ChildContent>
+            </RedGDetailField>
 
-                                <td>
-                                    <span>@_email.CC</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">
-                                    <DisplayName For="@(() => _email.Subject)" />
-                                </th>
+            <RedGDetailField Icon="mail">
+                <LabelContent><DisplayName For="@(() => _email.To)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_email.To</p></ChildContent>
+            </RedGDetailField>
 
-                                <td>
-                                    <span>@_email.Subject</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">
-                                    <DisplayName For="@(() => _email.Message)" />
-                                </th>
+            <RedGDetailField Icon="cc">
+                <LabelContent><DisplayName For="@(() => _email.CC)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_email.CC</p></ChildContent>
+            </RedGDetailField>
 
-                                <td>
-                                    <pre>@_email.Message</pre>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row">
-                                    <DisplayName For="@(() => _email.Result)" />
-                                </th>
+            <RedGDetailField Icon="subject">
+                <LabelContent><DisplayName For="@(() => _email.Subject)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_email.Subject</p></ChildContent>
+            </RedGDetailField>
 
-                                <td>
-                                    <span>@_email.Result</span>
-                                </td>
-                            </tr>
-                            
+            <RedGDetailField Icon="message">
+                <LabelContent><DisplayName For="@(() => _email.Message)" /></LabelContent>
+                <ChildContent><pre class="mb-0">@_email.Message</pre></ChildContent>
+            </RedGDetailField>
 
-                        </tbody>
-                    </table>
-                   
-                   
+            <RedGDetailField Icon="check_circle">
+                <LabelContent><DisplayName For="@(() => _email.Result)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_email.Result</p></ChildContent>
+            </RedGDetailField>
 
-                    <br>
+        </div>
 
-                    <div>
-                        <BlazorButton Template="TemplateButton.Back" OnClick="Annulla" Text="Emails" />
-
-
-                    </div>
-                </div>
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorButton Template="TemplateButton.Back" OnClick="Annulla" Text="Emails" />
             </div>
         </div>
     </div>
-    
-  
 }

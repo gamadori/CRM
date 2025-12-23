@@ -3,77 +3,56 @@
 
 <BlazorHeader Header="@_header"></BlazorHeader>
 
-<div class="container m-3">
-    @if (_item == null)
-    {
-        <Waiting></Waiting>
-    }
-    else
-    {
-    
-        <div class="row rounded-3 bg-light">
-            <div class="row">
+@if (_item == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
 
-                <div class="row g-3">
-                
+            <RedGDetailField Icon="description" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _item.ContractName)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_item.ContractName</p></ChildContent>
+            </RedGDetailField>
 
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th scope="col"></th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <th scope="row"><DisplayName For="@(() => _item.ContractName)" /></th>
-                                <td>@_item.ContractName</td>
-                            </tr>
+            <RedGDetailField Icon="event">
+                <LabelContent><DisplayName For="@(() => _item.DateFrom)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_item.DateFrom</p></ChildContent>
+            </RedGDetailField>
 
-                            <tr>
-                                <th scope="row"><DisplayName For="@(() => _item.DateFrom)" /></th>
-                                <td>@_item.DateFrom</td>
-                            </tr>
+            <RedGDetailField Icon="event_available">
+                <LabelContent><DisplayName For="@(() => _item.DateTo)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_item.DateTo</p></ChildContent>
+            </RedGDetailField>
 
-                            <tr>
-                                <th scope="row"><DisplayName For="@(() => _item.DateTo)" /></th>
-                                <td>@_item.DateTo</td>
-                            </tr>
+            <RedGDetailField Icon="pause_circle">
+                <LabelContent><DisplayName For="@(() => _item.Suspended)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_item.Suspended</p></ChildContent>
+            </RedGDetailField>
 
-                            <tr>
-                                <th scope="row"><DisplayName For="@(() => _item.Suspended)" /></th>
-                                <td>@_item.Suspended</td>
-                            </tr>
+            <RedGDetailField Icon="check_circle">
+                <LabelContent><DisplayName For="@(() => _item.Active)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_item.Active</p></ChildContent>
+            </RedGDetailField>
 
-                            <tr>
-                                <th scope="row"><DisplayName For="@(() => _item.Active)" /></th>
-                                <td>@_item.Active</td>
-                            </tr>
+            <RedGDetailField Icon="euro">
+                <LabelContent><DisplayName For="@(() => _item.Price)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_item.Price</p></ChildContent>
+            </RedGDetailField>
 
-                            <tr>
-                                <th scope="row"><DisplayName For="@(() => _item.Price)" /></th>
-                                <td>@_item.Price</td>
-                            </tr>
+        </div>
 
-                        </tbody>
-                    </table>
-                </div>    
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorButton Template="TemplateButton.Back" Text="@Localize["Contracts List"]" OnClick="Annulla" />
+                @if (_item.Permits.Edit())
+                {
+                    <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+                }
             </div>
         </div>
-        
-         <div>
-                    
-        
-            <BlazorButton Template="TemplateButton.Back" Text="@Localize["Contracts List"]" OnClick="Annulla" />
-
-            @if (_item.Permits.Edit())
-            {
-                <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
-            }
-        
-        
-        </div>
-    
-    }
-
-</div>
+    </div>
+}

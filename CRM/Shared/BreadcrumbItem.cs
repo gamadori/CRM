@@ -1,4 +1,4 @@
-namespace CRM.Client.Shared
+namespace CRM.Shared
 {
     /// <summary>
     /// Rappresenta un elemento del breadcrumb

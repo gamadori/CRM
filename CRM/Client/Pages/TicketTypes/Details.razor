@@ -1,80 +1,69 @@
 ﻿@page "/Settings/TicketTypes/Details/{Id:int}"
-<h3>Dettagli Tipo Ticket</h3>
-<hr />
+
+<BlazorHeader Header="Dettagli Tipo Ticket" />
+
 @if (_ticketType == null)
 {
     <Waiting></Waiting>
 }
 else
 {
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
 
-    <dl class="row">
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_ticketType.Desc)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@_ticketType.Desc</span>
-        </dd>
+            <RedGDetailField Icon="confirmation_number" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _ticketType.Desc)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_ticketType.Desc</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_ticketType.CustomerEnabled)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@_ticketType.CustomerEnabled</span>
-        </dd>
+            <RedGDetailField Icon="people">
+                <LabelContent><DisplayName For="@(() => _ticketType.CustomerEnabled)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_ticketType.CustomerEnabled</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_ticketType.Date)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.Date)</span>
-        </dd>
+            <RedGDetailField Icon="event">
+                <LabelContent><DisplayName For="@(() => _ticketType.Date)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.Date)</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_ticketType.Time)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.Time)</span>
-        </dd>
+            <RedGDetailField Icon="schedule">
+                <LabelContent><DisplayName For="@(() => _ticketType.Time)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.Time)</p></ChildContent>
+            </RedGDetailField>
 
-         <dt class="col-sm-2">
-            <DisplayName For="@(()=>_ticketType.DateEnd)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.DateEnd)</span>
-        </dd>
+            <RedGDetailField Icon="event_available">
+                <LabelContent><DisplayName For="@(() => _ticketType.DateEnd)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.DateEnd)</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_ticketType.IdProdotto)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.IdProdotto)</span>
-        </dd>
+            <RedGDetailField Icon="inventory">
+                <LabelContent><DisplayName For="@(() => _ticketType.IdProdotto)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.IdProdotto)</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_ticketType.IdArticolo)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.IdArticolo)</span>
-        </dd>
+            <RedGDetailField Icon="qr_code_2">
+                <LabelContent><DisplayName For="@(() => _ticketType.IdArticolo)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.IdArticolo)</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_ticketType.ExpiredDate)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.ExpiredDate)</span>
-        </dd>
+            <RedGDetailField Icon="event_busy">
+                <LabelContent><DisplayName For="@(() => _ticketType.ExpiredDate)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@Helpers.UtilityHelper.GetDisplayName((PropertyStates)_ticketType.ExpiredDate)</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_ticketType.Price)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@_ticketType.Price</span>
-        </dd>
-    </dl>
-    <div>
-        <BlazorLink Href="/Settings/TicketTypes" Template="TemplateButton.Back" Text="Lista Tipi di Ticket" />
-        <BlazorButton OnClick="EditTicketType" Template="TemplateButton.Edit" Label="true" />
-    
+            <RedGDetailField Icon="euro">
+                <LabelContent><DisplayName For="@(() => _ticketType.Price)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_ticketType.Price</p></ChildContent>
+            </RedGDetailField>
+
+        </div>
+
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorLink Href="/Settings/TicketTypes" Template="TemplateButton.Back" Text="Lista Tipi di Ticket" />
+                <BlazorButton OnClick="EditTicketType" Template="TemplateButton.Edit" Label="true" />
+            </div>
+        </div>
     </div>
 }

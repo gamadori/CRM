@@ -144,9 +144,6 @@
   <data name="ButtonCancel" xml:space="preserve">
     <value>Annuler</value>
   </data>
-  <data name="ButtonConfirm" xml:space="preserve">
-    <value>OK</value>
-  </data>
   <data name="ButtonDelete" xml:space="preserve">
     <value>Supprimer</value>
   </data>
@@ -382,7 +379,19 @@
     <value>Editer le ticket</value>
   </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="AddFiles" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
   <data name="Article" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="ButtonConfirm" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="Companies" xml:space="preserve">
+    <value>Entreprises</value>
+  </data>
+  <data name="Manage Companies" type="System.Resources.ResXNullRef, System.Windows.Forms">
     <value />
   </data>
 </root>

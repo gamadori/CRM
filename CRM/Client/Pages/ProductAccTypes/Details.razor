@@ -1,69 +1,53 @@
 ﻿@page "/ProductAccTypes/Details/{Id:int}"
 @using CRM.Shared.Helper
 
-<h3>@_header</h3>
-<hr />
+<BlazorHeader Header="@_header" />
+
 @if (_productAccessory == null)
 {
     <Waiting></Waiting>
 }
 else
 {
-    <div class="row rounded-3 bg-light">
-        <div class="col-md-8">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
 
-            <div class="row g-3">
-                
+            <RedGDetailField Icon="label" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _productAccessory.Name)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_productAccessory.Name</p></ChildContent>
+            </RedGDetailField>
 
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th scope="col"></th>
-                            <th scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _productAccessory.Name)" /></th>
-                            <td>@_productAccessory.Name</td>
-                        </tr>
+            <RedGDetailField Icon="inventory">
+                <LabelContent><DisplayName For="@(() => _productAccessory.ProdName)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_productAccessory.ProdName</p></ChildContent>
+            </RedGDetailField>
 
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _productAccessory.ProdName)" /></th>
-                            <td>@_productAccessory.ProdName</td>
-                        </tr>
+            <RedGDetailField Icon="category">
+                <LabelContent><DisplayName For="@(() => _productAccessory.AccTypeName)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_productAccessory.AccTypeName</p></ChildContent>
+            </RedGDetailField>
 
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _productAccessory.AccTypeName)" /></th>
-                            <td>@_productAccessory.AccTypeName</td>
-                        </tr>
+            <RedGDetailField Icon="priority_high">
+                <LabelContent><DisplayName For="@(() => _productAccessory.Necessary)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_productAccessory.Necessary</p></ChildContent>
+            </RedGDetailField>
 
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _productAccessory.Necessary)" /></th>
-                            <td>@_productAccessory.Necessary</td>
-                        </tr>
+            <RedGDetailField Icon="check_circle">
+                <LabelContent><DisplayName For="@(() => _productAccessory.Enabled)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_productAccessory.Enabled</p></ChildContent>
+            </RedGDetailField>
 
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _productAccessory.Enabled)" /></th>
-                            <td>@_productAccessory.Enabled</td>
-                        </tr>
-
-                    </tbody>
-                </table>
-            </div>    
         </div>
-    </div>
-    
-     <div>
-                    
-        
-        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Product Accessory List"]" OnClick="Annulla" />
 
-        @if (_productAccessory.Permits.Edit())
-        {
-            <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
-        }
-        
-        
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorButton Template="TemplateButton.Back" Text="@Localize["Product Accessory List"]" OnClick="Annulla" />
+                @if (_productAccessory.Permits.Edit())
+                {
+                    <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+                }
+            </div>
+        </div>
     </div>
 }

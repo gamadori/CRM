@@ -2,73 +2,67 @@
 @page "/Contacts/{Id:int}"
 @using CRM.Shared.Helper
 
-<h3>@Localize["Dettagli Contatto"]</h3>
-<hr />
+<BlazorHeader Header="@Localize["Dettagli Contatto"]" />
+
 @if (_contact == null)
 {
     <Waiting></Waiting>
 }
 else
 {
-    <div class="row rounded-3 bg-light">
-        <div class="col-md-8">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            
+            <RedGDetailField Icon="person" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _contact.Name)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_contact.Name</p></ChildContent>
+            </RedGDetailField>
 
-            <div class="row g-3">
-                
+            <RedGDetailField Icon="person_outline">
+                <LabelContent><DisplayName For="@(() => _contact.Surname)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_contact.Surname</p></ChildContent>
+            </RedGDetailField>
 
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th scope="col"></th>
-                            <th scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _contact.Name)" /></th>
-                            <td>@_contact.Name</td>
-                        </tr>
-                         <tr>
-                            <th scope="row"><DisplayName For="@(() => _contact.Surname)" /></th>
-                            <td>@_contact.Surname</td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _contact.IdCompany)" /></th>
-                            <td>@_contact.Company?.RagioneSociale</td>
-                        </tr>
+            <RedGDetailField Icon="business">
+                <LabelContent><DisplayName For="@(() => _contact.IdCompany)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_contact.Company?.RagioneSociale</p></ChildContent>
+            </RedGDetailField>
 
-                         <tr>
-                            <th scope="row"><DisplayName For="@(() => _contact.Phone)" /></th>
-                            <td>@_contact.Phone</td>
-                        </tr>
+            <RedGDetailField Icon="phone">
+                <LabelContent><DisplayName For="@(() => _contact.Phone)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_contact.Phone</p></ChildContent>
+            </RedGDetailField>
 
-                         <tr>
-                            <th scope="row"><DisplayName For="@(() => _contact.Mobile)" /></th>
-                            <td>@_contact.Mobile</td>
-                        </tr>
+            <RedGDetailField Icon="smartphone">
+                <LabelContent><DisplayName For="@(() => _contact.Mobile)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_contact.Mobile</p></ChildContent>
+            </RedGDetailField>
 
-                         <tr>
-                            <th scope="row"><DisplayName For="@(() => _contact.Email)" /></th>
-                            <td>@_contact.Email</td>
-                        </tr>
+            <RedGDetailField Icon="email">
+                <LabelContent><DisplayName For="@(() => _contact.Email)" /></LabelContent>
+                <ChildContent>
+                    @if (!string.IsNullOrWhiteSpace(_contact.Email))
+                    {
+                        <a href="mailto:@_contact.Email" class="text-primary text-decoration-none">
+                            <span class="material-icons" style="font-size: 18px; vertical-align: middle;">mail_outline</span>
+                            @_contact.Email
+                        </a>
+                    }
+                    else
+                    {
+                        <p class="mb-0 text-muted">-</p>
+                    }
+                </ChildContent>
+            </RedGDetailField>
 
-
-                        
-                    </tbody>
-                </table>
-            </div>    
         </div>
-    </div>
-    
-     <div>
-                    
-        
-        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Lista Contatti"]" OnClick="Annulla" />
 
-        
-        <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
-        
-        
-        
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorButton Template="TemplateButton.Back" Text="@Localize["Lista Contatti"]" OnClick="Annulla" />
+                <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+            </div>
+        </div>
     </div>
 }

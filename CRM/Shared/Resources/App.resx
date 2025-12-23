@@ -147,9 +147,6 @@
   <data name="ButtonCancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
-  <data name="ButtonConfirm" xml:space="preserve">
-    <value>OK</value>
-  </data>
   <data name="ButtonDelete" xml:space="preserve">
     <value>Delete</value>
   </data>
@@ -223,7 +220,7 @@
     <value>Ticket Description</value>
   </data>
   <data name="Dettagli Contatto" xml:space="preserve">
-    <value>Details Contact</value>
+    <value>Contact Details</value>
   </data>
   <data name="Edit User" xml:space="preserve">
     <value>Edit User</value>
@@ -370,7 +367,7 @@
     <value />
   </data>
   <data name="Displaying page {0} of {1} (total {2} records)" xml:space="preserve">
-    <value />
+    <value>Página{0} de {1} (total {2} registros</value>
   </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="Name" type="System.Resources.ResXNullRef, System.Windows.Forms">
@@ -406,7 +403,19 @@
   <data name="ToBeInvoiced" xml:space="preserve">
     <value>To be invoiced</value>
   </data>
+  <data name="AddFiles" xml:space="preserve">
+    <value>Add Files</value>
+  </data>
   <data name="Article" xml:space="preserve">
     <value>Article</value>
+  </data>
+  <data name="ButtonConfirm" xml:space="preserve">
+    <value>Confirm</value>
+  </data>
+  <data name="Companies" xml:space="preserve">
+    <value>Companies</value>
+  </data>
+  <data name="Manage Companies" xml:space="preserve">
+    <value>Management of registered companies</value>
   </data>
 </root>

@@ -9,78 +9,65 @@
 }
 else
 {
-    <div class="row rounded-3 bg-light">
-        <div class="col-md-8">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
 
-            <div class="row g-3">
-                
+            <RedGDetailField Icon="chat" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _talk.Name)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_talk.Name</p></ChildContent>
+            </RedGDetailField>
 
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th scope="col"></th>
-                            <th scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _talk.Name)" /></th>
-                            <td>@_talk.Name</td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _talk.Date)" /></th>
-                            <td>@_talk.Date.ToString("d")</td>
+            <RedGDetailField Icon="event">
+                <LabelContent><DisplayName For="@(() => _talk.Date)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_talk.Date.ToString("d")</p></ChildContent>
+            </RedGDetailField>
 
-                        </tr>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _talk.Company)" /></th>
-                            <td>@_talk.Company</td>
+            <RedGDetailField Icon="business">
+                <LabelContent><DisplayName For="@(() => _talk.Company)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_talk.Company</p></ChildContent>
+            </RedGDetailField>
 
-                        </tr>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _talk.Contact)" /></th>
-                            <td>@_talk.Contact</td>
+            <RedGDetailField Icon="person">
+                <LabelContent><DisplayName For="@(() => _talk.Contact)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_talk.Contact</p></ChildContent>
+            </RedGDetailField>
 
-                        </tr>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _talk.Amount)" /></th>
-                            <td>@_talk.Amount.ToString("###,##0.00")</td>
+            <RedGDetailField Icon="attach_money">
+                <LabelContent><DisplayName For="@(() => _talk.Amount)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_talk.Amount.ToString("###,##0.00")</p></ChildContent>
+            </RedGDetailField>
 
-                        </tr>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _talk.Target)" /></th>
-                            <td>@_talk.Target.ToString("###,##0.00")</td>
+            <RedGDetailField Icon="flag">
+                <LabelContent><DisplayName For="@(() => _talk.Target)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_talk.Target.ToString("###,##0.00")</p></ChildContent>
+            </RedGDetailField>
 
-                        </tr>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _talk.State)" /></th>
-                            <td><pre>@EnumService.Get(typeof(TalkStates), _talk.State)</pre></td>
+            <RedGDetailField Icon="pending">
+                <LabelContent><DisplayName For="@(() => _talk.State)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@EnumService.Get(typeof(TalkStates), _talk.State)</p></ChildContent>
+            </RedGDetailField>
 
-                        </tr>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(()=>_talk.Phase)" /></th>
-                            <td>@EnumService.Get(typeof(TalkPhases), _talk.Phase)</td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(()=>_talk.IdUser)" /></th>
-                            <td>@_talk.User</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>    
+            <RedGDetailField Icon="layers">
+                <LabelContent><DisplayName For="@(() => _talk.Phase)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@EnumService.Get(typeof(TalkPhases), _talk.Phase)</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="account_circle">
+                <LabelContent><DisplayName For="@(() => _talk.IdUser)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_talk.User</p></ChildContent>
+            </RedGDetailField>
+
         </div>
-    </div>
-    
-     <div>
-                    
-        
-        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Lista Talks"]" OnClick="Annulla" />
 
-        @if (_talk.Permits.Edit())
-        {
-            <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
-        }
-        
-        
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorButton Template="TemplateButton.Back" Text="@Localize["Lista Talks"]" OnClick="Annulla" />
+                @if (_talk.Permits.Edit())
+                {
+                    <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+                }
+            </div>
+        </div>
     </div>
 }

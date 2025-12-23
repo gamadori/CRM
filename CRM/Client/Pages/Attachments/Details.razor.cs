@@ -3,15 +3,16 @@ using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.Extensions.Localization;
+using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Threading.Tasks;
-using Microsoft.JSInterop;
 using System.Text.Json;
-using Microsoft.Extensions.Localization;
+using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace CRM.Client.Pages.Attachments
 {
@@ -247,6 +248,59 @@ namespace CRM.Client.Pages.Attachments
                 JSRuntime.InvokeVoidAsync("ShowModal", "dlgDelete");
             }
 
+        }
+        private async Task OnRename((int? IdFile, string NewName) args)
+        {
+            try
+            {
+                if (args.IdFile == null)
+                {
+                    Console.WriteLine("ID file non valido");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(args.NewName))
+                {
+                    Console.WriteLine("Il nuovo nome non può essere vuoto");
+                    return;
+                }
+
+                var nameWithoutExtension = System.IO.Path.GetFileNameWithoutExtension(args.NewName);
+                
+                var response = await Http.PutAsJsonAsync($"api/Attachments/files/rename/{args.IdFile}", nameWithoutExtension);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // Ricarica l'attachment per aggiornare la lista dei file
+                    await LoadAttachment();
+                    StateHasChanged();
+                }
+                else
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Errore durante la ridenominazione: {response.StatusCode} - {errorMessage}");
+                    
+                    // Opzionale: mostra un messaggio all'utente
+                    _message = $"Errore durante la ridenominazione del file: {errorMessage}";
+                    _messageHeader = "Errore";
+                    StateHasChanged();
+                    await JSRuntime.InvokeVoidAsync("ShowModal", "dlgDelete");
+                }
+            }
+            catch (AccessTokenNotAvailableException exception)
+            {
+                exception.Redirect();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore imprevisto durante la ridenominazione: {ex.Message}");
+                
+                // Opzionale: mostra un messaggio all'utente
+                _message = $"Errore imprevisto durante la ridenominazione del file: {ex.Message}";
+                _messageHeader = "Errore";
+                StateHasChanged();
+                await JSRuntime.InvokeVoidAsync("ShowModal", "dlgDelete");
+            }
         }
     }
 }

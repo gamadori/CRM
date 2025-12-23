@@ -1,40 +1,39 @@
 ﻿@page "/ProjectsModels/Details/{Id:int}"
 
-<h3>Dettagli Progetto</h3>
-<hr />
+<BlazorHeader Header="Dettagli Modello Progetto" />
+
 @if (_project == null)
 {
     <Waiting></Waiting>
 }
 else
 {
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
 
-    <dl class="row">
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_project.Name)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@_project.Name</span>
-        </dd>
+            <RedGDetailField Icon="folder_special" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _project.Name)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_project.Name</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_project.Description)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@_project.Description</span>
-        </dd>
+            <RedGDetailField Icon="description">
+                <LabelContent><DisplayName For="@(() => _project.Description)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_project.Description</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_project.IdUser)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@_project.IdUser</span>
-        </dd>
+            <RedGDetailField Icon="person">
+                <LabelContent><DisplayName For="@(() => _project.IdUser)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_project.IdUser</p></ChildContent>
+            </RedGDetailField>
 
-    </dl>
-    <div>
-        <BlazorButton Template="TemplateButton.Back" Text="Lista Tipo Prodotti" OnClick="Annulla" />
-        <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+        </div>
 
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorButton Template="TemplateButton.Back" Text="Lista Modelli Progetti" OnClick="Annulla" />
+                <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+            </div>
+        </div>
     </div>
-}
+}}

@@ -1,6 +1,7 @@
 ﻿@page "/Settings/AccessoryTypes/Details/{Id:int}"
 @using CRM.Shared.Helper
 
+<BlazorHeader Header="Dettagli Tipo Accessorio" />
 
 @if (_accessoryType == null)
 {
@@ -8,48 +9,30 @@
 }
 else
 {
-    <div class="container m-2">
-        <div class="row rounded-3 bg-light">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            
+            <RedGDetailField Icon="category" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _accessoryType.Name)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_accessoryType.Name</p></ChildContent>
+            </RedGDetailField>
 
-            <div class="row g-3">
-                
+            <RedGDetailField Icon="description">
+                <LabelContent><DisplayName For="@(() => _accessoryType.Description)" /></LabelContent>
+                <ChildContent><span class="note-report mb-0">@_accessoryType.Description</span></ChildContent>
+            </RedGDetailField>
 
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th scope="col"></th>
-                            <th scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _accessoryType.Name)" /></th>
-                            <td>@_accessoryType.Name</td>
-                        </tr>
-                        
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _accessoryType.Description)" /></th>
-                            <td><span class="note-report">@_accessoryType.Description</span></td>
-
-                        </tr>
-                       
-                    </tbody>
-                </table>
-            </div>    
         </div>
-    
-         <div>
-                    
-        
-            <BlazorButton Template="TemplateButton.Back" Text="@Localize["Back"]" OnClick="Annulla" />
 
-            @if (_accessoryType.Permits.Edit())
-            {
-                <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
-            }
-        
-        
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorButton Template="TemplateButton.Back" Text="@Localize["Back"]" OnClick="Annulla" />
+                @if (_accessoryType.Permits.Edit())
+                {
+                    <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+                }
+            </div>
         </div>
     </div>
-
 }

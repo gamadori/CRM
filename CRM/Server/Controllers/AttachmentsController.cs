@@ -444,7 +444,47 @@ namespace CRM.Server.Controllers
             }
         }
 
+        /// <summary>
+        /// Rinomina il nome del file mantenendo l'estensione
+        /// 
+        /// </summary>
+        /// <param name="id">ID del file da rinominare</param>
+        /// <param name="newName">Nuovo nome del file (senza estensione)</param>
+        /// <returns></returns>
+        [HttpPut("files/rename/{id}")]
+        public async Task<IActionResult> FileRename(int id, [FromBody] string newName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(newName))
+                {
+                    return BadRequest("Il nuovo nome non può essere vuoto");
+                }
 
+                var file = await _context.AttachmentFiles.Where(x => x.Id == id).FirstOrDefaultAsync();
+
+                if (file == null)
+                {
+                    return NotFound($"File con ID {id} non trovato");
+                }
+
+                var extension = Path.GetExtension(file.Name);
+                file.Name = $"{newName}{extension}";
+
+                await _context.SaveChangesAsync();
+
+                await _logEventService.RegisterAsync(nameof(AttachmentsController), nameof(FileRename), 
+                    LogEvent.EventsTypes.Info, $"File {id} rinominato in {file.Name}");
+
+                return Ok(new { success = true, newName = file.Name });
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(AttachmentsController), nameof(FileRename), 
+                    LogEvent.EventsTypes.Error, ex);
+                return StatusCode(500, $"Errore durante la ridenominazione del file: {ex.Message}");
+            }
+        }
         private bool AttachmentExists(int id)
         {
             return _context.Attachments.Any(e => e.Id == id);

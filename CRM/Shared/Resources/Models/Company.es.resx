@@ -144,6 +144,9 @@
   <data name="Mobile" xml:space="preserve">
     <value>Móvil</value>
   </data>
+  <data name="Note" xml:space="preserve">
+    <value>Note</value>
+  </data>
   <data name="PIva" xml:space="preserve">
     <value>Número de IVA</value>
   </data>

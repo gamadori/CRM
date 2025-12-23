@@ -67,6 +67,8 @@ namespace CRM.Shared
         [Display(Name = nameof(Company.CompanyType), ResourceType = typeof(Resources.Models.Company))]
         public CompanyTypes CompanyType { get; set; }
 
+        [Display(Name = nameof(Company.Note), ResourceType = typeof(Resources.Models.Company))]
+        public string Note { get; set; }
 
         [Display(Name = nameof(Company.IdReseller), ResourceType = typeof(Resources.Models.Company))]
         public int? IdReseller { get; set; } 

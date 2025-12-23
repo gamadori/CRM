@@ -160,6 +160,15 @@ namespace CRM.Shared.Resources.Models {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Note.
+        /// </summary>
+        public static string Note {
+            get {
+                return ResourceManager.GetString("Note", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a VAT Number.
         /// </summary>
         public static string PIva {

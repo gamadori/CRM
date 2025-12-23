@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Shared;
 using CRM.Shared;
 using CRM.Shared.Helper;
 using MediatR;
@@ -19,7 +20,7 @@ namespace CRM.Client.Services
 
         private readonly IUserService _userService;
 
-       
+        
        
 
         public BreadCrumbService(IStringLocalizer<CRM.Shared.Resources.App> localizer, IUserService userRestService)
@@ -238,21 +239,17 @@ namespace CRM.Client.Services
         }
 
 
-        public async Task<List<BreadcrumbModel>> Companies(string name = null, bool link = false)
+        public List<BreadcrumbItem> Companies(int? id = null, string? name = null)
         {
-            List<BreadcrumbModel> bread = await Home();
-
-
-            
-            bread.Add(new BreadcrumbModel() { Title = $"Aziende", Url = link || name != null ? $"Companies" : null });
-            if (name != null)
+            List<BreadcrumbItem> breadcrumbItems = new()
             {
-                
-                bread.Add(new BreadcrumbModel() { Title = name, Url = link ? ConstHelper.CompaniesPath : null });
+                new BreadcrumbItem(_localizer["Companies"], "/Companies"),
+            };
+            if (id != null)
+            {
+                breadcrumbItems.Add(new BreadcrumbItem(name, $"/Articles/{id}"));
             }
-            
-
-            return bread;
+            return breadcrumbItems; 
         }
 
         public async Task<List<BreadcrumbModel>> Articles(string name = null, bool link = false)

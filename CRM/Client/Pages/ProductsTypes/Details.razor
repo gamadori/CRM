@@ -10,26 +10,27 @@
 }
 else
 {
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
 
-<dl class="row">
-    <dt class="col-sm-2">
-        <DisplayName For="@(()=>_productType.Name)" />
-    </dt>
-    <dd class="col-sm-10">
-        <span>@_productType.Name</span>
-    </dd>
-    <dt class="col-sm-2">
-        <DisplayName For="@(()=>_productType.Description)" />
-    </dt>
-    <dd class="col-sm-10">
-        <span>@_productType.Description</span>
-    </dd>
-    
-</dl>
+            <RedGDetailField Icon="category" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _productType.Name)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_productType.Name</p></ChildContent>
+            </RedGDetailField>
 
-<div>
-    <BlazorLink Href="/Settings/ProductsTypes" Template="TemplateButton.Back" Text="@Localize["Lista Tipo Prodotti"]" />
-    <BlazorButton OnClick="EditProductType" Template="TemplateButton.Edit" Text="@Localize["Edit"]" Label="true" />
-    
-</div>
+            <RedGDetailField Icon="description">
+                <LabelContent><DisplayName For="@(() => _productType.Description)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_productType.Description</p></ChildContent>
+            </RedGDetailField>
+
+        </div>
+
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorLink Href="/Settings/ProductsTypes" Template="TemplateButton.Back" Text="@Localize["Lista Tipo Prodotti"]" />
+                <BlazorButton OnClick="EditProductType" Template="TemplateButton.Edit" Text="@Localize["Edit"]" Label="true" />
+            </div>
+        </div>
+    </div>
 }

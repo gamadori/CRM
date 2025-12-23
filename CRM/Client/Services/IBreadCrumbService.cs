@@ -1,4 +1,5 @@
-﻿using CRM.Shared;
+﻿using CRM.Client.Shared;
+using CRM.Shared;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -41,7 +42,7 @@ namespace CRM.Client.Services
 
         Task<List<BreadcrumbModel>> ContractTypes(bool link, string? txt = null);
 
-        Task<List<BreadcrumbModel>> Companies(string name = null, bool link = false);
+        public List<BreadcrumbItem> Companies(int? id = null, string? name = null);
 
         Task<List<BreadcrumbModel>> Contacts(string name = null, bool link = false);
 

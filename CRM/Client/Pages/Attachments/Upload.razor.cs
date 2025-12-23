@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 using Radzen;
 using System;
@@ -34,6 +35,9 @@ namespace CRM.Client.Pages.Attachments
 
         [Inject]
         private IJSRuntime JSRuntime { get; set; }
+
+        [Inject]
+        IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Parameter]
         public int Id { get; set; }

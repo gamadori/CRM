@@ -1,66 +1,47 @@
 ﻿@page "/Settings/ContractTypeTicketTypes/Details/{Id:int}"
 @using CRM.Shared.Helper
 
-<h3>@_header</h3>
-<hr />
+<BlazorHeader Header="@_header" />
+
 @if (_item == null)
 {
     <Waiting></Waiting>
 }
 else
 {
-    <div class="row rounded-3 bg-light">
-        <div class="col-md-8">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
 
-            <div class="row g-3">
-                
+            <RedGDetailField Icon="confirmation_number" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _item.TicketTypeName)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_item.TicketTypeName</p></ChildContent>
+            </RedGDetailField>
 
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th scope="col"></th>
-                            <th scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _item.TicketTypeName)" /></th>
-                            <td>@_item.TicketTypeName</td>
-                        </tr>
+            <RedGDetailField Icon="numbers">
+                <LabelContent><DisplayName For="@(() => _item.NumIntervention)" /></LabelContent>
+                <ChildContent>
+                    @if (_item.Unlimited)
+                    {
+                        <p class="mb-0 text-dark">@Localize["Unlimited"]</p>
+                    }
+                    else
+                    {
+                        <p class="mb-0 text-dark">@_item.NumIntervention</p>
+                    }
+                </ChildContent>
+            </RedGDetailField>
 
-                        <tr>
-                            <th scope="row"><DisplayName For="@(() => _item.NumIntervention)" /></th>
-                            <td>
-                                @if (_item.Unlimited)
-                                {
-                                    <span>@Localize["Unlimited"]</span>
-                                }
-                                else
-                                {
-                                    <span>@_item.NumIntervention</span>
-                                }
-                            </td>
-                        </tr>
-
-                        
-                       
-
-                    </tbody>
-                </table>
-            </div>    
         </div>
-    </div>
-    
-     <div>
-                    
-        
-        <BlazorButton Template="TemplateButton.Back" Text="@Localize["Contracts Details"]" OnClick="Annulla" />
 
-        @if (_item.Permits.Edit())
-        {
-            <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
-        }
-        
-        
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorButton Template="TemplateButton.Back" Text="@Localize["Contracts Details"]" OnClick="Annulla" />
+                @if (_item.Permits.Edit())
+                {
+                    <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+                }
+            </div>
+        </div>
     </div>
 }

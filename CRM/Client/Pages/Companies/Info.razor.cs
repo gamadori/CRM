@@ -66,7 +66,7 @@ namespace CRM.Client.Pages.Companies
 
         private Company _company = null;
 
-        private List<BreadcrumbModel> _breadCrumb;
+        private List<BreadcrumbItem> _breadcrumbItems = new();
 
         private bool _fromDetails = false;
         protected override async Task OnInitializedAsync()
@@ -86,7 +86,7 @@ namespace CRM.Client.Pages.Companies
         {
             _company = await companiesService.GetItem<Company, int>(Id, ConstHelper.CompaniesPath);
 
-            _breadCrumb = await BreadCrumbService.Companies(_company.RagioneSociale);
+            _breadcrumbItems = BreadCrumbService.Companies(_company.Id, _company.RagioneSociale);
 
             
 

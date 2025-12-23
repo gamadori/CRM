@@ -29,7 +29,7 @@
     }
 </style>
 
-<h3>Aggiungi File</h3>
+<BlazorHeader Header="@Localize["Add Files"]"></BlazorHeader>
 
 @if (_attachment == null)
 {
@@ -39,13 +39,15 @@ else
 {
     <div class="row">
         <div class="col-md-8">
+            <!-- Nome Allegato -->
             <div class="mb-3">
-                <DisplayName For="@(() => _attachment.Name)" />
-                <span>@_attachment.Name</span>
-            </div>
-            <div class="mb-3">
-                <DisplayName For="@(() => _attachment.Description)" />
-                <span>@_attachment.Description</span>
+                <h6 class="text-dark fw-semibold mb-2 d-flex align-items-center">
+                    <span class="material-icons me-2 text-primary" style="font-size: 20px;">label</span>
+                    <DisplayName For="@(() => _attachment.Name)" />
+                </h6>
+                <div class="p-3 bg-light rounded border-start border-primary border-4">
+                    <p class="mb-0 text-dark">@_attachment.Name</p>
+                </div>
             </div>
             <div class="mb-3">
                 <RadzenCard Variant="Variant.Outlined">

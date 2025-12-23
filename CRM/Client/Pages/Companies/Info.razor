@@ -11,13 +11,11 @@
 }
 else
 {
-    <BlazorBreadCrumb Model="@_breadCrumb"></BlazorBreadCrumb>
 
-  @*  <div class="page-header">
-
-           <h2> @_company.RagioneSociale</h2>
-    </div>*@
-    
+    <PageHeader Title="@_company.RagioneSociale"
+                Subtitle=@Localize["Company"]
+                BreadcrumbItems="@_breadcrumbItems">
+    </PageHeader>
 
     <RadzenSelectBar @bind-Value="_selectView" TValue="CompanyViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
         <Items>

@@ -3,9 +3,7 @@
 @using Radzen
 @using Radzen.Blazor
 
-<div class="container-fluid">
-<BlazorHeader Header="@Localize["Dettagli Utente"]">
-</BlazorHeader>
+<BlazorHeader Header="@Localize["Dettagli Utente"]"></BlazorHeader>
 
 <BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
 
@@ -15,96 +13,110 @@
 }
 else
 {
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th scope="col"></th>
-                <th scope="col"></th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <th scope="row"><DisplayName For="@(()=>_user.Name)"/></th>
-                <td><span>@_user.Name</span></td>
-            </tr>
-            <tr>
-                <th scope="row"><DisplayName For="@(()=>_user.Surname)"/></th>
-                <td><span>@_user.Surname</span></td>
-            </tr>
-            <tr>
-                <th scope="row"><DisplayName For="@(()=>_user.Enabled)"/></th>
-                <td><span>@_user.Enabled</span></td>
-            </tr>
-            <tr>
-                <th scope="row"><DisplayName For="@(()=>_user.AdminConfirmed)"/></th>
-                <td><span>@_user.AdminConfirmed</span></td>
-            </tr>
-            <tr>
-                <th scope="row"><DisplayName For="@(()=>_user.WaitConfirmInvite)"/></th>
-                <td><span>@_user.WaitConfirmInvite</span></td>
-            </tr>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+
+            <RedGDetailField Icon="person" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _user.Name)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_user.Name</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="badge">
+                <LabelContent><DisplayName For="@(() => _user.Surname)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_user.Surname</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="toggle_on">
+                <LabelContent><DisplayName For="@(() => _user.Enabled)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_user.Enabled</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="verified">
+                <LabelContent><DisplayName For="@(() => _user.AdminConfirmed)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_user.AdminConfirmed</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="pending">
+                <LabelContent><DisplayName For="@(() => _user.WaitConfirmInvite)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_user.WaitConfirmInvite</p></ChildContent>
+            </RedGDetailField>
+
             @if (_user.DateSendInvite != null)
             {
-                <tr>
-                    <th scope="row"><DisplayName For="@(()=>_user.DateSendInvite)"/></th>
-                    <td><span>@_user.DateSendInvite</span></td>
-                </tr>
-                <tr>
-                    <th scope="row"><DisplayName For="@(()=>_user.DateAcceptInvite)"/></th>
-                        <td><span>@_user.DateAcceptInvite</span></td>
-                </tr>
+                <RedGDetailField Icon="send">
+                    <LabelContent><DisplayName For="@(() => _user.DateSendInvite)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_user.DateSendInvite</p></ChildContent>
+                </RedGDetailField>
+
+                <RedGDetailField Icon="done">
+                    <LabelContent><DisplayName For="@(() => _user.DateAcceptInvite)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_user.DateAcceptInvite</p></ChildContent>
+                </RedGDetailField>
             }
-            <tr>
-                <th scope="row"><DisplayName For="@(()=>_user.Email)"/></th>
-                <td><span>@_user.Email</span></td>
-            </tr>
-            <tr>
-                <th scope="row"><DisplayName For="@(()=>_user.PhoneNumber)"/></th>
-                <td><span>@_user.PhoneNumber</span></td>
-            </tr>
-            <tr>
-                @if (_user.IdCompany != null)
-                {
-                    <th scope="row"><DisplayName For="@(()=>_user.Company)"/></th>
-                    <td><span>@_user.Company?.RagioneSociale</span></td>
-                }
-                else
-                {
-                    <th scope="row"><DisplayName For="@(()=>_user.CompanyPreview)" /></th>
-                    <td><span>@_user.CompanyPreview</span></td>
-                }
-            </tr>
-            <tr>
-                <th scope="row"><DisplayName For="@(()=>_user.Color)"/></th>
-                <td><span><RadzenColorPicker @bind-Value=@_user.Color ShowHSV=true ShowRGBA=true ShowColors=true Disabled="true" /></span></td>
-            </tr>
-            <tr>
-                <th scope="row"><DisplayName For="@(()=>_user.Photo)"/></th>
-                <td>
-                        <RedGAvatar IdUser="@_user.Id"></RedGAvatar>
-                </td>
-            </tr>
-        
 
-        </tbody>
-    </table>
-    
-    <div class="row m-3">
-        <BlazorButton CssClass="col-auto" Style="BtnStyle.Secondary" OnClick="Annulla" Text="Lista Utenti" Template="TemplateButton.Back"></BlazorButton>
-            <BlazorButton CssClass="col-auto" Style="BtnStyle.Primary" OnClick="Edit" Template="TemplateButton.Edit" Label="true"></BlazorButton>
-            <BlazorButton CssClass="col-auto" Style="BtnStyle.Dark" OnClick="Roles" Icon="supervised_user_circle" Text="Roles" Label="true"></BlazorButton>
-    
+            <RedGDetailField Icon="email">
+                <LabelContent><DisplayName For="@(() => _user.Email)" /></LabelContent>
+                <ChildContent>
+                    @if (!string.IsNullOrWhiteSpace(_user.Email))
+                    {
+                        <a href="mailto:@_user.Email" class="text-primary text-decoration-none">
+                            <span class="material-icons" style="font-size: 18px; vertical-align: middle;">mail_outline</span>
+                            @_user.Email
+                        </a>
+                    }
+                    else
+                    {
+                        <p class="mb-0 text-muted">-</p>
+                    }
+                </ChildContent>
+            </RedGDetailField>
 
-        @if (!_user.AdminConfirmed)
-        {
-            <BlazorButton CssClass="col-auto" Template="TemplateButton.Confirm" Label="true" OnClick="() => PreparateConfirm()"></BlazorButton>
-        }
-        @* @if (_user.WaitConfirmInvite) *@
-        @* { *@
-                <BlazorButton CssClass="col-auto" Template="TemplateButton.Invitation" Label="true" OnClick="() => PrepareSendInvite()"></BlazorButton>
-        @* } *@
+            <RedGDetailField Icon="phone">
+                <LabelContent><DisplayName For="@(() => _user.PhoneNumber)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_user.PhoneNumber</p></ChildContent>
+            </RedGDetailField>
+
+            @if (_user.IdCompany != null)
+            {
+                <RedGDetailField Icon="business">
+                    <LabelContent><DisplayName For="@(() => _user.Company)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_user.Company?.RagioneSociale</p></ChildContent>
+                </RedGDetailField>
+            }
+            else
+            {
+                <RedGDetailField Icon="business">
+                    <LabelContent><DisplayName For="@(() => _user.CompanyPreview)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_user.CompanyPreview</p></ChildContent>
+                </RedGDetailField>
+            }
+
+            <RedGDetailField Icon="palette">
+                <LabelContent><DisplayName For="@(() => _user.Color)" /></LabelContent>
+                <ChildContent><RadzenColorPicker @bind-Value=@_user.Color ShowHSV=true ShowRGBA=true ShowColors=true Disabled="true" /></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="account_circle">
+                <LabelContent><DisplayName For="@(() => _user.Photo)" /></LabelContent>
+                <ChildContent><RedGAvatar IdUser="@_user.Id"></RedGAvatar></ChildContent>
+            </RedGDetailField>
+
+        </div>
+
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2 flex-wrap">
+                <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Lista Utenti" Template="TemplateButton.Back"></BlazorButton>
+                <BlazorButton Style="BtnStyle.Primary" OnClick="Edit" Template="TemplateButton.Edit" Label="true"></BlazorButton>
+                <BlazorButton Style="BtnStyle.Dark" OnClick="Roles" Icon="supervised_user_circle" Text="Roles" Label="true"></BlazorButton>
+                @if (!_user.AdminConfirmed)
+                {
+                    <BlazorButton Template="TemplateButton.Confirm" Label="true" OnClick="() => PreparateConfirm()"></BlazorButton>
+                }
+                <BlazorButton Template="TemplateButton.Invitation" Label="true" OnClick="() => PrepareSendInvite()"></BlazorButton>
+            </div>
+        </div>
     </div>
 
     <MsgBoxConfirm Id="dlgDelete" LabelBtnNo="No" LabelBtnYes="Yes" Header="Confermare il documento" Message="@_message" OnClick="ConfirmUser"></MsgBoxConfirm>
 }
-</div>

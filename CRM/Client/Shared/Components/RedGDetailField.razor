@@ -1,0 +1,70 @@
+@* Componente per visualizzare un campo di dettaglio con icona e valore *@
+
+<div class="@ContainerClass">
+    <h6 class="text-dark fw-semibold mb-2 d-flex align-items-center">
+        @if (!string.IsNullOrWhiteSpace(Icon))
+        {
+            <span class="material-icons me-2 text-primary" style="font-size: 20px;">@Icon</span>
+        }
+        @if (!string.IsNullOrWhiteSpace(Label))
+        {
+            <span>@Label</span>
+        }
+        else if (LabelContent != null)
+        {
+            @LabelContent
+        }
+    </h6>
+    <div class="p-3 bg-light rounded border-start border-primary border-4">
+        @if (!string.IsNullOrWhiteSpace(Value))
+        {
+            <p class="mb-0 text-dark">@Value</p>
+        }
+        else if (ChildContent != null)
+        {
+            @ChildContent
+        }
+        else
+        {
+            <p class="mb-0 text-muted">-</p>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>
+    /// Icona Material Icons da visualizzare (es. "business", "email", "phone")
+    /// </summary>
+    [Parameter]
+    public string Icon { get; set; }
+
+    /// <summary>
+    /// Etichetta del campo (testo semplice)
+    /// </summary>
+    [Parameter]
+    public string Label { get; set; }
+
+    /// <summary>
+    /// Contenuto personalizzato per l'etichetta (es. DisplayName)
+    /// </summary>
+    [Parameter]
+    public RenderFragment LabelContent { get; set; }
+
+    /// <summary>
+    /// Valore del campo (testo semplice)
+    /// </summary>
+    [Parameter]
+    public string Value { get; set; }
+
+    /// <summary>
+    /// Contenuto personalizzato per il valore (es. link, HTML, immagini)
+    /// </summary>
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    /// <summary>
+    /// Classi CSS del container (default: "mb-3")
+    /// </summary>
+    [Parameter]
+    public string ContainerClass { get; set; } = "mb-3";
+}

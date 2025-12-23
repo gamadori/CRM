@@ -46,16 +46,12 @@ namespace CRM.Server.Controllers
             DateTime date = DateTime.Now.Date;
 
             model.IsClient = !( await _permitsService.IsAdmin() || await _permitsService.IsSuperUser());
-            
-           
 
             var tickets = _context.Tickets.AsQueryable();
 
-            
             if (!await _permitsService.CanAccessOtherCompany())
             {
                
-
                 idCompany = await _permitsService.GetIdCompany();
                 tickets = tickets.Where(x => x.IdCompany == idCompany);
             }
@@ -94,7 +90,7 @@ namespace CRM.Server.Controllers
 
             if (await _permitsService.IsAdmin(idUser))
             {
-                model.UsersNeedConfirm = await _context.Users.Where(x => x.AdminConfirmed == false).CountAsync();
+                model.UsersNeedConfirm = await _context.Users.Where(x =>!x.IsDeleted && x.AdminConfirmed == false).CountAsync();
             }
             else
                 model.UsersNeedConfirm = 0;

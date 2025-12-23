@@ -1,55 +1,53 @@
 ﻿@page "/LogEvents/Details/{Id:int}"
 
-<h3>Dettagli Evento</h3>
-<hr />
+<BlazorHeader Header="Dettagli Evento" />
+
 @if (_logEvent == null)
 {
     <Waiting></Waiting>
 }
 else
 {
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
 
-    <dl class="row">
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_logEvent.DateEvent)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@_logEvent.DateEvent</span>
-        </dd>
+            <RedGDetailField Icon="event" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _logEvent.DateEvent)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_logEvent.DateEvent</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_logEvent.Module)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@_logEvent.Module</span>
-        </dd>
+            <RedGDetailField Icon="widgets">
+                <LabelContent><DisplayName For="@(() => _logEvent.Module)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_logEvent.Module</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_logEvent.Subroutine)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@_logEvent.Subroutine</span>
-        </dd>
-         <dt class="col-sm-2">
-            <DisplayName For="@(()=>_logEvent.User)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@_logEvent.User</span>
-        </dd>
+            <RedGDetailField Icon="code">
+                <LabelContent><DisplayName For="@(() => _logEvent.Subroutine)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_logEvent.Subroutine</p></ChildContent>
+            </RedGDetailField>
 
-        <dt class="col-sm-2">
-            <DisplayName For="@(()=>_logEvent.EventType)" />
-        </dt>
-        <dd class="col-sm-10">
-            <span>@_logEvent.EventType</span>
-        </dd>
-        <dd class="col-sm-10">
-            
-            <p class="note-report">@_logEvent.Message</p> 
-        </dd>
-    </dl>
-    <div>
-        <BlazorButton Template="TemplateButton.Back" Text="Lista Eventi" OnClick="Annulla" />
+            <RedGDetailField Icon="person">
+                <LabelContent><DisplayName For="@(() => _logEvent.User)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_logEvent.User</p></ChildContent>
+            </RedGDetailField>
 
+            <RedGDetailField Icon="info">
+                <LabelContent><DisplayName For="@(() => _logEvent.EventType)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_logEvent.EventType</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="message">
+                <LabelContent>Messaggio</LabelContent>
+                <ChildContent><p class="note-report mb-0">@_logEvent.Message</p></ChildContent>
+            </RedGDetailField>
+
+        </div>
+
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorButton Template="TemplateButton.Back" Text="Lista Eventi" OnClick="Annulla" />
+            </div>
+        </div>
     </div>
 }

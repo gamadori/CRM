@@ -1,5 +1,6 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Services;
+using CRM.Client.Shared;
 using CRM.Shared;
 using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Authorization;
@@ -100,7 +101,7 @@ namespace CRM.Client.Pages.Companies
 
         private string _header;
 
-        private List<BreadcrumbModel> _breadCrumb;
+        private List<BreadcrumbItem> _breadcrumbItems = new();
 
         protected override async Task OnInitializedAsync()
         {
@@ -120,7 +121,7 @@ namespace CRM.Client.Pages.Companies
 
             await LoadData();
 
-            _breadCrumb = await BreadCrumbService.Companies();
+            _breadcrumbItems = BreadCrumbService.Companies();
 
         }
 

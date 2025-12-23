@@ -36,6 +36,10 @@
     {
         <BlazorHeader>@Localize["Edit Attachment"]</BlazorHeader>
     }
+    else
+    {
+        <BlazorHeader>@Localize["New Attachment"]</BlazorHeader>
+    }
     @if (_attachment == null)
     {
         <Waiting></Waiting>
@@ -50,26 +54,26 @@
         }
         <EditForm Model="@_attachment" OnValidSubmit="HandleValidSubmit">
             <RadzenStack Gap="1rem" class="mb-3">
-                <RadzenColumn Size="12" SizeSM="6">
+                <RadzenColumn Size="12" SizeSM="8">
                     <RadzenStack>
                         <DataAnnotationsValidator />
                         <ValidationSummary />
                         <RadzenRow>
-                            <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenColumn Size="12">
                                 <RadzenStack>
                                         <RedGTextBox @bind-Value="@_attachment.Name" For="@(() => _attachment.Name)" />
                                 </RadzenStack>
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow>
-                            <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenColumn Size="12" >
                                 <RadzenStack>
                                     <RedGTextArea @bind-Value="@_attachment.Description" For="@(() => _attachment.Description)" Rows="3" />
                                 </RadzenStack>
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow>
-                            <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenColumn Size="12">
                                 <RadzenStack Orientation="Orientation.Vertical">
                                     <RadzenCard Variant="Variant.Outlined">
                                         <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Drag and drop files to upload</RadzenText>
