@@ -33,8 +33,8 @@ a, .btn-link {
 }
 
 .valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
-    
+    outline: none;
+    /* Rimuovi la cornice verde - mantiene solo feedback rosso per errori */
 }
 
 .invalid {

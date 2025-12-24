@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
+using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,6 +27,12 @@ namespace CRM.Client.Pages.Tickets
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
+
+        [Inject]
+        HttpClient HttpClient { get; set; }
+
+        [Inject]
+        IJSRuntime JSRuntime { get; set; }
 
         [Parameter]
         public int? Id { get; set; }
@@ -56,6 +63,7 @@ namespace CRM.Client.Pages.Tickets
 
 
         private bool _panelAssign = false;
+        private bool _isDownloadingPdf = false;
 
         private TicketModel _ticket = null;
 
@@ -139,6 +147,51 @@ namespace CRM.Client.Pages.Tickets
             else
                 NavigationManager.NavigateTo($"/Tickets/Report/{Id}");
         }
+
+        /// <summary>
+        /// Scarica il PDF del ticket con QuestPDF
+        /// </summary>
+        private async Task DownloadPdf()
+        {
+            try
+            {
+                if (Id == null || Id <= 0)
+                    return;
+
+                _isDownloadingPdf = true;
+                StateHasChanged();
+
+                // Chiamata API per ottenere il PDF
+                var response = await HttpClient.GetAsync($"api/Tickets/pdf/{Id}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var fileBytes = await response.Content.ReadAsByteArrayAsync();
+                    var fileName = $"Ticket_{Id}_{DateTime.Now:yyyyMMdd}.pdf";
+
+                    // Scarica il file nel browser
+                    await JSRuntime.InvokeVoidAsync("downloadFileFromBytes", 
+                        fileName, 
+                        "application/pdf", 
+                        fileBytes);
+                }
+                else
+                {
+                    // Mostra errore nella console (o usa un toast/notification service se disponibile)
+                    Console.WriteLine($"Errore download PDF: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore download PDF: {ex.Message}");
+            }
+            finally
+            {
+                _isDownloadingPdf = false;
+                StateHasChanged();
+            }
+        }
+
         private void PrepareAssign()
         {
             _panelAssign = true;

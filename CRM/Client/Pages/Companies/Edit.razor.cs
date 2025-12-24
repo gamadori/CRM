@@ -59,11 +59,12 @@ namespace CRM.Client.Pages.Companies
         [Parameter]
         public int? IdReseller { get; set; }
 
+       
         [Parameter]
-        public EventCallback OnClickSave { get; set; }
+        public EventCallback<int?> OnSaving { get; set; }
 
         [Parameter]
-        public Action OnClickCancel { get; set; }
+        public EventCallback OnCancel { get; set; }
 
         [Parameter]
         public PageModality PageMode { get; set; } = PageModality.Visualization;
@@ -150,8 +151,8 @@ namespace CRM.Client.Pages.Companies
                 {
                     DialogService.CloseSide(_company.Id);
                 }
-                else if (OnClickSave.HasDelegate)
-                    await OnClickSave.InvokeAsync();
+                else if (OnSaving.HasDelegate)
+                    await OnSaving.InvokeAsync();
                 else
                     NavigationManager.NavigateTo("/Companies/Index");
             }
@@ -161,10 +162,10 @@ namespace CRM.Client.Pages.Companies
             }
         }
 
-        protected void Annulla()
+        protected async Task Annulla()
         {
-            if (OnClickCancel != null)
-                OnClickCancel();
+            if (OnCancel.HasDelegate)
+                await OnCancel.InvokeAsync();
             else
                 NavigationManager.NavigateTo("/Companies/Index");
         }

@@ -40,7 +40,7 @@ else
         }
         else
         {
-            <Edit Id="@Id" OnClickSave="SaveCompany" OnClickCancel="CancelCompany"></Edit>
+            <Edit Id="@Id" OnSaving="SaveCompany" OnCancel="CancelCompany"></Edit>
         }
     }
     else if (_selectView == CompanyViews.Users)

@@ -8,7 +8,7 @@ else if (Type == DialogType.Companies)
 {
     @if (Mode == DialogMode.Selection)
     {
-        <CRM.Client.Pages.Companies.Index OnSelectItem="OnSelect" OnAddNewItem=OnAddNew PageMode="PageModality.Dialog"></CRM.Client.Pages.Companies.Index>
+        <CRM.Client.Pages.Companies.Index OnSelectCompany="OnSelect" OnAddNewItem=OnAddNew PageMode="PageModality.Dialog"></CRM.Client.Pages.Companies.Index>
     }
     else if (Mode == DialogMode.Addition)
     {

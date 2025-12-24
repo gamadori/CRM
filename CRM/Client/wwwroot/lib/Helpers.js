@@ -22,6 +22,20 @@ function downloadFromByteArray(options) {
         alert(error);
     }
 }
+// ✅ AGGIUNTO: Funzione per scaricare file da byte array
+window.downloadFileFromBytes = (fileName, contentType, byteArray) => {
+    const blob = new Blob([byteArray], { type: contentType });
+    const url = URL.createObjectURL(blob);
+    const anchorElement = document.createElement('a');
+    anchorElement.href = url;
+    anchorElement.download = fileName ?? 'download';
+    anchorElement.click();
+    anchorElement.remove();
+    URL.revokeObjectURL(url);
+};
+
+
+
 function isDevice() {
     return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile/i.test(navigator.userAgent);
 }

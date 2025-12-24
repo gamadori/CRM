@@ -11,7 +11,7 @@
 
 <RtzDisplayName For="For">
     <ChildContent>
-        <RadzenDatePicker TValue="TValue" Value="@Value" DateFormat="@DateFormat" ShowTime="ShowTime" ValueChanged="@ValueChanged" @rendermode="renderMode" class="@($"{CssClass} remove-border")" Min="@Min" Max="@Max">
+        <RadzenDatePicker TValue="TValue" Value="@Value" DateFormat="@DateFormat" ShowTime="ShowTime" Change=@Change ValueChanged="@ValueChanged" @rendermode="renderMode" class="@($"{CssClass} remove-border")" Min="@Min" Max="@Max">
             <FooterTemplate>
                 @if (TodayButton)
                 {
@@ -62,4 +62,7 @@
     public bool TodayButton { get; set; } = true;
     [Parameter]
     public bool ShowTime { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<DateTime?> Change { get; set; }
 }

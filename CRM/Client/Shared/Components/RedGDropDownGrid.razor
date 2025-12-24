@@ -10,8 +10,12 @@
 <RtzDisplayName For="For" Text="@Label">
     <ChildContent>
     
-        <RadzenDropDown @rendermode="renderMode" TValue="TValue" Data="@Data" TextProperty="@TextProperty" AllowClear="true" Change="@Change"
-                        ValueProperty="@ValueProperty" Value="@Value" ValueChanged="ValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" PageSize="@PageSize" />
+        <RadzenDropDownDataGrid @rendermode="renderMode" TValue="TValue" Data="@Data" TextProperty="@TextProperty" AllowClear=@AllowClear PageSize="@PageSize" Count="@Count" PagingSummaryFormat="@ConstHelper.PagingSummaryFormatShort"
+                        ValueProperty="@ValueProperty" Value="@Value" ValueChanged="ValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+            <Columns>
+                @ChildColumns
+            </Columns>
+        </RadzenDropDownDataGrid>
     </ChildContent>
     <Helper>
         @if (For != null)
@@ -25,27 +29,27 @@
 
 @code {
 
-    [Parameter] 
+    [Parameter]
     public TValue Value { get; set; } = default!;
-    [Parameter] 
+    [Parameter]
     public EventCallback<TValue> ValueChanged { get; set; }
-    [Parameter] 
+    [Parameter]
     public string Style { get; set; } = string.Empty;
-    [Parameter] 
+    [Parameter]
     public string Name { get; set; } = string.Empty;
-    [Parameter] 
+    [Parameter]
     public string Placeholder { get; set; } = string.Empty;
-    [Parameter] 
+    [Parameter]
     public IComponentRenderMode renderMode { get; set; } = RenderMode.InteractiveAuto;
-    [Parameter] 
+    [Parameter]
     public Expression<Func<TValue>> For { get; set; } = default!;
-    [Parameter] 
-    public RenderFragment ChildContent { get; set; } = default!;
+    [Parameter]
+    public RenderFragment ChildColumns { get; set; } = default!;
     [Parameter]
     public RenderFragment Helper { get; set; } = default!;
     [Parameter]
     public RenderFragment? End { get; set; } = default!;
-    [Parameter] 
+    [Parameter]
     public string CssClass { get; set; } = string.Empty;
     [Parameter]
     public IEnumerable<TItem> Data { get; set; } = Enumerable.Empty<TItem>();
@@ -56,7 +60,7 @@
 
     [Parameter]
     public bool AllowFiltering { get; set; } = false;
-   
+
     [Parameter]
     public string? Label { get; set; }
 
@@ -64,5 +68,8 @@
     public int PageSize { get; set; } = ConstHelper.PageSize;
 
     [Parameter]
-    public EventCallback<object> Change { get; set; }
+    public bool AllowClear { get; set; } = true;
+
+    [Parameter]
+    public int Count { get; set; } = 0; 
 }

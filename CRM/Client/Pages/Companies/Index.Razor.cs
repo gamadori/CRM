@@ -59,9 +59,7 @@ namespace CRM.Client.Pages.Companies
         [Parameter]
         public EventCallback<int?> OnSelectCompany { get; set; }
 
-        [Parameter]
-        public EventCallback OnNewCompany { get; set; }
-
+       
         [Parameter]
         public EventCallback<int> OnAddCustomer { get; set; }    
 
@@ -72,8 +70,13 @@ namespace CRM.Client.Pages.Companies
         [Parameter]
         public EventCallback<int> OnRemoveCompany { get; set; }
 
-        private IQueryable<Company> _companies = null;
+       
 
+        [Parameter]
+        public EventCallback OnAddNewItem { get; set; }
+
+
+        private IQueryable<Company> _companies = null;
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
@@ -236,10 +239,10 @@ namespace CRM.Client.Pages.Companies
         }
         protected async Task NewCompany()
         {
-            if (OnNewCompany.HasDelegate)
+            if (OnAddNewItem.HasDelegate)
             {
 
-                await OnNewCompany.InvokeAsync();
+                await OnAddNewItem.InvokeAsync();
             }
             else
                 NavigationManager.NavigateTo("/Companies/Edit");

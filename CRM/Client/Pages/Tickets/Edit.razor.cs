@@ -120,8 +120,6 @@ namespace CRM.Client.Pages.Tickets
 
         private RadzenDropDownDataGrid<string> _ddUser;
 
-        private RadzenDropDownDataGrid<int?> _ddContact;
-
         private bool _isLoading = false;
 
 
@@ -273,7 +271,7 @@ namespace CRM.Client.Pages.Tickets
             _users = response.Items.ToList();
     
             StateHasChanged();
-          
+      
         }
 
         private async Task LoadContactsCustomer(LoadDataArgs args = null)
@@ -376,8 +374,10 @@ namespace CRM.Client.Pages.Tickets
             if (id != null)
             {
                 await LoadCompany();
-                await _ddCompany.SelectItem(id, true);
-                
+                StateHasChanged();
+                _ticket.IdCompany = id.Value;
+                StateHasChanged();
+
             }
         }
 
@@ -406,7 +406,7 @@ namespace CRM.Client.Pages.Tickets
             }
         }
 
-        private void DateOnChange(ChangeEventArgs args)
+        private void DateOnChange(DateTime? args)
         {
             if (_ticket.DateEnd < _ticket.Date)
                 _ticket.DateEnd = _ticket.Date;
@@ -433,6 +433,5 @@ namespace CRM.Client.Pages.Tickets
         {
             dialogService.Close();
         }
-
     }
 }

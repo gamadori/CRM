@@ -54,24 +54,43 @@ else
 
             @if (_ticket.TicketType.Date != (int)PropertyStates.No)
             {
-                <RedGDetailField Icon="calendar_today">
-                    <LabelContent><DisplayName For="@(() => _ticket.Date)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_ticket.Date?.ToShortDateString()</p></ChildContent>
-                </RedGDetailField>
+                <div class="row g-2 mb-3 align-items-stretch">
+                    <div class="col-md-4 d-flex">
+                        <div class="w-100">
+                            <RedGDetailField Icon="calendar_today">
+                                <LabelContent><DisplayName For="@(() => _ticket.Date)" /></LabelContent>
+                                <ChildContent><p class="mb-0 text-dark">@(_ticket.Date?.ToShortDateString() ?? "-")</p></ChildContent>
+                            </RedGDetailField>
+                        </div>
+                    </div>
 
-                <RedGDetailField Icon="schedule">
-                    <LabelContent><DisplayName For="@(() => _ticket.Time)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_ticket.Time?.ToShortTimeString()</p></ChildContent>
-                </RedGDetailField>
+                    @if (_ticket.TicketType.Time != (int)PropertyStates.No)
+                    {
+                        <div class="col-md-4 d-flex">
+                            <div class="w-100">
+                                <RedGDetailField Icon="schedule">
+                                    <LabelContent><DisplayName For="@(() => _ticket.Time)" /></LabelContent>
+                                    <ChildContent><p class="mb-0 text-dark">@(_ticket.Time?.ToShortTimeString() ?? "-")</p></ChildContent>
+                                </RedGDetailField>
+                            </div>
+                        </div>
+                    }
+
+                    @if (_ticket.TicketType.DateEnd != (int)PropertyStates.No)
+                    {
+                        <div class="col-md-4 d-flex">
+                            <div class="w-100">
+                                <RedGDetailField Icon="event_available">
+                                    <LabelContent><DisplayName For="@(() => _ticket.DateEnd)" /></LabelContent>
+                                    <ChildContent><p class="mb-0 text-dark">@(_ticket.DateEnd?.ToShortDateString() ?? "-")</p></ChildContent>
+                                </RedGDetailField>
+                            </div>
+                        </div>
+                    }
+                </div>
             }
 
-            @if (_ticket.TicketType.DateEnd != (int)PropertyStates.No)
-            {
-                <RedGDetailField Icon="event_available">
-                    <LabelContent><DisplayName For="@(() => _ticket.DateEnd)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_ticket.DateEnd?.ToShortDateString()</p></ChildContent>
-                </RedGDetailField>
-            }
+            
 
             @if (_ticket.TicketType.IdArticolo != (int)PropertyStates.No)
             {
@@ -162,6 +181,14 @@ else
                     }
 
                     <AGButton ButtonStyle="AGButton.ButtonStyles.ButtonPrint" OnClickEvent="TicketPrint"></AGButton>
+
+                    @* ✅ PULSANTE PDF - Scarica PDF con QuestPDF *@
+                    <BlazorButton OnClick="@DownloadPdf" 
+                                  Style="@BtnStyle.Info" 
+                                  Icon="picture_as_pdf" 
+                                  Text="Scarica PDF"
+                                  Disabled="_isDownloadingPdf">
+                    </BlazorButton>
                 </div>
             </div>
         }

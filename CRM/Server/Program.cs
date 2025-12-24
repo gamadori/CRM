@@ -101,6 +101,9 @@ builder.Services.AddSingleton<OpenAIEmbeddingService>();
 
 builder.Services.AddSingleton<OpenAIChatService>();
 
+// ✅ AGGIUNTO: Servizio per generare PDF dei ticket
+builder.Services.AddScoped<ITicketPdfGenerator, TicketPdfGenerator>();
+
 builder.Services.AddSingleton<WTelegramService>();
 builder.Services.AddHostedService(provider => provider.GetService<WTelegramService>());
 

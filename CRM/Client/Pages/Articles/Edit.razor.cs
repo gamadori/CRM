@@ -1,5 +1,6 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Services;
+using CRM.Client.Shared.Components;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -75,7 +76,7 @@ namespace CRM.Client.Pages.Articles
 
         private int _productsCount;
 
-        private RadzenDropDownDataGrid<int?> _ddCompany;
+       
 
         protected override async Task OnInitializedAsync()
         {
@@ -186,7 +187,10 @@ namespace CRM.Client.Pages.Articles
             if (id != null)
             {
                 await LoadCompany();
-                await _ddCompany.SelectItem(id, true);
+              
+                StateHasChanged();
+                _article.IdCompany = (int)id;
+                StateHasChanged();
 
             }
         }

@@ -85,6 +85,15 @@ namespace BlazoringComponents.Validators
         async void FieldChanged(object sender, FieldChangedEventArgs args)
         {
             FieldIdentifier fieldIdentifier = args.FieldIdentifier;
+            
+            // ✅ Verifica che il modello del campo sia lo stesso del modello del form
+            // Questo evita di validare componenti UI invece del modello
+            if (fieldIdentifier.Model != EditContext.Model)
+            {
+                // Se il modello del campo non è il modello del form, salta la validazione
+                return;
+            }
+            
             ValidationMessageStore.Clear(fieldIdentifier);
             var propertiesToValidate = new string[] { fieldIdentifier.FieldName };
             var fluentValidationContext =
@@ -93,6 +102,7 @@ namespace BlazoringComponents.Validators
                 propertyChain: new FluentValidation.Internal.PropertyChain(),
                 validatorSelector: new FluentValidation.Internal.MemberNameValidatorSelector(propertiesToValidate)
               );
+            
             ValidationResult result = await Validator.ValidateAsync(fluentValidationContext);
             AddValidationResult(fieldIdentifier.Model, result);
         }

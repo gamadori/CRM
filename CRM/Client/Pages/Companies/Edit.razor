@@ -25,13 +25,7 @@ else
                     <ValidationMessage For="@(() => _company.RagioneSociale)" />
                 </div>
 
-                <div class="col-md-4 mb-3">
-                    <div hidden="@_hidden">
-                        a
-                    </div>
-                </div>
-
-
+               
                 <div class="col-12 mb-3" hidden="@_hidden">
                     <DisplayName For="@(()=>_company.Indirizzo)" />
                     <input id="Indirizzo" class="form-control" @bind-value="@_company.Indirizzo" />

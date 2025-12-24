@@ -3,13 +3,10 @@
 @page "/Tickets/Edit/{Id:int}/{BackUrl}"
 @using Syncfusion.Blazor.Navigations
 @using Syncfusion.Blazor.Calendars
- 
 @using Radzen
 @using Radzen.Blazor
 
-
-<BlazorHeader Header="@_header" Visible=@(PageMode != PageHelper.PageModality.Dialog) />
-
+<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog)>@_header</BlazorHeader>
 
 @if (_ticket == null)
 {
@@ -17,214 +14,210 @@
 }
 else
 {
+    <EditForm Model="@_ticket" OnValidSubmit="HandleValidSubmit">
+        <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeSM="6">
+                <RadzenStack>
+                    <BlazoringComponents.Validators.FluentValidationValidator ValidatorType="typeof(Validators.TicketEditValidator)" />
+                    <ValidationSummary />
 
-    <div class="container m-3">
-    
-        <EditForm Model="@_ticket" OnValidSubmit="HandleValidSubmit">
-           
-            <BlazoringComponents.Validators.FluentValidationValidator ValidatorType="typeof(Validators.TicketEditValidator)"  />
-            <ValidationSummary />
-   
+                    <!-- Company and Contact -->
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGDropDown TItem="Company"   TValue="int" ValueProperty="Id" TextProperty="@nameof(Company.RagioneSociale)" @bind-Value="@_ticket.IdCompany" For="@(() => _ticket.IdCompany)"
+                                              Data="_companies" AllowFiltering="true">
+                                    <End>
+                                        <BtnCompanies OnGetCompany="OnGetCompany" Disabled=@_lockCompany></BtnCompanies>
+                                    </End>
+                                </RedGDropDown>
+                            </RadzenStack>
+                        </RadzenColumn>
 
-            <div class="row mb-3">
+                        @if (_ticket?.IdCompany != null && _ticket.IdCompany > 0)
+                        {
+                            <RadzenColumn Size="12" SizeSM="6">
+                                <RadzenStack>
+                                    <RedGDropDownGrid TItem="Contact" @bind-value="@_ticket.IdContact" TValue="int?" AllowFiltering="true" AllowClear="true"
+                                                                    Data="@_contactsCustomer" Count="@_contactsCustomer.Count" TextProperty="@nameof(Contact.NameComplete)"
+                                                            For="@(() => _ticket.IdContact)" ValueProperty ="Id">
+                                            <ChildColumns>
+                                               
+                                                <RadzenDropDownDataGridColumn Property="@nameof(Contact.Surname)" Title="@Localize[nameof(Contact.Surname)]" Width="auto" />
+                                                <RadzenDropDownDataGridColumn Property="@nameof(Contact.Name)" Title="@Localize[nameof(Contact.Name)]" Width="auto" />
+                                            </ChildColumns>
+                                    </RedGDropDownGrid>
+                                  
+                                </RadzenStack>
+                            </RadzenColumn>
+                        }
+                    </RadzenRow>
 
-                <div class="col-md-6 mb-3">
-                    <DisplayName For="@(()=>_ticket.IdCompany)" />
+                    <!-- Ticket Type -->
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGDropDown TItem="TicketType" TValue="int" ValueProperty="Id" TextProperty="Language"
+                                              @bind-Value="@_ticket.IdType" For="@(() => _ticket.IdType)"
+                                              Data="@_ticketTypes" AllowFiltering="true" PageSize="10"
+                                              Change="OnChangeTicketType" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
 
-                    <div class="input-group mb-3">
-
-
-                        <RadzenDropDownDataGrid @ref="_ddCompany" class="form-control" @bind-value="@_ticket.IdCompany" TValue="int" PageSize="10" AllowFiltering="true" FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive
-                                                AllowClear="true" Change="(arg=>OnChangeCompany(arg))"
-                                                Data="@_companies" Count="@_companyCount" TextProperty="RagioneSociale" ValueProperty="Id" ShowPagingSummary=true PagingSummaryFormat="@ConstHelper.PagingSummaryFormatShort"
-                                                Disabled="@_lockCompany" />
-                           
-                        <BtnCompanies OnGetCompany="OnGetCompany" Disabled=@_lockCompany></BtnCompanies>
-                    </div>
-                    <ValidationMessage For="@(() => _ticket.IdCompany)" />
-
-                </div>
-                @if (_ticket?.IdCompany != null && _ticket.IdCompany > 0)
-                {
-                    <div class="col-md-6">
-                        <DisplayName For="@(()=>_ticket.IdContact)" />
-                        <RadzenDropDownDataGrid @ref=_ddContact class="form-control" @bind-value="@_ticket.IdContact" TValue="int?" AllowFiltering="true" AllowClear="true"
-                                            Data="@_contactsCustomer" Count="@_contactsCustomer.Count" TextProperty="@nameof(Contact.NameComplete)" ValueProperty="Id">
-                            <Columns>
-                                <RadzenDropDownDataGridColumn Property="@nameof(Contact.Surname)" Title="@Localize[nameof(Contact.Surname)]" Width="auto" />
-                                <RadzenDropDownDataGridColumn Property="@nameof(Contact.Name)" Title="@Localize[nameof(Contact.Name)]" Width="auto" />
-
-                            </Columns>
-                        </RadzenDropDownDataGrid>
-                        <ValidationMessage For="@(() => _ticket.IdContact)" />
-                    </div>
-                }
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <DisplayName For="@(()=>_ticket.IdType)" />
-                    <RadzenDropDown class="form-control" @bind-Value="@_ticket.IdType" AllowClear="true" TValue="int" Change="OnChangeTicketType"
-                                AllowFiltering="true" FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive PageSize="10"
-                                Data=@_ticketTypes TextProperty="Language" ValueProperty="Id" />
-                    <ValidationMessage For="@(() => _ticket.IdType)" />
-                </div>
-            </div>
-            <div class="row mb-3">
-
-                <div class="col-md-6">
+                    <!-- Date and Time -->
                     @if (_ticket.IdType > 0)
                     {
-                        <div class="mb-3">
-                            <DisplayName For="@(() => _ticket.Date)" />
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeSM="6">
+                                <RadzenStack>
+                                    <RedGDateTimePicker @bind-Value="@_ticket.Date" For="@(() => _ticket.Date)" 
+                                        Change="DateOnChange">
+                                        <End>
+                                            @if (Scheduler)
+                                            {
+                                                <BtnScheduler OnGetItem="OnGetScheduler" Date=@(_ticket.Date??DateTime.Today) 
+                                                IdTicket=@Id IdTicketType=@_ticket.IdType IdUser=@_ticket?.IdUserAssigned></BtnScheduler>
+                                            }
+                                        </End>
+                                    </RedGDateTimePicker>
+                                </RadzenStack>
+                            </RadzenColumn>
 
-                            <div class="input-group mb-3">
-                                <InputDate class="form-control" @bind-Value="_ticket.Date" @onchange=DateOnChange></InputDate>
-                                @if (Scheduler)
-                                {
-                                    <BtnScheduler  OnGetItem="OnGetScheduler" Date=@(_ticket.Date??DateTime.Today) IdTicket=@Id IdTicketType=@_ticket.IdType IdUser=@_ticket?.IdUserAssigned></BtnScheduler>
-                                }
-                            </div>
-                            <ValidationMessage For="@(() => _ticket.Date)" />
-                        </div>
+                            @if (_timeProperty != PropertyStates.No)
+                            {
+                                <RadzenColumn Size="12" SizeSM="6">
+                                    <RadzenStack>
+                                        <RedGDateTimePicker TValue="TimeOnly?" @bind-Value="@_ticket.Time" For="@(() => _ticket.Time)"
+                                        DateFormat="HH:mm" ShowTime="true" TodayButton="false" />
+                                    </RadzenStack>
+                                </RadzenColumn>
+                            }
+                        </RadzenRow>
+
+
+                        <!-- Date End -->
+                        @if (_dateEndProperty != PropertyStates.No)
+                        {
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeSM="6">
+                                    <RadzenStack>
+                                        <RedGDateTimePicker @bind-Value="@_ticket.DateEnd" For="@(() => _ticket.DateEnd)" />
+                                    </RadzenStack>
+                                </RadzenColumn>
+                            </RadzenRow>
+                        }
                     }
-                </div>
-                @if (_timeProperty != PropertyStates.No)
-                {
-                    <div class="col-md-6 mb-3">
-                        <RedGDateTimePicker TValue="TimeOnly?" @bind-Value="@_ticket.Time" DateFormat="HH:mm" ShowTime="true" CssClass="form-control" For="@(() => _ticket.Time)" TodayButton="false" />
-                        
-                    </div>
-                }
+                    <!-- Assigned User -->
+                    @if (_ticket.IdType > 0)
+                    {
+                        <RadzenRow>
+                            <RadzenColumn Size="12" SizeSM="6">
+                                <RadzenStack>
+                                    <RedGDropDownGrid TItem="ApplicationUser" @bind-value="@_ticket.IdUserAssigned" TValue="string" AllowFiltering="true" AllowClear="true"
+                                                                    Data="@_users" Count="@_users.Count" TextProperty="@nameof(Contact.NameComplete)"
+                                                            For="@(() => _ticket.IdUserAssigned)" ValueProperty ="Id">
+                                            <ChildColumns>
+                                               
+                                                <RadzenDropDownDataGridColumn Property="@nameof(Contact.Surname)" Title="@Localize[nameof(Contact.Surname)]" Width="auto" />
+                                                <RadzenDropDownDataGridColumn Property="@nameof(Contact.Name)" Title="@Localize[nameof(Contact.Name)]" Width="auto" />
+                                            </ChildColumns>
+                                    </RedGDropDownGrid>
 
-            </div>
-            @if (_dateEndProperty != PropertyStates.No)
-            {
-                <div class="row mb-3">
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    }
 
-                    <div class="col-md-6">
-                    
-                            <div class="mb-3">
-                                <DisplayName For="@(() => _ticket.DateEnd)" />
+                    <!-- Product and Article -->
+                    <RadzenRow>
+                        @if (_productProperty != PropertyStates.No)
+                        {
+                            <RadzenColumn Size="12" SizeSM="6">
+                                <RadzenStack>
+                                    <RedGDropDown TItem="Product" TValue="int?" ValueProperty="Id" TextProperty="Name"
+                                                  @bind-Value="@_ticket.IdProduct" For="@(() => _ticket.IdProduct)"
+                                                  Data="@_products" AllowFiltering="true" PageSize="10"
+                                                  Change="ProductChange" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        }
 
-                                <div class="input-group mb-3">
-                                    <InputDate class="form-control" @bind-Value="_ticket.DateEnd"></InputDate>
-                               
-                                </div>
-                                <ValidationMessage For="@(() => _ticket.DateEnd)" />
-                            </div>
-                    
-                    </div>
-                
-                </div>
-            }
-            @if (_ticket.IdType > 0)
-            {
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <DisplayName For="@(()=>_ticket.IdUserAssigned)" />
-                        <RadzenDropDownDataGrid @ref=_ddUser class="form-control" @bind-value="@_ticket.IdUserAssigned" LoadData=LoadUsers TValue="string" AllowFiltering="true" AllowClear="true"
-                                        Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id" ShowPagingSummary=true PagingSummaryFormat="@ConstHelper.PagingSummaryFormatShort">
-                            <Columns>
-                                <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
-                                <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
+                        @if (_articleProperty != PropertyStates.No)
+                        {
+                            <RadzenColumn Size="12" SizeSM="6">
+                                <RadzenStack>
+                                    <RedGDropDownGrid TItem="Article" @bind-value="@_ticket.IdArticle" TValue="int?" AllowFiltering="true" AllowClear="true"
+                                                      Data="@_articles" Count="@_articles.Count" TextProperty="@nameof(Article.CompleteName)"
+                                                      For="@(() => _ticket.IdArticle)" ValueProperty="Id">
+                                        <ChildColumns>
 
-                            </Columns>
-                        </RadzenDropDownDataGrid>
-                        <ValidationMessage For="@(() => _ticket.IdUserAssigned)" />
-                    </div>
-                </div>
-            }
+                                            <RadzenDropDownDataGridColumn Property="Product.Name" Title="@Localize["Product"]" Width="200px" />
+                                            <RadzenDropDownDataGridColumn Property="SerialNumber" Title="@Localize["SerialNumber"]" Width="200px" />
+                                        </ChildColumns>
+                                    </RedGDropDownGrid>
 
-            <div class="row mb-3">  
-                @if (_productProperty != PropertyStates.No)
-                {
-                    <div class="col-md-6">
-                        <DisplayName For="@(() => _ticket.IdProduct)" />
-                        <RadzenDropDown class="form-control" @bind-value="@_ticket.IdProduct" Change="ProductChange" TValue="int?" AllowFiltering="true" FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive
-                                                AllowClear="true" PageSize="10" 
-                                                Data="@_products" Count="@_products.Count" TextProperty="Name" ValueProperty="Id" >
-                                
-                        </RadzenDropDown>
-                        <ValidationMessage For="@(() => _ticket.IdProduct)" />
-                    </div>
-                }
+                                    
+                                </RadzenStack>
+                            </RadzenColumn>
+                        }
+                    </RadzenRow>
 
-                @if (_articleProperty != PropertyStates.No)
-                {
-                    <div class="col-md-6">
-                        <DisplayName For="@(() => _ticket.IdArticle)" />
-                        <div class="input-group mb-3">
-                            <RadzenDropDownDataGrid @ref="_ddArticles" class="form-control" @bind-value="@_ticket.IdArticle" TValue="int?" PageSize="ConstHelper.PageSize" AllowFiltering="true" FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive
-                                                    AllowClear="true"
-                                            Data="@_articles" Count="@_articleCount" TextProperty="CompleteName" ValueProperty="Id" ShowPagingSummary=true PagingSummaryFormat="@ConstHelper.PagingSummaryFormatShort" Disabled=@_lockArticle>
-                                <Columns>
-                                    <RadzenDropDownDataGridColumn Property="Product.Name" Title="@Localize["Product"]" Width="200px" />
-                                    <RadzenDropDownDataGridColumn Property="SerialNumber" Title="@Localize["SerialNumber"]" Width="200px" />
+                    <!-- Priority and Project -->
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGSelectEnum TEnum="TicketPriorities" TValue="TicketPriorities" @bind-Value="@_ticket.Priority" 
+                                                For="@(() => _ticket.Priority)" AllowClear="false" />
+                            </RadzenStack>
+                        </RadzenColumn>
 
-                                </Columns>
-                            </RadzenDropDownDataGrid>
-                        <BtnArticles OnGetArticle="OnGetArticle" IdCompany="@_ticket?.IdCompany" Disabled=@_lockArticle></BtnArticles>
-                        </div>
-                        <ValidationMessage For="@(() => _ticket.IdArticle)" />
-                    </div>
-                }
-            </div>
-            
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <DisplayName For="@(()=>_ticket.Priority)" />
-                    <InputSelectEnum class="form-select" TEnum="int" TValue="TicketPriorities" @bind-Value="@_ticket.Priority" />
-                    <ValidationMessage For="@(() => _ticket.Priority)" />
-                </div>
-            
-                <div class="col-md-6">
-                        <DisplayName For="@(() => _ticket.IdProject)" />
-                        <RadzenDropDown class="form-control" @bind-Value="@_ticket.IdProject" AllowClear="true" AllowFiltering="true" FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive
-                            PageSize="10" Data="@_projects" Count="@_projects.Count" TextProperty="Name" ValueProperty="Id" ></RadzenDropDown>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGDropDown TItem="Project" TValue="int?" ValueProperty="Id" TextProperty="Name"
+                                              @bind-Value="@_ticket.IdProject" For="@(() => _ticket.IdProject)"
+                                              Data="@_projects" AllowFiltering="true" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
 
+                    <!-- Description -->
+                    <RedGTextArea @bind-Value="@_ticket.Description" For="@(() => _ticket.Description)" Rows="8" />
 
-                    <ValidationMessage For="@(() => _ticket.IdProject)" />
-                     
-                </div>
-            </div>
-            @*<div class="row mb-3">
-                <div class="col-md-6">
-                    <DisplayName For="@(()=>_ticket.Payment)" />
-                    <InputSelectEnum class="form-select"  TValue="Payments" @bind-Value="@_ticket.Payment" />
-                    <ValidationMessage For="@(() => _ticket.Payment)" />
-                </div>
-            </div>*@
-            
-            <div class="row mb-3">
-                <div class="col-md-12 mb-3">
-                        <DisplayName For="@(()=>_ticket.Description)" />
-                        <RadzenTextArea class="form-control" @bind-value="@_ticket.Description" Rows="8" />
-                        
-                        <ValidationMessage For="@(() => _ticket.Description)" />
-                </div>
-            </div>
-            
-            <div class="row mb-3">
-                <div class="col-md-12 mb-3">
-                    <DisplayName For="@(()=>_ticket.Invoiced)" />
-                    <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">   
-                        <Authorized Context="AuthorizeRole">
-                            <RadzenSwitch class="form-switch" @bind-Value=@_ticket.Invoiced></RadzenSwitch>
-                            <ValidationMessage For="@(() => _ticket.Invoiced)" />
-                        </Authorized>
-                        <NotAuthorized Context="AuthorizeRole">
-                            <RadzenLabel>@_ticket.Invoiced</RadzenLabel>
-                        </NotAuthorized>
-                    </AuthorizeView>
-                    
-                </div>
-            </div>
-            <p>
-                <BlazorButton Template="TemplateButton.Submit" Text="@Localize["Save"]" />
-                <BlazorButton Template="TemplateButton.Cancel" OnClick="Annulla" Text=@Localize["Cancel"] />
+                    <!-- Invoiced -->
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RadzenFormField>
+                                    <ChildContent>
+                                        <RadzenLabel>
+                                            <DisplayName For="@(() => _ticket.Invoiced)" />
+                                        </RadzenLabel>
+                                    </ChildContent>
+                                    <Helper>
+                                        <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                                            <Authorized Context="AuthorizeRole">
+                                                <RadzenSwitch @bind-Value=@_ticket.Invoiced />
+                                                <ValidationMessage For="@(() => _ticket.Invoiced)" />
+                                            </Authorized>
+                                            <NotAuthorized Context="AuthorizeRole">
+                                                <RadzenLabel>@_ticket.Invoiced</RadzenLabel>
+                                            </NotAuthorized>
+                                        </AuthorizeView>
+                                    </Helper>
+                                </RadzenFormField>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
 
-            </p>
-            
-        </EditForm>
-    </div>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenStack Orientation="Radzen.Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+            <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" Text=@Localize["Cancel"] />
+            <RedGButton RGButtonType="RGButtonType.Submit" Text="@Localize["Save"]" />
+        </RadzenStack>
+
+    </EditForm>
 }

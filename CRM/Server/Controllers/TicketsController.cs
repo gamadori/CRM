@@ -43,8 +43,10 @@ namespace CRM.Server.Controllers
         private readonly TelegramCommandsService _TelegramService;
         private readonly IArchiveService _archiveService;
         private readonly OpenAIEmbeddingService _embeddingService;
+        private readonly ITicketPdfGenerator _pdfGenerator;
+
         public TicketsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IPermitsService permitsService, ILogEventService logEventService, IEmailSenderPlus emailSenderPlus, ILanguagesService languageService, 
-            TelegramCommandsService telegram, IArchiveService archiveService, OpenAIEmbeddingService embeddingService)
+            TelegramCommandsService telegram, IArchiveService archiveService, OpenAIEmbeddingService embeddingService, ITicketPdfGenerator pdfGenerator)
         {
             _context = context;
             _userManager = userManager;
@@ -56,6 +58,7 @@ namespace CRM.Server.Controllers
             _archiveService = archiveService;
             _archiveService.TypeArchive = ArchiveTypes.Temp;
             _embeddingService = embeddingService;
+            _pdfGenerator = pdfGenerator;
         }
 
         [HttpGet("search")]
@@ -1726,6 +1729,67 @@ namespace CRM.Server.Controllers
             {
                 await _logEventService.RegisterAsync(nameof(TicketInterventionsController), nameof(CreatePdf), LogEvent.EventsTypes.Error, ex.Message);
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Genera un PDF del ticket con QuestPDF
+        /// </summary>
+        /// <param name="id">ID del ticket</param>
+        /// <returns>File PDF</returns>
+        [HttpGet("pdf/{id}")]
+        public async Task<IActionResult> DownloadTicketPdf(int id)
+        {
+            try
+            {
+                // Recupera il ticket con tutte le relazioni necessarie
+                var ticket = await _context.Tickets
+                    .Include(x => x.Company)
+                    .Include(x => x.TicketType)
+                    .Include(x => x.Article)
+                        .ThenInclude(x => x.Product)
+                    .Include(x => x.Product)
+                    .Include(x => x.Contact)
+                    .Include(x => x.UserAssigned)
+                    .Include(x => x.UserOpened)
+                    .Include(x => x.UserClosed)
+                    .Include(x => x.State)
+                    .Include(x => x.Project)
+                    .Where(x => x.Id == id)
+                    .FirstOrDefaultAsync();
+
+                if (ticket == null)
+                {
+                    return NotFound($"Ticket #{id} non trovato");
+                }
+
+                // Verifica permessi
+                if (!await _permits.CanGetObject(ticket.IdCompany))
+                {
+                    await _logEventService.RegisterAsync(
+                        nameof(TicketsController), 
+                        nameof(DownloadTicketPdf), 
+                        LogEvent.EventsTypes.Error, 
+                        $"Accesso negato al ticket #{id}");
+                    return Forbid();
+                }
+
+                // Genera il PDF
+                var pdfBytes = _pdfGenerator.GenerateTicketPdf(ticket);
+
+                // Restituisce il file
+                var fileName = $"Ticket_{id}_{DateTime.Now:yyyyMMdd}.pdf";
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController), 
+                    nameof(DownloadTicketPdf), 
+                    LogEvent.EventsTypes.Error, 
+                    ex);
+                
+                return Problem($"Errore durante la generazione del PDF: {ex.Message}");
             }
         }
 

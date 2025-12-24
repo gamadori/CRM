@@ -1,0 +1,130 @@
+@using System.Reflection
+@using System.Linq.Expressions
+@using System.ComponentModel.DataAnnotations
+@using System.Globalization
+@using Humanizer
+
+@typeparam TEnum where TEnum : Enum
+@typeparam TValue
+
+@inherits InputBase<int>
+
+<RtzDisplayName For="For" Text="@Label">
+    <ChildContent>
+        <RadzenDropDown TValue="int" Data="@_enumValues" TextProperty="@nameof(EnumItem.DisplayName)" ValueProperty="@nameof(EnumItem.Value)"
+                        Value="@CurrentValue" ValueChanged="OnValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" 
+                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="@AllowClear" Placeholder="@Placeholder"
+                        Disabled="@Disabled" />
+    </ChildContent>
+    <Helper>
+        @if (For != null)
+        {
+            <ValidationMessage For="@For" />
+        }
+    </Helper>
+    <End>@End</End>
+</RtzDisplayName>
+
+@code {
+    private List<EnumItem> _enumValues = new();
+
+    [Parameter]
+    public string Style { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Name { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Placeholder { get; set; } = string.Empty;
+
+    [Parameter]
+    public Expression<Func<int>>? For { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? Helper { get; set; }
+
+    [Parameter]
+    public RenderFragment? End { get; set; }
+
+    [Parameter]
+    public string CssClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool AllowFiltering { get; set; } = false;
+
+    [Parameter]
+    public bool AllowClear { get; set; } = false;
+
+    [Parameter]
+    public bool Disabled { get; set; } = false;
+
+    [Parameter]
+    public string? Label { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        LoadEnumValues();
+    }
+
+    private void LoadEnumValues()
+    {
+        var enumType = typeof(TEnum);
+        _enumValues = Enum.GetValues(enumType)
+            .Cast<TEnum>()
+            .Select(e => new EnumItem
+            {
+                Value = Convert.ToInt32(e),
+                DisplayName = GetDisplayName(e)
+            })
+            .ToList();
+    }
+
+    private async Task OnValueChanged(int value)
+    {
+        CurrentValue = value;
+        await ValueChanged.InvokeAsync(value);
+    }
+
+    private string GetDisplayName(TEnum value)
+    {
+        // Read the Display attribute name
+        var member = value.GetType().GetMember(value.ToString())[0];
+        var displayAttribute = member.GetCustomAttribute<DisplayAttribute>();
+        if (displayAttribute != null)
+            return displayAttribute.GetName() ?? value.ToString();
+
+        // Fallback on Humanizer to decamelize the enum member name
+        return value.ToString().Humanize();
+    }
+
+    protected override bool TryParseValueFromString(string? value, out int result, out string? validationErrorMessage)
+    {
+        if (BindConverter.TryConvertTo(value, CultureInfo.CurrentCulture, out TEnum parsedValue))
+        {
+            result = (int)(object)parsedValue;
+            validationErrorMessage = null;
+            return true;
+        }
+
+        if (string.IsNullOrEmpty(value))
+        {
+            result = default;
+            validationErrorMessage = null;
+            return true;
+        }
+
+        result = default;
+        validationErrorMessage = $"The {FieldIdentifier.FieldName} field is not valid.";
+        return false;
+    }
+
+    private class EnumItem
+    {
+        public int Value { get; set; }
+        public string DisplayName { get; set; } = string.Empty;
+    }
+}
