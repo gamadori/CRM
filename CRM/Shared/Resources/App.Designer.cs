@@ -520,6 +520,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Management Tickets.
+        /// </summary>
+        public static string Manage_Tickets {
+            get {
+                return ResourceManager.GetString("Manage Tickets", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Edit.
         /// </summary>
         public static string Modifica {
@@ -863,11 +872,29 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a .
+        ///   Cerca una stringa localizzata simile a Ticket Edit.
         /// </summary>
         public static string Ticket_Edit {
             get {
                 return ResourceManager.GetString("Ticket Edit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Ticket Management.
+        /// </summary>
+        public static string TicketManagement {
+            get {
+                return ResourceManager.GetString("TicketManagement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Ticket Number.
+        /// </summary>
+        public static string TicketNumber {
+            get {
+                return ResourceManager.GetString("TicketNumber", resourceCulture);
             }
         }
         

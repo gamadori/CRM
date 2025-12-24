@@ -5,7 +5,7 @@
         <!-- Breadcrumb -->
         @if (BreadcrumbItems != null && BreadcrumbItems.Any())
         {
-            <nav aria-label="breadcrumb" class="mb-3">
+            <nav aria-label="breadcrumb" class="mb-2">
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item">
                         <a href="/" class="text-decoration-none">
@@ -42,7 +42,7 @@
                 <div class="d-flex align-items-center">
                     @if (!string.IsNullOrEmpty(Icon))
                     {
-                        <div class="header-icon-box bg-primary bg-opacity-10 rounded-3 p-3 me-3">
+                        <div class="header-icon-box bg-primary bg-opacity-10 rounded-3 p-2 me-3">
                             <span class="material-icons text-primary" style="font-size: 32px;">@Icon</span>
                         </div>
                     }

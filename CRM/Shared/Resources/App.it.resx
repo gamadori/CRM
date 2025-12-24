@@ -414,4 +414,13 @@
   <data name="Manage Companies" xml:space="preserve">
     <value>Gestione delle Aziende registrate</value>
   </data>
+  <data name="Manage Tickets" xml:space="preserve">
+    <value>Gestione dei Tickets</value>
+  </data>
+  <data name="TicketNumber" xml:space="preserve">
+    <value>Ticket numero</value>
+  </data>
+  <data name="TicketManagement" xml:space="preserve">
+    <value>Gestione dei Ticket</value>
+  </data>
 </root>

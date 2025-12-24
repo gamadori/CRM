@@ -105,7 +105,7 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _fromDetails = false;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private List<BreadcrumbItem> _bread = new List<BreadcrumbItem>();
 
         private Project _project;
 
@@ -129,51 +129,38 @@ namespace CRM.Client.Pages.Tickets
             await LoadTicket();
 
 
-            _bread = await _breadCrumbService.Home();
-
+            
             if (IdProject != null)
             {
                 await GetProject();
-                _bread.Add(new BreadcrumbModel() { Title = $"{Localize["Progetto"]}: {_project?.Name}", Url = $"/Projects/{IdProject}" });
-                _bread.Add(new BreadcrumbModel() { Title = $"{Localize["Tickets"]}", Url = $"/Projects/{IdProject}/{(int)ProjectViews.Tickets}" });
+                _bread.Add(new BreadcrumbItem() { Text = $"{Localize["Progetto"]}: {_project?.Name}", Url = $"/Projects/{IdProject}" });
+                _bread.Add(new BreadcrumbItem() { Text = $"{Localize["Tickets"]}", Url = $"/Projects/{IdProject}/{(int)ProjectViews.Tickets}" });
             }
             else if (IdCompany != null)
             {
-                //_bread.Add(new BreadcrumbModel() { Title = $"{Localize["Tickets"]}", Url = "", Action = GotoIndex, Data = null });
+                
                 await GetCompany();
-                _bread.Add(new BreadcrumbModel() { Title = $"{Localize["Company"]}: {_company?.RagioneSociale}", Url = $"/Companies/{IdCompany}" });
-                _bread.Add(new BreadcrumbModel() { Title = $"{Localize["Tickets"]}", Url = $"/Companies/{IdCompany}/{(int)CompanyViews.Ticket}" });
+                _bread.Add(new BreadcrumbItem() { Text = $"{Localize["Company"]}: {_company?.RagioneSociale}", Url = $"/Companies/{IdCompany}" });
+                _bread.Add(new BreadcrumbItem() { Text = $"{Localize["Tickets"]}", Url = $"/Companies/{IdCompany}/{(int)CompanyViews.Ticket}" });
 
             }
            
             else if (IdUser != null)
             {
-                //await GetUser();
+                
+                _bread =  _breadCrumbService.TicketAssigned(IdUser, (TicketTypeSearch)TypeSearch);
 
                 
-                _bread = await _breadCrumbService.TicketAssigned(IdUser, (TicketTypeSearch)TypeSearch, true);
-
-                //if (TypeSearch == (int)TicketTypeSearch.All)
-                //{
-                //    _bread.Add(new BreadcrumbModel() { Title = $"{Localize["Tickets"]}", Url = $"/Tickets/Index/" });
-                //    _bread.Add(new BreadcrumbModel() { Title = $"{Localize["Assigned to"]} {_user.NameComplete}", Url = $"/Tickets/Index/{IdUser}" });
-                //}
-                //else
-                //{
-                //    _bread.Add(new BreadcrumbModel() { Title = $"{Localize["Tickets"]}", Url = $"/Tickets/Index" });
-                //    _bread.Add(new BreadcrumbModel() { Title = $"{Localize[((TicketTypeSearch)TypeSearch).ToString()]}", Url = $"/Tickets/Index/{(int)TypeSearch}" });
-                //    _bread.Add(new BreadcrumbModel() { Title = $"{Localize["Assigned to"]} {_user.NameComplete}", Url = $"/Tickets/Index/{(int)TypeSearch}/{IdUser}" });
-                //}
             }
             else if (TypeSearch != (int)TicketTypeSearch.All)
             {
-                _bread = await _breadCrumbService.TicketFiltered(IdUser, (TicketTypeSearch)TypeSearch, true);
+                _bread =  _breadCrumbService.TicketFiltered(IdUser, (TicketTypeSearch)TypeSearch);
             }
             else
             {
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Tickets"], Url = "/Tickets" });
+                _bread.Add(new BreadcrumbItem() { Text = Localize["Tickets"], Url = "/Tickets" });
             }
-            _bread.Add(new BreadcrumbModel() { Title = $"{Localize["Ticket n"]} {_ticket?.Id}", Url = null });
+            _bread.Add(new BreadcrumbItem() { Text = $"{Localize["Ticket n"]} {_ticket?.Id}", Url = null });
 
             if (IdAttachment != null)
             {

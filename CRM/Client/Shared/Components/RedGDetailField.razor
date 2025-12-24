@@ -1,35 +1,127 @@
-@* Componente per visualizzare un campo di dettaglio con icona e valore *@
+@* Componente per visualizzare un campo di dettaglio - Layout Verticale Pulito *@
 
-<div class="@ContainerClass">
-    <h6 class="text-dark fw-semibold mb-2 d-flex align-items-center">
-        @if (!string.IsNullOrWhiteSpace(Icon))
-        {
-            <span class="material-icons me-2 text-primary" style="font-size: 20px;">@Icon</span>
-        }
-        @if (!string.IsNullOrWhiteSpace(Label))
-        {
-            <span>@Label</span>
-        }
-        else if (LabelContent != null)
-        {
-            @LabelContent
-        }
-    </h6>
-    <div class="p-3 bg-light rounded border-start border-primary border-4">
-        @if (!string.IsNullOrWhiteSpace(Value))
-        {
-            <p class="mb-0 text-dark">@Value</p>
-        }
-        else if (ChildContent != null)
-        {
-            @ChildContent
-        }
-        else
-        {
-            <p class="mb-0 text-muted">-</p>
-        }
+<div class="@ContainerClass rg-detail-field">
+    <div class="rg-field-container">
+        <div class="rg-field-label">
+            @if (!string.IsNullOrWhiteSpace(Icon))
+            {
+                <span class="material-icons rg-field-icon">@Icon</span>
+            }
+            <span class="rg-label-text">
+                @if (!string.IsNullOrWhiteSpace(Label))
+                {
+                    @Label
+                }
+                else if (LabelContent != null)
+                {
+                    @LabelContent
+                }
+            </span>
+        </div>
+        <div class="rg-field-value">
+            @if (!string.IsNullOrWhiteSpace(Value))
+            {
+                @Value
+            }
+            else if (ChildContent != null)
+            {
+                @ChildContent
+            }
+            else
+            {
+                <span class="rg-empty-value">—</span>
+            }
+        </div>
     </div>
 </div>
+
+<style>
+    /* Layout Verticale - Sempre allineato, anche con multi-colonna */
+    .rg-detail-field {
+        --rg-color-label: #6c757d;
+        --rg-color-value: #212529;
+        --rg-color-icon: #9e9e9e;
+        --rg-color-border: #e9ecef;
+        --rg-color-hover: #f8f9fa;
+    }
+
+    .rg-field-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.375rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--rg-color-border);
+        transition: background-color 0.15s ease;
+    }
+
+    .rg-field-container:hover {
+        background-color: var(--rg-color-hover);
+    }
+
+    .rg-detail-field:last-child .rg-field-container {
+        border-bottom: none;
+    }
+
+    .rg-field-label {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        color: var(--rg-color-label);
+        font-size: 0.625rem;
+        font-weight: 600;
+        line-height: 1.2;
+        letter-spacing: 0.025em;
+    }
+
+    .rg-field-icon {
+        font-size: 16px !important;
+        color: var(--rg-color-icon);
+        flex-shrink: 0;
+    }
+
+    .rg-label-text {
+        user-select: none;
+    }
+
+    .rg-field-value {
+        color: var(--rg-color-value);
+        font-size: 1rem;
+        line-height: 1.5;
+        font-weight: 400;
+        word-break: break-word;
+        padding-left: 1.25rem;
+    }
+
+    .rg-empty-value {
+        color: var(--rg-color-label);
+        font-style: italic;
+    }
+
+    /* Link styling */
+    .rg-field-value a {
+        color: #0d6efd;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.15s ease;
+    }
+
+    .rg-field-value a:hover {
+        text-decoration: underline;
+        opacity: 0.85;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .rg-field-value {
+            padding-left: 1rem;
+            font-size: 0.9375rem;
+        }
+
+        .rg-field-label {
+            font-size: 0.5625rem;
+        }
+    }
+</style>
 
 @code {
     /// <summary>

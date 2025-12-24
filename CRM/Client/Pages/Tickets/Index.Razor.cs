@@ -93,7 +93,7 @@ namespace CRM.Client.Pages.Tickets
 
         private string _header = "Tickets";
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>() ;
+        private List<BreadcrumbItem> _breadcrumbItems = new List<BreadcrumbItem>();
 
         private int? _stateType = null;
 
@@ -190,16 +190,12 @@ namespace CRM.Client.Pages.Tickets
                 else
                     paging.IdUserAssigned = null;
 
-                //var resp = await RestClientHelper.Get(HttpClient, ConstHelper.TicketPath, paging);
                 
                 _ticketView = await _service.Get<string>(paging);
 
                 _numRecords = _ticketView.MetaData.TotalCount;
 
-                // _bread = await BreadCrumbService.Ticket(_idUser, LoadDataTickets);
-                _bread = await BreadCrumbService.TicketAssigned(_idUser, (TicketTypeSearch)TypeSearch, false, LoadDataTickets);
-                //_ticketView = await Decode(resp);
-                
+                _breadcrumbItems = BreadCrumbService.TicketAssigned(_idUser, (TicketTypeSearch)TypeSearch, LoadDataTickets);
                 
             }
 

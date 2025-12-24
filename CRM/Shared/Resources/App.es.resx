@@ -376,4 +376,13 @@
   <data name="Manage Companies" type="System.Resources.ResXNullRef, System.Windows.Forms">
     <value />
   </data>
+  <data name="Manage Tickets" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="TicketNumber" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="TicketManagement" xml:space="preserve">
+    <value>Gestión de tickets</value>
+  </data>
 </root>

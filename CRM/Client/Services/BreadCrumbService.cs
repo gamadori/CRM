@@ -80,66 +80,73 @@ namespace CRM.Client.Services
                return new List<BreadcrumbModel>() { new BreadcrumbModel() { Title = _localizer["Home"], Url = "/" } };
         }
 
-        public async Task<List<BreadcrumbModel>> Ticket(string? idUser = null, Func<object, Task> action = null, object param = null)
+        public List<BreadcrumbItem> Ticket(string? idUser = null, Func<object, Task> action = null, object param = null)
         {
-            List<BreadcrumbModel> bread = await Home();
 
-            bread.Add(new BreadcrumbModel() { Title = _localizer["Ticket"], Url = $"Tickets/Index/{(int)TicketTypeSearch.All}/{idUser}", Action = action, Data = param });
+
+            var bread = new List<BreadcrumbItem>();
+            List<BreadcrumbItem> breadcrumbItems = new()
+            {
+                new BreadcrumbItem(_localizer["Ticket"], $"Tickets/Index/{(int)TicketTypeSearch.All}/{idUser}", action, param)
+            };
+
+           
 
             return bread;
         }
 
-        public async Task<List<BreadcrumbModel>> TicketAssigned(string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, bool link = false, Func<object, Task> action = null, object param = null)
+        public List<BreadcrumbItem> TicketAssigned(string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, Func<object, Task> action = null, object param = null)
         {
             string? url = null;
             
-            List<BreadcrumbModel> model = await Ticket(idUserAssigned, action, param);
-
-            if (typeSearch != TicketTypeSearch.All)
-            {
-                if (link)
-                    url = $"/Tickets/Index/{(int)typeSearch}/{idUserAssigned}";
-                model.Add(new BreadcrumbModel() { Title = $"{_localizer[typeSearch.ToString()]}", Url = url });
-
-                
-            }
-
-            return model;
-        }
-
-        public async Task<List<BreadcrumbModel>> TicketFiltered(string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, bool link = false, Func<object, Task> action = null, object param = null)
-        {
-            string? url = null;
-
-            List<BreadcrumbModel> model = await Ticket(idUserAssigned, action, param);
-
-            if (typeSearch != TicketTypeSearch.All)
-            {
-                if (link)
-                    url = $"/Tickets/Index/{(int)typeSearch}/{idUserAssigned}";
-                model.Add(new BreadcrumbModel() { Title = $"{_localizer[typeSearch.ToString()]}", Url = url });
-
-
-            }
-
-            return model;
-        }
-
-        public async Task<List<BreadcrumbModel>> TicketNumber(int idTicket, string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, Func<object, Task> action = null, object param = null)
-        {
-            string? url = null;
-
-            List<BreadcrumbModel> model = await Ticket(idUserAssigned, action, param);
+            List<BreadcrumbItem> model = Ticket(idUserAssigned, action, param);
 
             if (typeSearch != TicketTypeSearch.All)
             {
                 
                 url = $"/Tickets/Index/{(int)typeSearch}/{idUserAssigned}";
-                model.Add(new BreadcrumbModel() { Title = $"{_localizer[typeSearch.ToString()]}", Url = url });
+
+                model.Add(new BreadcrumbItem() {  Text =$"{_localizer[typeSearch.ToString()]}", Url = url });
+
+                
+            }
+
+            return model;
+        }
+
+        public List<BreadcrumbItem> TicketFiltered(string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, Func<object, Task> action = null, object param = null)
+        {
+            string? url = null;
+
+            List<BreadcrumbItem> model = Ticket(idUserAssigned, action, param);
+
+            if (typeSearch != TicketTypeSearch.All)
+            {
+                
+                url = $"/Tickets/Index/{(int)typeSearch}/{idUserAssigned}";
+                model.Add(new BreadcrumbItem() { Text = $"{_localizer[typeSearch.ToString()]}", Url = url });
 
 
             }
-            model.Add(new BreadcrumbModel() { Title = $"{_localizer["Ticket n"]} {idTicket}", Url = null });
+
+            return model;
+        }
+
+        public List<BreadcrumbItem> TicketNumber(int idTicket, string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, Func<object, Task> action = null, object param = null)
+        {
+            string? url = null;
+
+            List<BreadcrumbItem> model = Ticket(idUserAssigned, action, param);
+
+            if (typeSearch != TicketTypeSearch.All)
+            {
+                
+                url = $"/Tickets/Index/{(int)typeSearch}/{idUserAssigned}";
+                model.Add(new BreadcrumbItem() { Text = $"{_localizer[typeSearch.ToString()]}", Url = url });
+
+
+            }
+            model.Add(new BreadcrumbItem() { Text = $"{_localizer["Ticket n"]} {idTicket}", Url = null });
             return model;
         }
 

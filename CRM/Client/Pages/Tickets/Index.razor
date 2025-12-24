@@ -14,7 +14,13 @@
 {
     @if (IdProject == null && IdCompany == null)
     {
-        <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
+        
+
+        <PageHeader Title="@Localize["Tickets"]"
+                    Subtitle="@Localize["Manage Tickets"]"
+                    BreadcrumbItems="@_breadcrumbItems">
+        </PageHeader>
+
     }
    
 

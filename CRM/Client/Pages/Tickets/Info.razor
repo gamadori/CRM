@@ -16,8 +16,12 @@
 }
 else
 {
+    <PageHeader Title="@($"{Localize["TicketNumber"]} {_ticket.Id}")"
+                Subtitle=@Localize["Menage Ticket"]
+                BreadcrumbItems="@_bread">
+    </PageHeader>
 
-    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
+    
    
     <RadzenSelectBar Size="@_buttonSize"   @bind-Value="selectView" TValue="TicketViews" Change="@((args) => Change(args, "SelectBar with single selection"))" >
         <Items>

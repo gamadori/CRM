@@ -1,3 +1,6 @@
+using System;
+using System.Threading.Tasks;
+
 namespace CRM.Shared
 {
     /// <summary>
@@ -15,6 +18,10 @@ namespace CRM.Shared
         /// </summary>
         public string? Url { get; set; }
 
+        public Func<object, Task>? Action { get; set; }
+
+        public object? Data { get; set; }
+
         /// <summary>
         /// Costruttore vuoto
         /// </summary>
@@ -25,10 +32,14 @@ namespace CRM.Shared
         /// </summary>
         /// <param name="text">Testo del breadcrumb</param>
         /// <param name="url">URL di navigazione (opzionale)</param>
-        public BreadcrumbItem(string text, string? url = null)
+        public BreadcrumbItem(string text, string? url = null, Func<object, Task>? action = null, object data = null)
         {
             Text = text;
             Url = url;
+            Action = action;
+            Data = data;
         }
+
+        
     }
 }

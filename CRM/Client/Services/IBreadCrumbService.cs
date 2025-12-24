@@ -18,13 +18,13 @@ namespace CRM.Client.Services
 
         Task<List<BreadcrumbModel>> SMTP (bool link = false);
 
-        Task<List<BreadcrumbModel>> Ticket(string? idUser = null, Func<object, Task> action = null, object param = null);
+        List<BreadcrumbItem> Ticket(string? idUser = null, Func<object, Task> action = null, object param = null);
 
-        Task<List<BreadcrumbModel>> TicketAssigned(string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, bool url = false, Func<object, Task> action = null, object param = null);
+        List<BreadcrumbItem> TicketAssigned(string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, Func<object, Task> action = null, object param = null);
 
-        Task<List<BreadcrumbModel>> TicketFiltered(string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, bool link = false, Func<object, Task> action = null, object param = null);
+        List<BreadcrumbItem> TicketFiltered(string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All,  Func<object, Task> action = null, object param = null);
 
-        Task<List<BreadcrumbModel>> TicketNumber(int idTicket, string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, Func<object, Task> action = null, object param = null);
+        List<BreadcrumbItem> TicketNumber(int idTicket, string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, Func<object, Task> action = null, object param = null);
 
         Task<List<BreadcrumbModel>> Talk(bool link);
 
