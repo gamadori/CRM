@@ -45,8 +45,11 @@ namespace CRM.Server.Controllers
         private readonly OpenAIEmbeddingService _embeddingService;
         private readonly ITicketPdfGenerator _pdfGenerator;
 
+        // ✅ NUOVO: Servizio Push Notifications
+        private readonly IPushNotificationService _pushService;
+
         public TicketsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IPermitsService permitsService, ILogEventService logEventService, IEmailSenderPlus emailSenderPlus, ILanguagesService languageService, 
-            TelegramCommandsService telegram, IArchiveService archiveService, OpenAIEmbeddingService embeddingService, ITicketPdfGenerator pdfGenerator)
+            TelegramCommandsService telegram, IArchiveService archiveService, OpenAIEmbeddingService embeddingService, ITicketPdfGenerator pdfGenerator, IPushNotificationService pushService)
         {
             _context = context;
             _userManager = userManager;
@@ -59,6 +62,7 @@ namespace CRM.Server.Controllers
             _archiveService.TypeArchive = ArchiveTypes.Temp;
             _embeddingService = embeddingService;
             _pdfGenerator = pdfGenerator;
+            _pushService = pushService;
         }
 
         [HttpGet("search")]
@@ -1793,5 +1797,530 @@ namespace CRM.Server.Controllers
             }
         }
 
+        /// <summary>
+        /// ✅ NUOVO: Ottiene il carico di lavoro (workload) degli utenti per una data specifica
+        /// Restituisce quanti ticket attivi ha ogni utente assegnato in quella giornata
+        /// </summary>
+        /// <param name="date">Data per cui calcolare il workload (solo la parte data, ignora orario)</param>
+        /// <returns>Dizionario: { "userId": { userId, fullName, ticketCount, tickets: [...] } }</returns>
+        [HttpGet("user-workload")]
+        public async Task<ActionResult<Dictionary<string, object>>> GetUserWorkload([FromQuery] DateTime date)
+        {
+            try
+            {
+                var dateOnly = date.Date;
+                var dateTomorrow = dateOnly.AddDays(1);
+                
+                // Query: Ottieni tutti i ticket NON chiusi per quella giornata con utenti assegnati
+                var ticketsInDate = await _context.TicketUserAssignments
+                    .Include(tua => tua.Ticket)
+                    .Include(tua => tua.User)
+                    .Where(tua => 
+                        tua.Ticket.Date.HasValue && 
+                        tua.Ticket.Date.Value >= dateOnly && 
+                        tua.Ticket.Date.Value < dateTomorrow &&
+                        !tua.Ticket.Closed) // Solo ticket aperti
+                    .ToListAsync();
+
+                // Filtra per permessi utente
+                if (!await _permits.CanAccessOtherCompany())
+                {
+                    var idCompany = await _permits.GetIdCompany();
+                    ticketsInDate = ticketsInDate
+                        .Where(tua => tua.Ticket.IdCompany == idCompany)
+                        .ToList();
+                }
+
+                // Raggruppa per utente
+                var workloadByUser = ticketsInDate
+                    .GroupBy(tua => new { tua.IdUser, tua.User.NameComplete })
+                    .Select(g => new
+                    {
+                        UserId = g.Key.IdUser,
+                        FullName = g.Key.NameComplete,
+                        TicketCount = g.Count(),
+                        Tickets = g.Select(tua => new
+                        {
+                            Id = tua.Ticket.Id,
+                            Description = tua.Ticket.Description,
+                            Company = tua.Ticket.Company?.RagioneSociale,
+                            Time = tua.Ticket.Time,
+                            Priority = tua.Ticket.Priority
+                        }).ToList()
+                    })
+                    .ToDictionary(x => x.UserId, x => (object)new
+                    {
+                        x.UserId,
+                        x.FullName,
+                        x.TicketCount,
+                        x.Tickets
+                    });
+
+                return Ok(workloadByUser);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController), 
+                    nameof(GetUserWorkload), 
+                    LogEvent.EventsTypes.Error, 
+                    ex);
+                
+                return Problem($"Errore durante il calcolo del workload: {ex.Message}");
+            }
+        }
+
+        /// ✅ ENDPOINT PER ASSEGNAZIONE MULTIPLA UTENTI AI TICKET
+        /// Aggiungere questi metodi al file CRM\Server\Controllers\TicketsController.cs 
+
+        // ==========================================
+        // GET: api/Tickets/{id}/assigned-users
+        // Recupera la lista degli ID utenti assegnati a un ticket
+        // ==========================================
+        [HttpGet("{id}/assigned-users")]
+        public async Task<ActionResult<List<string>>> GetAssignedUsers(int id)
+        {
+            try
+            {
+                var ticket = await _context.Tickets
+                    .Include(t => t.AssignedUsers)
+                    .ThenInclude(au => au.User)
+                    .FirstOrDefaultAsync(t => t.Id == id);
+
+                if (ticket == null)
+                {
+                    return NotFound($"Ticket con ID {id} non trovato");
+                }
+
+                // Restituisce la lista degli ID utenti assegnati
+                var userIds = ticket.AssignedUsers
+                    .Select(au => au.IdUser)
+                    .ToList();
+
+                return Ok(userIds);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Errore interno: {ex.Message}");
+            }
+        }
+
+        // ==========================================
+        // POST: api/Tickets/{id}/assign-users
+        // Assegna multipli utenti a un ticket
+        // ==========================================
+        [HttpPost("{id}/assign-users")]
+        public async Task<IActionResult> AssignUsers(int id, [FromBody] AssignUsersRequest request)
+        {
+            try
+            {
+                var ticket = await _context.Tickets
+                    .Include(t => t.AssignedUsers)
+                    .FirstOrDefaultAsync(t => t.Id == id);
+
+                if (ticket == null)
+                {
+                    return NotFound($"Ticket con ID {id} non trovato");
+                }
+
+                // Ottieni l'ID dell'utente corrente
+                var currentUser = await _userManager.GetUserAsync(User);
+                var currentUserId = currentUser?.Id;
+
+                // ✅ NUOVO: Memorizza utenti attualmente assegnati (PRIMA della rimozione)
+                var previouslyAssignedUserIds = ticket.AssignedUsers
+                    .Select(au => au.IdUser)
+                    .ToHashSet();
+
+                // Rimuovi tutte le assegnazioni esistenti
+                _context.TicketUserAssignments.RemoveRange(ticket.AssignedUsers);
+
+                // Nuovo set di utenti assegnati
+                var newlyAssignedUserIds = new HashSet<string>();
+
+                // ✅ NUOVO: Gestisci il caso di lista vuota (rimozione totale assegnazioni)
+                if (request.UserIds != null && request.UserIds.Any())
+                {
+                    // Aggiungi le nuove assegnazioni
+                    foreach (var userId in request.UserIds)
+                    {
+                        // Verifica che l'utente esista
+                        var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+                        if (!userExists)
+                        {
+                            return BadRequest($"Utente con ID {userId} non trovato");
+                        }
+
+                        var assignment = new TicketUserAssignment
+                        {
+                            IdTicket = id,
+                            IdUser = userId,
+                            AssignedDate = DateTime.Now,
+                            AssignedBy = currentUserId
+                        };
+
+                        _context.TicketUserAssignments.Add(assignment);
+                        newlyAssignedUserIds.Add(userId);
+                    }
+
+                    // ✅ SINCRONIZZAZIONE: Aggiorna IdUserAssigned (utente principale) = primo della lista
+                    ticket.IdUserAssigned = request.UserIds.First();
+                }
+                else
+                {
+                    // ✅ CASO LISTA VUOTA: Rimuovi tutte le assegnazioni
+                    ticket.IdUserAssigned = null;
+                    
+                    await _logEventService.RegisterAsync(
+                        nameof(TicketsController), 
+                        nameof(AssignUsers), 
+                        LogEvent.EventsTypes.Info, 
+                        $"Ticket #{id}: tutte le assegnazioni rimosse da utente {currentUserId}");
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Log operazione
+                var action = request.UserIds?.Any() == true 
+                    ? $"Assegnati {request.UserIds.Count} utenti" 
+                    : "Rimosse tutte le assegnazioni";
+                
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController), 
+                    nameof(AssignUsers), 
+                    LogEvent.EventsTypes.Info, 
+                    $"Ticket #{id}: {action}");
+
+                // ✅ NUOVO: Calcola utenti aggiunti e rimossi
+                var addedUsers = newlyAssignedUserIds.Except(previouslyAssignedUserIds).ToList();
+                var removedUsers = previouslyAssignedUserIds.Except(newlyAssignedUserIds).ToList();
+
+                // ✅ NUOVO: Invia notifiche agli utenti AGGIUNTI
+                if (addedUsers.Any())
+                {
+                    await SendAssignmentNotifications(ticket, addedUsers, isAssignment: true);
+                }
+
+                // ✅ NUOVO: Invia notifiche agli utenti RIMOSSI
+                if (removedUsers.Any())
+                {
+                    await SendAssignmentNotifications(ticket, removedUsers, isAssignment: false);
+                }
+
+                // ✅ NUOVO: Invia email riepilogo al manager
+                if (currentUser != null)
+                {
+                    await SendManagerSummaryEmail(ticket, currentUser, addedUsers, removedUsers);
+                }
+
+                return Ok(new 
+                { 
+                    message = request.UserIds?.Any() == true 
+                        ? "Utenti assegnati con successo" 
+                        : "Tutte le assegnazioni rimosse con successo", 
+                    assignedCount = request.UserIds?.Count ?? 0,
+                    addedCount = addedUsers.Count,
+                    removedCount = removedUsers.Count
+                });
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController), 
+                    nameof(AssignUsers), 
+                    LogEvent.EventsTypes.Error, 
+                    $"Errore assegnazione utenti ticket #{id}: {ex.Message}");
+                
+                return StatusCode(500, $"Errore interno: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Endpoint per salvare subscription push browser
+        /// </summary>
+        [HttpPost("push/subscribe")]
+        public async Task<IActionResult> PushSubscribe([FromBody] PushSubscribeRequest request)
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized("Utente non autenticato");
+                }
+
+                var result = await _pushService.SaveSubscriptionAsync(
+                    userId,
+                    request.Subscription);
+
+                if (result)
+                {
+                    return Ok(new { message = "Subscription salvata con successo" });
+                }
+                else
+                {
+                    return BadRequest("Impossibile salvare subscription");
+                }
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController),
+                    nameof(PushSubscribe),
+                    LogEvent.EventsTypes.Error,
+                    ex);
+
+                return StatusCode(500, $"Errore interno: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Endpoint per rimuovere subscription push browser
+        /// </summary>
+        [HttpPost("push/unsubscribe")]
+        public async Task<IActionResult> PushUnsubscribe()
+        {
+            try
+            {
+                var userId = _userManager.GetUserId(User);
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized("Utente non autenticato");
+                }
+
+                var result = await _pushService.RemoveSubscriptionAsync(userId);
+
+                if (result)
+                {
+                    return Ok(new { message = "Subscription rimossa con successo" });
+                }
+                else
+                {
+                    return BadRequest("Impossibile rimuovere subscription");
+                }
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController),
+                    nameof(PushUnsubscribe),
+                    LogEvent.EventsTypes.Error,
+                    ex);
+
+                return StatusCode(500, $"Errore interno: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Invia email riepilogo al manager
+        /// </summary>
+        private async Task SendManagerSummaryEmail(Ticket ticket, ApplicationUser manager, List<string> addedUsers, List<string> removedUsers)
+        {
+            try
+            {
+                if (!addedUsers.Any() && !removedUsers.Any())
+                    return;
+
+                var ticketWithDetails = await _context.Tickets
+                    .Include(t => t.Company)
+                    .FirstOrDefaultAsync(t => t.Id == ticket.Id);
+
+                if (ticketWithDetails == null)
+                    return;
+
+                var summary = new System.Text.StringBuilder();
+                summary.AppendLine($"Riepilogo assegnazione ticket #{ticket.Id}:");
+                summary.AppendLine($"Cliente: {ticketWithDetails.Company?.RagioneSociale}");
+                summary.AppendLine();
+
+                if (addedUsers.Any())
+                {
+                    summary.AppendLine($"✅ Utenti AGGIUNTI ({addedUsers.Count}):");
+                    foreach (var userId in addedUsers)
+                    {
+                        var user = await _context.Users.FindAsync(userId);
+                        if (user != null)
+                            summary.AppendLine($"  • {user.NameComplete} ({user.Email})");
+                    }
+                    summary.AppendLine();
+                }
+
+                if (removedUsers.Any())
+                {
+                    summary.AppendLine($"❌ Utenti RIMOSSI ({removedUsers.Count}):");
+                    foreach (var userId in removedUsers)
+                    {
+                        var user = await _context.Users.FindAsync(userId);
+                        if (user != null)
+                            summary.AppendLine($"  • {user.NameComplete} ({user.Email})");
+                    }
+                }
+
+                var callbackUrl = HttpContext.AbsoluteUrl($"/Tickets/Info/{ticket.Id}");
+
+                var keyValues = new Dictionary<string, string>();
+                keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Name), manager.NameComplete);
+                keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Date), DateTime.Now.ToString("g"));
+                keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Company), ticketWithDetails.Company?.RagioneSociale ?? "N/A");
+
+                if (callbackUrl != null)
+                    keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Url), callbackUrl);
+
+                await _emailSenderPlus.SendEmailAsync(
+                    new List<string>() { manager.Email },
+                    EmailsTypes.NoticeNewTicket,
+                    null,
+                    keyValues);
+
+                if (!string.IsNullOrEmpty(manager.PhoneNumber))
+                {
+                    await _TelegramService.SendMessage(manager.PhoneNumber, summary.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController),
+                    "SendManagerSummaryEmail",
+                    LogEvent.EventsTypes.Error,
+                    $"Errore invio email riepilogo: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Invia email, telegram e push agli utenti assegnati/rimossi da un ticket
+        /// </summary>
+        /// <param name="ticket">Ticket interessato</param>
+        /// <param name="userIds">Lista ID utenti</param>
+        /// <param name="isAssignment">True = assegnazione, False = rimozione</param>
+        private async Task SendAssignmentNotifications(Ticket ticket, List<string> userIds, bool isAssignment = true)
+        {
+            try
+            {
+                // Ricarica il ticket con le relazioni necessarie per l'email
+                var ticketWithDetails = await _context.Tickets
+                    .Include(t => t.Company)
+                    .FirstOrDefaultAsync(t => t.Id == ticket.Id);
+
+                if (ticketWithDetails == null)
+                {
+                    await _logEventService.RegisterAsync(
+                        nameof(TicketsController), 
+                        nameof(SendAssignmentNotifications), 
+                        LogEvent.EventsTypes.Warning, 
+                        $"Ticket #{ticket.Id} non trovato per invio notifiche");
+                    return;
+                }
+
+                // URL del ticket
+                var callbackUrl = HttpContext.AbsoluteUrl($"/Tickets/Info/{ticket.Id}");
+
+                // Usa sempre template di assegnazione
+                var emailType = EmailsTypes.NoticeTicketAssigned;
+
+                // Invia email/telegram/push a ogni utente
+                foreach (var userId in userIds)
+                {
+                    var user = await _context.Users.FindAsync(userId);
+                    if (user == null)
+                    {
+                        await _logEventService.RegisterAsync(
+                            nameof(TicketsController), 
+                            nameof(SendAssignmentNotifications), 
+                            LogEvent.EventsTypes.Warning, 
+                            $"Utente {userId} non trovato per notifica ticket #{ticket.Id}");
+                        continue;
+                    }
+
+                    // Prepara i parametri per l'email
+                    var keyValues = new Dictionary<string, string>();
+                    keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Name), user.NameComplete);
+                    keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Date), ticket.DateOpened.ToString("g"));
+                    
+                    if (ticketWithDetails.Company != null)
+                        keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Company), ticketWithDetails.Company.RagioneSociale);
+                    
+                    if (callbackUrl != null)
+                        keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Url), callbackUrl);
+
+                    // ✅ Invia EMAIL
+                    try
+                    {
+                        var msg = await _emailSenderPlus.SendEmailAsync(
+                            new List<string>() { user.Email }, 
+                            emailType, 
+                            null, 
+                            keyValues);
+
+                        // ✅ Invia TELEGRAM (se presente numero telefono)
+                        if (!string.IsNullOrEmpty(user.PhoneNumber) && msg != null)
+                        {
+                            var telegramMessage = isAssignment
+                                ? $"✅ Assegnato al ticket #{ticket.Id}\n{ticketWithDetails.Company?.RagioneSociale}\n{callbackUrl}"
+                                : $"❌ Rimosso dal ticket #{ticket.Id}\n{ticketWithDetails.Company?.RagioneSociale}\n{callbackUrl}";
+                            
+                            await _TelegramService.SendMessage(user.PhoneNumber, telegramMessage);
+                        }
+
+                        // ✅ Invia PUSH NOTIFICATION
+                        var pushNotification = new
+                        {
+                            title = isAssignment 
+                                ? $"✅ Assegnato al ticket #{ticket.Id}"
+                                : $"❌ Rimosso dal ticket #{ticket.Id}",
+                            body = ticketWithDetails?.Company?.RagioneSociale ?? "Ticket CRM",
+                            icon = "/favicon.ico",
+                            badge = "/favicon.ico",
+                            url = $"/Tickets/Info/{ticket.Id}",
+                            data = new
+                            {
+                                ticketId = ticket.Id,
+                                action = isAssignment ? "assigned" : "unassigned"
+                            }
+                        };
+
+                        await _pushService.SendToUsersAsync(new List<string> { userId }, pushNotification);
+                    }
+                    catch (Exception ex)
+                    {
+                        await _logEventService.RegisterAsync(
+                            nameof(TicketsController), 
+                            nameof(SendAssignmentNotifications), 
+                            LogEvent.EventsTypes.Warning, 
+                            $"Errore invio email {(isAssignment ? "assegnazione" : "rimozione")} a {user.NameComplete}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController), 
+                    nameof(SendAssignmentNotifications), 
+                    LogEvent.EventsTypes.Error, 
+                    $"Errore invio notifiche ticket #{ticket.Id}: {ex.Message}");
+            }
+        }
+
+        
+
+
+
+
+    }
+   
+    public class AssignUsersRequest
+    {
+        public int TicketId { get; set; }
+        public List<string> UserIds { get; set; } = new List<string>();
+    }
+
+    /// <summary>
+    /// ✅ NUOVO: Model per richiesta subscription push
+    /// </summary>
+    public class PushSubscribeRequest
+    {
+        public string Subscription { get; set; }
     }
 }

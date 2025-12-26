@@ -1,0 +1,225 @@
+@page "/settings/push-notifications"
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+@inject Radzen.NotificationService NotificationService
+
+<h3>?? Notifiche Push</h3>
+
+<RadzenCard class="rz-my-3">
+    <p>Attiva le notifiche push per ricevere avvisi in tempo reale anche quando il browser è chiuso.</p>
+    
+    @if (_isSupported)
+    {
+        @if (_permission == "granted")
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Success" Variant="Variant.Flat" class="rz-my-3">
+                ? Notifiche push attive
+            </RadzenAlert>
+            
+            <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" class="rz-my-3">
+                <strong>?? Nota:</strong> Le notifiche funzionano:
+                <ul class="rz-mt-2 rz-mb-0">
+                    <li>? <strong>Desktop:</strong> Sempre quando il browser è aperto (anche in background)</li>
+                    <li>? <strong>Android:</strong> Sempre, anche con browser chiuso (Chrome, Firefox, Edge)</li>
+                    <li>? <strong>iOS Safari:</strong> Con Safari in background o come PWA installata</li>
+                    <li>?? <strong>iOS Chrome/Firefox:</strong> Non supportato (usare Safari)</li>
+                </ul>
+                <small class="rz-mt-2 d-block">
+                    <strong>Tip Desktop:</strong> Mantieni una tab del CRM aperta per garantire la ricezione.<br/>
+                    <strong>Tip iOS:</strong> Usa Safari e aggiungi il CRM alla home screen per notifiche sempre attive.
+                </small>
+            </RadzenAlert>
+            
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="10px">
+                <RadzenButton Click="TestNotification" ButtonStyle="ButtonStyle.Info" Icon="notifications_active" Text="Test Notifica" />
+                <RadzenButton Click="DisableNotifications" ButtonStyle="ButtonStyle.Danger" Icon="notifications_off" Text="Disattiva Notifiche" />
+            </RadzenStack>
+        }
+        else if (_permission == "denied")
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" class="rz-my-3">
+                ? Permesso negato. Per sbloccare:
+                <ul class="rz-mt-2">
+                    <li><strong>Chrome</strong>: Icona lucchetto ? Impostazioni sito ? Notifiche ? Consenti</li>
+                    <li><strong>Firefox</strong>: Icona i ? Permessi ? Notifiche ? Consenti</li>
+                    <li><strong>Edge</strong>: Icona lucchetto ? Autorizzazioni per questo sito ? Notifiche ? Consenti</li>
+                </ul>
+            </RadzenAlert>
+        }
+        else
+        {
+            <RadzenButton Click="EnableNotifications" ButtonStyle="ButtonStyle.Primary" Icon="notifications" Text="?? Attiva Notifiche Push" />
+        }
+    }
+    else
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat">
+            ?? Il tuo browser non supporta le notifiche push
+        </RadzenAlert>
+    }
+</RadzenCard>
+
+@code {
+    private bool _isSupported;
+    private string _permission = "default";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _isSupported = await JSRuntime.InvokeAsync<bool>("PushNotifications.isSupported");
+                if (_isSupported)
+                {
+                    _permission = await JSRuntime.InvokeAsync<string>("PushNotifications.getPermissionState");
+                }
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error checking push support: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task EnableNotifications()
+    {
+        try
+        {
+            // 1. Richiedi permesso
+            var permissionResult = await JSRuntime.InvokeAsync<System.Text.Json.JsonElement>(
+                "PushNotifications.requestPermission");
+            
+            if (!permissionResult.GetProperty("success").GetBoolean())
+            {
+                NotificationService.Notify(new Radzen.NotificationMessage
+                {
+                    Severity = Radzen.NotificationSeverity.Error,
+                    Summary = "Errore",
+                    Detail = "Permesso negato dall'utente",
+                    Duration = 4000
+                });
+                return;
+            }
+
+            // 2. Subscribe con VAPID key
+            var vapidPublicKey = "BGP3BD1OnlEr7GW3YidM4E2YNgddp9r7BIyzYjUFi5s1xxD6sPlgK8VFcQHt0NNk98nO1VOxDhp9OlBdrCODeqE";
+            
+            var subscribeResult = await JSRuntime.InvokeAsync<System.Text.Json.JsonElement>(
+                "PushNotifications.subscribe", vapidPublicKey);
+            
+            if (!subscribeResult.GetProperty("success").GetBoolean())
+            {
+                var error = subscribeResult.GetProperty("error").GetString();
+                NotificationService.Notify(new Radzen.NotificationMessage
+                {
+                    Severity = Radzen.NotificationSeverity.Error,
+                    Summary = "Errore Subscribe",
+                    Detail = $"Impossibile iscriversi: {error}",
+                    Duration = 4000
+                });
+                return;
+            }
+
+            // 3. Invia subscription al server
+            var subscription = subscribeResult.GetProperty("subscription").GetString();
+            
+            var response = await Http.PostAsJsonAsync("api/Tickets/push/subscribe", new { 
+                subscription = subscription 
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                _permission = "granted";
+                NotificationService.Notify(new Radzen.NotificationMessage
+                {
+                    Severity = Radzen.NotificationSeverity.Success,
+                    Summary = "Successo",
+                    Detail = "Notifiche push attivate con successo!",
+                    Duration = 4000
+                });
+                StateHasChanged();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                NotificationService.Notify(new Radzen.NotificationMessage
+                {
+                    Severity = Radzen.NotificationSeverity.Error,
+                    Summary = "Errore Server",
+                    Detail = $"Impossibile salvare subscription: {errorContent}",
+                    Duration = 4000
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new Radzen.NotificationMessage
+            {
+                Severity = Radzen.NotificationSeverity.Error,
+                Summary = "Errore",
+                Detail = ex.Message,
+                Duration = 4000
+            });
+        }
+    }
+
+    private async Task DisableNotifications()
+    {
+        try
+        {
+            // 1. Unsubscribe dal browser
+            await JSRuntime.InvokeVoidAsync("PushNotifications.unsubscribe");
+            
+            // 2. Rimuovi dal server
+            await Http.PostAsync("api/Tickets/push/unsubscribe", null);
+            
+            _permission = "default";
+            NotificationService.Notify(new Radzen.NotificationMessage
+            {
+                Severity = Radzen.NotificationSeverity.Info,
+                Summary = "Info",
+                Detail = "Notifiche disattivate",
+                Duration = 4000
+            });
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new Radzen.NotificationMessage
+            {
+                Severity = Radzen.NotificationSeverity.Error,
+                Summary = "Errore",
+                Detail = ex.Message,
+                Duration = 4000
+            });
+        }
+    }
+
+    private async Task TestNotification()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("PushNotifications.showTestNotification");
+            
+            NotificationService.Notify(new Radzen.NotificationMessage
+            {
+                Severity = Radzen.NotificationSeverity.Info,
+                Summary = "Test",
+                Detail = "Notifica di test inviata! Controlla se appare.",
+                Duration = 4000
+            });
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new Radzen.NotificationMessage
+            {
+                Severity = Radzen.NotificationSeverity.Error,
+                Summary = "Errore",
+                Detail = ex.Message,
+                Duration = 4000
+            });
+        }
+    }
+}

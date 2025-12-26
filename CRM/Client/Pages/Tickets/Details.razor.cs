@@ -1,4 +1,4 @@
-ï»¿using CRM.Client.Helpers;
+using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
+using Radzen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,6 +34,9 @@ namespace CRM.Client.Pages.Tickets
 
         [Inject]
         IJSRuntime JSRuntime { get; set; }
+
+        [Inject]
+        DialogService DialogService { get; set; }
 
         [Parameter]
         public int? Id { get; set; }
@@ -62,10 +66,13 @@ namespace CRM.Client.Pages.Tickets
         public string BackUrl { get; set; }
 
 
-        private bool _panelAssign = false;
         private bool _isDownloadingPdf = false;
 
         private TicketModel _ticket = null;
+
+        // ? NUOVO: Lista degli utenti assegnati
+        private List<ApplicationUser> _assignedUsers = new List<ApplicationUser>();
+        private bool _isLoadingUsers = false;
 
 
        
@@ -98,6 +105,9 @@ namespace CRM.Client.Pages.Tickets
                 {
 
                     _ticket = await _service.GetDetails(Id.Value);
+                    
+                    // ? NUOVO: Carica gli utenti assegnati dopo aver caricato il ticket
+                    await LoadAssignedUsers();
                 }
                 else
                     _ticket = new TicketModel();
@@ -114,7 +124,59 @@ namespace CRM.Client.Pages.Tickets
                 await InvokeAsync(StateHasChanged);
             }
         }
-        
+
+        /// <summary>
+        /// ? NUOVO: Carica la lista completa degli utenti assegnati al ticket
+        /// </summary>
+        private async Task LoadAssignedUsers()
+        {
+            if (Id == null) return;
+
+            try
+            {
+                _isLoadingUsers = true;
+                
+                // ? IMPORTANTE: Svuota sempre la lista prima di ricaricare
+                _assignedUsers.Clear();
+                await InvokeAsync(StateHasChanged); // Forza render con lista vuota
+                
+                // Ottieni gli ID degli utenti assegnati
+                var userIds = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{Id}/assigned-users");
+                
+                if (userIds != null && userIds.Any())
+                {
+                    // Carica i dettagli completi degli utenti
+                    foreach (var userId in userIds)
+                    {
+                        try
+                        {
+                            var user = await HttpClient.GetFromJsonAsync<ApplicationUser>($"api/Users/{userId}");
+                            if (user != null)
+                            {
+                                _assignedUsers.Add(user);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Errore caricamento utente {userId}: {ex.Message}");
+                        }
+                    }
+                }
+                // ? ELSE rimosso: se userIds è vuota, _assignedUsers resta vuota (corretto!)
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento utenti assegnati: {ex.Message}");
+                // ? In caso di errore, assicurati che la lista sia vuota
+                _assignedUsers.Clear();
+            }
+            finally
+            {
+                _isLoadingUsers = false;
+                // ? IMPORTANTE: Forza sempre il render finale
+                await InvokeAsync(StateHasChanged);
+            }
+        }
 
         protected void Edit()
         {
@@ -192,21 +254,57 @@ namespace CRM.Client.Pages.Tickets
             }
         }
 
-        private void PrepareAssign()
+        /// <summary>
+        /// ? NUOVO: Apre il dialog di assegnazione utenti
+        /// </summary>
+        private async Task PrepareAssign()
         {
-            _panelAssign = true;
-            StateHasChanged();
+            var result = await DialogService.OpenAsync<Assign>(
+                Localize["Assign Users"],
+                new Dictionary<string, object> { { "Id", Id } },
+                new DialogOptions 
+                { 
+                    Width = "900px", 
+                    Height = "650px",
+                    Resizable = true,
+                    Draggable = true,
+                    CloseDialogOnEsc = true
+                }
+            );
+
+            // ? DEBUG: Log per verificare il risultato
+            Console.WriteLine($"[Details] Dialog chiuso. Result: {result}");
+            
+            // ? IMPORTANTE: Ricarica SEMPRE i dati dopo la chiusura del dialog
+            // Questo garantisce che l'UI sia sincronizzata anche se tutti gli utenti sono rimossi
+            Console.WriteLine($"[Details] Ricaricamento dati ticket #{Id}...");
+            await LoadData();
+            
+            Console.WriteLine($"[Details] Utenti assegnati dopo reload: {_assignedUsers.Count}");
+            await InvokeAsync(StateHasChanged);
         }
 
-        private async Task OnAssignClose()
-        {
-            _panelAssign = false;
-            await LoadData();
-            StateHasChanged();
-        }
         protected void SendInvitation()
         {
 
+        }
+
+        /// <summary>
+        /// ? NUOVO: Ottiene le iniziali dal nome completo dell'utente
+        /// </summary>
+        private string GetUserInitials(string fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+                return "?";
+
+            var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0)
+                return "?";
+
+            if (parts.Length == 1)
+                return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+
+            return (parts[0][0].ToString() + parts[^1][0].ToString()).ToUpper();
         }
 
         private void BackToUrl()
@@ -220,7 +318,5 @@ namespace CRM.Client.Pages.Tickets
 
             NavigationManager.NavigateTo($"/Tickets/Index/{BackUrl}");
         }
-
-
     }
 }

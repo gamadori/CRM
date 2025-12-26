@@ -132,13 +132,38 @@ else
                     }
                 </LabelContent>
                 <ChildContent>
-                    @if (_panelAssign)
+                    @if (_isLoadingUsers)
                     {
-                        <Assign OnClose="OnAssignClose" id="@_ticket.Id"></Assign>
+                        <div class="d-flex align-items-center">
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Caricamento utenti...</span>
+                        </div>
+                    }
+                    else if (_assignedUsers != null && _assignedUsers.Any())
+                    {
+                        <!-- ✅ VISUALIZZAZIONE MULTIPLA: Badge colorati per ogni utente -->
+                        <div class="assigned-users-badges">
+                            @foreach (var user in _assignedUsers)
+                            {
+                                <div class="user-badge" title="@user.Email">
+                                    <span class="user-avatar">@GetUserInitials(user.NameComplete)</span>
+                                    <span class="user-name">@user.NameComplete</span>
+                                    @if (_assignedUsers.IndexOf(user) == 0)
+                                    {
+                                        <span class="badge-primary-indicator" title="Utente principale">★</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(_ticket.UserAssigned))
+                    {
+                        <!-- ✅ FALLBACK: Visualizzazione singola (legacy) -->
+                        <p class="mb-0 text-dark">@_ticket.UserAssigned</p>
                     }
                     else
                     {
-                        <p class="mb-0 text-dark">@_ticket.UserAssigned</p>
+                        <p class="mb-0 text-muted">Nessun utente assegnato</p>
                     }
                 </ChildContent>
             </RedGDetailField>
@@ -170,7 +195,7 @@ else
                         <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
                     }
 
-                    @if (_ticket.IdUserAssigned == null && _ticket.Permits.Assign())
+                    @if (_ticket.Permits.Assign())
                     {
                         <BlazorButton OnClick="PrepareAssign" Style="@BtnStyle.Danger" Icon="assignment_ind" Text=@Localize["Assign"]></BlazorButton>
                     }
@@ -180,7 +205,7 @@ else
                         <BlazorButton OnClick="@TicketClose" Style="@BtnStyle.Warning" Icon="archive" Text="Chiudi"></BlazorButton>
                     }
 
-                    <AGButton ButtonStyle="AGButton.ButtonStyles.ButtonPrint" OnClickEvent="TicketPrint"></AGButton>
+                   
 
                     @* ✅ PULSANTE PDF - Scarica PDF con QuestPDF *@
                     <BlazorButton OnClick="@DownloadPdf" 

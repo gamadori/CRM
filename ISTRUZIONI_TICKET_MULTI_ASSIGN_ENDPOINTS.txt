@@ -1,0 +1,113 @@
+/// ? ENDPOINT PER ASSEGNAZIONE MULTIPLA UTENTI AI TICKET
+/// Aggiungere questi metodi al file CRM\Server\Controllers\TicketsController.cs
+
+// ==========================================
+// GET: api/Tickets/{id}/assigned-users
+// Recupera la lista degli ID utenti assegnati a un ticket
+// ==========================================
+[HttpGet("{id}/assigned-users")]
+public async Task<ActionResult<List<string>>> GetAssignedUsers(int id)
+{
+    try
+    {
+        var ticket = await _context.Tickets
+            .Include(t => t.AssignedUsers)
+            .ThenInclude(au => au.User)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
+        if (ticket == null)
+        {
+            return NotFound($"Ticket con ID {id} non trovato");
+        }
+
+        // Restituisce la lista degli ID utenti assegnati
+        var userIds = ticket.AssignedUsers
+            .Select(au => au.IdUser)
+            .ToList();
+
+        return Ok(userIds);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"Errore interno: {ex.Message}");
+    }
+}
+
+// ==========================================
+// POST: api/Tickets/{id}/assign-users
+// Assegna multipli utenti a un ticket
+// ==========================================
+[HttpPost("{id}/assign-users")]
+public async Task<IActionResult> AssignUsers(int id, [FromBody] AssignUsersRequest request)
+{
+    try
+    {
+        var ticket = await _context.Tickets
+            .Include(t => t.AssignedUsers)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
+        if (ticket == null)
+        {
+            return NotFound($"Ticket con ID {id} non trovato");
+        }
+
+        // Ottieni l'ID dell'utente corrente
+        var currentUser = await _userManager.GetUserAsync(User);
+        var currentUserId = currentUser?.Id;
+
+        // Rimuovi tutte le assegnazioni esistenti
+        _context.TicketUserAssignments.RemoveRange(ticket.AssignedUsers);
+
+        // Aggiungi le nuove assegnazioni
+        foreach (var userId in request.UserIds)
+        {
+            // Verifica che l'utente esista
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+            if (!userExists)
+            {
+                return BadRequest($"Utente con ID {userId} non trovato");
+            }
+
+            var assignment = new TicketUserAssignment
+            {
+                IdTicket = id,
+                IdUser = userId,
+                AssignedDate = DateTime.Now,
+                AssignedBy = currentUserId
+            };
+
+            _context.TicketUserAssignments.Add(assignment);
+        }
+
+        // ? Aggiorna anche IdUserAssigned (utente principale) - primo della lista
+        if (request.UserIds.Any())
+        {
+            ticket.IdUserAssigned = request.UserIds.First();
+        }
+        else
+        {
+            ticket.IdUserAssigned = null;
+        }
+
+        await _context.SaveChangesAsync();
+
+        // TODO: Invia email/notifiche agli utenti assegnati
+        // await SendAssignmentNotifications(ticket, request.UserIds);
+
+        return Ok(new { message = "Utenti assegnati con successo", assignedCount = request.UserIds.Count });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, $"Errore interno: {ex.Message}");
+    }
+}
+
+// ==========================================
+// CLASSE DI SUPPORTO PER LA REQUEST
+// Aggiungere questa classe alla fine del file o in un file separato
+// ==========================================
+public class AssignUsersRequest
+{
+    public int TicketId { get; set; }
+    public List<string> UserIds { get; set; } = new List<string>();
+}

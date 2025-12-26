@@ -24,57 +24,30 @@
     }
    
 
-    <div class=row>
-        <div class="col-auto">
-           
-            <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewTicket"></BlazorButton>
-        </div>
-        <div class="col-auto">
-            @if (_isMobile)
-            {
-                <RadzenSelectBar @bind-Value=@_isResponsable TValue="bool" class="mb-5">
-                    <Items>
-                        <RadzenSelectBarItem Text="Dettagli" Value="true" />
-                        <RadzenSelectBarItem Text="Grid" Value="false" />
-                    </Items>
-                </RadzenSelectBar>
-            }
-        </div>
-        <div class="col">
-
-            @if (_user != null && !_user.IsClient)
-            {
-                <BlazorFilter OnChangeFilter="OnChangeFilter" @bind-FilterState=@_filterState>
-                    <Filter>
-                        <div class="row">
-                            <div class="col">
-                                <div class="form-floating">
-
-                                    <RadzenDropDownDataGrid class="form-control" @bind-Value="@_idUser" TValue="string" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" Change="OnChangeIdUser"
-                                                            Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id">
-                                        <Columns>
-                                            <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
-                                            <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
-
-                                        </Columns>
-                                    </RadzenDropDownDataGrid>
-
-                                    <label>@Localize["Assegnato A:"]</label>
-
-                                </div>
-                            </div>
-                        </div>
-                    </Filter>
-                </BlazorFilter>
-            }
-        </div>
-
-    </div>
-
 
     <RadzenDataGrid @ref="grdTickets" IsLoading="@_isLoading" Count="@_numRecords" Responsive="@_isResponsable" Data="@_ticketView?.Items" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
                 AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowColumnResize=true
                     PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="TicketModel" EmptyText="Nessun Ticket" CellRender="@CellRender" CellClick="@OnCellClick" >
+        
+        <HeaderTemplate>
+            <div class="d-flex align-items-center gap-5">
+                <RedGButton RGButtonType="RGButtonType.New" Click="@NewTicket"></RedGButton>
+                @if (_user != null && !_user.IsClient)
+                {
+                    <RedGDropDownGrid TValue="string" @bind-Value="_idUser" AllowClear="true" Style="width: 250px;" Label="@Localize["Filter by User"]"
+                        Data="@_users" TItem="ApplicationUser" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id" Change="OnChangeIdUser">
+                        <ChildColumns>
+                            <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
+                            <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
+                        </ChildColumns>
+                
+                        <End>
+                            <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
+                        </End>
+                    </RedGDropDownGrid>
+                }
+            </div>
+        </HeaderTemplate>
         <Columns>
             @if (ColVisible())
             {

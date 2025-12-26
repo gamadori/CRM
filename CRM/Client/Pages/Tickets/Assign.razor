@@ -1,44 +1,184 @@
-﻿@page "/Tickets/Assign/{Id:int}"
+﻿@* ✅ RIMOSSO @page - Ora è un componente dialog *@
 
 @using Radzen
 @using Radzen.Blazor
 
-   
-    @if (_ticket != null)
-    {
-   
+@if (_ticket != null)
+{
+    <div class="assign-users-container">
+        <!-- Header con titolo e badge count -->
+        <div class="assign-header">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="mb-0">
+                    <span class="material-icons me-2">groups</span>
+                    @Localize["Assign Users"]
+                </h5>
+                <span class="badge bg-primary rounded-pill">
+                    @_selectedUserIds.Count @Localize["selected"]
+                </span>
+            </div>
+        </div>
 
-        <EditForm Model="@_ticket" OnValidSubmit="HandleValidSubmit">
-        
-           
-        
-            <DataAnnotationsValidator />
-            <ValidationSummary />
+        <!-- Sezione ricerca utenti -->
+        <div class="search-section mb-3">
+            <RadzenTextBox 
+                @bind-Value="@_searchQuery" 
+                Placeholder="@Localize["Search users..."]"
+                class="w-100"
+                @oninput="@(args => OnSearchChanged(args.Value?.ToString()))"
+                Style="padding: 0.75rem;">
+                <i class="material-icons" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6c757d;">search</i>
+            </RadzenTextBox>
+        </div>
 
-                    
-            <div class="row">
-                <div class="col">
-                    <div class="input-group mb-3">
-                        <RadzenDropDownDataGrid @ref="_userDropDown" class="form-control" @bind-Value="@_ticket.IdUserAssigned" TValue="string" AllowFiltering="true" PageSize="@ConstHelper.PageSize" AllowClear="true"
-                                    Data="@_users" Count="@_users.Count"  TextProperty="NameComplete" ValueProperty="Id" />
-                        <RadzenButton Click="OpenScheduler" Icon="calendar_month"></RadzenButton>
-                    </div>
-                    <ValidationMessage For="@(() => _ticket.IdUserAssigned)" />
-                </div>
-                
-                <div class="col-auto ms-4">
-                    <RadzenButton ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Secondary" Icon="done"></RadzenButton>
-                    <RadzenButton Click="Cancel" ButtonStyle="ButtonStyle.Danger" Icon="close"></RadzenButton>
+        <!-- Lista utenti già assegnati (chips/badges) -->
+        @if (_selectedUserIds.Any())
+        {
+            <div class="assigned-users-section mb-3">
+                <label class="form-label fw-semibold">@Localize["Assigned Users"]:</label>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var userId in _selectedUserIds.ToList())
+                    {
+                        var user = _users.FirstOrDefault(u => u.Id == userId);
+                        if (user != null)
+                        {
+                            <div class="user-badge">
+                                <span class="user-avatar">@GetInitials(user.NameComplete)</span>
+                                <span class="user-name">@user.NameComplete</span>
+                                <button type="button" 
+                                        class="btn-remove" 
+                                        @onclick="() => RemoveUser(userId)"
+                                        title="@Localize["Remove"]">
+                                    <span class="material-icons">close</span>
+                                </button>
+                            </div>
+                        }
+                    }
                 </div>
             </div>
-                   
+        }
 
+        <!-- Selected Users Summary (Top Section) -->
+        <div class="selected-users-summary mb-4">
+            <h6 class="mb-3 fw-bold text-primary">
+                <i class="bi bi-people-fill me-2"></i>
+                @Localize["Selected Users"] (@_selectedUserIds.Count)
+            </h6>
+            
+            @if (_selectedUserIds.Any())
+            {
+                <div class="selected-badges-container">
+                    @foreach (var userId in _selectedUserIds)
+                    {
+                        var user = _users.FirstOrDefault(u => u.Id == userId);
+                        if (user != null)
+                        {
+                            <div class="selected-user-badge">
+                                <span class="user-avatar-small">@GetInitials(user.NameComplete)</span>
+                                <span class="user-name-small">@user.NameComplete</span>
+                                <button type="button" class="btn-remove" @onclick="() => RemoveUser(userId)" title="@Localize["Remove"]">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- ✅ NUOVO: Messaggio informativo quando nessun utente è selezionato -->
+                <div class="alert alert-info d-flex align-items-center mb-0" role="alert">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <div>
+                        <strong>@Localize["No users assigned"]</strong><br/>
+                        <small>@Localize["Click 'Save' to remove all assignments or select users below"]</small>
+                    </div>
+                </div>
+            }
+        </div>
 
-        
-        </EditForm>
+        <!-- Lista utenti disponibili (card selezionabili) -->
+        <div class="available-users-section">
+            <label class="form-label fw-semibold">@Localize["Available Users"]:</label>
+            
+            @if (_filteredUsers.Any())
+            {
+                <div class="users-grid">
+                    @foreach (var user in _filteredUsers)
+                    {
+                        var isSelected = _selectedUserIds.Contains(user.Id);
+                        var workload = GetUserWorkload(user.Id);
+                        
+                        <div class="user-card @(isSelected ? "selected" : "")" 
+                             @onclick="() => ToggleUser(user.Id)">
+                            <div class="user-card-content">
+                                <div class="user-avatar-large">
+                                    @GetInitials(user.NameComplete)
+                                </div>
+                                <div class="user-info">
+                                    <div class="user-name-full">
+                                        @user.NameComplete
+                                        
+                                        <!-- ✅ NUOVO: Badge workload inline -->
+                                        <span class="workload-badge @workload.BadgeClass" 
+                                              title="@workload.TicketCount ticket assegnati per questa giornata">
+                                            @workload.Icon @workload.BadgeText
+                                        </span>
+                                    </div>
+                                    <div class="user-email">@user.Email</div>
+                                    
+                                    <!-- ✅ NUOVO: Link scheduler (opzionale) -->
+                                    @if (workload.TicketCount > 0)
+                                    {
+                                        <button type="button" 
+                                                class="btn-scheduler-link"
+                                                @onclick:stopPropagation="true"
+                                                @onclick="async () => await OpenSchedulerForUser(user.Id)"
+                                                title="Vedi calendario completo in nuova scheda">
+                                            📅 Vedi dettagli (@workload.TicketCount)
+                                        </button>
+                                    }
+                                </div>
+                                @if (isSelected)
+                                {
+                                    <div class="check-icon">
+                                        <span class="material-icons">check_circle</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <span class="material-icons me-2">info</span>
+                    @Localize["No users found"]
+                </div>
+            }
+        </div>
 
-    }
-    else
-    {
-        <SpinnerCircle></SpinnerCircle>
-    }
+        <!-- Footer con azioni -->
+        <div class="assign-footer mt-4">
+            <div class="d-flex gap-2 justify-content-end">
+                <RadzenButton 
+                    Click="Cancel" 
+                    ButtonStyle="ButtonStyle.Light" 
+                    Icon="close"
+                    Text="@Localize["Cancel"]" />
+                
+                <RadzenButton 
+                    Click="HandleValidSubmit" 
+                    ButtonStyle="ButtonStyle.Primary" 
+                    Icon="done"
+                    Text="@Localize["Save Assignments"]"
+                   />
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <Waiting></Waiting>
+}

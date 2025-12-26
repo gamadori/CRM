@@ -11,7 +11,8 @@
     <ChildContent>
     
         <RadzenDropDownDataGrid @rendermode="renderMode" TValue="TValue" Data="@Data" TextProperty="@TextProperty" AllowClear=@AllowClear PageSize="@PageSize" Count="@Count" PagingSummaryFormat="@ConstHelper.PagingSummaryFormatShort"
-                        ValueProperty="@ValueProperty" Value="@Value" ValueChanged="ValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                        ValueProperty="@ValueProperty" Value="@Value" ValueChanged="ValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" 
+                        Change="@Change">
             <Columns>
                 @ChildColumns
             </Columns>
@@ -72,4 +73,7 @@
 
     [Parameter]
     public int Count { get; set; } = 0; 
+
+    [Parameter]
+    public EventCallback<object> Change { get; set; }
 }

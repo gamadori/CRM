@@ -29,6 +29,8 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         IJSRuntime JSRuntime { get; set; }
        
+        [Inject]
+        NavigationManager NavigationManager { get; set; }
 
         [Inject]
         IAGRestClientService RestClientService { get; set; }
@@ -84,6 +86,13 @@ namespace CRM.Client.Pages.Tickets
         [Parameter]
         public int? IdTicketType { get; set; } = null;
 
+        // ✅ NUOVO: Parametri da query string (per apertura da Assign.razor)
+        [SupplyParameterFromQuery(Name = "userId")]
+        public string? QueryUserId { get; set; }
+
+        [SupplyParameterFromQuery(Name = "date")]
+        public string? QueryDate { get; set; }
+
 
         private DateTime? _dateStart = null;
 
@@ -107,6 +116,18 @@ namespace CRM.Client.Pages.Tickets
 
         protected override async Task OnInitializedAsync()
         {
+            // ✅ NUOVO: Imposta filtri da query string se presenti
+            if (!string.IsNullOrEmpty(QueryUserId))
+            {
+                _idUser = QueryUserId;
+                IdUserAssigned = QueryUserId; // Sincronizza con il parametro bound
+            }
+
+            if (!string.IsNullOrEmpty(QueryDate) && DateTime.TryParse(QueryDate, out var parsedDate))
+            {
+                _dateCurrent = parsedDate;
+                DateCurrent = parsedDate; // Sincronizza con il parametro bound
+            }
             
             await LoadUsers();
 

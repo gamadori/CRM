@@ -29,9 +29,25 @@ namespace CRM.Server.Data
 
             modelBuilder.Entity<ApplicationUser>().HasMany(x => x.Tickets).WithOne(x => x.UserOpened).HasForeignKey(y => y.IdUserOpened);
             modelBuilder.Entity<ApplicationUser>().HasMany(x => x.UserClosedTickets).WithOne(x => x.UserClosed).HasForeignKey(y => y.IdUserClosed);
-            modelBuilder.Entity<ApplicationUser>().HasMany(x => x.UserAssignedTickets).WithOne(x => x.UserAssigned).HasForeignKey(y => y.IdUserAssigned);
+            
+            // ⚠️ LEGACY: Relazione 1-to-many tradizionale (mantenuta per compatibilità)
+            modelBuilder.Entity<ApplicationUser>()
+                .HasMany(x => x.UserAssignedTickets)
+                .WithOne(x => x.UserAssigned)
+                .HasForeignKey(y => y.IdUserAssigned);
 
+            // ✅ NUOVA: Relazione many-to-many tramite TicketUserAssignment
+            modelBuilder.Entity<TicketUserAssignment>()
+                .HasOne(tua => tua.Ticket)
+                .WithMany(t => t.AssignedUsers)
+                .HasForeignKey(tua => tua.IdTicket)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<TicketUserAssignment>()
+                .HasOne(tua => tua.User)
+                .WithMany()
+                .HasForeignKey(tua => tua.IdUser)
+                .OnDelete(DeleteBehavior.Restrict);
 
             base.OnModelCreating(modelBuilder);
         }
@@ -133,10 +149,7 @@ namespace CRM.Server.Data
 
         public DbSet<CRM.Shared.ArticleAccessory> ArticleAccessory => Set<ArticleAccessory>();
 
-
-
-
-
-
+        // ✅ NUOVO: DbSet per la tabella di assegnazione multipla utenti ai ticket
+        public DbSet<TicketUserAssignment> TicketUserAssignments => Set<TicketUserAssignment>();
     }
 }

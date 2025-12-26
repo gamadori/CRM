@@ -72,6 +72,16 @@ namespace CRM.Shared
         [Display(Name = nameof(ApplicationUser.LanguageCode), ResourceType = typeof(Resources.Models.ApplicationUser))]
         public string LanguageCode { get; set; }
 
+        /// <summary>
+        /// ✅ NUOVO: Subscription Web Push (serializzata JSON)
+        /// </summary>
+        public string PushSubscription { get; set; }
+
+        /// <summary>
+        /// ✅ NUOVO: Data registrazione push subscription
+        /// </summary>
+        public DateTime? PushSubscriptionDate { get; set; }
+
         [DataMember]
         [NotMapped]
         public string AvatarTxt { get; set; }

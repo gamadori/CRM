@@ -150,6 +150,11 @@ namespace CRM.Shared
         [Display(Name = nameof(Ticket.IdContact), ResourceType = typeof(Resources.Models.Ticket))]
         public int? IdContact { get; set; }
 
+        /// <summary>
+        /// ⚠️ LEGACY FIELD: Utente principale assegnato (mantenuto per retrocompatibilità).
+        /// Per assegnazioni multiple, usa la collection AssignedUsers.
+        /// Viene sincronizzato automaticamente con il primo elemento di AssignedUsers.
+        /// </summary>
         [Display(Name = nameof(Ticket.IdUserAssigned), ResourceType = typeof(Resources.Models.Ticket))]
         public string? IdUserAssigned { get; set; } = null;
 
@@ -229,6 +234,9 @@ namespace CRM.Shared
         [JsonIgnore]
         public virtual ICollection<TicketIntervention> TicketInterventions { get; set; }
 
+        /// <summary>
+        /// Navigation property per l'utente principale assegnato (legacy)
+        /// </summary>
         [JsonIgnore]
         public virtual ApplicationUser UserAssigned { get; set; }
 
@@ -239,6 +247,12 @@ namespace CRM.Shared
         [JsonIgnore]
         public virtual Contact? Contact { get; set; }
         public virtual Project Project { get; set; }
+
+        /// <summary>
+        /// ✅ FONTE DI VERITÀ per assegnazioni MULTIPLE: Collezione di tutti gli utenti assegnati al ticket
+        /// </summary>
+        [JsonIgnore]
+        public virtual ICollection<TicketUserAssignment> AssignedUsers { get; set; } = new List<TicketUserAssignment>();
     }
 
     public class TicketFilter: PagingParameterModel
