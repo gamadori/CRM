@@ -1,0 +1,118 @@
+﻿@page "/Deals/Edit"
+@page "/Deals/Edit/{Id:int}"
+@using Radzen
+@using Radzen.Blazor
+
+<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog)>@_header</BlazorHeader>
+
+@if (_deal == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    
+    <div class="container m-3">
+        <EditForm Model="@_deal" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+           
+            <div class="row mb-3">
+                <div class="col-md-6">            
+                    <DisplayName For="@(()=>_deal.Name)" />
+                    <input class="form-control" @bind-value="@_deal.Name" />
+                    <ValidationMessage For="@(() => _deal.Name)" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <DisplayName For="@(()=>_deal.IdCompany)" />
+
+                    <div class="input-group mb-3">
+                        <RadzenDropDownDataGrid @ref=_ddCompany class="form-control" @bind-value="@_deal.IdCompany" TValue="int?" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                    AllowClear="true" PageSize="@_pageSize"
+                                            Data="@_companies" Count="@_companies.Count()" Change="OnChangeCompany" TextProperty="RagioneSociale" ValueProperty="Id"
+                                            Disabled="@_lockCompany">
+                            <Columns>
+                                <RadzenDropDownDataGridColumn Property="RagioneSociale" Title=@TranslateHelper.GetDisplayName(nameof(Company.RagioneSociale), typeof(Company)) />
+                            </Columns>
+                        </RadzenDropDownDataGrid>
+                        <BtnCompanies OnGetCompany="OnGetCompany"></BtnCompanies>
+                    </div>
+                    <ValidationMessage For="@(() => _deal.IdCompany)" />
+                </div>
+               
+                <div class="col-md-6">
+                    <DisplayName For="@(()=>_deal.IdContact)" />
+
+                    <div class="input-group mb-3">
+                        <RadzenDropDownDataGrid @ref=_ddContact class="form-control" @bind-value="@_deal.IdContact" TValue="int?" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            AllowClear="true" PageSize="@_pageSize"
+                                            Data="@_contacts" Count="@_contacts.Count()" TextProperty="NameComplete"  ValueProperty="Id">
+                            <Columns>
+                                <RadzenDropDownDataGridColumn Property="NameComplete" Title=@TranslateHelper.GetDisplayName(nameof(Contact.NameComplete), typeof(Contact)) />
+                            </Columns>
+                        </RadzenDropDownDataGrid>
+                        <BtnContacts OnGetContacts="OnGetContact" IdCompany=@_deal?.IdCompany></BtnContacts>
+                           
+                    </div>
+                    <ValidationMessage For="@(() => _deal.IdContact)" />
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <DisplayName For="@(()=>_deal.Amount)" />
+                    <input class="form-control" @bind-value="@_deal.Amount" />
+                    <ValidationMessage For="@(() => _deal.Amount)" />
+                </div>
+                <div class="col-md-6">
+                    <DisplayName For="@(()=>_deal.Target)" />
+                    <input class="form-control" @bind-value="@_deal.Target" />
+                    <ValidationMessage For="@(() => _deal.Target)" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <DisplayName For="@(()=>_deal.State)" />
+
+                    <RadzenDropDown class="form-control" @bind-value="@_deal.State" TValue="DealStates" AllowFiltering="true" AllowSorting=false AllowClear="true" PageSize="@_pageSize"
+                                        Data="@_dealStates" Count="@_dealStates.Count()"  TextProperty="Text" ValueProperty="Value" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
+                        
+                    </RadzenDropDown>
+
+                    <ValidationMessage For="@(() => _deal.State)" />
+                </div>
+
+                <div class="col-md-6">
+                    <DisplayName For="@(()=>_deal.Phase)" />
+
+                    <div class="input-group mb-3">
+                        <RadzenDropDown class="form-control" @bind-value="@_deal.Phase" TValue="DealPhases" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            AllowClear="true" PageSize="@_pageSize"
+                                            Data="@_dealPhases" Count="@_dealPhases.Count()" TextProperty="Text" ValueProperty="Value">
+
+                           
+                        </RadzenDropDown>
+
+                    </div>
+                    <ValidationMessage For="@(() => _deal.Phase)" />
+                </div>
+            </div>
+
+            <div class="row mb-3">    
+                <div class="col-md-12">
+                    <DisplayName For="@(()=>_deal.Note)" />
+                    <InputTextArea rows="8" class="form-control" @bind-Value="@_deal.Note" />
+                    <ValidationMessage For="@(() => _deal.Note)" />
+                </div>
+            </div>
+
+            
+
+            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+            <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+
+        </EditForm>
+    </div>
+}

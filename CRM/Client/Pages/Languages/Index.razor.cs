@@ -1,10 +1,12 @@
-﻿using CRM.Client.Helpers;
+﻿
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
-using Syncfusion.Blazor.Grids;
+using Radzen;
+using Radzen.Blazor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,131 +18,189 @@ namespace CRM.Client.Pages.Languages
 {
     public partial class Index : ComponentBase
     {
+        [Inject]
+        NavigationManager NavigationManager { get; set; } = default!;
+
+        [Inject]
+        DialogService DialogService { get; set; } = default!;   
+
+        [Inject]
+        ILanguagesService LanguagesService { get; set; } = default!;
+
+
+        [Inject]
+        IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; } = default!;
+
 
         private const string PageFolder = "Settings/Languages";
 
-        private int _currentPage = 1;
+        private List<Language>? _languages;
 
-        [Inject]
-        private NavigationManager NavigationManager { get; set; }
+        private LanguageFilter _filter = new LanguageFilter();
 
+        private int _totalCount = 0;
 
+        private RadzenDataGrid<Language> _grdLanguages = default!;
 
-        [Inject]
-        private IJSRuntime JSRuntime { get; set; }
+        private bool _loading = true;
 
-        [Inject]
-        IAGRestClientService RestClientService { get; set; }
+        private List<Language> _languageToUpdate = new List<Language>();
 
-        [Parameter]
-        public Action<int> OnClickDetails { get; set; }
-
-        [Parameter]
-        public Action<int?> OnClickEdit { get; set; }
-
-        [Parameter]
-        public Action<int> OnClickDelete { get; set; }
-
-        [Parameter]
-        public Action<int> OnClickGantt { get; set; }
-
-        private SfGrid<Language> GridLanguages;
-
-        Language _language;
-
-        private string _messageDelete;
-
-
-
-        public void CommandClickHandler(CommandClickEventArgs<Language> args)
+        private List<Language> _languagesToInsert = new List<Language>();
+        private async Task LoadData(LoadDataArgs? args = null)
         {
-            switch (args.CommandColumn.Type)
+            _loading = true;
+            if (args != null)
             {
-                case CommandButtonType.Delete:
-                    PrepareDelete(args.RowData);
-                    break;
+                _filter.Skip = args?.Skip;
+                _filter.Top = args?.Top;
 
-                case CommandButtonType.Edit:
-                    if (args.RowData != null)
-                        Edit(args.RowData.Id);
-                    break;
+                _filter.OrderBy = args?.OrderBy;
+                _filter.Filter = args?.Filter;
 
-                case CommandButtonType.None:
-                    if (args.RowData != null)
-                    {
+            }
 
-                        Details(args.RowData.Id);
-                    }
-                    break;
+            var resp = await LanguagesService.GetPagingAsync(_filter);
+
+            _languages = resp?.Items ?? new List<Language>();
+            _totalCount = resp?.MetaData?.TotalCount ?? 0;
+            _loading = false;
+
+            StateHasChanged();
+        }
+
+      
+
+
+        private async Task Delete(Language item)
+        {
+            if (await DialogService.Confirm($"{Localize["Eliminare definitivamente la lingua"]}: {item.Name}") == true)
+            {
+                await LanguagesService.DeleteAsync(item.Id);
+
+                await LoadData();
             }
         }
 
-
-        public void CommandDetailsClick()
+        async Task EditRow(Language language)
         {
-
-        }
-        public void ActionFailure(FailureEventArgs args)
-        {
-            //_errorDetails = args.Error.Message;
-            StateHasChanged();
-        }
-
-        public void ActionComplete(ActionEventArgs<Language> Args)
-        {
-            StateHasChanged();
+            if (!_grdLanguages.IsValid) 
+                return;
+    
+            Reset();
+            
+            _languageToUpdate.Add(language);
+            await _grdLanguages.EditRow(language);
         }
 
-        protected void NewItem()
+        private async Task OnUpdateRow(Language language)
         {
-            NavigationManager.NavigateTo($"/{PageFolder}/Edit");
+            Reset(language);
+
+            var resp = await LanguagesService.PostAsync(language);
+
+            await _grdLanguages.Reload();
+
+        }
+
+        private void CancelEdit(Language language)
+        {
+            Reset(language);
+
+            _grdLanguages.CancelEditRow(language);
+
+        }
+
+        private async Task DeleteRow(Language item)
+        {
+            Reset(item);
+            if (await DialogService.Confirm($"{Localize["Eliminare definitivamente la linua"]}: {item.Name}?") != true)
+            {
+                _grdLanguages.CancelEditRow(item);
+                return;
+            }
+            if (_languages != null && _languages.Contains(item))
+            {
+                await LanguagesService.DeleteAsync(item.Id);
+
+                await _grdLanguages.Reload();
+            }
+            else
+            {
+                _grdLanguages.CancelEditRow(item);
+                await _grdLanguages.Reload();
+            }
+        }
+
+        async Task InsertRow()
+        {
+            if (!_grdLanguages.IsValid)
+                return;
+
+            Reset();
+
+            var language = new Language();
+            
+            _languagesToInsert.Add(language);
+            await _grdLanguages.InsertRow(language);
+            
+        }
+
+        async Task InsertAfterRow(Language row)
+        {
+            if (!_grdLanguages.IsValid) return;
+            Reset();
+
+            var language = new Language();
+            _languagesToInsert.Add(language);
+            await _grdLanguages.InsertAfterRow(language, row);
+        }
+
+        async Task OnCreateRow(Language language)
+        {
+            var resp = await LanguagesService.PostAsync(language);
+            Reset(language);
+            await   _grdLanguages.Reload();
+        }
+
+
+
+        void Reset(Language language)
+        {
+            _languagesToInsert.Remove(language);
+            _languageToUpdate.Remove(language);
+        }
+
+
+        private void Reset()
+        {
+           
+            _languageToUpdate.Clear();
+            _languageToUpdate.Clear();
         }
 
         
 
-        protected async Task Delete()
+        private async Task SaveRow(Language language)
         {
-
-            await JSRuntime.InvokeAsync<object>("CloseModal", "dlgDelete");
-
-            if (_language != null)
-            {
-
-                
-                await RestClientService.Delete<int>(_language.Id, ConstHelper.LanguagesPath);
-
-                GridLanguages.Refresh();
-                StateHasChanged();
-            }
+            if (!_grdLanguages.IsValid)
+                return;
+            await _grdLanguages.UpdateRow(language);
         }
 
-        protected void PrepareDelete(Language item)
+
+
+
+        private void OnChange(string value, string name)
         {
-            _language = item;
-            _messageDelete = $"Eliminare definitivamente la Lingua: {_language.Name}";
-
-
-            StateHasChanged();
-            JSRuntime.InvokeVoidAsync("ShowModal", "dlgDelete");
-
         }
 
-        protected void Details(int id)
+        private void OnError(UploadErrorEventArgs args, string name)
         {
-            if (OnClickDetails != null)
-            {
-                OnClickDetails(id);
-            }
-            else
-                NavigationManager.NavigateTo($"/{PageFolder}/Details/{id}");
         }
 
-        protected void Edit(int id)
-        {
-            if (OnClickEdit != null)
-                OnClickEdit(id);
-            else
-                NavigationManager.NavigateTo($"/{PageFolder}/Edit/{id}");
-        }
+
+
+
     }
 }

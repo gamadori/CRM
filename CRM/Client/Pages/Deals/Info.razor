@@ -1,0 +1,60 @@
+﻿@page "/Deals/Info/{Id:int}"
+@page "/Deals/{Id:int}"
+@page "/Deals/{Id:int}/{SelectView:int}"
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+
+@if (_deal == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+
+    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
+   
+    <RadzenSelectBar @bind-Value="_selectView" TValue="DealsViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+        <Items>
+            <RadzenSelectBarItem Text="@Localize["Dati Deal"]" Value="DealsViews.Deal" />
+            <RadzenSelectBarItem Text="@Localize["Allegati"]" Value="DealsViews.Attachments" />
+            <RadzenSelectBarItem Text="@Localize["Tickets"]" Value="DealsViews.Tickets" />
+        </Items>
+    </RadzenSelectBar>
+
+    @if (_selectView == DealsViews.Deal)
+    {
+        if (_partialView == PartialViews.Details)
+        {
+            <Details Id="@Id" OnClickEdit="EditDeal" OnClickCancel="GotoIndex" ></Details>
+        }
+        else
+        {
+            <Edit Id="@Id"  OnClickSave="(async () => await SaveDeal())" OnClickCancel="CancelDeal"></Edit>
+        }
+    }
+    else if (_selectView == DealsViews.Attachments)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Attachments.Index IdParent="@Id" AttachmentType=AttachmentTypes.Deal OnClickEdit="IndexEditAttachment" OnClickDetails="IndexDetailsAttachment"></CRM.Client.Pages.Attachments.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Attachments.Edit Id="@_idAttachment" IdParent="@Id" AttachmentType=AttachmentTypes.Deal OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Edit>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Attachments.Details Id="@_idAttachment" OnClickCancel="CloseAttachment"
+                                                  OnClickEdit="DetailsEditAttachment" OnClickAddFile="AddFileAttachment"></CRM.Client.Pages.Attachments.Details>
+        }
+        else if (_partialView == PartialViews.AddFiles)
+        {
+            <CRM.Client.Pages.Attachments.Upload Id="@_idAttachment.Value" OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Upload>
+        }
+
+
+    }
+    
+    
+}

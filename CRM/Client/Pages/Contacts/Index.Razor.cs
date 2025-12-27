@@ -108,7 +108,7 @@ namespace CRM.Client.Pages.Contacts
 
         private RadzenDataGrid<Contact> grdContacts;
 
-        private List<BreadcrumbModel> _breadCrumb;
+        private List<BreadcrumbItem> _breadcrumbItems = new List<BreadcrumbItem>();
 
         protected override async Task OnInitializedAsync()
         {
@@ -126,7 +126,7 @@ namespace CRM.Client.Pages.Contacts
 
             await LoadData();
 
-            _breadCrumb = await BreadCrumbService.Contacts();
+            _breadcrumbItems = BreadCrumbService.Contacts();
         }
 
         public async Task LoadData(LoadDataArgs args = null)
@@ -284,12 +284,11 @@ namespace CRM.Client.Pages.Contacts
 
         }
 
-        private async void FilterChanged(string? value)
+        protected async Task OnChangeNameFilter(ChangeEventArgs args)
         {
-
-            _search = value;
+            _search = args.Value.ToString();
+            await grdContacts.GoToPage(0);
             await LoadData();
-            StateHasChanged();
         }
     }
 }

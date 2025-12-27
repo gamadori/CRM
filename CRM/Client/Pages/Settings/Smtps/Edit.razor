@@ -1,0 +1,48 @@
+﻿@page "/Settings/Smtps"
+
+
+@if (_item == null || _isLoading)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <EditForm Model="@_item" OnValidSubmit="HandleValidSubmit">
+         <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeSM="6">
+                <RadzenStack>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+       
+                    <RedGTextBox For="@(() => _item.Server)" @bind-value="@_item.Server" />
+
+                    <RedGNumeric For="@(() => _item.Port)" @bind-value="@_item.Port" />
+
+                    <div class="mb-1">
+                        <DisplayName For="@(() => _item.Ssl)" />
+                        <RadzenCheckBox @bind-Value=@_item.Ssl Name="chkSsl" />
+                        <ValidationMessage For="@(() => _item.Ssl)" />
+                    </div>
+
+                    <RedGTextBox For="@(() => _item.SenderName)" @bind-value="@_item.SenderName" />
+
+                    <RedGTextBox For="@(() => _item.SenderEmail)" @bind-value="@_item.SenderEmail" />
+
+                    <RedGTextBox For="@(() => _item.Username)" @bind-value="@_item.Username" />
+
+                    <RedGPassword For="@(() => _item.Password)" @bind-value="@_item.Password" />
+
+                    <RedGButton RGButtonType="RGButtonType.Submit" Click="TestSmtpAsync" Disabled="@_smtpTestInProgress">Test SMTP</RedGButton>
+                    @if (!string.IsNullOrEmpty(_smtpTestResult))
+                    {
+                        <div class="mt-2">@_smtpTestResult</div>
+                    }
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+        <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" />
+        <RedGButton RGButtonType="RGButtonType.Submit" />
+       
+        
+    </EditForm>
+}

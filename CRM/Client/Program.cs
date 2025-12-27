@@ -66,9 +66,9 @@ namespace CRM.Client
                 }
             });
 
-            builder.Services.AddTransient<ISettingsService<SmtpSettings>, SettingsService<SmtpSettings>>(sp =>
+            builder.Services.AddTransient<ISettingsService<SmtpSetting>, SettingsService<SmtpSetting>>(sp =>
             {
-                return new SettingsService<SmtpSettings>(sp.GetRequiredService<HttpClient>(), ConstHelper.SmtpSettingsPath);
+                return new SettingsService<SmtpSetting>(sp.GetRequiredService<HttpClient>(), ConstHelper.SmtpSettingsPath);
             });
 
 
@@ -77,7 +77,7 @@ namespace CRM.Client
 
             builder.Services.AddMemoryCache();
 
-            builder.Services.AddTransient<ITicketService, TicketsService>();
+            builder.Services.AddTransient<ITicketService, ProxyTicketsService>();
 
             builder.Services.AddTransient<ITicketChatsService, TicketChatsService>();
 
@@ -89,7 +89,7 @@ namespace CRM.Client
             builder.Services.AddTransient<IManyToManyService<UserGroupModel>, GroupUsersService>();
             builder.Services.AddTransient<Radzen.DialogService>();
             builder.Services.AddTransient<INavMenuService, NavMenuService>();
-            builder.Services.AddTransient<ITalkService, TalkService>();
+            builder.Services.AddTransient<IDealService, DealService>();
             builder.Services.AddTransient<IManyToManyService<ProductParentChildModel>, ProductParentChildService>();
             builder.Services.AddScoped<IEnumService, EnumService>();
             builder.Services.AddScoped<IAccessoryTypesService, AccessoryTypesService>();
@@ -107,7 +107,8 @@ namespace CRM.Client
             builder.Services.AddScoped<ICompanyContractsService, CompanyContractsService>();
             builder.Services.AddScoped<IAGRestClientService, AGRestClientService>();
             builder.Services.AddScoped<IProjectsService, ProjectsService>();
-
+            builder.Services.AddScoped<ILanguagesService, ProxyLanguagesService>();
+            builder.Services.AddScoped<ISmtpSettingsService, ProxySmtpSettingsService>();
 
             builder.Services.AddTransient<IManyToManyService<TicketTypeUser>, ManyToManyService<TicketTypeUser>>(sp =>
             {

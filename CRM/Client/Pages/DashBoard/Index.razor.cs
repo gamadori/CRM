@@ -1,16 +1,20 @@
-﻿using CRM.Client.Services;
+﻿using CRM.Client.Helpers;
+using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.Resources;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Extensions.Localization;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Localization;
 using Radzen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Components.Authorization;
-using MediatR;
 using static CRM.Client.Program;
 
 namespace CRM.Client.Pages.DashBoard
@@ -19,6 +23,8 @@ namespace CRM.Client.Pages.DashBoard
     
     public partial class Index : ComponentBase, INotificationHandler<MsgNotify>, IDisposable
     {
+        [Inject]
+        HttpClient Http { get; set; }   
 
         [Inject]
         NavigationManager NavigationManager { get; set; }
@@ -47,6 +53,10 @@ namespace CRM.Client.Pages.DashBoard
 
         private List<ApplicationUser> _users;
 
+        private List<TicketStatusChartModel> _ticketStatusChart = new();
+
+        private List<ActivityModel> _recentActivities = new();
+
         protected override async Task OnInitializedAsync()
         {
 
@@ -73,7 +83,13 @@ namespace CRM.Client.Pages.DashBoard
         {
             TicketDashBoardModelFilter filter = new TicketDashBoardModelFilter();
             filter.IdUser = _userId;
-           _model = await _service.Get(filter);
+            _model = await _service.Get(filter);
+
+            var qs = UriHelper.BuildQueryString(new Dictionary<string, object> { { "userId", _userId}, { "fromDate", DateTime.Now.AddDays(-7) } });
+           _recentActivities = await Http.GetFromJsonAsync<List<ActivityModel>>($"api/LogEvents/activities?{qs}");
+
+            GraphTicketStatus();
+
             StateHasChanged();
         }
         protected void AddTicket()
@@ -191,5 +207,26 @@ namespace CRM.Client.Pages.DashBoard
                 return url;
             }
         }
+
+        private void GraphTicketStatus()
+        {
+           
+
+            _ticketStatusChart = new List<TicketStatusChartModel>
+            {
+                new TicketStatusChartModel { Status = Localize["Not Assigned"], Count = _model.TicketsNotAssigned },
+                new TicketStatusChartModel { Status = Localize["Working"], Count = _model.TicketsWorking },
+                new TicketStatusChartModel { Status = Localize["Assigned"], Count = _model.TicketAssigned },
+                new TicketStatusChartModel { Status = Localize["Expired"], Count = _model.TicketsExpired }
+            };
+        }
+
+        private async Task ReloadDashboard() 
+        {
+            await LoadData();
+        }
+
     }
+    public class TicketStatusChartModel { public string Status { get; set; } public int Count { get; set; } }
+
 }

@@ -17,6 +17,7 @@ using CRM.Server.Helpers;
 using Microsoft.Extensions.Primitives;
 using CNM.Authorize;
 using System.Drawing.Printing;
+using CRM.Client.Services;
 
 namespace CRM.Server.Controllers
 {

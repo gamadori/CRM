@@ -132,6 +132,9 @@
   <data name="Fax" xml:space="preserve">
     <value>Fax</value>
   </data>
+  <data name="IdReseller" xml:space="preserve">
+    <value>Reseller</value>
+  </data>
   <data name="Indirizzo" xml:space="preserve">
     <value>Adresse</value>
   </data>

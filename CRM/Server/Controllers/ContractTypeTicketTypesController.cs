@@ -14,6 +14,7 @@ using CRM.Server.Services;
 using Microsoft.CodeAnalysis.Host;
 using System.Drawing;
 using Microsoft.CodeAnalysis.CSharp;
+using CRM.Client.Services;
 
 namespace CRM.Server.Controllers
 {
@@ -33,7 +34,7 @@ namespace CRM.Server.Controllers
             _languageService = languageService; 
         }
 
-        // GET: api/Talks
+        // GET: api/Deals
         [HttpGet]
         public async Task<ActionResult<List<ContractTypeTicketTypeModel>>> Get([FromQuery] ContractTypeTicketTypeFilter args)
         {
@@ -99,7 +100,7 @@ namespace CRM.Server.Controllers
             }
         }
 
-        // GET: api/Talks/5
+        // GET: api/Deals/5
         [HttpGet("{id}")]
         public async Task<ActionResult<ContractTypeTicketType>> GetItem(int id)
         {
@@ -115,7 +116,7 @@ namespace CRM.Server.Controllers
             return item;
         }
 
-        // GET: api/Talks/5
+        // GET: api/Deals/5
         [HttpGet("details/{id}")]
         public async Task<ActionResult<ContractTypeTicketTypeModel>> GetItemDetails(int id)
         {
@@ -147,7 +148,7 @@ namespace CRM.Server.Controllers
 
 
 
-        // PUT: api/Talks/5
+        // PUT: api/Deals/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutItem(int id, ContractTypeTicketType item)
@@ -190,7 +191,7 @@ namespace CRM.Server.Controllers
             return NoContent();
         }
 
-        // POST: api/Talks
+        // POST: api/Deals
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<ProductAccessoryType>> PostItem(ContractTypeTicketType item)
@@ -215,7 +216,7 @@ namespace CRM.Server.Controllers
             }
         }
 
-        // DELETE: api/Talks/5
+        // DELETE: api/Deals/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteItem(int id)
         {

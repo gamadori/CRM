@@ -156,7 +156,7 @@ ICONE MATERIAL ICONS CONSIGLIATE:
 - domain: Aziende
 - apps: Progetti
 - schedule: Calendario/Schedule
-- forum: Chat/Talks
+- forum: Chat/Deals
 - psychology: AI/Ricerca Intelligente
 - settings: Impostazioni
 - dashboard: Dashboard

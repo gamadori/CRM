@@ -753,6 +753,59 @@ namespace CRM.Server.Migrations
                     b.ToTable("Customers");
                 });
 
+            modelBuilder.Entity("CRM.Shared.Deal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("Money");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateClosed")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdCompany")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdContact")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdUser")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Phase")
+                        .HasColumnType("int");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Target")
+                        .HasColumnType("Money");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdCompany");
+
+                    b.HasIndex("IdContact");
+
+                    b.HasIndex("IdUser");
+
+                    b.ToTable("Deals");
+                });
+
             modelBuilder.Entity("CRM.Shared.EmailSent", b =>
                 {
                     b.Property<int>("Id")
@@ -968,6 +1021,9 @@ namespace CRM.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("ActivityType")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("DateEvent")
                         .HasColumnType("datetime2");
 
@@ -984,6 +1040,9 @@ namespace CRM.Server.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("User")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -1323,59 +1382,6 @@ namespace CRM.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SmtpSettings");
-                });
-
-            modelBuilder.Entity("CRM.Shared.Talk", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("Money");
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("DateClosed")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("IdCompany")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("IdContact")
-                        .HasColumnType("int");
-
-                    b.Property<string>("IdUser")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Phase")
-                        .HasColumnType("int");
-
-                    b.Property<int>("State")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Target")
-                        .HasColumnType("Money");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdCompany");
-
-                    b.HasIndex("IdContact");
-
-                    b.HasIndex("IdUser");
-
-                    b.ToTable("Talks");
                 });
 
             modelBuilder.Entity("CRM.Shared.TaskProject", b =>
@@ -2465,6 +2471,29 @@ namespace CRM.Server.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("CRM.Shared.Deal", b =>
+                {
+                    b.HasOne("CRM.Shared.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("IdCompany")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.Contact", "Contact")
+                        .WithMany()
+                        .HasForeignKey("IdContact");
+
+                    b.HasOne("CRM.Shared.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("IdUser");
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Contact");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CRM.Shared.EmailTemplate", b =>
                 {
                     b.HasOne("CRM.Shared.Logo", "Logo")
@@ -2587,29 +2616,6 @@ namespace CRM.Server.Migrations
                         .HasForeignKey("IdUser");
 
                     b.Navigation("Project");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("CRM.Shared.Talk", b =>
-                {
-                    b.HasOne("CRM.Shared.Company", "Company")
-                        .WithMany()
-                        .HasForeignKey("IdCompany")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("CRM.Shared.Contact", "Contact")
-                        .WithMany()
-                        .HasForeignKey("IdContact");
-
-                    b.HasOne("CRM.Shared.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("IdUser");
-
-                    b.Navigation("Company");
-
-                    b.Navigation("Contact");
 
                     b.Navigation("User");
                 });

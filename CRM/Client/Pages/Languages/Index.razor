@@ -2,66 +2,63 @@
 @page "/Settings/Languages"
 @page "/Settings/Languages/Index"
 
-@using Syncfusion.Blazor.Grids
-@using Syncfusion.Blazor.Data
-@using Syncfusion.Blazor
 
-<h3>Lingue</h3>
-<hr />
-<div class="btn-toolbar" role="toolbar" aria-label="Comandi">
-    <div class="btn-group mr-2" role="group" aria-label="First group">
-        <BlazorButton Template="TemplateButton.New" OnClick="NewItem"></BlazorButton>
-    </div>
-</div>
+@using CRM.Shared.Models
 
-
-<SfGrid @ref="GridLanguages" AllowPaging="true" TValue="Language">
-
-    <SfDataManager Key="Id" Url="/api/Languages" Adaptor="Adaptors.WebApiAdaptor"></SfDataManager>
-
-    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
-    <GridPageSettings CurrentPage="1" EnableQueryString="true" PageSize="10" PageSizes="true"></GridPageSettings>
-
-    <GridColumns>
-        <GridColumn Field="@nameof(Language.Id)" IsPrimaryKey="true" Visible="false"></GridColumn>
-        <GridColumn Field=@nameof(Language.Index) HeaderText="Index"></GridColumn>
-        <GridColumn Width="120">
-            <Template>
-                @{
-                    var language = (context as Language);
-                    <div class="image">
-                        <img src="@language.Flag" /> 
-                    </div>
-                }
-            </Template>
-        </GridColumn>
-        <GridColumn Field=@nameof(Language.Name) HeaderText="Nome"></GridColumn>
-        <GridColumn Field=@nameof(Language.Description) HeaderText="Descrizione"></GridColumn>
-        <GridColumn HeaderText="Navigation" Width="180">
-            <GridCommandColumns>
-                
-                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss="e-icons e-edit", CssClass="e-flat" })"></GridCommandColumn>
-                <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss="e-icons e-delete", CssClass="e-flat" })"></GridCommandColumn>
-
-
-            </GridCommandColumns>
-        </GridColumn>
-    </GridColumns>
-    <GridEvents TValue="Language" CommandClicked="CommandClickHandler" OnActionFailure="ActionFailure" OnActionComplete="ActionComplete"></GridEvents>
-</SfGrid>
-<MsgBoxConfirm Id="dlgDelete" LabelBtnNo="No" LabelBtnYes="Yes" Header="Eliminazione del Progetto" Message="@_messageDelete" OnClick="Delete"></MsgBoxConfirm>
 
 <style>
-    .ulstyle {
-        margin: 0px;
-        padding-left: 20px;
-        display: inline-block;
-    }
-
-    .list {
-        float: left;
-        line-height: 20px;
-        margin: 10px;
-        min-width: 200px;
+    .rz-grid-table {
+    width: unset;
     }
 </style>
+
+<RadzenDataGrid @ref="_grdLanguages" AllowAlternatingRows="false" LoadData="@LoadData" AllowFiltering="true" AllowPaging="true" PageSize="@ConstHelper.PageSize" AllowSorting="true" EditMode="DataGridEditMode.Single"
+                 Data="@_languages" TItem="Language" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" Sort="@Reset" Page="@Reset" Filter="@Reset" ColumnWidth="200px">
+    <HeaderTemplate>
+        <RedGButton RGButtonType="RGButtonType.New" Click="@InsertRow" Disabled="@(_languagesToInsert.Count() > 0)"></RedGButton>
+        @* <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle" Text="@Localize["AddNew"]" Click="@InsertRow" Disabled="@(_languagesToInsert.Count() > 0)" /> *@
+    </HeaderTemplate>
+
+    <Columns>
+        
+        <RadzenDataGridColumn Property="@nameof(Language.Index)" Title="Position">
+            <EditTemplate Context="Language">
+                <RadzenNumeric  @bind-Value="Language.Index" Style="min-width: 280px; display: block" Name="LanguageIndex" aria-label="Enter Language Index" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="@nameof(Language.LanguageCode)" Title="Code">
+            <EditTemplate Context="Language">
+                <RadzenTextBox @bind-Value="Language.LanguageCode" Style="min-width: 280px; display: block" Name="LanguageCode" aria-label="Enter Language Code" />
+                <RadzenRequiredValidator  Text="@Localize["Required"]" Component="LanguageCode" Popup="true" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="@nameof(Language.Name)" Title="Name" >
+            <EditTemplate Context="Language">
+                <RadzenTextBox @bind-Value="Language.Name" Style="min-width:300px; display: block" Name="LanguageName" aria-label="Enter Language Name" />
+                <RadzenRequiredValidator Text="@Localize["Required"]" Component="LanguageName" Popup="true" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="@nameof(Language.Flag)" Title="Flag">
+            <Template Context="Language">
+                <RadzenImage Path="@Language.Flag" Style="width: 32px; height: 32px;" AlternateText="@Language.Name" />
+            </Template>
+            <EditTemplate Context="Language">
+                <RadzenFileInput ChooseText="Carica Logo..." ImageStyle="Widt:32px; Height:auto" @bind-Value="@Language.Flag" TValue="string" Style="width: 100%"
+                                 Change=@(args => OnChange(args, "FileInput")) Error=@(args => OnError(args, "FileInput")) 
+                    InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "select file" }})" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn Context="language" Filterable="false" Sortable="false" TextAlign="TextAlign.Right" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+            <Template Context="language">
+                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" class="rz-my-1 rz-ms-1" Click="@(args => EditRow(language))" @onclick:stopPropagation="true" />
+                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Medium" Shade="Shade.Lighter" class="rz-my-1 rz-ms-1" Click="@(args => DeleteRow(language))" @onclick:stopPropagation="true" />
+            </Template>
+            <EditTemplate Context="language">
+                <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@((args) => SaveRow(language))" aria-label="Save" />
+                <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Medium" class="rz-my-1 rz-ms-1" Click="@((args) => CancelEdit(language))" aria-label="Cancel" />
+                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Medium" Shade="Shade.Lighter" class="rz-my-1 rz-ms-1" Click="@(args => DeleteRow(language))" aria-label="Delete" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>

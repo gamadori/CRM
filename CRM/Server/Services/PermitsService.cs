@@ -683,73 +683,73 @@ namespace CRM.Server.Services
 
         #endregion
 
-        #region Talks
+        #region Deals
 
         /// <summary>
         /// Da implementare
-        /// Un talk puo essere visualizzato se 
+        /// Un deal puo essere visualizzato se 
         /// Appartengo al gruppo dei commerciali ed è un mio cliente
         /// Oppure sono un super user
         /// </summary>
-        /// <param name="idTalk"></param>
+        /// <param name="idDeal"></param>
         /// <returns></returns>
-        public async Task<bool> CanGetTalk(int idTalk)
+        public async Task<bool> CanGetDeal(int idDeal)
         {
-            var talk = await _context.Talks.FindAsync(idTalk);
+            var deal = await _context.Deals.FindAsync(idDeal);
 
-            if (talk != null)
+            if (deal != null)
             {
                 return await BelongsToMainCompany() && await IsStandardUser();
             }
             return false;
         }
 
-        public async Task<bool> CanInsertTalk()
+        public async Task<bool> CanInsertDeal()
         {
             return await BelongsToMainCompany() && await IsStandardUser();
         }
 
-        public async Task<bool> CanEditTalk(int idTalk)
+        public async Task<bool> CanEditDeal(int idDeal)
         {
-            var talk = await _context.Talks.FindAsync(idTalk);
+            var deal = await _context.Deals.FindAsync(idDeal);
 
-            if (talk != null)
+            if (deal != null)
             {
-                var resp =  await BelongsToMainCompany() && (await IsStandardUser() || await IdUser() == talk.IdUser);
-                _context.Entry(talk).State = EntityState.Detached;
+                var resp =  await BelongsToMainCompany() && (await IsStandardUser() || await IdUser() == deal.IdUser);
+                _context.Entry(deal).State = EntityState.Detached;
                 return resp;
                 
             }
             return false;
         }
 
-        public async Task<bool> CanDeleteTalk(int idTalk)
+        public async Task<bool> CanDeleteDeal(int idDeal)
         {
-            var talk = await _context.Talks.FindAsync(idTalk);
+            var deal = await _context.Deals.FindAsync(idDeal);
 
-            if (talk != null)
+            if (deal != null)
             {
                 return await BelongsToMainCompany() &&
-                    ((await IsStandardUser() && await IdUser() == talk.IdUser) || await IsAdmin());
+                    ((await IsStandardUser() && await IdUser() == deal.IdUser) || await IsAdmin());
             }
             return false;
         }
 
 
-        public async Task<int> TalkPermits(int idTalk)
+        public async Task<int> DealPermits(int idDeal)
         {
             int permits = 0;
 
-            if (await CanGetTalk(idTalk))
+            if (await CanGetDeal(idDeal))
                 permits =  PermitsHelper.SetRead(permits);
 
-            if (await CanEditTalk(idTalk))
+            if (await CanEditDeal(idDeal))
                 permits = PermitsHelper.SetEdit(permits);
 
             if (await CanInsertObject())
                 permits = PermitsHelper.SetInsert(permits);
 
-            if (await CanDeleteTalk(idTalk))
+            if (await CanDeleteDeal(idDeal))
                 permits = PermitsHelper.SetDelete(permits);
             return permits;
         }

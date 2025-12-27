@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using MimeKit;
 using Microsoft.AspNetCore.Identity;
+using CRM.Client.Services;
 
 namespace CRM.Server.Controllers
 {

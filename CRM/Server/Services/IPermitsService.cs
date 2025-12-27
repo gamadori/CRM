@@ -93,15 +93,15 @@ namespace CRM.Server.Services
 
         Task<bool> CanDeleteAttachment(int idAttachment);
 
-        Task<bool> CanGetTalk(int idTalk);
+        Task<bool> CanGetDeal(int idDeal);
 
-        Task<bool> CanInsertTalk();
+        Task<bool> CanInsertDeal();
 
-        Task<bool> CanEditTalk(int idTalk);
+        Task<bool> CanEditDeal(int idDeal);
 
-        Task<bool> CanDeleteTalk(int idTalk);
+        Task<bool> CanDeleteDeal(int idDeal);
 
-        Task<int> TalkPermits(int idTalk);
+        Task<int> DealPermits(int idDeal);
 
         bool CanGetAccessoryType();
 

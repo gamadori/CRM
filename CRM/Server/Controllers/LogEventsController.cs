@@ -11,6 +11,7 @@ using CRM.Shared;
 using CRM.Server.Helpers;
 using Microsoft.Extensions.Primitives;
 using CRM.Shared.Helper;
+using static CRM.Shared.LogEvent;
 
 namespace CRM.Server.Controllers
 {
@@ -152,7 +153,26 @@ namespace CRM.Server.Controllers
 
             return NoContent();
         }
+        // Esempio in un controller API
+        [HttpGet("activities")]
+        public async Task<IActionResult> GetActivities([FromQuery] string? userId, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] ActivityType? type)
+        {
+            var query = _context.LogEvents.AsQueryable();
 
+            if (!string.IsNullOrEmpty(userId))
+                query = query.Where(x => x.UserId == userId);
+
+            if (fromDate.HasValue)
+                query = query.Where(x => x.DateEvent >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(x => x.DateEvent <= toDate.Value);
+
+            
+
+            var activities = await query.Select(x=>new ActivityModel() { Date = x.DateEvent, Description = x.Message, Title =x.Module, Type = x.ActivityType }).OrderByDescending(x => x.Date).Take(20).ToListAsync();
+            return Ok(activities);
+        }
         private bool LogEventExists(int id)
         {
             return _context.LogEvents.Any(e => e.Id == id);

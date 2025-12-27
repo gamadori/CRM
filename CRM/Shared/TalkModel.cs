@@ -8,50 +8,50 @@ using System.Threading.Tasks;
 
 namespace CRM.Shared
 {
-    public class TalkModel
+    public class DealModel
     {
         public int Id { get; set; }
 
-        [Display(Name = nameof(Talk.Name), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.Name), ResourceType = typeof(Resources.Models.Deal))]
         public string Name { get; set; }
 
-        [Display(Name = nameof(Talk.Date), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.Date), ResourceType = typeof(Resources.Models.Deal))]
         public DateTime Date { get; set; }
 
-        [Display(Name = nameof(Talk.Company), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.Company), ResourceType = typeof(Resources.Models.Deal))]
         public int? IdCompany { get; set; }
 
-        [Display(Name = nameof(Talk.Contact), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.Contact), ResourceType = typeof(Resources.Models.Deal))]
         public int? IdContact { get; set; }
 
-        [Display(Name = nameof(Talk.Amount), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.Amount), ResourceType = typeof(Resources.Models.Deal))]
         public decimal Amount { get; set; }
 
-        [Display(Name = nameof(Talk.Target), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.Target), ResourceType = typeof(Resources.Models.Deal))]
         public decimal Target { get; set; }
 
-        [Display(Name = nameof(Talk.Note), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.Note), ResourceType = typeof(Resources.Models.Deal))]
         public string Note { get; set; }
 
-        [Display(Name = nameof(Talk.State), ResourceType = typeof(Resources.Models.Talk))]
-        public TalkStates State { get; set; }
+        [Display(Name = nameof(Deal.State), ResourceType = typeof(Resources.Models.Deal))]
+        public DealStates State { get; set; }
 
-        [Display(Name = nameof(Talk.Phase), ResourceType = typeof(Resources.Models.Talk))]
-        public TalkPhases Phase { get; set; }
+        [Display(Name = nameof(Deal.Phase), ResourceType = typeof(Resources.Models.Deal))]
+        public DealPhases Phase { get; set; }
 
-        [Display(Name = nameof(Talk.DateClosed), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.DateClosed), ResourceType = typeof(Resources.Models.Deal))]
         public DateTime DateClosed { get; set; }
 
-        [Display(Name = nameof(Talk.Company), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.Company), ResourceType = typeof(Resources.Models.Deal))]
         public string Company { get; set; }
 
-        [Display(Name = nameof(Talk.Contact), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.Contact), ResourceType = typeof(Resources.Models.Deal))]
         public string Contact { get; set; }
 
-        [Display(Name = nameof(Talk.IdUser), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.IdUser), ResourceType = typeof(Resources.Models.Deal))]
         public string IdUser { get; set; }
 
-        [Display(Name = nameof(Talk.IdUser), ResourceType = typeof(Resources.Models.Talk))]
+        [Display(Name = nameof(Deal.IdUser), ResourceType = typeof(Resources.Models.Deal))]
         public string User { get; set; }
 
         public int Permits { get; set; }

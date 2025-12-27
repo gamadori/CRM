@@ -7,30 +7,32 @@
 @* 
 <BlazorHeader Header="@Localize["Contacts"]" Visible="@(PageMode != PageHelper.PageModality.Dialog)"></BlazorHeader> *@
 
-
 @if (IdCompany == null)
 {
-    <BlazorBreadCrumb Model="@_breadCrumb"></BlazorBreadCrumb>
+
+    <PageHeader Title="@Localize["Contacts"]"
+                Subtitle="@Localize["Gestisci i contatti"]"
+                BreadcrumbItems="@_breadcrumbItems">
+    </PageHeader>
 }
-    
 
 @if (_contacts != null)
 {
-    <div class=row>
-        <div class="col-auto">
-            <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewItem"></BlazorButton>
-            
-        </div>
-        <div class="col">
-
-            <RadzenTextBox class="form-control m-2" @bind-Value="@_search" @oninput=@(args => FilterChanged(args?.Value?.ToString())) Placeholder="@Localize["Cerca..."]"></RadzenTextBox>
-
-        </div>
-    </div>
 
     <RadzenDataGrid @ref="grdContacts" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_contacts" Responsive=true LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="@_filterMode"
                     AllowSorting="true" AllowFiltering="true" AllowPaging="true"
                     PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Contact" PagingSummaryFormat="@pagingSummaryFormat">
+        <HeaderTemplate>
+            <div class="d-flex align-items-center gap-5">
+                <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
+                <RedGTextBox @bind-Value="@_filter.Name" Label="@Localize["search..."]" @oninput="@OnChangeNameFilter" Style="width: 300px; margin-left: 10px;">
+                    <End>
+                        <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
+                    </End>
+                </RedGTextBox>
+            </div>
+
+        </HeaderTemplate>
         <Columns>
             <RadzenDataGridColumn Context="item" TItem="Contact" Property="@nameof(Contact.Surname)" Title=@TranslateHelper.GetDisplayName(nameof(Contact.NameComplete), typeof(Contact)) FilterProperty="Surname">
                 <Template>
@@ -53,14 +55,10 @@
             {
                 <RadzenDataGridColumn Context="item" TItem="Contact"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
                     <Template Context="item">
-                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
-                    </RadzenButton>
-                     <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" Click="@(args => Edit(item.Id))">
-                    </RadzenButton>
-                     <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" Click="@(args => Delete(item))">
-                    </RadzenButton>
+                        <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
+                        <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
+                        <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item))></RedGButton>
 
-                                   
                     </Template>
                 </RadzenDataGridColumn>
             }

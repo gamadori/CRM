@@ -1,0 +1,73 @@
+﻿@page "/AccessoryTypes/Details/{Id:int}"
+@using CRM.Shared.Helper
+
+<BlazorHeader Header="@_header"></BlazorHeader>
+
+@if (_deal == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+
+            <RedGDetailField Icon="chat" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _deal.Name)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.Name</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="event">
+                <LabelContent><DisplayName For="@(() => _deal.Date)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.Date.ToString("d")</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="business">
+                <LabelContent><DisplayName For="@(() => _deal.Company)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.Company</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="person">
+                <LabelContent><DisplayName For="@(() => _deal.Contact)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.Contact</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="attach_money">
+                <LabelContent><DisplayName For="@(() => _deal.Amount)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.Amount.ToString("###,##0.00")</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="flag">
+                <LabelContent><DisplayName For="@(() => _deal.Target)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.Target.ToString("###,##0.00")</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="pending">
+                <LabelContent><DisplayName For="@(() => _deal.State)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@EnumService.Get(typeof(DealStates), _deal.State)</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="layers">
+                <LabelContent><DisplayName For="@(() => _deal.Phase)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@EnumService.Get(typeof(DealPhases), _deal.Phase)</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="account_circle">
+                <LabelContent><DisplayName For="@(() => _deal.IdUser)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.User</p></ChildContent>
+            </RedGDetailField>
+
+        </div>
+
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <BlazorButton Template="TemplateButton.Back" Text="@Localize["Lista Deals"]" OnClick="Annulla" />
+                @if (_deal.Permits.Edit())
+                {
+                    <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+                }
+            </div>
+        </div>
+    </div>
+}

@@ -7,20 +7,21 @@
 
 
 
-@if (_user != null && _user.CompanyPermits.Insert())
-{
-    <div class=row>
-        <div class="col">
-            <BlazorButton Template="TemplateButton.New" Text="Nuovo" OnClick="NewItem"></BlazorButton>
-           
-        </div>
-    </div>
-}
 @if (_ticketInterventions != null)
 {
     <RadzenDataGrid @ref="grdInterventions"  IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_ticketInterventions" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
                     AllowSorting="true" AllowFiltering="true" AllowPaging="true" Responsive="true"
     PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="TicketIntervention">
+
+        <HeaderTemplate>
+            @if (_user != null && _user.CompanyPermits.Insert())
+            {
+                <div class="d-flex align-items-center gap-5">
+                    <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
+               
+            </div>
+            }
+        </HeaderTemplate>
     <Columns>
         <RadzenDataGridColumn TItem="TicketIntervention" Property="@nameof(TicketIntervention.StartDateTime)" Title="@Localize["Data Inizio"]"  />
        
@@ -51,16 +52,12 @@
             </FooterTemplate>*@
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Context="item" TItem="TicketIntervention"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
-            <Template Context="item">
-                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" title="Dettagli" Disabled=@(!item.Permits.Read())  Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
-                    </RadzenButton>
-                     <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" title="Edit" Disabled=@(!item.Permits.Edit()) Click="@(args => Edit(item.Id))">
-                    </RadzenButton>
-                     <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" title="Elimina" Disabled=@(!item.Permits.Delete()) Click="@(args => Delete(item.Id))">
-                    </RadzenButton>
-                    
-                                   
-            </Template>
+                <Template Context="item">
+                    <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item.Id))></RedGButton>
+
+                </Template>
         </RadzenDataGridColumn>
        
     </Columns>

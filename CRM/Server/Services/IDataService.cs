@@ -1,0 +1,35 @@
+﻿using CRM.Client.Models;
+using CRM.Shared;
+
+namespace CRM.Client.Services
+{
+    public interface IDataService<T, K, F, S> 
+    {
+        Task<T?> GetItemAsync(K id);
+
+        Task<T?> GetFirstAsync();
+
+        Task<PagingResponse<T, S>?> GetSummaryAsync(F? data);
+
+        Task<PagingResponse<T>?> GetPagingAsync(F? data);
+
+        Task<List<T>?> GetListAsync(F? data);
+
+        Task<APIResponseMessage<T>> PostAsync(T item);
+
+        Task<bool> DeleteAsync(K id);
+
+    }
+
+    public interface IDataService<T>
+    {
+
+        Task<T?> GetFirstAsync();
+
+
+        Task<APIResponseMessage<T>> PostAsync(T item);
+
+
+    }
+
+}

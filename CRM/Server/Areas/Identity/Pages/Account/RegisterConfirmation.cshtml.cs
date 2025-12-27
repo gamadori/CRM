@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using CRM.Server.Services;
+using CRM.Client.Services;
 
 namespace CRM.Server.Areas.Identity.Pages.Account
 {

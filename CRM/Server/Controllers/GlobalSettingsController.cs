@@ -76,7 +76,7 @@ namespace CRM.Server.Controllers
         // POST: api/SmtpSettings
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<SmtpSettings>> Post(GlobalSetting settings)
+        public async Task<ActionResult<SmtpSetting>> Post(GlobalSetting settings)
         {
             _context.GlobalSettings.Add(settings);
             await _context.SaveChangesAsync();

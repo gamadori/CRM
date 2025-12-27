@@ -14,7 +14,7 @@ namespace CRM.Shared
     {
         Ticket,
         Project,
-        Talk,
+        Deal,
         ContractType,
         Contract,
         Product,

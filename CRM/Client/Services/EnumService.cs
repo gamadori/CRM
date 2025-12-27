@@ -8,16 +8,16 @@ namespace CRM.Client.Services
 {
     public class EnumService: IEnumService
     {
-        private readonly IStringLocalizer<CRM.Shared.Resources.Enums.TalkPhases> _localizeTalkPhases;
-        private readonly IStringLocalizer<CRM.Shared.Resources.Enums.TalkStates> _localizeTalkStates;
+        private readonly IStringLocalizer<CRM.Shared.Resources.Enums.DealPhases> _localizeDealPhases;
+        private readonly IStringLocalizer<CRM.Shared.Resources.Enums.DealStates> _localizeDealStates;
         private readonly IStringLocalizer<CRM.Shared.Resources.Enums.CompanyTypes> _localizeCompanyTypes;
         private readonly IStringLocalizer<CRM.Shared.Resources.Enums.EmailTemplates> _localizeEmailTemplates;
 
-        public EnumService(IStringLocalizer<CRM.Shared.Resources.Enums.TalkPhases> localizeTalkPhases, IStringLocalizer<CRM.Shared.Resources.Enums.TalkStates> localizeTalkStates,
+        public EnumService(IStringLocalizer<CRM.Shared.Resources.Enums.DealPhases> localizeDealPhases, IStringLocalizer<CRM.Shared.Resources.Enums.DealStates> localizeDealstates,
             IStringLocalizer<CRM.Shared.Resources.Enums.CompanyTypes> localizeCompanyTypes, IStringLocalizer<CRM.Shared.Resources.Enums.EmailTemplates> localizeEmailTemplates)
         {
-            _localizeTalkPhases = localizeTalkPhases;
-            _localizeTalkStates = localizeTalkStates;
+            _localizeDealPhases = localizeDealPhases;
+            _localizeDealStates = localizeDealstates;
             _localizeCompanyTypes = localizeCompanyTypes;
             _localizeEmailTemplates = localizeEmailTemplates;
         }
@@ -33,10 +33,10 @@ namespace CRM.Client.Services
                 if (mask == null || !mask.Contains((int)value))
                 {
 
-                    if (typeEnum == typeof(TalkPhases))
-                        txt = _localizeTalkPhases[value.ToString()];
-                    else if (typeEnum == typeof(TalkStates))
-                        txt = _localizeTalkStates[value.ToString()];
+                    if (typeEnum == typeof(DealPhases))
+                        txt = _localizeDealPhases[value.ToString()];
+                    else if (typeEnum == typeof(DealStates))
+                        txt = _localizeDealStates[value.ToString()];
                     else if (typeEnum == typeof(CompanyTypes))
                         txt = _localizeCompanyTypes[value.ToString()];
                     else if (typeEnum == typeof(EmailsTypes))
@@ -58,10 +58,10 @@ namespace CRM.Client.Services
 
             try
             {
-                if (typeEnum == typeof(TalkPhases))
-                    return _localizeTalkPhases[value.ToString()];
-                else if (typeEnum == typeof(TalkStates))
-                    return _localizeTalkStates[value.ToString()];
+                if (typeEnum == typeof(DealPhases))
+                    return _localizeDealPhases[value.ToString()];
+                else if (typeEnum == typeof(DealStates))
+                    return _localizeDealStates[value.ToString()];
                 else if (typeEnum == typeof(CompanyTypes))
                     return _localizeCompanyTypes[value.ToString()];
                 else if (typeEnum == typeof(EmailsTypes))

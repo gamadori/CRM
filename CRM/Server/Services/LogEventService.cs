@@ -18,27 +18,27 @@ namespace CRM.Server.Services
         }
 
 
-        public void Register(string module, string subroutine, EventsTypes type, string message)
+        public void Register(string module, string subroutine, EventsTypes type, string message, ActivityType? activityType = null)
         {
-            LogEvent logEvent = CreateLogEvent(module, subroutine, type, message);
+            LogEvent logEvent = CreateLogEvent(module, subroutine, type, message, activityType);
 
             _context.LogEvents.Add(logEvent);
 
             _context.SaveChanges();
         }
 
-        public async Task RegisterAsync(string module, string subroutine, EventsTypes type, string message)
+        public async Task RegisterAsync(string module, string subroutine, EventsTypes type, string message, ActivityType? activityType = null)
         {
-            LogEvent logEvent = CreateLogEvent(module, subroutine, type, message);
+            LogEvent logEvent = CreateLogEvent(module, subroutine, type, message, activityType);
             
             _context.LogEvents.Add(logEvent);
 
             await _context.SaveChangesAsync();
         }
-        public async Task RegisterAsync(string module, string subroutine, EventsTypes type, Exception ex)
+        public async Task RegisterAsync(string module, string subroutine, EventsTypes type, Exception ex, ActivityType? activityType = null)
         {
             string msg = $"{ex.Message}\n\r{ex.StackTrace}";
-            LogEvent logEvent = CreateLogEvent(module, subroutine, type, msg);
+            LogEvent logEvent = CreateLogEvent(module, subroutine, type, msg, activityType);
 
             _context.LogEvents.Add(logEvent);
 
@@ -46,7 +46,7 @@ namespace CRM.Server.Services
         }
         
 
-        private LogEvent CreateLogEvent(string module, string subroutine, EventsTypes type, string massage)
+        private LogEvent CreateLogEvent(string module, string subroutine, EventsTypes type, string massage, ActivityType? activityType = null)
         {
             LogEvent logEvent = new LogEvent();
 
@@ -55,7 +55,10 @@ namespace CRM.Server.Services
             logEvent.EventType = type;
             logEvent.Message = massage;
             logEvent.DateEvent = DateTime.Now;
-            logEvent.User = _httpContextAccessor.HttpContext.User?.Identity.Name;
+            logEvent.User = _httpContextAccessor?.HttpContext?.User?.Identity?.Name;
+            logEvent.UserId = _httpContextAccessor?.HttpContext?.User?.FindFirst("sub")?.Value;
+            logEvent.ActivityType = activityType;
+
             return logEvent;
         }
     }

@@ -1,17 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using CRM.Client.Models;
+using CRM.Client.Services;
+using CRM.Server.Services;
+using CRM.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Dynamic.Core;
-using CRM.Server.Data;
-using CRM.Shared;
-using CRM.Server.Helpers;
 using Microsoft.Extensions.Primitives;
-using CRM.Shared.Helper;
-using CRM.Server.Services;
+using Newtonsoft.Json;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Dynamic.Core;
+using System.Threading.Tasks;
 
 namespace CRM.Server.Controllers
 {
@@ -19,154 +20,181 @@ namespace CRM.Server.Controllers
     [ApiController]
     public class LanguagesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
         private readonly ILogEventService _logEventService;
-        public LanguagesController(ApplicationDbContext context, ILogEventService logEventService)
+        private readonly ILanguagesService _languagesService;
+        public LanguagesController(ILogEventService logEventService, ILanguagesService languagesService)
         {
-            _context = context;
             _logEventService = logEventService;
+            _languagesService = languagesService;
         }
 
-        // GET: api/
+        // GET: api/Companies
         [HttpGet]
-        public ActionResult<object> GetLanguages()
+        public async Task<PagingResponse<Language>?> GetPage([FromQuery] LanguageFilter? args = null)
         {
             try
             {
-                string? filter = null;
-                string order;
-
-                var data = _context.Languages.AsQueryable();
-
-                var count = data.Count();
-                var queryString = Request.Query;
-
-
-                if (queryString.Keys.Contains("$filter"))
-                {
-                    filter = queryString["$filter"];
-
-                    data = SyncHelper.GetFilterPredicate(data, filter);
-
-
-                }
-
-                if (queryString.Keys.Contains("$orderby"))
-                {
-                    order = queryString["$orderby"];
-                    data = data.OrderBy(order);
-
-                }
-
-                if (queryString.Keys.Contains("$inlinecount"))
-                {
-
-                    StringValues Skip;
-                    StringValues Take;
-                    int skip = (queryString.TryGetValue("$skip", out Skip)) ? Convert.ToInt32(Skip[0]) : 0;
-                    int top = (queryString.TryGetValue("$top", out Take)) ? Convert.ToInt32(Take[0]) : data.Count();
-
-                    IQueryable<Language> items;
-
-                    if (top == 0)
-                    {
-                        items = data;
-
-                    }
-                    else
-                        items = data.Skip(skip).Take(top);
-                    return new { Items = items, Count = count };
-                }
-                else
-                {
-
-                    return data.ToList();
-                }
+                var companies = await _languagesService.GetPagingAsync(args);
+                return companies;
             }
             catch (Exception ex)
             {
-
-                _logEventService.Register(nameof(LanguagesController), nameof(GetLanguages), LogEvent.EventsTypes.Error, ex.Message);
-
-                return new { Items = new List<Language>(), Count = 0 };
-            }
-        }
-
-
-        // GET: api/Projects/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Language>> GetLanguage(int id)
-        {
-            var language = await _context.Languages.FindAsync(id);
-
-            if (language == null)
-            {
-                return NotFound();
-            }
-
-            return language;
-        }
-
-        // PUT: api/InterventionType/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutLanguage(int id, Language language)
-        {
-           
-
-            _context.Entry(language).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                
-                    return NotFound();
-                
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Projects
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Language>> PostLanguage([FromBody] Language language)
-        {
-            try
-            {
-                _context.Languages.Add(language);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction("GetLanguage", new { id = language.Id }, language);
-            }
-            catch(Exception ex)
-            {
+                await _logEventService.RegisterAsync(nameof(LanguagesController), nameof(GetItems), LogEvent.EventsTypes.Error, ex);
                 return null;
             }
         }
 
-        // DELETE: api/Projects/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteLanguage(int id)
+        [HttpGet("list")]
+        public async Task<IEnumerable<Language?>> GetItems([FromQuery] LanguageFilter? args = null)
         {
-            var language = await _context.Languages.FindAsync(id);
-            if (language == null)
+            try
+            {
+
+                var companies = await _languagesService.GetListAsync(args);
+
+                if (companies == null)
+                {
+                    return Enumerable.Empty<Language>();
+                }
+
+                return companies;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(LanguagesController), nameof(GetItems), LogEvent.EventsTypes.Error, ex);
+                return Enumerable.Empty<Language>();
+            }
+        }
+
+        
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Language>> Get(int id)
+        {
+            var item = await _languagesService.GetItemAsync(id);
+
+            if (item == null)
             {
                 return NotFound();
             }
 
-            _context.Languages.Remove(language);
-            await _context.SaveChangesAsync();
+            return item;
+        }
+        
+        // PUT: api/Companies/5
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        
+        [HttpPut("{id}")]
+        public async Task<ActionResult<APIResponseMessage<Language>>> Put(int id, Language item)
+        {
+            if (id != item.Id)
+            {
+                return BadRequest();
+            }
 
-            return NoContent();
+            var resp = await _languagesService.PostAsync(item);
+
+            if (resp == null)
+                return Problem("Error saving settings");
+
+            return Ok(resp);
         }
 
-        
+        // POST: api/Companies
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
+        [HttpPost]
+        public async Task<ActionResult<APIResponseMessage<Language>>> Post(Language item)
+        {
+            var resp = await _languagesService.PostAsync(item);
+
+            if (resp == null)
+                return StatusCode(StatusCodes.Status500InternalServerError, "Post return null");
+
+            return Ok(resp);
+        }
+
+        [HttpGet("GetIdLanguage")]
+        public async Task<ActionResult<Language>> GetIdLanguage()
+        {
+            try
+            {
+                var id = await _languagesService.GetIdLanguage();
+                if (id.HasValue)
+                {
+                    return Ok(id.Value);
+                }
+                else
+                {
+                    return NotFound("No language ID set.");
+                }
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(LanguagesController), nameof(GetIdLanguage), LogEvent.EventsTypes.Error, ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving language ID.");
+            }
+        }
+
+        [HttpPost("SetIdLanguage")]
+        public async Task<IActionResult> SetIdLanguage([FromBody] int id)
+        {
+            try
+            {
+                var result = await _languagesService.SetIdLanguage(id);
+                if (result)
+                {
+                    return Ok("Language ID set successfully.");
+                }
+                else
+                {
+                    return BadRequest("Failed to set language ID.");
+                }
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(LanguagesController), nameof(SetIdLanguage), LogEvent.EventsTypes.Error, ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error setting language ID.");
+            }
+        }
+
+        [HttpPost("SeCodeLanguage")]
+        public async Task<IActionResult> SetCodeLanguage([FromBody] string code)
+        {
+            try
+            {
+                var result = await _languagesService.SetCodeLanguage(code);
+                if (result)
+                {
+                    return Ok("Language ID set successfully.");
+                }
+                else
+                {
+                    return BadRequest("Failed to set language ID.");
+                }
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(LanguagesController), nameof(SetCodeLanguage), LogEvent.EventsTypes.Error, ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error setting language ID.");
+            }
+        }
+
+        // DELETE: api/Companies/5
+        //[AuthorizeRole(ePolicy.AdminRole)]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var resp = await _languagesService.DeleteAsync(id);
+            
+            if (!resp)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error On Deleded Language");
+            }
+            else
+                return NoContent();
+        }
+
        
 
-        
     }
 }

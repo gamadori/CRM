@@ -40,15 +40,15 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>EmailTemplates.resx</DependentUpon>
     </Compile>
-    <Compile Update="Resources\Enums\TalkPhases.Designer.cs">
+    <Compile Update="Resources\Enums\DealPhases.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>TalkPhases.resx</DependentUpon>
+      <DependentUpon>DealPhases.resx</DependentUpon>
     </Compile>
-    <Compile Update="Resources\Enums\TalkStates.Designer.cs">
+    <Compile Update="Resources\Enums\DealStates.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>TalkStates.resx</DependentUpon>
+      <DependentUpon>DealStates.resx</DependentUpon>
     </Compile>
     <Compile Update="Resources\ErrorMessages\AppErrorMessage.it.Designer.cs">
       <DependentUpon>AppErrorMessage.it.resx</DependentUpon>
@@ -140,10 +140,10 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Project.resx</DependentUpon>
     </Compile>
-    <Compile Update="Resources\Models\Talk.Designer.cs">
+    <Compile Update="Resources\Models\Deal.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>Talk.resx</DependentUpon>
+      <DependentUpon>Deal.resx</DependentUpon>
     </Compile>
     <Compile Update="Resources\Models\Ticket.Designer.cs">
       <DesignTime>True</DesignTime>
@@ -193,19 +193,19 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>EmailTemplates.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Update="Resources\Enums\TalkPhases.it.resx">
+    <EmbeddedResource Update="Resources\Enums\DealPhases.it.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
     </EmbeddedResource>
-    <EmbeddedResource Update="Resources\Enums\TalkPhases.resx">
+    <EmbeddedResource Update="Resources\Enums\DealPhases.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>TalkPhases.Designer.cs</LastGenOutput>
+      <LastGenOutput>DealPhases.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Update="Resources\Enums\TalkStates.it.resx">
+    <EmbeddedResource Update="Resources\Enums\DealStates.it.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
     </EmbeddedResource>
-    <EmbeddedResource Update="Resources\Enums\TalkStates.resx">
+    <EmbeddedResource Update="Resources\Enums\DealStates.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>TalkStates.Designer.cs</LastGenOutput>
+      <LastGenOutput>DealStates.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Update="Resources\ErrorMessages\AppErrorMessage.it.resx">
       <LastGenOutput>AppErrorMessage.it.Designer.cs</LastGenOutput>
@@ -291,9 +291,9 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Project.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Update="Resources\Models\Talk.resx">
+    <EmbeddedResource Update="Resources\Models\Deal.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>Talk.Designer.cs</LastGenOutput>
+      <LastGenOutput>Deal.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <EmbeddedResource Update="Resources\Models\Ticket.it.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>

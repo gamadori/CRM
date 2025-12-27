@@ -112,6 +112,7 @@
   <ItemGroup>
     <Folder Include="Archives\Interventions\" />
     <Folder Include="Data\Migrations\" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
   <ItemGroup>

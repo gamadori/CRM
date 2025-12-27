@@ -150,25 +150,25 @@ namespace CRM.Client.Services
             return model;
         }
 
-        public async Task<List<BreadcrumbModel>> Talk(bool link)
+        public async Task<List<BreadcrumbModel>> Deal(bool link)
         {
             var bread = await Home();
 
-            bread.Add(new BreadcrumbModel() { Title = _localizer["Talk"], Url = (link) ? "Talks/Index" : null });
+            bread.Add(new BreadcrumbModel() { Title = _localizer["Deal"], Url = (link) ? "Deals/Index" : null });
 
             return bread;
         }
 
-        public async Task<List<BreadcrumbModel>> TalkUser(string idUser, bool link)
+        public async Task<List<BreadcrumbModel>> DealUser(string idUser, bool link)
         {
 
-            List<BreadcrumbModel> model = await Talk(idUser != null ? true : false);
+            List<BreadcrumbModel> model = await Deal(idUser != null ? true : false);
             if (idUser != null) 
             {
                 var user = await _userService.GetItem<ApplicationUser, string>(idUser, ConstHelper.UsersPath);
                 if (user != null)
                 {
-                    model.Add(new BreadcrumbModel() { Title = $"{_localizer["Owner To"]} {user.NameComplete}", Url = link ?  $"/Talk/Index/{idUser}" : null });
+                    model.Add(new BreadcrumbModel() { Title = $"{_localizer["Owner To"]} {user.NameComplete}", Url = link ?  $"/Deal/Index/{idUser}" : null });
                 }
             }
             return model;
@@ -276,21 +276,27 @@ namespace CRM.Client.Services
             return bread;
         }
 
-        public async Task<List<BreadcrumbModel>> Contacts(string name = null, bool link = false)
+        public List<BreadcrumbItem> Contacts(int? id = null, string name = null)
         {
-            List<BreadcrumbModel> bread = await Home();
 
-
-
-            bread.Add(new BreadcrumbModel() { Title = $"Contatti", Url = link || name != null ? $"Contacts" : null });
-            if (name != null)
+            List< BreadcrumbItem> breadcrumbItems = new()
             {
+                new BreadcrumbItem(_localizer["Contacts"], ConstHelper.ContactsPath),
+            };
 
-                bread.Add(new BreadcrumbModel() { Title = name, Url = link ? ConstHelper.ContactsPath : null });
+            
+
+            if (id != null)
+            {
+                breadcrumbItems.Add(new BreadcrumbItem()
+                {
+                    Text = name,
+                    Url = $"{ConstHelper.ContactsPath}/Details/{id}"
+                });
             }
 
 
-            return bread;
+            return breadcrumbItems;
         }
 
     }

@@ -64,7 +64,7 @@ namespace CRM.Server.Data
 
         public DbSet<Company> Companies => Set<Company>();
         public DbSet<Customer> Customers => Set<Customer>();
-        public DbSet<SmtpSettings> SmtpSettings => Set<SmtpSettings>();
+        public DbSet<SmtpSetting> SmtpSettings => Set<SmtpSetting>();
 
         public DbSet<TelegramAppConfig> TelegramAppConfigs => Set<TelegramAppConfig>();
         
@@ -119,7 +119,7 @@ namespace CRM.Server.Data
 
         public DbSet<Contact> Contacts => Set<Contact>();
 
-        public DbSet<Talk> Talks => Set<Talk>();
+        public DbSet<Deal> Deals => Set<Deal>();
 
         public DbSet<AccessoryType> AccessoryTypes => Set<AccessoryType>();
 

@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using CRM.Shared;
 using CRM.Server.Services;
 using Microsoft.Extensions.Localization;
+using CRM.Client.Services;
 
 namespace CRM.Server.Areas.Identity.Pages.Account
 {

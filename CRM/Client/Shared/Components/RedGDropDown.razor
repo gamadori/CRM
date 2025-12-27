@@ -10,7 +10,7 @@
 <RtzDisplayName For="For" Text="@Label">
     <ChildContent>
     
-        <RadzenDropDown @rendermode="renderMode" TValue="TValue" Data="@Data" TextProperty="@TextProperty" AllowClear="true" Change="@Change"
+        <RadzenDropDown Disabled=@Disabled @rendermode="renderMode" TValue="TValue" Data="@Data" TextProperty="@TextProperty" AllowClear="true" Change="@Change" Multiple=@Multiple
                         ValueProperty="@ValueProperty" Value="@Value" ValueChanged="ValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" PageSize="@PageSize" />
     </ChildContent>
     <Helper>
@@ -65,4 +65,10 @@
 
     [Parameter]
     public EventCallback<object> Change { get; set; }
+
+    [Parameter]
+    public bool Multiple { get; set; } = false;
+
+    [Parameter]
+    public bool Disabled { get; set; } = false;
 }

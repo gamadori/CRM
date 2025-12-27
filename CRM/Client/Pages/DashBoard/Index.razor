@@ -2,6 +2,8 @@
 @page "/DashBoard"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Radzen
+@using Radzen.Blazor
 
 @if (_model == null)
 {
@@ -11,12 +13,16 @@ else
 {
     <div class="container-fluid px-4 py-3 dashboard-page">
         <!-- Header Section -->
-        <div class="row mb-4">
-            <div class="col-12">
+        <div class="row mb-4 align-items-center">
+            <div class="col-12 col-md-8">
                 <div class="dashboard-hero">
                     <h2 class="fw-bold text-dark mb-1 dashboard-title">Dashboard</h2>
                     <p class="text-muted dashboard-subtitle">Benvenuto nel tuo pannello di controllo</p>
                 </div>
+            </div>
+            <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+                <RedGButton Icon="refresh" Text="Aggiorna" Style="margin-right: 8px;" Click="ReloadDashboard" ButtonStyle="ButtonStyle.Secondary" />
+                <RedGButton Icon="notifications" Text="Notifiche" Click="ShowNotifications" ButtonStyle="ButtonStyle.Info" />
             </div>
         </div>
 
@@ -24,161 +30,163 @@ else
         @if (!_model.IsClient && _users != null)
         {
             <div class="row mb-4">
-                <div class="col-md-6 col-lg-4">
-                    <div class="card border-0 shadow-sm dashboard-toolbar">
-                        <div class="card-body">
-                            <label class="form-label fw-semibold text-dark mb-2">
-                                <span class="material-icons me-2" style="font-size: 18px; vertical-align: middle;">person</span>
-                                @Localize["User"]
-                            </label>
-                            <RadzenDropDownDataGrid class="w-100" @bind-value="@_userId" TValue="string" AllowFiltering="true" AllowClear="true" Change="OnChangeIdUser"
-                                                Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id">
-                                <Columns>
-                                    <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
-                                    <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
-                                </Columns>
-                            </RadzenDropDownDataGrid>
-                        </div>
+                <RadzenCard class="dashboard-toolbar">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 col-lg-4">
+                                <RedGDropDownGrid Label="@Localize["User"]" TItem="ApplicationUser" @bind-value="@_userId" TValue="string" Data="@_users" Change="OnChangeIdUser" TextProperty="NameComplete" ValueProperty="Id">
+                                    <ChildColumns>
+                                        <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
+                                        <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
+                                    </ChildColumns>
+                                </RedGDropDownGrid>
+                            </div>
+                            <div class="col-md-6 col-lg-8">
+                                <div class="d-flex flex-wrap gap-2">
+                                    <RedGButton Icon="add_box" Text="@Localize["Nuovo Ticket"]" Click="AddTicket" ButtonStyle="ButtonStyle.Primary" />
+                                    <RedGButton Icon="list" Text="@Localize["Storico TICKETS"]" Click="TicketAll" ButtonStyle="ButtonStyle.Secondary" />
+                                    <RedGButton Icon="schedule" Text=@Localize["Scheduler"] Click="Schedule" ButtonStyle="ButtonStyle.Light" />
+                                    <RedGButton Icon="manage_search" Text=@Localize["Ricerca Ticket"] Click="TicketsSearch" ButtonStyle="ButtonStyle.Light" />
+                                    <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                                        <RedGButton Icon="money" Text="@Localize["Ticket da Fatturare"]" Click="TicketsToInvoice" ButtonStyle="ButtonStyle.Light" />
+                                    </AuthorizeView>
+                                </div>
+                            </div>
+                            </div>
                     </div>
-                </div>
+                </RadzenCard>
+                
             </div>
         }
 
-        <!-- Toolbar -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="dashboard-toolbar">
-                    <div class="p-3">
-                        <div class="d-flex flex-wrap gap-2">
-                            <button type="button" class="btn btn-primary d-flex align-items-center" @onclick="AddTicket">
-                                <span class="material-icons me-2" style="font-size: 20px;">add_box</span>
-                                <span>@Localize["Nuovo Ticket"]</span>
-                            </button>
-                            <button type="button" class="btn btn-outline-primary d-flex align-items-center" @onclick="TicketAll">
-                                <span class="material-icons me-2" style="font-size: 20px;">list</span>
-                                <span>@Localize["Storico TICKETS"]</span>
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary d-flex align-items-center" @onclick="Schedule">
-                                <span class="material-icons me-2" style="font-size: 20px;">schedule</span>
-                                <span>Scheduler</span>
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary d-flex align-items-center" @onclick="TicketsSearch">
-                                <span class="material-icons me-2" style="font-size: 20px;">manage_search</span>
-                                <span>Ricerca Ticket</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      
 
-        <!-- Stats Cards -->
-        <div class="row g-4">
-            <!-- Ticket Non Assegnati -->
-            <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 dashboard-card" @onclick="TicketNotAssigned" style="cursor: pointer;">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between mb-3">
-                            <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase small fw-semibold mb-2">TICKET @Localize[TicketTypeSearch.NotAssigned.ToString()]</p>
-                                <h3 class="fw-bold mb-0 text-warning">@_model.TicketsNotAssigned</h3>
-                            </div>
-                            <div class="icon-box bg-warning bg-opacity-10 rounded-3 p-3">
+        <!-- KPI Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="row g-4">
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #fffbe6 0%, #fff 100%);" @onclick="TicketNotAssigned">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div>
+                                    <p class="text-muted text-uppercase small fw-semibold mb-1">TICKET @Localize[TicketTypeSearch.NotAssigned.ToString()]</p>
+                                    <h3 class="fw-bold mb-0 text-warning">@_model.TicketsNotAssigned</h3>
+                                </div>
                                 <span class="material-icons text-warning" style="font-size: 32px;">support_agent</span>
                             </div>
-                        </div>
+                        </RadzenCard>
                     </div>
-                </div>
-            </div>
-
-            <!-- Ticket In Lavorazione -->
-            <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 dashboard-card" @onclick="TicketWorking" style="cursor: pointer;">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between mb-3">
-                            <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase small fw-semibold mb-2">TICKET @Localize[TicketTypeSearch.Working.ToString()]</p>
-                                <h3 class="fw-bold mb-0 text-success">@_model.TicketsWorking</h3>
-                            </div>
-                            <div class="icon-box bg-success bg-opacity-10 rounded-3 p-3">
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #e6fff7 0%, #fff 100%);" @onclick="TicketWorking">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div>
+                                    <p class="text-muted text-uppercase small fw-semibold mb-1">TICKET @Localize[TicketTypeSearch.Working.ToString()]</p>
+                                    <h3 class="fw-bold mb-0 text-success">@_model.TicketsWorking</h3>
+                                </div>
                                 <span class="material-icons text-success" style="font-size: 32px;">support_agent</span>
                             </div>
-                        </div>
+                        </RadzenCard>
                     </div>
-                </div>
-            </div>
-
-            <!-- Ticket Scaduti -->
-            <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 dashboard-card" @onclick="TicketExpired" style="cursor: pointer;">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between mb-3">
-                            <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase small fw-semibold mb-2">TICKET @Localize[TicketTypeSearch.Expired.ToString()]</p>
-                                <h3 class="fw-bold mb-0 text-danger">@_model.TicketsExpired</h3>
-                            </div>
-                            <div class="icon-box bg-danger bg-opacity-10 rounded-3 p-3">
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #ffe6e6 0%, #fff 100%);" @onclick="TicketExpired">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div>
+                                    <p class="text-muted text-uppercase small fw-semibold mb-1">TICKET @Localize[TicketTypeSearch.Expired.ToString()]</p>
+                                    <h3 class="fw-bold mb-0 text-danger">@_model.TicketsExpired</h3>
+                                </div>
                                 <span class="material-icons text-danger" style="font-size: 32px;">support_agent</span>
                             </div>
-                        </div>
+                        </RadzenCard>
                     </div>
-                </div>
-            </div>
-
-            <!-- Nuovi Messaggi Chat -->
-            <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                <div class="card border-0 shadow-sm h-100 dashboard-card" @onclick="TicketsNewMessage" style="cursor: pointer;">
-                    <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between mb-3">
-                            <div class="flex-grow-1">
-                                <p class="text-muted text-uppercase small fw-semibold mb-2">CHAT NUOVI MESSAGGI</p>
-                                <h3 class="fw-bold mb-0 text-info">@_model.ChatMessageToRead</h3>
-                            </div>
-                            <div class="icon-box bg-info bg-opacity-10 rounded-3 p-3">
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #e6f0ff 0%, #fff 100%);" @onclick="TicketsNewMessage">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div>
+                                    <p class="text-muted text-uppercase small fw-semibold mb-1">CHAT NUOVI MESSAGGI</p>
+                                    <h3 class="fw-bold mb-0 text-info">@_model.ChatMessageToRead</h3>
+                                </div>
                                 <span class="material-icons text-info" style="font-size: 32px;">chat</span>
                             </div>
-                        </div>
+                        </RadzenCard>
                     </div>
-                </div>
-            </div>
-
-            <!-- Ticket da Fatturare -->
-            <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
-                <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                    <div class="card border-0 shadow-sm h-100 dashboard-card" @onclick="TicketsToInvoice" style="cursor: pointer;">
-                        <div class="card-body">
-                            <div class="d-flex align-items-start justify-content-between mb-3">
-                                <div class="flex-grow-1">
-                                    <p class="text-muted text-uppercase small fw-semibold mb-2">TICKET DA FATTURARE</p>
-                                </div>
-                                <div class="icon-box bg-secondary bg-opacity-10 rounded-3 p-3">
-                                    <span class="material-icons text-secondary" style="font-size: 32px;">shopping_cart_checkout</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </AuthorizeView>
-
-            <!-- Utenti da Confermare -->
-            @if (_model.UsersNeedConfirm > 0)
-            {
-                <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                    <div class="card border-0 shadow-sm h-100 dashboard-card" @onclick="UsersNeedConfirm" style="cursor: pointer;">
-                        <div class="card-body">
-                            <div class="d-flex align-items-start justify-content-between mb-3">
-                                <div class="flex-grow-1">
-                                    <p class="text-muted text-uppercase small fw-semibold mb-2">UTENTI DA CONFERMARE</p>
-                                    <h3 class="fw-bold mb-0 text-info">@_model.UsersNeedConfirm</h3>
-                                </div>
-                                <div class="icon-box bg-info bg-opacity-10 rounded-3 p-3">
+                    @if (_model.UsersNeedConfirm > 0)
+                    {
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #e6f7ff 0%, #fff 100%);" @onclick="UsersNeedConfirm">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div>
+                                        <p class="text-muted text-uppercase small fw-semibold mb-1">UTENTI DA CONFERMARE</p>
+                                        <h3 class="fw-bold mb-0 text-info">@_model.UsersNeedConfirm</h3>
+                                    </div>
                                     <span class="material-icons text-info" style="font-size: 32px;">people</span>
                                 </div>
-                            </div>
+                            </RadzenCard>
                         </div>
-                    </div>
+                    }
                 </div>
-            }
+            </div>
         </div>
+
+        <!-- Chart & Attività Recenti affiancati -->
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-lg-6">
+                <RadzenCard class="shadow-sm border-0 h-100">
+                    <h6 class="fw-bold mb-3">
+                        <span class="material-icons me-2 text-primary">bar_chart</span>Ticket per stato
+                    </h6>
+                    <RadzenChart Style="height:320px;">
+                        <RadzenColumnSeries Data="@_ticketStatusChart" CategoryProperty="Status" ValueProperty="Count" />
+                        <RadzenCategoryAxis Padding="0.2" />
+                        <RadzenValueAxis />
+                    </RadzenChart>
+                </RadzenCard>
+            </div>
+            <div class="col-12 col-lg-6">
+                <RadzenCard class="h-100 shadow-sm border-0">
+                    <h6 class="fw-bold mb-3">
+                        <span class="material-icons me-2 text-info">notifications</span>Attività Recenti
+                    </h6>
+                    <div style="max-height:320px;overflow-y:auto;overflow-x:hidden;">
+                        <RadzenTimeline Data="@_recentActivities">
+                            <Items>
+                                @foreach (var activity in _recentActivities)
+                                {
+                                    <RadzenTimelineItem>
+                                        <PointContent>
+                                            <RadzenIcon Icon="@activity.Icon" />
+                                        </PointContent>
+                                        <LabelContent>
+                                            <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-m-0">@activity.Date</RadzenText>
+                                        </LabelContent>
+                                        <ChildContent>
+                                            <div class="activity-description">@activity.Description</div>
+                                        </ChildContent>
+                                    </RadzenTimelineItem>
+                                }
+                            </Items>
+                        </RadzenTimeline>
+                    </div>
+                </RadzenCard>
+            </div>
+        </div>
+
+       
     </div>
+}
+
+<style>
+.activity-description {
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
+    max-width: 100%;
+}
+</style>
+
+@code {
+    private void ShowNotifications() { /* TODO: implement notification logic */ }
 }

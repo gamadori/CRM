@@ -18,6 +18,7 @@ using System.Net.WebSockets;
 using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using CNM.Authorize;
+using CRM.Client.Services;
 
 namespace CRM.Server.Controllers
 {
@@ -38,7 +39,7 @@ namespace CRM.Server.Controllers
             _languageService = languageService; 
         }
 
-        // GET: api/Talks
+        // GET: api/Deals
         [HttpGet]
         public async Task<ActionResult<List<CompanyContract>>> Get([FromQuery] CompanyContractFilter args)
         {
@@ -108,7 +109,7 @@ namespace CRM.Server.Controllers
             }
         }
 
-        // GET: api/Talks/5
+        // GET: api/Deals/5
         [HttpGet("{id}")]
         public async Task<ActionResult<CompanyContract>> GetItem(int id)
         {
@@ -129,7 +130,7 @@ namespace CRM.Server.Controllers
             return item;
         }
 
-        // GET: api/Talks/5
+        // GET: api/Deals/5
         [HttpGet("details/{id}")]
         public async Task<ActionResult<CompanyContract>> GetItemDetails(int id)
         {
@@ -145,7 +146,7 @@ namespace CRM.Server.Controllers
 
 
 
-        // PUT: api/Talks/5
+        // PUT: api/Deals/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         [AuthorizeRole(ePolicy.SuperUserRole)]
@@ -215,7 +216,7 @@ namespace CRM.Server.Controllers
             return await items.ToListAsync();
         }
 
-        // POST: api/Talks
+        // POST: api/Deals
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         [AuthorizeRole(ePolicy.SuperUserRole)]
@@ -256,7 +257,7 @@ namespace CRM.Server.Controllers
             }
         }
 
-        // DELETE: api/Talks/5
+        // DELETE: api/Deals/5
         [HttpDelete("{id}")]
         [AuthorizeRole(ePolicy.AdminRole)]
         public async Task<IActionResult> DeleteItem(int id)

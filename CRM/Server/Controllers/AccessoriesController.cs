@@ -29,7 +29,7 @@ namespace CRM.Server.Controllers
             _permits = permits;
         }
 
-        // GET: api/Talks
+        // GET: api/Deals
         [HttpGet]
         public async Task<ActionResult<List<Accessory>>> Get([FromQuery]AccessoryFilter args)
         {
@@ -83,7 +83,7 @@ namespace CRM.Server.Controllers
             }
         }
 
-        // GET: api/Talks/5
+        // GET: api/Deals/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Accessory>> GetAccessory(int id)
         {
@@ -125,7 +125,7 @@ namespace CRM.Server.Controllers
         }
 
 
-        // PUT: api/Talks/5
+        // PUT: api/Deals/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutAccessory(int id, Accessory accessory)
@@ -168,10 +168,10 @@ namespace CRM.Server.Controllers
             return NoContent();
         }
 
-        // POST: api/Talks
+        // POST: api/Deals
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Talk>> PostAccessory(Accessory accessory)
+        public async Task<ActionResult<Deal>> PostAccessory(Accessory accessory)
         {
             if (await _permits.CanInsertAccessoryType())
             {
@@ -186,7 +186,7 @@ namespace CRM.Server.Controllers
                 return Problem(GlobalMessages.PermitsErrors);
         }
 
-        // DELETE: api/Talks/5
+        // DELETE: api/Deals/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAccessory(int id)
         {

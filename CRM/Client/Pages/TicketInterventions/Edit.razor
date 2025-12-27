@@ -15,134 +15,144 @@
 else
 {
 
-<EditForm Model="@_ticketIntervention" OnValidSubmit="HandleValidSubmit">
-    <BlazoringComponents.Validators.FluentValidationValidator ValidatorType="typeof(Validators.TicketInterventionValidator)" />
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-    <div class="row">
-        <div class="col">
-             <div class="row g-3">
+    <EditForm Model="@_ticketIntervention" OnValidSubmit="HandleValidSubmit">
+         <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeSM="6">
+                <RadzenStack>
+                    <BlazoringComponents.Validators.FluentValidationValidator ValidatorType="typeof(Validators.TicketInterventionValidator)" />
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGDropDownGrid TItem="ApplicationUser" TValue="string" ValueProperty="Id" TextProperty="NameComplete"
+                                              @bind-Value="@_ticketIntervention.IdUser" For="@(() => _ticketIntervention.IdUser)"
+                                            Data=@_users AllowFiltering="true">
+                                    <ChildColumns>
+                                        <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
+                                        <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
 
-                <div class="col-md-6 mb-3">
-                    <DisplayName For="@(() => _ticketIntervention.IdUser)" />
-                    <RadzenDropDownDataGrid class="form-control" @bind-value="@_ticketIntervention.IdUser" TValue="string"  AllowFiltering="true" AllowClear="true"
-                                            Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id" FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive Style="margin-bottom: 20px">
-                        <Columns>
-                            <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
-                            <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
+                                    </ChildColumns>
+                                 </RedGDropDownGrid>
 
-                        </Columns>
-                    </RadzenDropDownDataGrid>
-                    <ValidationMessage For="@(() => _ticketIntervention.IdUser)" />
-                </div>
-            </div>
-            <div class="row g-3">
-                <div class="col-md-6 mb-3">
-                    <DisplayName For="@(()=>_ticketIntervention.StartDateTime)" Floating="startDateTime" />
-                    <SfDateTimePicker CssClass="form-control" id="startDateTime" TValue="DateTime" @bind-Value="@_ticketIntervention.StartDateTime" ShowClearButton="true">
-                        <DateTimePickerEvents TValue="DateTime" ValueChange="ValueStartDateTimeChangeHandler"></DateTimePickerEvents>
-                    </SfDateTimePicker>      
-                    <ValidationMessage For="@(() => _ticketIntervention.StartDateTime)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="4">
+                            <RadzenStack>
+                                    <RedGDateTimePicker ShowTime=true @bind-Value="_ticketIntervention.StartDateTime" DateFormat="g" Change="@ValueStartDateTimeChangeHandler" For="@(() => _ticketIntervention.StartDateTime)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+       
+                        <RadzenColumn Size="12" SizeSM="4">
+                            <RadzenStack>
+                                <RedGDateTimePicker ShowTime=true @bind-Value="_ticketIntervention.EndDateTime" DateFormat="g" Change="ValueEndDateTimeChangeHandler" For="@(() => _ticketIntervention.EndDateTime)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeSM="4">
+                            <RadzenStack>
+                                <RedGNumeric @bind-Value="@_ticketIntervention.Minute" For="@(() => _ticketIntervention.Minute)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                     <RadzenRow>
+           
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                    
+                                <RedGSelectEnum TEnum="TypesSupport" TValue="TypesSupport" @bind-Value="@_ticketIntervention.SupportType"
+                                                For="@(() => _ticketIntervention.SupportType)" AllowClear="false" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGDropDown Multiple=true TItem="InterventionType" TValue="List<int>" ValueProperty="Id" TextProperty="Name"
+                                              @bind-Value="@_ticketIntervention.InterventionsTypesId" For="@(() => _ticketIntervention.InterventionsTypesId)"
+                                              Data=@_interventionTypes AllowFiltering="true" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                <div class="row">
+                    <div class="col">
+            
+                            <div class="accordion" id="accordionExample">
 
-                </div>
-                <div class="col-md-6 mb-3">
-                    <DisplayName For="@(()=>_ticketIntervention.EndDateTime)" />
-                    <SfDateTimePicker CssClass="form-select" TValue="DateTime" @bind-Value="@_ticketIntervention.EndDateTime" ShowClearButton="true">
-                        <DateTimePickerEvents TValue="DateTime" ValueChange="ValueEndDateTimeChangeHandler"></DateTimePickerEvents>
-                    </SfDateTimePicker>
-                    <ValidationMessage For="@(() => _ticketIntervention.EndDateTime)" />
-                </div>
-                <div class="col-md-4 mb-3">            
-                    <DisplayName For="@(()=>_ticketIntervention.Minute)" />
-                    <InputNumber TValue="int" class="form-control" @bind-Value="@_ticketIntervention.Minute" />
-                    <ValidationMessage For="@(() => _ticketIntervention.Minute)" />
-                </div>
-
-                <div class="col-md-4 mb-3">            
-                    <DisplayName For="@(()=>_ticketIntervention.SupportType)" />
-                    <InputSelectEnum class="form-select" TEnum="int" TValue="TypesSupport" @bind-Value="@_ticketIntervention.SupportType" />
-                    <ValidationMessage For="@(() => _ticketIntervention.SupportType)" />
-                </div>
-
-                <div id="local-data" class="col-md-4 mb-3">
-                    <DisplayName For="@(()=>_ticketIntervention.InterventionsTypesId)" />
-                    <SfMultiSelect CssClass="form-select" TValue="List<int>" TItem="InterventionType"  DataSource="@_interventionTypes" @bind-Value="@_ticketIntervention.InterventionsTypesId">
-                        <MultiSelectFieldSettings Text="Name" Value="Id"></MultiSelectFieldSettings>
-                    </SfMultiSelect>
-                </div>
-
-                
-
-                <div class="accordion" id="accordionExample">
-
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading1">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="true" aria-controls="collapse1">
-                                <DisplayName For="@(()=>_ticketIntervention.TicketInterventionArticles)">
-                                    @if (_ticketIntervention.InterventionArticles.Any())
-                                    {
-                                        <span class="badge text-bg-primary">@_ticketIntervention.InterventionArticles.Count()</span>
-                                    }    
-                                </DisplayName>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading1">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="true" aria-controls="collapse1">
+                                            <DisplayName For="@(()=>_ticketIntervention.TicketInterventionArticles)">
+                                                @if (_ticketIntervention.InterventionArticles.Any())
+                                                {
+                                                    <span class="badge text-bg-primary">@_ticketIntervention.InterventionArticles.Count()</span>
+                                                }    
+                                            </DisplayName>
                                     
-                            </button>
-                        </h2>
-                        <div id="collapse1" class="accordion-collapse collapse show" aria-labelledby="heading1">
-                            <div class="accordion-body">
-                                <ArticlesIndex @bind-InterventionArticles=@_ticketIntervention.InterventionArticles IdCompany=@_ticket?.IdCompany  IdIntervention="_ticketIntervention.Id" 
-                                    OnAdd="ArticledOnAdd" OnDelete="ArticlesOnDelete" OnUpdate="ArticledOnUpdate"></ArticlesIndex>
-                            </div>
-                        </div>
-                    </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapse1" class="accordion-collapse collapse show" aria-labelledby="heading1">
+                                        <div class="accordion-body">
+                                            <ArticlesIndex @bind-InterventionArticles=@_ticketIntervention.InterventionArticles IdCompany=@_ticket?.IdCompany  IdIntervention="_ticketIntervention.Id" 
+                                                OnAdd="ArticledOnAdd" OnDelete="ArticlesOnDelete" OnUpdate="ArticledOnUpdate"></ArticlesIndex>
+                                        </div>
+                                    </div>
+                                </div>
 
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading2">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                                <DisplayName For="@(()=>_ticketIntervention.Activities)" />
-                                <ValidationMessage For="@(() => _ticketIntervention.Activities)" />
-                            </button>
-                        </h2>
-                        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="heading2">
-                            <div class="accordion-body">
-                                <RadzenTextArea class="form-control" @bind-value="@_ticketIntervention.Activities" Rows="8" />
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading2">
+                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                            <DisplayName For="@(()=>_ticketIntervention.Activities)" />
+                                            <ValidationMessage For="@(() => _ticketIntervention.Activities)" />
+                                        </button>
+                                    </h2>
+                                    <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="heading2">
+                                        <div class="accordion-body">
+                                            <RadzenTextArea class="form-control" @bind-value="@_ticketIntervention.Activities" Rows="8" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading3">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                            <DisplayName For="@(()=>_ticketIntervention.MountedParts)" />
+                                            <ValidationMessage For="@(() => _ticketIntervention.MountedParts)" />
+                                        </button>
+                                    </h2>
+                                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="heading3">
+                                        <div class="accordion-body">
+                                            <RadzenTextArea class="form-control" @bind-value="@_ticketIntervention.MountedParts" Rows="8" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="heading4">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                            <DisplayName For="@(()=>_ticketIntervention.Note)" />
+                                            <ValidationMessage For="@(() => _ticketIntervention.Note)" />
+                                        </button>
+                                    </h2>
+                                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="heading4">
+                                        <div class="accordion-body">
+                                            <RadzenTextArea class="form-control" @bind-value="@_ticketIntervention.Note" Rows="8" />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading3">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                                <DisplayName For="@(()=>_ticketIntervention.MountedParts)" />
-                                <ValidationMessage For="@(() => _ticketIntervention.MountedParts)" />
-                            </button>
-                        </h2>
-                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="heading3">
-                            <div class="accordion-body">
-                                <RadzenTextArea class="form-control" @bind-value="@_ticketIntervention.MountedParts" Rows="8" />
-                            </div>
-                        </div>
-                    </div>
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading4">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                                <DisplayName For="@(()=>_ticketIntervention.Note)" />
-                                <ValidationMessage For="@(() => _ticketIntervention.Note)" />
-                            </button>
-                        </h2>
-                        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="heading4">
-                            <div class="accordion-body">
-                                <RadzenTextArea class="form-control" @bind-value="@_ticketIntervention.Note" Rows="8" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
                
-                <div class="col-12">
-                    <BlazorButton Template="TemplateButton.Submit" Text="Salva" />
-                    <BlazorButton Template="TemplateButton.Cancel" OnClick="Annulla" Text="Annulla" />
+                            <div class="col-12">
+                                <RedGButton RGButtonType="RGButtonType.Cancel"></RedGButton>
+                                <RedGButton RGButtonType="RGButtonType.Save"></RedGButton>
+                    
 
-                </div>
-            </div>
-        </div>     
-    </div>
-</EditForm>
+                            </div>
+                        </div>
+                    </div>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+    </EditForm>
 }

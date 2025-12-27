@@ -27,7 +27,6 @@ namespace CRM.Client.Pages.Settings.Logos
         [Inject]
         IAGRestClientService RestClientService { get; set; }
 
-        
         [Inject] 
         private IJSRuntime JSRuntime { get; set; }
 

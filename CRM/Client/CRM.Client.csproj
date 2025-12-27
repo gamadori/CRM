@@ -6,6 +6,16 @@
 	  <VersionPrefix Condition="'$(RELEASE_VERSION)' == ''">2.0.1</VersionPrefix> 
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Pages\ChatsTickets\**" />
+    <Compile Remove="Pages\Customers\**" />
+    <Content Remove="Pages\ChatsTickets\**" />
+    <Content Remove="Pages\Customers\**" />
+    <EmbeddedResource Remove="Pages\ChatsTickets\**" />
+    <EmbeddedResource Remove="Pages\Customers\**" />
+    <None Remove="Pages\ChatsTickets\**" />
+    <None Remove="Pages\Customers\**" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Remove="Services\ILogosService.cs" />
     <Compile Remove="Services\LogosService.cs" />
   </ItemGroup>
@@ -49,8 +59,6 @@
 	
 	
   <ItemGroup>
-    <Folder Include="Pages\ChatsTickets\" />
-    <Folder Include="Pages\Customers\" />
     <Folder Include="wwwroot\Archive\" />
     <Folder Include="wwwroot\js\" />
   </ItemGroup>

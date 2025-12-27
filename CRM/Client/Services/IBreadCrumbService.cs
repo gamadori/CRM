@@ -26,9 +26,9 @@ namespace CRM.Client.Services
 
         List<BreadcrumbItem> TicketNumber(int idTicket, string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, Func<object, Task> action = null, object param = null);
 
-        Task<List<BreadcrumbModel>> Talk(bool link);
+        Task<List<BreadcrumbModel>> Deal(bool link);
 
-        Task<List<BreadcrumbModel>> TalkUser(string idUser, bool link);
+        Task<List<BreadcrumbModel>> DealUser(string idUser, bool link);
 
         Task<List<BreadcrumbModel>> Projects(bool link);
 
@@ -44,7 +44,7 @@ namespace CRM.Client.Services
 
         public List<BreadcrumbItem> Companies(int? id = null, string? name = null);
 
-        Task<List<BreadcrumbModel>> Contacts(string name = null, bool link = false);
+        List<BreadcrumbItem> Contacts(int? id = null, string name = null);
 
         Task<List<BreadcrumbModel>> Articles(string name = null, bool link = false);
     }

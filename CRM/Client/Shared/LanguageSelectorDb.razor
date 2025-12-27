@@ -97,8 +97,7 @@ else
         {
             if (AutoSetting)
             {
-                Languages = await http.GetFromJsonAsync<List<Language>>(ConstHelper.LanguagesPath) ?? new List<Language>();
-                // Populate items whenever Languages are loaded here
+                Languages = await http.GetFromJsonAsync<List<Language>>($"{ConstHelper.LanguagesPath}/list") ?? new List<Language>();
                
                 if (string.IsNullOrEmpty(_value))
                 {

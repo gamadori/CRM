@@ -136,19 +136,19 @@ namespace CRM.Client.Pages.TicketInterventions
                 exception.Redirect();
             }
         }
-        protected void ValueStartDateTimeChangeHandler(ChangedEventArgs<DateTime> args)
+        private void ValueStartDateTimeChangeHandler()
         {
-            if (args.Value < _ticketIntervention.EndDateTime)
+            if (_ticketIntervention.StartDateTime < _ticketIntervention.EndDateTime)
             {
-                _ticketIntervention.Minute = (int)(_ticketIntervention.EndDateTime - args.Value).TotalMinutes;
+                _ticketIntervention.Minute = (int)(_ticketIntervention.EndDateTime - _ticketIntervention.StartDateTime).TotalMinutes;
             }
         }
 
-        protected void ValueEndDateTimeChangeHandler(ChangedEventArgs<DateTime> args)
+        protected void ValueEndDateTimeChangeHandler()
         {
-            if (args.Value > _ticketIntervention.StartDateTime)
+            if (_ticketIntervention.EndDateTime > _ticketIntervention.StartDateTime)
             {
-                _ticketIntervention.Minute = (int)(args.Value - _ticketIntervention.StartDateTime).TotalMinutes;
+                _ticketIntervention.Minute = (int)(_ticketIntervention.EndDateTime - _ticketIntervention.StartDateTime).TotalMinutes;
             }
         }
 

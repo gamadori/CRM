@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CRM.Client.Services
 {
-    public interface ITalkService : IRestClientModelService<Talk, TalkModel, TalkFilter, int>
+    public interface IDealService : IRestClientModelService<Deal, DealModel, DealFilter, int>
     {
     
     }
