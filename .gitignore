@@ -339,3 +339,4 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 /CRM/Server/WTelegram.session
+/CRM/Server/appsettings.json
