@@ -39,7 +39,9 @@ namespace CRM.Client.Pages.ProductsTypes
 
         private ProductType _productType = null;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private List<BreadcrumbItem> _bread = new List<BreadcrumbItem>();
+
+        private string _subTitle = "";
         protected override async Task OnInitializedAsync()
         {
             try
@@ -47,10 +49,10 @@ namespace CRM.Client.Pages.ProductsTypes
 
                 _productType = await RestClientService.GetItem<ProductType, int>(Id, ConstHelper.ProductTypesPath);   // Service.Get(Id);
 
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "/Settings" });
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Tipo Prodotto"], Url = "/Settings/ProductsTypes" });
-                _bread.Add(new BreadcrumbModel() { Title = _productType.Name, Url = null });
-
+                _bread.Add(new BreadcrumbItem() { Text = Localize["Settings"], Url = "/Settings" });
+                _bread.Add(new BreadcrumbItem() { Text = Localize["Tipo Prodotto"], Url = "/Settings/ProductsTypes" });
+                _bread.Add(new BreadcrumbItem() { Text = _productType.Name, Url = null });
+                _subTitle = string.Format(Localize["Dettagli del Tipo Prodotto: {0}"], _productType.Name);
             }
             catch (Exception ex)
             {

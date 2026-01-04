@@ -12,10 +12,7 @@
 else
 {
     
-    <PageHeader Title="@_product.Name"
-                Subtitle=@Localize["Product"]
-               
-                BreadcrumbItems="@_breadcrumbItems">
+    <PageHeader Model="@_pageHeader">
     </PageHeader>
     <!-- Desktop: SelectBar -->
     <div class="d-none d-md-block mb-3">
@@ -45,11 +42,11 @@ else
     {
         if (_partialView == PartialViews.Details)
         {
-            <Details Id="@Id" OnClickEdit="EditCommand" OnClickCancel="CancelCommand"></Details>
+            <Details Id="@Id" OnClickEdit="EditCommand" OnClickCancel="CancelCommand" PageMode="PageHelper.PageModality.Dialog" ></Details>
         }
         else
         {
-            <Edit Id="@Id" OnClickSave="(async () => await SaveCommand())" OnClickCancel="CancelCommand"></Edit>
+            <Edit Id="@Id" OnClickSave="(async () => await SaveCommand())" OnClickCancel="CancelCommand" PageMode="PageHelper.PageModality.Dialog"></Edit>
         }
     }
     else if (_selectView == GroupViews.ProductDxf)

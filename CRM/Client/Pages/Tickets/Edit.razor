@@ -6,7 +6,9 @@
 @using Radzen
 @using Radzen.Blazor
 
-<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog)>@_header</BlazorHeader>
+
+<PageHeader Model="@_pageHeader">
+</PageHeader>
 
 @if (_ticket == null)
 {
@@ -191,14 +193,14 @@ else
                             <RadzenStack>
                                 <RadzenFormField>
                                     <ChildContent>
-                                        <RadzenLabel>
+                                        <RadzenLabel Component="swInvoice">
                                             <DisplayName For="@(() => _ticket.Invoiced)" />
                                         </RadzenLabel>
                                     </ChildContent>
                                     <Helper>
                                         <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
                                             <Authorized Context="AuthorizeRole">
-                                                <RadzenSwitch @bind-Value=@_ticket.Invoiced />
+                                                <RadzenSwitch @bind-Value=@_ticket.Invoiced Name="swInvoice" />
                                                 <ValidationMessage For="@(() => _ticket.Invoiced)" />
                                             </Authorized>
                                             <NotAuthorized Context="AuthorizeRole">

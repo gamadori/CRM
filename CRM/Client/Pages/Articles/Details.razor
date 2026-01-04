@@ -1,4 +1,10 @@
-﻿@page "/Articles/Details/{Id:int}"
+﻿@page "/Articles/{Id:int}/Details"
+@page "/Companies/{CompanyId:int}/Articles/{Id:int}/Details"
+
+@using CRM.Client.Pages.Articles.Components
+
+<PageHeader Visible=@(PageMode != PageHelper.PageModality.Dialog) Model="_pageHeader"  >
+</PageHeader>
 
 @if (_article == null)
 {
@@ -6,61 +12,120 @@
 }
 else
 {
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-4">
+    <div class="row">
+            <!-- Colonna sinistra: Info articolo -->
+        <div class="col-lg-12 col-xl-8">
+            <div class="card mb-3  shadow-sm">
+                @* <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Informazioni Articolo</h5>
+                    
+                </div> *@
+                <div class="card border-0 shadow-sm mb-4">
+                   
+                    <div class="card-body p-4">
 
-            <RedGDetailField Icon="confirmation_number" ContainerClass="mb-4">
-                <LabelContent><DisplayName For="@(() => _article.SerialNumber)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_article.SerialNumber</p></ChildContent>
-            </RedGDetailField>
+                        <RedGDetailField Icon="confirmation_number" ContainerClass="mb-4">
+                            <LabelContent><DisplayName For="@(() => _article.SerialNumber)" /></LabelContent>
+                            <ChildContent><p class="mb-0 text-dark">@_article.SerialNumber</p></ChildContent>
+                        </RedGDetailField>
 
-            @if (_article.SaleDate != null)
-            {
-                <RedGDetailField Icon="shopping_cart" ContainerClass="mb-4">
-                    <LabelContent><DisplayName For="@(() => _article.SaleDate)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_article.SaleDate?.ToString("d")</p></ChildContent>
-                </RedGDetailField>
-            }
+                        @if (_article.SaleDate != null)
+                        {
+                            <RedGDetailField Icon="shopping_cart" ContainerClass="mb-4">
+                                <LabelContent><DisplayName For="@(() => _article.SaleDate)" /></LabelContent>
+                                <ChildContent><p class="mb-0 text-dark">@_article.SaleDate?.ToString("d")</p></ChildContent>
+                            </RedGDetailField>
+                        }
 
-            @if (_article.DeliveryDate != null)
-            {
-                <RedGDetailField Icon="local_shipping" ContainerClass="mb-4">
-                    <LabelContent><DisplayName For="@(() => _article.DeliveryDate)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_article.DeliveryDate?.ToString("d")</p></ChildContent>
-                </RedGDetailField>
-            }
+                        @if (_article.DeliveryDate != null)
+                        {
+                            <RedGDetailField Icon="local_shipping" ContainerClass="mb-4">
+                                <LabelContent><DisplayName For="@(() => _article.DeliveryDate)" /></LabelContent>
+                                <ChildContent><p class="mb-0 text-dark">@_article.DeliveryDate?.ToString("d")</p></ChildContent>
+                            </RedGDetailField>
+                        }
 
-            @if (_article.TestDate != null)
-            {
-                <RedGDetailField Icon="verified" ContainerClass="mb-4">
-                    <LabelContent><DisplayName For="@(() => _article.TestDate)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_article.TestDate?.ToString("d")</p></ChildContent>
-                </RedGDetailField>
-            }
+                        @if (_article.TestDate != null)
+                        {
+                            <RedGDetailField Icon="verified" ContainerClass="mb-4">
+                                <LabelContent><DisplayName For="@(() => _article.TestDate)" /></LabelContent>
+                                <ChildContent><p class="mb-0 text-dark">@_article.TestDate?.ToString("d")</p></ChildContent>
+                            </RedGDetailField>
+                        }
 
-            <RedGDetailField Icon="inventory" ContainerClass="mb-4">
-                <LabelContent><DisplayName For="@(() => _article.IdProduct)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_article.Product?.Name</p></ChildContent>
-            </RedGDetailField>
+                        <RedGDetailField Icon="inventory" ContainerClass="mb-4">
+                            <LabelContent><DisplayName For="@(() => _article.IdProduct)" /></LabelContent>
+                            <ChildContent><p class="mb-0 text-dark">@_article.Product?.Name</p></ChildContent>
+                        </RedGDetailField>
 
-            <RedGDetailField Icon="business" ContainerClass="mb-4">
-                <LabelContent><DisplayName For="@(() => _article.IdCompany)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_article.Company?.RagioneSociale</p></ChildContent>
-            </RedGDetailField>
+                        <RedGDetailField Icon="business" ContainerClass="mb-4">
+                            <LabelContent><DisplayName For="@(() => _article.IdCompany)" /></LabelContent>
+                            <ChildContent><p class="mb-0 text-dark">@_article.Company?.RagioneSociale</p></ChildContent>
+                        </RedGDetailField>
 
-            <RedGDetailField Icon="description">
-                <LabelContent><DisplayName For="@(() => _article.Description)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_article.Description</p></ChildContent>
-            </RedGDetailField>
+                        <RedGDetailField Icon="description">
+                            <LabelContent><DisplayName For="@(() => _article.Description)" /></LabelContent>
+                            <ChildContent><p class="mb-0 text-dark">@_article.Description</p></ChildContent>
+                        </RedGDetailField>
 
-        </div>
-
-        <!-- Footer con azioni -->
-        <div class="card-footer bg-light border-top py-3">
-            <div class="d-flex gap-2">
-                <BlazorButton Template="TemplateButton.Back" Text="Lista Articoli" OnClick="Annulla" />
-                <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+                    </div>
+                    <!-- Footer con azioni -->
+                    <div class="card-footer bg-light border-top py-3">
+                        <div class="d-flex gap-2">
+                            <RedGButton RGButtonType=RGButtonType.Back Text=@Localize["Lista Articoli"] Click="Annulla" />
+                            <RedGButton RGButtonType=RGButtonType.Edit AutoLabel=true Click="Edit" />
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+        @* <!-- Colonna destra: Timeline eventi e domini -->
+        <div class="col-lg-6 col-xl-8">
+            <!-- Tab navigation -->
+            <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="states-tab" data-bs-toggle="tab"
+                            data-bs-target="#states" type="button" role="tab">
+                        <i class="bi bi-diagram-3"></i> Stati Correnti
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="history-tab" data-bs-toggle="tab"
+                            data-bs-target="#history" type="button" role="tab">
+                        <i class="bi bi-clock-history"></i> Storia Completa
+                    </button>
+                </li>
+            </ul>
+            <!-- Tab content -->
+            <div class="tab-content">
+                <!-- Tab Stati -->
+                <div class="tab-pane fade show active" id="states" role="tabpanel">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <ArticleStateManager 
+                                ArticleId="@Id" 
+                                OnDataChanged="@HandleStateChanged" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Storia -->
+                <div class="tab-pane fade" id="history" role="tabpanel">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-journal-text"></i> Storia Completa Articolo
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <ArticleHistoryView ArticleId="@Id" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> *@
+       
+    
 }

@@ -3,8 +3,8 @@
 @using Radzen.Blazor
 @using Syncfusion.Blazor.Calendars
 
-<h3>@Localize["Nuovo Ticket"]</h3>
-<hr />
+<PageHeader Model="@_pageHeader">
+</PageHeader>
 
 @if (_stepTicket > TicketCreateSteps.CompanyTicket)
 {

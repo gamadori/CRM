@@ -1,0 +1,102 @@
+@using CRM.Shared
+@inject HttpClient Http
+
+<div class="card domain-card domain-@Domain.Code.ToLower()">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="@GetDomainIcon()"></i> @Domain.Name
+        </h6>
+    </div>
+    <div class="card-body">
+        @if (DomainState != null)
+        {
+            <div class="current-state">
+                <span class="badge badge-lg bg-@GetStateBadgeColor()">
+                    @CurrentStateName
+                </span>
+                <small class="text-muted d-block mt-1">
+                    Aggiornato: @DomainState.UpdatedAt.ToString("dd/MM/yyyy HH:mm")
+                </small>
+            </div>
+            
+            <div class="available-actions mt-3">
+                <label class="form-label small">Azioni disponibili:</label>
+                @foreach (var eventType in AvailableEventTypes)
+                {
+                    <button class="btn btn-sm btn-outline-primary d-block w-100 mb-2"
+                            @onclick="() => ShowEventDialog(eventType)">
+                        @eventType.Name
+                    </button>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted small">Nessuno stato impostato</p>
+            <button class="btn btn-sm btn-primary" @onclick="InitializeDomain">
+                Inizializza
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public ArticleDomain Domain { get; set; }
+    
+    [Parameter]
+    public ArticleDomainState DomainState { get; set; }
+    
+    [Parameter]
+    public int ArticleId { get; set; }
+    
+    [Parameter]
+    public EventCallback OnStateChanged { get; set; }
+    
+    private List<ArticleEventType> AvailableEventTypes { get; set; } = new();
+    private string CurrentStateName { get; set; } = "";
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        if (DomainState != null)
+        {
+            var state = await Http.GetFromJsonAsync<ArticleState>($"api/ArticleStates/{DomainState.CurrentStateId}");
+            CurrentStateName = state?.Name ?? "Sconosciuto";
+            
+            // Carica eventi disponibili in base allo stato corrente
+            AvailableEventTypes = await Http.GetFromJsonAsync<List<ArticleEventType>>(
+                $"api/ArticleDomains/{Domain.Id}/AvailableEvents?currentStateId={DomainState.CurrentStateId}");
+        }
+    }
+    
+    private string GetDomainIcon() => Domain.Code switch
+    {
+        "PRODUCTION" => "bi bi-gear-fill",
+        "COMMERCIAL" => "bi bi-cart-fill",
+        "LOGISTICS" => "bi bi-truck",
+        "TECHNICAL" => "bi bi-tools",
+        _ => "bi bi-circle-fill"
+    };
+    
+    private string GetStateBadgeColor() => CurrentStateName switch
+    {
+        var s when s.Contains("Pronta") || s.Contains("OK") => "success",
+        var s when s.Contains("collaudo") || s.Contains("Ordinata") => "warning",
+        var s when s.Contains("Chiusa") || s.Contains("Ritirata") => "secondary",
+        _ => "info"
+    };
+    
+    private async Task InitializeDomain()
+    {
+        // Crea lo stato iniziale per questo dominio
+        await Http.PostAsJsonAsync($"api/Articles/{ArticleId}/InitializeDomain/{Domain.Id}", new { });
+        await OnStateChanged.InvokeAsync();
+    }
+    
+    private async Task ShowEventDialog(ArticleEventType eventType)
+    {
+        // Aprirà un dialog modale per registrare l'evento
+        // Per ora placeholder
+        await OnStateChanged.InvokeAsync();
+    }
+}

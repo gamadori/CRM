@@ -1200,3 +1200,7 @@ body.dark-theme .logo {
         height: 32px;
     }
 }
+
+.rz-dropdown {
+    width: max-content !important;
+}

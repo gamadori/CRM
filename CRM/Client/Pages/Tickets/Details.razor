@@ -3,7 +3,9 @@
 @page "/Tickets/{Id:int}/{BackUrl}"
 @using CRM.Shared.Helper
 
-<BlazorHeader Header="Ticket" Visible=@HeaderVisible></BlazorHeader>
+<PageHeader Model="@_pageHeader">
+</PageHeader>
+
 @if (_ticket == null)
 {
     <Waiting></Waiting>

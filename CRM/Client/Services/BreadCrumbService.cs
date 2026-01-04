@@ -259,24 +259,10 @@ namespace CRM.Client.Services
             return breadcrumbItems; 
         }
 
-        public async Task<List<BreadcrumbModel>> Articles(string name = null, bool link = false)
-        {
-            List<BreadcrumbModel> bread = await Home();
+        
+      
 
-
-
-            bread.Add(new BreadcrumbModel() { Title = $"Articoli", Url = link || name != null ? $"Articles" : null });
-            if (name != null)
-            {
-
-                bread.Add(new BreadcrumbModel() { Title = name, Url = link ? ConstHelper.ArticlesPath : null });
-            }
-
-
-            return bread;
-        }
-
-        public List<BreadcrumbItem> Contacts(int? id = null, string name = null)
+        public List<BreadcrumbItem> Contacts(int? id = null, string name = null, bool edit = false)
         {
 
             List< BreadcrumbItem> breadcrumbItems = new()
@@ -284,7 +270,6 @@ namespace CRM.Client.Services
                 new BreadcrumbItem(_localizer["Contacts"], ConstHelper.ContactsPath),
             };
 
-            
 
             if (id != null)
             {
@@ -294,12 +279,21 @@ namespace CRM.Client.Services
                     Url = $"{ConstHelper.ContactsPath}/Details/{id}"
                 });
             }
-
+            else if (edit)
+            {
+                breadcrumbItems.Add(new BreadcrumbItem()
+                {
+                    Text = _localizer["New Contact"],
+                    Url = null
+                });
+            }
 
             return breadcrumbItems;
         }
 
-    }
+        
 
+    }
+    
 
 }

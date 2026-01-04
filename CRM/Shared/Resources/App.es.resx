@@ -243,7 +243,7 @@
   <data name="Partita IVA" xml:space="preserve">
     <value>Nº de IVA</value>
   </data>
-  <data name="Prodotti" xml:space="preserve">
+  <data name="Products" xml:space="preserve">
     <value>Productos</value>
   </data>
   <data name="Product data" xml:space="preserve">
@@ -384,5 +384,47 @@
   </data>
   <data name="TicketManagement" xml:space="preserve">
     <value>Gestión de tickets</value>
+  </data>
+  <data name="SettingsListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="UtentiListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="ContactsListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="CompaniesDetailsSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="CompaniesListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="ArticlesListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="ArticlesNewSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="ArticlesDetailsSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="ArticlesEditSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="ProductsListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="ProductsDetailsSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="NewItem" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="EditItem" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
+  <data name="ProductsNewSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
   </data>
 </root>

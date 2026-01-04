@@ -79,6 +79,42 @@ namespace CRM.Shared.Resources.Models {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Facebook.
+        /// </summary>
+        public static string Facebook {
+            get {
+                return ResourceManager.GetString("Facebook", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Facebook Url.
+        /// </summary>
+        public static string FacebookUrl {
+            get {
+                return ResourceManager.GetString("FacebookUrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a LinkedIn.
+        /// </summary>
+        public static string LinkedIn {
+            get {
+                return ResourceManager.GetString("LinkedIn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a LinkedIn Url.
+        /// </summary>
+        public static string LinkedInUrl {
+            get {
+                return ResourceManager.GetString("LinkedInUrl", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Mobile.
         /// </summary>
         public static string Mobile {
@@ -129,6 +165,24 @@ namespace CRM.Shared.Resources.Models {
         public static string Surname {
             get {
                 return ResourceManager.GetString("Surname", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Twitter.
+        /// </summary>
+        public static string Twitter {
+            get {
+                return ResourceManager.GetString("Twitter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Twitter Url.
+        /// </summary>
+        public static string TwitterUrl {
+            get {
+                return ResourceManager.GetString("TwitterUrl", resourceCulture);
             }
         }
     }

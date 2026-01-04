@@ -61,6 +61,15 @@ namespace CRM.Shared.Resources.Models {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Commercial State.
+        /// </summary>
+        public static string CommercialState {
+            get {
+                return ResourceManager.GetString("CommercialState", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Country.
         /// </summary>
         public static string Country {
@@ -106,6 +115,15 @@ namespace CRM.Shared.Resources.Models {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Logistic State.
+        /// </summary>
+        public static string LogisticState {
+            get {
+                return ResourceManager.GetString("LogisticState", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Name.
         /// </summary>
         public static string Name {
@@ -120,6 +138,15 @@ namespace CRM.Shared.Resources.Models {
         public static string Note {
             get {
                 return ResourceManager.GetString("Note", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Production State.
+        /// </summary>
+        public static string ProductionState {
+            get {
+                return ResourceManager.GetString("ProductionState", resourceCulture);
             }
         }
         
@@ -147,6 +174,15 @@ namespace CRM.Shared.Resources.Models {
         public static string SerialNumber {
             get {
                 return ResourceManager.GetString("SerialNumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Current State.
+        /// </summary>
+        public static string StatoAttuale {
+            get {
+                return ResourceManager.GetString("StatoAttuale", resourceCulture);
             }
         }
         

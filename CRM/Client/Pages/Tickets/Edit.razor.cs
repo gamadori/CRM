@@ -1,5 +1,6 @@
 ﻿using BlazoringComponents;
 using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -50,6 +51,9 @@ namespace CRM.Client.Pages.Tickets
 
         [Inject]
         DialogService dialogService { get; set; }
+
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int? Id { get; set; }
@@ -122,6 +126,8 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _isLoading = false;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
 
         protected override async Task OnInitializedAsync()
         {
@@ -168,6 +174,9 @@ namespace CRM.Client.Pages.Tickets
                 await LoadContactsCustomer();
 
                 _inputTextAreaAttributes.Add("rows", "20");
+
+                //_pageHeader = HeaderService.Create("Tickets", Id, _ticket?.Numero, true, ConstHelper.ClientTicketsPath, null, PageMode);
+                _pageHeader = await HeaderService.Create(PageMode);
 
                 OnChangeTicketType();
             }

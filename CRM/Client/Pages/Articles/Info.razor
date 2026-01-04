@@ -1,10 +1,10 @@
-﻿@page "/Articles/Info/{Id:int}"
+﻿@page "/Articles/{Id:int}/Info"
 @page "/Articles/{Id:int}"
-@page "/Articles/Info/{Id:int}/{Root}"
-@page "/Articles/{Id:int}/{Root}"
+@page "/Companies/{CompanyId:int}/Articles/{Id:int}"
 
 @using Radzen
 @using Radzen.Blazor
+@using static CRM.Client.Helpers.PageHelper
 
 @if (_article == null)
 {
@@ -12,9 +12,7 @@
 }
 else
 {
-    <PageHeader Title="@_article.SerialNumber"
-                Subtitle=@Localize["Article"]
-                BreadcrumbItems="@_breadcrumbItems">
+    <PageHeader Model="_pageHeader">
     </PageHeader>
 
     <RadzenSelectBar @bind-Value="selectView" TValue="ProductViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
@@ -32,18 +30,19 @@ else
         if (_partialView == PartialViews.Details)
         {
 
-            <Details Id="@Id" OnClickEdit="EditProduct" OnClickCancel="OnGotoIndex"></Details>
+            <Details Id="@Id" OnClickEdit="EditProduct" OnClickCancel="OnGotoIndex" PageMode="PageModality.Child"></Details>
         }
         else
         {
-            <Edit Id="@Id" OnClickSave="(async () => await SaveProduct())" OnClickCancel="CancelProduct"></Edit>
+            <Edit Id="@Id" OnClickSave="(async () => await SaveProduct())" OnClickCancel="CancelProduct" PageMode="PageModality.Child"></Edit>
         }
     }
     else if (selectView == ProductViews.Attachments)
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Attachments.Index IdParent="@Id" AttachmentType=@AttachmentTypes.Article OnClickEdit="IndexEditAttachment" OnClickDetails="IndexDetailsAttachment"></CRM.Client.Pages.Attachments.Index>
+            <CRM.Client.Pages.Attachments.Index IdParent="@Id" AttachmentType=@AttachmentTypes.Article OnClickEdit="IndexEditAttachment" 
+                OnClickDetails="IndexDetailsAttachment"></CRM.Client.Pages.Attachments.Index>
         }
         else if (_partialView == PartialViews.Edit)
         {

@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Pages.Projects;
 using CRM.Client.Services;
 using CRM.Client.Shared;
@@ -7,10 +8,12 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 using Radzen;
+using Syncfusion.Blazor.Grids;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Products
 {
@@ -54,8 +57,14 @@ namespace CRM.Client.Pages.Products
         [Parameter]
         public int Id { get; set; }
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
+
         [Inject]
         private IManyToManyService<ProductParentChildModel> _parentChildService { get; set; }
+
+        [Inject]
+        private IHeaderService HeaderService { get; set; }
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
@@ -79,17 +88,15 @@ namespace CRM.Client.Pages.Products
 
         private List<ViewOption> _viewOptions;
 
-        private List<BreadcrumbItem> _breadcrumbItems = new();
-       
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected override async Task OnInitializedAsync()
         {
             InitializeViewOptions();
             await LoadProductType();
 
-            _breadcrumbItems = new()             {
-                new BreadcrumbItem(Localize["Catalogo"], "/Products"),
-            };
-            _breadcrumbItems.Add(new BreadcrumbItem(_product.Name, $"/Products/Info/{Id}"));
+            //_pageHeader = HeaderService.Create("Products", Id, _product?.Name, false, ConstHelper.ClientProductsPath, null);
+            _pageHeader = await HeaderService.Create(PageMode);
         }
 
         private void InitializeViewOptions()

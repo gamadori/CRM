@@ -31,6 +31,7 @@ namespace CRM.Client.Pages.Attachments
         [Inject]
         private IJSRuntime JSRuntime { get; set; }
 
+
         [Parameter]
         public int? Id { get; set; }
 

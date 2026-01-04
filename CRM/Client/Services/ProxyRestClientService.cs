@@ -347,10 +347,16 @@ namespace CRM.Client.Services
 
         public async Task<T?> GetFirstAsync()
         {
+            try
+            {
+                T? response = await _http.GetFromJsonAsync<T?>($"{_pathService}");
 
-            T? response = await _http.GetFromJsonAsync<T?>($"{_pathService}");
-
-            return response;
+                return response;
+            }
+            catch(Exception ex)
+            {
+                return null;
+            }
         }
 
         public async Task<APIResponseMessage<T>> PostAsync(T item)

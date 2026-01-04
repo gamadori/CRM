@@ -4,13 +4,10 @@
 @using Radzen.Blazor
 
 
-<BlazorHeader Header="@Localize["Tipo Prodotto"]">
-
-</BlazorHeader>
-
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
-
-
+<PageHeader Title="@Localize["Tipo Prodotto"]"
+            Subtitle="@_subTitle"
+            BreadcrumbItems="@_bread">
+</PageHeader>
 @if (_productType == null)
 {
     <Waiting></Waiting>
@@ -18,28 +15,31 @@
 else
 {
     <EditForm Model="@_productType" OnValidSubmit="HandleValidSubmit">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-        <div class="containerleft">
-            <div  class="form-group row g-3">
-                <div class="col-md-8">
-                    <div class="form-floating mb-3">                    
-                        <input id="Name" class="form-control" @bind-value="@_productType.Name" placeholder="Name" />
-                        <DisplayName For="@(()=>_productType.Name)" />
-                        <ValidationMessage For="@(() => _productType.Name)" />
-                    </div>
-                    <div class="form-floating mb-3">
-                        <input id="Description" class="form-control" @bind-value="@_productType.Description" placeholder="Description" />
-                        <DisplayName For="@(()=>_productType.Description)" />
-                        <ValidationMessage For="@(() => _productType.Description)" />
-                    </div>
-                
-                    <div class=" mb-3">
-                        <BlazorButton Template="TemplateButton.Submit" Text="Salva" />
-                        <BlazorButton Template="TemplateButton.Cancel" OnClick="Annulla" Text="Annulla" />
-                    </div>
-                </div>
-            </div>
-        </div>
+        <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeSM="6">
+                <RadzenStack>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_productType.Name" For="@(() => _productType.Name)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_productType.Description" For="@(() => _productType.Description)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+        <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" />
+        <RedGButton RGButtonType="RGButtonType.Submit" AutoLabel=true />
     </EditForm>
+
+   
 }

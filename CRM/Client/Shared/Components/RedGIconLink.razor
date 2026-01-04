@@ -1,0 +1,40 @@
+﻿@inject NavigationManager NavigationManager
+
+<div class="position-relative d-flex flex-column justify-content-center align-items-center" Style="cursor: pointer;">
+    
+    <RadzenIcon Icon="@Icon" @onclick="OnClickHandler" Style="@Style" />
+    @if (Text != string.Empty)
+    {
+        <div class="mt-1"><a href="@Href" class="stretched-link text-decoration-none" style="color: inherit; ">@Text</a></div>
+    }
+ </div>
+
+@code {
+    [Parameter]
+    public string? Href { get; set; }
+    [Parameter]
+    public string? Icon { get; set; }
+
+    [Parameter] 
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Style { get; set; } = "font-size: 48px; color: #7b1fa2;";
+
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+
+
+    private void OnClickHandler()
+    {
+        if (OnClick.HasDelegate)
+        {
+            OnClick.InvokeAsync(null);
+        }
+        else if (!string.IsNullOrEmpty(Href))
+        {
+            // Navigate to the Href if OnClick is not set
+            NavigationManager.NavigateTo(Href);
+        }
+    }
+}

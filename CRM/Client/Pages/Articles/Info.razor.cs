@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Client.Shared;
 using CRM.Shared;
@@ -43,9 +44,11 @@ namespace CRM.Client.Pages.Articles
         IBreadCrumbService BreadCrumbService { get; set; }
 
         [Inject]
-        private NavigationManager NavigationManager { get; set; }
+        NavigationManager NavigationManager { get; set; }
 
-       
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
 
         [Parameter]
         public Action OnGotoIndex { get; set; }
@@ -54,7 +57,7 @@ namespace CRM.Client.Pages.Articles
         public int Id { get; set; }
 
         [Parameter]
-        public string Root { get; set; } = null;
+        public int? CompanyId { get; set; } = null;
 
         
         protected ProductViews selectView = ProductViews.Product;
@@ -69,7 +72,7 @@ namespace CRM.Client.Pages.Articles
 
         private bool _fromDetails = false;
 
-        private List<BreadcrumbItem> _breadcrumbItems = new();
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
@@ -80,15 +83,12 @@ namespace CRM.Client.Pages.Articles
         {
             //_product = await _service.Get(Id);
 
-            var model = await RestClientService.GetWithBreadCrumb<Article, int>(Id, Root, ConstHelper.ArticlesPath); 
+            var model = await RestClientService.GetItem<Article, int>(Id, ConstHelper.ArticlesPath); 
 
-            _article = model?.Item;
+            _article = model;
 
-            _breadcrumbItems = new()             
-            {
-                new BreadcrumbItem(Localize["Articles"], "/Articles"),
-            };
-            _breadcrumbItems.Add(new BreadcrumbItem(_article.SerialNumber, $"/Articles/Info/{Id}"));
+            //_pageHeader = HeaderService.Create("Articles", Id, _article?.SerialNumber, false, ConstHelper.ClientArticlesPath, null);
+            _pageHeader = await HeaderService.Create();
         }
         private void EditProduct()
         {

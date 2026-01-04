@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +11,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Products
 {
@@ -28,6 +30,9 @@ namespace CRM.Client.Pages.Products
         [Inject]
         IAGRestClientService RestClientService { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int Id { get; set; }
 
@@ -40,8 +45,12 @@ namespace CRM.Client.Pages.Products
         [Parameter]
         public Action OnClickCancel { get; set; }
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
+
         private Product _product = null;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
         protected override async Task OnInitializedAsync()
         {
             string path;
@@ -51,8 +60,9 @@ namespace CRM.Client.Pages.Products
                 path = ConstHelper.GroupsPath;
 
                 _product = await RestClientService.GetItem<Product, int>(Id, ConstHelper.Products);   // _service.Get(Id);
-
-               
+                
+                //_pageHeader = HeaderService.Create("Products", Id, _product?.Name, true, ConstHelper.ClientProductsPath, null, PageMode);
+                _pageHeader = await HeaderService.Create(PageMode);
             }
             catch (Exception ex)
             {

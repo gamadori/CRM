@@ -89,11 +89,5 @@ namespace CRM.Shared
         public virtual ICollection<ApplicationUser> ApplicationUsers { get; set; }
     }
 
-    public class CompanyItem
-    {
-        public int Id { get; set; }
-
-        [Display(Name = nameof(Company.RagioneSociale), ResourceType = typeof(Resources.Models.Company))]
-        public string RagioneSociale { get; set; }
-    }
+    
 }

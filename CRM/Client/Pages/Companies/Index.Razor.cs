@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Client.Shared;
 using CRM.Shared;
@@ -44,7 +45,7 @@ namespace CRM.Client.Pages.Companies
         DialogService dialogService { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int? IdReseller { get; set; } = null;
@@ -69,8 +70,6 @@ namespace CRM.Client.Pages.Companies
 
         [Parameter]
         public EventCallback<int> OnRemoveCompany { get; set; }
-
-       
 
         [Parameter]
         public EventCallback OnAddNewItem { get; set; }
@@ -104,7 +103,8 @@ namespace CRM.Client.Pages.Companies
 
         private string _header;
 
-        private List<BreadcrumbItem> _breadcrumbItems = new();
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
 
         protected override async Task OnInitializedAsync()
         {
@@ -115,6 +115,8 @@ namespace CRM.Client.Pages.Companies
             else
                 _header = Localize["Customers"];
 
+            
+
             pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
             _user = await userSigned.Get();
 
@@ -124,8 +126,8 @@ namespace CRM.Client.Pages.Companies
 
             await LoadData();
 
-            _breadcrumbItems = BreadCrumbService.Companies();
-
+            //_pageHeader = HeaderService.Create(ConstHelper.ClientCompaniesPath, null, null, false, ConstHelper.ClientCompaniesPath, null, PageMode);
+            _pageHeader = await HeaderService.Create(PageMode);
         }
 
         public async Task LoadData(LoadDataArgs args = null)

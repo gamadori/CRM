@@ -10,6 +10,9 @@
 }
 else
 {
+    <PageHeader Model="@_pageHeader" Visible=@(PageMode != PageHelper.PageModality.Dialog)>
+    </PageHeader>
+
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-4">
             
@@ -58,7 +61,7 @@ else
         <div class="card-footer bg-light border-top py-3">
             <div class="d-flex gap-2">
                 <RedGButton RGButtonType="RGButtonType.Back" Click="@(() => Nav.NavigateTo("/Products"))" Text="@Localize["Lista Prodotti"]" />
-                <RedGButton RGButtonType="RGButtonType.Edit" Click="Edit" Text="@Localize["Modifica"]"></RedGButton>
+                <RedGButton RGButtonType="RGButtonType.Edit" Click="Edit" AutoLabel=true></RedGButton>
             </div>
         </div>
     </div>

@@ -17,6 +17,7 @@ using Radzen.Blazor;
 using Microsoft.Extensions.Localization;
 using CRM.Shared.Helper;
 using static CRM.Client.Helpers.PageHelper;
+using CRM.Client.Models;
 
 namespace CRM.Client.Pages.Contacts
 {
@@ -42,7 +43,7 @@ namespace CRM.Client.Pages.Contacts
         DialogService DialogService { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int? IdContact { get; set; }
@@ -108,7 +109,7 @@ namespace CRM.Client.Pages.Contacts
 
         private RadzenDataGrid<Contact> grdContacts;
 
-        private List<BreadcrumbItem> _breadcrumbItems = new List<BreadcrumbItem>();
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
@@ -126,7 +127,8 @@ namespace CRM.Client.Pages.Contacts
 
             await LoadData();
 
-            _breadcrumbItems = BreadCrumbService.Contacts();
+            //_pageHeader = HeaderService.Create(ConstHelper.ClientContactsPath);
+            _pageHeader = await HeaderService.Create(PageMode);
         }
 
         public async Task LoadData(LoadDataArgs args = null)

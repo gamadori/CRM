@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using CRM.Shared; // aggiunto per ItemStatus
 
 namespace CRM.Shared
 {
@@ -61,11 +59,13 @@ namespace CRM.Shared
         public string NameComplete { get { return $"{Product?.Name} {SerialNumber}"; } }
 
         [NotMapped]
-        public List<ArticleAccessory> Accessories { get; set; }
+        public virtual List<ArticleAccessory> Accessories { get; set; }
 
-        public Product Product { get; set; }
+        public virtual Product Product { get; set; }
 
-        public Company Company { get; set; }
+        public virtual Company Company { get; set; }
+
+        public virtual ICollection<ArticleDomainState> StatesCurrent { get; set; }
     }
 
     public class ArticleFilter : PagingParameterModel

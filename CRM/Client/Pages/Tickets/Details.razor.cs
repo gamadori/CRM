@@ -1,4 +1,5 @@
 using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +14,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Tickets
 {
@@ -37,6 +39,9 @@ namespace CRM.Client.Pages.Tickets
 
         [Inject]
         DialogService DialogService { get; set; }
+
+        [Inject]
+        IHeaderService HeaderService { get; set; }  
 
         [Parameter]
         public int? Id { get; set; }
@@ -65,6 +70,8 @@ namespace CRM.Client.Pages.Tickets
         [Parameter]
         public string BackUrl { get; set; }
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         private bool _isDownloadingPdf = false;
 
@@ -74,8 +81,8 @@ namespace CRM.Client.Pages.Tickets
         private List<ApplicationUser> _assignedUsers = new List<ApplicationUser>();
         private bool _isLoadingUsers = false;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
-       
 
 
         protected override async Task OnInitializedAsync()
@@ -86,6 +93,9 @@ namespace CRM.Client.Pages.Tickets
             }
        
             await LoadData();
+
+            //_pageHeader = HeaderService.Create(ConstHelper.ClientTicketsPath, null, null, false, ConstHelper.ClientTicketsPath, null, PageMode);
+            _pageHeader = await HeaderService.Create(PageMode);
         }
 
         protected override async Task OnParametersSetAsync()

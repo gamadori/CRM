@@ -41,8 +41,9 @@ namespace CRM.Client.Pages.ProductsTypes
 
         private ProductType _productType = null;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private List<BreadcrumbItem> _bread = new List<BreadcrumbItem>();
 
+        private string _subTitle = "";
         protected override async Task OnInitializedAsync()
         {
             
@@ -50,24 +51,27 @@ namespace CRM.Client.Pages.ProductsTypes
             string path;
             try
             {
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "/Settings" });
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Tipo Prodotto"], Url = "/Settings/ProductsTypes" });
+                _bread.Add(new BreadcrumbItem() { Text = Localize["Settings"], Url = "/Settings" });
+                _bread.Add(new BreadcrumbItem() { Text = Localize["Tipo Prodotto"], Url = "/Settings/ProductsTypes" });
                 
                 //await Task.Delay(10000);      // changes are flushed again   
                 path = ConstHelper.CompaniesPath;
+               
 
                 if (Id != null)
                 {
                     path += $"/{Id}";
 
                     _productType = await RestClientService.GetItem<ProductType, int>(Id.Value, ConstHelper.ProductTypesPath);   // await Service.Get(Id.Value);
-                    _bread.Add(new BreadcrumbModel() { Title = _productType?.Name, Url = $"/Settings/TicketsTypes/{Id}" });
-                    _bread.Add(new BreadcrumbModel() { Title = Localize["Modifica"], Url = null });
+                    _bread.Add(new BreadcrumbItem() { Text = _productType?.Name, Url = $"/Settings/TicketsTypes/{Id}" });
+                    _bread.Add(new BreadcrumbItem() { Text = Localize["Modifica"], Url = null });
+                    _subTitle = Localize["Modifica Tipo Prodotto"];
                 }
                 else
                 {
-                    _bread.Add(new BreadcrumbModel() { Title = Localize["Nuovo"], Url = null });
+                    _bread.Add(new BreadcrumbItem() { Text = Localize["Nuovo"], Url = null });
                     _productType = new ProductType();
+                    _subTitle = Localize["Nuovo Tipo Prodotto"];
                 }
                
             }

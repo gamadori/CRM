@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Client.Shared.Components;
 using CRM.Shared;
@@ -37,8 +38,10 @@ namespace CRM.Client.Pages.Articles
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
-        DialogService DialogService { get; set; }   
+        DialogService DialogService { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int? Id { get; set; }
@@ -47,7 +50,7 @@ namespace CRM.Client.Pages.Articles
         public int? IdParent { get; set; }
 
         [Parameter]
-        public int? IdCompany { get; set; }
+        public int? IdCompany { get; set; } = null;
         
         [Parameter]
         public Action OnClickSave { get; set; }
@@ -76,7 +79,10 @@ namespace CRM.Client.Pages.Articles
 
         private int _productsCount;
 
-       
+        private string _subTitle = "";
+
+       private PageHeaderModel _pageHeader = new PageHeaderModel();
+
 
         protected override async Task OnInitializedAsync()
         {
@@ -87,14 +93,12 @@ namespace CRM.Client.Pages.Articles
                 await LoadProducts();
 
                 if (Id != null)
-                {
-
-                    _header = "Edit Article";
+                { 
                     _article = await RestClientService.GetItem<Article, int>(Id.Value, ConstHelper.ArticlesPath);
                 }
                 else
                 {
-                    _header = "New Article";
+                    _subTitle = Localize["Nuovo Articolo"];
                     _article = new Article();
 
                     if (IdCompany != null)
@@ -104,7 +108,8 @@ namespace CRM.Client.Pages.Articles
                     }
                 }
 
-               
+                //_pageHeader = HeaderService.Create("Articles", Id, _article?.SerialNumber, true, ConstHelper.ClientArticlesPath, null, PageMode);
+                _pageHeader = await HeaderService.Create(PageMode);
 
                 StateHasChanged();
             }
@@ -118,16 +123,7 @@ namespace CRM.Client.Pages.Articles
 
         public async Task LoadCompany()
         {
-            //CompaniesFilterModel request = new CompaniesFilterModel() { PageSize = 0 };
-
-            //request.PageSize = 0;
-
-            //if (args != null)
-            //{
-            //    request.RagioneSociale = args.Filter;
-            //    request.Skip = args.Skip;
-            //    request.Top = args.Top;
-            //}
+            
 
             var response = await CompaniesService.Get<Company>(ConstHelper.CompaniesPath);
             _companiesCount = response.Count();

@@ -17,6 +17,7 @@ using Radzen.Blazor;
 using Microsoft.Extensions.Localization;
 using CRM.Shared.Helper;
 using static CRM.Client.Helpers.PageHelper;
+using CRM.Client.Models;
 
 namespace CRM.Client.Pages.ProductParameters
 {
@@ -45,7 +46,7 @@ namespace CRM.Client.Pages.ProductParameters
         IJSRuntime JsRuntime { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int? IdProduct { get; set; }
@@ -113,7 +114,8 @@ namespace CRM.Client.Pages.ProductParameters
 
         private bool _isResponsable = false;
 
-        private List<BreadcrumbModel> _breadCrumb;
+       
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
@@ -128,9 +130,10 @@ namespace CRM.Client.Pages.ProductParameters
 
              pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
 
-           
+            //_pageHeader = HeaderService.Create(ConstHelper.ClientProductParametersPath);
 
-            _breadCrumb = await BreadCrumbService.Articles();
+            _pageHeader = await HeaderService.Create(PageMode);
+
         }
 
         public async Task LoadData(LoadDataArgs args = null)

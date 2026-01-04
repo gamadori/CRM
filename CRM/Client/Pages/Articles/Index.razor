@@ -1,30 +1,29 @@
 ﻿@page "/Articles"
 @page "/Articles/Index"
+@page "/Companies/{IdCompany:int}/Articles"
 
 @using Radzen
 @using Radzen.Blazor
 @using BlazoringComponents.DropDownButton
 
 @* <BlazorHeader Header="@Localize["Article"]" Visible=@(PageMode != PageHelper.PageModality.Dialog)></BlazorHeader> *@
-@if (IdCompany == null)
-{
+
    
-    <PageHeader Title="@Localize["Articles"]"
-                Subtitle="@Localize["Gestisci gli articoli venduti"]"
-                BreadcrumbItems="@_breadcrumbItems">
+    <PageHeader Model="@_pageHeader">
     </PageHeader>
-}   
+   
 
 
 @if (_articles != null)
 {
+    
     <RadzenDataGrid @ref="grdArticles" IsLoading="@_isLoading" Responsive=@_isResponsable Count="@_paging.TotalCount" Data="@_articles" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode=@_filterMode 
         AllowSorting="true" AllowFiltering="true" AllowPaging="true"
                     PageSize="@_articletPageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Article" PagingSummaryFormat="@pagingSummaryFormat" ShowPagingSummary=true>
         <HeaderTemplate>
             <div class="d-flex align-items-center gap-5">
                 <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
-                <RedGTextBox @bind-Value="@_filter.SerialNumber" Label="@Localize["search serial..."]" @oninput="@OnChangeSerialNumberFilter" Style="width: 300px; margin-left: 10px;">
+                <RedGTextBox @bind-Value="@_filter.SerialNumber" Label="@Localize["search serial..."]" @oninput="@OnChangeSerialNumberFilter">
                     <End>
                         <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
                     </End>
@@ -71,10 +70,12 @@
                 <Template Context="item">
                     @if (item.Product != null)
                     {
-                        <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
-                            <span class="material-icons me-1" style="font-size: 14px; vertical-align: middle;">@MaterialIcons.Catalogo</span>
-                            @item.Product.Name
-                        </span>
+                        <div style="display:inline-flex;align-items:center;gap:8px;white-space:nowrap;">
+                            <span class="material-icons text-info" style="font-size:14px;vertical-align:middle;">
+                                @MaterialIcons.Catalogo
+                            </span>
+                            <span title="@item.Product.Name">@item.Product.Name</span>
+                        </div>
                     }
                 </Template>
             </RadzenDataGridColumn>

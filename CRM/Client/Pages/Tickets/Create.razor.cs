@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -7,10 +8,12 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 using Radzen;
+using Syncfusion.Blazor.Grids;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Tickets
 {
@@ -61,6 +64,13 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         private NotificationService NotificationService { get; set; }
 
+        [Inject]
+        private IHeaderService HeaderService { get; set; }
+
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
+
+
         private TicketCreateSteps _stepTicket = TicketCreateSteps.CompanyTicket;
         private Ticket _ticket = new Ticket() ;
         private List<ApplicationUser> _users = new List<ApplicationUser>();
@@ -84,6 +94,8 @@ namespace CRM.Client.Pages.Tickets
         private DateTime _maxTime;
 
         private bool _backDisabled = true;
+
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
         /// <summary>
         /// Da Eliminare quando verranno inserite le traduzioni
         /// </summary>
@@ -123,8 +135,8 @@ namespace CRM.Client.Pages.Tickets
                 {
                     Notify(Localize["Impossibile aprire un ticket: all'utente non è stata assegnato nessuna ditta."], NotificationSeverity.Error);
                 }
-
-                
+                //_pageHeader = HeaderService.Create(ConstHelper.ClientTicketsPath, null, null, true, ConstHelper.ClientTicketsPath, null);
+                _pageHeader = await HeaderService.Create(PageMode);
             }
             catch
             {

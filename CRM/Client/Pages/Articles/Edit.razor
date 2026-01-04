@@ -1,9 +1,11 @@
 ﻿@page "/Articles/Edit"
-@page "/Articles/Edit/{Id:int}"
+@page "/Articles/{Id:int}/Edit"
+@page "/Companies/{IdCompany:int}/Articles/{Id:int}/Edit"
 @using Radzen
 @using Radzen.Blazor
 
-<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog)>@_header</BlazorHeader>
+<PageHeader Model="@_pageHeader">
+</PageHeader>
 
 @if (_article == null)
 {
@@ -11,6 +13,7 @@
 }
 else
 {
+   
     <EditForm Model="@_article" OnValidSubmit="HandleValidSubmitAsync">
         <RadzenRow Gap="1rem" class="mb-3">
             <RadzenColumn Size="12" SizeSM="6">

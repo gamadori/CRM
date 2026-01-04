@@ -5,7 +5,8 @@
         public enum PageModality
         {
             Visualization,           
-            Dialog
+            Dialog,
+            Child
         }
     }
 }

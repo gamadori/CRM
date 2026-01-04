@@ -17,6 +17,7 @@ namespace CRM.Shared
 
         public string Description { get; set; }
 
+
         public bool Property1 { get; set; }
 
         public bool Property2 { get; set; }

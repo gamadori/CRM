@@ -279,8 +279,8 @@
   <data name="Partita IVA" xml:space="preserve">
     <value>Partita IVA</value>
   </data>
-  <data name="Prodotti" xml:space="preserve">
-    <value>Prodotti</value>
+  <data name="Products" xml:space="preserve">
+    <value>Catalogo</value>
   </data>
   <data name="Product data" xml:space="preserve">
     <value>Dati Prodotto</value>
@@ -422,5 +422,47 @@
   </data>
   <data name="TicketManagement" xml:space="preserve">
     <value>Gestione dei Ticket</value>
+  </data>
+  <data name="SettingsListSubTitle" xml:space="preserve">
+    <value>Settaggi dell'applicazione</value>
+  </data>
+  <data name="UtentiListSubTitle" xml:space="preserve">
+    <value>Gestione degli Utenti</value>
+  </data>
+  <data name="ContactsListSubTitle" xml:space="preserve">
+    <value>Gestione dei Contatti</value>
+  </data>
+  <data name="CompaniesDetailsSubTitle" xml:space="preserve">
+    <value>Dati Azienda</value>
+  </data>
+  <data name="CompaniesListSubTitle" xml:space="preserve">
+    <value>Gestione delle Aziende</value>
+  </data>
+  <data name="ArticlesListSubTitle" xml:space="preserve">
+    <value>Lista degli Articoli</value>
+  </data>
+  <data name="ArticlesNewSubTitle" xml:space="preserve">
+    <value>Nuovo Articolo</value>
+  </data>
+  <data name="ArticlesDetailsSubTitle" xml:space="preserve">
+    <value>Dati dell'Articolo</value>
+  </data>
+  <data name="ArticlesEditSubTitle" xml:space="preserve">
+    <value>Modifica Articolo</value>
+  </data>
+  <data name="ProductsListSubTitle" xml:space="preserve">
+    <value>Catalogo dei Prodotti</value>
+  </data>
+  <data name="ProductsDetailsSubTitle" xml:space="preserve">
+    <value>Prodotto</value>
+  </data>
+  <data name="NewItem" xml:space="preserve">
+    <value>Nuovo {0}</value>
+  </data>
+  <data name="EditItem" xml:space="preserve">
+    <value>Modifica {0}</value>
+  </data>
+  <data name="ProductsNewSubTitle" xml:space="preserve">
+    <value>Nuovo Prodotto</value>
   </data>
 </root>

@@ -4,6 +4,7 @@
 @using Radzen
 @using Radzen.Blazor
 @using CRM.Shared.Helper
+@using static CRM.Client.Helpers.PageHelper
 
 @if (_company == null)
 {
@@ -12,9 +13,7 @@
 else
 {
 
-    <PageHeader Title="@_company.RagioneSociale"
-                Subtitle=@Localize["Company"]
-                BreadcrumbItems="@_breadcrumbItems">
+    <PageHeader Model="@_pageHeader">
     </PageHeader>
 
     <RadzenSelectBar @bind-Value="_selectView" TValue="CompanyViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
@@ -47,15 +46,15 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Settings.Users.Index IdCompany="@Id" OnClickEdit="IndexEditUser" OnClickDetails="DetailsUser" BreadCrumbVisible=false></CRM.Client.Pages.Settings.Users.Index>
+            <CRM.Client.Pages.Settings.Users.Index IdCompany="@Id" OnClickEdit="IndexEditUser" OnClickDetails="DetailsUser" PageMode="PageModality.Child"></CRM.Client.Pages.Settings.Users.Index>
         }
         else if (_partialView == PartialViews.Details)
         {
-            <CRM.Client.Pages.Settings.Users.Details Id="@_idUser" CloseForm="UsersCloseForm" OnClickEdit="DetailsEditUser"></CRM.Client.Pages.Settings.Users.Details>
+            <CRM.Client.Pages.Settings.Users.Details Id="@_idUser" CloseForm="UsersCloseForm" OnClickEdit="DetailsEditUser" PageMode="PageModality.Child"></CRM.Client.Pages.Settings.Users.Details>
         }
         else if (_partialView == PartialViews.Edit)
         {
-            <CRM.Client.Pages.Settings.Users.Edit Id="@_idUser" CloseForm="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Settings.Users.Edit>
+            <CRM.Client.Pages.Settings.Users.Edit Id="@_idUser" CloseForm="UsersCloseForm" IdCompany="@Id" PageMode="PageModality.Child"></CRM.Client.Pages.Settings.Users.Edit>
         }
 
 
@@ -64,14 +63,13 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Articles.Index IdCompany="@Id" OnClickEdit="IndexEditProduct" OnClickDetails="DetailsProduct">
+            <CRM.Client.Pages.Articles.Index IdCompany="@Id" OnClickEdit="IndexEditProduct" OnClickDetails="DetailsProduct" PageMode="PageModality.Child">
 
             </CRM.Client.Pages.Articles.Index>
         }
         else if (_partialView == PartialViews.Details)
         {
            <CRM.Client.Pages.Articles.Info Id="@_idProduct.GetValueOrDefault()" OnGotoIndex="IndexTicket"></CRM.Client.Pages.Articles.Info>
-           @*<CRM.Client.Pages.Products.Details Id="@_idProduct.GetValueOrDefault()" OnClickCancel="ProductCloseForm" OnClickEdit="DetailsEditProduct"></CRM.Client.Pages.Products.Details>*@
         }
         else if (_partialView == PartialViews.Edit)
         {
@@ -90,7 +88,6 @@ else
         else if (_partialView == PartialViews.Details)
         {
             <CRM.Client.Pages.Tickets.Info Id="@_idTicket.GetValueOrDefault()" IdCompany="Id" OnGotoIndex="IndexTicket"></CRM.Client.Pages.Tickets.Info>
-           @* <CRM.Client.Pages.Tickets.Details Id="@_idTicket.GetValueOrDefault()" OnClickCancel="TicketCloseForm" OnClickEdit="DetailsEditTicket"></CRM.Client.Pages.Tickets.Details>*@
         }
         else if (_partialView == PartialViews.Edit)
         {
@@ -101,15 +98,15 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Contacts.Index IdCompany="@Id" OnClickDetails="DetailsContact" OnClickEdit="IndexEditContact" OnClickNew="IndexNewContact"></CRM.Client.Pages.Contacts.Index>
+            <CRM.Client.Pages.Contacts.Index IdCompany="@Id" OnClickDetails="DetailsContact" OnClickEdit="IndexEditContact" OnClickNew="IndexNewContact" PageMode="PageModality.Child"></CRM.Client.Pages.Contacts.Index>
         }
         else if (_partialView == PartialViews.Details)
         {
-            <CRM.Client.Pages.Contacts.Details Id="@_idContact.GetValueOrDefault()" OnClickEdit="@(()=>EditContact(_idContact))" OnClickCancel="ContactCloseForm"></CRM.Client.Pages.Contacts.Details>
+            <CRM.Client.Pages.Contacts.Details Id="@_idContact.GetValueOrDefault()" OnClickEdit="@(() => EditContact(_idContact))" OnClickCancel="ContactCloseForm" PageMode="PageModality.Child"></CRM.Client.Pages.Contacts.Details>
         }
         else if (_partialView == PartialViews.Edit)
         {
-            <CRM.Client.Pages.Contacts.Edit Id="@_idContact" IdCompany="@Id" OnClickSave="ContactCloseForm" OnClickCancel="ContactCloseForm"></CRM.Client.Pages.Contacts.Edit>
+            <CRM.Client.Pages.Contacts.Edit Id="@_idContact" IdCompany="@Id" OnClickSave="ContactCloseForm" OnClickCancel="ContactCloseForm" PageMode="PageModality.Child"></CRM.Client.Pages.Contacts.Edit>
         }
     }
     else if (_selectView == CompanyViews.Contracts)

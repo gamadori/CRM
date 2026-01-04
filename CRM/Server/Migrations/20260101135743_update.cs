@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace CRM.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class update : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -25,6 +25,22 @@ namespace CRM.Server.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AccessoryTypes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ArticleDomains",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Code = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SortedOrder = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ArticleDomains", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -433,6 +449,54 @@ namespace CRM.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ArticleEventTypes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DomainId = table.Column<int>(type: "int", nullable: false),
+                    Code = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SetsStateId = table.Column<int>(type: "int", nullable: true),
+                    RequiresOwner = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ArticleEventTypes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ArticleEventTypes_ArticleDomains_DomainId",
+                        column: x => x.DomainId,
+                        principalTable: "ArticleDomains",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ArticleStates",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DomainId = table.Column<int>(type: "int", nullable: false),
+                    Code = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SortOrder = table.Column<int>(type: "int", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    IsTerminal = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ArticleStates", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ArticleStates_ArticleDomains_DomainId",
+                        column: x => x.DomainId,
+                        principalTable: "ArticleDomains",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
@@ -512,7 +576,10 @@ namespace CRM.Server.Migrations
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Mobile = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Phone = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Note = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Note = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    FacebookUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LinkedInUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TwitterUrl = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -816,6 +883,44 @@ namespace CRM.Server.Migrations
                         principalTable: "TicketTypes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ArticleStateTransitions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DomainId = table.Column<int>(type: "int", nullable: false),
+                    FromStateId = table.Column<int>(type: "int", nullable: false),
+                    EventTypeId = table.Column<int>(type: "int", nullable: false),
+                    ToStateId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ArticleStateTransitions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ArticleStateTransitions_ArticleDomains_DomainId",
+                        column: x => x.DomainId,
+                        principalTable: "ArticleDomains",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ArticleStateTransitions_ArticleEventTypes_EventTypeId",
+                        column: x => x.EventTypeId,
+                        principalTable: "ArticleEventTypes",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ArticleStateTransitions_ArticleStates_FromStateId",
+                        column: x => x.FromStateId,
+                        principalTable: "ArticleStates",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ArticleStateTransitions_ArticleStates_ToStateId",
+                        column: x => x.ToStateId,
+                        principalTable: "ArticleStates",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -1241,6 +1346,55 @@ namespace CRM.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ArticleEvents",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ArticleId = table.Column<int>(type: "int", nullable: false),
+                    DomainId = table.Column<int>(type: "int", nullable: false),
+                    EventTypeId = table.Column<int>(type: "int", nullable: false),
+                    FromStateId = table.Column<int>(type: "int", nullable: true),
+                    ToStateId = table.Column<int>(type: "int", nullable: true),
+                    OccurredAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Note = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ActorUserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    NewOwnerId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ArticleEvents", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ArticleEvents_ArticleDomains_DomainId",
+                        column: x => x.DomainId,
+                        principalTable: "ArticleDomains",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ArticleEvents_ArticleEventTypes_EventTypeId",
+                        column: x => x.EventTypeId,
+                        principalTable: "ArticleEventTypes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ArticleEvents_ArticleStates_FromStateId",
+                        column: x => x.FromStateId,
+                        principalTable: "ArticleStates",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ArticleEvents_ArticleStates_ToStateId",
+                        column: x => x.ToStateId,
+                        principalTable: "ArticleStates",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ArticleEvents_Articles_ArticleId",
+                        column: x => x.ArticleId,
+                        principalTable: "Articles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ProductTypeAccessoryLanguages",
                 columns: table => new
                 {
@@ -1416,6 +1570,45 @@ namespace CRM.Server.Migrations
                         name: "FK_BackUpParameters_ProductParameters_IdParameter",
                         column: x => x.IdParameter,
                         principalTable: "ProductParameters",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ArticleDomainStates",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DomainId = table.Column<int>(type: "int", nullable: false),
+                    CurrentStateId = table.Column<int>(type: "int", nullable: false),
+                    LastEventId = table.Column<int>(type: "int", nullable: true),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    RowVer = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true),
+                    ArticleId = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ArticleDomainStates", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ArticleDomainStates_ArticleDomains_DomainId",
+                        column: x => x.DomainId,
+                        principalTable: "ArticleDomains",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ArticleDomainStates_ArticleEvents_LastEventId",
+                        column: x => x.LastEventId,
+                        principalTable: "ArticleEvents",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ArticleDomainStates_ArticleStates_CurrentStateId",
+                        column: x => x.CurrentStateId,
+                        principalTable: "ArticleStates",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ArticleDomainStates_Articles_ArticleId",
+                        column: x => x.ArticleId,
+                        principalTable: "Articles",
                         principalColumn: "Id");
                 });
 
@@ -1679,6 +1872,56 @@ namespace CRM.Server.Migrations
                 column: "IdArticle");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ArticleDomainStates_ArticleId",
+                table: "ArticleDomainStates",
+                column: "ArticleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleDomainStates_CurrentStateId",
+                table: "ArticleDomainStates",
+                column: "CurrentStateId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleDomainStates_DomainId",
+                table: "ArticleDomainStates",
+                column: "DomainId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleDomainStates_LastEventId",
+                table: "ArticleDomainStates",
+                column: "LastEventId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleEvents_ArticleId",
+                table: "ArticleEvents",
+                column: "ArticleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleEvents_DomainId",
+                table: "ArticleEvents",
+                column: "DomainId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleEvents_EventTypeId",
+                table: "ArticleEvents",
+                column: "EventTypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleEvents_FromStateId",
+                table: "ArticleEvents",
+                column: "FromStateId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleEvents_ToStateId",
+                table: "ArticleEvents",
+                column: "ToStateId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleEventTypes_DomainId",
+                table: "ArticleEventTypes",
+                column: "DomainId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Articles_IdCompany",
                 table: "Articles",
                 column: "IdCompany");
@@ -1687,6 +1930,31 @@ namespace CRM.Server.Migrations
                 name: "IX_Articles_IdProduct",
                 table: "Articles",
                 column: "IdProduct");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleStates_DomainId",
+                table: "ArticleStates",
+                column: "DomainId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleStateTransitions_DomainId",
+                table: "ArticleStateTransitions",
+                column: "DomainId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleStateTransitions_EventTypeId",
+                table: "ArticleStateTransitions",
+                column: "EventTypeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleStateTransitions_FromStateId",
+                table: "ArticleStateTransitions",
+                column: "FromStateId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ArticleStateTransitions_ToStateId",
+                table: "ArticleStateTransitions",
+                column: "ToStateId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -2090,6 +2358,12 @@ namespace CRM.Server.Migrations
                 name: "ArticleAccessory");
 
             migrationBuilder.DropTable(
+                name: "ArticleDomainStates");
+
+            migrationBuilder.DropTable(
+                name: "ArticleStateTransitions");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
             migrationBuilder.DropTable(
@@ -2201,6 +2475,9 @@ namespace CRM.Server.Migrations
                 name: "Accessories");
 
             migrationBuilder.DropTable(
+                name: "ArticleEvents");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
@@ -2237,10 +2514,19 @@ namespace CRM.Server.Migrations
                 name: "Languages");
 
             migrationBuilder.DropTable(
+                name: "ArticleEventTypes");
+
+            migrationBuilder.DropTable(
+                name: "ArticleStates");
+
+            migrationBuilder.DropTable(
                 name: "AccessoryTypes");
 
             migrationBuilder.DropTable(
                 name: "Tickets");
+
+            migrationBuilder.DropTable(
+                name: "ArticleDomains");
 
             migrationBuilder.DropTable(
                 name: "Articles");

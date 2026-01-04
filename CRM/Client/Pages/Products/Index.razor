@@ -10,9 +10,7 @@
     @if (IdParent == null)
     {
         <PageHeader 
-            Title="@Localize["Catalogo Prodotti"]"
-            Subtitle="Gestisci il catalogo prodotti"
-            BreadcrumbItems="@_breadcrumbItems">
+            Model=@_pageHeader>
         </PageHeader>
     }
     <!-- Products Grid -->

@@ -1,10 +1,12 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Radzen;
+using Syncfusion.Blazor.Grids;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,7 +31,7 @@ namespace CRM.Client.Pages.Companies
         ICompaniesService companiesService { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
 
         [Inject]
         NavigationManager NavigationManager { get; set; }
@@ -66,7 +68,7 @@ namespace CRM.Client.Pages.Companies
 
         private Company _company = null;
 
-        private List<BreadcrumbItem> _breadcrumbItems = new();
+        private PageHeaderModel _pageHeader;
 
         private bool _fromDetails = false;
         protected override async Task OnInitializedAsync()
@@ -78,7 +80,7 @@ namespace CRM.Client.Pages.Companies
             }
             await LoadCompany();
             
-
+            _pageHeader = _pageHeader = await HeaderService.Create();  //HeaderService.Create(ConstHelper.ClientCompaniesPath, Id, _company?.RagioneSociale, false, ConstHelper.ClientCompaniesPath);
 
         }
 
@@ -86,7 +88,7 @@ namespace CRM.Client.Pages.Companies
         {
             _company = await companiesService.GetItem<Company, int>(Id, ConstHelper.CompaniesPath);
 
-            _breadcrumbItems = BreadCrumbService.Companies(_company.Id, _company.RagioneSociale);
+            
 
             
 
@@ -189,7 +191,7 @@ namespace CRM.Client.Pages.Companies
 
         private void DetailsProduct(int id)
         {
-            NavigationManager.NavigateTo($"/Articles/{id}/company");
+            NavigationManager.NavigateTo($"/Companies/{Id}/Articles/{id}");
 
             /*selectView = CompanyViews.Products;
             _partialView = PartialViews.Details;

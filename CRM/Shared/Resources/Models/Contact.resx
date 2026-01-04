@@ -123,6 +123,18 @@
   <data name="Email" xml:space="preserve">
     <value>Email</value>
   </data>
+  <data name="Facebook" xml:space="preserve">
+    <value>Facebook</value>
+  </data>
+  <data name="FacebookUrl" xml:space="preserve">
+    <value>Facebook Url</value>
+  </data>
+  <data name="LinkedIn" xml:space="preserve">
+    <value>LinkedIn</value>
+  </data>
+  <data name="LinkedInUrl" xml:space="preserve">
+    <value>LinkedIn Url</value>
+  </data>
   <data name="Mobile" xml:space="preserve">
     <value>Mobile</value>
   </data>
@@ -140,5 +152,11 @@
   </data>
   <data name="Surname" xml:space="preserve">
     <value>Surname</value>
+  </data>
+  <data name="Twitter" xml:space="preserve">
+    <value>Twitter</value>
+  </data>
+  <data name="TwitterUrl" xml:space="preserve">
+    <value>Twitter Url</value>
   </data>
 </root>

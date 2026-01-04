@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +14,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Settings.Users
 {
@@ -32,11 +34,15 @@ namespace CRM.Client.Pages.Settings.Users
         IAGRestClientService RestClientService { get; set; }
         
         [Inject]
-        private IJSRuntime JSRuntime { get; set; }
+        IJSRuntime JSRuntime { get; set; }
+
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         [Inject]
         private IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
+        
         [Parameter]
         public string Id { get; set; }
 
@@ -46,7 +52,10 @@ namespace CRM.Client.Pages.Settings.Users
         [Parameter]
         public Action<string> OnClickEdit { get; set; }
 
-        
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
+
+
         private Func<Task> ConfirmUser { get; set; }
 
 
@@ -60,7 +69,9 @@ namespace CRM.Client.Pages.Settings.Users
 
         private string _message;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+       
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected override async Task OnInitializedAsync()
         {
             string path;
@@ -83,11 +94,9 @@ namespace CRM.Client.Pages.Settings.Users
 
                 await LoadCompany();
 
-
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "Settings" });
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Utenti"], Url = "Settings/Users" });
-                _bread.Add(new BreadcrumbModel() { Title = _user.UserName, Url = null });
-
+               
+                //_pageHeader = HeaderService.Create("Users", Id, _user?.UserName, false, ConstHelper.ClientUsersPath, null, PageMode);
+                _pageHeader = await HeaderService.Create(PageMode);
             }
             catch (Exception ex)
             {

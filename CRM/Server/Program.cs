@@ -167,6 +167,12 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
+// Seed database (roles, default data, admin user)
+using (var scopeSeed = app.Services.CreateScope())
+{
+    // run seeding synchronously to avoid changing method signature
+   // CRM.Server.Data.DbInitializer.SeedAsync(scopeSeed.ServiceProvider).GetAwaiter().GetResult();
+}
 
 app.UseResponseCompression();
 

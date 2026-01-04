@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +14,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Products
 {
@@ -32,6 +34,9 @@ namespace CRM.Client.Pages.Products
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int? Id { get; set; }
 
@@ -44,13 +49,16 @@ namespace CRM.Client.Pages.Products
         [Parameter]
         public Action OnClickCancel { get; set; }
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
+
         private Product _product = null;
 
         private List<ProductType> _productTypes;
 
         private string _messageState = "";
 
-        private string _header = "Tipo Prodotto";
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
@@ -62,15 +70,17 @@ namespace CRM.Client.Pages.Products
                 if (Id != null)
                 {
 
-                    _header = Localize["Modifica Prodotto"];
+                    
                     _product = await RestClientService.GetItem<Product, int>(Id.Value, ConstHelper.Products); // await Service.Get(Id.Value);
                 }
                 else
                 {
-                    _header = Localize["Nuovo Prodotto"];
+                    
                     _product = new Product();
                 }
 
+                //_pageHeader = HeaderService.Create("Products", Id, _product?.Name, true, ConstHelper.ClientProductsPath, null, PageMode);
+                _pageHeader = await HeaderService.Create(PageMode);
             }
             catch (Exception ex)
             {

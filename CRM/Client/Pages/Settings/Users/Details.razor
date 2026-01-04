@@ -3,10 +3,10 @@
 @using Radzen
 @using Radzen.Blazor
 
-<BlazorHeader Header="@Localize["Dettagli Utente"]"></BlazorHeader>
 
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
-
+    <PageHeader 
+        Model="@_pageHeader" />
+  
 @if (_user == null)
 {
     <Waiting></Waiting>

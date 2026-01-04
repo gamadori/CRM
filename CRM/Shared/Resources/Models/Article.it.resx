@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="CommercialState" xml:space="preserve">
+    <value>Stato Commerciale</value>
+  </data>
   <data name="DeliveryDate" xml:space="preserve">
     <value>Data di Consegna</value>
   </data>
@@ -129,8 +132,14 @@
   <data name="IdProduct" xml:space="preserve">
     <value>Prodotto</value>
   </data>
+  <data name="LogisticState" xml:space="preserve">
+    <value>Stato della Logistica</value>
+  </data>
   <data name="Name" xml:space="preserve">
     <value>Nome</value>
+  </data>
+  <data name="ProductionState" xml:space="preserve">
+    <value>Stato della produzione</value>
   </data>
   <data name="Property1" xml:space="preserve">
     <value>Dimensione Lama</value>
@@ -140,6 +149,9 @@
   </data>
   <data name="SerialNumber" xml:space="preserve">
     <value>Matricola</value>
+  </data>
+  <data name="StatoAttuale" xml:space="preserve">
+    <value>Stato Attuale</value>
   </data>
   <data name="TestDate" xml:space="preserve">
     <value>Data di Test</value>

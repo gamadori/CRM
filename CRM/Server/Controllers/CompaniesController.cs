@@ -16,6 +16,7 @@ using CRM.Server.Helpers;
 using Microsoft.Extensions.Primitives;
 using CNM.Authorize;
 using CRM.Client.Shared;
+using CRM.Shared.DTOs;
 
 
 
@@ -89,7 +90,7 @@ namespace CRM.Server.Controllers
         }
 
         [HttpGet("items")]
-        public async Task<IEnumerable<CompanyItem?>> GetitemsCompany([FromQuery] CompanyFilter? args = null)
+        public async Task<IEnumerable<CompanyDTO?>> GetitemsCompany([FromQuery] CompanyFilter? args = null)
         {
             try
             {
@@ -99,19 +100,21 @@ namespace CRM.Server.Controllers
 
                 if (companies == null)
                 {
-                    return Enumerable.Empty<CompanyItem>();
+                    return Enumerable.Empty<CompanyDTO>();
                 }
 
-                var items = companies.Select(x => new CompanyItem() { Id = x.Id, RagioneSociale = x.RagioneSociale });
+                var items = companies.Select(x => new CompanyDTO() { Id = x.Id, RagioneSociale = x.RagioneSociale });
                 
                 return await items.ToListAsync();
             }
             catch (Exception ex)
             {
                 await _logEventService.RegisterAsync(nameof(CompaniesController), nameof(GetCompany), LogEvent.EventsTypes.Error, ex);
-                return Enumerable.Empty<CompanyItem>();
+                return Enumerable.Empty<CompanyDTO>();
             }
         }
+
+       
 
         // GET: api/Companies/5
         [HttpGet("{id}")]

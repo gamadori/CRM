@@ -1,6 +1,9 @@
 ﻿@page "/Contacts/Edit"
 @page "/Contacts/Edit/{Id:int}"
-<BlazorHeader>@_header</BlazorHeader>
+
+
+<PageHeader Model="@_pageHeader">
+</PageHeader>
 
 @if (_contact == null)
 {
@@ -8,63 +11,96 @@
 }
 else
 {
-    @using Radzen
-    @using Radzen.Blazor
-
     <EditForm Model="@_contact" OnValidSubmit="HandleValidSubmit">
         <DataAnnotationsValidator />
         <ValidationSummary />
-        <div class="containerleft">
-            <div class="row">
-                <div class="col-md-6 mb-3">            
-                    <DisplayName For="@(()=>_contact.Surname)" />
-                    <input class="form-control" @bind-value="@_contact.Surname" />
-                    <ValidationMessage For="@(() => _contact.Surname)" />
-                </div>
-                <div class="col-md-6 mb-3">
-                    <DisplayName For="@(()=>_contact.Name)" />
-                    <input id="Descrizione" class="form-control" @bind-value="@_contact.Name"  />
-                    <ValidationMessage For="@(() => _contact.Name)" />
-                </div>
-                <div class="col-md-6 mb-3">
-                    <DisplayName For="@(()=>_contact.IdCompany)" />
-                    <div class="input-group mb-3">
-                        <RadzenDropDownDataGrid @ref="_ddCompany" class="form-control" @bind-value="@_contact.IdCompany" TValue="int?" AllowFiltering="true"
-                                                AllowClear="true" PageSize="@ConstHelper.PageSize"
-                                                Data="@_companies" Count="@_companiesCount" TextProperty="RagioneSociale" ValueProperty="Id" 
-                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" 
-                                                Disabled="@(IdCompany != null)"  />
-                        <BtnCompanies OnGetCompany="OnGetCompany"></BtnCompanies>
-                    </div>
-                    <ValidationMessage For="@(() => _contact.IdCompany)" />
-                </div>
-                <div class="col-md-6 mb-3">
-                    <DisplayName For="@(()=>_contact.Mobile)" />
-                    <input id="Descrizione" class="form-control" @bind-value="@_contact.Mobile" />
-                    <ValidationMessage For="@(() => _contact.Mobile)" />
-                </div>
-                <div class="col-md-6 mb-3">
-                    <DisplayName For="@(()=>_contact.Phone)" />
-                    <input id="Descrizione" class="form-control" @bind-value="@_contact.Phone" />
-                    <ValidationMessage For="@(() => _contact.Phone)" />
-                </div>
+         <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeSM="6">
+                <RadzenStack>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <RadzenRow>
+                        <RadzenColumn Size="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_contact.Name" For="@(() => _contact.Name)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_contact.Surname" For="@(() => _contact.Surname)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGDropDown TItem="Company" TValue="int?" ValueProperty="Id" TextProperty="@nameof(Company.RagioneSociale)" @bind-Value="@_contact.IdCompany" 
+                                For="@(() => _contact.IdCompany)"
+                                              Data="_companies" AllowFiltering="true">
+                                    <End>
+                                        <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetCompany DialogType="RedGDialog.DialogType.Companies"></RedGButtonDialog>
+                                    </End>
+                                </RedGDropDown>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+           
+                    <RadzenRow>
+                        <RadzenColumn Size="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_contact.Mobile" For="@(() => _contact.Mobile)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_contact.Phone" For="@(() => _contact.Phone)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_contact.Email" For="@(() => _contact.Email)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                        
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGTextArea @bind-Value="@_contact.Note" For="@(() => _contact.Note)" Rows="3" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <!-- Social Links -->
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_contact.FacebookUrl" For="@(() => _contact.FacebookUrl)" Placeholder="Facebook URL" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_contact.LinkedInUrl" For="@(() => _contact.LinkedInUrl)" Placeholder="LinkedIn URL" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_contact.TwitterUrl" For="@(() => _contact.TwitterUrl)" Placeholder="Twitter URL" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
 
-                <div class="col-md-6 mb-3">
-                    <DisplayName For="@(()=>_contact.Email)" />
-                    <input class="form-control" @bind-value="@_contact.Email" />
-                    <ValidationMessage For="@(() => _contact.Email)" />
-                </div>
-                <div class="col-md-12 mb-3">
-                    <DisplayName For="@(()=>_contact.Note)" />
-                    <RadzenTextArea Rows="5" class="form-control" @bind-value="@_contact.Note" />
-                    <ValidationMessage For="@(() => _contact.Note)" />
-                </div>
-            </div>
-        </div>
 
-
-        <BlazorButton Template="TemplateButton.Submit" Type="BtnType.Submit" Style="BtnStyle.Primary" Label=true></BlazorButton>
-        <BlazorButton Template="TemplateButton.Cancel" Style="BtnStyle.Secondary" OnClick="Annulla"  Label=true></BlazorButton>
+        <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" />
+        <RedGButton RGButtonType="RGButtonType.Submit" />
 
     </EditForm>
 }

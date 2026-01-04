@@ -1,6 +1,8 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -47,6 +49,9 @@ namespace CRM.Client.Pages.Companies
         [Inject]
         IUserService UserService { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [CascadingParameter]
         private Task<AuthenticationState>? authenticationState { get; set; }
 
@@ -76,7 +81,7 @@ namespace CRM.Client.Pages.Companies
 
         private List<EnumField> _companyTypesFields;
 
-        private List<CompanyItem> _companies;
+        private List<CompanyDTO> _companies;
 
         private Company? _userCompany;
 
@@ -84,6 +89,7 @@ namespace CRM.Client.Pages.Companies
 
         private bool _resellerDisabled = true;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
         protected override async Task OnInitializedAsync()
         {
             string path;
@@ -113,7 +119,9 @@ namespace CRM.Client.Pages.Companies
                         _company.IdReseller = _userCompany.Id;
                     }
                 }
-                                DisplayComponent();
+                //_pageHeader = HeaderService.Create("Companies", Id, _company?.RagioneSociale, true, ConstHelper.ClientCompaniesPath);
+                _pageHeader = await HeaderService.Create(PageMode);
+                DisplayComponent();
                
             }
             catch (Exception ex)
@@ -197,7 +205,7 @@ namespace CRM.Client.Pages.Companies
             {
                 data.RagioneSociale = args.Filter;
             }
-            var resp = await _companiesService.GetListPag<CompanyFilter, CompanyItem>(data, ConstHelper.CompaniesPath); 
+            var resp = await _companiesService.GetListPag<CompanyFilter, CompanyDTO>(data, ConstHelper.CompaniesPath); 
 
             _companies = resp?.Items;
 

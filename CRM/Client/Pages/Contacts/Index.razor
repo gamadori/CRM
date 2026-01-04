@@ -10,9 +10,7 @@
 @if (IdCompany == null)
 {
 
-    <PageHeader Title="@Localize["Contacts"]"
-                Subtitle="@Localize["Gestisci i contatti"]"
-                BreadcrumbItems="@_breadcrumbItems">
+    <PageHeader Model="@_pageHeader">
     </PageHeader>
 }
 
@@ -39,17 +37,12 @@
                     <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OnClickName(item.Id)">@item.NameComplete</a>
                 </Template>
             </RadzenDataGridColumn>
-           @* <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Surname)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Surname), typeof(Contact))  />
-            <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Name)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Name), typeof(Contact)) />*@
             <RadzenDataGridColumn TItem="Contact" Property="Company.RagioneSociale" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.IdCompany), typeof(Contact)) />
             <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Mobile)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Mobile), typeof(Contact)) />
             <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Phone)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Phone), typeof(Contact)) />
             <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Email)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Email), typeof(Contact)) />
 
-            <RadzenDataGridColumn TItem="Article" Property="Product.Name" Title="Prodotto" />
-            <RadzenDataGridColumn TItem="Article" Property="Company.RagioneSociale" Title="Ragione Sociale"/>
-
-            <RadzenDataGridColumn TItem="Article" Property="Year" Title="Anno"/>
+           
 
             @if (PageMode == PageHelper.PageModality.Visualization)
             {

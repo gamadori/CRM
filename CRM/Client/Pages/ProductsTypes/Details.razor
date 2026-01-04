@@ -1,9 +1,10 @@
 ﻿@page "/Settings/ProductsTypes/Details/{Id:int}"
 
 
-<BlazorHeader Header="@Localize["Tipo Prodotto"]" />
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
-
+<PageHeader Title="@Localize["Tipi Prodotti"]"
+            Subtitle="@_subTitle"
+            BreadcrumbItems="@_bread">
+</PageHeader>
 @if (_productType == null)
 {
     <Waiting></Waiting>
@@ -22,14 +23,13 @@ else
                 <LabelContent><DisplayName For="@(() => _productType.Description)" /></LabelContent>
                 <ChildContent><p class="mb-0 text-dark">@_productType.Description</p></ChildContent>
             </RedGDetailField>
-
         </div>
 
         <!-- Footer con azioni -->
         <div class="card-footer bg-light border-top py-3">
             <div class="d-flex gap-2">
-                <BlazorLink Href="/Settings/ProductsTypes" Template="TemplateButton.Back" Text="@Localize["Lista Tipo Prodotti"]" />
-                <BlazorButton OnClick="EditProductType" Template="TemplateButton.Edit" Text="@Localize["Edit"]" Label="true" />
+                <RedGButton RGButtonType=RGButtonType.Cancel Click="Annulla"  Text="@Localize["Lista Tipo Prodotti"]" />
+                <RedGButton RGButtonType=RGButtonType.Edit AutoLabel=true Click="EditProductType"  />
             </div>
         </div>
     </div>

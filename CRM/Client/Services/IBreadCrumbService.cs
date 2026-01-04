@@ -44,8 +44,9 @@ namespace CRM.Client.Services
 
         public List<BreadcrumbItem> Companies(int? id = null, string? name = null);
 
-        List<BreadcrumbItem> Contacts(int? id = null, string name = null);
+        List<BreadcrumbItem> Contacts(int? id = null, string name = null, bool edit = false);
 
-        Task<List<BreadcrumbModel>> Articles(string name = null, bool link = false);
+       
+       
     }
 }

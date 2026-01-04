@@ -1,0 +1,131 @@
+@using CRM.Shared
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<div class="article-state-manager">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Gestione Stati</h4>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshData">
+            <i class="bi bi-arrow-clockwise"></i> Aggiorna
+        </button>
+    </div>
+    
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Caricamento...</span>
+            </div>
+        </div>
+    }
+    else if (AvailableDomains == null || !AvailableDomains.Any())
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> Nessun dominio configurato
+        </div>
+    }
+    else
+    {
+        <div class="domains-grid">
+            @foreach (var domain in AvailableDomains.OrderBy(d => d.SortedOrder))
+            {
+                var domainState = DomainStates?.FirstOrDefault(ds => ds.DomainId == domain.Id);
+                <ArticleDomainCard 
+                    Domain="@domain"
+                    DomainState="@domainState"
+                    ArticleId="@ArticleId"
+                    OnStateChanged="@HandleStateChanged" />
+            }
+        </div>
+        
+        <div class="state-history mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Storico Eventi</h5>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-secondary @(ShowAllEvents ? "" : "active")" 
+                            @onclick="() => ShowAllEvents = false">
+                        Ultimi 10
+                    </button>
+                    <button class="btn btn-outline-secondary @(ShowAllEvents ? "active" : "")" 
+                            @onclick="() => ShowAllEvents = true">
+                        Tutti
+                    </button>
+                </div>
+            </div>
+            <ArticleEventTimeline 
+                ArticleId="@ArticleId"
+                Events="@GetFilteredEvents()" />
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int ArticleId { get; set; }
+    
+    [Parameter]
+    public EventCallback OnDataChanged { get; set; }
+    
+    private List<ArticleDomain> AvailableDomains { get; set; }
+    private List<ArticleDomainState> DomainStates { get; set; }
+    private List<ArticleEvent> RecentEvents { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool ShowAllEvents { get; set; } = false;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ArticleId > 0)
+        {
+            await LoadData();
+        }
+    }
+    
+    private async Task LoadData()
+    {
+        IsLoading = true;
+        try
+        {
+            var domainsTask = Http.GetFromJsonAsync<List<ArticleDomain>>("api/ArticleDomains");
+            var statesTask = Http.GetFromJsonAsync<List<ArticleDomainState>>($"api/Articles/{ArticleId}/DomainStates");
+            var eventsTask = Http.GetFromJsonAsync<List<ArticleEvent>>($"api/Articles/{ArticleId}/Events");
+            
+            await Task.WhenAll(domainsTask, statesTask, eventsTask);
+            
+            AvailableDomains = await domainsTask;
+            DomainStates = await statesTask;
+            RecentEvents = await eventsTask;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore caricamento stati: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+    
+    private async Task RefreshData()
+    {
+        await LoadData();
+        StateHasChanged();
+    }
+    
+    private async Task HandleStateChanged()
+    {
+        await LoadData();
+        await OnDataChanged.InvokeAsync();
+        StateHasChanged();
+    }
+    
+    private List<ArticleEvent> GetFilteredEvents()
+    {
+        if (RecentEvents == null) return new();
+        return ShowAllEvents ? RecentEvents : RecentEvents.Take(10).ToList();
+    }
+}

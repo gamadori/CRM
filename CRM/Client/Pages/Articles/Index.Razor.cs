@@ -1,5 +1,6 @@
 ﻿using BlazoringComponents;
 using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Client.Shared;
 using CRM.Shared;
@@ -47,7 +48,7 @@ namespace CRM.Client.Pages.Articles
         IJSRuntime JsRuntime { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int? IdCompany { get; set; }
@@ -122,7 +123,8 @@ namespace CRM.Client.Pages.Articles
 
         private bool _isResponsable = false;
 
-        private List<BreadcrumbItem> _breadcrumbItems = new();
+       private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected override async Task OnInitializedAsync()
         {
 
@@ -141,8 +143,8 @@ namespace CRM.Client.Pages.Articles
 
             await LoadData();
 
-            _breadcrumbItems.Add(new BreadcrumbItem(Localize["Articles"], "/Articles"));
-
+            //_pageHeader = HeaderService.Create("Articles", null, null, false, ConstHelper.ClientArticlesPath, null, PageMode);
+            _pageHeader = await HeaderService.Create(PageMode);
         }
 
         public async Task LoadData(LoadDataArgs args = null)
@@ -248,7 +250,7 @@ namespace CRM.Client.Pages.Articles
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientArticlesPath}/Edit/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientArticlesPath}/{id}/Edit");
         }
         protected void Cancel()
         {

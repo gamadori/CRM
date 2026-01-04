@@ -1,22 +1,25 @@
-﻿using CRM.Client.Helpers;
+﻿using BlazoringComponents;
+using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
+using CRM.Client.Shared;
 using CRM.Shared;
+using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
+using Radzen;
+using Radzen.Blazor;
+using Syncfusion.Blazor.Grids;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using BlazoringComponents;
-using CRM.Shared.Helper;
-using Microsoft.Extensions.Localization;
-using Radzen.Blazor;
-using Radzen;
-using CRM.Client.Shared;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Products
 {
@@ -47,6 +50,9 @@ namespace CRM.Client.Pages.Products
         [Inject]
         DialogService DialogService { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int? IdParent { get; set; } = null;
 
@@ -72,6 +78,8 @@ namespace CRM.Client.Pages.Products
         [Parameter]
         public bool CmdDelete { get; set; } = true;
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         private IQueryable<Product> _products = null;
 
@@ -93,7 +101,7 @@ namespace CRM.Client.Pages.Products
 
         private int _productPageSize = 10;
 
-        private List<BreadcrumbItem> _breadcrumbItems = new();
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
@@ -101,8 +109,11 @@ namespace CRM.Client.Pages.Products
             navMenuService.CallRequestRefresh();
             await LoadData();
 
-            _breadcrumbItems.Add(new BreadcrumbItem(Localize["Catalogo"], "/Products"));
-    
+            //_pageHeader = HeaderService.Create("Products", null, null, false, ConstHelper.ClientProductsPath, null);
+            _pageHeader = await HeaderService.Create(PageMode);
+
+
+
         }
 
         public async Task LoadData(LoadDataArgs args = null)

@@ -1,5 +1,7 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
+using CRM.Client.Shared;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -36,16 +38,16 @@ namespace CRM.Client.Pages.ProductParameters
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
-        DialogService DialogService { get; set; }   
+        DialogService DialogService { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int? Id { get; set; }
 
         [Parameter]
         public int? IdProduct { get; set; }
-
-       
         
         [Parameter]
         public Action OnClickSave { get; set; }
@@ -66,7 +68,7 @@ namespace CRM.Client.Pages.ProductParameters
 
         private bool _lockProduct = false;
 
-      
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
@@ -93,7 +95,8 @@ namespace CRM.Client.Pages.ProductParameters
                     }
                 }
 
-               
+                //_pageHeader = HeaderService.Create(ConstHelper.ClientProductParametersPath, Id, _item.Name, true);
+                _pageHeader = await HeaderService.Create(PageMode);
 
                 StateHasChanged();
             }

@@ -127,8 +127,8 @@
                     <RedGButton RGButtonType="RGButtonType.Back" Click="Annulla" Text="Allegati" />
                     @if (!ReadOnly)
                     {
-                        <RedGButton RGButtonType="RGButtonType.Edit" Click="EditAttachment" Text="Modifica" />
-                        <RedGButton RGButtonType="RGButtonType.New" Click="AddFile" Text="Aggiungi File"></RedGButton>
+                        <RedGButton RGButtonType="RGButtonType.Edit" Click="EditAttachment"AutoLabel />
+                        <RedGButton RGButtonType="RGButtonType.New" Click="AddFile" Text=@Localize["Aggiungi File"]></RedGButton>
                     }
                 </div>
             </div>

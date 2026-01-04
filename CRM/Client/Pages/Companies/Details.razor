@@ -144,7 +144,7 @@ else
                 <RedGButton RGButtonType="RGButtonType.Back" Click="@(() => NavigationManager.NavigateTo("/Companies"))" Text="@Localize["Companies"]" />
                 <AuthorizeView Policy="@ePolicy.SuperUserRole.ToString()">
                     <Authorized Context="AuthorizeRole">
-                        <RedGButton RGButtonType="RGButtonType.Edit" Click="EditCompany" Text="@Localize["Modifica"]"></RedGButton>
+                        <RedGButton RGButtonType="RGButtonType.Edit" Click="EditCompany" AutoLabel=true ></RedGButton>
                     </Authorized>
                 </AuthorizeView>
             </div>

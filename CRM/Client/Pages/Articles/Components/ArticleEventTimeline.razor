@@ -1,0 +1,306 @@
+@using CRM.Shared
+@inject HttpClient Http
+
+<div class="article-event-timeline">
+    <!-- Filtri -->
+    <div class="timeline-filters mb-3">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <select class="form-select form-select-sm" @bind="SelectedDomainId">
+                    <option value="0">Tutti i domini</option>
+                    @foreach (var domain in AvailableDomains)
+                    {
+                        <option value="@domain.Id">@domain.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select form-select-sm" @bind="SortOrder">
+                    <option value="desc">Più recenti prima</option>
+                    <option value="asc">Più vecchi prima</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" placeholder="Cerca nelle note..." 
+                           @bind="SearchText" @bind:event="oninput" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    @if (FilteredEvents == null || !FilteredEvents.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nessun evento trovato per i criteri selezionati
+        </div>
+    }
+    else
+    {
+        <div class="timeline">
+            @foreach (var evt in FilteredEvents)
+            {
+                <div class="timeline-item @GetDomainClass(evt.DomainId)" @onclick="() => ToggleEventDetails(evt.Id)">
+                    <div class="timeline-marker bg-@GetEventColor(evt)">
+                        <i class="@GetEventIcon(evt)"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong class="event-name">@evt.EventType?.Name</strong>
+                                    <span class="badge bg-@GetDomainColor(evt.DomainId) ms-2">
+                                        @evt.Domain?.Name
+                                    </span>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted d-block">
+                                        @evt.OccurredAt.ToString("dd/MM/yyyy")
+                                    </small>
+                                    <small class="text-muted">
+                                        @evt.OccurredAt.ToString("HH:mm")
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        @if (evt.FromState != null || evt.ToState != null)
+                        {
+                            <div class="state-transition mt-2">
+                                @if (evt.FromState != null)
+                                {
+                                    <span class="badge bg-secondary">@evt.FromState.Name</span>
+                                    <i class="bi bi-arrow-right mx-1"></i>
+                                }
+                                @if (evt.ToState != null)
+                                {
+                                    <span class="badge bg-primary">@evt.ToState.Name</span>
+                                }
+                            </div>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(evt.Note))
+                        {
+                            <p class="event-note mt-2 mb-0">
+                                <i class="bi bi-card-text text-muted"></i> @evt.Note
+                            </p>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(evt.ActorUserId))
+                        {
+                            <div class="event-actor mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-person"></i> @evt.ActorUserId
+                                </small>
+                            </div>
+                        }
+                        
+                        @if (evt.NewOwnerId.HasValue)
+                        {
+                            <div class="event-owner mt-1">
+                                <small class="text-muted">
+                                    <i class="bi bi-building"></i> Cliente ID: @evt.NewOwnerId
+                                </small>
+                            </div>
+                        }
+                        
+                        <!-- Dettagli espandibili -->
+                        @if (ExpandedEventId == evt.Id)
+                        {
+                            <div class="event-details mt-3 pt-3 border-top">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block">ID Evento</small>
+                                        <strong>#@evt.Id</strong>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block">Tipo Evento</small>
+                                        <strong>@evt.EventType?.Code</strong>
+                                    </div>
+                                    @if (evt.FromStateId.HasValue)
+                                    {
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Da Stato ID</small>
+                                            <strong>@evt.FromStateId</strong>
+                                        </div>
+                                    }
+                                    @if (evt.ToStateId.HasValue)
+                                    {
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">A Stato ID</small>
+                                            <strong>@evt.ToStateId</strong>
+                                        </div>
+                                    }
+                                </div>
+                                
+                                <!-- Pulsante per allegati (placeholder per futura implementazione) -->
+                                <button class="btn btn-sm btn-outline-secondary mt-2">
+                                    <i class="bi bi-paperclip"></i> Visualizza allegati
+                                </button>
+                            </div>
+                        }
+                        
+                        <!-- Indicatore cliccabile -->
+                        <div class="expand-indicator mt-2">
+                            <small class="text-primary">
+                                <i class="bi bi-chevron-@(ExpandedEventId == evt.Id ? "up" : "down")"></i>
+                                @(ExpandedEventId == evt.Id ? "Nascondi" : "Mostra") dettagli
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        
+        <!-- Statistiche -->
+        <div class="timeline-stats mt-4 p-3 bg-light rounded">
+            <div class="row text-center">
+                <div class="col-3">
+                    <strong class="d-block h4 mb-0">@FilteredEvents.Count()</strong>
+                    <small class="text-muted">Eventi totali</small>
+                </div>
+                <div class="col-3">
+                    <strong class="d-block h4 mb-0">@FilteredEvents.Select(e => e.DomainId).Distinct().Count()</strong>
+                    <small class="text-muted">Domini</small>
+                </div>
+                <div class="col-3">
+                    <strong class="d-block h4 mb-0">@FilteredEvents.Select(e => e.ActorUserId).Distinct().Count()</strong>
+                    <small class="text-muted">Utenti</small>
+                </div>
+                <div class="col-3">
+                    <strong class="d-block h4 mb-0">@GetDaysSinceFirstEvent()</strong>
+                    <small class="text-muted">Giorni storia</small>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int ArticleId { get; set; }
+    
+    [Parameter]
+    public List<ArticleEvent> Events { get; set; }
+    
+    private List<ArticleDomain> AvailableDomains { get; set; } = new();
+    private int SelectedDomainId { get; set; } = 0;
+    private string SortOrder { get; set; } = "desc";
+    private string SearchText { get; set; } = "";
+    private int? ExpandedEventId { get; set; }
+    
+    private List<ArticleEvent> FilteredEvents => GetFilteredAndSortedEvents();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        if (Events?.Any() == true)
+        {
+            // Estrai domini unici dagli eventi
+            var domainIds = Events.Where(e => e.Domain != null)
+                                 .Select(e => e.Domain)
+                                 .DistinctBy(d => d.Id)
+                                 .OrderBy(d => d.SortedOrder)
+                                 .ToList();
+            AvailableDomains = domainIds;
+        }
+    }
+    
+    private List<ArticleEvent> GetFilteredAndSortedEvents()
+    {
+        if (Events == null) return new();
+        
+        var filtered = Events.AsEnumerable();
+        
+        // Filtra per dominio
+        if (SelectedDomainId > 0)
+        {
+            filtered = filtered.Where(e => e.DomainId == SelectedDomainId);
+        }
+        
+        // Filtra per testo
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var search = SearchText.ToLower();
+            filtered = filtered.Where(e => 
+                (e.Note?.ToLower().Contains(search) ?? false) ||
+                (e.EventType?.Name?.ToLower().Contains(search) ?? false) ||
+                (e.Domain?.Name?.ToLower().Contains(search) ?? false)
+            );
+        }
+        
+        // Ordina
+        filtered = SortOrder == "desc" 
+            ? filtered.OrderByDescending(e => e.OccurredAt)
+            : filtered.OrderBy(e => e.OccurredAt);
+        
+        return filtered.ToList();
+    }
+    
+    private void ToggleEventDetails(int eventId)
+    {
+        ExpandedEventId = ExpandedEventId == eventId ? null : eventId;
+    }
+    
+    private string GetEventColor(ArticleEvent evt) => evt.EventType?.Code switch
+    {
+        "START_TEST" => "info",
+        "COLLAUDO_OK" => "success",
+        "RESERVE" or "SELL" => "primary",
+        "INVOICE" => "warning",
+        "CLOSE" or "RETIRED" => "secondary",
+        "PACK" or "SHIP" or "DELIVER" => "info",
+        "INSTALL" => "success",
+        "OPEN_SR" => "danger",
+        "RETROFIT" => "warning",
+        "RETRIEVE" or "TRANSFER" => "dark",
+        _ => "secondary"
+    };
+    
+    private string GetEventIcon(ArticleEvent evt) => evt.EventType?.Code switch
+    {
+        "START_TEST" => "bi-play-circle",
+        "COLLAUDO_OK" => "bi-check-circle",
+        "RESERVE" => "bi-bookmark",
+        "SELL" => "bi-cart-check",
+        "INVOICE" => "bi-receipt",
+        "CLOSE" => "bi-x-circle",
+        "PACK" => "bi-box-seam",
+        "SHIP" => "bi-truck",
+        "DELIVER" => "bi-house-check",
+        "INSTALL" => "bi-tools",
+        "OPEN_SR" => "bi-exclamation-triangle",
+        "RETROFIT" => "bi-arrow-repeat",
+        "RETRIEVE" => "bi-arrow-return-left",
+        "TRANSFER" => "bi-arrow-left-right",
+        _ => "bi-circle-fill"
+    };
+    
+    private string GetDomainColor(int domainId)
+    {
+        var domain = AvailableDomains.FirstOrDefault(d => d.Id == domainId);
+        return domain?.Code switch
+        {
+            "PRODUCTION" => "secondary",
+            "COMMERCIAL" => "primary",
+            "LOGISTICS" => "warning",
+            "TECHNICAL" => "danger",
+            _ => "info"
+        };
+    }
+    
+    private string GetDomainClass(int domainId)
+    {
+        var domain = AvailableDomains.FirstOrDefault(d => d.Id == domainId);
+        return $"domain-{domain?.Code?.ToLower() ?? "unknown"}";
+    }
+    
+    private int GetDaysSinceFirstEvent()
+    {
+        if (FilteredEvents?.Any() != true) return 0;
+        var first = FilteredEvents.Min(e => e.OccurredAt);
+        var last = FilteredEvents.Max(e => e.OccurredAt);
+        return (int)(last - first).TotalDays;
+    }
+}

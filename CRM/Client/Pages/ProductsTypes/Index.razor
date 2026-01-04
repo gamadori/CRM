@@ -6,40 +6,35 @@
 @using Radzen
 @using Radzen.Blazor
 
+<PageHeader Title="@Localize["Tipi Prodotti"]"
+            Subtitle="@Localize["Gestisci il tipo dei prodotti"]"
+            BreadcrumbItems="@_bread">
+</PageHeader>
 
-<BlazorHeader Header="@Localize["Tipi Prodotti"]"></BlazorHeader>
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
-
-
-<div class=row>
-    <div class="col">
-        <BlazorButton Template="TemplateButton.New" Text="Nuovo" OnClick="NewItem"></BlazorButton>
-        <DropDownBtn Text="@Localize["Utility"]" CssClass="btn-light" IconMaterial="settings">
-            <DropDownBrnItem Text="@Localize["CSV Import"]" IconMaterial="folder_zip" OnClickEvent="ImportData" />
-        </DropDownBtn>
-    </div>
-</div>
 
 @if (_productTypes != null)
 {
     <RadzenDataGrid @ref="grdItems" Responsive=true IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_productTypes" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
                     AllowSorting="true" AllowFiltering="true" AllowPaging="true" PageSize=@_pageSize PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ProductType" PagingSummaryFormat=@_pagingSummaryFormat>
+        <HeaderTemplate>
+            <div class="d-flex align-items-center gap-5">
+                <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
+                
+            </div>
+
+        </HeaderTemplate>
         <Columns>
             <RadzenDataGridColumn TItem="ProductType" Property="@nameof(ProductType.Name)" Title=@TranslateHelper.GetDisplayName(nameof(ProductType.Name), typeof(ProductType)) />
 
             <RadzenDataGridColumn TItem="ProductType" Property="@nameof(ProductType.Description)" Title=@TranslateHelper.GetDisplayName(nameof(ProductType.Description), typeof(ProductType)) />
 
             <RadzenDataGridColumn Context="item" TItem="ProductType" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
-            <Template Context="item">
-                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted"  Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
-                    </RadzenButton>
-                     <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" title="Edit" Click="@(args => Edit(item.Id))">
-                    </RadzenButton>
-                     <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" title="Elimina" Click="@(args => Delete(item))">
-                    </RadzenButton>
-                    
-                                   
-            </Template>
+                <Template Context="item">
+                    <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item))></RedGButton>
+
+                </Template>
         </RadzenDataGridColumn>
        
     </Columns>

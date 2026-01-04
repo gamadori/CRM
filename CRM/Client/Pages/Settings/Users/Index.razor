@@ -6,79 +6,78 @@
 @using Radzen
 @using Radzen.Blazor
 
-<BlazorHeader Header="@_header" Visible="@(PageMode != PageHelper.PageModality.Dialog && HeaderVisible)"></BlazorHeader>
 
-@if (IdProject == null)
+@if (IdProject == null && IdCompany == null)
 {
-    <BlazorBreadCrumb Model="@_bread" Visible=@(BreadCrumbVisible && PageMode != PageHelper.PageModality.Dialog)></BlazorBreadCrumb>
+    <PageHeader Model="@_pageHeader"></PageHeader>
 }
 
-<div class=row>
-    <div class="col">
+
+
+<RadzenDataGrid @ref="grdUsers" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_users" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced" 
+    AllowSorting="true" AllowFiltering="true" AllowPaging="true" 
+        PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ApplicationUser">
+    <HeaderTemplate>
+       
         @if (IdProject == null)
         {
-            <BlazorButton Template="TemplateButton.New" Text="Nuovo" OnClick="NewItem"></BlazorButton>
+            <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
         }
         else
         {
             <BtnUsers OnGetItem="NewItem" Text=@Localize["Add User"] IdProjectParent="@IdProject"></BtnUsers>
         }
-    </div>
-</div>
+    </HeaderTemplate>
+    <Columns>
+        <RadzenDataGridColumn Context="Item" TItem="ApplicationUser" Title="@Localize["Avatar"]"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center" Width="128px">
+            <Template Context="item">
 
-    <RadzenDataGrid @ref="grdUsers" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_users" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced" 
-        AllowSorting="true" AllowFiltering="true" AllowPaging="true" 
-        PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ApplicationUser">
-        <Columns>
-           <RadzenDataGridColumn Context="Item" TItem="ApplicationUser" Title="@Localize["Avatar"]"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center" Width="128px">
-                <Template Context="item">
-
-                        <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OnClickName(item?.Id)"><RedGAvatar IdUser="@item.Id"></RedGAvatar></a>
-                </Template>
-            </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="ApplicationUser" Property="Company.RagioneSociale" Title=@TranslateHelper.GetDisplayName(nameof(Company.RagioneSociale), typeof(Company)) />
-            <RadzenDataGridColumn TItem="ApplicationUser" Property="@nameof(ApplicationUser.Email)" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Email), typeof(ApplicationUser)) />
+                    <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OnClickName(item?.Id)"><RedGAvatar IdUser="@item.Id"></RedGAvatar></a>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="ApplicationUser" Property="Company.RagioneSociale" Title=@TranslateHelper.GetDisplayName(nameof(Company.RagioneSociale), typeof(Company)) />
+        <RadzenDataGridColumn TItem="ApplicationUser" Property="@nameof(ApplicationUser.Email)" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Email), typeof(ApplicationUser)) />
        
-            <RadzenDataGridColumn TItem="ApplicationUser" Property="@nameof(ApplicationUser.Surname)" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Surname), typeof(ApplicationUser)) />
-            <RadzenDataGridColumn TItem="ApplicationUser" Property="@nameof(ApplicationUser.Name)" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Name), typeof(ApplicationUser)) />
-            <RadzenDataGridColumn TItem="ApplicationUser" Property="@nameof(ApplicationUser.Enabled)" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Enabled), typeof(ApplicationUser)) />
+        <RadzenDataGridColumn TItem="ApplicationUser" Property="@nameof(ApplicationUser.Surname)" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Surname), typeof(ApplicationUser)) />
+        <RadzenDataGridColumn TItem="ApplicationUser" Property="@nameof(ApplicationUser.Name)" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Name), typeof(ApplicationUser)) />
+        <RadzenDataGridColumn TItem="ApplicationUser" Property="@nameof(ApplicationUser.Enabled)" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Enabled), typeof(ApplicationUser)) />
 
-            <RadzenDataGridColumn Context="Item" TItem="ApplicationUser" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Color), typeof(ApplicationUser))>
+        <RadzenDataGridColumn Context="Item" TItem="ApplicationUser" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Color), typeof(ApplicationUser))>
+            <Template Context="item">
+                    <div class="alert align-middle" style="width:200px;margin:0 auto; background-color:@item.Color"></div>
+            </Template>
+        </RadzenDataGridColumn>
+        @if (PageMode != PageHelper.PageModality.Dialog)
+        {
+            <RadzenDataGridColumn Context="item" TItem="ApplicationUser" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
                 <Template Context="item">
-                        <div class="alert align-middle" style="width:200px;margin:0 auto; background-color:@item.Color"></div>
-                </Template>
-            </RadzenDataGridColumn>
-            @if (PageMode == PageHelper.PageModality.Visualization)
-            {
-                <RadzenDataGridColumn Context="item" TItem="ApplicationUser"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
-                    <Template Context="item">
+                    <div class="d-flex gap-2 justify-content-center align-items-center">
                         @if (CmdDetails)
                         {
-                        <RadzenButton class="mx-1" ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
-                            </RadzenButton> 
+                        
+                            <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
                         }
                         @if (CmdEdit)
                         {
-                            <RadzenButton class="mx-1" ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" Click="@(args => Edit(item.Id))">
-                            </RadzenButton>
+                            <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
                         }
                         @if (CmdDelete)
                         {
-                            <RadzenButton class="mx-1"  ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" Click="@(args => Delete(item))">
-                            </RadzenButton>
+                            <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item))></RedGButton>
                         }   
                         @if (!item.AdminConfirmed)
                         {
-                            <RadzenButton class="mx-1" ButtonStyle="Radzen.ButtonStyle.Info" Icon="check" Size="Radzen.ButtonSize.Medium" Click="@(args => Confirm(item))">
-                            </RadzenButton>
+                        
+                            <RedGButton RGButtonType="RGButtonType.Confirm" Icon="check" Click=@(() => Confirm(item))></RedGButton>
 
-                        }                    
-                    </Template>
+                        }
+                    </div>
+                </Template>
             </RadzenDataGridColumn>
-            }
+        }
        
-        </Columns>
-    </RadzenDataGrid>
+    </Columns>
+</RadzenDataGrid>
 
 
 

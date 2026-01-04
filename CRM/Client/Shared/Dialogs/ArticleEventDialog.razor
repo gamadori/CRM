@@ -1,0 +1,138 @@
+@using CRM.Shared
+@inject HttpClient Http
+
+@if (IsVisible)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@EventType?.Name</h5>
+                    <button type="button" class="btn-close" @onclick="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@EventModel" OnValidSubmit="@HandleSubmit">
+                        <DataAnnotationsValidator />
+                        
+                        @if (EventType?.RequiresOwner == true)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Proprietario/Cliente</label>
+                                <InputNumber class="form-control" @bind-Value="EventModel.NewOwnerId" />
+                            </div>
+                        }
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Note</label>
+                            <InputTextArea class="form-control" rows="3" @bind-Value="EventModel.Note" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Documenti allegati (DDT, Fatture, etc.)</label>
+                            <InputFile OnChange="@HandleFileSelection" multiple class="form-control" />
+                            @if (SelectedFiles.Any())
+                            {
+                                <ul class="mt-2 small">
+                                    @foreach (var file in SelectedFiles)
+                                    {
+                                        <li>@file.Name (@file.Size bytes)</li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="Close">Annulla</button>
+                            <button type="submit" class="btn btn-primary">Registra Evento</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public ArticleEventType EventType { get; set; }
+    
+    [Parameter]
+    public int ArticleId { get; set; }
+    
+    [Parameter]
+    public int DomainId { get; set; }
+    
+    [Parameter]
+    public bool IsVisible { get; set; }
+    
+    [Parameter]
+    public EventCallback OnEventRegistered { get; set; }
+    
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+    
+    private ArticleEventModel EventModel { get; set; } = new();
+    private List<IBrowserFile> SelectedFiles { get; set; } = new();
+    
+    private void HandleFileSelection(InputFileChangeEventArgs e)
+    {
+        SelectedFiles = e.GetMultipleFiles(10).ToList();
+    }
+    
+    private async Task HandleSubmit()
+    {
+        // Crea l'evento
+        var eventData = new
+        {
+            ArticleId,
+            DomainId,
+            EventTypeId = EventType.Id,
+            Note = EventModel.Note,
+            NewOwnerId = EventModel.NewOwnerId
+        };
+        
+        var response = await Http.PostAsJsonAsync("api/ArticleEvents", eventData);
+        
+        if (response.IsSuccessStatusCode)
+        {
+            var createdEvent = await response.Content.ReadFromJsonAsync<ArticleEvent>();
+            
+            // Carica i file allegati se presenti
+            if (SelectedFiles.Any() && createdEvent != null)
+            {
+                await UploadAttachments(createdEvent.Id);
+            }
+            
+            await OnEventRegistered.InvokeAsync();
+            await Close();
+        }
+    }
+    
+    private async Task UploadAttachments(int eventId)
+    {
+        using var content = new MultipartFormDataContent();
+        
+        foreach (var file in SelectedFiles)
+        {
+            var fileContent = new StreamContent(file.OpenReadStream(maxAllowedSize: 10485760));
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+            content.Add(fileContent, "files", file.Name);
+        }
+        
+        await Http.PostAsync($"api/ArticleEvents/{eventId}/Attachments", content);
+    }
+    
+    private async Task Close()
+    {
+        IsVisible = false;
+        EventModel = new();
+        SelectedFiles.Clear();
+        await OnClose.InvokeAsync();
+    }
+    
+    public class ArticleEventModel
+    {
+        public string Note { get; set; }
+        public int? NewOwnerId { get; set; }
+    }
+}

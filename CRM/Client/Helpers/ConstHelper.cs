@@ -125,7 +125,9 @@ namespace CRM.Client.Helpers
 
         public static string EmailsSentPath = "api/EmailsSent";
 
-        
+        public static string ItemEventsPath = "api/ItemEvents";
+
+
 
         public static string PagingHeader = "Paging-Header";
 
@@ -140,6 +142,8 @@ namespace CRM.Client.Helpers
         public static string ClientArticlesPath = "Articles";
 
         public static string ClientArticleBackupsPath = "ArticleBackups";
+
+        public static string ClientCompaniesPath = "Companies";
 
         public static string ClientContactsPath = "Contacts";
 
@@ -165,9 +169,17 @@ namespace CRM.Client.Helpers
 
         public static string ClientAzurePath = "Settings/AzureSettings";
 
+        public static string ClientProductsPath = "Products";
+
         public static string ClientProductParametersPath = "ProductParameters";
 
         public static string ClientEmailTemplatesPath = "Settings/EmailTemplates";
+
+        public static string ClientUsersPath = "Settings/Users";
+
+        public static string ClientSettingsPath = "Settings"; 
+        
+        public static string ClientTicketsPath = "Tickets";
 
         public static int PageSize = 10;
 

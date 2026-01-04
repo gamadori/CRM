@@ -28,7 +28,9 @@ namespace CRM.Server.Controllers
         [HttpGet]
         public async Task<ActionResult<SmtpSetting?>> Get()
         {
-            return await _context.SmtpSettings.FirstOrDefaultAsync();
+            var item = await _context.SmtpSettings.FirstOrDefaultAsync() ?? new SmtpSetting();
+
+            return Ok(item);
         }
 
         // GET: api/SmtpSettings/5

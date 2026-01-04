@@ -8,7 +8,7 @@
 @* <BlazorHeader Header="@Localize["Article"]" Visible=@(PageMode != PageHelper.PageModality.Dialog)></BlazorHeader> *@
 @if (IdProduct == null)
 {
-    <BlazorBreadCrumb Model="@_breadCrumb"></BlazorBreadCrumb>
+    <PageHeader Model="@_pageHeader"></PageHeader>
 }
 
 <BlazorFilter OnChangeFilter="OnChangeFilter">

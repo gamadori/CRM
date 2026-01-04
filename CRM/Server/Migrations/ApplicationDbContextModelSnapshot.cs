@@ -366,6 +366,223 @@ namespace CRM.Server.Migrations
                     b.ToTable("ArticleBackups");
                 });
 
+            modelBuilder.Entity("CRM.Shared.ArticleDomain", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SortedOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ArticleDomains");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleDomainState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ArticleId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CurrentStateId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DomainId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("LastEventId")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVer")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArticleId");
+
+                    b.HasIndex("CurrentStateId");
+
+                    b.HasIndex("DomainId");
+
+                    b.HasIndex("LastEventId");
+
+                    b.ToTable("ArticleDomainStates");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActorUserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ArticleId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DomainId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EventTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("FromStateId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("NewOwnerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ToStateId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ArticleId");
+
+                    b.HasIndex("DomainId");
+
+                    b.HasIndex("EventTypeId");
+
+                    b.HasIndex("FromStateId");
+
+                    b.HasIndex("ToStateId");
+
+                    b.ToTable("ArticleEvents");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleEventType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DomainId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("RequiresOwner")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("SetsStateId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DomainId");
+
+                    b.ToTable("ArticleEventTypes");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DomainId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsTerminal")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DomainId");
+
+                    b.ToTable("ArticleStates");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleStateTransition", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DomainId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EventTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("FromStateId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ToStateId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DomainId");
+
+                    b.HasIndex("EventTypeId");
+
+                    b.HasIndex("FromStateId");
+
+                    b.HasIndex("ToStateId");
+
+                    b.ToTable("ArticleStateTransitions");
+                });
+
             modelBuilder.Entity("CRM.Shared.Attachment", b =>
                 {
                     b.Property<int>("Id")
@@ -611,8 +828,14 @@ namespace CRM.Server.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("FacebookUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("IdCompany")
                         .HasColumnType("int");
+
+                    b.Property<string>("LinkedInUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Mobile")
                         .HasColumnType("nvarchar(max)");
@@ -629,6 +852,9 @@ namespace CRM.Server.Migrations
 
                     b.Property<string>("Surname")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TwitterUrl")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -1347,7 +1573,7 @@ namespace CRM.Server.Migrations
                     b.ToTable("ProjectUsers");
                 });
 
-            modelBuilder.Entity("CRM.Shared.SmtpSettings", b =>
+            modelBuilder.Entity("CRM.Shared.SmtpSetting", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -2376,6 +2602,138 @@ namespace CRM.Server.Migrations
                     b.Navigation("Article");
                 });
 
+            modelBuilder.Entity("CRM.Shared.ArticleDomainState", b =>
+                {
+                    b.HasOne("CRM.Shared.Article", "Article")
+                        .WithMany("StatesCurrent")
+                        .HasForeignKey("ArticleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ArticleState", "CurrentState")
+                        .WithMany()
+                        .HasForeignKey("CurrentStateId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ArticleDomain", "Domain")
+                        .WithMany()
+                        .HasForeignKey("DomainId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ArticleEvent", "LastEvent")
+                        .WithMany()
+                        .HasForeignKey("LastEventId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Article");
+
+                    b.Navigation("CurrentState");
+
+                    b.Navigation("Domain");
+
+                    b.Navigation("LastEvent");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleEvent", b =>
+                {
+                    b.HasOne("CRM.Shared.Article", "Article")
+                        .WithMany()
+                        .HasForeignKey("ArticleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ArticleDomain", "Domain")
+                        .WithMany()
+                        .HasForeignKey("DomainId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ArticleEventType", "EventType")
+                        .WithMany()
+                        .HasForeignKey("EventTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ArticleState", "FromState")
+                        .WithMany()
+                        .HasForeignKey("FromStateId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("CRM.Shared.ArticleState", "ToState")
+                        .WithMany()
+                        .HasForeignKey("ToStateId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Article");
+
+                    b.Navigation("Domain");
+
+                    b.Navigation("EventType");
+
+                    b.Navigation("FromState");
+
+                    b.Navigation("ToState");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleEventType", b =>
+                {
+                    b.HasOne("CRM.Shared.ArticleDomain", "Domain")
+                        .WithMany()
+                        .HasForeignKey("DomainId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Domain");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleState", b =>
+                {
+                    b.HasOne("CRM.Shared.ArticleDomain", "Domain")
+                        .WithMany()
+                        .HasForeignKey("DomainId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Domain");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleStateTransition", b =>
+                {
+                    b.HasOne("CRM.Shared.ArticleDomain", "Domain")
+                        .WithMany()
+                        .HasForeignKey("DomainId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ArticleEventType", "EventType")
+                        .WithMany()
+                        .HasForeignKey("EventTypeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ArticleState", "FromState")
+                        .WithMany()
+                        .HasForeignKey("FromStateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ArticleState", "ToState")
+                        .WithMany()
+                        .HasForeignKey("ToStateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Domain");
+
+                    b.Navigation("EventType");
+
+                    b.Navigation("FromState");
+
+                    b.Navigation("ToState");
+                });
+
             modelBuilder.Entity("CRM.Shared.Attachment", b =>
                 {
                     b.HasOne("CRM.Shared.ApplicationUser", "User")
@@ -2971,6 +3329,11 @@ namespace CRM.Server.Migrations
                     b.Navigation("UserAssignedTickets");
 
                     b.Navigation("UserClosedTickets");
+                });
+
+            modelBuilder.Entity("CRM.Shared.Article", b =>
+                {
+                    b.Navigation("StatesCurrent");
                 });
 
             modelBuilder.Entity("CRM.Shared.Attachment", b =>

@@ -16,7 +16,8 @@ namespace RedG.Client.Components
         Back,
         Download,
         View,
-        Close
+        Close,
+        Confirm
     }
     public class RedGButton: RadzenButton
     {
@@ -25,6 +26,9 @@ namespace RedG.Client.Components
 
         [Parameter]
         public RGButtonType RGButtonType { get; set; } = RGButtonType.Save;
+
+        [Parameter]
+        public bool AutoLabel { get; set; } = false;
 
         protected override void OnInitialized()
         {
@@ -37,6 +41,8 @@ namespace RedG.Client.Components
                     break;
                 case RGButtonType.Edit:
                     Icon = "edit";
+                    if (AutoLabel)
+                        Text = Localize["Edit"];
                     ButtonStyle = Radzen.ButtonStyle.Secondary;
                     break;
                 case RGButtonType.Delete:
@@ -77,6 +83,11 @@ namespace RedG.Client.Components
                 case RGButtonType.Close:
                     Icon = "close";
                     ButtonStyle = Radzen.ButtonStyle.Light;
+                    break;
+
+                case RGButtonType.Confirm:
+                    Icon = "check_circle";
+                    ButtonStyle = Radzen.ButtonStyle.Info;
                     break;
             }
         }

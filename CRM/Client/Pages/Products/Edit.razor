@@ -5,7 +5,7 @@
 @using Radzen
 @using Radzen.Blazor
 
-<BlazorHeader Header="@_header"></BlazorHeader>
+
 
 @if (_product == null)
 {
@@ -13,25 +13,49 @@
 }
 else
 {
+    <PageHeader Model="@_pageHeader">
+    </PageHeader>
+
     <EditForm Model="@_product" OnValidSubmit="HandleValidSubmit">
         <RadzenRow Gap="1rem" class="mb-3">
             <RadzenColumn Size="12" SizeSM="6">
                 <RadzenStack>
                     <DataAnnotationsValidator />
                     <ValidationSummary />
-
-                    <RedGTextBox @bind-Value="@_product.Name" For="@(() => _product.Name)" />
-
-                    <RedGDropDown TItem="ProductType" TValue="int?" ValueProperty="Id" TextProperty="Name" @bind-Value="@_product.IdProductType" For="@(() => _product.IdProductType)"
-                                  Data="_productTypes" AllowFiltering="true" />
-                    <RedGTextArea @bind-Value="@_product.Description" For="@(() => _product.Description)" Rows="5" />
-                    <RedGNumeric T="decimal" Format="c" @bind-Value="@_product.Price" For="@(() => _product.Price)" />
-
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_product.Name" For="@(() => _product.Name)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RedGDropDown TItem="ProductType" TValue="int?" ValueProperty="Id" TextProperty="Name" @bind-Value="@_product.IdProductType" For="@(() => _product.IdProductType)"
+                                    Data="_productTypes" AllowFiltering="true" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RedGTextArea @bind-Value="@_product.Description" For="@(() => _product.Description)" Rows="5" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="8">
+                            <RadzenStack>
+                                <RedGNumeric T="decimal" Format="c" @bind-Value="@_product.Price" For="@(() => _product.Price)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
                 </RadzenStack>
             </RadzenColumn>
         </RadzenRow>
         <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" />
-        <RedGButton RGButtonType="RGButtonType.Submit" />
+        <RedGButton RGButtonType="RGButtonType.Submit" AutoLabel=true  />
     </EditForm>
 
 }

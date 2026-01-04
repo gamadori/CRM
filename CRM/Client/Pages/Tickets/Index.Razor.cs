@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -17,6 +18,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Tickets
 {
@@ -53,6 +55,9 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         IJSRuntime JsRuntime { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int? IdCompany { get; set; }
 
@@ -83,7 +88,9 @@ namespace CRM.Client.Pages.Tickets
         [Parameter]
         public Action<int> OnClickDelete { get; set; }
 
-       
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
+
 
         private PagingResponse<TicketModel, string> _ticketView = null;
 
@@ -117,6 +124,8 @@ namespace CRM.Client.Pages.Tickets
 
         private int _numRecords = 0;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected async override Task OnInitializedAsync()
         {
             //#if DEBUG
@@ -140,6 +149,8 @@ namespace CRM.Client.Pages.Tickets
             }
             await LoadData();
 
+            //_pageHeader = HeaderService.Create(ConstHelper.ClientTicketsPath, null, null, false, ConstHelper.ClientTicketsPath, null, PageMode);
+            _pageHeader = await HeaderService.Create(PageMode);
             StateHasChanged();
         }
 

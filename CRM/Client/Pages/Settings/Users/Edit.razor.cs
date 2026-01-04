@@ -1,7 +1,9 @@
 ﻿using BlazoringComponents;
 using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -45,6 +47,10 @@ namespace CRM.Client.Pages.Settings.Users
         [Inject]
         NotificationService NotificationService { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
+
         [Parameter]
         public string Id { get; set; }
 
@@ -63,7 +69,7 @@ namespace CRM.Client.Pages.Settings.Users
 
         private bool readOnly = false;
 
-        private List<CompanyItem> _companies = new List<CompanyItem>();
+        private List<CompanyDTO> _companies = new List<CompanyDTO>();
 
         private string _message;
 
@@ -75,11 +81,11 @@ namespace CRM.Client.Pages.Settings.Users
 
         private Func<Task> msgBoxEvent;
 
-        MsgBoxConfirm msgBox;
-
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private MsgBoxConfirm msgBox;
 
         private bool _hidden = false;
+
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
@@ -97,31 +103,23 @@ namespace CRM.Client.Pages.Settings.Users
                 path = ConstHelper.UsersPath;
 
 
-                if (readOnly = (Id != null))
+                if (Id != null)
                 {
                     path += $"/Profile/{Id}";
 
                     _user = await Http.GetFromJsonAsync<UserModel>(path);
-                    _header = "Edit User";
                 }
                 else
                 {
-                    _header = "New User";
                     _user = new UserModel() {IdCompany = IdCompany };
+
                 }
+                
+                //_pageHeader = HeaderService.Create("Users", Id, _user?.UserName, true, ConstHelper.ClientUsersPath, null, PageMode);
+                _pageHeader = await HeaderService.Create(PageMode);
                 await LoadCompanies(new LoadDataArgs());
 
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "Settings" });
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Utenti"], Url = "Settings/Users" });
-                if (Id != null && Id.Any())
-                {
-                    _bread.Add(new BreadcrumbModel() { Title = _user.UserName, Url = $"Settings/Users/Details/{Id}" });
-                    _bread.Add(new BreadcrumbModel() { Title = Localize["Modifica"], Url = null });
-                }
-                else
-                {
-                    _bread.Add(new BreadcrumbModel() { Title = Localize["Nuovo"], Url = null });
-                }
+                
 
             }
             catch (Exception ex)
@@ -210,7 +208,7 @@ namespace CRM.Client.Pages.Settings.Users
             {
                 data.RagioneSociale = args.Filter;
             }
-            var resp = await RestClientService.GetListPag<CompanyFilter, CompanyItem>(data, ConstHelper.CompaniesPath);
+            var resp = await RestClientService.GetListPag<CompanyFilter, CompanyDTO>(data, ConstHelper.CompaniesPath);
 
             _companies = resp?.Items;
 

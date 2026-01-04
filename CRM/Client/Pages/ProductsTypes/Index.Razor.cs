@@ -60,12 +60,13 @@ namespace CRM.Client.Pages.ProductsTypes
 
         private RadzenDataGrid<ProductType> grdItems;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private List<BreadcrumbItem> _bread = new List<BreadcrumbItem>();
 
         protected override async Task OnInitializedAsync()
         {
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "/Settings" });
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Tipo Prodotto"], Url = null });
+            
+            _bread.Add(new BreadcrumbItem() {  Text = Localize["Settings"], Url = "/Settings" });
+            _bread.Add(new BreadcrumbItem() { Text = Localize["Tipo Prodotto"], Url = "/Setting/ProductsTypes" });
 
             _pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
             await LoadData();

@@ -1,17 +1,19 @@
-﻿using CRM.Shared;
+﻿using CRM.Server.Controllers;
+using CRM.Shared;
+using Duende.IdentityServer.EntityFramework.Options;
 using Microsoft.AspNetCore.ApiAuthorization.IdentityServer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Options;
+using Mono.TextTemplating;
+using Org.BouncyCastle.Math.EC.Rfc7748;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Org.BouncyCastle.Math.EC.Rfc7748;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Duende.IdentityServer.EntityFramework.Options;
 using System.Reflection.Metadata;
 using System.Text.Json.Serialization;
-using CRM.Server.Controllers;
+using System.Threading.Tasks;
 
 namespace CRM.Server.Data
 {
@@ -26,7 +28,6 @@ namespace CRM.Server.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-
             modelBuilder.Entity<ApplicationUser>().HasMany(x => x.Tickets).WithOne(x => x.UserOpened).HasForeignKey(y => y.IdUserOpened);
             modelBuilder.Entity<ApplicationUser>().HasMany(x => x.UserClosedTickets).WithOne(x => x.UserClosed).HasForeignKey(y => y.IdUserClosed);
             
@@ -49,7 +50,112 @@ namespace CRM.Server.Data
                 .HasForeignKey(tua => tua.IdUser)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // ✅ CONFIGURAZIONE STATI ARTICOLO - Previene cicli di cascade
+            modelBuilder.Entity<ArticleDomainState>()
+                .HasOne(ads => ads.Domain)
+                .WithMany()
+                .HasForeignKey(ads => ads.DomainId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ArticleDomainState>()
+                .HasOne(ads => ads.CurrentState)
+                .WithMany()
+                .HasForeignKey(ads => ads.CurrentStateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ArticleDomainState>()
+                .HasOne(ads => ads.LastEvent)
+                .WithMany()
+                .HasForeignKey(ads => ads.LastEventId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ArticleState>()
+                .HasOne(s => s.Domain)
+                .WithMany()
+                .HasForeignKey(s => s.DomainId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ArticleEvent>()
+                .HasOne(e => e.Domain)
+                .WithMany()
+                .HasForeignKey(e => e.DomainId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ArticleEvent>()
+                .HasOne(e => e.FromState)
+                .WithMany()
+                .HasForeignKey(e => e.FromStateId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ArticleEvent>()
+                .HasOne(e => e.ToState)
+                .WithMany()
+                .HasForeignKey(e => e.ToStateId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ArticleEvent>()
+                .HasOne(e => e.EventType)
+                .WithMany()
+                .HasForeignKey(e => e.EventTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ArticleEvent>()
+                .HasOne(e => e.Article)
+                .WithMany()
+                .HasForeignKey(e => e.ArticleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configurazioni esistenti
+            modelBuilder.Entity<ArticleStateTransition>()
+                .HasOne(t => t.EventType)
+                .WithMany()
+                .HasForeignKey(t => t.EventTypeId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ArticleStateTransition>()
+                .HasOne(t => t.Domain)
+                .WithMany()
+                .HasForeignKey(t => t.DomainId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ArticleEventType>()
+                .HasOne(et => et.Domain)
+                .WithMany()
+                .HasForeignKey(et => et.DomainId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ArticleStateTransition>()
+                .HasOne(t => t.FromState)
+                .WithMany()
+                .HasForeignKey(t => t.FromStateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ArticleStateTransition>()
+                .HasOne(t => t.ToState)
+                .WithMany()
+                .HasForeignKey(t => t.ToStateId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
             base.OnModelCreating(modelBuilder);
+
+            // C#
+            modelBuilder.Entity<ArticleDomainState>()
+                .HasOne(ad => ad.CurrentState)
+                .WithMany()
+                .HasForeignKey(ad => ad.CurrentStateId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ArticleDomainState>()
+                .HasOne(ad => ad.Domain)
+                .WithMany()
+                .HasForeignKey(ad => ad.DomainId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ArticleState>(entity =>
+            {
+                entity.Property(e => e.IsActive)
+                      .HasDefaultValue(1);
+            });
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -151,5 +257,19 @@ namespace CRM.Server.Data
 
         // ✅ NUOVO: DbSet per la tabella di assegnazione multipla utenti ai ticket
         public DbSet<TicketUserAssignment> TicketUserAssignments => Set<TicketUserAssignment>();
+
+        public DbSet<ArticleDomain> ArticleDomains => Set<ArticleDomain>();
+        public DbSet<ArticleState> ArticleStates => Set<ArticleState>();
+
+        public DbSet<ArticleEventType> ArticleEventTypes => Set<ArticleEventType>();
+
+        public DbSet<ArticleStateTransition> ArticleStateTransitions => Set<ArticleStateTransition>();
+
+        public DbSet<ArticleDomainState> ArticleDomainStates => Set<ArticleDomainState>();
+
+        public DbSet<ArticleEvent> ArticleEvents => Set<ArticleEvent>();
+
+
+
     }
 }

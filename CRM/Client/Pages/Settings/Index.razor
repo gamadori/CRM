@@ -1,45 +1,51 @@
 ﻿
 @page "/Settings"
+@using CRM.Client.Models
+@using CRM.Client.Services
 @using Microsoft.AspNetCore.Authorization;
 @using Microsoft.Extensions.Localization;
 
 @attribute [Authorize(Policy = "AdminRole")]
 
-@* <BlazorHeader Header="Settings"></BlazorHeader>
- *@
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
-<div class="container">
-    <div class="row d-flex justify-content-around">
+<PageHeader Model="_pageHeader">
+</PageHeader>
 
-        <BlazorIcon href="Settings/Users" Icon="person" Text="Utenti" />
-        <BlazorIcon href="Settings/Groups" Icon="groups" Text="Gruppi" />
-        <BlazorIcon href="Settings/ContractTypes" Icon="gavel" Text="@Localize["Contratti"]" />
-        <BlazorIcon href="Settings/Smtps" Icon="send" Text="SMTP" />
-        <BlazorIcon href="Settings/Logos" Icon="image" Text="Loghi" />
-        <BlazorIcon href="Settings/EmailTemplates" Icon="email" Text="Emails Templates" />
-        <BlazorIcon href="Settings/TicketTypes" Icon="class" Text="Tipi Ticket" />
-        <BlazorIcon href="TicketStates" Icon="traffic" Text="Ticket Stati" />
-        <BlazorIcon href="Settings/InterventionTypes" Icon="home_repair_service" Text="Tipi di Intervento" />
-        <BlazorIcon href="GlobalSettings" Icon="settings" Text="Settaggi Globali" />
-        @*<BlazorIcon href="Settings/ProductsTypes/Index" Icon="category" Text="Product Types" />*@
-        <BlazorIcon href="@ConstHelper.ClientProductsSettings" Icon="precision_manufacturing" Text="@Localize["Products Settings"]" />
-        <BlazorIcon href="Settings/Languages" Icon="language" Text="Lingue" />
-        <BlazorIcon href="LogEvents" Icon="event_note" Text="Log e Eventi" />
-        <BlazorIcon href="CSVSettings/Index" Icon="folder_zip" Text="CSV" />
-        <BlazorIcon href="AzureSettings" Icon="settings_applications" Text="Azure" />
-        <BlazorIcon href="Settings/Telegram" Icon="send" Text="Telegram" />
-    </div>
-    
-</div>
+<RadzenCard Style="max-width: 900px; margin: 40px auto;">
+    <RadzenHeading Size="H4" Text="Impostazioni" class="mb-4" />
+    <RadzenCard Style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center" Variant="Variant.Flat">
+       
+        <RedGIconLink Icon="account_circle" Href="Settings/Users" Text="@Localize["Users"]" Style="font-size: 48px; color: #1976d2;" />
+        <RedGIconLink Icon="groups" Href="Settings/Groups" Text="@Localize["Groups"]" Style="font-size: 48px; color: #455a64;" />
+        <RedGIconLink Icon="category" Href="Settings/ProductsTypes" Text="@Localize["Product Types"]" Style="font-size: 48px; color: #fbc02d;" />
+        <RedGIconLink Icon="class" Href="Settings/TicketTypes" Text="@Localize["Ticket Types"]" Style="font-size: 48px; color: #455a64;" />
+        <RedGIconLink Icon="traffic" Href="TicketStates" Text="@Localize["Ticket States"]" Style="font-size: 48px; color: #c62828;" />
+        <RedGIconLink Icon="home_repair_service" Href="Settings/InterventionTypes" Text="@Localize["Tipi di Intervento"]" Style="font-size: 48px; color: #7b1fa2;" />
+        <RedGIconLink Icon="Language" Href="Settings/Languages" Text="@Localize["Linguages"]" Style="font-size: 48px; color: #388e3c;" />
+        <RedGIconLink Icon="switch_account" Href="Settings/Logos" Text="@Localize["Logos"]" Style="font-size: 48px; color: #e64a19;" />
+        <RedGIconLink Icon="forward_to_inbox" Href="Settings/Smtps" Text="@Localize["Smtp"]" Style="font-size: 48px; color: #c62828;" />
+        <RedGIconLink Icon="mail" Href="Settings/EmailTemplates" Text="@Localize["Email Template"]" Style="font-size: 48px; color: #455a64;" />
+        <RedGIconLink Icon="send" Href="Settings/Telegram" Text="@Localize["Telegram"]" Style="font-size: 48px; color: #1976d2;" />
+        <RedGIconLink Icon="settings" Href="GlobalSettings" Text="@Localize["Log e Eventi"]" Style="font-size: 48px; color: #fbc02d;" />
+        <RedGIconLink Icon="precision_manufacturing" Href="@ConstHelper.ClientProductsSettings" Text="@Localize["Products Settings"]" Style="font-size: 48px; color: #7b1fa2;" />
+        <RedGIconLink Icon="event_note" Href="LogEvents" Text="@Localize["Log e Eventi"]" Style="font-size: 48px; color: #388e3c;" />
+      </RadzenCard>  
+</RadzenCard>
+
+
 @code {
     [Inject]
     IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
-    private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
 
-    protected override void OnInitialized()
+    [Inject]
+    IHeaderService HeaderService { get; set; }
+
+    private PageHeaderModel _pageHeader = new PageHeaderModel();
+
+    protected override async Task OnInitializedAsync()
     {
-        _bread.Add(new BreadcrumbModel() { Title = $"Settings", Url = null });
-        base.OnInitialized();
+        _pageHeader = await HeaderService.Create();
+        await base.OnInitializedAsync();
     }
+    
    
 }

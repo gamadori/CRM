@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Pages.Groups;
 using CRM.Client.Services;
 using CRM.Shared;
@@ -39,6 +40,9 @@ namespace CRM.Client.Pages.Settings.Users
 
         [Inject]
         SFDialogService DialogService { get; set; }
+
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public bool HeaderVisible { get; set; } = false;
@@ -90,10 +94,6 @@ namespace CRM.Client.Pages.Settings.Users
         [Parameter]
         public EventCallback<string?> OnSelectItem { get; set; }
 
-        
-
-
-
         private IQueryable<ApplicationUser> _users = null;
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
@@ -106,20 +106,13 @@ namespace CRM.Client.Pages.Settings.Users
 
         private int? _idUserToDelete = null;
 
-
-       
-
-        private string _header;
-
         private bool _isLoading = false;
 
+        private FilterMode _filterMode = FilterMode.Advanced;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         private RadzenDataGrid<ApplicationUser> grdUsers;
-
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
-
-        private FilterMode _filterMode = FilterMode.Advanced;
 
         protected override async Task OnInitializedAsync()
         {
@@ -160,39 +153,30 @@ namespace CRM.Client.Pages.Settings.Users
             await base.OnAfterRenderAsync(firstRender);
         }
 
-        private void CreateBreadCrumb()
-        {
-            _bread.Clear();
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "Settings" });
-
-            if (!NeedConfirm)
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Utenti"], Url = null });
-            else
-            {
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Utenti"], Url = "Settings/Users", Action = InitPage, Data = false  });
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Utenti da Confermare"], Url = null });
-            }
-
-        }
+      
 
         public async Task InitPage(object? confirm = null)
         {
+            string header;
+
             if (confirm != null)
                 NeedConfirm = (bool)confirm;
 
             _filter.AdminConfirmed = !NeedConfirm;
 
             if (NeedConfirm)
-                _header = Localize["Lista Utenti da Confermare"];
+                header = Localize["UsersConfirm"];
             else
-                _header = Localize["Lista Utenti"];
+                header = Localize["Users"];
 
             if (PageMode == PageModality.Dialog)
                 _filterMode = FilterMode.SimpleWithMenu;
 
             await LoadData();
 
-            CreateBreadCrumb();
+           
+            //_pageHeader = HeaderService.Create(header, null, null, false, ConstHelper.ClientUsersPath, null);
+            _pageHeader = await HeaderService.Create(PageMode);
         }
 
         public async Task LoadData(LoadDataArgs args = null)

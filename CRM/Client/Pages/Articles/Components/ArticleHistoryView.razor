@@ -1,0 +1,115 @@
+@using CRM.Shared
+@inject HttpClient Http
+
+<div class="article-history-view">
+    @if (_isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Caricamento storia...</span>
+            </div>
+        </div>
+    }
+    else if (_events == null || !_events.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Nessun evento storico registrato per questo articolo.
+            <p class="mb-0 mt-2 small">Gli eventi verranno visualizzati qui non appena vengono registrate azioni sull'articolo.</p>
+        </div>
+    }
+    else
+    {
+        <!-- Riepilogo rapido -->
+        <div class="history-summary mb-4">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="summary-card text-center p-3 bg-light rounded">
+                        <i class="bi bi-calendar-event text-primary display-6"></i>
+                        <h5 class="mt-2 mb-0">@_events.Count</h5>
+                        <small class="text-muted">Eventi Totali</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card text-center p-3 bg-light rounded">
+                        <i class="bi bi-diagram-3 text-success display-6"></i>
+                        <h5 class="mt-2 mb-0">@_events.Select(e => e.DomainId).Distinct().Count()</h5>
+                        <small class="text-muted">Domini Coinvolti</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card text-center p-3 bg-light rounded">
+                        <i class="bi bi-calendar-check text-warning display-6"></i>
+                        <h5 class="mt-2 mb-0">@GetFirstEventDate()</h5>
+                        <small class="text-muted">Primo Evento</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="summary-card text-center p-3 bg-light rounded">
+                        <i class="bi bi-clock text-info display-6"></i>
+                        <h5 class="mt-2 mb-0">@GetLastEventDate()</h5>
+                        <small class="text-muted">Ultimo Evento</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline eventi -->
+        <ArticleEventTimeline 
+            ArticleId="@ArticleId" 
+            Events="@_events" />
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int ArticleId { get; set; }
+    
+    private List<ArticleEvent> _events;
+    private bool _isLoading = true;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHistory();
+    }
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ArticleId > 0)
+        {
+            await LoadHistory();
+        }
+    }
+    
+    private async Task LoadHistory()
+    {
+        _isLoading = true;
+        try
+        {
+            _events = await Http.GetFromJsonAsync<List<ArticleEvent>>(
+                $"api/Articles/{ArticleId}/Events");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore caricamento storia: {ex.Message}");
+            _events = new List<ArticleEvent>();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+    
+    private string GetFirstEventDate()
+    {
+        if (_events?.Any() != true) return "-";
+        var firstEvent = _events.MinBy(e => e.OccurredAt);
+        return firstEvent?.OccurredAt.ToString("dd/MM/yyyy") ?? "-";
+    }
+    
+    private string GetLastEventDate()
+    {
+        if (_events?.Any() != true) return "-";
+        var lastEvent = _events.MaxBy(e => e.OccurredAt);
+        return lastEvent?.OccurredAt.ToString("dd/MM/yyyy") ?? "-";
+    }
+}

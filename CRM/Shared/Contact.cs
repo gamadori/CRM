@@ -37,6 +37,16 @@ namespace CRM.Shared
         [Display(Name = nameof(Contact.Note), ResourceType = typeof(Resources.Models.Contact))]
         public string Note { get; set; }
 
+        // Social links
+        [Display(Name = "Facebook", ResourceType = typeof(Resources.Models.Contact))]
+        public string? FacebookUrl { get; set; }
+
+        [Display(Name = "LinkedIn", ResourceType = typeof(Resources.Models.Contact))]
+        public string? LinkedInUrl { get; set; }
+
+        [Display(Name = "Twitter", ResourceType = typeof(Resources.Models.Contact))]
+        public string? TwitterUrl { get; set; }
+
         [Display(Name = nameof(Contact.NameComplete), ResourceType = typeof(Resources.Models.Contact))]
         [NotMapped]
         public string NameComplete { get { return $"{Surname} {Name}"; } }
