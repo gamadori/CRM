@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -12,6 +13,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.TicketTypes
 {
@@ -20,11 +22,14 @@ namespace CRM.Client.Pages.TicketTypes
     {
       
         [Inject]
-        private NavigationManager NavigationManager { get; set; }
+        NavigationManager NavigationManager { get; set; }
 
         [Inject]
-        private ITicketTypesService _service { get; set; }
-        
+        ITicketTypesService _service { get; set; }
+
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public Action OnClickSave { get; set; }
 
@@ -34,51 +39,37 @@ namespace CRM.Client.Pages.TicketTypes
         [Parameter]
         public int? Id { get; set; }
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         private TicketType _state = null;
 
         private List<TicketType> _ticketStates = new List<TicketType>();
 
-
         private string _messageState = "";
 
-        private string _header = "Ticket Types";
 
-        
-
-        
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
             try
             {
-
-                
                 if (Id != null)
                 {
-                    
-                    _header = "Modifica Ticket Type";
                     _state = await _service.Get(Id.Value);
-                    
                 }
                 else
                 {
-                    
-                    _header = "Nuovo Ticket Type";
                     _state = new TicketType();
-                    
                 }
-
+                _pageHeader = await HeaderService.Create();
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
             }
         }
-
-      
-
-      
 
         protected async Task HandleValidSubmit()
         {

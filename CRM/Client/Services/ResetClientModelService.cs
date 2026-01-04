@@ -51,7 +51,7 @@ namespace CRM.Client.Services
             {
                 if (id == null)
                     return null;
-                M response = await _http.GetFromJsonAsync<M>(_pathService + $"/Details/{id}");
+                M response = await _http.GetFromJsonAsync<M>(_pathService + $"/{id}/Details");
 
                 return response;
             }

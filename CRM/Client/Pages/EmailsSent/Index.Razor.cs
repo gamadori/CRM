@@ -161,7 +161,7 @@ namespace CRM.Client.Pages.EmailsSent
                 await OnDetails.InvokeAsync(id);
             }
             else
-                NavigationManager.NavigateTo($"/EmailsSent/Details/{id}");
+                NavigationManager.NavigateTo($"/EmailsSent/{id}/Details");
         }
 
        

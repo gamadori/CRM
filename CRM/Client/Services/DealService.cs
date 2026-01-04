@@ -15,7 +15,7 @@ namespace CRM.Client.Services
     public class DealService: RestClientModelService<Deal, DealModel, DealFilter, int>, IDealService
     {
         
-        public DealService(HttpClient http): base(http, ConstHelper.DealaPath)
+        public DealService(HttpClient http): base(http, ConstHelper.DealsPath)
         {
           
         }

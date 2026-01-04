@@ -41,7 +41,7 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Attachments.Index IdParent="@Id" AttachmentType=@AttachmentTypes.Article OnClickEdit="IndexEditAttachment" 
+            <CRM.Client.Pages.Attachments.Index IdParent="@Id" AttachmentType=@AttachmentTypes.Article OnClickEdit="IndexEditAttachment"
                 OnClickDetails="IndexDetailsAttachment"></CRM.Client.Pages.Attachments.Index>
         }
         else if (_partialView == PartialViews.Edit)
@@ -75,14 +75,14 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Tickets.Index IdArticle="@Id" OnClickEdit="EditTicket" OnClickDetails="DetailsTicket">
+            <CRM.Client.Pages.Tickets.Index IdArticle="@Id" OnClickEdit="EditTicket" OnClickDetails="DetailsTicket" PageMode="PageModality.Child">
 
             </CRM.Client.Pages.Tickets.Index>
         }
         else if (_partialView == PartialViews.Details)
         {
-             <CRM.Client.Pages.Tickets.Info Id="@_idTicket.GetValueOrDefault()" OnGotoIndex="IndexTicket"></CRM.Client.Pages.Tickets.Info>
-            @*<CRM.Client.Pages.Tickets.Details Id="@_idTicket.GetValueOrDefault()" OnClickCancel="TicketCloseForm" OnClickEdit="DetailsEditTicket"></CRM.Client.Pages.Tickets.Details>*@
+             <CRM.Client.Pages.Tickets.Info Id="@_idTicket.GetValueOrDefault()" OnGotoIndex="IndexTicket"></CRM.Client.Pages.Tickets.Info PageMode="PageModality.Child">
+            
         }
         else if (_partialView == PartialViews.Edit)
         {

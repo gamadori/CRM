@@ -157,7 +157,7 @@ namespace CRM.Client.Pages.ContractTypes
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientContractTypesPath}/Edit/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientContractTypesPath}/{id}/Edit");
         }
 
     }

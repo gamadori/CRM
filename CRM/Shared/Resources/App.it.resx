@@ -429,40 +429,25 @@
   <data name="UtentiListSubTitle" xml:space="preserve">
     <value>Gestione degli Utenti</value>
   </data>
-  <data name="ContactsListSubTitle" xml:space="preserve">
-    <value>Gestione dei Contatti</value>
-  </data>
-  <data name="CompaniesDetailsSubTitle" xml:space="preserve">
-    <value>Dati Azienda</value>
-  </data>
-  <data name="CompaniesListSubTitle" xml:space="preserve">
-    <value>Gestione delle Aziende</value>
-  </data>
-  <data name="ArticlesListSubTitle" xml:space="preserve">
-    <value>Lista degli Articoli</value>
-  </data>
-  <data name="ArticlesNewSubTitle" xml:space="preserve">
-    <value>Nuovo Articolo</value>
-  </data>
-  <data name="ArticlesDetailsSubTitle" xml:space="preserve">
-    <value>Dati dell'Articolo</value>
-  </data>
-  <data name="ArticlesEditSubTitle" xml:space="preserve">
-    <value>Modifica Articolo</value>
-  </data>
-  <data name="ProductsListSubTitle" xml:space="preserve">
-    <value>Catalogo dei Prodotti</value>
-  </data>
-  <data name="ProductsDetailsSubTitle" xml:space="preserve">
-    <value>Prodotto</value>
-  </data>
   <data name="NewItem" xml:space="preserve">
     <value>Nuovo {0}</value>
   </data>
   <data name="EditItem" xml:space="preserve">
     <value>Modifica {0}</value>
   </data>
-  <data name="ProductsNewSubTitle" xml:space="preserve">
-    <value>Nuovo Prodotto</value>
+  <data name="ListSubTitle" xml:space="preserve">
+    <value>Elenco {0}</value>
+  </data>
+  <data name="DetailsSubTitle" xml:space="preserve">
+    <value>Dettagli {0}:</value>
+  </data>
+  <data name="Tickettypes" xml:space="preserve">
+    <value>Tipi di Ticket</value>
+  </data>
+  <data name="Tickettypeslanguages" xml:space="preserve">
+    <value>Traduzioni</value>
+  </data>
+  <data name="EditSubTitle" xml:space="preserve">
+    <value>Modifica {0}</value>
   </data>
 </root>

@@ -219,7 +219,7 @@ namespace CRM.Client.Pages.ProductParameters
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientProductParametersPath}/Edit/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientProductParametersPath}/{id}/Edit");
         }
         protected void Cancel()
         {
@@ -235,7 +235,7 @@ namespace CRM.Client.Pages.ProductParameters
             else if (OnClickEdit != null)
                 OnClickEdit(null);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientProductParametersPath}/Edit");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientProductParametersPath}/New");
         }
 
         protected async Task Delete(ProductParameter item)

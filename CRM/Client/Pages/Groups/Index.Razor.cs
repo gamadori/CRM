@@ -151,7 +151,7 @@ namespace CRM.Client.Pages.Groups
         }
         protected void Edit(int id)
         {
-            NavigationManager.NavigateTo($"/Settings/Groups/Edit/{id}");
+            NavigationManager.NavigateTo($"/Settings/Groups/{id}/Edit");
         }
         protected void Cancel()
         {
@@ -162,7 +162,7 @@ namespace CRM.Client.Pages.Groups
             if (OnClickEdit != null)
                 OnClickEdit(null);
             else
-                NavigationManager.NavigateTo("/Settings/Groups/Edit");
+                NavigationManager.NavigateTo("/Settings/Groups/New");
         }
 
         protected async Task Delete(CRM.Shared.Group group)

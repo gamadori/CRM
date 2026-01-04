@@ -59,7 +59,7 @@ namespace CRM.Client.Pages.Groups
                     _header = Localize["Modifica Gruppo"];
                     _group = await RestClientService.GetItem<Group, int>(Id.Value, ConstHelper.GroupsPath);
 
-                    _bread.Add(new BreadcrumbModel() { Title = _group.Name, Url = $"Settings/Groups/Details/{Id}" });
+                    _bread.Add(new BreadcrumbModel() { Title = _group.Name, Url = $"Settings/Groups/{Id}/Details" });
                     _bread.Add(new BreadcrumbModel() { Title = Localize["Modifica Gruppo"], Url = null });
                 }
                 else

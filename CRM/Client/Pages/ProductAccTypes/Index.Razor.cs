@@ -163,7 +163,7 @@ namespace CRM.Client.Pages.ProductAccTypes
             else
             {
                 
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientProductAccTypesPath}/Details/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientProductAccTypesPath}/{id}/Details");
             }
         }
 
@@ -172,7 +172,7 @@ namespace CRM.Client.Pages.ProductAccTypes
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientProductAccTypesPath}/Edit/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientProductAccTypesPath}/{id}/Edit");
         }
 
         protected async Task Delete(int id)

@@ -98,7 +98,7 @@ namespace CRM.Client.Pages.Tickets
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/Tickets/Edit/{Id}");
+                NavigationManager.NavigateTo($"/Tickets/{Id}/Edit");
         }
         protected void Annulla()
         {

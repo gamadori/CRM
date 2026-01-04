@@ -153,7 +153,7 @@ namespace CRM.Client.Pages.Attachments
                 if (AttachmentType == AttachmentTypes.DXF)
                     NavigationManager.NavigateTo($"/DxfViewer/{id}");
                 else
-                    NavigationManager.NavigateTo($"/Attachments/Details/{id}");
+                    NavigationManager.NavigateTo($"/Attachments/{id}/Details");
             }
         }
 
@@ -165,7 +165,7 @@ namespace CRM.Client.Pages.Attachments
             }
             else
             {
-                NavigationManager.NavigateTo($"/Attachments/Edit/{id}");
+                NavigationManager.NavigateTo($"/Attachments/{id}/Edit");
             }
         }
 
@@ -174,7 +174,7 @@ namespace CRM.Client.Pages.Attachments
             if (OnClickEdit != null)
                 OnClickEdit(null);
             else
-                NavigationManager.NavigateTo("/Attachments/Edit");
+                NavigationManager.NavigateTo("/Attachments/New");
         }
 
         protected async Task Delete(int id)

@@ -1,5 +1,8 @@
-﻿@page "/Contacts/Details/{Id:int}"
+﻿@page "/Contacts/{Id:int}/Details"
 @page "/Contacts/{Id:int}"
+@page "/Companies/{CompanyId:int}/Contacts/{Id:int}/Details"
+@page "/Companies/{CompanyId:int}/Contacts/{Id:int}"
+
 @using CRM.Shared.Helper
 
 <PageHeader Model="@_pageHeader">
@@ -7,7 +10,7 @@
 
 @if (_contact == null)
 {
-    <Waiting></Waiting>
+    <Waiting></Waiting>     
 }
 else
 {
@@ -97,4 +100,4 @@ else
             </div>
         </div>
     </div>
-}
+}}

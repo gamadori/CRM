@@ -266,7 +266,7 @@ namespace CRM.Client.Pages.Articles
             else if (OnClickEdit != null)
                 OnClickEdit(null);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientArticlesPath}/Edit");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientArticlesPath}/New");
         }
 
         protected async Task Delete(Article article)

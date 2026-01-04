@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
@@ -43,6 +44,10 @@ namespace CRM.Client.Pages.TicketTypesLanguages
         [Inject]
         SFDialogService DialogService { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
+
         [Parameter]
         public int IdTicketType { get; set; }
         [Parameter]
@@ -66,25 +71,21 @@ namespace CRM.Client.Pages.TicketTypesLanguages
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
-        
-
         private bool _isLoading = false;
-
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
 
         private List<Language> _languages;
 
         private TicketType _ticketType;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+       
         protected override async Task OnInitializedAsync()
         {
             await GetInterventions();
             await GetLanguages();
             await GetInterventionType();
 
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "Settings" });
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Tipi Ticket"], Url = "Settings/TicketTypes" });
-            _bread.Add(new BreadcrumbModel() { Title = _ticketType.Desc, Url = null });
+            _pageHeader = await HeaderService.Create();
 
             await base.OnInitializedAsync();
         }
@@ -148,7 +149,7 @@ namespace CRM.Client.Pages.TicketTypesLanguages
         {
             try
             {
-                _languages = await HttpClient.GetFromJsonAsync<List<Language>>(ConstHelper.LanguagesPath);
+                _languages = await HttpClient.GetFromJsonAsync<List<Language>>($"{ConstHelper.LanguagesPath}/list");
                 
                 
                 

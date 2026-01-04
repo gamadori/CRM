@@ -221,7 +221,7 @@ namespace CRM.Client.Pages.TicketInterventions
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/TicketInterventions/Edit/{id}");
+                NavigationManager.NavigateTo($"/TicketInterventions/{id}/Edit");
         }
         protected void Cancel()
         {

@@ -119,7 +119,6 @@ namespace CRM.Client.Pages.Companies
                         _company.IdReseller = _userCompany.Id;
                     }
                 }
-                //_pageHeader = HeaderService.Create("Companies", Id, _company?.RagioneSociale, true, ConstHelper.ClientCompaniesPath);
                 _pageHeader = await HeaderService.Create(PageMode);
                 DisplayComponent();
                

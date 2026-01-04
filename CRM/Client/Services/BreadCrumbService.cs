@@ -276,7 +276,7 @@ namespace CRM.Client.Services
                 breadcrumbItems.Add(new BreadcrumbItem()
                 {
                     Text = name,
-                    Url = $"{ConstHelper.ContactsPath}/Details/{id}"
+                    Url = $"{ConstHelper.ContactsPath}/{id}/Details"
                 });
             }
             else if (edit)

@@ -136,7 +136,7 @@ namespace CRM.Client.Pages.TicketStates
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/TicketStates/Edit/{id}");
+                NavigationManager.NavigateTo($"/TicketStates/{id}/Edit");
         }
         protected void Cancel()
         {

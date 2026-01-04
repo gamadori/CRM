@@ -285,7 +285,7 @@ namespace CRM.Client.Pages.Settings.Users
             }
             else
             {             
-                NavigationManager.NavigateTo($"/Settings/Users/Edit/{idUser}");
+                NavigationManager.NavigateTo($"/Settings/Users/{idUser}/Edit");
             }
         }
 
@@ -296,7 +296,7 @@ namespace CRM.Client.Pages.Settings.Users
                 OnClickDetails(idUser);
             }
             else
-                NavigationManager.NavigateTo($"/Settings/Users/Details/{idUser}");
+                NavigationManager.NavigateTo($"/Settings/Users/{idUser}/Details");
         }
 
 
@@ -308,7 +308,7 @@ namespace CRM.Client.Pages.Settings.Users
                 await LoadData();
             }
             else
-                NavigationManager.NavigateTo($"/Settings/Users/Edit");
+                NavigationManager.NavigateTo($"/Settings/Users/New");
         }
 
         protected async Task OnChangeEmailFilter(ChangeEventArgs args)
@@ -376,7 +376,7 @@ namespace CRM.Client.Pages.Settings.Users
                         DialogService.DialogService.CloseSide(id);
                     break;
                 case PageModality.Visualization:
-                    NavigationManager.NavigateTo($"/Settings/Users/Details/{id}");
+                    NavigationManager.NavigateTo($"/Settings/Users/{id}/Details");
                     break;
             }
 

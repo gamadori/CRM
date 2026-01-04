@@ -67,7 +67,7 @@ namespace CRM.Client.Pages.TicketTypes
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/Settings/TicketTypes/Edit/{Id}");
+                NavigationManager.NavigateTo($"/Settings/TicketTypes/{Id}/Edit");
         }
         protected void Annulla()
         {

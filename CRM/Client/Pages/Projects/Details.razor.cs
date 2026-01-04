@@ -65,7 +65,7 @@ namespace CRM.Client.Pages.Projects
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/Projects/Edit/{Id}");
+                NavigationManager.NavigateTo($"/Projects/{Id}/Edit");
         }
         protected void Annulla()
         {

@@ -1,20 +1,21 @@
 ﻿@page "/Settings/TicketTypes"
 @page "/Settings/TicketTypes/Index"
 
-<BlazorHeader Header="@Localize["Tipi di Tickets"]"></BlazorHeader>
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
-
-
-<div class=row>
-    <div class="col">
-        <BlazorButton Template="TemplateButton.New" Text="@Localize["Nuovo"]" OnClick="NewItem"></BlazorButton>
-    </div>
-</div>
 
 @if (_types != null)
 {
+    <PageHeader Model="@_pageHeader">
+    </PageHeader>
+
     <RadzenDataGrid @ref="grdItemes" Responsive=true IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_types" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
                 AllowSorting="true" AllowFiltering="true" AllowPaging="true" PageSize="10" PagerHorizontalAlign=" Radzen.HorizontalAlign.Center" TItem="TicketType" PagingSummaryFormat="@pagingSummaryFormat">
+        <HeaderTemplate>
+            <div class="d-flex align-items-center gap-5">
+                <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
+                
+            </div>
+
+        </HeaderTemplate>
         <Columns>
             <RadzenDataGridColumn TItem="TicketType" Property="@nameof(TicketType.Desc)"  Title=@TranslateHelper.GetDisplayName(nameof(TicketType.Desc), typeof(TicketType))  />
 
@@ -53,15 +54,11 @@
             </RadzenDataGridColumn>
             <RadzenDataGridColumn Context="item" TItem="TicketType"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
                 <Template Context="item">
-                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" title="Dettagli"  Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
-                        </RadzenButton>
-                         <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" title="Edit" Click="@(args => Edit(item.Id))">
-                        </RadzenButton>
-                         <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" title="Elimina" Click="@(args => Delete(item))">
-                        </RadzenButton>
-                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Warning" Icon="translate" Class="m-1" Click="@(args => LanguageRow(item))" @onclick:stopPropagation="true">
-                        </RadzenButton>
-                                   
+                        
+                    <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Translate" Click=@(() => LanguageRow(item))></RedGButton>
                 </Template>
             </RadzenDataGridColumn>
        

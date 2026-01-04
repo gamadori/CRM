@@ -63,7 +63,7 @@ namespace CRM.Client.Pages.ContractTypeTicketTypes
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientContractTypeTicketsPath}/Edit/{Id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientContractTypeTicketsPath}/{Id}/Edit");
         }
         protected void Annulla()
         {

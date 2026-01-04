@@ -45,7 +45,7 @@ namespace CRM.Client.Pages.Settings.Users
 
             _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "Settings" });
             _bread.Add(new BreadcrumbModel() { Title = Localize["Utenti"], Url = "Settings/Users" });
-            _bread.Add(new BreadcrumbModel() { Title = _user.UserName, Url = $"Settings/Users/Details/{Id}" });
+            _bread.Add(new BreadcrumbModel() { Title = _user.UserName, Url = $"Settings/Users/{Id}/Details" });
             _bread.Add(new BreadcrumbModel() { Title = Localize["Ruoli"], Url = null });
         }
         protected async Task LoadData()
@@ -74,12 +74,12 @@ namespace CRM.Client.Pages.Settings.Users
                 }
             }
             await RestClientService.Post<UserRoles, string>(model, ConstHelper.UserRolesPath); 
-            NavigationManager.NavigateTo($"/Settings/Users/Details/{Id}");
+            NavigationManager.NavigateTo($"/Settings/Users/{Id}/Details");
         }
 
         protected void Annulla()
         {
-            NavigationManager.NavigateTo($"/Settings/Users/Details/{Id}");
+            NavigationManager.NavigateTo($"/Settings/Users/{Id}/Details");
         }
     }
 }

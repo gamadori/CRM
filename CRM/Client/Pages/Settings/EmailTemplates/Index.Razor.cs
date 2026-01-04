@@ -127,14 +127,14 @@ namespace CRM.Client.Pages.Settings.EmailTemplates
 
         protected void NewTemplate()
         {
-            NavigationManager.NavigateTo("/Settings/EmailTemplates/Edit");
+            NavigationManager.NavigateTo("/Settings/EmailTemplates/New");
         }
 
        
 
         private void Edit(int id)
         {
-            NavigationManager.NavigateTo($"/{ConstHelper.ClientEmailTemplatesPath}/Edit/{id}");
+            NavigationManager.NavigateTo($"/{ConstHelper.ClientEmailTemplatesPath}/{id}/Edit");
         }
 
         private async Task Delete(EmailTemplate item)

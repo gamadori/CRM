@@ -433,40 +433,25 @@
   <data name="UtentiListSubTitle" xml:space="preserve">
     <value>User Management</value>
   </data>
-  <data name="ContactsListSubTitle" xml:space="preserve">
-    <value>Contact Management</value>
-  </data>
-  <data name="CompaniesDetailsSubTitle" xml:space="preserve">
-    <value>Company Data</value>
-  </data>
-  <data name="CompaniesListSubTitle" xml:space="preserve">
-    <value>Company Management</value>
-  </data>
-  <data name="ArticlesListSubTitle" xml:space="preserve">
-    <value>Article List</value>
-  </data>
-  <data name="ArticlesNewSubTitle" xml:space="preserve">
-    <value>New Article</value>
-  </data>
-  <data name="ArticlesDetailsSubTitle" xml:space="preserve">
-    <value>Article Data</value>
-  </data>
-  <data name="ArticlesEditSubTitle" xml:space="preserve">
-    <value>Edit Article</value>
-  </data>
-  <data name="ProductsListSubTitle" xml:space="preserve">
-    <value>Product Catalog</value>
-  </data>
-  <data name="ProductsDetailsSubTitle" xml:space="preserve">
-    <value>Product</value>
-  </data>
   <data name="NewItem" xml:space="preserve">
     <value>New {0}</value>
   </data>
   <data name="EditItem" xml:space="preserve">
     <value>Edit {0}</value>
   </data>
-  <data name="ProductsNewSubTitle" xml:space="preserve">
-    <value>New Product</value>
+  <data name="ListSubTitle" xml:space="preserve">
+    <value>{0} List</value>
+  </data>
+  <data name="DetailsSubTitle" xml:space="preserve">
+    <value>Details {0}:</value>
+  </data>
+  <data name="Tickettypes" xml:space="preserve">
+    <value>Ticket types</value>
+  </data>
+  <data name="Tickettypeslanguages" xml:space="preserve">
+    <value>Ticket Type Translates</value>
+  </data>
+  <data name="EditSubTitle" xml:space="preserve">
+    <value>Edit {0}</value>
   </data>
 </root>

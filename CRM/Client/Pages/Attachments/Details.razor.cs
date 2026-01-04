@@ -99,7 +99,7 @@ namespace CRM.Client.Pages.Attachments
             if (OnClickEdit != null)
                 OnClickEdit(Id);
             else
-                NavigationManager.NavigateTo($"/Attachments/Edit/{Id}");
+                NavigationManager.NavigateTo($"/Attachments/{Id}/Edit");
         }
         protected void Annulla()
         {

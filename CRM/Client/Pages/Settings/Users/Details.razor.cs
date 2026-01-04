@@ -119,7 +119,7 @@ namespace CRM.Client.Pages.Settings.Users
             if (OnClickEdit != null)
                 OnClickEdit(Id);
             else
-                NavigationManager.NavigateTo($"/Settings/Users/Edit/{Id}");
+                NavigationManager.NavigateTo($"/Settings/Users/{Id}/Edit");
         }
 
         protected void Roles()

@@ -221,7 +221,7 @@ namespace CRM.Client.Pages.Contacts
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/Contacts/Edit/{id}");
+                NavigationManager.NavigateTo($"/Contacts/{id}/Edit");
         }
         protected void Cancel()
         {
@@ -232,7 +232,7 @@ namespace CRM.Client.Pages.Contacts
             if (OnClickNew.HasDelegate)
                 await OnClickNew.InvokeAsync();
             else
-                NavigationManager.NavigateTo($"/Contacts/Edit");
+                NavigationManager.NavigateTo($"/Contacts/New");
         }
 
         protected async Task Delete(Contact contact)

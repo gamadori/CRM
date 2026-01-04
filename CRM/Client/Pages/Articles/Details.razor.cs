@@ -82,7 +82,7 @@ namespace CRM.Client.Pages.Articles
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientArticlesPath}/Edit/{Id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientArticlesPath}/{Id}/Edit");
         }
         protected void Annulla()
         {

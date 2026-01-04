@@ -1,19 +1,24 @@
-﻿@page "/Settings/TicketTypesLanguages/{IdTicketType:int}"
-@page "/Settings/TicketTypesLanguages/Index/{IdTicketType:int}"
+﻿@page "/Settings/TicketTypes/{IdTicketType:int}/TicketTypesLanguages/Index"
+@page "/Settings/TicketTypes/{IdTicketType:int}/TicketTypesLanguages"
 
-<BlazorHeader Header="@Localize["Tipo di Ticket Traduzioni"]"></BlazorHeader>
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
 
 @if (_ticketTypeLangs != null)
 {
-    <div class=row>
-        <div class="col">
-            <RadzenButton Icon="add_circle_outline" style="margin-bottom: 10px" Text="@Localize["Aggiungi Lingua"]" Click="@InsertRow" Disabled=@(_ticketTypeLang != null) />
-        </div>
-    </div>
+    <PageHeader Model="@_pageHeader">
+    </PageHeader>
+   
+
+    
 
     <RadzenDataGrid @ref="_ticketTypeGrid" Responsive=true AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true" EditMode="DataGridEditMode.Single" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                     Data="@_ticketTypeLangs" TItem="TicketTypeLanguage" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" IsLoading=@_isLoading>
+        <HeaderTemplate>
+            <div class="d-flex align-items-center gap-5">
+                <RedGButton RGButtonType="RGButtonType.New" Click="@InsertRow"></RedGButton>
+                
+            </div>
+
+        </HeaderTemplate>
         <Columns>
             <RadzenDataGridColumn TItem="TicketTypeLanguage" Property="Id" Title="ID" Width="120px" />
         

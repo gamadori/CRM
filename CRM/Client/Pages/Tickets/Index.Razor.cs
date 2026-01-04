@@ -303,17 +303,17 @@ namespace CRM.Client.Pages.Tickets
             else
             {
                 if (IdProject != null)
-                    NavigationManager.NavigateTo($"/Tickets/Info/{idTicket}/{IdProject}");
+                    NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info/{IdProject}");
                 else if (IdCompany != null)
-                    NavigationManager.NavigateTo($"/Tickets/Info/Company/{idTicket}/{IdCompany}");
+                    NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info/Company/{IdCompany}");
                 else if (_idUser != null)
-                    NavigationManager.NavigateTo($"/Tickets/Info/{idTicket}/{TypeSearch}/{IdUser}");
+                    NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info/{TypeSearch}/{IdUser}");
                 else if (TypeSearch != (int)TicketTypeSearch.All)
                 {
-                    NavigationManager.NavigateTo($"/Tickets/Info/filter/{idTicket}/{TypeSearch}");
+                    NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info/filter/{TypeSearch}");
                 }
                 else
-                    NavigationManager.NavigateTo($"/Tickets/Info/{idTicket}");
+                    NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info");
             }
         }
 
@@ -325,7 +325,7 @@ namespace CRM.Client.Pages.Tickets
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/Tickets/Edit/{id}/{TypeSearch}-{IdUser}");
+                NavigationManager.NavigateTo($"/Tickets/{id}/Edit/{TypeSearch}-{IdUser}");
         }
 
         protected async Task Delete(int? id)
@@ -359,7 +359,7 @@ namespace CRM.Client.Pages.Tickets
                 }
                 else
                 {
-                    NavigationManager.NavigateTo($"/Tickets/Edit");
+                    NavigationManager.NavigateTo($"/Tickets/New");
                 }
             }
         }

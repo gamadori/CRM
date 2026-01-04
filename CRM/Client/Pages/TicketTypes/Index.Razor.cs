@@ -15,6 +15,8 @@ using BlazoringComponents;
 using Radzen;
 using Microsoft.Extensions.Localization;
 using Radzen.Blazor;
+using CRM.Client.Models;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.TicketTypes
 {
@@ -41,12 +43,14 @@ namespace CRM.Client.Pages.TicketTypes
         [Inject]
         NotificationService NotificationService { get; set; }
 
-
         [Inject]
         DialogService DialogService { get; set; }
 
         [Inject]
         IBreadCrumbService BreadCrumbService { get; set; }
+
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public Action<int> OnClickDetails { get; set; }
@@ -69,8 +73,9 @@ namespace CRM.Client.Pages.TicketTypes
         [Parameter]
         public bool CmdDelete { get; set; } = true;
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
-      
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
@@ -85,17 +90,14 @@ namespace CRM.Client.Pages.TicketTypes
 
         private IList<TicketType> _types = null;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
-
-
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async void OnInitialized()
         {
             pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
             await LoadData();
-            _bread.AddRange(await BreadCrumbService.Settings());
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Tipi Ticket"], Url = "Settings/TicketTypes" });
-            
+
+            _pageHeader = await HeaderService.Create(PageMode);
 
             StateHasChanged();
         }
@@ -180,7 +182,7 @@ namespace CRM.Client.Pages.TicketTypes
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/Settings/TicketTypes/Edit/{id}");
+                NavigationManager.NavigateTo($"/Settings/TicketTypes/{id}/Edit");
         }
 
         protected void Cancel()
@@ -192,7 +194,7 @@ namespace CRM.Client.Pages.TicketTypes
             if (OnClickEdit != null)
                 OnClickEdit(null);
             else
-                NavigationManager.NavigateTo("/Settings/TicketTypes/Edit");
+                NavigationManager.NavigateTo("/Settings/TicketTypes/New");
         }
 
         protected async Task Delete(TicketType item)
@@ -212,7 +214,7 @@ namespace CRM.Client.Pages.TicketTypes
         private void LanguageRow(TicketType item)
         {
 
-            NavigationManager.NavigateTo($"Settings/TicketTypesLanguages/Index/{item.Id}");
+            NavigationManager.NavigateTo($"Settings/TicketTypes/{item.Id}/TicketTypesLanguages");
 
 
         }

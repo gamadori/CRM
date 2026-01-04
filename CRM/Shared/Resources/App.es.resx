@@ -391,40 +391,25 @@
   <data name="UtentiListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
     <value />
   </data>
-  <data name="ContactsListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
-  </data>
-  <data name="CompaniesDetailsSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
-  </data>
-  <data name="CompaniesListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
-  </data>
-  <data name="ArticlesListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
-  </data>
-  <data name="ArticlesNewSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
-  </data>
-  <data name="ArticlesDetailsSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
-  </data>
-  <data name="ArticlesEditSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
-  </data>
-  <data name="ProductsListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
-  </data>
-  <data name="ProductsDetailsSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
-  </data>
   <data name="NewItem" type="System.Resources.ResXNullRef, System.Windows.Forms">
     <value />
   </data>
   <data name="EditItem" type="System.Resources.ResXNullRef, System.Windows.Forms">
     <value />
   </data>
-  <data name="ProductsNewSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
+  <data name="ListSubTitle" xml:space="preserve">
+    <value>Lista {0}</value>
+  </data>
+  <data name="DetailsSubTitle" xml:space="preserve">
+    <value>Detalles {0}:</value>
+  </data>
+  <data name="Tickettypes" xml:space="preserve">
+    <value>Tipos de Ticket</value>
+  </data>
+  <data name="Tickettypeslanguages" xml:space="preserve">
+    <value>Traducciones</value>
+  </data>
+  <data name="EditSubTitle" xml:space="preserve">
+    <value>Editar {0}</value>
   </data>
 </root>

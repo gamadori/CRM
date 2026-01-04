@@ -190,7 +190,7 @@ namespace CRM.Client.Pages.ArticleBackups
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientArticleBackupsPath}/Edit/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientArticleBackupsPath}/{id}/Edit");
         }
         protected void Cancel()
         {

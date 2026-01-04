@@ -1,6 +1,8 @@
-﻿@page "/Companies/Details/{Id:int}"
+﻿@page "/Companies/{Id:int}/Details"
 
-<BlazorHeader Header="@Localize["Azienda"]" Visible="HeaderVisible" />
+
+<PageHeader Visible=@(PageMode != PageHelper.PageModality.Dialog) Model="_pageHeader">
+</PageHeader>
 
 @if (_company == null)
 {

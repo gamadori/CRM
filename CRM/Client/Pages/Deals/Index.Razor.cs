@@ -217,7 +217,7 @@ namespace CRM.Client.Pages.Deals
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientDealPath}/Edit/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientDealPath}/{id}/Edit");
         }
 
         protected async Task Delete(int id)
@@ -241,7 +241,7 @@ namespace CRM.Client.Pages.Deals
             if (OnClickEdit != null)
                 OnClickEdit(null);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientDealPath}/Edit");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientDealPath}/New");
         }
 
         private void CellRender(DataGridCellRenderEventArgs<TicketModel> args)

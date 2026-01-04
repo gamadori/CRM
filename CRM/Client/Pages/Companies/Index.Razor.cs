@@ -237,7 +237,7 @@ namespace CRM.Client.Pages.Companies
             if (OnEditCompany.HasDelegate)
                 await OnEditCompany.InvokeAsync(id);
             else
-                NavigationManager.NavigateTo($"/Companies/Edit/{id}");
+                NavigationManager.NavigateTo($"/Companies/{id}/Edit");
         }
         protected async Task NewCompany()
         {
@@ -247,7 +247,7 @@ namespace CRM.Client.Pages.Companies
                 await OnAddNewItem.InvokeAsync();
             }
             else
-                NavigationManager.NavigateTo("/Companies/Edit");
+                NavigationManager.NavigateTo("/Companies/New");
         }
 
      

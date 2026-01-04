@@ -78,7 +78,7 @@ namespace CRM.Client.Pages.Contacts
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/Contacts/Edit/{Id}");
+                NavigationManager.NavigateTo($"/Contacts/{Id}/Edit");
         }
         protected void Annulla()
         {

@@ -109,6 +109,7 @@ namespace CRM.Client
             builder.Services.AddScoped<IProjectsService, ProjectsService>();
             builder.Services.AddScoped<ILanguagesService, ProxyLanguagesService>();
             builder.Services.AddScoped<ISmtpSettingsService, ProxySmtpSettingsService>();
+            builder.Services.AddScoped<ILocalizationService, LocalizationService>();
             builder.Services.AddScoped<IHeaderService, HeaderService>();
 
             builder.Services.AddTransient<IManyToManyService<TicketTypeUser>, ManyToManyService<TicketTypeUser>>(sp =>

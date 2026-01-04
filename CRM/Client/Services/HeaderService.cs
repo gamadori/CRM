@@ -15,78 +15,26 @@ namespace CRM.Client.Services
 {
     public class HeaderService: IHeaderService
     {
-        private readonly IStringLocalizer<CRM.Shared.Resources.App> _localizer;
-
+    
         private readonly NavigationManager _navigationManager;
         private readonly IAGRestClientService _restClient;
-        public HeaderService(IStringLocalizer<CRM.Shared.Resources.App> localizer, NavigationManager navigationManager, IAGRestClientService restClient)
+        private readonly ILocalizationService _localizationService;
+
+        public HeaderService(NavigationManager navigationManager, IAGRestClientService restClient, ILocalizationService localizationService)
         {
-            _localizer = localizer;
+           
             _navigationManager = navigationManager;
             _restClient = restClient;
+            _localizationService = localizationService;
         }
+
+        // Helper method to get localized string with case-insensitive fallback
+        private string GetLocalizedString(string key) => _localizationService.GetLocalizedString(key);
+
+        private bool GetLocalizedResourceNotFound(string key) => _localizationService.IsResourceNotFound(key);
 
         
 
-        public PageHeaderModel Create(string domine, object? id = null, string? name = null, bool edit = false, string urlbase = null, string? subTitle = null, 
-            PageModality pageModality = PageModality.Visualization)
-        {
-            List<string> root = new List<string>();
-
-            PageHeaderModel headerModel = new PageHeaderModel
-            {
-                Title = _localizer[domine],
-            };
-
-            if (urlbase == null)
-            {
-                urlbase = $"/{domine}";
-            }
-
-            if (urlbase != null)
-            {
-                var rootDomine = urlbase.Split('/');
-
-                foreach (var item in rootDomine)
-                {
-                    if (item == "" || item.ToLower() == domine.ToLower())
-                    {
-                        continue;
-                    }
-                    root.Add(item);
-                }
-            }
-
-            headerModel.BreadcrumbItems = BreadCrumbRoot(root);
-
-            headerModel.BreadcrumbItems.Add(
-            
-                new BreadcrumbItem(_localizer[domine], urlbase)
-            );
-
-
-            if (id != null)
-            {
-                headerModel.BreadcrumbItems.Add(new BreadcrumbItem()
-                {
-                    Text = name,
-                    Url = $"{urlbase}/Details/{id}"
-                });
-            }
-            else if (edit)
-            {
-                headerModel.BreadcrumbItems.Add(new BreadcrumbItem()
-                {
-                    Text = _localizer[$"New {domine}"],
-                    Url = null
-                });
-            }
-            headerModel.Icon = GetIcon(domine);
-            headerModel.Subtitle = subTitle ?? GetSubTitle(domine, name, edit);
-            headerModel.PageMode = pageModality;
-            headerModel.DialogTitle = GetDialogTitle(domine, edit, id);
-            return headerModel;
-        }
 
         // New overload: build header from current URL only
         public async Task<PageHeaderModel> Create(PageModality pageModality = PageModality.Visualization)
@@ -106,9 +54,9 @@ namespace CRM.Client.Services
                 // fallback to Home
                 var modelEmpty = new PageHeaderModel()
                 {
-                    Title = _localizer["Home"],
+                    Title = GetLocalizedString("Home"),
                     Subtitle = null,
-                    BreadcrumbItems = new List<BreadcrumbItem>() { new BreadcrumbItem(_localizer["Home"], "/") },
+                    BreadcrumbItems = new List<BreadcrumbItem>() { new BreadcrumbItem(GetLocalizedString("Home"), "/") },
                     PageMode = pageModality,
                     Icon = GetIcon("")
                 };
@@ -170,7 +118,7 @@ namespace CRM.Client.Services
             }
 
             // determine display title
-            var title = domainSegment != null ? (_localizer[domainSegment].ResourceNotFound ? ToTitle(domainSegment) : _localizer[domainSegment]) : _localizer["Home"];
+            var title = domainSegment != null ? (GetLocalizedResourceNotFound(domainSegment) ? ToTitle(domainSegment) : GetLocalizedString(domainSegment)) : GetLocalizedString("Home");
 
             // determine name for subtitle when possible
             string name = null;
@@ -203,6 +151,36 @@ namespace CRM.Client.Services
                         if (usr != null)
                             name = usr.NameComplete;
                         break;
+                    case "tickets":
+                    case "ticket":
+                        var tick = await _restClient.GetItem<Ticket, int>((int)domainId, ConstHelper.TicketPath);
+                        if (tick != null)
+                            name = tick.Numero;
+                        break;
+                    case "contacts":
+                    case "contact":
+                        var cont = await _restClient.GetItem<Contact, int>((int)domainId, ConstHelper.ContactsPath);
+                        if (cont != null)
+                            name = cont.NameComplete;
+                        break;
+                    case "deals":
+                    case "deal":
+                        var deal = await _restClient.GetItem<Deal, int>((int)domainId, ConstHelper.DealsPath);
+                        if (deal != null)
+                            name = deal.Name;
+                        break;
+                    case "tickettypes":
+                    case "tickettype":
+                        var ttype = await _restClient.GetItem<TicketType, int>((int)domainId, ConstHelper.TicketTypesPath);
+                        if (ttype != null)
+                            name = ttype.Desc;
+                        break;
+                    case "tickettypeslanguages":
+                    case "tickettypeslanguage":
+                        var ttlang = await _restClient.GetItem<TicketTypeLanguage, int>((int)domainId, ConstHelper.TicketTypesLanguagesPath);
+                        if (ttlang != null)
+                            name = ttlang.Name;
+                        break;
                     default:
                         // no known mapping: leave name null
                         break;
@@ -219,20 +197,24 @@ namespace CRM.Client.Services
                 {
                     case "details":
                         edit = false;
-                        subtitle = name != null ? GetSubTitle(domainSegment ?? "", name, false) : _localizer[$"{(domainSegment ?? "")}DetailsSubTitle"];
+                        subtitle = name != null ? GetSubTitle(domainSegment ?? "", name, false) : FormatSubTitle("DetailsSubTitle", domainSegment);  //_localizer[$"{(domainSegment ?? "")}DetailsSubTitle"];
                         break;
                     case "edit":
                         edit = true;
-                        subtitle = name != null ? GetSubTitle(domainSegment ?? "", name, true) : _localizer[$"{(domainSegment ?? "")}EditSubTitle"];
+                        subtitle = name != null ? GetSubTitle(domainSegment ?? "", name, true) : FormatSubTitle("EditSubTitle", domainSegment); // _localizer[$"{(domainSegment ?? "")}EditSubTitle"];
                         break;
                     case "new":
                     case "create":
                         edit = true;
-                        subtitle = _localizer[$"{(domainSegment ?? "")}NewSubTitle"];
+                        subtitle = FormatSubTitle("NewSubTitle", domainSegment);  //_localizer[$"{(domainSegment ?? "")}NewSubTitle"];
                         break;
                     case "info":
                         edit = false;
                         subtitle = name ?? ToTitle(actionSegment);
+                        break;
+                    case "index":
+                        edit = false;
+                        subtitle = FormatSubTitle("ListSubTitle", domainSegment); // _localizer[$"{(domainSegment ?? "")}ListSubTitle"];
                         break;
                     default:
                         subtitle = null;
@@ -250,7 +232,7 @@ namespace CRM.Client.Services
                 else
                 {
                     // list/index
-                    subtitle = _localizer[$"{(domainSegment ?? "")}ListSubTitle"];
+                    subtitle = GetSubTitle(domainSegment, null, false); // _localizer[$"{(domainSegment ?? "")}ListSubTitle"];
                 }
             }
 
@@ -263,7 +245,7 @@ namespace CRM.Client.Services
                 breadcrumbItems = new List<BreadcrumbItem>();
                 if (domainSegment != null)
                 {
-                    breadcrumbItems.Add(new BreadcrumbItem(_localizer[domainSegment], $"/{domainSegment}"));
+                    breadcrumbItems.Add(new BreadcrumbItem(GetLocalizedString(domainSegment), $"/{domainSegment}"));
                     if (name != null)
                         breadcrumbItems.Add(new BreadcrumbItem(name, null));
                 }
@@ -282,6 +264,23 @@ namespace CRM.Client.Services
             return header;
         }
 
+        private string FormatSubTitle(string domine, string? name, bool edit)
+        {
+            if (name != null)
+            {
+                return edit ? $"{FormatSubTitle("EditSubTitle", domine)} {name}" : $"{FormatSubTitle("DetailsSubTitle", domine)} {name}";
+                
+            }
+            else
+                return edit ? $"{FormatSubTitle("NewSubTitle", domine)} {name}" : $"{FormatSubTitle("ListSubTitle", domine)} {name}";
+            
+        }
+
+        private string FormatSubTitle(string type, string domine)
+        {
+            return string.Format(GetLocalizedString(type), GetLocalizedString(domine));
+        }
+
         private List<BreadcrumbItem> BreadCrumbRoot(List<string> root)
         {
            
@@ -290,7 +289,7 @@ namespace CRM.Client.Services
             {
                 foreach (var parent in root)
                 {
-                    items.Add(new BreadcrumbItem() { Text = _localizer[parent], Url = parent });
+                    items.Add(new BreadcrumbItem() { Text = GetLocalizedString(parent), Url = parent });
                 }
             }
             return items;
@@ -316,19 +315,19 @@ namespace CRM.Client.Services
         private string GetSubTitle(string domine, string? name, bool edit)
         {
             
-            if (name != null)
-            {
-                return edit ? $"{_localizer[$"{domine}EditSubTitle"]} {name}" : $"{_localizer[$"{domine}DetailsSubTitle"]} {name}";
-            }
-            else
-                return edit ? _localizer[$"{domine}NewSubTitle"] : _localizer[$"{domine}ListSubTitle"];
+           
+                return FormatSubTitle(domine, name, edit);
+
+                //return edit ? $"{_localizer[$"{domine}EditSubTitle"]} {name}" : $"{_localizer[$"{domine}DetailsSubTitle"]} {name}";
+           
+            // return edit ? _localizer[$"{domine}NewSubTitle"] : _localizer[$"{domine}ListSubTitle"];
         }
 
         private string? GetDialogTitle(string domine, bool edit, object? id)
         {
             if (edit)
             {
-                return id == null ? string.Format(_localizer["NewItem"], _localizer[domine]) : string.Format(_localizer["EditItem"], _localizer[domine]);
+                return id == null ? string.Format(GetLocalizedString("NewItem"), GetLocalizedString(domine)) : string.Format(GetLocalizedString("EditItem"), GetLocalizedString(domine));
             }
             return null;
         }
@@ -365,8 +364,15 @@ namespace CRM.Client.Services
 
             if (segments == null || segments.Length == 0)
                 return items;
+            
+            // Eliminare i segment contenenti "Details" e "Index"
+            
+            segments = segments.Where(s => !s.Equals("details", StringComparison.OrdinalIgnoreCase)
+                                        && !s.Equals("index", StringComparison.OrdinalIgnoreCase)
+                                        ).ToArray();
 
             string cumulative = string.Empty;
+
 
             for (int i = 0; i < segments.Length; i++)
             {
@@ -418,7 +424,7 @@ namespace CRM.Client.Services
                                 text = ticket?.Numero ?? numericId.ToString();
                             }
                             break;
-
+                    
                         case "users":
                         case "user":
                             // users ids are GUID/string typed
@@ -437,7 +443,22 @@ namespace CRM.Client.Services
                                 text = user?.NameComplete ?? numericId.ToString();
                             }
                             break;
-
+                        case "contacts":
+                        case "contact":
+                            if (int.TryParse(segment, out numericId))
+                            {
+                                var contact = await _restClient.GetItem<Contact, int>(numericId, ConstHelper.ContactsPath);
+                                text = contact?.NameComplete ?? numericId.ToString();
+                            }
+                            break;
+                        case "tickettypes":
+                        case "tickettype":
+                            if (int.TryParse(segment, out numericId))
+                            {
+                                var ticketType = await _restClient.GetItem<TicketType, int>(numericId, ConstHelper.TicketTypesPath);
+                                text = ticketType?.Desc ?? numericId.ToString();
+                            }
+                            break;
                         default:
                             text = segment;
                             break;
@@ -451,8 +472,9 @@ namespace CRM.Client.Services
                 else
                 {
                     // normal segment
-                    var localized = _localizer[segment];
-                    string text = !localized.ResourceNotFound ? localized.Value : ToTitle(segment);
+                    
+
+                    string text = !GetLocalizedResourceNotFound(segment) ? GetLocalizedString(segment) : ToTitle(segment);
 
                     cumulative += "/" + segment;
 

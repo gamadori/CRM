@@ -174,7 +174,7 @@ namespace CRM.Client.Pages.CompanyContracts
             else
             {
                 
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientCompanyContractsPath}/Details/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientCompanyContractsPath}/{id}/Details");
             }
         }
 
@@ -183,7 +183,7 @@ namespace CRM.Client.Pages.CompanyContracts
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientCompanyContractsPath}/Edit/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientCompanyContractsPath}/{id}/New");
         }
 
         protected async Task Delete(int id)
@@ -207,7 +207,7 @@ namespace CRM.Client.Pages.CompanyContracts
             if (OnNewItem.HasDelegate)
                 await OnNewItem.InvokeAsync();
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientCompanyContractsPath}/Edit");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientCompanyContractsPath}/New");
         }
 
 

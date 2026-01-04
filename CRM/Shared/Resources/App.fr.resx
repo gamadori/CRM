@@ -409,40 +409,25 @@
   <data name="UtentiListSubTitle" xml:space="preserve">
     <value />
   </data>
-  <data name="ContactsListSubTitle" xml:space="preserve">
-    <value />
-  </data>
-  <data name="CompaniesDetailsSubTitle" xml:space="preserve">
-    <value />
-  </data>
-  <data name="CompaniesListSubTitle" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ArticlesListSubTitle" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ArticlesNewSubTitle" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ArticlesDetailsSubTitle" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ArticlesEditSubTitle" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ProductsListSubTitle" xml:space="preserve">
-    <value />
-  </data>
-  <data name="ProductsDetailsSubTitle" xml:space="preserve">
-    <value>Produit</value>
-  </data>
   <data name="NewItem" xml:space="preserve">
     <value>Nouvel</value>
   </data>
   <data name="EditItem" xml:space="preserve">
     <value>Modifier</value>
   </data>
-  <data name="ProductsNewSubTitle" xml:space="preserve">
-    <value />
+  <data name="ListSubTitle" xml:space="preserve">
+    <value>Liste {0}</value>
+  </data>
+  <data name="DetailsSubTitle" xml:space="preserve">
+    <value>Détails {0}:</value>
+  </data>
+  <data name="Tickettypes" xml:space="preserve">
+    <value>Types de Tickets</value>
+  </data>
+  <data name="Tickettypeslanguages" xml:space="preserve">
+    <value>Traductions</value>
+  </data>
+  <data name="EditSubTitle" xml:space="preserve">
+    <value>Modifier {0}</value>
   </data>
 </root>

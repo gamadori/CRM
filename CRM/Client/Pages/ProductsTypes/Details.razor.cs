@@ -67,7 +67,7 @@ namespace CRM.Client.Pages.ProductsTypes
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/Settings/ProductsTypes/Edit/{Id}");
+                NavigationManager.NavigateTo($"/Settings/ProductsTypes/{Id}/Edit");
         }
         protected void Annulla()
         {

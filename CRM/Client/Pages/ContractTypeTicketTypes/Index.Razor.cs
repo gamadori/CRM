@@ -163,7 +163,7 @@ namespace CRM.Client.Pages.ContractTypeTicketTypes
             else
             {
                 
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientContractTypeTicketsPath}/Details/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientContractTypeTicketsPath}/{id}/Details");
             }
         }
 
@@ -172,7 +172,7 @@ namespace CRM.Client.Pages.ContractTypeTicketTypes
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientContractTypeTicketsPath}/Edit/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientContractTypeTicketsPath}/{id}/Edit");
         }
 
         protected async Task Delete(int id)
@@ -196,7 +196,7 @@ namespace CRM.Client.Pages.ContractTypeTicketTypes
             if (OnNewItem.HasDelegate)
                 await OnNewItem.InvokeAsync();
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientContractTypeTicketsPath}/Edit");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientContractTypeTicketsPath}/New");
         }
 
 

@@ -98,7 +98,7 @@ namespace CRM.Client.Pages.Deals
                 {
 
                     _header = Localize["Edit Deal"];
-                    _deal = await RestClientService.GetItem<Deal, int>(Id.Value, ConstHelper.DealaPath);
+                    _deal = await RestClientService.GetItem<Deal, int>(Id.Value, ConstHelper.DealsPath);
                 }
                 else
                 {
@@ -161,7 +161,7 @@ namespace CRM.Client.Pages.Deals
             _messageState = "";
             try
             {
-                var resp = await RestClientService.Post<Deal, int>(_deal, ConstHelper.DealaPath);
+                var resp = await RestClientService.Post<Deal, int>(_deal, ConstHelper.DealsPath);
                 if (resp != null)
                 {
                     _deal = resp.Data;

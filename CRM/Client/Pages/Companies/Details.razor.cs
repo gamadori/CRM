@@ -1,4 +1,6 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
+using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -10,6 +12,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Companies
 {
@@ -31,6 +34,8 @@ namespace CRM.Client.Pages.Companies
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.Enums.CompanyTypes> LocalizeCompanyTypes { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int? Id { get; set; }
@@ -44,7 +49,12 @@ namespace CRM.Client.Pages.Companies
         [Parameter]
         public bool HeaderVisible {get; set;} = false;
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
+
         private Company _company = null;
+
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
@@ -62,7 +72,8 @@ namespace CRM.Client.Pages.Companies
                 }
                 else
                     _company = new Company();
-                
+
+                _pageHeader = await HeaderService.Create(PageMode);
                
             }
             catch (Exception ex)
@@ -95,7 +106,7 @@ namespace CRM.Client.Pages.Companies
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/Companies/Edit/{Id}");
+                NavigationManager.NavigateTo($"/Companies/{Id}/Edit");
         }
         protected void Annulla()
         {

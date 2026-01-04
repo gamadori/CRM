@@ -35,11 +35,11 @@ else
     {
         if (_partialView == PartialViews.Details)
         {
-            <Details Id="@Id" OnClickEdit="EditCompany" OnClickCancel="CancelCompany"></Details>
+            <Details Id="@Id" OnClickEdit="EditCompany" OnClickCancel="CancelCompany" PageMode="@PageModality.Child"></Details>
         }
         else
         {
-            <Edit Id="@Id" OnSaving="SaveCompany" OnCancel="CancelCompany"></Edit>
+            <Edit Id="@Id" OnSaving="SaveCompany" OnCancel="CancelCompany" PageMode="@PageModality.Child"></Edit>
         }
     }
     else if (_selectView == CompanyViews.Users)
@@ -69,7 +69,7 @@ else
         }
         else if (_partialView == PartialViews.Details)
         {
-           <CRM.Client.Pages.Articles.Info Id="@_idProduct.GetValueOrDefault()" OnGotoIndex="IndexTicket"></CRM.Client.Pages.Articles.Info>
+            <CRM.Client.Pages.Articles.Info Id="@_idProduct.GetValueOrDefault()" OnGotoIndex="IndexTicket" PageMode="@PageModality.Dialog"></CRM.Client.Pages.Articles.Info>
         }
         else if (_partialView == PartialViews.Edit)
         {

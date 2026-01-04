@@ -63,7 +63,7 @@ namespace CRM.Client.Pages.ProductsTypes
                     path += $"/{Id}";
 
                     _productType = await RestClientService.GetItem<ProductType, int>(Id.Value, ConstHelper.ProductTypesPath);   // await Service.Get(Id.Value);
-                    _bread.Add(new BreadcrumbItem() { Text = _productType?.Name, Url = $"/Settings/TicketsTypes/{Id}" });
+                    _bread.Add(new BreadcrumbItem() { Text = _productType?.Name, Url = $"/Settings/ProductsTypes/{Id}" });
                     _bread.Add(new BreadcrumbItem() { Text = Localize["Modifica"], Url = null });
                     _subTitle = Localize["Modifica Tipo Prodotto"];
                 }

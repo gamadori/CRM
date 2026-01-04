@@ -166,31 +166,15 @@ namespace CRM.Client.Pages.AccessoryTypes
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoryTypesPath}/Edit/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoryTypesPath}/{id}/Edit");
         }
 
-        protected async Task Delete(int id)
-        {
-
-            if (await DialogService.Confirm(Localize["Eliminare il Tipo selezionato"], Localize["Elimina"]) == true)
-            {
-                if (OnClickDelete != null)
-                    OnClickDelete(id);
-                else
-                {
-                    await _service.Delete(id);
-
-                    await LoadData();
-                    StateHasChanged();
-                }
-            }
-        }
-        private async void NewAccessoryType()
+        protected async void NewAccessoryType()
         {
             if (OnNewItem.HasDelegate)
                 await OnNewItem.InvokeAsync();
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoryTypesPath}/Edit");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoryTypesPath}/New");
         }
 
 
@@ -234,5 +218,21 @@ namespace CRM.Client.Pages.AccessoryTypes
             }
 
         }
+
+        private async Task Delete(int id)
+        {
+            if (await DialogService.Confirm(Localize["Eliminare il Tipo selezionato"], Localize["Elimina"]) == true)
+            {
+                if (OnClickDelete != null)
+                    OnClickDelete(id);
+                else
+                {
+                    await _service.Delete(id);
+                    await LoadData();
+                    StateHasChanged();
+                }
+            }
+        }
+
     }
 }

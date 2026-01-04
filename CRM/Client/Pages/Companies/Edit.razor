@@ -1,12 +1,14 @@
-﻿@page "/Companies/Edit"
-@page "/Companies/Edit/{Id:int}"
+﻿@page "/Companies/New"
+@page "/Companies/{Id:int}/Edit"
 @using CRM.Shared.DTOs
 @using Radzen
 @using Radzen.Blazor
 
-<BlazorHeader Header="@Localize["Azienda"]" Visible=@(PageMode != PageHelper.PageModality.Dialog)>
 
-</BlazorHeader>
+<PageHeader  Model="_pageHeader">
+</PageHeader>
+
+
 
 @if (_company == null)
 {

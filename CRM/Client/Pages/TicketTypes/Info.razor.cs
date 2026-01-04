@@ -1,4 +1,5 @@
-﻿using CRM.Client.Pages.Tickets;
+﻿using CRM.Client.Models;
+using CRM.Client.Pages.Tickets;
 using CRM.Client.Services;
 using CRM.Client.Shared;
 using CRM.Shared;
@@ -50,6 +51,9 @@ namespace CRM.Client.Pages.TicketTypes
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int Id { get; set; }
 
@@ -65,22 +69,20 @@ namespace CRM.Client.Pages.TicketTypes
 
         private string _messagePrepareDelete = "Eliminare l'utente {0} dal Tipo di Ticket";
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
 
       
         private Settings.Users.Index _pageUsersIndex;
 
         private Groups.Index _pageGroupsIndex;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected override async Task OnInitializedAsync()
         {
             dialogService.OnClose += async (s) => await OnClickClose(s);
             await LoadTicketType();
 
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "Settings" });
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Tipi Ticket"], Url = "Settings/TicketTypes" });
-            _bread.Add(new BreadcrumbModel() { Title = _ticketType?.Desc, Url = null });
-           
+            _pageHeader = await HeaderService.Create();
         }
 
         public void Dispose()

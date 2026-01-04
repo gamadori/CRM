@@ -63,7 +63,7 @@ namespace CRM.Client.Pages.ProductAccTypes
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientProductAccTypesPath}/Edit/{Id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientProductAccTypesPath}/{Id}/Edit");
         }
         protected void Annulla()
         {

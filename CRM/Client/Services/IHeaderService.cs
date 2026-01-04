@@ -8,8 +8,7 @@ namespace CRM.Client.Services
 {
     public interface IHeaderService
     {
-        PageHeaderModel Create(string domine, object? id = null, string? name = null, bool edit = false, string urlbase = null, string? subTitle = null,
-           PageModality pageModality = PageModality.Visualization);
+       
 
         Task<PageHeaderModel> Create(PageModality pageModality = PageModality.Visualization);
 

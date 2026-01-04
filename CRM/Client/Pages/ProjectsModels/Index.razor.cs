@@ -137,7 +137,7 @@ namespace CRM.Client.Pages.ProjectsModels
 
         protected void NewItem()
         {
-            NavigationManager.NavigateTo("/ProjectsModels/Edit");
+            NavigationManager.NavigateTo("/ProjectsModels/New");
         }
 
         public void ActionBegin(ActionEventArgs<ProjectModel> Args)
@@ -198,7 +198,7 @@ namespace CRM.Client.Pages.ProjectsModels
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/ProjectsModels/Edit/{id}");
+                NavigationManager.NavigateTo($"/ProjectsModels/{id}/Edit");
         }
 
     }

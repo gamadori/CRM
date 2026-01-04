@@ -6,17 +6,12 @@
 @using Radzen.Blazor
 @using BlazoringComponents.DropDownButton
 
-@* <BlazorHeader Header="@Localize["Article"]" Visible=@(PageMode != PageHelper.PageModality.Dialog)></BlazorHeader> *@
-
-   
-    <PageHeader Model="@_pageHeader">
-    </PageHeader>
-   
-
 
 @if (_articles != null)
 {
-    
+    <PageHeader Model="@_pageHeader">
+    </PageHeader>
+
     <RadzenDataGrid @ref="grdArticles" IsLoading="@_isLoading" Responsive=@_isResponsable Count="@_paging.TotalCount" Data="@_articles" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode=@_filterMode 
         AllowSorting="true" AllowFiltering="true" AllowPaging="true"
                     PageSize="@_articletPageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Article" PagingSummaryFormat="@pagingSummaryFormat" ShowPagingSummary=true>

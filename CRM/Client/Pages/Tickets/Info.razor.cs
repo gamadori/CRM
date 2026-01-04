@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Tickets
 {
@@ -88,6 +89,9 @@ namespace CRM.Client.Pages.Tickets
 
         [Parameter]
         public int? IdChat { get; set; }
+
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         protected TicketViews selectView = TicketViews.Ticket;
 

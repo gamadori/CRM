@@ -109,7 +109,7 @@ namespace CRM.Client.Pages.UsersGroups
 
         protected void Edit(int id)
         {
-            NavigationManager.NavigateTo($"/UsersGroups/Edit/{id}");
+            NavigationManager.NavigateTo($"/UsersGroups/{id}/Edit");
         }
         protected void Cancel()
         {

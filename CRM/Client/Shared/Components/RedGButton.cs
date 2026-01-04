@@ -17,7 +17,8 @@ namespace RedG.Client.Components
         Download,
         View,
         Close,
-        Confirm
+        Confirm,
+        Translate
     }
     public class RedGButton: RadzenButton
     {
@@ -88,6 +89,11 @@ namespace RedG.Client.Components
                 case RGButtonType.Confirm:
                     Icon = "check_circle";
                     ButtonStyle = Radzen.ButtonStyle.Info;
+                    break;
+
+                case RGButtonType.Translate:
+                    Icon = "translate";
+                    ButtonStyle = Radzen.ButtonStyle.Warning;
                     break;
             }
         }

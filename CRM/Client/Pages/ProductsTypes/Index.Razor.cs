@@ -156,16 +156,16 @@ namespace CRM.Client.Pages.ProductsTypes
 
         protected void Details(int id)
         {
-            NavigationManager.NavigateTo($"/Settings/ProductsTypes/Details/{id}");
+            NavigationManager.NavigateTo($"/Settings/ProductsTypes/{id}/Details");
         }
 
         protected void Edit(int id)
         {
-            NavigationManager.NavigateTo($"/Settings/ProductsTypes/Edit/{id}");
+            NavigationManager.NavigateTo($"/Settings/ProductsTypes/{id}/Edit");
         }
         protected void NewItem()
         {
-            NavigationManager.NavigateTo("/Settings/ProductsTypes/Edit");
+            NavigationManager.NavigateTo("/Settings/ProductsTypes/New");
         }
 
         protected async Task Delete(ProductType item)

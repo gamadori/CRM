@@ -185,7 +185,7 @@ namespace CRM.Client.Pages.Products
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/Products/Edit/{id}");
+                NavigationManager.NavigateTo($"/Products/{id}/Edit");
         }
         protected void Cancel()
         {
@@ -196,7 +196,7 @@ namespace CRM.Client.Pages.Products
             if (OnClickEdit != null)
                 OnClickEdit(null);
             else
-                NavigationManager.NavigateTo("/Products/Edit");
+                NavigationManager.NavigateTo("/Products/New");
         }
 
         protected async Task Delete(Product item)

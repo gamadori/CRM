@@ -147,8 +147,7 @@ namespace CRM.Client.Pages.Accessories
             }
             else
             {
-                
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoriesPath}/Details/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoriesPath}/{id}/Details");
             }
         }
 
@@ -157,31 +156,15 @@ namespace CRM.Client.Pages.Accessories
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoriesPath}/Edit/{id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoriesPath}/{id}/Edit");
         }
 
-        protected async Task Delete(int id)
-        {
-
-            if (await DialogService.Confirm(Localize["Eliminare l'accessorio selezionato"], Localize["Elimina"]) == true)
-            {
-                if (OnClickDelete != null)
-                    OnClickDelete(id);
-                else
-                {
-                    await AccessoriesService.Delete(id);
-
-                    await LoadData();
-                    StateHasChanged();
-                }
-            }
-        }
         private void NewAccessory()
         {
             if (OnClickEdit != null)
                 OnClickEdit(null);
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoriesPath}/Edit");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoriesPath}/New");
         }
 
 
@@ -193,17 +176,20 @@ namespace CRM.Client.Pages.Accessories
             StateHasChanged();
         }
 
-        private async Task OnChangeIdUser()
+        private async Task Delete(int id)
         {
-            await LoadData();
+            if (await DialogService.Confirm(Localize["Eliminare l'accessorio selezionato"], Localize["Elimina"]) == true)
+            {
+                if (OnClickDelete != null)
+                    OnClickDelete(id);
+                else
+                {
+                    await AccessoriesService.Delete(id);
+                    await LoadData();
+                    StateHasChanged();
+                }
+            }
         }
 
-        private void LanguageRow(int id)
-        {
-
-            NavigationManager.NavigateTo($"{ConstHelper.ClientAccessoriesPath}/Index/{id}");
-
-
-        }
     }
 }

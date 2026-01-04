@@ -54,7 +54,7 @@ namespace CRM.Client.Pages.Deals
             {
                 _header = Localize["Deal Dettagli"];
 
-                _deal = await RestClientService.GetItem<DealModel, int>(Id, $"{ConstHelper.DealaPath}/Details");
+                _deal = await RestClientService.GetItem<DealModel, int>(Id, $"{ConstHelper.DealsPath}/Details");
 
                 
             }
@@ -70,14 +70,14 @@ namespace CRM.Client.Pages.Deals
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.DealaPath}/Edit/{Id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.DealsPath}/{Id}/Edit");
         }
         protected void Annulla()
         {
             if (OnClickCancel != null)
                 OnClickCancel();
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.DealaPath}/Index");
+                NavigationManager.NavigateTo($"/{ConstHelper.DealsPath}/Index");
                
         }
 

@@ -65,7 +65,7 @@ namespace CRM.Client.Pages.Accessories
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoriesPath}/Edit/{Id}");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientAccessoriesPath}/{Id}/Edit");
         }
         protected void Annulla()
         {

@@ -80,7 +80,7 @@ namespace CRM.Client.Pages.Groups
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/Settings/Groups/Edit/{Id}");
+                NavigationManager.NavigateTo($"/Settings/Groups/{Id}/Edit");
         }
         protected void Annulla()
         {

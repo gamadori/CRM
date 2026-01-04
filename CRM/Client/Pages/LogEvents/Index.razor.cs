@@ -81,7 +81,7 @@ namespace CRM.Client.Pages.LogEvents
 
         protected void NewItem()
         {
-            NavigationManager.NavigateTo("/Projects/Edit");
+            NavigationManager.NavigateTo("/Projects/New");
         }
 
         public void ActionBegin(ActionEventArgs<LogEvent> Args)
@@ -132,7 +132,7 @@ namespace CRM.Client.Pages.LogEvents
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/LogEvents/Edit/{id}");
+                NavigationManager.NavigateTo($"/LogEvents/{id}/Edit");
         }
 
     }
