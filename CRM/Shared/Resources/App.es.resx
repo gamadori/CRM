@@ -412,4 +412,7 @@
   <data name="EditSubTitle" xml:space="preserve">
     <value>Editar {0}</value>
   </data>
+  <data name="NewSubTitle" xml:space="preserve">
+    <value>Nuevo  {0}</value>
+  </data>
 </root>

@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +12,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Groups
 {
@@ -29,6 +31,9 @@ namespace CRM.Client.Pages.Groups
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int? Id { get; set; }
 
@@ -38,9 +43,12 @@ namespace CRM.Client.Pages.Groups
         [Parameter]
         public Action OnClickCancel { get; set; }
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
+
         private Group _group = null;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
@@ -50,22 +58,21 @@ namespace CRM.Client.Pages.Groups
                 //await Task.Delay(10000);      // changes are flushed again   
                 path = ConstHelper.GroupsPath;
 
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url="Settings" });
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Gruppi"], Url = "Settings/Groups" });
+                
 
                 if (Id != null)
                 {
                     _group = await RestClientService.GetItem<Group, int>(Id.Value, ConstHelper.GroupsPath); 
-                    _bread.Add(new BreadcrumbModel() { Title = _group.Name, Url = null });
+                   
 
                 }
                 else
                 {
                     _group = new Group();
-                    _bread.Add(new BreadcrumbModel() { Title = Localize["Nuovo Gruppo"], Url = null });
                 }
 
-               
+                _pageHeader = await HeaderService.Create(PageMode);
+
             }
             catch (Exception ex)
             {

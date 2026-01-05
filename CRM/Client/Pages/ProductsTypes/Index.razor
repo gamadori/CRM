@@ -6,14 +6,11 @@
 @using Radzen
 @using Radzen.Blazor
 
-<PageHeader Title="@Localize["Tipi Prodotti"]"
-            Subtitle="@Localize["Gestisci il tipo dei prodotti"]"
-            BreadcrumbItems="@_bread">
-</PageHeader>
-
-
 @if (_productTypes != null)
 {
+    <PageHeader Model="@_pageHeader">
+    </PageHeader>
+
     <RadzenDataGrid @ref="grdItems" Responsive=true IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_productTypes" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
                     AllowSorting="true" AllowFiltering="true" AllowPaging="true" PageSize=@_pageSize PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ProductType" PagingSummaryFormat=@_pagingSummaryFormat>
         <HeaderTemplate>

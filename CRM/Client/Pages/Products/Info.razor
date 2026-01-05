@@ -2,6 +2,7 @@
 @page "/Products/{Id:int}"
 @using Radzen
 @using Radzen.Blazor
+@using static CRM.Client.Helpers.PageHelper
 
 
 
@@ -98,19 +99,19 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.ProductAccTypes.Index IdProductType="Id" OnClickDetails="OnClickAccessoryDetails" OnClickEdit="OnClickAccessoryEdit" OnNewItem="OnClickAccessoryNew" BreadCrumbVisible=false></CRM.Client.Pages.ProductAccTypes.Index>
+            <CRM.Client.Pages.ProductAccTypes.Index PageMode=PageModality.Child IdProductType="Id" OnClickDetails="OnClickAccessoryDetails" OnClickEdit="OnClickAccessoryEdit" OnNewItem="OnClickAccessoryNew" BreadCrumbVisible=false></CRM.Client.Pages.ProductAccTypes.Index>
         }
         else if (_partialView == PartialViews.Details)
         {
-            <CRM.Client.Pages.ProductAccTypes.Details Id=@_idAccessory OnClickCancel="@OnClickAccessoryClose" OnClickEdit="OnClickAccessoryEditFromDetails"></CRM.Client.Pages.ProductAccTypes.Details>
+            <CRM.Client.Pages.ProductAccTypes.Details Id=@_idAccessory PageMode=PageModality.Child  OnClickCancel="@OnClickAccessoryClose" OnClickEdit="OnClickAccessoryEditFromDetails"></CRM.Client.Pages.ProductAccTypes.Details>
         }
         else if (_partialView == PartialViews.New)
         {
-            <CRM.Client.Pages.ProductAccTypes.Edit IdProduct=@Id OnClickCancel="OnClickAccessoryClose" OnClickSave="OnClickAccessoryClose"></CRM.Client.Pages.ProductAccTypes.Edit>
+            <CRM.Client.Pages.ProductAccTypes.Edit IdProduct=@Id PageMode=PageModality.Child OnClickCancel ="OnClickAccessoryClose" OnClickSave="OnClickAccessoryClose"></CRM.Client.Pages.ProductAccTypes.Edit>
         }
         else if (_partialView == PartialViews.Edit)
         {
-            <CRM.Client.Pages.ProductAccTypes.Edit Id=@_idAccessory OnClickCancel="OnClickAccessoryClose" OnClickSave="OnClickAccessoryClose"></CRM.Client.Pages.ProductAccTypes.Edit>
+            <CRM.Client.Pages.ProductAccTypes.Edit Id=@_idAccessory PageMode=PageModality.Child OnClickCancel="OnClickAccessoryClose" OnClickSave="OnClickAccessoryClose"></CRM.Client.Pages.ProductAccTypes.Edit>
         }
         else if (_partialView == PartialViews.Translate)
         {
@@ -121,17 +122,17 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Products.Index IdParent="@Id" CmdDetails="false" CmdEdit="false" OnClickEdit="@((s)=> OnClickNew(s))"
+            <CRM.Client.Pages.Products.Index PageMode="PageModality.Child" IdParent="@Id" CmdDetails="false" CmdEdit="false" OnClickEdit="@((s)=> OnClickNew(s))"
                                                  OnClickDelete="@(async (s)=> await OnClickDelete(s))"
                                                  MessagePrepareDelete="@_messagePrepareDelete"></CRM.Client.Pages.Products.Index>
         }
         else if (_partialView == PartialViews.Details)
         {
-            <CRM.Client.Pages.Products.Details Id="@_idChild" CloseForm="UsersCloseForm" OnClickEdit="EditCommand"></CRM.Client.Pages.Products.Details>
+            <CRM.Client.Pages.Products.Details PageMode=PageModality.Child Id="@_idChild" CloseForm="UsersCloseForm" OnClickEdit="EditCommand"></CRM.Client.Pages.Products.Details>
         }
         else if (_partialView == PartialViews.Edit)
         {
-            <CRM.Client.Pages.Products.Edit Id="@_idChild" CloseForm="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Products.Edit>
+            <CRM.Client.Pages.Products.Edit PageMode=PageModality.Child Id="@_idChild" CloseForm="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Products.Edit>
         }
         else if (_partialView == PartialViews.New)
         {

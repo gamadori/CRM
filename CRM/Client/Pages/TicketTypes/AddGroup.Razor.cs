@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
@@ -6,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.TicketTypes
 {
@@ -20,11 +22,17 @@ namespace CRM.Client.Pages.TicketTypes
         [Inject] 
         private Radzen.DialogService dialogService { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }  
+
         [Parameter]
         public int IdTicket { get; set; }
 
         [Parameter]
         public Action OnClickClose { get; set; }
+
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Dialog;
 
         private List<Group> _groups { get; set; }
 
@@ -32,12 +40,16 @@ namespace CRM.Client.Pages.TicketTypes
 
         private TicketTypeGroup _ticketTypeGroup = null;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected override async Task OnInitializedAsync()
         {
            
             await LoadGroups(new Radzen.LoadDataArgs());
             _ticketTypeGroup = new TicketTypeGroup() { IdTicket = IdTicket };
             _group = new Group();
+
+            _pageHeader = await HeaderService.Create(PageMode);
 
         }
         public async Task LoadGroups(Radzen.LoadDataArgs args)

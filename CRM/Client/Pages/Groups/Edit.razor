@@ -1,39 +1,41 @@
 ﻿@page "/Settings/Groups/New"
 @page "/Settings/Groups/{Id:int}/Edit"
 
-<BlazorHeader Header="@_header"></BlazorHeader>
-
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
-
-
 @if (_group == null)
 {
     <Waiting></Waiting>
 }
 else
 {
-<EditForm Model="@_group" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-    <div class="row">
-        <div class="col-md-4">
-            
-            <div class="mb-3">
-                <DisplayName For="@(()=>_group.Name)" />
-                <input id="Descrizione" class="form-control" @bind-value="@_group.Name" />
-                <ValidationMessage For="@(() => _group.Name)" />
-            </div>
+    <PageHeader 
+            Model=@_pageHeader>
+    </PageHeader>
 
-            <div class="mb-3">
-                <DisplayName For="@(()=>_group.Description)" />
-                <InputTextArea rows="8" class="form-control" @bind-Value="@_group.Description" />
-                <ValidationMessage For="@(() => _group.Description)" />
-            </div>
-
-            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
-            <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
-
-        </div>
-    </div>
-</EditForm>
+     <EditForm Model="@_group" OnValidSubmit="HandleValidSubmit">
+        <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeSM="6">
+                <RadzenStack>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_group.Name" For="@(() => _group.Name)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RedGTextArea @bind-Value="@_group.Description" For="@(() => _group.Description)" Rows="3" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+        <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" />
+        <RedGButton RGButtonType="RGButtonType.Submit" AutoLabel=true />
+    </EditForm>
+   
 }

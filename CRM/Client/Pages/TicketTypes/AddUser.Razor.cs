@@ -1,4 +1,5 @@
-﻿using CRM.Client.Services;
+﻿using CRM.Client.Models;
+using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
 using Radzen;
@@ -6,19 +7,23 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.TicketTypes
 {
     public partial class AddUser : ComponentBase
     {
         [Inject]
-        private IBaseRestService<ApplicationUser, UsersFilterModel, string> _usersService { get; set; }
+        IBaseRestService<ApplicationUser, UsersFilterModel, string> _usersService { get; set; }
 
         [Inject]
-        private IManyToManyService<TicketTypeUser> _service { get; set; }
+        IManyToManyService<TicketTypeUser> _service { get; set; }
 
         [Inject] 
-        private DialogService dialogService { get; set; }
+        DialogService dialogService { get; set; }
+
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int IdTicket { get; set; }
@@ -26,11 +31,16 @@ namespace CRM.Client.Pages.TicketTypes
         [Parameter]
         public Action OnClickClose { get; set; }
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Dialog;    
+
         private List<UserFiltered> _users { get; set; }
 
         private ApplicationUser _user;
 
         private TicketTypeUser _ticketTypeUser = null;
+
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
@@ -38,6 +48,8 @@ namespace CRM.Client.Pages.TicketTypes
             await LoadUsers(new LoadDataArgs());
             _ticketTypeUser = new TicketTypeUser() { IdTicket = IdTicket };
             _user = new ApplicationUser();
+
+            _pageHeader = await HeaderService.Create(PageMode);
 
         }
         public async Task LoadUsers(LoadDataArgs args)

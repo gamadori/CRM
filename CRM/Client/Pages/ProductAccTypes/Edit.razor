@@ -4,15 +4,15 @@
 @using Radzen
 @using Radzen.Blazor
 
-<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog)>@_header</BlazorHeader>
-
 @if (_productTypeAccessory == null)
 {
     <Waiting></Waiting>
 }
 else
 {
-    
+    <PageHeader Model=@_pageHeader>
+    </PageHeader>
+
     <div class="container m-3">
         <EditForm Model="@_productTypeAccessory" OnValidSubmit="HandleValidSubmit">
             <DataAnnotationsValidator />

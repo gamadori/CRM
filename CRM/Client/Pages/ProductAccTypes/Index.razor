@@ -5,29 +5,20 @@
 @using CRM.Shared.Helper
 @using CRM.Client.Shared.Filters
 
-
-
-<BlazorHeader Header="@_header" Visible="@(PageMode != PageHelper.PageModality.Dialog)"></BlazorHeader>
-
-
-
-
 @if (_prodTypeAccs != null)
 {
 
-    <BlazorBreadCrumb Model=@_bread Visible=@(PageMode != PageHelper.PageModality.Dialog && BreadCrumbVisible)></BlazorBreadCrumb>
-    
-    
-    <div class=row>
-        <div class="col">
-            <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewItem"></BlazorButton>
-        
-        </div>
-    </div>
+    <PageHeader Model=@_pageHeader>
+    </PageHeader>
 
     <RadzenDataGrid @ref="_grdProductTypeAccType" Responsive=true IsLoading="@_isLoading" Count="@_prodTypeAccs.Items.Count" Data="@_prodTypeAccs.Items" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode=@_filterMode
                 AllowSorting="true" AllowFiltering="true" AllowPaging="true" 
         PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ProductAccessoryTypeModel" EmptyText=@Localize["No Accessory"]>
+
+        <HeaderTemplate>
+            <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
+        </HeaderTemplate>
+
         <Columns>
 
 

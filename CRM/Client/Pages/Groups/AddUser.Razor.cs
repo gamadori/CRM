@@ -1,4 +1,5 @@
-﻿using CRM.Client.Services;
+﻿using CRM.Client.Models;
+using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
 using Radzen;
@@ -6,25 +7,31 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Groups
 {
     public partial class AddUser : ComponentBase
     {
         [Inject]
-        private IBaseRestService<ApplicationUser, UsersFilterModel, string> _userService { get; set; }
+        IBaseRestService<ApplicationUser, UsersFilterModel, string> _userService { get; set; }
 
         [Inject]
-        private IManyToManyService<UserGroupModel> _userGroupService { get; set; }
+        IManyToManyService<UserGroupModel> _userGroupService { get; set; }
 
         [Inject] 
-        private DialogService dialogService { get; set; }
+        DialogService dialogService { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
         [Parameter]
         public int IdGroup { get; set; }
 
         [Parameter]
         public Action OnClickClose { get; set; }
+
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Dialog;
 
         private List<UserFiltered> _users { get; set; }
 
@@ -32,13 +39,15 @@ namespace CRM.Client.Pages.Groups
 
         private UserGroupModel _userGroup = null;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected override async Task OnInitializedAsync()
         {
            
             await LoadUsers(new LoadDataArgs());
             _userGroup = new UserGroupModel() { IdGroup = IdGroup };
             _user = new ApplicationUser();
-
+            _pageHeader = await HeaderService.Create(PageMode);
         }
         public async Task LoadUsers(LoadDataArgs args)
         {
@@ -57,8 +66,6 @@ namespace CRM.Client.Pages.Groups
 
         protected async Task HandleValidSubmit()
         {
-           
-
             await _userGroupService.Post(_userGroup);
             dialogService.Close();
             

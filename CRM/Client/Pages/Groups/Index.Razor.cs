@@ -13,6 +13,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using BlazoringComponents;
 using Microsoft.Extensions.Localization;
+using CRM.Client.Models;
+using static CRM.Client.Helpers.PageHelper;
 
 
 
@@ -30,13 +32,15 @@ namespace CRM.Client.Pages.Groups
 
         [Inject] 
         private IJSRuntime JSRuntime { get; set; }
-
        
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
         Radzen.DialogService DialogService { get; set; }
+
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int? IdTicketType { get; set; } = null;
@@ -61,20 +65,13 @@ namespace CRM.Client.Pages.Groups
         public bool CmdDelete { get; set; } = true;
 
         [Parameter]
-        public bool BreadCrumbVisible { get; set; } = true;
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         private List<CRM.Shared.Group> _groups = null;
 
-        private PagingHeaderModel _paging = new PagingHeaderModel();
-
         private GroupFilter _filter = new GroupFilter();
 
-
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
-
         private string _pagingSummaryFormat;
-
-        private string _pageTitle;
 
         private bool _isLoading = false;
 
@@ -82,35 +79,27 @@ namespace CRM.Client.Pages.Groups
 
         private Radzen.Blazor.RadzenDataGrid<CRM.Shared.Group> _grdGroup;
 
+        private PagingHeaderModel _paging = new PagingHeaderModel();
+
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected override async Task OnInitializedAsync()
         {
-            //#if DEBUG
-            //            await Task.Delay(10000);
-            //#endif
             _pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
- 
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "Settings" });
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Gruppi"], Url = null});
-            _pageTitle = Localize["Gruppi"];
-
            await LoadData();
+
+            _pageHeader = await HeaderService.Create(PageMode);
+
            await base.OnInitializedAsync();
         }
-
-        
-
-        
 
         public async Task LoadData(Radzen.LoadDataArgs args = null)
         {
             _isLoading = true;
 
-
             try
             {
                 _filter.IdTicketType = IdTicketType;
-
-                
 
                 if (args != null)
                 {
@@ -124,12 +113,10 @@ namespace CRM.Client.Pages.Groups
 
                 _groups = pagingResponse.Items;
                 _paging = pagingResponse.MetaData;
-
             }
 
             catch (Exception ex)
             {
-
                 _pageMessage = ex.Message;
             }
             finally
@@ -140,14 +127,11 @@ namespace CRM.Client.Pages.Groups
 
                 await InvokeAsync(StateHasChanged);
             }
-
         }
-
-        
 
         private void Details(int id)
         {
-            NavigationManager.NavigateTo($"/Settings/Groups/info/{id}");
+            NavigationManager.NavigateTo($"/Settings/Groups/{id}/info");
         }
         protected void Edit(int id)
         {
@@ -167,7 +151,6 @@ namespace CRM.Client.Pages.Groups
 
         protected async Task Delete(CRM.Shared.Group group)
         {
-           
             if (await DialogService.Confirm($"{Localize["Eliminare il Gruppo"]}: {group.Name}?") == true)
             {
                 if (OnClickDelete != null)
@@ -177,7 +160,6 @@ namespace CRM.Client.Pages.Groups
                 else
                 {
                     await RestClientService.Delete<int>(group.Id, ConstHelper.GroupsPath);
-
                     await LoadData();
                 }
             }

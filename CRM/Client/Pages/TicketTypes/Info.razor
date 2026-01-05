@@ -1,11 +1,9 @@
-﻿@page "/Settings/TicketTypes/Info/{Id:int}"
+﻿@page "/Settings/TicketTypes/{Id:int}/Info"
 @page "/Settings/TicketTypes/{Id:int}"
 
 @using Radzen
 @using Radzen.Blazor
-
-
-
+@using static CRM.Client.Helpers.PageHelper
 
 @if (_ticketType == null)
 {
@@ -30,28 +28,28 @@ else
     {
         if (_partialView == PartialViews.Details)
         {
-            <Details Id="@Id" OnClickEdit="EditTicketType" OnClickCancel="CancelTicketType"></Details>
+            <Details Id="@Id" PageMode=PageModality.Child OnClickEdit="EditTicketType" OnClickCancel="CancelTicketType"></Details>
         }
         else
         {
-            <Edit Id="@Id" OnClickSave="(async () => await SaveTicketType())" OnClickCancel="CancelTicketType"></Edit>
+            <Edit Id="@Id" PageMode=PageModality.Child OnClickSave ="(async () => await SaveTicketType())" OnClickCancel="CancelTicketType"></Edit>
         }
     }
     else if (_selectView == TicketTypeViews.Users)
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Settings.Users.Index @ref="_pageUsersIndex" IdTicketType="@Id" CmdDetails="false" CmdEdit="false" OnClickEdit="@(async(s)=>await OnClickNew(s))"
+            <CRM.Client.Pages.Settings.Users.Index PageMode=PageModality.Child @ref="_pageUsersIndex" IdTicketType="@Id" CmdDetails="false" CmdEdit="false" OnClickEdit="@(async (s) => await OnClickNew(s))"
                                                    OnClickDelete="@(async (s)=> await OnClickDelete(s))"
                                                    MessagePrepareDelete="@_messagePrepareDelete" BreadCrumbVisible=false></CRM.Client.Pages.Settings.Users.Index>
         }
         else if (_partialView == PartialViews.Details)
         {
-            <CRM.Client.Pages.Settings.Users.Details Id="@_idUser" CloseForm="UsersCloseForm" OnClickEdit="DetailsEditUser"></CRM.Client.Pages.Settings.Users.Details>
+            <CRM.Client.Pages.Settings.Users.Details PageMode=PageModality.Child Id="@_idUser" CloseForm="UsersCloseForm" OnClickEdit="DetailsEditUser"></CRM.Client.Pages.Settings.Users.Details>
         }
         else if (_partialView == PartialViews.Edit)
         {
-            <CRM.Client.Pages.Settings.Users.Edit Id="@_idUser" CloseForm="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Settings.Users.Edit>
+            <CRM.Client.Pages.Settings.Users.Edit PageMode=PageModality.Child Id ="@_idUser" CloseForm="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Settings.Users.Edit>
         }
 
 
@@ -61,7 +59,7 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Groups.Index @ref="_pageGroupsIndex" IdTicketType="@Id" CmdDetails="false" CmdEdit="false" BreadCrumbVisible=false OnClickEdit="@(async (s)=>await OnClickGroupNew(s))"
+            <CRM.Client.Pages.Groups.Index PageMode="PageModality.Child" @ref="_pageGroupsIndex" IdTicketType="@Id" CmdDetails="false" CmdEdit="false"  OnClickEdit="@(async (s)=>await OnClickGroupNew(s))"
                                OnClickDelete="@(async (s)=> await OnClickGroupDelete(s))"
                                                    MessagePrepareDelete="@_messagePrepareDelete"></CRM.Client.Pages.Groups.Index>
         }

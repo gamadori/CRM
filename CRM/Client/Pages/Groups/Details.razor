@@ -1,8 +1,6 @@
 ﻿@page "/Settings/Groups/{Id:int}/Details"
 
-<BlazorHeader Header="@Localize["Dettagli Gruppo"]"></BlazorHeader>
 
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
 
 @if (_group == null)
 {
@@ -10,6 +8,10 @@
 }
 else
 {
+     <PageHeader 
+            Model=@_pageHeader>
+    </PageHeader>
+
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-4">
 

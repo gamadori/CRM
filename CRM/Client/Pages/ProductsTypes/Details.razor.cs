@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -28,6 +29,9 @@ namespace CRM.Client.Pages.ProductsTypes
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int Id { get; set; }
 
@@ -37,22 +41,17 @@ namespace CRM.Client.Pages.ProductsTypes
         [Parameter]
         public Action OnClickCancel { get; set; }
 
+
         private ProductType _productType = null;
 
-        private List<BreadcrumbItem> _bread = new List<BreadcrumbItem>();
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
-        private string _subTitle = "";
         protected override async Task OnInitializedAsync()
         {
             try
             {
-
                 _productType = await RestClientService.GetItem<ProductType, int>(Id, ConstHelper.ProductTypesPath);   // Service.Get(Id);
-
-                _bread.Add(new BreadcrumbItem() { Text = Localize["Settings"], Url = "/Settings" });
-                _bread.Add(new BreadcrumbItem() { Text = Localize["Tipo Prodotto"], Url = "/Settings/ProductsTypes" });
-                _bread.Add(new BreadcrumbItem() { Text = _productType.Name, Url = null });
-                _subTitle = string.Format(Localize["Dettagli del Tipo Prodotto: {0}"], _productType.Name);
+                _pageHeader = await HeaderService.Create();
             }
             catch (Exception ex)
             {

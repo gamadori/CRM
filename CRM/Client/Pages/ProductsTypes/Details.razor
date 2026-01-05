@@ -1,16 +1,16 @@
 ﻿@page "/Settings/ProductsTypes/{Id:int}/Details"
 
 
-<PageHeader Title="@Localize["Tipi Prodotti"]"
-            Subtitle="@_subTitle"
-            BreadcrumbItems="@_bread">
-</PageHeader>
 @if (_productType == null)
 {
     <Waiting></Waiting>
 }
 else
 {
+
+    <PageHeader Model="_pageHeader">
+    </PageHeader>
+
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-4">
 

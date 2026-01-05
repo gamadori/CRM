@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
@@ -31,20 +32,21 @@ namespace CRM.Client.Pages.Groups
         IAGRestClientService RestClientService { get; set; }
 
         [Inject]
-        private IJSRuntime JSRuntime { get; set; }
+        IManyToManyService<UserGroupModel> _userGroupService { get; set; }
 
         [Inject]
-        private Radzen.DialogService dialogService { get; set; }
-      
+        IJSRuntime JSRuntime { get; set; }
+
+        [Inject]
+        Radzen.DialogService dialogService { get; set; }
+
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int Id { get; set; }
 
-        [Inject]
-        private IManyToManyService<UserGroupModel>  _userGroupService { get; set; }
-
-
-        protected GroupViews selectView = GroupViews.Group;
-
+        private GroupViews selectView = GroupViews.Group;
 
         private PartialViews _partialView = PartialViews.Details;
 
@@ -58,11 +60,17 @@ namespace CRM.Client.Pages.Groups
 
         private Settings.Users.Index _pageUsersIndex;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
+        
+
         protected override async Task OnInitializedAsync()
         {
             dialogService.OnClose += async (s) => await OnClickClose(s);
 
             await LoadGroup();
+
+            _pageHeader = await HeaderService.Create();
         }
 
         public void Dispose()

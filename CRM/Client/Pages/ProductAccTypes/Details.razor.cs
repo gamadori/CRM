@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +12,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.ProductAccTypes
 {
@@ -27,6 +29,9 @@ namespace CRM.Client.Pages.ProductAccTypes
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int Id { get; set; }
 
@@ -39,17 +44,20 @@ namespace CRM.Client.Pages.ProductAccTypes
         [Parameter]
         public Action OnClickCancel { get; set; }
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
+
+
         private ProductAccessoryTypeModel _productAccessory = null;
 
-        private string _header;
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected override async Task OnInitializedAsync()
         {
-  
             try
             {
-                _header = Localize["Product Accessory Type Details"];
-
                 _productAccessory = await ProductTypeAccsService.GetDetails(Id);
+                _pageHeader = await HeaderService.Create(PageMode);
             }
             catch (Exception ex)
             {

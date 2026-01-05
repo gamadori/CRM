@@ -4,16 +4,16 @@
 @using Radzen.Blazor
 
 
-<PageHeader Title="@Localize["Tipo Prodotto"]"
-            Subtitle="@_subTitle"
-            BreadcrumbItems="@_bread">
-</PageHeader>
+
 @if (_productType == null)
 {
     <Waiting></Waiting>
 }
 else
 {
+    <PageHeader Model="_pageHeader">
+    </PageHeader>
+
     <EditForm Model="@_productType" OnValidSubmit="HandleValidSubmit">
         <RadzenRow Gap="1rem" class="mb-3">
             <RadzenColumn Size="12" SizeSM="6">

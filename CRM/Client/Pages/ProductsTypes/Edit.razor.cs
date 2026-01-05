@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -30,6 +31,9 @@ namespace CRM.Client.Pages.ProductsTypes
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int? Id { get; set; }
 
@@ -41,9 +45,8 @@ namespace CRM.Client.Pages.ProductsTypes
 
         private ProductType _productType = null;
 
-        private List<BreadcrumbItem> _bread = new List<BreadcrumbItem>();
-
-        private string _subTitle = "";
+        
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
         protected override async Task OnInitializedAsync()
         {
             
@@ -51,8 +54,6 @@ namespace CRM.Client.Pages.ProductsTypes
             string path;
             try
             {
-                _bread.Add(new BreadcrumbItem() { Text = Localize["Settings"], Url = "/Settings" });
-                _bread.Add(new BreadcrumbItem() { Text = Localize["Tipo Prodotto"], Url = "/Settings/ProductsTypes" });
                 
                 //await Task.Delay(10000);      // changes are flushed again   
                 path = ConstHelper.CompaniesPath;
@@ -63,17 +64,15 @@ namespace CRM.Client.Pages.ProductsTypes
                     path += $"/{Id}";
 
                     _productType = await RestClientService.GetItem<ProductType, int>(Id.Value, ConstHelper.ProductTypesPath);   // await Service.Get(Id.Value);
-                    _bread.Add(new BreadcrumbItem() { Text = _productType?.Name, Url = $"/Settings/ProductsTypes/{Id}" });
-                    _bread.Add(new BreadcrumbItem() { Text = Localize["Modifica"], Url = null });
-                    _subTitle = Localize["Modifica Tipo Prodotto"];
+                    
                 }
                 else
                 {
-                    _bread.Add(new BreadcrumbItem() { Text = Localize["Nuovo"], Url = null });
+                   
                     _productType = new ProductType();
-                    _subTitle = Localize["Nuovo Tipo Prodotto"];
+                    
                 }
-               
+                _pageHeader = await HeaderService.Create();
             }
             catch (Exception ex)
             {

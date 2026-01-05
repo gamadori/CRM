@@ -1,7 +1,8 @@
-﻿@page "/Settings/Groups/Info/{Id:int}"
+﻿@page "/Settings/Groups/{Id:int}/Info"
 @page "/Settings/Groups/{Id:int}"
 @using Radzen
 @using Radzen.Blazor
+@using static CRM.Client.Helpers.PageHelper
 
 
 
@@ -11,9 +12,10 @@
 }
 else
 {
-    <div class="page-header">
-        @_group.Name
-    </div>
+    <PageHeader 
+            Model=@_pageHeader>
+    </PageHeader>
+
     <RadzenSelectBar @bind-Value="selectView" TValue="GroupViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
         <Items>
             <RadzenSelectBarItem Text="Dati Gruppo" Value="GroupViews.Group" />
@@ -26,28 +28,28 @@ else
     {
         if (_partialView == PartialViews.Details)
         {
-            <Details Id="@Id" OnClickEdit="EditGroup" OnClickCancel="CancelGroup"></Details>
+            <Details Id="@Id" PageMode=PageModality.Child OnClickEdit="EditGroup" OnClickCancel="CancelGroup"></Details>
         }
         else
         {
-            <Edit Id="@Id" OnClickSave="(async () => await SaveGroup())" OnClickCancel="CancelGroup"></Edit>
+            <Edit Id="@Id" PageMode=PageModality.Child OnClickSave="(async () => await SaveGroup())" OnClickCancel="CancelGroup"></Edit>
         }
     }
     else if (selectView == GroupViews.Users)
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Settings.Users.Index @ref="_pageUsersIndex" IdGroup="@Id" CmdDetails="false" CmdEdit="false" OnClickEdit="@((s)=> OnClickNew(s))"
+            <CRM.Client.Pages.Settings.Users.Index PageMode=PageModality.Child @ref="_pageUsersIndex" IdGroup="@Id" CmdDetails="false" CmdEdit="false" OnClickEdit="@((s) => OnClickNew(s))"
                                                    OnClickDelete="@(async (s)=> await OnClickDelete(s))" BreadCrumbVisible=false
                                                    MessagePrepareDelete="@_messagePrepareDelete"></CRM.Client.Pages.Settings.Users.Index>
         }
         else if (_partialView == PartialViews.Details)
         {
-            <CRM.Client.Pages.Settings.Users.Details Id="@_idUser" CloseForm="UsersCloseForm" OnClickEdit="DetailsEditUser"></CRM.Client.Pages.Settings.Users.Details>
+            <CRM.Client.Pages.Settings.Users.Details Id="@_idUser" PageMode=PageModality.Child CloseForm="UsersCloseForm" OnClickEdit="DetailsEditUser"></CRM.Client.Pages.Settings.Users.Details>
         }
         else if (_partialView == PartialViews.Edit)
         {
-            <CRM.Client.Pages.Settings.Users.Edit Id="@_idUser" CloseForm="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Settings.Users.Edit>
+            <CRM.Client.Pages.Settings.Users.Edit Id="@_idUser" PageMode=PageModality.Child CloseForm="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Settings.Users.Edit>
         }
         else if (_partialView == PartialViews.New)
         {

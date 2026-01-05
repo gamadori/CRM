@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using static CRM.Client.Helpers.PageHelper;
 using System.Globalization;
 using CRM.Client.Helpers;
@@ -15,243 +14,51 @@ namespace CRM.Client.Services
 {
     public class HeaderService: IHeaderService
     {
-    
         private readonly NavigationManager _navigationManager;
         private readonly IAGRestClientService _restClient;
         private readonly ILocalizationService _localizationService;
 
+        // Cache per action keywords per evitare ricreazione ripetuta
+        private static readonly HashSet<string> ActionKeywords = new(
+            new[] { "details", "edit", "info", "new", "create", "index", "view" }, 
+            StringComparer.OrdinalIgnoreCase
+        );
+
         public HeaderService(NavigationManager navigationManager, IAGRestClientService restClient, ILocalizationService localizationService)
         {
-           
             _navigationManager = navigationManager;
             _restClient = restClient;
             _localizationService = localizationService;
         }
 
-        // Helper method to get localized string with case-insensitive fallback
         private string GetLocalizedString(string key) => _localizationService.GetLocalizedString(key);
-
         private bool GetLocalizedResourceNotFound(string key) => _localizationService.IsResourceNotFound(key);
 
-        
-
-
-        // New overload: build header from current URL only
         public async Task<PageHeaderModel> Create(PageModality pageModality = PageModality.Visualization)
         {
             var url = GetUrl();
-            var segments = url.Split('?', '#')[0].Split('/', System.StringSplitOptions.RemoveEmptyEntries).Select(s => System.Net.WebUtility.UrlDecode(s)).ToArray();
-
-            // determine action keywords
-            var actions = new HashSet<string>(new[] { "details", "edit", "info", "new", "create", "index", "view" }, System.StringComparer.OrdinalIgnoreCase);
-
-            string domainSegment = null;
-            string actionSegment = null;
-            object? domainId = null;
+            var segments = url.Split('?', '#')[0]
+                .Split('/', StringSplitOptions.RemoveEmptyEntries)
+                .Select(System.Net.WebUtility.UrlDecode)
+                .ToArray();
 
             if (segments.Length == 0)
             {
-                // fallback to Home
-                var modelEmpty = new PageHeaderModel()
-                {
-                    Title = GetLocalizedString("Home"),
-                    Subtitle = null,
-                    BreadcrumbItems = new List<BreadcrumbItem>() { new BreadcrumbItem(GetLocalizedString("Home"), "/") },
-                    PageMode = pageModality,
-                    Icon = GetIcon("")
-                };
-                return modelEmpty;
+                return CreateEmptyHeader(pageModality);
             }
 
-            // find action if last segment is action word
-            if (actions.Contains(segments.Last()))
-            {
-                actionSegment = segments.Last().ToLower();
-            }
-
-            // find domain: the last segment that represents a resource name (not numeric and not action)
-            for (int i = segments.Length - 1; i >= 0; i--)
-            {
-                var s = segments[i];
-                if (actions.Contains(s))
-                    continue;
-
-                if (int.TryParse(s, out _))
-                    continue;
-
-                if (Guid.TryParse(s, out _))
-                    continue;
-
-                domainSegment = s.ToLower();
-
-                // attempt to find id for this domain: check next segment (i+1) or previous (i-1)
-                if (i + 1 < segments.Length && int.TryParse(segments[i + 1], out int idNext))
-                {
-                    domainId = idNext;
-                }
-                else if (i - 1 >= 0 && int.TryParse(segments[i - 1], out int idPrev))
-                {
-                    domainId = idPrev;
-                }
-                else if (i + 1 < segments.Length && Guid.TryParse(segments[i + 1], out Guid guidNext))
-                {
-                    domainId = guidNext.ToString();
-                }
-                else if (i - 1 >= 0 && Guid.TryParse(segments[i - 1], out Guid guidPrev))
-                {
-                    domainId = guidPrev.ToString();
-                }
-                break;
-            }
-
-            // if no domain found, pick first non-numeric segment
-            if (domainSegment == null)
-            {
-                foreach (var s in segments)
-                {
-                    if (!int.TryParse(s, out _) && !actions.Contains(s))
-                    {
-                        domainSegment = s.ToLower();
-                        break;
-                    }
-                }
-            }
-
-            // determine display title
-            var title = domainSegment != null ? (GetLocalizedResourceNotFound(domainSegment) ? ToTitle(domainSegment) : GetLocalizedString(domainSegment)) : GetLocalizedString("Home");
-
-            // determine name for subtitle when possible
-            string name = null;
-            if (domainId != null && domainSegment != null)
-            {
-                switch (domainSegment)
-                {
-                    case "companies":
-                    case "company":
-                        var comp = await _restClient.GetItem<Company, int>((int)domainId, ConstHelper.CompaniesPath);
-                        if (comp != null)
-                            name = comp.RagioneSociale;
-                        break;
-                    case "articles":
-                    case "article":
-                        var art = await _restClient.GetItem<Article, int>((int)domainId, ConstHelper.ArticlesPath);
-                        if (art != null)
-                            name = art.Product != null ? $"{art.Product.Name} - {art.SerialNumber}" : art.SerialNumber;
-                        break;
-                    case "products":
-                    case "product":
-                        var prod = await _restClient.GetItem<Product, int>((int)domainId, ConstHelper.Products);
-                        if (prod != null)
-                            name = prod.Name;
-                        break;
-                    case "users":
-                    case "user":
-                        var usr = await _restClient.GetItem<ApplicationUser, string>((string)domainId, ConstHelper.UsersPath).ConfigureAwait(false) as ApplicationUser;
-                        // note: GetItem generic expects K type; users use string id normally — fallback
-                        if (usr != null)
-                            name = usr.NameComplete;
-                        break;
-                    case "tickets":
-                    case "ticket":
-                        var tick = await _restClient.GetItem<Ticket, int>((int)domainId, ConstHelper.TicketPath);
-                        if (tick != null)
-                            name = tick.Numero;
-                        break;
-                    case "contacts":
-                    case "contact":
-                        var cont = await _restClient.GetItem<Contact, int>((int)domainId, ConstHelper.ContactsPath);
-                        if (cont != null)
-                            name = cont.NameComplete;
-                        break;
-                    case "deals":
-                    case "deal":
-                        var deal = await _restClient.GetItem<Deal, int>((int)domainId, ConstHelper.DealsPath);
-                        if (deal != null)
-                            name = deal.Name;
-                        break;
-                    case "tickettypes":
-                    case "tickettype":
-                        var ttype = await _restClient.GetItem<TicketType, int>((int)domainId, ConstHelper.TicketTypesPath);
-                        if (ttype != null)
-                            name = ttype.Desc;
-                        break;
-                    case "tickettypeslanguages":
-                    case "tickettypeslanguage":
-                        var ttlang = await _restClient.GetItem<TicketTypeLanguage, int>((int)domainId, ConstHelper.TicketTypesLanguagesPath);
-                        if (ttlang != null)
-                            name = ttlang.Name;
-                        break;
-                    default:
-                        // no known mapping: leave name null
-                        break;
-                }
-            }
-
-            // determine edit flag and subtitle text
-            bool edit = false;
-            string subtitle = null;
-
-            if (actionSegment != null)
-            {
-                switch (actionSegment)
-                {
-                    case "details":
-                        edit = false;
-                        subtitle = name != null ? GetSubTitle(domainSegment ?? "", name, false) : FormatSubTitle("DetailsSubTitle", domainSegment);  //_localizer[$"{(domainSegment ?? "")}DetailsSubTitle"];
-                        break;
-                    case "edit":
-                        edit = true;
-                        subtitle = name != null ? GetSubTitle(domainSegment ?? "", name, true) : FormatSubTitle("EditSubTitle", domainSegment); // _localizer[$"{(domainSegment ?? "")}EditSubTitle"];
-                        break;
-                    case "new":
-                    case "create":
-                        edit = true;
-                        subtitle = FormatSubTitle("NewSubTitle", domainSegment);  //_localizer[$"{(domainSegment ?? "")}NewSubTitle"];
-                        break;
-                    case "info":
-                        edit = false;
-                        subtitle = name ?? ToTitle(actionSegment);
-                        break;
-                    case "index":
-                        edit = false;
-                        subtitle = FormatSubTitle("ListSubTitle", domainSegment); // _localizer[$"{(domainSegment ?? "")}ListSubTitle"];
-                        break;
-                    default:
-                        subtitle = null;
-                        break;
-                }
-            }
-            else
-            {
-                // no explicit action: if there's an id assume details
-                if (domainId != null)
-                {
-                    edit = false;
-                    subtitle = name != null ? GetSubTitle(domainSegment ?? "", name, false) : null;
-                }
-                else
-                {
-                    // list/index
-                    subtitle = GetSubTitle(domainSegment, null, false); // _localizer[$"{(domainSegment ?? "")}ListSubTitle"];
-                }
-            }
-
-            // build breadcrumb
+            var (domainSegment, actionSegment, domainId) = ParseSegments(segments);
+            var title = GetTitle(domainSegment);
+            var name = await GetDomainNameAsync(domainSegment, domainId);
+            var subtitle = GetSubtitle(domainSegment, actionSegment, name);
             var breadcrumbItems = await GetBreadCrumbFromUrlAsync(url);
 
-            // if breadcrumb empty, fallback to simple
             if (breadcrumbItems == null || !breadcrumbItems.Any())
             {
-                breadcrumbItems = new List<BreadcrumbItem>();
-                if (domainSegment != null)
-                {
-                    breadcrumbItems.Add(new BreadcrumbItem(GetLocalizedString(domainSegment), $"/{domainSegment}"));
-                    if (name != null)
-                        breadcrumbItems.Add(new BreadcrumbItem(name, null));
-                }
+                breadcrumbItems = CreateFallbackBreadcrumb(domainSegment, name);
             }
 
-            var header = new PageHeaderModel()
+            return new PageHeaderModel
             {
                 Title = title,
                 Subtitle = subtitle,
@@ -260,20 +67,187 @@ namespace CRM.Client.Services
                 PageMode = pageModality,
                 DialogTitle = null
             };
+        }
 
-            return header;
+        private PageHeaderModel CreateEmptyHeader(PageModality pageModality)
+        {
+            return new PageHeaderModel
+            {
+                Title = GetLocalizedString("Home"),
+                Subtitle = null,
+                BreadcrumbItems = new List<BreadcrumbItem> { new(GetLocalizedString("Home"), "/") },
+                PageMode = pageModality,
+                Icon = GetIcon("")
+            };
+        }
+
+        private (string domainSegment, string actionSegment, object? domainId) ParseSegments(string[] segments)
+        {
+            string domainSegment = null;
+            string actionSegment = null;
+            object? domainId = null;
+
+            // Trova action se l'ultimo segmento è una keyword
+            if (ActionKeywords.Contains(segments.Last()))
+            {
+                actionSegment = segments.Last().ToLower();
+            }
+
+            // Trova domain: ultimo segmento che rappresenta una risorsa (non numerico e non action)
+            for (int i = segments.Length - 1; i >= 0; i--)
+            {
+                var s = segments[i];
+                
+                if (ActionKeywords.Contains(s) || int.TryParse(s, out _) || Guid.TryParse(s, out _))
+                    continue;
+
+                domainSegment = s.ToLower();
+                domainId = ExtractDomainId(segments, i);
+                break;
+            }
+
+            // Se non trovato domain, prendi primo segmento non-numerico
+            if (domainSegment == null)
+            {
+                domainSegment = segments.FirstOrDefault(s => 
+                    !int.TryParse(s, out _) && !ActionKeywords.Contains(s))?.ToLower();
+            }
+
+            return (domainSegment, actionSegment, domainId);
+        }
+
+        private object? ExtractDomainId(string[] segments, int domainIndex)
+        {
+            // Controlla segmento successivo
+            if (domainIndex + 1 < segments.Length)
+            {
+                if (int.TryParse(segments[domainIndex + 1], out int idNext))
+                    return idNext;
+                if (Guid.TryParse(segments[domainIndex + 1], out Guid guidNext))
+                    return guidNext.ToString();
+            }
+
+            // Controlla segmento precedente
+            if (domainIndex - 1 >= 0)
+            {
+                if (int.TryParse(segments[domainIndex - 1], out int idPrev))
+                    return idPrev;
+                if (Guid.TryParse(segments[domainIndex - 1], out Guid guidPrev))
+                    return guidPrev.ToString();
+            }
+
+            return null;
+        }
+
+        private string GetTitle(string domainSegment)
+        {
+            if (domainSegment == null)
+                return GetLocalizedString("Home");
+
+            return GetLocalizedResourceNotFound(domainSegment) 
+                ? ToTitle(domainSegment) 
+                : GetLocalizedString(domainSegment);
+        }
+
+        private async Task<string> GetDomainNameAsync(string domainSegment, object? domainId)
+        {
+            if (domainId == null || domainSegment == null)
+                return null;
+
+            try
+            {
+                return domainSegment switch
+                {
+                    "companies" or "company" => 
+                        (await _restClient.GetItem<Company, int>((int)domainId, ConstHelper.CompaniesPath))?.RagioneSociale,
+                    
+                    "articles" or "article" => 
+                        GetArticleName(await _restClient.GetItem<Article, int>((int)domainId, ConstHelper.ArticlesPath)),
+                    
+                    "products" or "product" => 
+                        (await _restClient.GetItem<Product, int>((int)domainId, ConstHelper.Products))?.Name,
+                    
+                    "users" or "user" => 
+                        (await _restClient.GetItem<ApplicationUser, string>((string)domainId, ConstHelper.UsersPath))?.NameComplete,
+                    
+                    "tickets" or "ticket" => 
+                        (await _restClient.GetItem<Ticket, int>((int)domainId, ConstHelper.TicketPath))?.Numero,
+                    
+                    "contacts" or "contact" => 
+                        (await _restClient.GetItem<Contact, int>((int)domainId, ConstHelper.ContactsPath))?.NameComplete,
+                    
+                    "deals" or "deal" => 
+                        (await _restClient.GetItem<Deal, int>((int)domainId, ConstHelper.DealsPath))?.Name,
+                    
+                    "tickettypes" or "tickettype" => 
+                        (await _restClient.GetItem<TicketType, int>((int)domainId, ConstHelper.TicketTypesPath))?.Desc,
+                    
+                    "tickettypeslanguages" or "tickettypeslanguage" => 
+                        (await _restClient.GetItem<TicketTypeLanguage, int>((int)domainId, ConstHelper.TicketTypesLanguagesPath))?.Name,
+
+                    "productacctypes" or "productacctype" =>
+                        (await _restClient.GetItem<ProductAccessoryType, int>((int)domainId, ConstHelper.ProductAccTypesPath))?.Name,   
+                    _ => null
+                };
+            }
+            catch
+            {
+                // In caso di errore (es. record non trovato), restituisci null
+                return null;
+            }
+        }
+
+        private static string GetArticleName(Article article)
+        {
+            if (article == null) return null;
+            return article.Product != null 
+                ? $"{article.Product.Name} - {article.SerialNumber}" 
+                : article.SerialNumber;
+        }
+
+        private string GetSubtitle(string domainSegment, string actionSegment, string name)
+        {
+            if (actionSegment != null)
+            {
+                return actionSegment switch
+                {
+                    "details" => name != null 
+                        ? FormatSubTitle(domainSegment, name, false) 
+                        : FormatSubTitle("DetailsSubTitle", domainSegment),
+                    
+                    "edit" => name != null 
+                        ? FormatSubTitle(domainSegment, name, true) 
+                        : FormatSubTitle("EditSubTitle", domainSegment),
+                    
+                    "new" or "create" => FormatSubTitle("NewSubTitle", domainSegment),
+                    
+                    "info" => name ?? ToTitle(actionSegment),
+                    
+                    "index" => FormatSubTitle("ListSubTitle", domainSegment),
+                    
+                    _ => null
+                };
+            }
+
+            // Nessuna action esplicita
+            if (name != null)
+            {
+                return FormatSubTitle(domainSegment ?? "", name, false);
+            }
+
+            return FormatSubTitle("ListSubTitle", domainSegment);
         }
 
         private string FormatSubTitle(string domine, string? name, bool edit)
         {
             if (name != null)
             {
-                return edit ? $"{FormatSubTitle("EditSubTitle", domine)} {name}" : $"{FormatSubTitle("DetailsSubTitle", domine)} {name}";
-                
+                var subtitleType = edit ? "EditSubTitle" : "DetailsSubTitle";
+                return $"{FormatSubTitle(subtitleType, domine)} {name}";
             }
-            else
-                return edit ? $"{FormatSubTitle("NewSubTitle", domine)} {name}" : $"{FormatSubTitle("ListSubTitle", domine)} {name}";
-            
+
+            var type = edit ? "NewSubTitle" : "ListSubTitle";
+            return FormatSubTitle(type, domine);
         }
 
         private string FormatSubTitle(string type, string domine)
@@ -281,21 +255,21 @@ namespace CRM.Client.Services
             return string.Format(GetLocalizedString(type), GetLocalizedString(domine));
         }
 
-        private List<BreadcrumbItem> BreadCrumbRoot(List<string> root)
+        private List<BreadcrumbItem> CreateFallbackBreadcrumb(string domainSegment, string name)
         {
-           
-            List<BreadcrumbItem> items = new List<BreadcrumbItem>();
-            if (root != null && root.Any())
+            var items = new List<BreadcrumbItem>();
+            
+            if (domainSegment != null)
             {
-                foreach (var parent in root)
-                {
-                    items.Add(new BreadcrumbItem() { Text = GetLocalizedString(parent), Url = parent });
-                }
+                items.Add(new BreadcrumbItem(GetLocalizedString(domainSegment), $"/{domainSegment}"));
+                
+                if (name != null)
+                    items.Add(new BreadcrumbItem(name, null));
             }
+
             return items;
         }
 
-        
         private string GetIcon(string domine)
         {
             return domine.ToLower() switch
@@ -307,41 +281,16 @@ namespace CRM.Client.Services
                 "opportunities" => "trending_up",
                 "settings" => "settings",
                 "users" => "manage_accounts",
+                "tickets" => "confirmation_number",
+                "products" => "inventory_2",
+                "deals" => "handshake",
                 _ => "dashboard"
             };
-        }
-        
-        
-        private string GetSubTitle(string domine, string? name, bool edit)
-        {
-            
-           
-                return FormatSubTitle(domine, name, edit);
-
-                //return edit ? $"{_localizer[$"{domine}EditSubTitle"]} {name}" : $"{_localizer[$"{domine}DetailsSubTitle"]} {name}";
-           
-            // return edit ? _localizer[$"{domine}NewSubTitle"] : _localizer[$"{domine}ListSubTitle"];
-        }
-
-        private string? GetDialogTitle(string domine, bool edit, object? id)
-        {
-            if (edit)
-            {
-                return id == null ? string.Format(GetLocalizedString("NewItem"), GetLocalizedString(domine)) : string.Format(GetLocalizedString("EditItem"), GetLocalizedString(domine));
-            }
-            return null;
         }
 
         private string GetUrl()
         {
-            string uri;
-
-
-            uri = _navigationManager.Uri.Substring(_navigationManager.BaseUri.Length - 1);
-
-            
-            return uri;
-
+            return _navigationManager.Uri.Substring(_navigationManager.BaseUri.Length - 1);
         }
 
         public async Task<List<BreadcrumbItem>> GetBreadCrumbFromCurrentUrlAsync()
@@ -355,147 +304,100 @@ namespace CRM.Client.Services
             var items = new List<BreadcrumbItem>();
 
             if (string.IsNullOrWhiteSpace(url))
-                return items;    
-
-            // strip query and fragment
-            var path = url.Split('?', '#')[0];
-
-            var segments = path.Split('/', System.StringSplitOptions.RemoveEmptyEntries);
-
-            if (segments == null || segments.Length == 0)
                 return items;
-            
-            // Eliminare i segment contenenti "Details" e "Index"
-            
-            segments = segments.Where(s => !s.Equals("details", StringComparison.OrdinalIgnoreCase)
-                                        && !s.Equals("index", StringComparison.OrdinalIgnoreCase)
-                                        ).ToArray();
+
+            var path = url.Split('?', '#')[0];
+            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries)
+                .Where(s => !s.Equals("details", StringComparison.OrdinalIgnoreCase) 
+                         && !s.Equals("index", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            if (segments.Length == 0)
+                return items;
 
             string cumulative = string.Empty;
 
-
             for (int i = 0; i < segments.Length; i++)
             {
-                var segment = segments[i];
+                var segment = System.Net.WebUtility.UrlDecode(segments[i]);
 
-                // decode URL-encoded parts
-                segment = System.Net.WebUtility.UrlDecode(segment);
-
-                // if segment is numeric or a guid treat as id of previous resource
-                if (i > 0 && (int.TryParse(segment, out int numericId) || Guid.TryParse(segment, out Guid guidId)))
+                if (i > 0 && IsIdSegment(segment, out var isNumeric, out var isGuid))
                 {
-                    var prev = segments[i - 1].ToLower();
-                    string text = segment;
-
-                    switch (prev)
-                    {
-                        case "companies":
-                            if (int.TryParse(segment, out numericId))
-                            {
-                                var company = await _restClient.GetItem<Company, int>(numericId, ConstHelper.CompaniesPath);
-                                text = company?.RagioneSociale ?? numericId.ToString();
-                            }
-                            break;
-                        case "articles":
-                        case "article":
-                            if (int.TryParse(segment, out numericId))
-                            {
-                                var article = await _restClient.GetItem<Article, int>(numericId, ConstHelper.ArticlesPath);
-                                if (article != null)
-                                    text = article.Product != null ? $"{article.Product.Name} - {article.SerialNumber}" : article.SerialNumber;
-                                else
-                                    text = numericId.ToString();
-                            }
-                            break;
-                        case "products":
-                        case "product":
-                            if (int.TryParse(segment, out numericId))
-                            {
-                                var product = await _restClient.GetItem<Product, int>(numericId, ConstHelper.Products);
-                                text = product?.Name ?? numericId.ToString();
-                            }
-                            break;
-
-                        case "tickets":
-                        case "ticket":
-                            if (int.TryParse(segment, out numericId))
-                            {
-                                var ticket = await _restClient.GetItem<Ticket, int>(numericId, ConstHelper.TicketPath);
-                                text = ticket?.Numero ?? numericId.ToString();
-                            }
-                            break;
-                    
-                        case "users":
-                        case "user":
-                            // users ids are GUID/string typed
-                            if (Guid.TryParse(segment, out guidId))
-                            {
-                                var user = await _restClient.GetItem<ApplicationUser, string>(guidId.ToString(), ConstHelper.UsersPath);
-                                if (user != null)
-                                    text = user.NameComplete;
-                                else
-                                    text = guidId.ToString();
-                            }
-                            else if (int.TryParse(segment, out numericId))
-                            {
-                                // fallback if numeric id used
-                                var user = await _restClient.GetItem<ApplicationUser, string>(numericId.ToString(), ConstHelper.UsersPath);
-                                text = user?.NameComplete ?? numericId.ToString();
-                            }
-                            break;
-                        case "contacts":
-                        case "contact":
-                            if (int.TryParse(segment, out numericId))
-                            {
-                                var contact = await _restClient.GetItem<Contact, int>(numericId, ConstHelper.ContactsPath);
-                                text = contact?.NameComplete ?? numericId.ToString();
-                            }
-                            break;
-                        case "tickettypes":
-                        case "tickettype":
-                            if (int.TryParse(segment, out numericId))
-                            {
-                                var ticketType = await _restClient.GetItem<TicketType, int>(numericId, ConstHelper.TicketTypesPath);
-                                text = ticketType?.Desc ?? numericId.ToString();
-                            }
-                            break;
-                        default:
-                            text = segment;
-                            break;
-                    }
-
+                    var text = await GetSegmentTextForIdAsync(segments[i - 1].ToLower(), segment, isNumeric, isGuid);
                     cumulative += "/" + segment;
-
-                    // make id item clickable
                     items.Add(new BreadcrumbItem { Text = text, Url = cumulative });
                 }
                 else
                 {
-                    // normal segment
-                    
-
-                    string text = !GetLocalizedResourceNotFound(segment) ? GetLocalizedString(segment) : ToTitle(segment);
+                    var text = GetLocalizedResourceNotFound(segment) 
+                        ? ToTitle(segment) 
+                        : GetLocalizedString(segment);
 
                     cumulative += "/" + segment;
 
-                    // last segment -> not clickable
-                    if (i == segments.Length - 1)
-                        items.Add(new BreadcrumbItem { Text = text, Url = null });
-                    else
-                        items.Add(new BreadcrumbItem { Text = text, Url = cumulative });
+                    // Ultimo segmento non cliccabile
+                    var breadcrumbUrl = i == segments.Length - 1 ? null : cumulative;
+                    items.Add(new BreadcrumbItem { Text = text, Url = breadcrumbUrl });
                 }
             }
 
             return items;
         }
 
+        private bool IsIdSegment(string segment, out bool isNumeric, out bool isGuid)
+        {
+            isNumeric = int.TryParse(segment, out _);
+            isGuid = Guid.TryParse(segment, out _);
+            return isNumeric || isGuid;
+        }
+
+        private async Task<string> GetSegmentTextForIdAsync(string previousSegment, string segment, bool isNumeric, bool isGuid)
+        {
+            if (!isNumeric && !isGuid)
+                return segment;
+
+            try
+            {
+                return previousSegment switch
+                {
+                    "companies" when isNumeric => 
+                        (await _restClient.GetItem<Company, int>(int.Parse(segment), ConstHelper.CompaniesPath))?.RagioneSociale ?? segment,
+                    
+                    "articles" or "article" when isNumeric => 
+                        GetArticleName(await _restClient.GetItem<Article, int>(int.Parse(segment), ConstHelper.ArticlesPath)) ?? segment,
+                    
+                    "products" or "product" when isNumeric => 
+                        (await _restClient.GetItem<Product, int>(int.Parse(segment), ConstHelper.Products))?.Name ?? segment,
+                    
+                    "tickets" or "ticket" when isNumeric => 
+                        (await _restClient.GetItem<Ticket, int>(int.Parse(segment), ConstHelper.TicketPath))?.Numero ?? segment,
+                    
+                    "users" or "user" when isGuid => 
+                        (await _restClient.GetItem<ApplicationUser, string>(Guid.Parse(segment).ToString(), ConstHelper.UsersPath))?.NameComplete ?? segment,
+                    
+                    "users" or "user" when isNumeric => 
+                        (await _restClient.GetItem<ApplicationUser, string>(segment, ConstHelper.UsersPath))?.NameComplete ?? segment,
+                    
+                    "contacts" or "contact" when isNumeric => 
+                        (await _restClient.GetItem<Contact, int>(int.Parse(segment), ConstHelper.ContactsPath))?.NameComplete ?? segment,
+                    
+                    "tickettypes" or "tickettype" when isNumeric => 
+                        (await _restClient.GetItem<TicketType, int>(int.Parse(segment), ConstHelper.TicketTypesPath))?.Desc ?? segment,
+                    "ProductAccTypes" or "productacctype" when isNumeric =>
+                        (await _restClient.GetItem<ProductAccessoryType, int>(int.Parse(segment), ConstHelper.ProductAccTypesPath))?.Name ?? segment,
+
+                    _ => segment
+                };
+            }
+            catch
+            {
+                return segment;
+            }
+        }
+
         private static string ToTitle(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-                return value;
-
-            // if numeric keep as-is
-            if (int.TryParse(value, out _))
+            if (string.IsNullOrWhiteSpace(value) || int.TryParse(value, out _))
                 return value;
 
             var cleaned = value.Replace("-", " ").Replace("_", " ");

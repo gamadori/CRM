@@ -665,6 +665,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a New {0}.
+        /// </summary>
+        public static string NewSubTitle {
+            get {
+                return ResourceManager.GetString("NewSubTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a To be assigned.
         /// </summary>
         public static string NotAssigned {

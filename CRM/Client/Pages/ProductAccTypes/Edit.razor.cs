@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -39,7 +40,8 @@ namespace CRM.Client.Pages.ProductAccTypes
         [Inject]
         DialogService DialogService { get; set; }
 
-        
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int? Id { get; set; }
@@ -62,32 +64,29 @@ namespace CRM.Client.Pages.ProductAccTypes
         
         private string _messageState = "";
 
-        private string _header = "Accessory";
-
         private RadzenDropDown<int> _ddAccessoryTypes;
 
         private int _pageSize = 12;
+        
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
-      
         protected override async Task OnInitializedAsync()
         {
             try
             {
 
                 await LoadAccessoryTypes();
+
                 if (Id != null)
                 {
-
-                    _header = Localize["Edit Accessory"];
                     _productTypeAccessory = await ProductTypeAccsService.Get(Id.Value);
                 }
                 else
                 {
-                    _header = "New Accessory";
                     _productTypeAccessory = new ProductAccessoryType() { IdProduct = (int)IdProduct };
-
-                   
                 }
+
+                _pageHeader = await HeaderService.Create(PageMode);
 
                 StateHasChanged();
             }

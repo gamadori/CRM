@@ -17,6 +17,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CRM.Shared.Resources.Models;
 using System.Threading;
+using CRM.Client.Models;
 
 namespace CRM.Client.Pages.ProductsTypes
 {
@@ -41,7 +42,10 @@ namespace CRM.Client.Pages.ProductsTypes
         DialogService DialogService { get; set; }
 
         [Inject]
-        NotificationService NotificationService { get; set; }   
+        NotificationService NotificationService { get; set; }
+
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         private IList<ProductType> _productTypes = null;
 
@@ -60,17 +64,15 @@ namespace CRM.Client.Pages.ProductsTypes
 
         private RadzenDataGrid<ProductType> grdItems;
 
-        private List<BreadcrumbItem> _bread = new List<BreadcrumbItem>();
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
             
-            _bread.Add(new BreadcrumbItem() {  Text = Localize["Settings"], Url = "/Settings" });
-            _bread.Add(new BreadcrumbItem() { Text = Localize["Tipo Prodotto"], Url = "/Setting/ProductsTypes" });
-
             _pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
             await LoadData();
 
+            _pageHeader = await HeaderService.Create();
         }
 
         public async Task LoadData(LoadDataArgs args = null)

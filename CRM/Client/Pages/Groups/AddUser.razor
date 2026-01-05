@@ -9,6 +9,10 @@
 }
 else
 {
+     <PageHeader 
+            Model=@_pageHeader>
+    </PageHeader>
+
     <EditForm Model="@_userGroup" OnValidSubmit="HandleValidSubmit">
         <DataAnnotationsValidator />
         <ValidationSummary />

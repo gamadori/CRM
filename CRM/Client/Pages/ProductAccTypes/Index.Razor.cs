@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -41,7 +42,7 @@ namespace CRM.Client.Pages.ProductAccTypes
         DialogService DialogService { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int IdProductType { get; set; }
@@ -80,17 +81,13 @@ namespace CRM.Client.Pages.ProductAccTypes
 
         private bool _filterState = false;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>() ;
-
         private ApplicationUser? _user;
 
         private FilterMode _filterMode = FilterMode.Advanced;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
         protected async override Task OnInitializedAsync()
         {
-            _bread = await BreadCrumbService.ProductTypeAccs(false);
-
-            _header = Localize["Product Accessory"];
 
             _user = await UserSignedService.Get();
 
@@ -98,7 +95,9 @@ namespace CRM.Client.Pages.ProductAccTypes
                 _filterMode = FilterMode.SimpleWithMenu;
 
             await LoadData();
-            
+
+            _pageHeader = await HeaderService.Create(PageMode);
+
             StateHasChanged();
         }
 

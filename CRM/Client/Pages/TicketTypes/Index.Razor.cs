@@ -46,9 +46,7 @@ namespace CRM.Client.Pages.TicketTypes
         [Inject]
         DialogService DialogService { get; set; }
 
-        [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
-
+       
         [Inject]
         IHeaderService HeaderService { get; set; }
 
@@ -174,7 +172,7 @@ namespace CRM.Client.Pages.TicketTypes
                 OnClickDetails(idTicketState);
             }
             else
-                NavigationManager.NavigateTo($"/Settings/TicketTypes/Info/{idTicketState}");
+                NavigationManager.NavigateTo($"/Settings/TicketTypes/{idTicketState}");
         }
 
         protected void Edit(int id)

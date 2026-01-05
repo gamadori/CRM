@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +12,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Groups
 {
@@ -28,6 +30,9 @@ namespace CRM.Client.Pages.Groups
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int? Id { get; set; }
 
@@ -37,38 +42,28 @@ namespace CRM.Client.Pages.Groups
         [Parameter]
         public Action OnClickCancel { get; set; }
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
+
         private Group _group = null;
 
         private string _messageState = null;
 
-        private string _header = "Gruppo";
-
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
 
         protected override async Task OnInitializedAsync()
         {
             try
             {
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "Settings" });
-                _bread.Add(new BreadcrumbModel() { Title = Localize["Gruppi"], Url = "Settings/Groups" });
-
-                
                 if (Id != null)
                 {
-                    
-                    _header = Localize["Modifica Gruppo"];
                     _group = await RestClientService.GetItem<Group, int>(Id.Value, ConstHelper.GroupsPath);
-
-                    _bread.Add(new BreadcrumbModel() { Title = _group.Name, Url = $"Settings/Groups/{Id}/Details" });
-                    _bread.Add(new BreadcrumbModel() { Title = Localize["Modifica Gruppo"], Url = null });
                 }
                 else
                 {
-                    _bread.Add(new BreadcrumbModel() { Title = Localize["Nuovo Gruppo"], Url = null });
-                    _header = Localize["Nuovo Gruppo"];
                     _group = new Group();
                 }
-
+                _pageHeader = await HeaderService.Create(PageMode);
             }
             catch (Exception ex)
             {

@@ -1,7 +1,6 @@
 ﻿@page "/ProductAccTypes/{Id:int}/Details"
 @using CRM.Shared.Helper
 
-<BlazorHeader Header="@_header" />
 
 @if (_productAccessory == null)
 {
@@ -9,6 +8,10 @@
 }
 else
 {
+    <PageHeader Model=@_pageHeader>
+    </PageHeader>
+
+
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-4">
 
