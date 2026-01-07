@@ -104,7 +104,7 @@ namespace CRM.Server.Controllers
                     }
                     if (args.IdArticle != null)
                     {
-                        where += " FT_TBL.IdArticke = @IdArticle";
+                        where += " FT_TBL.IdArticle = @IdArticle";
                         parms.Add(new SqlParameter("@IdArticle", args.IdArticle));
                     }
                 }
@@ -220,7 +220,7 @@ namespace CRM.Server.Controllers
                     if (args.ViewNotAssigned)
                         tickets = tickets.Where(x => (x.IdUserAssigned == args.IdUserAssigned || x.IdUserAssigned == null));
                     else
-                        tickets = tickets.Where(x => x.IdUserAssigned == args.IdUserAssigned);
+                        tickets = tickets.Where(x => x.AssignedUsers.Where(y=>y.IdUser == args.IdUserAssigned).Any());
                 }
 
                 if (args.IdProject != null)
@@ -345,28 +345,33 @@ namespace CRM.Server.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Ticket>> GetTicket(int id)
         {
-
-            var ticket = await _context.Tickets.Include(x => x.Company).Include(x => x.TicketType)
-                .Include(x => x.Article).ThenInclude(x => x.Product).Where(x => x.Id == id).FirstOrDefaultAsync();
-
-
-            if (ticket == null)
+            try
             {
-                return NotFound();
-            }
-            else if (await _permits.CanGetObject(ticket.IdCompany))
-            {
-                await TicketSetState(ticket);
-                
-                return ticket;
-            }
-            else
-            {
-                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(GetTicket), LogEvent.EventsTypes.Error, GlobalMessages.PermitsErrors);
-                return BadRequest();
-            }
+                var ticket = await _context.Tickets.Include(x => x.Company).Include(x => x.TicketType)
+                    .Include(x => x.Article).ThenInclude(x => x.Product).Where(x => x.Id == id).FirstOrDefaultAsync();
 
 
+                if (ticket == null)
+                {
+                    return NotFound();
+                }
+                else if (await _permits.CanGetObject(ticket.IdCompany))
+                {
+                    await TicketSetState(ticket);
+
+                    return Ok(ticket);
+                }
+                else
+                {
+                    await _logEventService.RegisterAsync(nameof(TicketsController), nameof(GetTicket), LogEvent.EventsTypes.Error, GlobalMessages.PermitsErrors);
+                    return BadRequest();
+                }
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(GetTicket), LogEvent.EventsTypes.Error, ex);
+                return Problem(ex.Message);
+            }
         }
 
         // GET: api/Tickets/5
@@ -1542,10 +1547,14 @@ namespace CRM.Server.Controllers
         {
             try
             {
-                string p = txtSearch;
+                List<object> parms = new List<object>();
 
                 var select = $"SELECT  FT_TBL.Id as Id,FT_TBL.Description as Description, KEY_TBL.RANK as Rank ";
-                var from = $"FROM Tickets AS FT_TBL INNER JOIN FREETEXTTABLE(Tickets, Description, {p}, LANGUAGE N'Italian', 2) AS KEY_TBL ON FT_TBL.Id = KEY_TBL.[KEY]";
+                var from = $"FROM Tickets AS FT_TBL INNER JOIN FREETEXTTABLE(Tickets, Description, @Search, LANGUAGE N'Italian') AS KEY_TBL ON FT_TBL.Id = KEY_TBL.[KEY]";
+                
+                var pSearch = new SqlParameter("@Search", txtSearch);
+                parms.Add(pSearch);
+                
                 string where = string.Empty;
 
                 if (idCompany != null || idProduct != null || IdArticle != null) 
@@ -1553,21 +1562,27 @@ namespace CRM.Server.Controllers
                     where = "where ";
 
                     if (idCompany != null)
-                        where += $" FT_TBL.IdCompany = {idCompany}";
-
+                    {
+                        where += $" FT_TBL.IdCompany = @IdCompany";
+                        parms.Add(new SqlParameter("@IdCompany", idCompany));
+                    }
                     if (idProduct != null)
-                        where += $" FT_TBL.IdProduct = {idProduct}";
-
+                    {
+                        where += " FT_TBL.IdProduct = @IdProduct";
+                        parms.Add(new SqlParameter("@IdProduct", idProduct));
+                    }
                     if (IdArticle != null)
-                        where += $" FT_TBL.IdArticke = {IdArticle}";
-
+                    {
+                        where += " FT_TBL.IdArticle = @IdArticle";
+                        parms.Add(new SqlParameter("@IdArticle", IdArticle));
+                    }
                 }
 
                 var orderby = $"ORDER BY KEY_TBL.RANK DESC OFFSET {skip} ROWS FETCH NEXT {top} ROWS ONLY";
 
-                FormattableString sql = $"{select} {from} {where} {orderby}";
+                var sql = select + from + where + orderby;
 
-                List<TicketSearchModel> tickets = await _context.Tickets.FromSql(sql).Select(x => new TicketSearchModel()
+                List<TicketSearchModel> tickets = await _context.Tickets.FromSqlRaw(sql, parms.ToArray()).Select(x => new TicketSearchModel()
                 {
                     Description = x.Description,
                     Id = x.Id,
@@ -1578,9 +1593,9 @@ namespace CRM.Server.Controllers
             }
             catch(Exception ex)
             {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(TicketsSearch), LogEvent.EventsTypes.Error, ex);
                 return new List<TicketSearchModel>();
             }
-           
         }
 
 

@@ -30,23 +30,7 @@
         <Radzen.Blazor.RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Disabled=@DateLocked ButtonType="Radzen.ButtonType.Button" Click="Today">@Localize["Today"]</Radzen.Blazor.RadzenButton>
         
         <div class="d-flex justify-content-end">
-           @* <ul class="nav nav-pills">
-                 <li class="nav-item">
-                    <button type="button" class="nav-link @_activeMonth" @onclick="()=>ViewSelected(SchedulerViews.Month)">@Localize["Month"]</button>
-                    
-                </li>
-
-                <li class="nav-item">
-                    <button type="button" class="nav-link @_activeWeek" @onclick="()=>ViewSelected(SchedulerViews.Week)">@Localize["Week"]</button>
-                </li>
-               
-
-                <li class="nav-item">
-                    <button type="button" class="nav-link @_activeDay" aria-current="page" @onclick="()=>ViewSelected(SchedulerViews.Day)">@Localize["Day"]</button>
-                </li>
-                
-
-            </ul>*@
+          
             <RadzenSelectBar @bind-Value="CurrentView" Change="ViewChanged" TValue="SchedulerViews">
                 <Items>
 

@@ -7,13 +7,7 @@
         <div class="col border @_dayTickets.BgBody">
 
             <div>
-                @*<div class="row border-bottom mb-3 @_dayTickets.BgHead text-white text-center border-secondary">
-
-                    <label>@_dayTickets.NameDay</label>
-                    <label>@_dayTickets.Date.ToShortDateString()</label>
-
-
-                </div>*@
+               
                 <AGDayHead Day="@_dayTickets" OnSelect="OnSelect"></AGDayHead>
                 @if (_dayTickets.Tickets.Any())
                 {

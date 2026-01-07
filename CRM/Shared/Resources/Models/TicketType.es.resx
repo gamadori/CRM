@@ -123,6 +123,12 @@
   <data name="Desc" xml:space="preserve">
     <value>Descripción</value>
   </data>
+  <data name="Free" xml:space="preserve">
+    <value>Gratis</value>
+  </data>
+  <data name="MaxHoursLife" xml:space="preserve">
+    <value>Duración máxima del ticket antes del vencimiento (horas)</value>
+  </data>
   <data name="Price" xml:space="preserve">
     <value>Price</value>
   </data>

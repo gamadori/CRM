@@ -148,10 +148,10 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
         {
             try
             {
-                _languages = await HttpClient.GetFromJsonAsync<List<Language>>(ConstHelper.LanguagesPath);
-                
-                
-                
+                _languages = await HttpClient.GetFromJsonAsync<List<Language>>($"{ConstHelper.LanguagesPath}/list");
+
+
+
             }
             catch (AccessTokenNotAvailableException exception)
             {
@@ -171,10 +171,10 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
             }
             finally
             {
-              
+
             }
         }
-
+       
 
         async Task EditRow(InterventionTypeLanguage interventionType)
         {

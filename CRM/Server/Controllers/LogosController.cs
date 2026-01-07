@@ -1,211 +1,125 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using CRM.Client.Models;
+using CRM.Client.Services;
+using CRM.Server.Services;
+using CRM.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using CRM.Server.Data;
-using CRM.Shared;
-using Microsoft.AspNetCore.Hosting;
-using System.IO;
+using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Dynamic.Core;
+using System.Threading.Tasks;
 
-namespace CRM.Server.Controllers
+namespace RedG.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class LogosController : ControllerBase
     {
-        private const string DirLoghi = "Loghi";
-
-        private readonly ApplicationDbContext _context;
-        private readonly IWebHostEnvironment _env;
-
-        public LogosController(ApplicationDbContext context, IWebHostEnvironment env)
+        private readonly ILogEventService _logEventService;
+        private readonly ILogosService _logosService;
+        public LogosController(ILogEventService logEventService, ILogosService logosService)
         {
-            _context = context;
-            _env = env;
+            _logEventService = logEventService;
+            _logosService = logosService;
         }
 
-        // GET: api/Loghi
+        // GET: api/Companies
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Logo>>> GetLoghi([FromQuery] LogosFilterModel args)
+        public async Task<PagingResponse<Logo>?> GetPage([FromQuery] LogosFilterModel? args = null)
         {
-            int totalPage;
-
-            var logos = _context.Logos.AsQueryable();
-
-            if (args.Codice != null && args.Codice?.Length > 0)
-                logos = logos.Where(x => x.Codice.Contains(args.Codice));
-
-            if (args.Descrizione != null && args.Descrizione?.Length > 0)
-                logos = logos.Where(x => x.Descrizione.Contains(args.Descrizione));
-            
-            int count = logos.Count();
-
-            if (args.PageSize > 0)
+            try
             {
-                logos = logos.Skip((args.PageNumber - 1) * args.PageSize).Take(args.PageSize);
-                totalPage = (int)Math.Ceiling(count / (double)args.PageSize);
+                var items = await _logosService.GetPagingAsync(args);
+
+                return items;
             }
-            else
-                totalPage = 1;
-
-            bool nextPage = args.PageNumber < totalPage;
-            bool previousPage = args.PageNumber > 1;
-
-            var paginationMetadata = new
+            catch (Exception ex)
             {
-                totalCunt = count,
-                pageSize = args.PageSize,
-                currentPage = args.PageNumber,
-                totalPage = totalPage,
-                previousPage = previousPage,
-                nextPage = nextPage
-            };
-            HttpContext.Response.Headers.Add("Paging-Header", JsonConvert.SerializeObject(paginationMetadata));
-
-
-            return await logos.ToListAsync();
+                await _logEventService.RegisterAsync(nameof(LogosController), nameof(GetPage), LogEvent.EventsTypes.Error, ex);
+                return null;
+            }
         }
 
-        // GET: api/Loghi/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Logo>> GetLogo(int id)
+        [HttpGet("list")]
+        public async Task<IEnumerable<Logo?>> GetItems([FromQuery] LogosFilterModel? args = null)
         {
-            var logo = await _context.Logos.FindAsync(id);
+            try
+            {
+                var items = await _logosService.GetListAsync(args);
 
-            if (logo == null)
+                if (items == null)
+                {
+                    return Enumerable.Empty<Logo>();
+                }
+                return items;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(LogosController), nameof(GetItems), LogEvent.EventsTypes.Error, ex);
+                return Enumerable.Empty<Logo>();
+            }
+        }
+
+        
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Logo>> Get(int id)
+        {
+            var item = await _logosService.GetItemAsync(id);
+
+            if (item == null)
             {
                 return NotFound();
             }
-
-            return logo;
+            return item;
         }
-
-        // PUT: api/Loghi/5
+        
+        // PUT: api/Companies/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutLogo(int id, Logo logo)
+        public async Task<ActionResult<APIResponseMessage<Logo>>> Put(int id, Logo item)
         {
-            
-            if (id != logo.Id)
+            if (id != item.Id)
             {
                 return BadRequest();
             }
+            var resp = await _logosService.PostAsync(item);
 
-            
+            if (resp == null)
+                return Problem("Error saving settings");
 
-            _context.Entry(logo).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!LogoExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            return Ok(resp);
         }
 
-        // POST: api/Loghi
+        // POST: api/Companies
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Logo>> PostLogo(Logo logo)
+        public async Task<ActionResult<APIResponseMessage<Logo>>> Post(Logo item)
         {
-            
-            _context.Logos.Add(logo);
-            await _context.SaveChangesAsync();
+            var resp = await _logosService.PostAsync(item);
 
-            //SetLogo(logo.Id, logo.Ext, bytes);
+            if (resp == null)
+                return StatusCode(StatusCodes.Status500InternalServerError, "Post return null");
 
-            return CreatedAtAction("GetLogo", new { id = logo.Id }, logo);
+            return Ok(resp);
         }
-
-        // DELETE: api/Loghi/5
+        
+        // DELETE: api/Companies/5
+        //[AuthorizeRole(ePolicy.AdminRole)]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteLogo(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var logo = await _context.Logos.FindAsync(id);
-            if (logo == null)
+            var resp = await _logosService.DeleteAsync(id);
+            
+            if (!resp)
             {
-                return NotFound();
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error On Deleded Logo");
             }
-
-            _context.Logos.Remove(logo);
-            await _context.SaveChangesAsync();
-            
-            return NoContent();
+            else
+                return NoContent();
         }
-
-        private bool LogoExists(int id)
-        {
-            return _context.Logos.Any(e => e.Id == id);
-        }
-
-
-        //private byte[] GetLogo(int id, string ext)
-        //{
-        //    string path = GetFileLogo(id, ext);
-            
-        //    if (System.IO.File.Exists(path))
-        //        return System.IO.File.ReadAllBytes(path);
-        //    else
-        //        return null;
-        //}
-
-        //public bool SetLogo(int id, string ext, byte[] file)
-        //{
-        //    try
-        //    {
-        //        string path = GetFileLogo(id, ext);
-
-        //        if (System.IO.File.Exists(path))
-        //            System.IO.File.Delete(path);
-
-        //        System.IO.File.WriteAllBytes(path, file);
-
-        //        return true;
-
-        //    }
-        //    catch
-        //    {
-        //        return false;
-        //    }
-        //}
-
-        //public void DeleteLogo(int id, string ext)
-        //{
-        //    string path = GetFileLogo(id, ext);
-
-        //    if (System.IO.File.Exists(path))
-        //        System.IO.File.Delete(path);
-        //}
-        //private string GetFileLogo(int id, string ext)
-        //{
-        //    string path = PathDirLoghi();
-        //    path += $"\\{id}.{ext}";
-
-        //    return path;
-        //}
-        //private string PathDirLoghi()
-        //{
-        //    string path = $"{_env.WebRootPath}\\{DirLoghi}";
-
-        //    if (!Directory.Exists(path))
-        //        Directory.CreateDirectory(path);
-
-        //    return path;
-        //}
     }
 }

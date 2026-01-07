@@ -1,4 +1,5 @@
-﻿using CRM.Client.Services;
+﻿using CRM.Client.Models;
+using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -19,19 +20,27 @@ namespace CRM.Client.Pages.Settings.Smtps
         
         [Inject]
         NavigationManager NavigationManager { get; set; } = default!;
+        
         [Inject]
-        public HttpClient Http { get; set; } = default!;
+        HttpClient Http { get; set; } = default!;
+        
+        [Inject]
+        IHeaderService HeaderService { get; set; } = default!;
 
         private SmtpSetting? _item = null;
         private bool _isLoading = true;
         private string? _smtpTestResult = null;
         private bool _smtpTestInProgress = false;
 
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected override async Task OnInitializedAsync()
         {
             _isLoading = true;
             StateHasChanged();
             _item = await SmtpSettingsService.GetFirstAsync() ?? new SmtpSetting();
+            _pageHeader = await HeaderService.Create();
+
             _isLoading = false;
             StateHasChanged();
 

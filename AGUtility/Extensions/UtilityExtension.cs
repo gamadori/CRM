@@ -58,6 +58,199 @@ namespace AGUtility.Extensions
             return default(T);
         }
 
+        /// <summary>
+        /// ✅ Versione sicura di GetPropertyValue con default value personalizzabile.
+        /// Gestisce automaticamente eccezioni e proprietà mancanti senza logging eccessivo.
+        /// </summary>
+        /// <typeparam name="T">Tipo della proprietà da recuperare</typeparam>
+        /// <param name="sourceInstance">Oggetto sorgente</param>
+        /// <param name="targetPropertyName">Nome della proprietà da leggere</param>
+        /// <param name="defaultValue">Valore di default se proprietà non esiste o genera errori</param>
+        /// <returns>Valore della proprietà o defaultValue</returns>
+        /// <example>
+        /// <code>
+        /// // Uso base con default value
+        /// var users = item.GetPropertyValueSafe("AssignedUserNames", new List&lt;string&gt;());
+        /// 
+        /// // Con default implicito (null per reference types)
+        /// var description = item.GetPropertyValueSafe&lt;string&gt;("Description");
+        /// </code>
+        /// </example>
+        public static T GetPropertyValueSafe<T>(this object sourceInstance, string targetPropertyName, T defaultValue = default)
+        {
+            try
+            {
+                // Validazione input
+                if (sourceInstance == null || string.IsNullOrWhiteSpace(targetPropertyName))
+                {
+                    return defaultValue;
+                }
+
+                Type sourceType = sourceInstance.GetType();
+                PropertyInfo propertyInfo = sourceType.GetProperty(targetPropertyName);
+                
+                // Proprietà non trovata
+                if (propertyInfo == null)
+                {
+                    return defaultValue;
+                }
+
+                // Recupera valore
+                var value = propertyInfo.GetValue(sourceInstance, null);
+                
+                // Gestione null
+                if (value == null)
+                {
+                    return defaultValue;
+                }
+
+                return (T)value;
+            }
+            catch
+            {
+                // Silenziosamente ritorna default senza logging
+                // (utile per reflection su ViewModel dinamici)
+                return defaultValue;
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Versione con lazy evaluation del default value tramite factory.
+        /// Utile quando il default value è costoso da creare e potrebbe non servire.
+        /// </summary>
+        /// <typeparam name="T">Tipo della proprietà da recuperare</typeparam>
+        /// <param name="sourceInstance">Oggetto sorgente</param>
+        /// <param name="targetPropertyName">Nome della proprietà da leggere</param>
+        /// <param name="defaultValueFactory">Factory che genera il default value solo se necessario</param>
+        /// <returns>Valore della proprietà o risultato di defaultValueFactory()</returns>
+        /// <example>
+        /// <code>
+        /// // Factory eseguita SOLO se proprietà mancante (lazy evaluation)
+        /// var users = item.GetPropertyValueSafe("AssignedUserNames", () => LoadDefaultUsers());
+        /// 
+        /// // Factory inline
+        /// var config = item.GetPropertyValueSafe("Config", () => new ConfigObject { IsDefault = true });
+        /// </code>
+        /// </example>
+        public static T GetPropertyValueSafe<T>(this object sourceInstance, string targetPropertyName, Func<T> defaultValueFactory)
+        {
+            if (defaultValueFactory == null)
+            {
+                throw new ArgumentNullException(nameof(defaultValueFactory), "Default value factory cannot be null. Use the overload with T defaultValue instead.");
+            }
+
+            try
+            {
+                // Validazione input
+                if (sourceInstance == null || string.IsNullOrWhiteSpace(targetPropertyName))
+                {
+                    return defaultValueFactory();
+                }
+
+                Type sourceType = sourceInstance.GetType();
+                PropertyInfo propertyInfo = sourceType.GetProperty(targetPropertyName);
+                
+                // Proprietà non trovata
+                if (propertyInfo == null)
+                {
+                    return defaultValueFactory();
+                }
+
+                // Recupera valore
+                var value = propertyInfo.GetValue(sourceInstance, null);
+                
+                // Gestione null
+                if (value == null)
+                {
+                    return defaultValueFactory();
+                }
+
+                return (T)value;
+            }
+            catch
+            {
+                // Esegui factory solo in caso di errore
+                return defaultValueFactory();
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Versione con validazione tipo strict mode.
+        /// Lancia InvalidCastException se la proprietà esiste ma ha un tipo diverso da T.
+        /// </summary>
+        /// <typeparam name="T">Tipo della proprietà da recuperare</typeparam>
+        /// <param name="sourceInstance">Oggetto sorgente</param>
+        /// <param name="targetPropertyName">Nome della proprietà da leggere</param>
+        /// <param name="defaultValue">Valore di default se proprietà non esiste</param>
+        /// <param name="strictMode">Se true, valida che il tipo della proprietà corrisponda esattamente a T</param>
+        /// <returns>Valore della proprietà o defaultValue</returns>
+        /// <exception cref="InvalidCastException">Lanciata in strict mode se il tipo non corrisponde</exception>
+        /// <example>
+        /// <code>
+        /// // Strict mode: lancia eccezione se AssignedUserNames è int invece di List&lt;string&gt;
+        /// var users = item.GetPropertyValueSafe("AssignedUserNames", new List&lt;string&gt;(), strictMode: true);
+        /// 
+        /// // Non-strict mode: ritorna default senza eccezione
+        /// var users = item.GetPropertyValueSafe("AssignedUserNames", new List&lt;string&gt;(), strictMode: false);
+        /// </code>
+        /// </example>
+        public static T GetPropertyValueSafe<T>(this object sourceInstance, string targetPropertyName, T defaultValue, bool strictMode)
+        {
+            try
+            {
+                // Validazione input
+                if (sourceInstance == null || string.IsNullOrWhiteSpace(targetPropertyName))
+                {
+                    return defaultValue;
+                }
+
+                Type sourceType = sourceInstance.GetType();
+                PropertyInfo propertyInfo = sourceType.GetProperty(targetPropertyName);
+                
+                // Proprietà non trovata
+                if (propertyInfo == null)
+                {
+                    return defaultValue;
+                }
+
+                // ✅ STRICT MODE: Validazione tipo
+                if (strictMode)
+                {
+                    Type expectedType = typeof(T);
+                    Type actualType = propertyInfo.PropertyType;
+
+                    // Controllo tipo esatto (no conversioni implicite)
+                    if (!expectedType.IsAssignableFrom(actualType))
+                    {
+                        throw new InvalidCastException(
+                            $"Property '{targetPropertyName}' has type '{actualType.FullName}' but expected '{expectedType.FullName}'. " +
+                            $"Source type: {sourceType.FullName}");
+                    }
+                }
+
+                // Recupera valore
+                var value = propertyInfo.GetValue(sourceInstance, null);
+                
+                // Gestione null
+                if (value == null)
+                {
+                    return defaultValue;
+                }
+
+                return (T)value;
+            }
+            catch (InvalidCastException)
+            {
+                // Re-throw strict mode exceptions
+                throw;
+            }
+            catch
+            {
+                // Altre eccezioni: ritorna default
+                return defaultValue;
+            }
+        }
+
         public static bool SetPropertyValue(this object sourceInstance, string targetPropertyName, object value)
         {
             string errorMsg = null;

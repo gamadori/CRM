@@ -250,11 +250,11 @@ namespace CRM.Client.Pages.Companies
 
         private void DetailsTicket(int id)
         {
-            _selectView = CompanyViews.Ticket;
-            _partialView = PartialViews.Details;
-            _idTicket = id;
-
-            StateHasChanged();
+        //    _selectView = CompanyViews.Ticket;
+        //    _partialView = PartialViews.Details;
+        //    _idTicket = id;
+            NavigationManager.NavigateTo($"/Companies/{Id}/Tickets/{id}");
+            //StateHasChanged();
         }
 
         private void DetailsEditTicket()

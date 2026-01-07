@@ -141,9 +141,7 @@ namespace CRM.Server.Controllers
 
             company.ResellerName = await CompanyName(company.Id);
 
-            var breadcrumb = GetBreadcrumb(company);
-
-            HttpContext.Response.Headers.Add(ValuesHelper.BreadcrumbHeader, JsonConvert.SerializeObject(breadcrumb));
+             
             return company;
         }
         // GET: api/Companies/5
@@ -161,9 +159,7 @@ namespace CRM.Server.Controllers
                     return NotFound();
                 }
 
-                var breadcrumb = GetBreadcrumb(company);
-
-                HttpContext.Response.Headers.Add(ValuesHelper.BreadcrumbHeader, JsonConvert.SerializeObject(breadcrumb));
+              
                 return company;
             }
             else

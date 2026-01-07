@@ -1,8 +1,8 @@
 ﻿@using Radzen
 @using Radzen.Blazor
 
-<RadzenCard Class="alert p-1" Style="@_styleTicket" MouseLeave="CloseTooltip" MouseEnter=@(args => ShowTooltip(args, $"<pre>{@Ticket.Description}</pre>", new TooltipOptions(){ Style="background-color: yellow; color: black", Duration = null }))
-         @onclick="()=>OpenModal?.Invoke(Ticket.Id)">
+<RadzenCard Class="alert p-1" Style="@_styleTicket" MouseLeave="CloseTooltip" MouseEnter=@(args => ShowTooltip(args))
+         @onclick="HandleCardClick">
     <div class="row">
         <span style="mix-blend-mode: difference; color: white">
             <small class="fw-bold">
@@ -10,8 +10,62 @@
             </small>
         </span>
     </div>
-    <div class="row">
-        <span style="mix-blend-mode: difference; color: white">
-            @Ticket.User</span>
+    <div class="row position-relative">
+        @if (Ticket.AssignedUserNames != null && Ticket.AssignedUserNames.Any())
+        {
+            @* ✅ VISUALIZZAZIONE MULTIPLA: Badge utenti con contatore *@
+            <span style="mix-blend-mode: difference; color: white" title="@GetAssignedUsersTooltip()">
+                @Ticket.AssignedUserNames.First()
+                @if (Ticket.AssignedUserNames.Count > 1)
+                {
+                    <span class="badge bg-primary ms-1" title="Clicca per vedere tutti gli utenti"
+                          @onclick="ToggleUsersPanel" @onclick:stopPropagation="true"
+                          style="cursor: pointer;">
+                        +@(Ticket.AssignedUserNames.Count - 1)
+                    </span>
+                }
+            </span>
+            
+            @* 📋 Pannello elenco utenti *@
+            @if (_showUsersPanel && Ticket.AssignedUserNames.Count > 1)
+            {
+                <div class="users-panel position-absolute bg-white border rounded shadow-sm p-2"
+                     style="top: 100%; left: 0; z-index: 1050; min-width: 200px; max-width: 300px;"
+                     @onclick:stopPropagation="true">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong class="text-dark" style="font-size: 0.85rem;">Utenti Assegnati</strong>
+                        <button type="button" class="btn-close btn-close-sm" @onclick="ToggleUsersPanel" 
+                                aria-label="Close" style="font-size: 0.7rem;"></button>
+                    </div>
+                    <ul class="list-unstyled mb-0" style="font-size: 0.8rem;">
+                        @foreach (var userName in Ticket.AssignedUserNames)
+                        {
+                            <li class="text-dark py-1 border-bottom">
+                                @if (Ticket.AssignedUserNames.IndexOf(userName) == 0)
+                                {
+                                    <span>⭐ <strong>@userName</strong></span>
+                                }
+                                else
+                                {
+                                    <span>👤 @userName</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        }
+        else if (!string.IsNullOrEmpty(Ticket.User))
+        {
+            @* ⚠️ FALLBACK: Visualizzazione singola (legacy) *@
+            <span style="mix-blend-mode: difference; color: white">@Ticket.User</span>
+        }
+        else
+        {
+            @* Nessun utente assegnato *@
+            <span style="mix-blend-mode: difference; color: white">
+                <em>Non Assegnato</em>
+            </span>
+        }
     </div>
 </RadzenCard>

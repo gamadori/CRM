@@ -27,7 +27,7 @@ else
                     <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
-                                <RedGDropDown TItem="Company"   TValue="int" ValueProperty="Id" TextProperty="@nameof(Company.RagioneSociale)" @bind-Value="@_ticket.IdCompany" For="@(() => _ticket.IdCompany)"
+                                <RedGDropDown Change=OnChangeCompany TItem="Company"   TValue="int" ValueProperty="Id" TextProperty="@nameof(Company.RagioneSociale)" @bind-Value="@_ticket.IdCompany" For="@(() => _ticket.IdCompany)"
                                               Data="_companies" AllowFiltering="true">
                                     <End>
                                         <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetCompany DialogType="RedGDialog.DialogType.Companies"></RedGButtonDialog>

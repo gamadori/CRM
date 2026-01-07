@@ -193,8 +193,9 @@ namespace CRM.Shared
 
         public string? DescriptionEmbedding { get; set; }
 
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public int RANK { get; set; }
+        //[DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        [NotMapped]
+        public int RANK { get; set; } = 0;
 
         [NotMapped]
         public TicketCreateSteps Step { get; set; }

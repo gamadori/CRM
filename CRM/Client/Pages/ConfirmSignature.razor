@@ -1,0 +1,170 @@
+@page "/ConfirmSignature"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@using CRM.Client.Helpers
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            @if (_loading)
+            {
+                <div class="card shadow-lg">
+                    <div class="card-body text-center py-5">
+                        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                            <span class="visually-hidden">Verifica in corso...</span>
+                        </div>
+                        <h4>Verifica firma in corso...</h4>
+                        <p class="text-muted">Attendere prego</p>
+                    </div>
+                </div>
+            }
+            else if (_success)
+            {
+                <div class="card shadow-lg border-success">
+                    <div class="card-body text-center py-5">
+                        <div class="mb-4">
+                            <i class="material-icons text-success" style="font-size: 80px;">check_circle</i>
+                        </div>
+                        <h1 class="text-success mb-3">Firma Confermata!</h1>
+                        <p class="lead">La tua firma per l'intervento <strong>#{_ticketId}</strong> è stata confermata con successo.</p>
+                        
+                        <div class="alert alert-info mt-4">
+                            <i class="material-icons" style="vertical-align: middle;">schedule</i>
+                            Data conferma: <strong>@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</strong>
+                        </div>
+
+                        <div class="mt-4">
+                            <button class="btn btn-primary btn-lg" @onclick="GoToHome">
+                                <i class="material-icons" style="vertical-align: middle;">home</i>
+                                Torna alla Home
+                            </button>
+                        </div>
+
+                        <p class="text-muted mt-3 small">Puoi chiudere questa finestra.</p>
+                    </div>
+                </div>
+            }
+            else if (_rejected)
+            {
+                <div class="card shadow-lg border-danger">
+                    <div class="card-body text-center py-5">
+                        <div class="mb-4">
+                            <i class="material-icons text-danger" style="font-size: 80px;">cancel</i>
+                        </div>
+                        <h1 class="text-danger mb-3">Firma Rifiutata</h1>
+                        <p class="lead">Hai rifiutato la firma per l'intervento <strong>#{_ticketId}</strong>.</p>
+                        
+                        <div class="alert alert-warning mt-4">
+                            <i class="material-icons" style="vertical-align: middle;">info</i>
+                            Se ritieni che ci sia stato un errore, contatta il nostro ufficio.
+                        </div>
+
+                        <div class="mt-4">
+                            <button class="btn btn-secondary btn-lg" @onclick="GoToHome">
+                                <i class="material-icons" style="vertical-align: middle;">home</i>
+                                Torna alla Home
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card shadow-lg border-danger">
+                    <div class="card-body text-center py-5">
+                        <div class="mb-4">
+                            <i class="material-icons text-danger" style="font-size: 80px;">error</i>
+                        </div>
+                        <h1 class="text-danger mb-3">Errore</h1>
+                        <p class="lead">@_errorMessage</p>
+                        
+                        <div class="mt-4">
+                            <button class="btn btn-secondary btn-lg" @onclick="GoToHome">
+                                <i class="material-icons" style="vertical-align: middle;">home</i>
+                                Torna alla Home
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "token")]
+    public string? Token { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "id")]
+    public int? InterventionId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "action")]
+    public string? Action { get; set; } // "confirm" o "reject"
+
+    private bool _loading = true;
+    private bool _success = false;
+    private bool _rejected = false;
+    private string _errorMessage = string.Empty;
+    private int _ticketId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Token) || !InterventionId.HasValue)
+        {
+            _loading = false;
+            _errorMessage = "Link non valido. Token o ID intervento mancante.";
+            return;
+        }
+
+        try
+        {
+            var endpoint = Action == "reject" 
+                ? $"{ConstHelper.TicketsInterventionsPath}/RejectSignature?token={Token}&id={InterventionId}"
+                : $"{ConstHelper.TicketsInterventionsPath}/ConfirmSignature?token={Token}&id={InterventionId}";
+
+            var response = await Http.GetAsync(endpoint);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Estrai ticket ID dalla risposta (opzionale)
+                // Per ora usiamo InterventionId
+                _ticketId = InterventionId.Value;
+
+                if (Action == "reject")
+                {
+                    _rejected = true;
+                }
+                else
+                {
+                    _success = true;
+                }
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _errorMessage = response.StatusCode switch
+                {
+                    System.Net.HttpStatusCode.BadRequest => "Token non valido o già utilizzato.",
+                    System.Net.HttpStatusCode.NotFound => "Intervento non trovato.",
+                    _ => $"Errore durante la verifica: {errorContent}"
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Errore di connessione: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void GoToHome()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}

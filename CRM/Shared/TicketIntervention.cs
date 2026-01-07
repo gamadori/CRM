@@ -8,7 +8,27 @@ using System.Threading.Tasks;
 
 namespace CRM.Shared
 {
-    
+    /// <summary>
+    /// Stato di verifica della firma digitale
+    /// </summary>
+    public enum SignatureStatus
+    {
+        /// <summary>
+        /// Firma in attesa di conferma via email
+        /// </summary>
+        Pending = 0,
+        
+        /// <summary>
+        /// Firma confermata dal cliente
+        /// </summary>
+        Verified = 1,
+        
+        /// <summary>
+        /// Firma rifiutata dal cliente
+        /// </summary>
+        Rejected = 2
+    }
+
     public class TicketIntervention
     {
         [Key]
@@ -42,7 +62,6 @@ namespace CRM.Shared
         [Display(Name = "Orario di Fine")]
         public DateTime EndDateTime { get; set; }
 
-
         public bool HasAttachments { get; set; }
 
         [NotMapped]
@@ -51,6 +70,76 @@ namespace CRM.Shared
         [Display(Name = "Minute")]
         public int Minute { get; set; }
 
+        /// <summary>
+        /// Firma del cliente in formato Base64 (PNG)
+        /// </summary>
+        [Display(Name = "Firma Cliente")]
+        public string? CustomerSignature { get; set; }
+
+        /// <summary>
+        /// Data e ora in cui è stata apposta la firma digitale
+        /// </summary>
+        [Display(Name = "Data Firma")]
+        public DateTime? SignatureDate { get; set; }
+
+        /// <summary>
+        /// Nome completo di chi ha firmato il documento
+        /// </summary>
+        [Display(Name = "Nome Firmatario")]
+        public string? SignatureName { get; set; }
+
+        /// <summary>
+        /// Email del firmatario per conferma
+        /// </summary>
+        [Display(Name = "Email Firmatario")]
+        public string? SignatureEmail { get; set; }
+
+        /// <summary>
+        /// Stato verifica firma: Pending, Verified, Rejected
+        /// </summary>
+        [Display(Name = "Stato Firma")]
+        public SignatureStatus SignatureStatus { get; set; } = SignatureStatus.Pending;
+
+        /// <summary>
+        /// Token univoco per conferma firma via email
+        /// </summary>
+        public string? SignatureConfirmationToken { get; set; }
+
+        /// <summary>
+        /// Data conferma firma
+        /// </summary>
+        [Display(Name = "Data Conferma Firma")]
+        public DateTime? SignatureConfirmedDate { get; set; }
+
+        /// <summary>
+        /// Hash OTP per verifica firma (temporaneo, cancellato dopo verifica)
+        /// </summary>
+        public string? SignatureOtpHash { get; set; }
+
+        /// <summary>
+        /// Scadenza OTP firma
+        /// </summary>
+        public DateTime? SignatureOtpExpiry { get; set; }
+
+        /// <summary>
+        /// Numero tentativi OTP falliti
+        /// </summary>
+        public int SignatureOtpAttempts { get; set; }
+
+        /// <summary>
+        /// ID univoco challenge OTP (UUID)
+        /// </summary>
+        public string? SignatureOtpChallengeId { get; set; }
+
+        /// <summary>
+        /// Firma in attesa di verifica OTP (Base64 temporaneo)
+        /// </summary>
+        public string? PendingSignature { get; set; }
+
+        /// <summary>
+        /// Nome firmatario in attesa di verifica OTP
+        /// </summary>
+        public string? PendingSignatureName { get; set; }
 
         [Display(Name = "Tipi di Intervento")]
         [NotMapped]

@@ -138,7 +138,7 @@ namespace CRM.Client.Pages.TicketInterventions
                 _typeMessage = "alert-success";
                 _message = "Report Creato con successo";
 
-                ReportView();
+                await ReportViewAsync();
 
             }
             else
@@ -153,12 +153,15 @@ namespace CRM.Client.Pages.TicketInterventions
             StateHasChanged();
         }
 
-        protected void ReportView()
+        protected async Task ReportViewAsync()
         {
-            if (OnClickPdfViewer != null)
-                OnClickPdfViewer();
-            else
-                NavigationManager.NavigateTo($"/TicketInterventions/PDFLoading/{_ticketIntervention.Id}");
+            // Naviga direttamente alla pagina ReportViewer invece di aprire una dialog
+            NavigationManager.NavigateTo($"/TicketInterventions/ReportViewer/{_ticketIntervention.Id}");
+        }
+
+        protected async void ReportView()
+        {
+            await ReportViewAsync();
         }
 
         protected async Task CreateReportPrepare()

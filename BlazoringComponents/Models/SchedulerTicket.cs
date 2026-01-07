@@ -21,10 +21,17 @@ namespace BlazoringComponents.Models
 
         public string Company { get; set; }
 
+        /// <summary>
+        /// ⚠️ LEGACY: Utente principale (primo assegnato). Mantenuto per compatibilità.
+        /// Per visualizzazione multipla, usa AssignedUserNames.
+        /// </summary>
         public string User { get; set; }
 
-       public string Description { get; set; }
+        /// <summary>
+        /// ✅ NUOVO: Lista di tutti gli utenti assegnati al ticket (nome completo)
+        /// </summary>
+        public List<string> AssignedUserNames { get; set; } = new List<string>();
 
-
+        public string Description { get; set; }
     }
 }

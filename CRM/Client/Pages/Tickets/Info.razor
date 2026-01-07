@@ -1,14 +1,17 @@
-﻿@page "/Tickets/Info/{Id:int}"
-@page "/Tickets/Info/{Id:int}/{IdProject:int}"
-@page "/Tickets/Info/Company/{Id:int}/{IdCompany:int}"
-@page "/Tickets/info/{Id:int}/{TypeSearch:int}/{IdUser}"
-@page "/Tickets/info/attachment/{id:int}/{IdAttachment:int}"
-@page "/Tickets/Info/chat/{Id:int}/{IdChat:int}"
-@page "/Tickets/Info/filter/{Id:int}/{TypeSearch:int}"
+﻿@page "/Tickets/{Id:int}/Info"
+@page "/Tickets/{Id:int}"
+@page "/Projects/{IdProject:int}/Tickets/{Id:int}"
+@page "/Companies/{IdCompany:int}/Tickets/{Id:int}"
+@page "/Tickets/{Id:int}/{TypeSearch:int}/{IdUser}"
+@page "/Tickets/{id:int}/attachment/{IdAttachment:int}"
+@page "/Tickets/{id:int}/chat/{IdChat:int}"
+@page "/Tickets/{id:int}/filter/{TypeSearch:int}"
+
 
 @using CRM.Shared.Helper
 @using Radzen
 @using Radzen.Blazor
+@using static CRM.Client.Helpers.PageHelper
 
 @if (_ticket == null)
 {
@@ -16,12 +19,8 @@
 }
 else
 {
-    <PageHeader Title="@($"{Localize["TicketNumber"]} {_ticket.Id}")"
-                Subtitle=@Localize["Menage Ticket"]
-                BreadcrumbItems="@_bread">
+    <PageHeader Model=@_pageHeader>
     </PageHeader>
-
-    
    
     <RadzenSelectBar Size="@_buttonSize"   @bind-Value="selectView" TValue="TicketViews" Change="@((args) => Change(args, "SelectBar with single selection"))" >
         <Items>
@@ -42,16 +41,16 @@ else
     {
         if (_partialView == PartialViews.Details)
         {
-            <Details Id="@Id" OnClickEdit="EditTicket" OnClickCancel="GotoIndex" OnClickTicketClose="CloseTicket"  OnClickPrint="PrintTicket"></Details>
+            <Details Id="@Id" PageMode="PageModality.Child" OnClickEdit="EditTicket" OnClickCancel="GotoIndex" OnClickTicketClose="CloseTicket" OnClickPrint="PrintTicket"></Details>
         }
         else
         {
-            <Edit Id="@Id"  OnClickSave="(async () => await SaveTicket())" OnClickCancel="CancelTicket"></Edit>
+            <Edit Id="@Id" PageMode="PageModality.Child" OnClickSave="(async () => await SaveTicket())" OnClickCancel="CancelTicket"></Edit>
         }
     }
     else if (selectView == TicketViews.Chat)
     {
-        <CRM.Client.Pages.TicketChats.Index IdTicket="@Id"></CRM.Client.Pages.TicketChats.Index>
+        <CRM.Client.Pages.TicketChats.Index  IdTicket="@Id"></CRM.Client.Pages.TicketChats.Index>
     }
     else if (selectView == TicketViews.Chiusura)
     {
@@ -104,7 +103,7 @@ else
         }
         else if (_partialView == PartialViews.PDFViewer)
         {
-            <CRM.Client.Pages.TicketInterventions.PDFLoading Id="@_idIntervention.Value" OnUpdatePdfViewer="InterventionPDFViewerUpdate" OnClickDetails="InterventionDetails" ></CRM.Client.Pages.TicketInterventions.PDFLoading>
+            <CRM.Client.Pages.TicketInterventions.ReportViewer Id="@_idIntervention.Value"></CRM.Client.Pages.TicketInterventions.ReportViewer>
         }
         else if (_partialView == PartialViews.Null)
         {

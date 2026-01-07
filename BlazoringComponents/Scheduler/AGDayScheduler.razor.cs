@@ -42,7 +42,6 @@ namespace BlazoringComponents.Scheduler
         [CascadingParameter(Name = "Tickets")]
         public IEnumerable<TItem> Items { get; set; }
 
-       
         [Parameter]
         public Action<string> OpenModal { get; set; }
 
@@ -52,11 +51,7 @@ namespace BlazoringComponents.Scheduler
         [Parameter]
         public string ColorText { get; set; }
 
-        
-
         private DayTickets _dayTickets;
-
-       
 
         protected override void OnParametersSet()
         {
@@ -80,6 +75,10 @@ namespace BlazoringComponents.Scheduler
                 model.Company = item.GetPropertyValue<string>(CompanyProperty);
                 model.Description = item.GetPropertyValue<string>(DescriptionProperty);
                 model.BackGroundColor = item.GetPropertyValue<string>(BackColorProperty);
+                
+                // ✅ REFACTORED: Usa GetPropertyValueSafe per gestione sicura reflection
+                model.AssignedUserNames = item.GetPropertyValueSafe<List<string>>("AssignedUserNames", new List<string>());
+                
                 tickets.Add(model);
             }
 

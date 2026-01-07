@@ -2,7 +2,7 @@
 @page "/Tickets/Index"
 @page "/Tickets/Index/{TypeSearch:int}"
 @page "/Tickets/Index/{TypeSearch:int}/{IdUser}"
-
+@page "/Companies/{IdCompany:int}/Tickets"
 
 @using Radzen
 @using Radzen.Blazor
@@ -12,14 +12,11 @@
 
 @if (_ticketView != null && _user != null)
 {
-    @if (IdProject == null && IdCompany == null)
-    {
+    
         
 
         <PageHeader Model="@_pageHeader">
         </PageHeader>
-
-    }
    
 
 

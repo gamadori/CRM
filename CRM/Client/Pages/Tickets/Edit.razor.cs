@@ -357,9 +357,7 @@ namespace CRM.Client.Pages.Tickets
         
         protected async void OnChangeCompany(object value)
         {
-            await LoadProducts(new LoadDataArgs());
-            await LoadArticles(new LoadDataArgs());
-            await LoadContactsCustomer();
+            await CompanyChangedAsync();
         }
 
         protected void Annulla()
@@ -371,7 +369,12 @@ namespace CRM.Client.Pages.Tickets
         }
 
        
-
+        private async Task CompanyChangedAsync()
+        {
+            await LoadProducts(new LoadDataArgs());
+            await LoadArticles(new LoadDataArgs());
+            await LoadContactsCustomer();
+        }
 
         private void CompanyOnClickCancel()
         {
@@ -385,6 +388,7 @@ namespace CRM.Client.Pages.Tickets
                 await LoadCompany();
                 StateHasChanged();
                 _ticket.IdCompany = id.Value;
+                await CompanyChangedAsync();
                 StateHasChanged();
 
             }
@@ -428,11 +432,8 @@ namespace CRM.Client.Pages.Tickets
 
         private void BackToUrl()
         {
-            if (BackUrl == null || BackUrl.Length == 0)
-            {
-                BackUrl = "/Tickets/Index";
-            }
-            else
+           
+            if (BackUrl != null && BackUrl.Any())
                 BackUrl = BackUrl.Replace("-", "/");
 
             NavigationManager.NavigateTo($"/Tickets/Index/{BackUrl}");

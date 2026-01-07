@@ -13,7 +13,6 @@ namespace CRM.Client.Services
 
         Task<PagingResponse<M, S>> Get<S>(F data);
 
-
         Task<PagingResponse<M, string>> GetList(F data);
         Task<PagingResponse<M, S>> GetList<S>(F data);
 

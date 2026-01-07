@@ -126,4 +126,7 @@
   <data name="Free" xml:space="preserve">
     <value>Gratuito</value>
   </data>
+  <data name="MaxHoursLife" xml:space="preserve">
+    <value>Tempo Massimo del Ticket prima della scadenza (ore)</value>
+  </data>
 </root>

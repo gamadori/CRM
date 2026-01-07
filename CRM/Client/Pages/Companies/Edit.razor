@@ -22,9 +22,21 @@ else
                 <RadzenStack>
                     <DataAnnotationsValidator />
                     <ValidationSummary />
-
-                    <RedGTextBox @bind-Value="@_company.RagioneSociale" For="@(() => _company.RagioneSociale)" />
-                    <RedGTextBox @bind-Value="@_company.Indirizzo" For="@(() => _company.Indirizzo)" />
+                     <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_company.RagioneSociale" For="@(() => _company.RagioneSociale)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_company.Indirizzo" For="@(() => _company.Indirizzo)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    
                      <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>

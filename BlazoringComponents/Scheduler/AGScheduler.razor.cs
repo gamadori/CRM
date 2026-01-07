@@ -340,7 +340,7 @@ namespace BlazoringComponents.Scheduler
         protected async void OpenTicket(object id)
         {
             await JSRuntime.InvokeVoidAsync("CloseModal", "modalDetails");
-            NavigationManager.NavigateTo($"/Tickets/Info/{id}");
+            NavigationManager.NavigateTo($"/Tickets/{id}");
         }
 
         

@@ -1,12 +1,13 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Services;
+using CRM.Client.Shared.Components;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
+using Microsoft.JSInterop;
 using Radzen;
-using Syncfusion.Blazor.Calendars;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -66,6 +67,10 @@ namespace CRM.Client.Pages.TicketInterventions
 
         private string _header;
 
+        // ✅ AGGIUNTO: Riferimento al componente SignaturePad
+        private SignaturePad _signaturePad;
+
+        private bool _signatureLoaded = false; // ✅ Flag per evitare loop infiniti
        
         protected override async Task OnInitializedAsync()
         {
@@ -78,8 +83,9 @@ namespace CRM.Client.Pages.TicketInterventions
                 {
                     _header = "INTERVENTO MODIFICA";
                     _ticketIntervention = await _service.Get(Id.Value);
-
                     
+                    // ✅ Carica la firma esistente dopo aver recuperato i dati
+                    StateHasChanged(); // Forza il render del componente SignaturePad
                 }
                 else
                 {
@@ -118,6 +124,16 @@ namespace CRM.Client.Pages.TicketInterventions
 
             try
             {
+                // ✅ Cattura la firma prima di salvare
+                if (_signaturePad != null)
+                {
+                    var signatureBase64 = await _signaturePad.GetSignatureAsync();
+                    if (!string.IsNullOrWhiteSpace(signatureBase64))
+                    {
+                        _ticketIntervention.CustomerSignature = signatureBase64;
+                    }
+                }
+
                 if (Id == null)
                 {
                     //_ticketIntervention.Date = DateTime.Now;
@@ -205,6 +221,44 @@ namespace CRM.Client.Pages.TicketInterventions
         private void OnUpdateArticles()
         {
             StateHasChanged();
+        }
+
+        /// <summary>
+        /// Gestisce la pulizia della firma
+        /// </summary>
+        private void OnSignatureCleared()
+        {
+            _ticketIntervention.CustomerSignature = null;
+            StateHasChanged();
+        }
+
+        /// <summary>
+        /// Carica la firma esistente quando il componente è pronto
+        /// </summary>
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            // ✅ Carica firma solo UNA VOLTA quando:
+            // 1. Non è già stata caricata
+            // 2. Il componente SignaturePad è stato renderizzato
+            // 3. _ticketIntervention è stato caricato
+            // 4. C'è una firma salvata
+            if (!_signatureLoaded && 
+                _signaturePad != null && 
+                _ticketIntervention != null && 
+                !string.IsNullOrWhiteSpace(_ticketIntervention.CustomerSignature))
+            {
+                try
+                {
+                    await _signaturePad.SetSignatureAsync(_ticketIntervention.CustomerSignature);
+                    _signatureLoaded = true; // ✅ Marca come caricata
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Errore caricamento firma: {ex.Message}");
+                }
+            }
+            
+            await base.OnAfterRenderAsync(firstRender);
         }
     }
 }

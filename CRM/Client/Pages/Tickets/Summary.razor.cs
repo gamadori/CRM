@@ -49,7 +49,7 @@ namespace CRM.Client.Pages.Tickets
         private void OpenTicket()
         {
             DialogService.CloseSide();
-            NavigationManager.NavigateTo($"/Tickets/Info/{Id}");
+            NavigationManager.NavigateTo($"/Tickets/{Id}");
         }
        
     }

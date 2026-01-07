@@ -1,0 +1,121 @@
+@inject IJSRuntime JS
+
+<div class="signature-container">
+    <label class="form-label">@Label</label>
+    <div class="signature-pad-wrapper">
+        <canvas id="@CanvasId" 
+                width="@Width" 
+                height="@Height" 
+                style="border: 1px solid #dee2e6; border-radius: 0.375rem; touch-action: none; background-color: white;">
+        </canvas>
+    </div>
+    <div class="mt-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearSignature">
+            <i class="material-icons" style="font-size: 18px; vertical-align: middle;">clear</i>
+            Clear
+        </button>
+        @if (ShowSaveButton)
+        {
+            <button type="button" class="btn btn-sm btn-primary ms-2" @onclick="SaveSignature">
+                <i class="material-icons" style="font-size: 18px; vertical-align: middle;">save</i>
+                Save
+            </button>
+        }
+    </div>
+</div>
+
+<style>
+    .signature-container {
+        margin-bottom: 1rem;
+    }
+
+    .signature-pad-wrapper {
+        display: inline-block;
+        box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        border-radius: 0.375rem;
+    }
+</style>
+
+@code {
+    [Parameter] public string Label { get; set; } = "Customer Signature";
+    [Parameter] public int Width { get; set; } = 500;
+    [Parameter] public int Height { get; set; } = 200;
+    [Parameter] public bool ShowSaveButton { get; set; } = true;
+    [Parameter] public EventCallback<string> OnSignatureSaved { get; set; }
+    [Parameter] public EventCallback OnSignatureCleared { get; set; }
+
+    private string CanvasId = $"signatureCanvas_{Guid.NewGuid():N}";
+    private bool _initialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // ? Retry con timeout per aspettare il caricamento dello script
+            for (int i = 0; i < 10; i++)
+            {
+                try
+                {
+                    await JS.InvokeVoidAsync("signaturePad.initialize", CanvasId);
+                    _initialized = true;
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    if (i == 9)
+                    {
+                        Console.Error.WriteLine($"SignaturePad: impossibile inizializzare dopo 10 tentativi - {ex.Message}");
+                    }
+                    else
+                    {
+                        await Task.Delay(100); // Aspetta 100ms prima di riprovare
+                    }
+                }
+            }
+        }
+    }
+
+    private async Task ClearSignature()
+    {
+        if (_initialized)
+        {
+            await JS.InvokeVoidAsync("signaturePad.clear");
+            await OnSignatureCleared.InvokeAsync();
+        }
+    }
+
+    private async Task SaveSignature()
+    {
+        if (!_initialized) return;
+
+        var signatureBase64 = await JS.InvokeAsync<string>("signaturePad.getSignature");
+        
+        if (string.IsNullOrWhiteSpace(signatureBase64))
+        {
+            // Firma vuota
+            return;
+        }
+
+        await OnSignatureSaved.InvokeAsync(signatureBase64);
+    }
+
+    public async Task<string> GetSignatureAsync()
+    {
+        if (!_initialized) return string.Empty;
+        return await JS.InvokeAsync<string>("signaturePad.getSignature");
+    }
+
+    public async Task SetSignatureAsync(string base64Data)
+    {
+        if (_initialized && !string.IsNullOrWhiteSpace(base64Data))
+        {
+            await JS.InvokeVoidAsync("signaturePad.setSignature", base64Data);
+        }
+    }
+
+    public async Task<bool> IsEmptyAsync()
+    {
+        if (!_initialized) return true;
+        return await JS.InvokeAsync<bool>("signaturePad.isEmpty");
+    }
+}

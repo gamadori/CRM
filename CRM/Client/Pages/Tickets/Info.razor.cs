@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Pages.Projects;
 using CRM.Client.Services;
 using CRM.Shared;
@@ -38,7 +39,6 @@ namespace CRM.Client.Pages.Tickets
             New,
             AddFiles,
             PDFViewer,
-            
             Null
 
         }
@@ -61,10 +61,11 @@ namespace CRM.Client.Pages.Tickets
         IUserService _userService { get; set; }
 
         [Inject]
-        IBreadCrumbService _breadCrumbService { get; set;}
+        IHeaderService HeaderService { get; set; }
 
         [Inject] 
         IJSRuntime JsRuntime { get; set; }
+
 
         [Parameter]
         public int Id { get; set; }
@@ -109,8 +110,6 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _fromDetails = false;
 
-        private List<BreadcrumbItem> _bread = new List<BreadcrumbItem>();
-
         private Project _project;
 
         private Company _company;
@@ -120,13 +119,11 @@ namespace CRM.Client.Pages.Tickets
         private bool singleValue = false;
 
         private bool _isMobile = false;
+
         private ButtonSize _buttonSize = ButtonSize.Medium;
 
-        //private async Task GotoIndex(object p)
-        //{
-        //    if (OnGotoIndex != null)
-        //        OnGotoIndex();
-        //}
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected override async Task OnInitializedAsync()
         {
             await FindResponsiveness();
@@ -137,35 +134,18 @@ namespace CRM.Client.Pages.Tickets
             if (IdProject != null)
             {
                 await GetProject();
-                _bread.Add(new BreadcrumbItem() { Text = $"{Localize["Progetto"]}: {_project?.Name}", Url = $"/Projects/{IdProject}" });
-                _bread.Add(new BreadcrumbItem() { Text = $"{Localize["Tickets"]}", Url = $"/Projects/{IdProject}/{(int)ProjectViews.Tickets}" });
+                
+
             }
             else if (IdCompany != null)
             {
                 
                 await GetCompany();
-                _bread.Add(new BreadcrumbItem() { Text = $"{Localize["Company"]}: {_company?.RagioneSociale}", Url = $"/Companies/{IdCompany}" });
-                _bread.Add(new BreadcrumbItem() { Text = $"{Localize["Tickets"]}", Url = $"/Companies/{IdCompany}/{(int)CompanyViews.Ticket}" });
+                
 
             }
            
-            else if (IdUser != null)
-            {
-                
-                _bread =  _breadCrumbService.TicketAssigned(IdUser, (TicketTypeSearch)TypeSearch);
-
-                
-            }
-            else if (TypeSearch != (int)TicketTypeSearch.All)
-            {
-                _bread =  _breadCrumbService.TicketFiltered(IdUser, (TicketTypeSearch)TypeSearch);
-            }
-            else
-            {
-                _bread.Add(new BreadcrumbItem() { Text = Localize["Tickets"], Url = "/Tickets" });
-            }
-            _bread.Add(new BreadcrumbItem() { Text = $"{Localize["Ticket n"]} {_ticket?.Id}", Url = null });
-
+            
             if (IdAttachment != null)
             {
                 selectView = TicketViews.Allegati;
@@ -178,7 +158,8 @@ namespace CRM.Client.Pages.Tickets
                
                 _partialView = PartialViews.Details;
             }
-            
+
+            _pageHeader = await HeaderService.Create();
         }
 
         private async Task GetProject()

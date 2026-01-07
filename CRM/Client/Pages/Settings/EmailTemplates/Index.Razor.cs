@@ -17,6 +17,7 @@ using CRM.Shared.Resources.Models;
 using Radzen;
 using System.Reflection.PortableExecutable;
 using Microsoft.Extensions.Localization;
+using CRM.Client.Models;
 
 namespace CRM.Client.Pages.Settings.EmailTemplates
 {
@@ -49,19 +50,20 @@ namespace CRM.Client.Pages.Settings.EmailTemplates
         [Inject]
         IEnumService EnumService { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         private IQueryable<EmailTemplate> _templates = null;
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
         private EmailTemplateFilter _filter = new EmailTemplateFilter();
 
-   
-
         private bool _isLoading = false;
 
         private RadzenDataGrid<EmailTemplate> grdEmails;
 
-        private string _header = "Email Templates";
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
         protected override async Task OnInitializedAsync()
         {
             //#if DEBUG
@@ -82,7 +84,6 @@ namespace CRM.Client.Pages.Settings.EmailTemplates
             try
             {
 
-                _header = Localize["EmailTemplates"];
 
                 
 
@@ -99,7 +100,7 @@ namespace CRM.Client.Pages.Settings.EmailTemplates
                 _paging = pagingResponse.MetaData;
 
 
-
+                _pageHeader = await HeaderService.Create();
 
             }
 

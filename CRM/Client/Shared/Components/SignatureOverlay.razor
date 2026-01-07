@@ -1,0 +1,277 @@
+@inject IJSRuntime JS
+
+@if (Visible)
+{
+    <!-- Overlay fullscreen semi-trasparente -->
+    <div class="signature-overlay-backdrop" @onclick="Cancel">
+        <div class="signature-overlay-container" @onclick:stopPropagation>
+            <!-- Header -->
+            <div class="signature-overlay-header">
+                <h5 class="mb-0">
+                    <i class="material-icons middle">draw</i>
+                    @Title
+                </h5>
+                <button type="button" class="btn-close" @onclick="Cancel"></button>
+            </div>
+
+            <!-- Canvas Area -->
+            <div class="signature-overlay-body">
+                <!-- ? Input Nome Firmatario -->
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 600; color: #495057;">
+                        <i class="material-icons" style="font-size: 18px; vertical-align: middle;">person</i>
+                        Nome e Cognome del Firmatario
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           @bind="SignerName" 
+                           placeholder="Es: Mario Rossi"
+                           maxlength="200"
+                           style="font-size: 16px;" />
+                </div>
+
+                <!-- ? NUOVO: Input Email Firmatario -->
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 600; color: #495057;">
+                        <i class="material-icons" style="font-size: 18px; vertical-align: middle;">email</i>
+                        Email per Conferma Firma
+                    </label>
+                    <input type="email" 
+                           class="form-control" 
+                           @bind="SignerEmail" 
+                           placeholder="Es: mario.rossi@example.com"
+                           maxlength="200"
+                           style="font-size: 16px;" />
+                    <small class="form-text text-muted">
+                        <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
+                        Riceverai un'email per confermare la firma. La firma sarà valida solo dopo la conferma.
+                    </small>
+                </div>
+
+                <div class="signature-canvas-wrapper">
+                    <canvas id="@CanvasId" 
+                            width="@Width" 
+                            height="@Height" 
+                            style="border: 2px solid #dee2e6; border-radius: 0.5rem; touch-action: none; background-color: white; cursor: crosshair;">
+                    </canvas>
+                </div>
+                <div class="text-muted small mt-2 text-center">
+                    <i class="material-icons" style="font-size: 16px; vertical-align: middle;">info</i>
+                    Firma all'interno del riquadro bianco
+                </div>
+            </div>
+
+            <!-- Footer con bottoni -->
+            <div class="signature-overlay-footer">
+                <button type="button" class="btn btn-outline-secondary" @onclick="Clear">
+                    <i class="material-icons middle">clear</i>
+                    Cancella
+                </button>
+                <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="btn btn-light" @onclick="Cancel">
+                        <i class="material-icons middle">close</i>
+                        Annulla
+                    </button>
+                    <button type="button" class="btn btn-primary" @onclick="Save">
+                        <i class="material-icons middle">check</i>
+                        Conferma Firma
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .signature-overlay-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.2s ease;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .signature-overlay-container {
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        max-width: 90vw;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        animation: slideUp 0.3s ease;
+    }
+
+    @@keyframes slideUp {
+        from { transform: translateY(50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .signature-overlay-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .signature-overlay-header h5 {
+        color: #0d6efd;
+        font-weight: 600;
+    }
+
+    .signature-overlay-body {
+        padding: 2rem 1.5rem;
+        flex: 1;
+        overflow: auto;
+    }
+
+    .signature-canvas-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .signature-overlay-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        background: #f8f9fa;
+        border-bottom-left-radius: 0.75rem;
+        border-bottom-right-radius: 0.75rem;
+    }
+
+    .material-icons.middle {
+        vertical-align: middle;
+        font-size: 20px;
+    }
+</style>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public string Title { get; set; } = "Firma del Cliente";
+    [Parameter] public int Width { get; set; } = 700;
+    [Parameter] public int Height { get; set; } = 300;
+    [Parameter] public bool RequireOtp { get; set; } = false; // ? Flag per richiedere OTP
+    [Parameter] public EventCallback<string> OnSignatureSaved { get; set; }
+    [Parameter] public EventCallback<(string signature, string signerName)> OnSignatureWithNameSaved { get; set; }
+    [Parameter] public EventCallback<(string signature, string signerName, string signerEmail)> OnOtpRequired { get; set; } // ? AGGIORNATO con email
+    [Parameter] public EventCallback OnCancelled { get; set; }
+
+    private string CanvasId = $"signatureOverlay_{Guid.NewGuid():N}";
+    private bool _initialized = false;
+    private string SignerName { get; set; } = string.Empty;
+    private string SignerEmail { get; set; } = string.Empty; // ? NUOVO
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Visible && !_initialized)
+        {
+            // Retry logic per aspettare caricamento JavaScript
+            for (int i = 0; i < 10; i++)
+            {
+                try
+                {
+                    await JS.InvokeVoidAsync("signaturePad.initialize", CanvasId);
+                    _initialized = true;
+                    break;
+                }
+                catch
+                {
+                    if (i == 9)
+                    {
+                        Console.Error.WriteLine("SignatureOverlay: impossibile inizializzare canvas");
+                    }
+                    else
+                    {
+                        await Task.Delay(100);
+                    }
+                }
+            }
+        }
+    }
+
+    private async Task Clear()
+    {
+        if (_initialized)
+        {
+            await JS.InvokeVoidAsync("signaturePad.clear");
+        }
+    }
+
+    private async Task Save()
+    {
+        if (!_initialized) return;
+
+        try
+        {
+            var isEmpty = await JS.InvokeAsync<bool>("signaturePad.isEmpty");
+            
+            if (isEmpty)
+            {
+                // TODO: Mostra messaggio "Firma vuota"
+                return;
+            }
+
+            // ? VALIDAZIONE: Nome obbligatorio
+            if (string.IsNullOrWhiteSpace(SignerName))
+            {
+                // TODO: Mostra messaggio "Inserisci nome e cognome"
+                return;
+            }
+
+            // ? VALIDAZIONE: Email obbligatoria
+            if (string.IsNullOrWhiteSpace(SignerEmail))
+            {
+                // TODO: Mostra messaggio "Inserisci email per conferma"
+                return;
+            }
+
+            var signatureBase64 = await JS.InvokeAsync<string>("signaturePad.getSignature");
+            
+            if (!string.IsNullOrWhiteSpace(signatureBase64))
+            {
+                // ? NUOVO: Se richiede OTP, invia callback OtpRequired
+                if (RequireOtp && OnOtpRequired.HasDelegate)
+                {
+                    await OnOtpRequired.InvokeAsync((signatureBase64, SignerName.Trim(), SignerEmail.Trim()));
+                }
+                // Altrimenti usa flusso normale con nome + email
+                else if (OnSignatureWithNameSaved.HasDelegate)
+                {
+                    await OnSignatureWithNameSaved.InvokeAsync((signatureBase64, SignerName.Trim()));
+                }
+                else
+                {
+                    // Fallback per compatibilità
+                    await OnSignatureSaved.InvokeAsync(signatureBase64);
+                }
+                
+                _initialized = false; // Reset per prossima apertura
+                SignerName = string.Empty; // Reset nome
+                SignerEmail = string.Empty; // Reset email
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Errore salvataggio firma overlay: {ex.Message}");
+        }
+    }
+
+    private async Task Cancel()
+    {
+        _initialized = false;
+        SignerName = string.Empty;
+        SignerEmail = string.Empty; // ? Reset email
+        await OnCancelled.InvokeAsync();
+    }
+}

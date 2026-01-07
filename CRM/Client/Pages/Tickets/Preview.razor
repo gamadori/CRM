@@ -77,9 +77,46 @@
                                 <th scope="row"><DisplayName For="@(() => _ticket.IdUserOpened)" /></th>
                                 <td><span>@_userOpened?.NameComplete</span></td>
                             </tr>
+                            
+                            @* ✅ MODIFICATO: Visualizza tutti gli utenti assegnati *@
                             <tr>
-                                <th scope="row"><DisplayName For="@(() => _ticket.IdUserAssigned)" /></th>
-                                <td><span>@_userAssigned?.NameComplete</span></td>
+                                <th scope="row">
+                                    @if (_assignedUsers.Count > 1)
+                                    {
+                                        <span>@Localize["Assigned Users"] (@_assignedUsers.Count)</span>
+                                    }
+                                    else
+                                    {
+                                        <DisplayName For="@(() => _ticket.IdUserAssigned)" />
+                                    }
+                                </th>
+                                <td>
+                                    @if (_assignedUsers.Any())
+                                    {
+                                        <ul class="list-unstyled mb-0">
+                                            @foreach (var user in _assignedUsers)
+                                            {
+                                                <li class="py-1">
+                                                    @if (_assignedUsers.IndexOf(user) == 0)
+                                                    {
+                                                        <span class="badge bg-primary me-1">★</span>
+                                                        <strong>@user.NameComplete</strong>
+                                                        <small class="text-muted ms-1">(principale)</small>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary me-1">👤</span>
+                                                        <span>@user.NameComplete</span>
+                                                    }
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                    else
+                                    {
+                                        <em class="text-muted">@Localize["Not Assigned"]</em>
+                                    }
+                                </td>
                             </tr>
                         </tbody>
                     </table>

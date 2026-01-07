@@ -1,0 +1,505 @@
+@inject IJSRuntime JS
+@implements IDisposable
+
+@if (Visible)
+{
+    <!-- Overlay fullscreen -->
+    <div class="otp-modal-backdrop" @onclick="Cancel">
+        <div class="otp-modal-container" @onclick:stopPropagation>
+            <!-- Header -->
+            <div class="otp-modal-header">
+                <h5 class="mb-0">
+                    <i class="material-icons middle">verified_user</i>
+                    Verifica Codice OTP
+                </h5>
+                <button type="button" class="btn-close" @onclick="Cancel" disabled="@_verifying"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="otp-modal-body">
+                @if (_error != null)
+                {
+                    <div class="alert alert-danger d-flex align-items-center" role="alert">
+                        <i class="material-icons me-2">error</i>
+                        <div>@_error</div>
+                    </div>
+                }
+
+                @if (_success)
+                {
+                    <div class="alert alert-success d-flex align-items-center" role="alert">
+                        <i class="material-icons me-2">check_circle</i>
+                        <div>? Firma verificata con successo!</div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center mb-4">
+                        <div class="mb-3">
+                            <i class="material-icons" style="font-size: 64px; color: #0d6efd;">mail_outline</i>
+                        </div>
+                        <p class="mb-2">
+                            Inserisci il codice di 6 cifre inviato a:
+                        </p>
+                        <p class="fw-bold text-primary mb-0">@SentTo</p>
+                    </div>
+
+                    <!-- OTP Input -->
+                    <div class="otp-input-container mb-4">
+                        @for (int i = 0; i < 6; i++)
+                        {
+                            var index = i; // Capture for lambda
+                            <input type="text" 
+                                   @ref="_otpInputs[index]"
+                                   class="otp-digit @(_error != null ? "is-invalid" : "")"
+                                   maxlength="1"
+                                   inputmode="numeric"
+                                   pattern="[0-9]"
+                                   @bind="_otpDigits[index]"
+                                   @bind:event="oninput"
+                                   @onkeydown="@(e => OnKeyDown(e, index))"
+                                   @onpaste="@(e => OnPaste(e, index))"
+                                   disabled="@_verifying" />
+                        }
+                    </div>
+
+                    <!-- Timer & Info -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="text-muted small">
+                            <i class="material-icons" style="font-size: 16px; vertical-align: middle;">schedule</i>
+                            @if (_remainingSeconds > 0)
+                            {
+                                <span>Scade tra: <strong class="@(_remainingSeconds <= 30 ? "text-danger" : "text-primary")">@FormatTime(_remainingSeconds)</strong></span>
+                            }
+                            else
+                            {
+                                <span class="text-danger fw-bold">?? Codice scaduto</span>
+                            }
+                        </div>
+                        <div class="text-muted small">
+                            @if (_attemptsRemaining > 0)
+                            {
+                                <span>Tentativi: <strong class="@(_attemptsRemaining == 1 ? "text-danger" : "text-warning")">@_attemptsRemaining/3</strong></span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Resend Button -->
+                    @if (_canResend)
+                    {
+                        <button type="button" 
+                                class="btn btn-link btn-sm w-100 mb-3" 
+                                @onclick="RequestResend"
+                                disabled="@_resending">
+                            @if (_resending)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                <span>Invio in corso...</span>
+                            }
+                            else
+                            {
+                                <i class="material-icons middle">refresh</i>
+                                <span>Non hai ricevuto il codice? Invia di nuovo</span>
+                            }
+                        </button>
+                    }
+                    else if (_resendCooldown > 0)
+                    {
+                        <p class="text-muted text-center small mb-3">
+                            <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
+                            Potrai richiedere un nuovo codice tra @_resendCooldown secondi
+                        </p>
+                    }
+                }
+            </div>
+
+            <!-- Footer -->
+            <div class="otp-modal-footer">
+                <button type="button" 
+                        class="btn btn-light" 
+                        @onclick="Cancel"
+                        disabled="@_verifying">
+                    <i class="material-icons middle">close</i>
+                    Annulla
+                </button>
+                
+                @if (!_success)
+                {
+                    <button type="button" 
+                            class="btn btn-primary ms-auto" 
+                            @onclick="VerifyOtp"
+                            disabled="@(_verifying || !IsOtpComplete() || _remainingSeconds <= 0)">
+                        @if (_verifying)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span>Verifica...</span>
+                        }
+                        else
+                        {
+                            <i class="material-icons middle">check</i>
+                            <span>Verifica Codice</span>
+                        }
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .otp-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.2s ease;
+    }
+
+    .otp-modal-container {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        max-width: 500px;
+        width: 90vw;
+        display: flex;
+        flex-direction: column;
+        animation: slideUp 0.3s ease;
+    }
+
+    .otp-modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
+    }
+
+    .otp-modal-header h5 {
+        color: white;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .otp-modal-header .btn-close {
+        filter: brightness(0) invert(1);
+    }
+
+    .otp-modal-body {
+        padding: 2rem 1.5rem;
+    }
+
+    .otp-input-container {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+
+    .otp-digit {
+        width: 50px;
+        height: 60px;
+        text-align: center;
+        font-size: 28px;
+        font-weight: 700;
+        border: 2px solid #dee2e6;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        caret-color: #0d6efd;
+    }
+
+    .otp-digit:focus {
+        outline: none;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        transform: scale(1.05);
+    }
+
+    .otp-digit:disabled {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+    }
+
+    .otp-digit.is-invalid {
+        border-color: #dc3545;
+        animation: shake 0.5s;
+    }
+
+    .otp-modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        align-items: center;
+        background: #f8f9fa;
+        border-bottom-left-radius: 1rem;
+        border-bottom-right-radius: 1rem;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @@keyframes slideUp {
+        from { transform: translateY(50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    @@keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+
+    .material-icons.middle {
+        vertical-align: middle;
+        font-size: 20px;
+    }
+</style>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public string ChallengeId { get; set; } = string.Empty;
+    [Parameter] public DateTime ExpiresAt { get; set; }
+    [Parameter] public string SentTo { get; set; } = "***@***.***";
+    [Parameter] public EventCallback<string> OnOtpVerified { get; set; }
+    [Parameter] public EventCallback OnCancelled { get; set; }
+    [Parameter] public EventCallback OnResendRequested { get; set; }
+
+    private ElementReference[] _otpInputs = new ElementReference[6];
+    private string[] _otpDigits = new string[6];
+    private bool _verifying = false;
+    private bool _resending = false;
+    private bool _success = false;
+    private string? _error = null;
+    private int _remainingSeconds = 300; // 5 minuti
+    private int _resendCooldown = 0;
+    private bool _canResend = false;
+    private int _attemptsRemaining = 3;
+    private System.Threading.Timer? _timer;
+
+    protected override void OnParametersSet()
+    {
+        if (Visible && _timer == null)
+        {
+            StartTimer();
+            FocusFirstInput();
+        }
+        else if (!Visible)
+        {
+            StopTimer();
+        }
+    }
+
+    private void StartTimer()
+    {
+        _remainingSeconds = (int)(ExpiresAt - DateTime.Now).TotalSeconds;
+        if (_remainingSeconds < 0) _remainingSeconds = 0;
+
+        _timer = new System.Threading.Timer(async _ =>
+        {
+            _remainingSeconds--;
+            if (_resendCooldown > 0) _resendCooldown--;
+            
+            if (_remainingSeconds <= 0)
+            {
+                _canResend = true;
+                StopTimer();
+            }
+            
+            if (_resendCooldown <= 0 && _remainingSeconds > 0)
+            {
+                _canResend = true;
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+    }
+
+    private void StopTimer()
+    {
+        _timer?.Dispose();
+        _timer = null;
+    }
+
+    private async Task FocusFirstInput()
+    {
+        await Task.Delay(300); // Aspetta animazione
+        try
+        {
+            await JS.InvokeVoidAsync("eval", $"document.querySelector('.otp-digit')?.focus()");
+        }
+        catch { }
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e, int index)
+    {
+        if (e.Key == "Backspace" && string.IsNullOrEmpty(_otpDigits[index]) && index > 0)
+        {
+            // Backspace su campo vuoto ? focus previous
+            _otpDigits[index - 1] = string.Empty;
+            await FocusInput(index - 1);
+        }
+        else if (e.Key == "ArrowLeft" && index > 0)
+        {
+            await FocusInput(index - 1);
+        }
+        else if (e.Key == "ArrowRight" && index < 5)
+        {
+            await FocusInput(index + 1);
+        }
+        else if (e.Key == "Enter" && IsOtpComplete())
+        {
+            await VerifyOtp();
+        }
+    }
+
+    private async Task OnPaste(ClipboardEventArgs e, int index)
+    {
+        // Il paste verrà gestito via JS per ottenere i dati
+        try
+        {
+            var pastedText = await JS.InvokeAsync<string>("navigator.clipboard.readText");
+            if (!string.IsNullOrWhiteSpace(pastedText))
+            {
+                var digits = new string(pastedText.Where(char.IsDigit).ToArray());
+                if (digits.Length >= 6)
+                {
+                    for (int i = 0; i < 6; i++)
+                    {
+                        _otpDigits[i] = digits[i].ToString();
+                    }
+                    await FocusInput(5);
+                    StateHasChanged();
+                }
+            }
+        }
+        catch { }
+    }
+
+    private async Task FocusInput(int index)
+    {
+        await Task.Delay(50);
+        try
+        {
+            await JS.InvokeVoidAsync("eval", 
+                $"document.querySelectorAll('.otp-digit')[{index}]?.focus()");
+        }
+        catch { }
+    }
+
+    private bool IsOtpComplete()
+    {
+        return _otpDigits.All(d => !string.IsNullOrWhiteSpace(d) && d.Length == 1 && char.IsDigit(d[0]));
+    }
+
+    private string GetOtpValue()
+    {
+        return string.Join("", _otpDigits);
+    }
+
+    private async Task VerifyOtp()
+    {
+        if (!IsOtpComplete() || _verifying) return;
+
+        _verifying = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var otp = GetOtpValue();
+            await OnOtpVerified.InvokeAsync(otp);
+            
+            // Success viene gestito dal parent che chiude il modal
+            // oppure imposta _success = true se vuoi mostrare conferma
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _attemptsRemaining--;
+            
+            // Shake animation + clear inputs
+            _otpDigits = new string[6];
+            await FocusFirstInput();
+        }
+        finally
+        {
+            _verifying = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RequestResend()
+    {
+        if (_resending || !_canResend) return;
+
+        _resending = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            await OnResendRequested.InvokeAsync();
+            
+            // Reset timer e cooldown
+            _resendCooldown = 60; // 1 minuto cooldown
+            _canResend = false;
+            _otpDigits = new string[6];
+            _attemptsRemaining = 3;
+            
+            await FocusFirstInput();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Errore invio OTP: {ex.Message}";
+        }
+        finally
+        {
+            _resending = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Cancel()
+    {
+        StopTimer();
+        _otpDigits = new string[6];
+        _error = null;
+        _success = false;
+        await OnCancelled.InvokeAsync();
+    }
+
+    private string FormatTime(int seconds)
+    {
+        var minutes = seconds / 60;
+        var secs = seconds % 60;
+        return $"{minutes:D2}:{secs:D2}";
+    }
+
+    public void SetError(string error, int attemptsRemaining = 3)
+    {
+        _error = error;
+        _attemptsRemaining = attemptsRemaining;
+        _otpDigits = new string[6];
+        StateHasChanged();
+        _ = FocusFirstInput();
+    }
+
+    public void SetSuccess()
+    {
+        _success = true;
+        StopTimer();
+        StateHasChanged();
+    }
+
+    void IDisposable.Dispose()
+    {
+        StopTimer();
+    }
+}

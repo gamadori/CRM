@@ -82,6 +82,10 @@ namespace BlazoringComponents.Scheduler
                 model.Company = item.GetPropertyValue<string>(CompanyProperty);
                 model.Description = item.GetPropertyValue<string>(DescriptionProperty);
                 model.BackGroundColor = item.GetPropertyValue<string>(BackColorProperty);
+                
+                // ✅ REFACTORED: Usa GetPropertyValueSafe per gestione sicura reflection
+                model.AssignedUserNames = item.GetPropertyValueSafe<List<string>>("AssignedUserNames", new List<string>());
+                
                 tickets.Add(model);
             }
             

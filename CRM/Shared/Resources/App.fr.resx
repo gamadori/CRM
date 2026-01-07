@@ -433,4 +433,7 @@
   <data name="NewSubTitle" xml:space="preserve">
     <value>Nouvel {0}</value>
   </data>
+  <data name="Logos" xml:space="preserve">
+    <value>Logos</value>
+  </data>
 </root>

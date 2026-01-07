@@ -16,7 +16,6 @@
     <None Remove="Pages\Customers\**" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Remove="Services\ILogosService.cs" />
     <Compile Remove="Services\LogosService.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -60,7 +59,6 @@
 	
   <ItemGroup>
     <Folder Include="wwwroot\Archive\" />
-    <Folder Include="wwwroot\js\" />
   </ItemGroup>
 	<PropertyGroup>
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>

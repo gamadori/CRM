@@ -547,6 +547,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Logos.
+        /// </summary>
+        public static string Logos {
+            get {
+                return ResourceManager.GetString("Logos", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Management of registered companies.
         /// </summary>
         public static string Manage_Companies {

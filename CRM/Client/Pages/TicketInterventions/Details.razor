@@ -154,6 +154,51 @@ else
                                 </div>
                             </div>
                         </div>
+                        @if (!string.IsNullOrWhiteSpace(_ticketIntervention.CustomerSignature))
+                        {
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="panelsStayOpen-headingFour">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseFour" aria-expanded="true" aria-controls="panelsStayOpen-collapseFour">
+                                        Customer Signature <span class="badge text-bg-success ms-2">Signed</span>
+                                        @if (!string.IsNullOrWhiteSpace(_ticketIntervention.SignatureName))
+                                        {
+                                            <span class="text-primary ms-2" style="font-size: 0.85rem; font-weight: 600;">
+                                                (@_ticketIntervention.SignatureName)
+                                            </span>
+                                        }
+                                        @if (_ticketIntervention.SignatureDate.HasValue)
+                                        {
+                                            <span class="text-muted ms-2" style="font-size: 0.75rem;">
+                                                - @_ticketIntervention.SignatureDate.Value.ToString("g")
+                                            </span>
+                                        }
+                                    </button>
+                                </h2>
+                                <div id="panelsStayOpen-collapseFour" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingFour">
+                                    <div class="accordion-body bg-light">
+                                        @if (!string.IsNullOrWhiteSpace(_ticketIntervention.SignatureName))
+                                        {
+                                            <div class="text-center mb-3">
+                                                <span class="badge bg-primary" style="font-size: 14px; padding: 8px 16px;">
+                                                    <i class="material-icons" style="font-size: 16px; vertical-align: middle;">person</i>
+                                                    @_ticketIntervention.SignatureName
+                                                </span>
+                                            </div>
+                                        }
+                                        <img src="data:image/png;base64,@_ticketIntervention.CustomerSignature" 
+                                             alt="Customer Signature" 
+                                             style="max-width: 100%; border: 1px solid #dee2e6; border-radius: 0.375rem;" />
+                                        @if (_ticketIntervention.SignatureDate.HasValue)
+                                        {
+                                            <div class="text-center mt-2 text-muted small">
+                                                <i class="material-icons" style="font-size: 14px; vertical-align: middle;">schedule</i>
+                                                Firmato digitalmente il @_ticketIntervention.SignatureDate.Value.ToString("g")
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
 
                     <br>

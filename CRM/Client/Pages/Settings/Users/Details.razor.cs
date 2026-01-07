@@ -125,7 +125,7 @@ namespace CRM.Client.Pages.Settings.Users
         protected void Roles()
         {
            
-            NavigationManager.NavigateTo($"/Settings/Users/Roles/{Id}");
+            NavigationManager.NavigateTo($"/Settings/Users/{Id}/Roles");
         }
 
         protected void PreparateConfirm()

@@ -1,22 +1,22 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.EntityFrameworkCore;
-using CRM.Server.Data;
-using CRM.Shared;
-using Microsoft.AspNetCore.Identity;
-using CRM.Server.Helpers;
-using Microsoft.AspNetCore.Builder;
-using CRM.Server.Services;
-using Microsoft.AspNetCore.Identity.UI.Services;
-using Syncfusion.Licensing;
-using Microsoft.AspNetCore.Mvc.Razor;
-using static System.Formats.Asn1.AsnWriter;
+﻿using CRM.Client.Services;
 using CRM.Server;
 using CRM.Server.Controllers;
+using CRM.Server.Data;
+using CRM.Server.Helpers;
+using CRM.Server.Services;
+using CRM.Shared;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
-using CRM.Client.Services;
+using Syncfusion.Licensing;
+using static System.Formats.Asn1.AsnWriter;
 
 
 
@@ -102,8 +102,16 @@ builder.Services.AddSingleton<OpenAIEmbeddingService>();
 
 builder.Services.AddSingleton<OpenAIChatService>();
 
+builder.Services.AddScoped<ILogosService, LogosService>();
+
 // ✅ AGGIUNTO: Servizio per generare PDF dei ticket
 builder.Services.AddScoped<ITicketPdfGenerator, TicketPdfGenerator>();
+
+// ✅ NUOVO: Servizio per generare PDF degli interventi
+builder.Services.AddScoped<IInterventionPdfGenerator, InterventionPdfGenerator>();
+
+// ✅ NUOVO: Servizio OTP per verifica firma
+builder.Services.AddScoped<ISignatureOtpService, SignatureOtpService>();
 
 builder.Services.AddSingleton<WTelegramService>();
 builder.Services.AddHostedService(provider => provider.GetService<WTelegramService>());

@@ -47,9 +47,6 @@ namespace CRM.Client.Pages.Tickets
         public int? Id { get; set; }
 
         [Parameter]
-        public object IdTicket { get; set; }
-
-        [Parameter]
         public Action OnClickEdit { get; set; }
 
         [Parameter]
@@ -73,47 +70,30 @@ namespace CRM.Client.Pages.Tickets
         [Parameter]
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
+
         private bool _isDownloadingPdf = false;
 
         private TicketModel _ticket = null;
 
-        // ? NUOVO: Lista degli utenti assegnati
         private List<ApplicationUser> _assignedUsers = new List<ApplicationUser>();
+
         private bool _isLoadingUsers = false;
 
         private PageHeaderModel _pageHeader = new PageHeaderModel();
 
-
-
         protected override async Task OnInitializedAsync()
         {
-            if (Id == null && IdTicket != null && int.TryParse(IdTicket.ToString(), out int id))
-            {
-                Id = id;
-            }
-       
             await LoadData();
-
-            //_pageHeader = HeaderService.Create(ConstHelper.ClientTicketsPath, null, null, false, ConstHelper.ClientTicketsPath, null, PageMode);
             _pageHeader = await HeaderService.Create(PageMode);
         }
 
-        protected override async Task OnParametersSetAsync()
-        {
-            if (IdTicket != null && int.TryParse(IdTicket.ToString(), out int id))
-            {
-                Id = id;
-                await LoadData();
-            }
-        }
+       
         private async Task LoadData()
         {
             try
             {
-
                 if (Id != null)
                 {
-
                     _ticket = await _service.GetDetails(Id.Value);
                     
                     // ? NUOVO: Carica gli utenti assegnati dopo aver caricato il ticket

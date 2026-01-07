@@ -29,6 +29,9 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         private IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
+        [Inject]
+        private HttpClient HttpClient { get; set; }
+
         [Parameter]
         public int? Id { get; set; }
 
@@ -50,7 +53,8 @@ namespace CRM.Client.Pages.Tickets
 
         private ApplicationUser _userAssigned = null;
 
-       
+        // ✅ NUOVO: Lista di tutti gli utenti assegnati
+        private List<ApplicationUser> _assignedUsers = new List<ApplicationUser>();
 
         protected override async Task OnInitializedAsync()
         {
@@ -79,7 +83,12 @@ namespace CRM.Client.Pages.Tickets
 
                     _ticket = await _service.Get(Id.Value);
                     _userOpened = await _serviceUsers.Get(_ticket.IdUserOpened);
+                    
+                    // ⚠️ LEGACY: Mantieni per retrocompatibilità
                     _userAssigned = await _serviceUsers.Get(_ticket.IdUserAssigned);
+
+                    // ✅ NUOVO: Carica tutti gli utenti assegnati
+                    await LoadAssignedUsers();
                 }
                 else
                     _ticket = new Ticket();
@@ -89,6 +98,53 @@ namespace CRM.Client.Pages.Tickets
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Carica tutti gli utenti assegnati al ticket dalla tabella TicketUserAssignments
+        /// </summary>
+        private async Task LoadAssignedUsers()
+        {
+            try
+            {
+                if (_ticket == null || _ticket.Id == 0)
+                    return;
+
+                // Chiamata API per ottenere ID utenti assegnati
+                var userIds = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{_ticket.Id}/assigned-users");
+
+                if (userIds != null && userIds.Any())
+                {
+                    // Carica dettagli utenti
+                    _assignedUsers.Clear();
+                    foreach (var userId in userIds)
+                    {
+                        var user = await _serviceUsers.Get(userId);
+                        if (user != null)
+                        {
+                            _assignedUsers.Add(user);
+                        }
+                    }
+                }
+                else
+                {
+                    // Fallback: Se non ci sono utenti in TicketUserAssignments, usa IdUserAssigned legacy
+                    if (!string.IsNullOrEmpty(_ticket.IdUserAssigned) && _userAssigned != null)
+                    {
+                        _assignedUsers.Add(_userAssigned);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento utenti assegnati: {ex.Message}");
+                
+                // Fallback in caso di errore: usa utente legacy
+                if (_userAssigned != null)
+                {
+                    _assignedUsers.Add(_userAssigned);
+                }
             }
         }
         

@@ -81,17 +81,17 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Tickets.Index IdCompany="@Id" OnClickEdit="IndexEditTicket">
+            <CRM.Client.Pages.Tickets.Index IdCompany="@Id" OnClickEdit="IndexEditTicket" OnClickDetails="DetailsTicket" PageMode="PageModality.Child">
 
             </CRM.Client.Pages.Tickets.Index>
         }
         else if (_partialView == PartialViews.Details)
         {
-            <CRM.Client.Pages.Tickets.Info Id="@_idTicket.GetValueOrDefault()" IdCompany="Id" OnGotoIndex="IndexTicket"></CRM.Client.Pages.Tickets.Info>
+            <CRM.Client.Pages.Tickets.Info Id="@_idTicket.GetValueOrDefault()" IdCompany="Id" OnGotoIndex="IndexTicket" PageMode="PageModality.Child"></CRM.Client.Pages.Tickets.Info>
         }
         else if (_partialView == PartialViews.Edit)
         {
-            <CRM.Client.Pages.Tickets.Edit Id="@_idTicket" IdCompany="@Id" OnClickSave="TicketCloseForm" OnClickCancel="TicketCloseForm"></CRM.Client.Pages.Tickets.Edit>
+            <CRM.Client.Pages.Tickets.Edit Id="@_idTicket" IdCompany="@Id" OnClickSave="TicketCloseForm" OnClickCancel="TicketCloseForm" PageMode="PageModality.Child"></CRM.Client.Pages.Tickets.Edit>
         }
     }
     else if (_selectView == CompanyViews.Contacts)

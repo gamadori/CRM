@@ -492,7 +492,7 @@ namespace CRM.Client.Pages.Tickets
         }
         private void OpenTicket()
         {
-            NavigationManager.NavigateTo($"Tickets/Info/{_ticket.Id}");
+            NavigationManager.NavigateTo($"Tickets/{_ticket.Id}");
         }
 
         private bool PropertyVisible(PropertyStates? property)

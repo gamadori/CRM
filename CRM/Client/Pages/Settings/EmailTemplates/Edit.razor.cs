@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -28,7 +29,11 @@ namespace CRM.Client.Pages.Settings.EmailTemplates
         [Inject]
         IAGRestClientService RestClientService { get; set; }
 
-       
+        [Inject]
+        ILogosService LogosService { get; set; }
+
+        [Inject]
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int? Id { get; set; }
@@ -38,6 +43,9 @@ namespace CRM.Client.Pages.Settings.EmailTemplates
         private List<Logo> _loghi;
 
         private string _messageState = null;
+
+        private PageHeaderModel _pageHeader = new PageHeaderModel();
+
         protected override async Task OnInitializedAsync()
         {
            
@@ -56,6 +64,8 @@ namespace CRM.Client.Pages.Settings.EmailTemplates
                     _template = new EmailTemplate();
 
                 await LoadLoghi();
+
+                _pageHeader = await HeaderService.Create();
             }
             catch (Exception ex)
             {
@@ -111,8 +121,8 @@ namespace CRM.Client.Pages.Settings.EmailTemplates
 
         private async Task LoadLoghi()
         {
-            var loghi = await RestClientService.Get<Logo, LogosFilterModel>(new LogosFilterModel(), ConstHelper.LogosPath);
-            _loghi = loghi.Items;
+            var loghi = await LogosService.GetListAsync(new LogosFilterModel());
+            _loghi = loghi;
 
         }
     }

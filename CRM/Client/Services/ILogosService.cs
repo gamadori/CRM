@@ -1,16 +1,12 @@
-﻿using CRM.Shared;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿
+
+using CRM.Client.Services;
+using CRM.Shared;
 
 namespace CRM.Client.Services
 {
-    public interface ILogosService
+    public interface ILogosService : IDataService<Logo, int, LogosFilterModel, object>
     {
-        Task<PagingResponse<Logo>> GetLogos(LogosFilterModel filter);
-
-        Task<bool> PostLogo(Logo logo);
 
     }
 }

@@ -1772,10 +1772,6 @@ namespace CRM.Server.Migrations
                     b.Property<int>("Progress")
                         .HasColumnType("int");
 
-                    b.Property<int>("RANK")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("int");
-
                     b.Property<int>("Support")
                         .HasColumnType("int");
 
@@ -1879,6 +1875,9 @@ namespace CRM.Server.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CustomerSignature")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("EndDateTime")
                         .HasColumnType("datetime2");
 
@@ -1900,6 +1899,42 @@ namespace CRM.Server.Migrations
 
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PendingSignature")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PendingSignatureName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SignatureConfirmationToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SignatureConfirmedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("SignatureDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SignatureEmail")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SignatureName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SignatureOtpAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SignatureOtpChallengeId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SignatureOtpExpiry")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SignatureOtpHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SignatureStatus")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("StartDateTime")
                         .HasColumnType("datetime2");

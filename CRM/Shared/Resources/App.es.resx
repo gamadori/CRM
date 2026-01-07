@@ -415,4 +415,7 @@
   <data name="NewSubTitle" xml:space="preserve">
     <value>Nuevo  {0}</value>
   </data>
+  <data name="Logos" xml:space="preserve">
+    <value>Logotipos</value>
+  </data>
 </root>

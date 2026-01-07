@@ -13,14 +13,12 @@ namespace CRM.Shared
         [Key]
         public int Id { get; set; }
 
-        [Display(Name = "Tipo Ticket")]
+        [Display(Name = nameof(TicketTypeUser.IdTicket), ResourceType = typeof(Resources.Models.TicketTypeUser))]
         [Required]
         public int IdTicket { get; set; }
 
-        [Display(Name = "Utente")]
+        [Display(Name = nameof(TicketTypeUser.IdUser), ResourceType = typeof(Resources.Models.TicketTypeUser))]
         [Required]
         public string IdUser { get; set; }
-
-
     }
 }

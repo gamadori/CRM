@@ -1,9 +1,8 @@
-﻿@page "/Settings/EmailTemplates/Edit"
-@page "/Settings/EmailTemplates/Edit/{Id:int}"
+﻿@page "/Settings/EmailTemplates/New"
+@page "/Settings/EmailTemplates/{Id:int}/Edit"
 @using Radzen
 @using Radzen.Blazor
 
-<h3>Email Template</h3>
 
 @if (_template == null)
 {
@@ -11,43 +10,51 @@
 }
 else
 {
-    <div class="containerleft">
-        <EditForm Model="@_template" OnValidSubmit="HandleValidSubmit">
-           
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-            <div class="row">
-                <div class="col">
-                    <div class="mb-3">
-                        <label for="Codice">Tipo</label>
-                        <RadzenDropDown class="form-control" TValue="CRM.Shared.EmailsTypes" Data="@(EnumGetList())" TextProperty="Text" ValueProperty="Value" @bind-Value="_template.Tipo" />
+    <PageHeader Model="_pageHeader">
+    </PageHeader>
 
-                        <ValidationMessage For="@(() => _template.Tipo)" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="Descrizione">Oggetto</label>
-                        <input id="Descrizione" class="form-control" @bind-value="@_template.Subject" />
-                        <ValidationMessage For="@(() => _template.Subject)" />
-                    </div>
+    <EditForm Model="@_template" OnValidSubmit="HandleValidSubmit">
+        <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeSM="8">
+                <RadzenStack>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                
+                                <RedGSelectEnumGeneric TEnum="CRM.Shared.EmailsTypes" TValue="CRM.Shared.EmailsTypes" @bind-Value="@_template.Tipo" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                     <RadzenRow>
+                        <RadzenColumn Size="12" >
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_template.Subject" For="@(() => _template.Subject)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RedGTextArea @bind-Value="@_template.Body" For="@(() => _template.Subject)" Rows="9" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" >
+                            <RadzenStack>
+                                <RedGDropDown TValue="int?" TItem="Logo" Data="_loghi" @bind-Value="@_template.IdLogo" For="@(() => _template.IdLogo)" ValueProperty="Id" TextProperty="Codice" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
 
-                    <div class="mb-3">
-                        <label for="Descrizione">Testo</label>
-                        <InputTextArea rows="8" id="Descrizione" class="form-control" @bind-Value="@_template.Body" />
-                        <ValidationMessage For="@(() => _template.Body)" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="Codice">Logo</label>
-                        <RadzenDropDown class="form-control" TValue="int?" Data="@_loghi" TextProperty="Codice" ValueProperty="Id" @bind-Value="_template.IdLogo" />
-
-                        <ValidationMessage For="@(() => _template.IdLogo)" />
-                    </div>
-
-                    <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
-                    <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
-
-                </div>
-            </div>
-        </EditForm>
-    </div>
+            </RadzenColumn>
+        </RadzenRow>
+        <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" />
+        <RedGButton RGButtonType="RGButtonType.Submit" />
+    </EditForm>
+    
+    
 }

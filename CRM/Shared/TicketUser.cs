@@ -15,7 +15,5 @@ namespace CRM.Shared
         public int IdTicket { get; set; }
 
         public string IdUser { get; set; }
-
-        
     }
 }

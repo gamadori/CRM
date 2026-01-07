@@ -1,0 +1,58 @@
+﻿@page "/Settings/Logos"
+@page "/Settings/Logos/Index"
+
+
+
+
+<style>
+    .rz-grid-table {
+        width: unset;
+    }
+</style>
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+<RadzenDataGrid @ref="_grdLogos" AllowAlternatingRows="false" LoadData="@LoadData" AllowFiltering="true" AllowPaging="true" PageSize="@ConstHelper.PageSize" AllowSorting="true" EditMode="DataGridEditMode.Single"
+                Data="@_logos" TItem="Logo" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" Sort="@Reset" Page="@Reset" Filter="@Reset" ColumnWidth="200px">
+    <HeaderTemplate>
+        <RedGButton RGButtonType="RGButtonType.New" Click="@InsertRow" Disabled="@(_logosToInsert.Count() > 0)"></RedGButton>
+       
+    </HeaderTemplate>
+
+    <Columns>
+
+        <RadzenDataGridColumn Property="@nameof(Logo.Codice)" Title="Codice">
+            <EditTemplate Context="Logo">
+                <RadzenTextBox @bind-Value="Logo.Codice" Style="min-width: 280px; display: block" Name="LogoCode" aria-label="Enter Logo Code" />
+                <RadzenRequiredValidator Text="@Localize["Required"]" Component="LogoCode" Popup="false" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="@nameof(Logo.Descrizione)" Title="Descrizione">
+            <EditTemplate Context="Logo">
+                <RadzenTextBox @bind-Value="Logo.Descrizione" Style="min-width:300px; display: block" Name="LogoDesc" aria-label="Enter Language Name" />
+                <RadzenRequiredValidator Text="@Localize["Required"]" Component="LogoDesc" Popup="false" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="@nameof(Logo.InputFile)" Title="Logo">
+            <Template Context="Logo">
+                <RadzenImage Path="@Logo.InputFile" Style="width: 32px; height: 32px;" AlternateText="@Logo.InputFile" />
+            </Template>
+            <EditTemplate Context="Logo">
+                <RadzenFileInput ChooseText="Carica Logo..." ImageStyle="Widt:32px; Height:auto" @bind-Value="@Logo.InputFile" TValue="string" Style="width: 100%"
+                                 Change=@(args => OnChange(args, "FileInput")) Error=@(args => OnError(args, "FileInput"))
+                                 InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "select file" }})" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Context="Logo" Filterable="false" Sortable="false" TextAlign="TextAlign.Right" Frozen="true" FrozenPosition="FrozenColumnPosition.Right">
+            <Template Context="logo">
+                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Size="ButtonSize.Medium" class="rz-my-1 rz-ms-1" Click="@(args => EditRow(logo))" @onclick:stopPropagation="true" />
+                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Medium" Shade="Shade.Lighter" class="rz-my-1 rz-ms-1" Click="@(args => DeleteRow(logo))" @onclick:stopPropagation="true" />
+            </Template>
+            <EditTemplate Context="logo">
+                <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Medium" Click="@((args) => SaveRow(logo))" aria-label="Save" />
+                <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat" Size="ButtonSize.Medium" class="rz-my-1 rz-ms-1" Click="@((args) => CancelEdit(logo))" aria-label="Cancel" />
+                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Size="ButtonSize.Medium" Shade="Shade.Lighter" class="rz-my-1 rz-ms-1" Click="@(args => DeleteRow(logo))" aria-label="Delete" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>

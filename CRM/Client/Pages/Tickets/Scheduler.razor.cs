@@ -12,6 +12,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 using static BlazoringComponents.Scheduler.AGScheduler<CRM.Client.Models.TicketSchedulerViewModel>;
 using static CRM.Client.Helpers.PageHelper;
@@ -40,6 +42,10 @@ namespace CRM.Client.Pages.Tickets
 
         [Inject]
         DialogService DialogService { get; set; }
+
+        // ✅ NUOVO: Inject HttpClient per API calls
+        [Inject]
+        HttpClient HttpClient { get; set; }
 
        
         [Parameter]
@@ -114,6 +120,9 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _loading = true;
 
+        // ✅ NUOVO: Cache per utenti assegnati (evita chiamate duplicate)
+        private Dictionary<int, List<ApplicationUser>> _ticketAssignedUsersCache = new();
+
         protected override async Task OnInitializedAsync()
         {
             // ✅ NUOVO: Imposta filtri da query string se presenti
@@ -151,20 +160,28 @@ namespace CRM.Client.Pages.Tickets
             filter.DateFrom = _dateStart;
             filter.DateTo = _dateEnd;
 
-            var tikets = await _serviceTicket.GetList(filter);
+            var tickets = await _serviceTicket.GetList(filter);
 
             _tickets = new List<TicketSchedulerViewModel>();
+            _ticketAssignedUsersCache.Clear(); // Pulisci cache
 
-            if (tikets != null)
+            if (tickets != null)
             {
-                foreach (var t in tikets.Items)
+                foreach (var t in tickets.Items)
                 {
-                    var user = await _serviceUser.Get(t.IdUserAssigned);
-
-                    if (user != null)
-                        backColor = user.Color;
+                    // ✅ NUOVO: Carica TUTTI gli utenti assegnati dal database
+                    var assignedUsers = await LoadAssignedUsersForTicket(t.Id);
+                    
+                    // Determina colore di sfondo (usa il primo utente assegnato come principale)
+                    if (assignedUsers.Any())
+                    {
+                        var mainUser = assignedUsers.First();
+                        backColor = mainUser.Color ?? "white";
+                    }
                     else
+                    {
                         backColor = "white";
+                    }
 
                     _tickets.Add(new TicketSchedulerViewModel()
                     {
@@ -173,7 +190,14 @@ namespace CRM.Client.Pages.Tickets
                         Time = t.Time,
                         DateEnd = t.DateEnd,
                         Company = t.Company,
-                        User = user?.NameComplete,
+                        
+                        // ⚠️ LEGACY: Mantieni User per retrocompatibilità
+                        User = assignedUsers.Any() ? assignedUsers.First().NameComplete : null,
+                        
+                        // ✅ NUOVO: Popola liste utenti multipli
+                        AssignedUserIds = assignedUsers.Select(u => u.Id).ToList(),
+                        AssignedUserNames = assignedUsers.Select(u => u.NameComplete).ToList(),
+                        
                         BackColor = backColor,
                         Description = t.Description
 
@@ -184,6 +208,57 @@ namespace CRM.Client.Pages.Tickets
             StateHasChanged();
             return _tickets;
         }
+
+        /// <summary>
+        /// ✅ NUOVO: Carica tutti gli utenti assegnati a un ticket dalla tabella TicketUserAssignments
+        /// Usa cache per evitare chiamate duplicate
+        /// </summary>
+        private async Task<List<ApplicationUser>> LoadAssignedUsersForTicket(int ticketId)
+        {
+            // Controlla cache
+            if (_ticketAssignedUsersCache.TryGetValue(ticketId, out var cachedUsers))
+            {
+                return cachedUsers;
+            }
+
+            try
+            {
+                // Chiamata API per recuperare ID utenti assegnati
+                var userIds = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{ticketId}/assigned-users");
+
+                if (userIds == null || !userIds.Any())
+                {
+                    _ticketAssignedUsersCache[ticketId] = new List<ApplicationUser>();
+                    return _ticketAssignedUsersCache[ticketId];
+                }
+
+                // Recupera dettagli utenti dalla lista utenti già caricata
+                var users = _users.Where(u => userIds.Contains(u.Id)).ToList();
+
+                // Se alcuni utenti non sono nella lista locale, caricali dal servizio
+                var missingUserIds = userIds.Where(id => !_users.Any(u => u.Id == id)).ToList();
+                foreach (var userId in missingUserIds)
+                {
+                    var user = await _serviceUser.Get(userId);
+                    if (user != null)
+                    {
+                        users.Add(user);
+                        _users.Add(user); // Aggiungi alla cache locale
+                    }
+                }
+
+                // Salva in cache
+                _ticketAssignedUsersCache[ticketId] = users;
+                return users;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento utenti assegnati per ticket {ticketId}: {ex.Message}");
+                _ticketAssignedUsersCache[ticketId] = new List<ApplicationUser>();
+                return _ticketAssignedUsersCache[ticketId];
+            }
+        }
+
         private async Task<List<ApplicationUser>> LoadUsers()
         {
             UsersFilterModel request = new UsersFilterModel();
@@ -205,7 +280,7 @@ namespace CRM.Client.Pages.Tickets
             if (settings != null)
                 _maxNumMonthlyTicket = settings.MonthlySchedulerMaxNumTickets;
         }
-       
+      
 
         protected async void OnChangeIdUser()
         {

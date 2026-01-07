@@ -1,10 +1,8 @@
-﻿@page "/Tickets/Details/{Id:int}"
-@page "/Tickets/{Id:int}"
-@page "/Tickets/{Id:int}/{BackUrl}"
+﻿@page "/Tickets/{Id:int}/Details"
+@page "/Tickets/{Id:int}/Details/{BackUrl}"
 @using CRM.Shared.Helper
 
-<PageHeader Model="@_pageHeader">
-</PageHeader>
+
 
 @if (_ticket == null)
 {
@@ -12,8 +10,10 @@
 }
 else
 {
-    <div class="card border-0 shadow-sm mb-4">
+    <PageHeader Model="@_pageHeader">
+    </PageHeader>
 
+    <div class="card border-0 shadow-sm mb-4">
         <!-- Alert Descrizione -->
         <div class="alert alert-warning m-4 mb-0" role="alert">
             <h4 class="alert-heading d-flex align-items-center">

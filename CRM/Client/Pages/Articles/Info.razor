@@ -86,7 +86,7 @@ else
         }
         else if (_partialView == PartialViews.Edit)
         {
-            <CRM.Client.Pages.Tickets.Edit Id="@_idTicket" IdCompany="@_article?.IdCompany" IdArticle=@Id  OnClickSave="TicketCloseForm" OnClickCancel="TicketCloseForm"></CRM.Client.Pages.Tickets.Edit>
+            <CRM.Client.Pages.Tickets.Edit Id="@_idTicket" IdCompany="@_article?.IdCompany" IdArticle=@Id PageMode="PageModality.Child" OnClickSave="TicketCloseForm" OnClickCancel="TicketCloseForm"></CRM.Client.Pages.Tickets.Edit>
         }
     }
     @* else if (selectView == ProductViews.Backups)
