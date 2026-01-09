@@ -63,7 +63,7 @@ namespace CRM.Client.Pages.Settings.EmailTemplates
 
         private RadzenDataGrid<EmailTemplate> grdEmails;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
         protected override async Task OnInitializedAsync()
         {
             //#if DEBUG

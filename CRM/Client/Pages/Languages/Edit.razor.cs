@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -12,6 +13,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Languages
 {
@@ -27,8 +29,14 @@ namespace CRM.Client.Pages.Languages
         [Inject]
         IAGRestClientService RestClientService { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int? Id { get; set; }
+
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         private Language _language = null;
 
@@ -36,6 +44,7 @@ namespace CRM.Client.Pages.Languages
 
         private string _messageState = null;
 
+        private PageHeaderModel? _pageHeader = null;
         protected override async Task OnInitializedAsync()
         {
             string path;
@@ -53,7 +62,8 @@ namespace CRM.Client.Pages.Languages
                 }
                 else
                     _language = new Language();
-                
+
+                _pageHeader = await HeaderService.Create(PageMode);
                
             }
             catch (Exception ex)

@@ -112,6 +112,7 @@ namespace CRM.Client
             builder.Services.AddScoped<ILocalizationService, LocalizationService>();
             builder.Services.AddScoped<IHeaderService, HeaderService>();
             builder.Services.AddScoped<ILogosService, ProxyLogosService>();
+            builder.Services.AddScoped<ILogEventService, ProxyLogEventService>();
 
             builder.Services.AddTransient<IManyToManyService<TicketTypeUser>, ManyToManyService<TicketTypeUser>>(sp =>
             {

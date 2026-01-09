@@ -1,139 +1,143 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
-using Syncfusion.Blazor.Grids;
+using Radzen;
+using Radzen.Blazor;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json.Serialization;
+using System.Text.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
+using static CRM.Shared.LogEvent;
 
 namespace CRM.Client.Pages.LogEvents
 {
-    public partial class Index : ComponentBase
+    
+    public partial class Index: ComponentBase
     {
 
 
         [Inject]
-        private HttpClient Http { get; set; }
+        private NavigationManager NavigationManager { get; set; } = default!;
 
         [Inject]
-        private NavigationManager NavigationManager { get; set; }
+        ILogEventService LogEventService { get; set; } = default!;
 
         [Inject]
-        private IJSRuntime JSRuntime { get; set; }
+        IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; } = default!;
+
+        [Inject]
+        IHeaderService HeaderService { get; set; } = default!;
+
+        
 
         [Parameter]
-        public Action<int> OnClickDetails { get; set; }
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
-        [Parameter]
-        public Action<int?> OnClickEdit { get; set; }
+       
 
-        [Parameter]
-        public Action<int> OnClickDelete { get; set; }
+        private List<LogEvent>? _items = null;
 
-        [Parameter]
-        public Action<int> OnClickGantt { get; set; }
+        private int _totalCount = 0;
 
+        private LogEventFilterModel _filter = new LogEventFilterModel();
 
-        private PagingHeaderModel _paging = new PagingHeaderModel();
-        private string _messageDelete;
+        private bool _isLoading = false;
 
+        private RadzenDataGrid<LogEvent> _grdLogs = default!;
 
-        LogEvent _logEvent;
+        [Display(Name = "search", ResourceType = typeof(CRM.Shared.Resources.App))]
+        private string? _searchText = string.Empty;
 
-        public void CommandClickHandler(CommandClickEventArgs<LogEvent> args)
+        [Display(Name = "EventType", ResourceType = typeof(CRM.Shared.Resources.App))]
+        private EventsTypes _eventType = EventsTypes.NullReference;
+
+        private PageHeaderModel? _pageHeader = null;
+
+        protected override async Task OnInitializedAsync()
         {
-            switch (args.CommandColumn.Type)
+
+            await LoadDataAsync();
+            _pageHeader = await HeaderService.Create(PageMode);
+        }
+
+        private async Task LoadDataAsync(LoadDataArgs? args = null)
+        {
+            _isLoading = true;
+            if (args != null)
             {
-                case CommandButtonType.Delete:
-                    PrepareDelete(args.RowData);
-                    break;
+                _filter.Skip = args?.Skip;
+                _filter.Top = args?.Top;
 
-                case CommandButtonType.Edit:
-                    if (args.RowData != null)
-                        Edit(args.RowData.Id);
-                    break;
+                _filter.OrderBy = args?.OrderBy;
+                _filter.Filter = args?.Filter;
 
-                case CommandButtonType.None:
-                    if (args.RowData != null)
-                    {                        
-                        Details(args.RowData.Id);
-                    }
-                    break;
-            }
-        }
-
-        public void CommandDetailsClick()
-        {
-
-        }
-        public void ActionFailure(FailureEventArgs args)
-        {
-            //_errorDetails = args.Error.Message;
-            StateHasChanged();
-        }
-
-
-        protected void NewItem()
-        {
-            NavigationManager.NavigateTo("/Projects/New");
-        }
-
-        public void ActionBegin(ActionEventArgs<LogEvent> Args)
-        {
-            if (Args.RequestType == Syncfusion.Blazor.Grids.Action.FilterChoiceRequest)
-            {
-
-            }
-        }
-
-        protected async Task Delete()
-        {
-
-            await JSRuntime.InvokeAsync<object>("CloseModal", "dlgDelete");
-
-            if (_logEvent != null)
-            {
-                await Http.DeleteAsync($"{ConstHelper.LogEventsPath}/{_logEvent.Id}");
-
-                StateHasChanged();
                 
-            }
-        }
-        protected void PrepareDelete(LogEvent item)
-        {
-            _logEvent = item;
-            _messageDelete = $"Eliminare definitivamente il log";
 
-          
+            }
+            _filter.Message = _searchText;
+            _filter.EventType = _eventType;
+            var resp = await LogEventService.GetPagingAsync(_filter);
+
+            _items = resp?.Items ?? new List<LogEvent>();
+            _totalCount = resp?.MetaData?.TotalCount ?? 0;
+            _isLoading = false;
+
             StateHasChanged();
-            JSRuntime.InvokeVoidAsync("ShowModal", "dlgDelete");
-
         }
 
-        protected void Details(int idProduct)
+        private async Task OnSearchTextChanged(string? search)
         {
-            if (OnClickDetails != null)
+            _searchText = search;
+            
+            await LoadDataAsync();
+        }
+
+        private async Task OnEventTypeChanged()
+        {
+            
+            await LoadDataAsync();
+        }
+
+
+        private void OnDetails(int id)
+        {
+            NavigationManager.NavigateTo($"/{ConstHelper.ClientLogEventsPath}/{id}");
+        }
+
+        /// <summary>
+        /// Colora le righe del grid in base al tipo di evento
+        /// </summary>
+        private void OnRowRender(RowRenderEventArgs<LogEvent> args)
+        {
+            string backgroundColor = args.Data.EventType switch
             {
-                OnClickDetails(idProduct);
-            }
-            else
-                NavigationManager.NavigateTo($"/LogEvents/Details/{idProduct}");
+                EventsTypes.Info => "#e3f2fd",        // Azzurro chiaro
+                EventsTypes.Warning => "#fff3e0",     // Arancione chiaro
+                EventsTypes.Error => "#ffebee",       // Rosso chiaro
+                EventsTypes.Permits => "#f3e5f5",     // Viola chiaro
+                _ => "transparent"
+            };
+
+            string textColor = args.Data.EventType switch
+            {
+                EventsTypes.Info => "#1565c0",        // Blu scuro
+                EventsTypes.Warning => "#e65100",     // Arancione scuro
+                EventsTypes.Error => "#c62828",       // Rosso scuro
+                EventsTypes.Permits => "#6a1b9a",     // Viola scuro
+                _ => "inherit"
+            };
+
+            args.Attributes.Add("style", $"background-color: {backgroundColor}; color: {textColor}; font-weight: 500;");
         }
-
-
-        protected void Edit(int id)
-        {
-            if (OnClickEdit != null)
-                OnClickEdit(id);
-            else
-                NavigationManager.NavigateTo($"/LogEvents/{id}/Edit");
-        }
-
     }
 }

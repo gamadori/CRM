@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static CRM.Client.Pages.Articles.Info;
 
 namespace CRM.Client.Pages.Companies
 {
@@ -71,6 +72,9 @@ namespace CRM.Client.Pages.Companies
         private PageHeaderModel _pageHeader;
 
         private bool _fromDetails = false;
+
+        private List<ViewOption<CompanyViews>> _viewOptions;
+
         protected override async Task OnInitializedAsync()
         {
             if (SelectViewValue != null)
@@ -79,11 +83,21 @@ namespace CRM.Client.Pages.Companies
                 _partialView = PartialViews.Index;
             }
             await LoadCompany();
-            
+            InitializeViewOptions();
             _pageHeader = _pageHeader = await HeaderService.Create();  //HeaderService.Create(ConstHelper.ClientCompaniesPath, Id, _company?.RagioneSociale, false, ConstHelper.ClientCompaniesPath);
 
         }
-
+        private void InitializeViewOptions()
+        {
+            _viewOptions = new List<ViewOption<CompanyViews>>
+            {
+                new ViewOption<CompanyViews> { Text = Localize["Dati Azienda"], Value = CompanyViews.Company },
+                new ViewOption<CompanyViews> { Text = Localize["Utenti"], Value = CompanyViews.Users },
+                new ViewOption<CompanyViews> { Text = Localize["Contacts"], Value = CompanyViews.Contacts },
+                new ViewOption<CompanyViews> { Text = Localize["Articles"], Value = CompanyViews.Articles },
+                new ViewOption<CompanyViews> { Text = Localize["Tickets"], Value = CompanyViews.Ticket },
+            };
+        }
         private async Task LoadCompany()
         {
             _company = await companiesService.GetItem<Company, int>(Id, ConstHelper.CompaniesPath);

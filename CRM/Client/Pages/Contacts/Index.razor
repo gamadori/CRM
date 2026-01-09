@@ -7,15 +7,12 @@
 @* 
 <BlazorHeader Header="@Localize["Contacts"]" Visible="@(PageMode != PageHelper.PageModality.Dialog)"></BlazorHeader> *@
 
-@if (IdCompany == null)
+
+@if (_contacts != null)
 {
 
     <PageHeader Model="@_pageHeader">
     </PageHeader>
-}
-
-@if (_contacts != null)
-{
 
     <RadzenDataGrid @ref="grdContacts" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_contacts" Responsive=true LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="@_filterMode"
                     AllowSorting="true" AllowFiltering="true" AllowPaging="true"
@@ -44,7 +41,7 @@
 
            
 
-            @if (PageMode == PageHelper.PageModality.Visualization)
+            @if (PageMode != PageHelper.PageModality.Dialog)
             {
                 <RadzenDataGridColumn Context="item" TItem="Contact"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
                     <Template Context="item">

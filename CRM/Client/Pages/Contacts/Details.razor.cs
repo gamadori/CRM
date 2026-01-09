@@ -41,8 +41,10 @@ namespace CRM.Client.Pages.Contacts
         public int Id { get; set; }
 
         [Parameter]
-        public Action OnClickEdit { get; set; }
+        public int? CompanyId { get; set; }
 
+        [Parameter]
+        public Action OnClickEdit { get; set; }
        
         [Parameter]
         public Action OnClickCancel { get; set; }
@@ -53,7 +55,7 @@ namespace CRM.Client.Pages.Contacts
 
         private Contact _contact = null;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {

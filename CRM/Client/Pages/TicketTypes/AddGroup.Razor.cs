@@ -40,7 +40,7 @@ namespace CRM.Client.Pages.TicketTypes
 
         private TicketTypeGroup _ticketTypeGroup = null;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {

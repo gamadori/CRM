@@ -14,17 +14,28 @@ else
 {
     <PageHeader Model="_pageHeader">
     </PageHeader>
-
-    <RadzenSelectBar @bind-Value="selectView" TValue="ProductViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
-        <Items>
-            <RadzenSelectBarItem Text="@Localize["Product data"]" Value="ProductViews.Product" />
-            <RadzenSelectBarItem Text="@Localize["Documenti Macchina"]" Value="ProductViews.Attachments" />
-            <RadzenSelectBarItem Text="@($"{Localize["Documenti"]} {_article.Product?.Name}")" Value="ProductViews.ProductAttachments" />
-            <RadzenSelectBarItem Text="@Localize["Tickets"]" Value="ProductViews.Ticket" />
-            @* <RadzenSelectBarItem Text="@Localize["Backups"]" Value="ProductViews.Backups" /> *@
-        </Items>
-    </RadzenSelectBar>
-
+    <!-- Desktop: SelectBar -->
+    <div class="d-none d-md-block mb-3">
+        <RadzenSelectBar @bind-Value="selectView" TValue="ProductViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+            <Items>
+                <RadzenSelectBarItem Text="@Localize["Data Product"]" Value="ProductViews.Product" />
+                <RadzenSelectBarItem Text="@Localize["Documenti Macchina"]" Value="ProductViews.Attachments" />
+                <RadzenSelectBarItem Text="@($"{Localize["Documenti"]} {_article.Product?.Name}")" Value="ProductViews.ProductAttachments" />
+                <RadzenSelectBarItem Text="@Localize["Tickets"]" Value="ProductViews.Ticket" />
+                @* <RadzenSelectBarItem Text="@Localize["Backups"]" Value="ProductViews.Backups" /> *@
+            </Items>
+        </RadzenSelectBar>
+    </div>
+    <!-- Mobile: Dropdown -->
+    <div class="d-md-none mb-3">
+        <RadzenDropDown @bind-Value="selectView" TValue="ProductViews"
+                        Change="@((args) => Change(args, "SelectBar with single selection"))"
+                        Data="@_viewOptions"
+                        TextProperty="Text"
+                        ValueProperty="Value"
+                        Style="width: 100%;"
+                        Placeholder=@Localize["Seleziona vista..."] />
+    </div>
     @if (selectView == ProductViews.Product)
     {
         if (_partialView == PartialViews.Details)
@@ -75,13 +86,13 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Tickets.Index IdArticle="@Id" OnClickEdit="EditTicket" OnClickDetails="DetailsTicket" PageMode="PageModality.Child">
+            <CRM.Client.Pages.Tickets.Index IdArticle="@Id"  OnClickEdit="EditTicket" OnClickDetails="DetailsTicket" PageMode="PageModality.Child">
 
             </CRM.Client.Pages.Tickets.Index>
         }
         else if (_partialView == PartialViews.Details)
         {
-             <CRM.Client.Pages.Tickets.Info Id="@_idTicket.GetValueOrDefault()" OnGotoIndex="IndexTicket"></CRM.Client.Pages.Tickets.Info PageMode="PageModality.Child">
+            <CRM.Client.Pages.Tickets.Info Id="@_idTicket.GetValueOrDefault()" OnGotoIndex="IndexTicket" PageMode="PageModality.Child"></CRM.Client.Pages.Tickets.Info>
             
         }
         else if (_partialView == PartialViews.Edit)

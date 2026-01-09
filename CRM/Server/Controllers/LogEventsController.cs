@@ -1,16 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using CRM.Client.Models;
+using CRM.Client.Services;
+using CRM.Server.Data;
+using CRM.Server.Helpers;
+using CRM.Server.Services;
+using CRM.Shared;
+using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Dynamic.Core;
-using CRM.Server.Data;
-using CRM.Shared;
-using CRM.Server.Helpers;
 using Microsoft.Extensions.Primitives;
-using CRM.Shared.Helper;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Dynamic.Core;
+using System.Threading.Tasks;
 using static CRM.Shared.LogEvent;
 
 namespace CRM.Server.Controllers
@@ -19,165 +22,125 @@ namespace CRM.Server.Controllers
     [ApiController]
     public class LogEventsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
-
-        public LogEventsController(ApplicationDbContext context)
+        private readonly ILogEventService _logEventService;
+        public LogEventsController(ILogEventService logEventService)
         {
-            _context = context;
+            _logEventService = logEventService;
+            
         }
 
-        // GET: api/ProjectModels
+        // GET: api/Companies
         [HttpGet]
-        public ActionResult<object> GetLogEvent()
+        public async Task<PagingResponse<LogEvent>?> GetPage([FromQuery] LogEventFilterModel? args = null)
         {
             try
             {
-                string filter = null;
-                string order;
+                var items = await _logEventService.GetPagingAsync(args);
 
-                var data = _context.LogEvents.OrderByDescending(x=>x.DateEvent).AsQueryable();
-
-                var count = data.Count();
-                var queryString = Request.Query;
-
-
-                if (queryString.Keys.Contains("$filter"))
-                {
-                    filter = queryString["$filter"];
-
-                    data = SyncHelper.GetFilterPredicate(data, filter);
-
-
-                }
-
-                if (queryString.Keys.Contains("$orderby"))
-                {
-                    order = queryString["$orderby"];
-                    data = data.OrderBy(order);
-
-                }
-
-                if (queryString.Keys.Contains("$inlinecount"))
-                {
-
-                    StringValues Skip;
-                    StringValues Take;
-                    int skip = (queryString.TryGetValue("$skip", out Skip)) ? Convert.ToInt32(Skip[0]) : 0;
-                    int top = (queryString.TryGetValue("$top", out Take)) ? Convert.ToInt32(Take[0]) : data.Count();
-
-
-
-                    return new { Items = data.Skip(skip).Take(top), Count = count };
-                }
-                else
-                {
-
-                    return data.ToList();
-                }
+                return items;
             }
             catch (Exception ex)
             {
+                await _logEventService.RegisterAsync(nameof(GroupsController), nameof(GetPage), LogEvent.EventsTypes.Error, ex);
                 return null;
             }
         }
 
-
-        // GET: api/Projects/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<LogEvent>> GetLogEvent(int id)
+        [HttpGet("list")]
+        public async Task<IEnumerable<LogEvent?>> GetItems([FromQuery] LogEventFilterModel? args = null)
         {
-            var logEvent = await _context.LogEvents.FindAsync(id);
+            try
+            {
+                var items = await _logEventService.GetListAsync(args);
 
-            if (logEvent == null)
+                if (items == null)
+                {
+                    return Enumerable.Empty<LogEvent>();
+                }
+                return items;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(GroupsController), nameof(GetItems), LogEvent.EventsTypes.Error, ex);
+                return Enumerable.Empty<LogEvent>();
+            }
+        }
+
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<LogEvent>> Get(int id)
+        {
+            var item = await _logEventService.GetItemAsync(id);
+
+            if (item == null)
             {
                 return NotFound();
             }
-
-            return logEvent;
+            return item;
         }
 
-        // PUT: api/Projects/5
+        // PUT: api/Companies/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutLogEvent(int id, LogEvent logEvent)
+        public async Task<ActionResult<APIResponseMessage<LogEvent>>> Put(int id, LogEvent item)
         {
-            if (id != logEvent.Id)
+            if (id != item.Id)
             {
                 return BadRequest();
             }
+            var resp = await _logEventService.PostAsync(item);
 
-            _context.Entry(logEvent).State = EntityState.Modified;
+            if (resp == null)
+                return Problem("Error saving settings");
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!LogEventExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            return Ok(resp);
         }
 
-        // POST: api/Projects
+        // POST: api/Companies
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Project>> PostProject(LogEvent logEvent)
+        public async Task<ActionResult<APIResponseMessage<LogEvent>>> Post(LogEvent item)
         {
-            _context.LogEvents.Add(logEvent);
-            await _context.SaveChangesAsync();
+            var resp = await _logEventService.PostAsync(item);
 
-            return CreatedAtAction("GetLogEvent", new { id = logEvent.Id }, logEvent);
+            if (resp == null)
+                return StatusCode(StatusCodes.Status500InternalServerError, "Post return null");
+
+            return Ok(resp);
         }
 
-        // DELETE: api/Projects/5
+        // DELETE: api/Companies/5
+        //[AuthorizeRole(ePolicy.AdminRole)]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteLogEvent(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var logEvent = await _context.LogEvents.FindAsync(id);
-            if (logEvent == null)
+            var resp = await _logEventService.DeleteAsync(id);
+
+            if (!resp)
             {
-                return NotFound();
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error On Deleded Group");
             }
-
-            _context.LogEvents.Remove(logEvent);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            else
+                return NoContent();
         }
-        // Esempio in un controller API
+
         [HttpGet("activities")]
         public async Task<IActionResult> GetActivities([FromQuery] string? userId, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] ActivityType? type)
         {
-            var query = _context.LogEvents.AsQueryable();
+            LogEventFilterModel filterModel = new LogEventFilterModel() { Skip = 0, Top = 20 };
 
-            if (!string.IsNullOrEmpty(userId))
-                query = query.Where(x => x.UserId == userId);
+            filterModel.EventType = EventsTypes.Info;
 
-            if (fromDate.HasValue)
-                query = query.Where(x => x.DateEvent >= fromDate.Value);
-
-            if (toDate.HasValue)
-                query = query.Where(x => x.DateEvent <= toDate.Value);
+            var query = await _logEventService.GetPagingAsync(filterModel);
 
             
 
-            var activities = await query.Select(x=>new ActivityModel() { Date = x.DateEvent, Description = x.Message, Title =x.Module, Type = x.ActivityType }).OrderByDescending(x => x.Date).Take(20).ToListAsync();
+            if (query == null)
+                return Ok(new List<ActivityModel>());   
+            var activities = query.Items.Select(x => new ActivityModel() { Date = x.DateEvent, Description = x.Message, Title = x.Module, Type = x.ActivityType }).OrderByDescending(x => x.Date);
             return Ok(activities);
         }
-        private bool LogEventExists(int id)
-        {
-            return _context.LogEvents.Any(e => e.Id == id);
-        }
 
-        
     }
 }

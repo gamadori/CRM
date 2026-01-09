@@ -14,7 +14,8 @@ namespace CRM.Shared
             Info,
             Warning,
             Error, 
-            Permits
+            Permits,
+            NullReference,
         }
 
         [Key]

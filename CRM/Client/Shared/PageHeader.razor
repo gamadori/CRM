@@ -2,7 +2,7 @@
 @using CRM.Client.Services
 @* Modern Page Header Component *@
 
-@if (!Visible)
+@if (!Visible || Model == null)
 {
     return;
 }
@@ -173,7 +173,7 @@ else
 
     [Parameter]
 
-    public PageHeaderModel Model { get; set; } = new PageHeaderModel();
+    public PageHeaderModel? Model { get; set; } = null;
 
     [Parameter]
     public bool Visible { get; set; } = true;

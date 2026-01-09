@@ -95,7 +95,7 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _backDisabled = true;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
         /// <summary>
         /// Da Eliminare quando verranno inserite le traduzioni
         /// </summary>

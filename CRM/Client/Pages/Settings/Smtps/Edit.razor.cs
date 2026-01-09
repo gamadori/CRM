@@ -32,7 +32,7 @@ namespace CRM.Client.Pages.Settings.Smtps
         private string? _smtpTestResult = null;
         private bool _smtpTestInProgress = false;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {

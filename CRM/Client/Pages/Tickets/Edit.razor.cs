@@ -126,7 +126,7 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _isLoading = false;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
 
         protected override async Task OnInitializedAsync()

@@ -298,8 +298,8 @@
   <data name="Seleziona la Ditta..." xml:space="preserve">
     <value>Sélectionnez l'entreprise...</value>
   </data>
-  <data name="Settaggi" xml:space="preserve">
-    <value>Réglages</value>
+  <data name="Settings" xml:space="preserve">
+    <value>Paramètres système</value>
   </data>
   <data name="Storico TICKETS" xml:space="preserve">
     <value>Historique TICKETS</value>
@@ -403,9 +403,6 @@
   <data name="TicketManagement" xml:space="preserve">
     <value>Gestion des tickets</value>
   </data>
-  <data name="SettingsListSubTitle" xml:space="preserve">
-    <value />
-  </data>
   <data name="UtentiListSubTitle" xml:space="preserve">
     <value />
   </data>
@@ -435,5 +432,17 @@
   </data>
   <data name="Logos" xml:space="preserve">
     <value>Logos</value>
+  </data>
+  <data name="Languages" xml:space="preserve">
+    <value>Langues</value>
+  </data>
+  <data name="EventType" xml:space="preserve">
+    <value>Type d'événement</value>
+  </data>
+  <data name="SettingsListSubTitle" xml:space="preserve">
+    <value>Configurer et gérer tous les paramètres CRM</value>
+  </data>
+  <data name="logevents" xml:space="preserve">
+    <value>Journaux et événements</value>
   </data>
 </root>

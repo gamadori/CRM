@@ -60,7 +60,7 @@ namespace CRM.Client.Pages.Groups
 
         private Settings.Users.Index _pageUsersIndex;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         
 

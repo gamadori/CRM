@@ -81,7 +81,7 @@ namespace CRM.Client.Pages.Groups
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {

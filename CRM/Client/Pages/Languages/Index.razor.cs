@@ -1,4 +1,5 @@
 ﻿
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
@@ -13,6 +14,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Languages
 {
@@ -27,10 +29,14 @@ namespace CRM.Client.Pages.Languages
         [Inject]
         ILanguagesService LanguagesService { get; set; } = default!;
 
+        [Inject]
+        IHeaderService HeaderService { get; set; } = default!;
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; } = default!;
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         private const string PageFolder = "Settings/Languages";
 
@@ -47,6 +53,9 @@ namespace CRM.Client.Pages.Languages
         private List<Language> _languageToUpdate = new List<Language>();
 
         private List<Language> _languagesToInsert = new List<Language>();
+
+        private PageHeaderModel? _pageHeader = null;
+
         private async Task LoadData(LoadDataArgs? args = null)
         {
             _loading = true;
@@ -66,6 +75,7 @@ namespace CRM.Client.Pages.Languages
             _totalCount = resp?.MetaData?.TotalCount ?? 0;
             _loading = false;
 
+            _pageHeader = await HeaderService.Create(PageMode);
             StateHasChanged();
         }
 

@@ -78,7 +78,52 @@
     <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Radzen.Colors).Assembly.GetName().Version)"></script>
     <script src="lib/Helpers.js?v=1.9"></script>
     <script src="js/signaturePad.js?v=1.0"></script>
-    <script>navigator.serviceWorker.register('service-worker-1.0.js');</script>
+    
+    <!-- ✅ Service Worker Registration con error handling -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker-1.0.js', { scope: '/' })
+                    .then(registration => {
+                        console.log('✅ Service Worker registrato con successo:', registration.scope);
+                        
+                        // Check immediato per aggiornamenti
+                        registration.update();
+                        
+                        // Check for updates ogni 60 secondi
+                        setInterval(() => {
+                            registration.update();
+                        }, 60000);
+
+                        // Listen per aggiornamenti
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('🔄 Nuova versione Service Worker disponibile. Ricarica la pagina.');
+                                    
+                                    // Force reload automatico per applicare fix audio/video
+                                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                    window.location.reload();
+                                }
+                            });
+                        });
+                        
+                        // Listen per il controller change (nuovo SW attivo)
+                        navigator.serviceWorker.addEventListener('controllerchange', () => {
+                            console.log('🔄 Service Worker aggiornato, ricarico la pagina...');
+                            window.location.reload();
+                        });
+                    })
+                    .catch(error => {
+                        console.error('❌ Errore registrazione Service Worker:', error);
+                    });
+            });
+        } else {
+            console.warn('⚠️ Service Worker non supportato da questo browser');
+        }
+    </script>
+
     <script>
         window.appCulture = {
             get: () => window.localStorage['AppLanguage'],

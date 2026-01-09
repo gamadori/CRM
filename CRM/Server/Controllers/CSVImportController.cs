@@ -1,4 +1,5 @@
 ﻿using CNM.Authorize;
+using CRM.Client.Services;
 using CRM.Server.Data;
 using CRM.Server.Services;
 using CRM.Shared;

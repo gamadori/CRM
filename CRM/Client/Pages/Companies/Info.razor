@@ -15,21 +15,33 @@ else
 
     <PageHeader Model="@_pageHeader">
     </PageHeader>
-
-    <RadzenSelectBar @bind-Value="_selectView" TValue="CompanyViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
-        <Items>
-            <RadzenSelectBarItem Text=@Localize["Dati Azienda"] Value="CompanyViews.Company" />
-            <RadzenSelectBarItem Text=@Localize["Utenti"] Value="CompanyViews.Users" />
-            <RadzenSelectBarItem Text=@Localize["Contacts"] Value="CompanyViews.Contacts" />
-            <RadzenSelectBarItem Text=@Localize["Articles"] Value="CompanyViews.Articles" />
-            <RadzenSelectBarItem Text=@Localize["Tickets"] Value="CompanyViews.Ticket" />
-            <RadzenSelectBarItem Text=@Localize["Contracts"] Value="CompanyViews.Contracts" />
-            @if (_company.CompanyType == CompanyTypes.Reseller)
-            {
-                <RadzenSelectBarItem Text=@Localize["Customers"] Value="CompanyViews.Customers" />
-            }
-        </Items>
-    </RadzenSelectBar>
+    <!-- Desktop: SelectBar -->
+    <div class="d-none d-md-block mb-3">
+        <RadzenSelectBar @bind-Value="_selectView" TValue="CompanyViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
+            <Items>
+                <RadzenSelectBarItem Text=@Localize["Dati Azienda"] Value="CompanyViews.Company" />
+                <RadzenSelectBarItem Text=@Localize["Utenti"] Value="CompanyViews.Users" />
+                <RadzenSelectBarItem Text=@Localize["Contacts"] Value="CompanyViews.Contacts" />
+                <RadzenSelectBarItem Text=@Localize["Articles"] Value="CompanyViews.Articles" />
+                <RadzenSelectBarItem Text=@Localize["Tickets"] Value="CompanyViews.Ticket" />
+               
+                @if (_company.CompanyType == CompanyTypes.Reseller)
+                {
+                    <RadzenSelectBarItem Text=@Localize["Customers"] Value="CompanyViews.Customers" />
+                }
+            </Items>
+        </RadzenSelectBar>
+    </div>
+    <!-- Mobile: Dropdown -->
+    <div class="d-md-none mb-3">
+        <RadzenDropDown @bind-Value="_selectView" TValue="CompanyViews"
+                        Change="@((args) => Change(args, "SelectBar with single selection"))"
+                        Data="@_viewOptions"
+                        TextProperty="Text"
+                        ValueProperty="Value"
+                        Style="width: 100%;"
+                        Placeholder=@Localize["Seleziona vista..."] />
+    </div>
 
     @if (_selectView == CompanyViews.Company)
     {

@@ -86,9 +86,9 @@ namespace CRM.Client.Pages.Products
         private int? _idAttachment;
         private string _messagePrepareDelete = "Eliminare la sotto parte {0} dal ";
 
-        private List<ViewOption> _viewOptions;
+        private List<ViewOption<GroupViews>> _viewOptions;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {
@@ -101,22 +101,17 @@ namespace CRM.Client.Pages.Products
 
         private void InitializeViewOptions()
         {
-            _viewOptions = new List<ViewOption>
+            _viewOptions = new List<ViewOption<GroupViews>>
             {
-                new ViewOption { Text = Localize["Data Product"], Value = GroupViews.ProductType },
-                new ViewOption { Text = Localize["Attachments"], Value = GroupViews.Attachments },
-                new ViewOption { Text = Localize["Accessories"], Value = GroupViews.ProductAccessories },
-                new ViewOption { Text = Localize["Parameters"], Value = GroupViews.Parameters },
-                new ViewOption { Text = "Sotto Parti", Value = GroupViews.ProductTypeChilds }
+                new ViewOption<GroupViews> { Text = Localize["Data Product"], Value = GroupViews.ProductType },
+                new ViewOption<GroupViews> { Text = Localize["Attachments"], Value = GroupViews.Attachments },
+                new ViewOption<GroupViews> { Text = Localize["Accessories"], Value = GroupViews.ProductAccessories },
+                new ViewOption<GroupViews> { Text = Localize["Parameters"], Value = GroupViews.Parameters },
+                new ViewOption<GroupViews> { Text = Localize["Sotto Parti"], Value = GroupViews.ProductTypeChilds }
             };
         }
 
-        private class ViewOption
-        {
-            public string Text { get; set; }
-            public GroupViews Value { get; set; }
-        }
-
+        
         private async Task LoadProductType()
         {
             _product = await RestClientService.GetItem<Product, int>(Id, ConstHelper.Products); // service.Get(Id);

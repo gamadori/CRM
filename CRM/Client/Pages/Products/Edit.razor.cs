@@ -58,7 +58,7 @@ namespace CRM.Client.Pages.Products
 
         private string _messageState = "";
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {

@@ -1,49 +1,58 @@
-﻿
-@page "/LogEvents"
-@page "/LogEvents/Index"
+﻿@page "/Settings/LogEvents"
 
-@using Syncfusion.Blazor.Grids
-@using Syncfusion.Blazor.Data
-@using Syncfusion.Blazor
+@if (_items == null)
+{
+    <Waiting></Waiting>
+    return;
+}
+<PageHeader Model="@_pageHeader">
+</PageHeader>
 
-<h3>Log e Eventi</h3>
-<hr />
-<div class="btn-toolbar" role="toolbar" aria-label="Comandi">
-    <div class="btn-group mr-2" role="group" aria-label="First group">
-        <BlazorButton Template="TemplateButton.New" OnClick="NewItem"></BlazorButton>
-    </div>
+<RadzenDataGrid @ref="_grdLogs" IsLoading="@_isLoading" Count="@_totalCount" Responsive=true Data="@_items" LoadData="@LoadDataAsync" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="LogEvent" AllowAlternatingRows=false
+                RowRender="@OnRowRender">
 
-</div>
-<SfGrid TValue="LogEvent" AllowPaging="true" AllowSorting="true" AllowFiltering="true">
+    <HeaderTemplate>
+        <div class="d-flex align-items-center gap-5">
+            <RedGTextBox @bind-Value="_searchText" Label="@Localize["search..."]" @oninput="@(args => OnSearchTextChanged(args?.Value?.ToString()))" Style="width: 300px; margin-left: 10px;">
+                <End>
+                    <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
+                </End>
+            </RedGTextBox>
 
-    <GridEvents OnActionBegin="ActionBegin" CommandClicked="CommandClickHandler" TValue="LogEvent"></GridEvents>
-    <SfDataManager Url="@ConstHelper.LogEventsPath" Adaptor="Adaptors.WebApiAdaptor"></SfDataManager>
-    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
-    <GridPageSettings PageSize="10"></GridPageSettings>
+            <RedGSelectEnumGeneric TEnum="LogEvent.EventsTypes" Change=OnEventTypeChanged @bind-Value="@_eventType" Label="@Localize["EventTypes"]">
+                 <End>
+                    <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
+                </End>
+            </RedGSelectEnumGeneric>
+           
+        </div>
+            
+    </HeaderTemplate>
 
-    <GridColumns>
+    <Columns>
+       
+        <RadzenDataGridColumn TItem="LogEvent" Property="@nameof(LogEvent.DateEvent)" Title=@TranslateHelper.GetDisplayName(nameof(LogEvent.DateEvent), typeof(LogEvent))  />
 
-        <GridColumn Field=@nameof(LogEvent.DateEvent) HeaderText="Data Evento"></GridColumn>
-        <GridColumn Field=@nameof(LogEvent.Module) HeaderText="Modulo"></GridColumn>
-        <GridColumn Field=@nameof(LogEvent.Subroutine) HeaderText="Funzione"></GridColumn>
-        <GridColumn Field=@nameof(LogEvent.User) HeaderText="User"></GridColumn>
-        <GridColumn Field=@nameof(LogEvent.EventType) HeaderText="Tipo"></GridColumn>
-        <GridColumn HeaderText="Navigation" Width="180">
-            <GridCommandColumns>
-                <GridCommandColumn Type="CommandButtonType.Edit" ButtonOption="@(new CommandButtonOptions() {IconCss="e-icons e-edit", CssClass="e-flat" })"></GridCommandColumn>
-                <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() {IconCss="e-icons e-delete", CssClass="e-flat" })"></GridCommandColumn>
+        <RadzenDataGridColumn TItem="LogEvent" Property="@nameof(LogEvent.Module)" Title=@TranslateHelper.GetDisplayName(nameof(LogEvent.Module), typeof(LogEvent)) />
 
-                <GridCommandColumn Type="CommandButtonType.None"
-                                   ButtonOption="@(new CommandButtonOptions() { IconCss="e-icons e-details", CssClass = "e-flat"})"
-                                   Title="Dettagli" ID="details"></GridCommandColumn>
+        <RadzenDataGridColumn TItem="LogEvent" Property="@nameof(LogEvent.Subroutine)" Title=@TranslateHelper.GetDisplayName(nameof(LogEvent.Subroutine), typeof(LogEvent)) />
+        <RadzenDataGridColumn TItem="LogEvent" Property="@nameof(LogEvent.Subroutine)" Title=@TranslateHelper.GetDisplayName(nameof(LogEvent.EventType), typeof(LogEvent))>
+            <Template Context="data">
+                @Localize[$"EventType.{data.EventType}"]
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Context="item" TItem="LogEvent" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+            <Template Context="item">
 
+                <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="format_list_bulleted" Size="Radzen.ButtonSize.Medium" title="Edit" Click="@(args => OnDetails(item.Id))">
+                </RadzenButton>
                 
+            </Template>
+        </RadzenDataGridColumn>
 
-               
+    </Columns>
+</RadzenDataGrid>
 
 
-            </GridCommandColumns>
-        </GridColumn>
-    </GridColumns>
-</SfGrid>
-<MsgBoxConfirm Id="dlgDelete" LabelBtnNo="No" LabelBtnYes="Yes" Header="Eliminazione del Progetto" Message="@_messageDelete" OnClick="Delete"></MsgBoxConfirm>

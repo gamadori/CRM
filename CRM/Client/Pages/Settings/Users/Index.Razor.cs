@@ -110,7 +110,7 @@ namespace CRM.Client.Pages.Settings.Users
 
         private FilterMode _filterMode = FilterMode.Advanced;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         private RadzenDataGrid<ApplicationUser> grdUsers;
 

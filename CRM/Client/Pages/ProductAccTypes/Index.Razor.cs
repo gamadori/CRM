@@ -85,7 +85,7 @@ namespace CRM.Client.Pages.ProductAccTypes
 
         private FilterMode _filterMode = FilterMode.Advanced;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
         protected async override Task OnInitializedAsync()
         {
 

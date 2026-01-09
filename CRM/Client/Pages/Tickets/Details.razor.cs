@@ -79,12 +79,14 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _isLoadingUsers = false;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {
             await LoadData();
             _pageHeader = await HeaderService.Create(PageMode);
+
+            StateHasChanged();
         }
 
        

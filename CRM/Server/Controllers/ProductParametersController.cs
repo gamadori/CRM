@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authorization;
 using CNM.Authorize;
 using Microsoft.Extensions.Hosting;
 using AGUtility.Extensions;
+using CRM.Client.Services;
 
 namespace CRM.Server.Controllers
 {

@@ -1,14 +1,15 @@
-﻿using CRM.Client.Models;
+﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
-using System.Collections.Generic;
-using System.Linq;
-using static CRM.Client.Helpers.PageHelper;
-using System.Globalization;
-using CRM.Client.Helpers;
-using System.Threading.Tasks;
+using QLNet;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Services
 {
@@ -252,7 +253,11 @@ namespace CRM.Client.Services
 
         private string FormatSubTitle(string type, string domine)
         {
-            return string.Format(GetLocalizedString(type), GetLocalizedString(domine));
+            string name = $"{domine}{type}";
+            if (GetLocalizedResourceNotFound(name))
+                return string.Format(GetLocalizedString(type), GetLocalizedString(domine));
+            else
+                return GetLocalizedString(name);
         }
 
         private List<BreadcrumbItem> CreateFallbackBreadcrumb(string domainSegment, string name)

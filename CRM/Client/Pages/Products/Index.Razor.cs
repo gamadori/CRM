@@ -101,7 +101,7 @@ namespace CRM.Client.Pages.Products
 
         private int _productPageSize = 10;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {

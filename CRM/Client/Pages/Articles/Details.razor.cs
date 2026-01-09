@@ -53,7 +53,7 @@ namespace CRM.Client.Pages.Articles
 
         private Article _article = null;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
         
 
         protected override async Task OnInitializedAsync()

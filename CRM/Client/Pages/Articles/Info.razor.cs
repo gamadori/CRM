@@ -72,11 +72,25 @@ namespace CRM.Client.Pages.Articles
 
         private bool _fromDetails = false;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
+
+        private List<ViewOption<ProductViews>> _viewOptions;
 
         protected override async Task OnInitializedAsync()
         {
+            InitializeViewOptions();
             await LoadProduct();
+        }
+
+        private void InitializeViewOptions()
+        {
+            _viewOptions = new List<ViewOption<ProductViews>>
+            {
+                new ViewOption<ProductViews> { Text = Localize["Data Product"], Value = ProductViews.Product },
+                new ViewOption<ProductViews> { Text = Localize["Documenti Macchina"], Value = ProductViews.Attachments },
+                new ViewOption<ProductViews> { Text = Localize["Documenti"], Value = ProductViews.ProductAttachments },
+                new ViewOption<ProductViews> { Text = Localize["Tickets"], Value = ProductViews.Ticket },
+            };
         }
 
         private async Task LoadProduct()
@@ -158,12 +172,14 @@ namespace CRM.Client.Pages.Articles
 
         private void DetailsTicket(int id)
         {
-            selectView = ProductViews.Ticket;
-            _partialView = PartialViews.Details;
-            _idTicket = id;
-
-
-            StateHasChanged();
+            //selectView = ProductViews.Ticket;
+            //_partialView = PartialViews.Details;
+            //_idTicket = id;
+            //StateHasChanged();
+            if (CompanyId.HasValue)
+                NavigationManager.NavigateTo($"{ConstHelper.ClientCompaniesPath}/{CompanyId.Value}/{ConstHelper.ClientArticlesPath}/{Id}/{ConstHelper.ClientTicketsPath}/{id}");
+            else
+                NavigationManager.NavigateTo($"{ConstHelper.ClientArticlesPath}/{Id}/{ConstHelper.ClientTicketsPath}/{id}");
         }
 
         private void DetailsEditTicket()

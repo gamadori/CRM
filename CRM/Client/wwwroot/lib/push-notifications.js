@@ -47,15 +47,10 @@ window.PushNotifications = {
         }
 
         try {
-            // Registra Service Worker
-            const registration = await navigator.serviceWorker.register('/service-worker.js', {
-                scope: '/'
-            });
+            // ? FIX: Usa service worker già registrato in index.html
+            const registration = await navigator.serviceWorker.ready;
 
-            console.log('[PushNotifications] Service Worker registered:', registration);
-
-            // Attendi che sia attivo
-            await navigator.serviceWorker.ready;
+            console.log('[PushNotifications] Service Worker ready:', registration);
 
             // Ottieni subscription esistente o creane una nuova
             let subscription = await registration.pushManager.getSubscription();

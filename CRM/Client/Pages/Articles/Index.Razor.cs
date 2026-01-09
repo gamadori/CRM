@@ -123,7 +123,7 @@ namespace CRM.Client.Pages.Articles
 
         private bool _isResponsable = false;
 
-       private PageHeaderModel _pageHeader = new PageHeaderModel();
+       private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {

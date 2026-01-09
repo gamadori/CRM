@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 using Radzen;
+using Radzen.Blazor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -80,6 +81,8 @@ namespace CRM.Client.Pages.Tickets
         public int? IdCompany { get; set; }
 
         [Parameter]
+        public int? IdArticle { get; set; }
+        [Parameter]
         public int TypeSearch { get; set; } = (int)(TicketTypeSearch.All);
 
         [Parameter]
@@ -122,7 +125,9 @@ namespace CRM.Client.Pages.Tickets
 
         private ButtonSize _buttonSize = ButtonSize.Medium;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private List<ViewOption<TicketViews>> _viewOptions;
+
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {
@@ -160,8 +165,25 @@ namespace CRM.Client.Pages.Tickets
             }
 
             _pageHeader = await HeaderService.Create();
+
+            InitializeViewOptions();
         }
 
+        private void InitializeViewOptions()
+        {
+            _viewOptions = new List<ViewOption<TicketViews>>
+            {
+                new ViewOption<TicketViews> { Text = Localize["Ticket Data"], Value = TicketViews.Ticket },
+                new ViewOption<TicketViews> { Text = Localize["Attachments"], Value = TicketViews.Allegati },
+                new ViewOption<TicketViews> { Text = Localize["Chat"], Value = TicketViews.Chat },
+                new ViewOption<TicketViews> { Text = Localize["Service"], Value = TicketViews.Interventi },
+            };
+
+            if(_ticket.Permits.Close() || _ticket.Closed)
+            {
+                _viewOptions.Add(new ViewOption<TicketViews> { Text = Localize["Closing"], Value = TicketViews.Chiusura });
+            }
+        }
         private async Task GetProject()
         {
             _project = await RestClientService.GetItem<Project, int>((int)IdProject, ConstHelper.ProjectsPath);

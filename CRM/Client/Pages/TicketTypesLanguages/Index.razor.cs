@@ -77,7 +77,7 @@ namespace CRM.Client.Pages.TicketTypesLanguages
 
         private TicketType _ticketType;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
        
         protected override async Task OnInitializedAsync()
         {

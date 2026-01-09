@@ -50,7 +50,7 @@ namespace CRM.Client.Pages.ProductAccTypes
 
         private ProductAccessoryTypeModel _productAccessory = null;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {

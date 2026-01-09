@@ -39,7 +39,7 @@ namespace CRM.Client.Pages.Groups
 
         private UserGroupModel _userGroup = null;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {

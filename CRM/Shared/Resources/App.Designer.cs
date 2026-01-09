@@ -493,6 +493,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Event Type.
+        /// </summary>
+        public static string EventType {
+            get {
+                return ResourceManager.GetString("EventType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Expired.
         /// </summary>
         public static string Expired {
@@ -529,6 +538,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Languages.
+        /// </summary>
+        public static string Languages {
+            get {
+                return ResourceManager.GetString("Languages", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Companies List.
         /// </summary>
         public static string Lista_Aziende {
@@ -543,6 +561,15 @@ namespace CRM.Shared.Resources {
         public static string ListSubTitle {
             get {
                 return ResourceManager.GetString("ListSubTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Logs and Events.
+        /// </summary>
+        public static string logevents {
+            get {
+                return ResourceManager.GetString("logevents", resourceCulture);
             }
         }
         
@@ -890,16 +917,16 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a Settings.
+        ///   Cerca una stringa localizzata simile a System Settings.
         /// </summary>
-        public static string Settaggi {
+        public static string Settings {
             get {
-                return ResourceManager.GetString("Settaggi", resourceCulture);
+                return ResourceManager.GetString("Settings", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a Application Settings.
+        ///   Cerca una stringa localizzata simile a Configure and manage all CRM settings.
         /// </summary>
         public static string SettingsListSubTitle {
             get {

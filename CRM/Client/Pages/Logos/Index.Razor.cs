@@ -53,7 +53,7 @@ namespace CRM.Client.Pages.Logos
 
         private List<Logo> _logosToInsert = new List<Logo>();
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         private async Task LoadData(LoadDataArgs? args = null)
         {

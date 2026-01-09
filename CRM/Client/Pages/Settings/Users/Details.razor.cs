@@ -70,7 +70,7 @@ namespace CRM.Client.Pages.Settings.Users
         private string _message;
 
        
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {

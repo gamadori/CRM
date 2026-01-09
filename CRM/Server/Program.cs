@@ -115,6 +115,7 @@ builder.Services.AddScoped<ISignatureOtpService, SignatureOtpService>();
 
 builder.Services.AddSingleton<WTelegramService>();
 builder.Services.AddHostedService(provider => provider.GetService<WTelegramService>());
+
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 
 builder.Services.AddCors(options =>

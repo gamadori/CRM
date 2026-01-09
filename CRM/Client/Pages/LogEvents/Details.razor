@@ -1,6 +1,5 @@
-﻿@page "/LogEvents/{Id:int}/Details"
+﻿@page "/Settings/LogEvents/{Id:int}"
 
-<BlazorHeader Header="Dettagli Evento" />
 
 @if (_logEvent == null)
 {
@@ -8,6 +7,10 @@
 }
 else
 {
+    <PageHeader Model="@_pageHeader">
+    </PageHeader>
+
+
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-4">
 

@@ -1,4 +1,5 @@
-﻿using CRM.Server.Models;
+﻿using CRM.Client.Services;
+using CRM.Server.Models;
 
 namespace CRM.Server.Services
 {

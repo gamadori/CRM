@@ -88,9 +88,12 @@ else
                                 </th>
 
                                 <td>
-                                    @foreach (var item in _ticketIntervention.TicketInterventionsTypes)
+                                    @if (_ticketIntervention.TicketInterventionsTypes != null)
                                     {
-                                        <div>@item.Name</div>
+                                        @foreach (var item in _ticketIntervention.TicketInterventionsTypes)
+                                        {
+                                            <div>@item.Name</div>
+                                        }
                                     }
 
                                 </td>

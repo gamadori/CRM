@@ -1,12 +1,13 @@
 ﻿@page "/Tickets/{Id:int}/Info"
 @page "/Tickets/{Id:int}"
-@page "/Projects/{IdProject:int}/Tickets/{Id:int}"
-@page "/Companies/{IdCompany:int}/Tickets/{Id:int}"
 @page "/Tickets/{Id:int}/{TypeSearch:int}/{IdUser}"
 @page "/Tickets/{id:int}/attachment/{IdAttachment:int}"
 @page "/Tickets/{id:int}/chat/{IdChat:int}"
 @page "/Tickets/{id:int}/filter/{TypeSearch:int}"
-
+@page "/Companies/{IdCompany:int}/Tickets/{Id:int}"
+@page "/Companies/{IdCompany:int}/Articles/{IdArticle:int}/Tickets/{Id:int}"
+@page "/Articles/{IdArticle:int}/Tickets/{Id:int}"
+@page "/Projects/{IdProject:int}/Tickets/{Id:int}"
 
 @using CRM.Shared.Helper
 @using Radzen
@@ -21,21 +22,31 @@ else
 {
     <PageHeader Model=@_pageHeader>
     </PageHeader>
-   
-    <RadzenSelectBar Size="@_buttonSize"   @bind-Value="selectView" TValue="TicketViews" Change="@((args) => Change(args, "SelectBar with single selection"))" >
-        <Items>
-            <RadzenSelectBarItem  Text=@(_isMobile ? "": Localize["Dati Ticket"]) Icon="format_list_bulleted"  Value="TicketViews.Ticket" />
-            <RadzenSelectBarItem Text=@(_isMobile ? "": Localize["Allegati"]) Icon = "attach_file" Value="TicketViews.Allegati" />
-            <RadzenSelectBarItem Text=@(_isMobile ? "":Localize["Chat"]) Icon="chat" Value="TicketViews.Chat" />
-            <RadzenSelectBarItem Text=@(_isMobile ? "":Localize["Interventi"]) Icon="construction" Value="TicketViews.Interventi" />
-            @if (_ticket.Permits.Close() || _ticket.Closed)
-            {
-                <RadzenSelectBarItem Text=@(_isMobile ? "": Localize["Chiusura"]) Icon="done" Value="TicketViews.Chiusura" />
-            }
-            <RadzenSelectBarItem Text=@(_isMobile ? "":Localize["Print"]) Icon="print" Value="TicketViews.Print" />
-        </Items>
+     <div class="d-none d-md-block mb-3">
+        <RadzenSelectBar Size="@_buttonSize"   @bind-Value="selectView" TValue="TicketViews" Change="@((args) => Change(args, "SelectBar with single selection"))" >
+            <Items>
+                <RadzenSelectBarItem  Text=@Localize["Ticket Data"] Icon="format_list_bulleted"  Value="TicketViews.Ticket" />
+                <RadzenSelectBarItem Text=@Localize["Attachments"] Icon = "attach_file" Value="TicketViews.Allegati" />
+                <RadzenSelectBarItem Text=@Localize["Chat"] Icon="chat" Value="TicketViews.Chat" />
+                <RadzenSelectBarItem Text=@Localize["Services"] Icon="construction" Value="TicketViews.Interventi" />
+                @if (_ticket.Permits.Close() || _ticket.Closed)
+                {
+                    <RadzenSelectBarItem Text=@Localize["Chiusura"] Icon="done" Value="TicketViews.Chiusura" />
+                }
+            </Items>
 
-    </RadzenSelectBar>
+        </RadzenSelectBar>
+    </div>
+    <!-- Mobile: Dropdown -->
+    <div class="d-md-none mb-3">
+        <RadzenDropDown @bind-Value="selectView" TValue="TicketViews"
+                        Change="@((args) => Change(args, "SelectBar with single selection"))"
+                        Data="@_viewOptions"
+                        TextProperty="Text"
+                        ValueProperty="Value"
+                        Style="width: 100%;"
+                        Placeholder="Seleziona vista..." />
+    </div>
 
     @if (selectView == TicketViews.Ticket)
     {
@@ -110,9 +121,6 @@ else
             <Waiting></Waiting>
         }
     }
-    else if (selectView == TicketViews.Print)
-    {
-        <CRM.Client.Pages.Tickets.Report Id="@Id"></CRM.Client.Pages.Tickets.Report>
-    }
+    
 
 }

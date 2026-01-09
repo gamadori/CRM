@@ -12,50 +12,52 @@
 }
 else
 {
-<EditForm Model="@_language" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-    <div class="row">
-        <div class="col-md-4">
-            <div class="mb-3">
-                <label for="Name">Nome</label>
-                <input id="Name" class="form-control" @bind-value="@_language.Name" />
-                <ValidationMessage For="@(() => _language.Name)" />
-            </div>
-             <div class="mb-3">
-                <label for="Name">Codice</label>
-                <input id="Name" class="form-control" @bind-value="@_language.LanguageCode" />
-                <ValidationMessage For="@(() => _language.LanguageCode)" />
-            </div>
+    <PageHeader Model="@_pageHeader">
+    </PageHeader>
+    <EditForm Model="@_language" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="row">
+            <div class="col-md-4">
                 <div class="mb-3">
-                    <label for="Name">Index</label>
-                    <input id="Name" class="form-control" @bind-value="@_language.Index" />
-                    <ValidationMessage For="@(() => _language.Index)" />
+                    <label for="Name">Nome</label>
+                    <input id="Name" class="form-control" @bind-value="@_language.Name" />
+                    <ValidationMessage For="@(() => _language.Name)" />
                 </div>
-            <div class="mb-3">
-                <label for="Descrizione">Descrizione</label>
-                <input id="Descrizione" class="form-control" @bind-value="@_language.Description" />
-                <ValidationMessage For="@(() => _language.Description)" />
-            </div>
-            <div class="mb-3">
-                <div>
-                    <RadzenCard Style="width:auto;margin-bottom: 20px; height:auto;">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div style="margin-top:20px">File Logo:</div>
+                 <div class="mb-3">
+                    <label for="Name">Codice</label>
+                    <input id="Name" class="form-control" @bind-value="@_language.LanguageCode" />
+                    <ValidationMessage For="@(() => _language.LanguageCode)" />
+                </div>
+                    <div class="mb-3">
+                        <label for="Name">Index</label>
+                        <input id="Name" class="form-control" @bind-value="@_language.Index" />
+                        <ValidationMessage For="@(() => _language.Index)" />
+                    </div>
+                <div class="mb-3">
+                    <label for="Descrizione">Descrizione</label>
+                    <input id="Descrizione" class="form-control" @bind-value="@_language.Description" />
+                    <ValidationMessage For="@(() => _language.Description)" />
+                </div>
+                <div class="mb-3">
+                    <div>
+                        <RadzenCard Style="width:auto;margin-bottom: 20px; height:auto;">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div style="margin-top:20px">File Logo:</div>
 
-                                <br />
-                                <RadzenFileInput @ref="inputImage" ImageStyle="width:32px" Accept="Image/*" @bind-Value="@_language.Flag" TValue="string" ChooseText="Seleziona"
-                                                 Change="@(args => Change(args, "FileInput"))" Error="@(args => Error(args, "FileInput"))" />
+                                    <br />
+                                    <RadzenFileInput @ref="inputImage" ImageStyle="width:32px" Accept="Image/*" @bind-Value="@_language.Flag" TValue="string" ChooseText="Seleziona"
+                                                     Change="@(args => Change(args, "FileInput"))" Error="@(args => Error(args, "FileInput"))" />
+                                </div>
                             </div>
-                        </div>
-                    </RadzenCard>
+                        </RadzenCard>
+                    </div>
                 </div>
-            </div>
-            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
-            <BlazorButton  Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
+                <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
+                <BlazorButton  Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
             
+            </div>
         </div>
-    </div>
-</EditForm>
+    </EditForm>
 }

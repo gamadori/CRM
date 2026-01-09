@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Push Notifications - CRM</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #0056b3; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #17a2b8; }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.ok { background: #d4edda; border: 1px solid #c3e6cb; }
+        .status.fail { background: #f8d7da; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>?? Test Push Notifications CRM</h1>
+    
+    <div class="section">
+        <h2>1?? Verifica Supporto Browser</h2>
+        <div id="support-check"></div>
+    </div>
+
+    <div class="section">
+        <h2>2?? Service Worker</h2>
+        <button onclick="checkServiceWorker()">?? Controlla Service Worker</button>
+        <button onclick="unregisterAll()">??? Cancella Tutti i SW</button>
+        <div id="sw-status"></div>
+    </div>
+
+    <div class="section">
+        <h2>3?? VAPID Public Key</h2>
+        <button onclick="fetchVapidKey()">?? Recupera VAPID Key</button>
+        <div id="vapid-status"></div>
+    </div>
+
+    <div class="section">
+        <h2>4?? Permesso Notifiche</h2>
+        <p>Stato attuale: <strong id="permission-status"></strong></p>
+        <button onclick="requestPermission()">?? Richiedi Permesso</button>
+        <div id="permission-result"></div>
+    </div>
+
+    <div class="section">
+        <h2>5?? Subscription Push</h2>
+        <button onclick="subscribe()">? Iscriviti alle Notifiche</button>
+        <button onclick="getSubscription()">?? Mostra Subscription</button>
+        <button onclick="testNotification()">?? Test Notifica Locale</button>
+        <div id="subscription-status"></div>
+    </div>
+
+    <div class="section">
+        <h2>?? Log Console</h2>
+        <button onclick="clearLog()">?? Pulisci Log</button>
+        <pre id="console-log"></pre>
+    </div>
+
+    <script>
+        let vapidPublicKey = null;
+        let logMessages = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '?' : type === 'success' ? '?' : '??';
+            const logMsg = `[${timestamp}] ${prefix} ${message}`;
+            logMessages.push(logMsg);
+            document.getElementById('console-log').textContent = logMessages.join('\n');
+            console.log(logMsg);
+        }
+
+        function clearLog() {
+            logMessages = [];
+            document.getElementById('console-log').textContent = '';
+        }
+
+        // ? 1. Verifica supporto browser
+        function checkSupport() {
+            const supportDiv = document.getElementById('support-check');
+            let html = '<div class="status ';
+            
+            const swSupported = 'serviceWorker' in navigator;
+            const pushSupported = 'PushManager' in window;
+            const notifSupported = 'Notification' in window;
+            
+            const allSupported = swSupported && pushSupported && notifSupported;
+            html += allSupported ? 'ok' : 'fail';
+            html += '">';
+            
+            html += `<p><strong>Service Worker:</strong> ${swSupported ? '? Supportato' : '? NON supportato'}</p>`;
+            html += `<p><strong>Push Manager:</strong> ${pushSupported ? '? Supportato' : '? NON supportato'}</p>`;
+            html += `<p><strong>Notifications:</strong> ${notifSupported ? '? Supportato' : '? NON supportato'}</p>`;
+            html += `<p><strong>Browser:</strong> ${navigator.userAgent}</p>`;
+            html += '</div>';
+            
+            supportDiv.innerHTML = html;
+            
+            log(`Support check: SW=${swSupported}, Push=${pushSupported}, Notif=${notifSupported}`, allSupported ? 'success' : 'error');
+            
+            return allSupported;
+        }
+
+        // ? 2. Controlla Service Worker
+        async function checkServiceWorker() {
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                const swDiv = document.getElementById('sw-status');
+                
+                if (registrations.length === 0) {
+                    swDiv.innerHTML = '<div class="status fail"><p>? Nessun Service Worker registrato!</p></div>';
+                    log('Nessun Service Worker trovato', 'error');
+                    return;
+                }
+                
+                let html = '<div class="status ok">';
+                html += `<p>? Trovati <strong>${registrations.length}</strong> Service Worker:</p><ul>`;
+                
+                registrations.forEach((reg, i) => {
+                    html += `<li>SW ${i+1}: ${reg.scope} - Stato: ${reg.active?.state || 'N/A'}</li>`;
+                    log(`SW ${i+1}: scope=${reg.scope}, state=${reg.active?.state}`, 'success');
+                });
+                
+                html += '</ul></div>';
+                swDiv.innerHTML = html;
+            } catch (error) {
+                log(`Errore controllo SW: ${error.message}`, 'error');
+            }
+        }
+
+        // ? 3. Cancella tutti i Service Worker
+        async function unregisterAll() {
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let reg of registrations) {
+                    await reg.unregister();
+                    log(`SW disregistrato: ${reg.scope}`, 'success');
+                }
+                document.getElementById('sw-status').innerHTML = '<div class="status ok"><p>? Tutti i SW cancellati. Ricarica la pagina!</p></div>';
+            } catch (error) {
+                log(`Errore unregister: ${error.message}`, 'error');
+            }
+        }
+
+        // ? 4. Recupera VAPID Public Key dal server
+        async function fetchVapidKey() {
+            const vapidDiv = document.getElementById('vapid-status');
+            try {
+                const response = await fetch('/api/Tickets/push/vapid-public-key');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                vapidPublicKey = data.publicKey;
+                
+                vapidDiv.innerHTML = `
+                    <div class="status ok">
+                        <p>? VAPID Public Key recuperata con successo!</p>
+                        <pre>${vapidPublicKey}</pre>
+                    </div>
+                `;
+                log(`VAPID key recuperata: ${vapidPublicKey.substring(0, 20)}...`, 'success');
+            } catch (error) {
+                vapidDiv.innerHTML = `<div class="status fail"><p>? Errore: ${error.message}</p><p>Verifica che l'API sia configurata!</p></div>`;
+                log(`Errore fetch VAPID: ${error.message}`, 'error');
+            }
+        }
+
+        // ? 5. Richiedi permesso notifiche
+        async function requestPermission() {
+            try {
+                const permission = await Notification.requestPermission();
+                document.getElementById('permission-status').textContent = permission;
+                document.getElementById('permission-result').innerHTML = 
+                    `<p class="${permission === 'granted' ? 'success' : 'error'}">Risultato: ${permission}</p>`;
+                log(`Permesso notifiche: ${permission}`, permission === 'granted' ? 'success' : 'error');
+            } catch (error) {
+                log(`Errore permesso: ${error.message}`, 'error');
+            }
+        }
+
+        // ? 6. Iscriviti alle push notifications
+        async function subscribe() {
+            const subDiv = document.getElementById('subscription-status');
+            
+            try {
+                if (!vapidPublicKey) {
+                    subDiv.innerHTML = '<div class="status fail"><p>? Prima recupera la VAPID key!</p></div>';
+                    return;
+                }
+                
+                if (Notification.permission !== 'granted') {
+                    subDiv.innerHTML = '<div class="status fail"><p>? Prima concedi il permesso notifiche!</p></div>';
+                    return;
+                }
+                
+                log('Attesa Service Worker ready...', 'info');
+                const registration = await navigator.serviceWorker.ready;
+                log(`Service Worker ready: ${registration.scope}`, 'success');
+                
+                // Converti VAPID key
+                const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+                log(`VAPID key convertita (length: ${convertedVapidKey.length})`, 'success');
+                
+                log('Tentativo iscrizione push...', 'info');
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: convertedVapidKey
+                });
+                
+                log('? Subscription creata!', 'success');
+                
+                subDiv.innerHTML = `
+                    <div class="status ok">
+                        <p>? Iscrizione push riuscita!</p>
+                        <p><strong>Endpoint:</strong> ${subscription.endpoint.substring(0, 60)}...</p>
+                        <pre>${JSON.stringify(subscription.toJSON(), null, 2)}</pre>
+                    </div>
+                `;
+                
+                // Salva sul server
+                try {
+                    const saveResponse = await fetch('/api/Tickets/push/subscribe', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer YOUR_TOKEN_HERE` // ?? In produzione usa token vero
+                        },
+                        body: JSON.stringify({ subscription: JSON.stringify(subscription.toJSON()) })
+                    });
+                    
+                    if (saveResponse.ok) {
+                        log('? Subscription salvata sul server!', 'success');
+                    } else {
+                        log(`?? Subscription NON salvata sul server: HTTP ${saveResponse.status}`, 'error');
+                    }
+                } catch (err) {
+                    log(`?? Errore salvataggio sul server: ${err.message}`, 'error');
+                }
+                
+            } catch (error) {
+                subDiv.innerHTML = `<div class="status fail"><p>? Errore: ${error.message}</p><pre>${error.stack}</pre></div>`;
+                log(`Errore subscription: ${error.message}\n${error.stack}`, 'error');
+            }
+        }
+
+        // ? 7. Mostra subscription attuale
+        async function getSubscription() {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                
+                const subDiv = document.getElementById('subscription-status');
+                
+                if (subscription) {
+                    subDiv.innerHTML = `
+                        <div class="status ok">
+                            <p>? Subscription attiva:</p>
+                            <pre>${JSON.stringify(subscription.toJSON(), null, 2)}</pre>
+                        </div>
+                    `;
+                    log('Subscription attiva trovata', 'success');
+                } else {
+                    subDiv.innerHTML = '<div class="status fail"><p>? Nessuna subscription attiva</p></div>';
+                    log('Nessuna subscription attiva', 'info');
+                }
+            } catch (error) {
+                log(`Errore get subscription: ${error.message}`, 'error');
+            }
+        }
+
+        // ? 8. Test notifica locale
+        async function testNotification() {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                await registration.showNotification('?? Test CRM', {
+                    body: 'Questa è una notifica di test locale!',
+                    icon: '/icon-192.png',
+                    badge: '/favicon.ico',
+                    tag: 'test-notification',
+                    requireInteraction: false
+                });
+                log('Test notifica mostrata con successo!', 'success');
+            } catch (error) {
+                log(`Errore test notifica: ${error.message}`, 'error');
+            }
+        }
+
+        // ? Utility: Converti VAPID key
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/\-/g, '+')
+                .replace(/_/g, '/');
+
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        // Init
+        window.addEventListener('load', () => {
+            checkSupport();
+            document.getElementById('permission-status').textContent = Notification.permission;
+            checkServiceWorker();
+            log('Pagina test caricata', 'success');
+        });
+    </script>
+</body>
+</html>

@@ -1,36 +1,223 @@
-﻿
-@page "/Settings"
+﻿@page "/Settings"
 @using CRM.Client.Models
 @using CRM.Client.Services
 @using Microsoft.AspNetCore.Authorization;
 @using Microsoft.Extensions.Localization;
+@using CRM.Client.Pages.Settings.Components
 
 @attribute [Authorize(Policy = "AdminRole")]
 
 <PageHeader Model="_pageHeader">
 </PageHeader>
 
-<RadzenCard Style="max-width: 1024; margin: 40px auto;">
-    <RadzenHeading Size="H4" Text="Impostazioni" class="mb-4" />
-    <RadzenCard Style="display: flex; flex-wrap: wrap; gap: 24px; justify-content: center" Variant="Variant.Flat">
-       
-        <RedGIconLink Icon="account_circle" Href="Settings/Users" Text="@Localize["Users"]" Style="font-size: 48px; color: #1976d2;" />
-        <RedGIconLink Icon="groups" Href="Settings/Groups" Text="@Localize["Groups"]" Style="font-size: 48px; color: #455a64;" />
-        <RedGIconLink Icon="category" Href="Settings/ProductsTypes" Text="@Localize["Product Types"]" Style="font-size: 48px; color: #fbc02d;" />
-        <RedGIconLink Icon="class" Href="Settings/TicketTypes" Text="@Localize["Ticket Types"]" Style="font-size: 48px; color: #455a64;" />
-        <RedGIconLink Icon="traffic" Href="TicketStates" Text="@Localize["Ticket States"]" Style="font-size: 48px; color: #c62828;" />
-        <RedGIconLink Icon="home_repair_service" Href="Settings/InterventionTypes" Text="@Localize["Tipi di Intervento"]" Style="font-size: 48px; color: #7b1fa2;" />
-        <RedGIconLink Icon="Language" Href="Settings/Languages" Text="@Localize["Linguages"]" Style="font-size: 48px; color: #388e3c;" />
-        <RedGIconLink Icon="switch_account" Href="Settings/Logos" Text="@Localize["Logos"]" Style="font-size: 48px; color: #e64a19;" />
-        <RedGIconLink Icon="forward_to_inbox" Href="Settings/Smtps" Text="@Localize["Smtp"]" Style="font-size: 48px; color: #c62828;" />
-        <RedGIconLink Icon="mail" Href="Settings/EmailTemplates" Text="@Localize["Email Template"]" Style="font-size: 48px; color: #455a64;" />
-        <RedGIconLink Icon="send" Href="Settings/Telegram" Text="@Localize["Telegram"]" Style="font-size: 48px; color: #1976d2;" />
-        <RedGIconLink Icon="settings" Href="GlobalSettings" Text="@Localize["Log e Eventi"]" Style="font-size: 48px; color: #fbc02d;" />
-        <RedGIconLink Icon="precision_manufacturing" Href="@ConstHelper.ClientProductsSettings" Text="@Localize["Products Settings"]" Style="font-size: 48px; color: #7b1fa2;" />
-        <RedGIconLink Icon="event_note" Href="LogEvents" Text="@Localize["Log e Eventi"]" Style="font-size: 48px; color: #388e3c;" />
-      </RadzenCard>  
-</RadzenCard>
+<div class="settings-container">
+    
 
+    <div class="settings-grid">
+        <!-- User Management Section -->
+        <div class="settings-section">
+            <h3 class="section-title">👥 Gestione Utenti</h3>
+            <div class="settings-cards">
+                <SettingCard Icon="account_circle" 
+                           Href="Settings/Users" 
+                           Title="@Localize["Users"]" 
+                           Description="Gestisci utenti e permessi"
+                           Color="#1976d2" />
+                
+                <SettingCard Icon="groups" 
+                           Href="Settings/Groups" 
+                           Title="@Localize["Groups"]" 
+                           Description="Configura gruppi di lavoro"
+                           Color="#455a64" />
+            </div>
+        </div>
+
+        <!-- Product & Ticket Configuration -->
+        <div class="settings-section">
+            <h3 class="section-title">📦 Prodotti e Ticket</h3>
+            <div class="settings-cards">
+                <SettingCard Icon="category" 
+                           Href="Settings/ProductsTypes" 
+                           Title="@Localize["Product Types"]" 
+                           Description="Tipi di prodotto"
+                           Color="#fbc02d" />
+                
+                <SettingCard Icon="class" 
+                           Href="Settings/TicketTypes" 
+                           Title="@Localize["Ticket Types"]" 
+                           Description="Tipi di ticket"
+                           Color="#455a64" />
+                
+                <SettingCard Icon="traffic" 
+                           Href="TicketStates" 
+                           Title="@Localize["Ticket States"]" 
+                           Description="Stati del ticket"
+                           Color="#c62828" />
+                
+                <SettingCard Icon="home_repair_service" 
+                           Href="Settings/InterventionTypes" 
+                           Title="@Localize["Tipi di Intervento"]" 
+                           Description="Gestisci tipi intervento"
+                           Color="#7b1fa2" />
+                
+                <SettingCard Icon="precision_manufacturing" 
+                           Href="@ConstHelper.ClientProductsSettings" 
+                           Title="@Localize["Products Settings"]" 
+                           Description="Configurazione prodotti"
+                           Color="#00897b" />
+            </div>
+        </div>
+
+        <!-- Communication Settings -->
+        <div class="settings-section">
+            <h3 class="section-title">📧 Comunicazioni</h3>
+            <div class="settings-cards">
+                <SettingCard Icon="forward_to_inbox" 
+                           Href="Settings/Smtps" 
+                           Title="@Localize["Smtp"]" 
+                           Description="Configurazione email"
+                           Color="#c62828" />
+                
+                <SettingCard Icon="mail" 
+                           Href="Settings/EmailTemplates" 
+                           Title="@Localize["Email Template"]" 
+                           Description="Template email"
+                           Color="#455a64" />
+                
+                <SettingCard Icon="send" 
+                           Href="Settings/Telegram" 
+                           Title="@Localize["Telegram"]" 
+                           Description="Integrazione Telegram"
+                           Color="#0088cc" />
+            </div>
+        </div>
+
+        <!-- System Configuration -->
+        <div class="settings-section">
+            <h3 class="section-title">🔧 Configurazione Sistema</h3>
+            <div class="settings-cards">
+                <SettingCard Icon="language" 
+                           Href="Settings/Languages" 
+                           Title="@Localize["Linguages"]" 
+                           Description="Lingue del sistema"
+                           Color="#388e3c" />
+                
+                <SettingCard Icon="switch_account" 
+                           Href="Settings/Logos" 
+                           Title="@Localize["Logos"]" 
+                           Description="Gestisci loghi aziendali"
+                           Color="#e64a19" />
+                
+                <SettingCard Icon="settings" 
+                           Href="GlobalSettings" 
+                           Title="@Localize["GlobalSettings"]" 
+                           Description="Impostazioni globali"
+                           Color="#fbc02d" />
+                
+                <SettingCard Icon="event_note" 
+                           Href="@ConstHelper.ClientLogEventsPath" 
+                           Title="@Localize["Log e Eventi"]" 
+                           Description="Visualizza log di sistema"
+                           Color="#388e3c" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .settings-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .settings-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .settings-title {
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+    }
+
+    .settings-subtitle {
+        color: #666;
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    .settings-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 2.5rem;
+    }
+
+    .settings-section {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        transition: all 0.3s ease;
+    }
+
+    .settings-section:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .section-title {
+        margin: 0 0 1.5rem 0;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 3px solid #f0f0f0;
+        padding-bottom: 0.75rem;
+    }
+
+    .settings-cards {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1.5rem !important;
+    }
+
+    /* Mobile: 1 colonna */
+    @@media (max-width: 767px) {
+        .settings-container {
+            padding: 1rem;
+        }
+
+        .settings-cards {
+            grid-template-columns: 1fr !important;
+        }
+
+        .settings-section {
+            padding: 1.5rem;
+        }
+
+        .settings-header {
+            margin-bottom: 2rem;
+        }
+    }
+
+    /* Desktop grande: 3 colonne */
+    @@media (min-width: 1280px) {
+        .settings-cards {
+            grid-template-columns: repeat(3, 1fr) !important;
+        }
+    }
+
+    /* Desktop extra large: 4 colonne */
+    @@media (min-width: 1600px) {
+        .settings-cards {
+            grid-template-columns: repeat(4, 1fr) !important;
+        }
+    }
+</style>
 
 @code {
     [Inject]
@@ -39,13 +226,11 @@
     [Inject]
     IHeaderService HeaderService { get; set; }
 
-    private PageHeaderModel _pageHeader = new PageHeaderModel();
+    private PageHeaderModel? _pageHeader = null;
 
     protected override async Task OnInitializedAsync()
     {
         _pageHeader = await HeaderService.Create();
         await base.OnInitializedAsync();
     }
-    
-   
 }

@@ -315,8 +315,8 @@
   <data name="Seleziona la Ditta..." xml:space="preserve">
     <value>Seleziona la Ditta...</value>
   </data>
-  <data name="Settaggi" xml:space="preserve">
-    <value>Settaggi</value>
+  <data name="Settings" xml:space="preserve">
+    <value>Impostazioni Sistema</value>
   </data>
   <data name="Storico TICKETS" xml:space="preserve">
     <value>Storico TICKETS</value>
@@ -423,9 +423,6 @@
   <data name="TicketManagement" xml:space="preserve">
     <value>Gestione dei Ticket</value>
   </data>
-  <data name="SettingsListSubTitle" xml:space="preserve">
-    <value>Settaggi dell'applicazione</value>
-  </data>
   <data name="UtentiListSubTitle" xml:space="preserve">
     <value>Gestione degli Utenti</value>
   </data>
@@ -455,5 +452,17 @@
   </data>
   <data name="Logos" xml:space="preserve">
     <value>Loghi</value>
+  </data>
+  <data name="Languages" xml:space="preserve">
+    <value>Lingue</value>
+  </data>
+  <data name="EventType" xml:space="preserve">
+    <value>Tipo di Evento</value>
+  </data>
+  <data name="SettingsListSubTitle" xml:space="preserve">
+    <value>Configura e gestisci tutte le impostazioni del CRM</value>
+  </data>
+  <data name="logevents" xml:space="preserve">
+    <value>Log ed Eventi</value>
   </data>
 </root>

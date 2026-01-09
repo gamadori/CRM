@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Net.Http;
 using System.Text;
 using WebPush;
+using CRM.Client.Services;
 
 namespace CRM.Server.Services
 {
@@ -187,9 +188,9 @@ namespace CRM.Server.Services
                     $"Tentativo invio push notification. Subscription length: {subscriptionJson?.Length ?? 0}");
                 
                 // Leggi VAPID keys da configurazione
-                var vapidPublicKey = _configuration["WebPush:publicKey"];
-                var vapidPrivateKey = _configuration["WebPush:privateKey"];
-                var vapidSubject = _configuration["WebPush:subject"];
+                var vapidPublicKey = _configuration["PushNotifications:WebPush:publicKey"];
+                var vapidPrivateKey = _configuration["PushNotifications:WebPush:privateKey"];
+                var vapidSubject = _configuration["PushNotifications:WebPush:subject"];
 
                 // ? LOG 2: Verifica VAPID keys (solo primi caratteri per sicurezza)
                 if (string.IsNullOrEmpty(vapidPublicKey) || string.IsNullOrEmpty(vapidPrivateKey))

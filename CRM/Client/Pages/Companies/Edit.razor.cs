@@ -89,7 +89,7 @@ namespace CRM.Client.Pages.Companies
 
         private bool _resellerDisabled = true;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
         protected override async Task OnInitializedAsync()
         {
             string path;

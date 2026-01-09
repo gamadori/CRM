@@ -279,8 +279,8 @@
   <data name="Seleziona la Ditta..." xml:space="preserve">
     <value>Selecciona la empresa...</value>
   </data>
-  <data name="Settaggi" xml:space="preserve">
-    <value>Ajustes</value>
+  <data name="Settings" xml:space="preserve">
+    <value>Configuración del sistema</value>
   </data>
   <data name="Storico TICKETS" xml:space="preserve">
     <value>Historia de los TICKETS</value>
@@ -385,9 +385,6 @@
   <data name="TicketManagement" xml:space="preserve">
     <value>Gestión de tickets</value>
   </data>
-  <data name="SettingsListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
-  </data>
   <data name="UtentiListSubTitle" type="System.Resources.ResXNullRef, System.Windows.Forms">
     <value />
   </data>
@@ -417,5 +414,17 @@
   </data>
   <data name="Logos" xml:space="preserve">
     <value>Logotipos</value>
+  </data>
+  <data name="Languages" xml:space="preserve">
+    <value>Idiomas</value>
+  </data>
+  <data name="EventType" xml:space="preserve">
+    <value>Tipo de evento</value>
+  </data>
+  <data name="SettingsListSubTitle" xml:space="preserve">
+    <value>Configurar y administrar todas las configuraciones de CRM</value>
+  </data>
+  <data name="logevents" xml:space="preserve">
+    <value>Registros y eventos</value>
   </data>
 </root>

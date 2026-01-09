@@ -10,6 +10,7 @@ using CRM.Shared;
 using System.Linq.Dynamic.Core;
 using Newtonsoft.Json;
 using CRM.Server.Services;
+using CRM.Client.Services;
 
 namespace CRM.Server.Controllers
 {

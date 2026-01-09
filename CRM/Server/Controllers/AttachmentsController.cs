@@ -20,6 +20,7 @@ using System.IO.Compression;
 using CRM.Server.Helpers;
 using MimeKit;
 using Microsoft.AspNetCore.Hosting.Server.Features;
+using CRM.Client.Services;
 
 namespace CRM.Server.Controllers
 {

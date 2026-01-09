@@ -85,7 +85,7 @@ namespace CRM.Client.Pages.Settings.Users
 
         private bool _hidden = false;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {

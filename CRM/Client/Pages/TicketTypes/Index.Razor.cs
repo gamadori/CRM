@@ -88,7 +88,7 @@ namespace CRM.Client.Pages.TicketTypes
 
         private IList<TicketType> _types = null;
 
-        private PageHeaderModel _pageHeader = new PageHeaderModel();
+        private PageHeaderModel? _pageHeader = null;
 
         protected override async void OnInitialized()
         {

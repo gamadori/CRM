@@ -26,6 +26,7 @@ using System.Composition;
 using SelectPdf;
 using System.Runtime.Serialization.Formatters.Binary;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Extensions.Configuration;
 
 namespace CRM.Server.Controllers
 {
@@ -44,12 +45,24 @@ namespace CRM.Server.Controllers
         private readonly IArchiveService _archiveService;
         private readonly OpenAIEmbeddingService _embeddingService;
         private readonly ITicketPdfGenerator _pdfGenerator;
-
-        // ✅ NUOVO: Servizio Push Notifications
         private readonly IPushNotificationService _pushService;
+        
+        // ✅ NUOVO: Aggiungi IConfiguration
+        private readonly IConfiguration _configuration;
 
-        public TicketsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IPermitsService permitsService, ILogEventService logEventService, IEmailSenderPlus emailSenderPlus, ILanguagesService languageService, 
-            TelegramCommandsService telegram, IArchiveService archiveService, OpenAIEmbeddingService embeddingService, ITicketPdfGenerator pdfGenerator, IPushNotificationService pushService)
+        public TicketsController(
+            ApplicationDbContext context, 
+            UserManager<ApplicationUser> userManager, 
+            IPermitsService permitsService, 
+            ILogEventService logEventService, 
+            IEmailSenderPlus emailSenderPlus, 
+            ILanguagesService languageService, 
+            TelegramCommandsService telegram, 
+            IArchiveService archiveService, 
+            OpenAIEmbeddingService embeddingService, 
+            ITicketPdfGenerator pdfGenerator, 
+            IPushNotificationService pushService,
+            IConfiguration configuration) // ✅ AGGIUNTO
         {
             _context = context;
             _userManager = userManager;
@@ -63,6 +76,7 @@ namespace CRM.Server.Controllers
             _embeddingService = embeddingService;
             _pdfGenerator = pdfGenerator;
             _pushService = pushService;
+            _configuration = configuration; // ✅ AGGIUNTO
         }
 
         [HttpGet("search")]
@@ -2127,6 +2141,22 @@ namespace CRM.Server.Controllers
                 return StatusCode(500, $"Errore interno: {ex.Message}");
             }
         }
+        /// <summary>
+        /// ✅ NUOVO: Endpoint per ottenere VAPID public key (necessario per Chrome)
+        /// </summary>
+        [HttpGet("push/vapid-public-key")]
+        [AllowAnonymous] // Pubblico perché serve al browser PRIMA del login
+        public IActionResult GetVapidPublicKey()
+        {
+            var publicKey = _configuration["PushNotifications:WebPush:publicKey"];
+
+            if (string.IsNullOrEmpty(publicKey))
+            {
+                return NotFound("VAPID public key non configurata");
+            }
+
+            return Ok(new { publicKey });
+        }
 
         /// <summary>
         /// ✅ NUOVO: Invia email riepilogo al manager
@@ -2319,10 +2349,6 @@ namespace CRM.Server.Controllers
         }
 
         
-
-
-
-
     }
    
     public class AssignUsersRequest
