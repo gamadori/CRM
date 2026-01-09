@@ -279,6 +279,10 @@
   <data name="Seleziona la Ditta..." xml:space="preserve">
     <value>Selecciona la empresa...</value>
   </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="Selezionare il Cliente" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
   <data name="Settings" xml:space="preserve">
     <value>Configuración del sistema</value>
   </data>
@@ -360,7 +364,6 @@
   <data name="Ticket Edit" xml:space="preserve">
     <value>Editar Ticket</value>
   </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="AddFiles" type="System.Resources.ResXNullRef, System.Windows.Forms">
     <value />
   </data>
@@ -426,5 +429,35 @@
   </data>
   <data name="logevents" xml:space="preserve">
     <value>Registros y eventos</value>
+  </data>
+  <data name="ProductTypes" xml:space="preserve">
+    <value>Tipos de productos</value>
+  </data>
+  <data name="TicketStates" xml:space="preserve">
+    <value>Estados de los tickets</value>
+  </data>
+  <data name="ServiceTypes" xml:space="preserve">
+    <value>Tipos de servicios</value>
+  </data>
+  <data name="ProductsSettings" xml:space="preserve">
+    <value>Configuración de productos</value>
+  </data>
+  <data name="GlobalSettings" xml:space="preserve">
+    <value>Configuración global</value>
+  </data>
+  <data name="eTicketStatesCreated" xml:space="preserve">
+    <value>Creado</value>
+  </data>
+  <data name="eTicketStatesClosed" xml:space="preserve">
+    <value>Cerrado</value>
+  </data>
+  <data name="eTicketStatesAssigned" xml:space="preserve">
+    <value>Asignado</value>
+  </data>
+  <data name="eTicketStatesProcessing" xml:space="preserve">
+    <value>En curso</value>
+  </data>
+  <data name="eTicketStatesExpired" xml:space="preserve">
+    <value>Venció</value>
   </data>
 </root>

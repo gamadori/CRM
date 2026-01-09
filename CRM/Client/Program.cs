@@ -113,6 +113,7 @@ namespace CRM.Client
             builder.Services.AddScoped<IHeaderService, HeaderService>();
             builder.Services.AddScoped<ILogosService, ProxyLogosService>();
             builder.Services.AddScoped<ILogEventService, ProxyLogEventService>();
+            builder.Services.AddScoped<ITicketStatesService, ProxyTicketsStates>();
 
             builder.Services.AddTransient<IManyToManyService<TicketTypeUser>, ManyToManyService<TicketTypeUser>>(sp =>
             {
@@ -177,10 +178,7 @@ namespace CRM.Client
                 return new ManyToManyService<TicketInterventionType>(sp.GetRequiredService<HttpClient>(), ConstHelper.TicketTypesUsersPath);
             });
 
-            builder.Services.AddTransient<IRestService<List<TicketState>>>(sp =>
-            {
-                return new RestGetClientService<List<TicketState>>(sp.GetRequiredService<HttpClient>(), ConstHelper.TicketStatesPath);
-            });
+           
 
 
 

@@ -1,95 +1,112 @@
 ﻿@page "/GlobalSettings"
 
-@using Syncfusion.Blazor.Calendars
-@using Syncfusion.Blazor.DropDowns
 
 <h3>Settaggi</h3>
 <hr/>
 
-@if (_settings == null)
+@if (_settings == null || _saving)
 {
     <Waiting></Waiting>
 }
-else if (_saving)
-{
-    <Waiting></Waiting>
-}
+
 else
 {
-    <EditForm Model="@_settings" OnValidSubmit="HandleValidSubmit">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-        <div class="row">
-            <div class="col-md-4">
-                <div class="mb-3">
-                    <DisplayName For="@(()=>_settings.TicketDaysExpired)" />
-                    <input class="form-control" @bind-value="@_settings.TicketDaysExpired" />
-                    <ValidationMessage For="@(() => _settings.TicketDaysExpired)" />
-                </div>
-                <div class="mb-3">
+    <PageHeader Model="@_pageHeader">
+    </PageHeader>
 
-                    <DisplayName For="@(()=>_settings.ScheduleTimeStart)" />
-                    <SfTimePicker TValue="DateTime" @bind-Value="_settings.ScheduleTimeStart" Format="@("HH\\:mm\\:ss")"></SfTimePicker>
-                    <ValidationMessage For="@(() => _settings.ScheduleTimeStart)" />
-                </div>
-
-                <div class="mb-3">
-
-                    <DisplayName For="@(()=>_settings.ScheduleTimeEnd)" />
-                    <SfTimePicker TValue="DateTime" @bind-Value="_settings.ScheduleTimeEnd" Format="@("HH\\:mm\\:ss")"></SfTimePicker>
-                    <ValidationMessage For="@(() =>_settings.ScheduleTimeEnd)" />
-                </div>
+     <EditForm Model="@_settings" OnValidSubmit="HandleValidSubmit">
+        <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeSM="6">
+                <RadzenStack>
+                    <ValidationSummary />
 
 
-                <div class="mb-3">
-
-                    <DisplayName For="@(()=>_settings.MonthlySchedulerMaxNumTickets)" />
-                    <InputNumber class="form-control" @bind-Value="_settings.MonthlySchedulerMaxNumTickets"></InputNumber>
-                    <ValidationMessage For="@(() => _settings.MonthlySchedulerMaxNumTickets)" />
-                </div>
-                <div class="mb-3">
-                    <DisplayName  For="@(()=>_settings.IdHeadQuarter)" />
-                    <div class="control_wrapper">
-                       
-                        <RadzenDropDownDataGrid class="form-control" @bind-value="@_settings.IdHeadQuarter" TValue="int" AllowFiltering="true" ShowPagingSummary=true
-                                            AllowClear="true" PageSize="@_pageSize" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" 
-                            Data="@_companies" Count="@_companyCount" TextProperty="RagioneSociale" ValueProperty="Id"  />
-
-                    </div>
-                    <ValidationMessage For="@(() => _settings.IdHeadQuarter)" />
-                </div>
-                
-
-                
-                <div class="mb-3 form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" @bind="@_settings.Telegram" id="flexSwitchCheckChecked">
-                    <DisplayName For="@(()=>_settings.Telegram)" CssClass="form-check-label" />
-                </div>
-                <div class="mb-3">
-
-                    <DisplayName For="@(()=>_settings.LogoReport)" />
-                    <RadzenDropDown class="form-control" TValue="int?" Data="@_loghi" TextProperty="Codice" ValueProperty="Id" @bind-Value="_settings.LogoReport" />
-                    <ValidationMessage For="@(() => _settings.LogoReport)" />
-                </div>
-
-                 <div class="mb-3">
-
-                    <DisplayName For="@(()=>_settings.LogoSiteHeader)" />
-                    <RadzenDropDown class="form-control" TValue="int?" Data="@_loghi" TextProperty="Codice" ValueProperty="Id" @bind-Value="_settings.LogoSiteHeader" />
-                    <ValidationMessage For="@(() => _settings.LogoSiteHeader)" />
-                </div>
-
-                <div class="mb-3">
-
-                    <DisplayName For="@(()=>_settings.TopRowBgColor)" />
-                    <RadzenColorPicker @bind-Value=@_settings.TopRowBgColor ShowHSV=@true ShowRGBA=@true ShowColors=@true  />
-                    <ValidationMessage For="@(() => _settings.TopRowBgColor)" />
-                </div>
-
-
-                <button type="submit" class="btn btn-primary">Salva</button>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="Annulla">Annulla</button>
-            </div>
-        </div>
+                    <!-- Company and Contact -->
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGNumeric @bind-Value="@_settings.TicketDaysExpired" For="@(() => _settings.TicketDaysExpired)" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGDateTimePicker TValue="TimeOnly?" @bind-Value="@_settings.ScheduleTimeStart" For="@(() => _settings.ScheduleTimeStart)"
+                                                        DateFormat="HH:mm" ShowTime="true" TodayButton="false" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGDateTimePicker TValue="TimeOnly?" @bind-Value="@_settings.ScheduleTimeEnd" For="@(() => _settings.ScheduleTimeEnd)"
+                                                        DateFormat="HH:mm" ShowTime="true" TodayButton="false" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGDropDown TValue="int" @bind-Value="@_settings.IdHeadQuarter" For="@(() => _settings.IdHeadQuarter)" TItem="Company" 
+                                        TextProperty="@nameof(Company.RagioneSociale)" ValueProperty="@nameof(Company.Id)" Data="_companies"/>
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGNumeric @bind-Value="@_settings.MonthlySchedulerMaxNumTickets" For="@(() => _settings.MonthlySchedulerMaxNumTickets)" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGDropDown TValue="int?" @bind-Value="@_settings.LogoSiteHeader" For="@(() => _settings.LogoSiteHeader)" TItem="Logo"
+                                                  TextProperty="@nameof(Logo.Codice)" ValueProperty="@nameof(Logo.Id)" Data="_loghi" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGDropDown TValue="int?" @bind-Value="@_settings.LogoReport" For="@(() => _settings.LogoReport)" TItem="Logo"
+                                                  TextProperty="@nameof(Logo.Codice)" ValueProperty="@nameof(Logo.Id)" Data="_loghi" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <div class="mb-3 form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" @bind="@_settings.Telegram" id="flexSwitchCheckChecked">
+                                        <DisplayName For="@(() => _settings.Telegram)" CssClass="form-check-label" />
+                                    </div>
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+        <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" />
+        <RedGButton RGButtonType="RGButtonType.Submit" AutoLabel=true />
     </EditForm>
+   
 }

@@ -15,10 +15,10 @@ namespace CRM.Shared
         public int TicketDaysExpired { get; set; } = 1;
 
         [Display(Name = "Schedule Orario Iniziale")]
-        public DateTime ScheduleTimeStart { get; set; }
+        public TimeOnly? ScheduleTimeStart { get; set; }
 
         [Display(Name = "Schedule Orario Finale")]
-        public DateTime ScheduleTimeEnd { get; set; }
+        public TimeOnly? ScheduleTimeEnd { get; set; }
 
         [Display(Name = "Scheduler Mensile Massimo Numero Ticket per Giorno")]
         public int MonthlySchedulerMaxNumTickets { get; set; }

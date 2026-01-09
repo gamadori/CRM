@@ -55,6 +55,9 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         IHeaderService HeaderService { get; set; }
 
+        [Inject]
+        NotificationService NotificationService { get; set; }
+
         [Parameter]
         public int? Id { get; set; }
 
@@ -128,6 +131,8 @@ namespace CRM.Client.Pages.Tickets
 
         private PageHeaderModel? _pageHeader = null;
 
+        private GlobalSetting? _globalSettings = null;
+
 
         protected override async Task OnInitializedAsync()
         {
@@ -137,6 +142,8 @@ namespace CRM.Client.Pages.Tickets
                 //await Task.Delay(10000);      // changes are flushed again   
                 path = ConstHelper.TicketPath;
 
+                // Carica le impostazioni globali per validazione orario
+                await LoadGlobalSettings();
 
                 await LoadCompany(new LoadDataArgs());
                 await LoadProject(new LoadDataArgs());
@@ -186,6 +193,18 @@ namespace CRM.Client.Pages.Tickets
             }
         }
 
+        private async Task LoadGlobalSettings()
+        {
+            try
+            {
+                _globalSettings = await RestClientService.GetFirst<GlobalSetting>(ConstHelper.GlobalSettingsPath);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento GlobalSettings: {ex.Message}");
+            }
+        }
+
         public async Task LoadCompany(LoadDataArgs args = null)
         {
             CompanyFilter request = new CompanyFilter() ; 
@@ -198,9 +217,6 @@ namespace CRM.Client.Pages.Tickets
             var response = await RestClientService.GetListPag<CompanyFilter, Company>(request, ConstHelper.CompaniesPath);
             _companyCount = response.MetaData.TotalCount;
             _companies = response.Items.ToList();
-
-            
-
         }
 
         private async Task LoadProject(LoadDataArgs args = null)
@@ -308,6 +324,12 @@ namespace CRM.Client.Pages.Tickets
             
             try
             {
+                // ⚠️ Validazione orario prima di salvare
+                if (!ValidateScheduleTime())
+                {
+                    return; // Blocca il salvataggio se l'orario non è valido
+                }
+
                 _isLoading = true;
                 Waiting();
                 if (Id == null)
@@ -332,6 +354,45 @@ namespace CRM.Client.Pages.Tickets
                 _isLoading = false;
                 WaitingClose();
             }
+        }
+
+        /// <summary>
+        /// Valida che l'orario inserito nel ticket rientri nell'intervallo definito in GlobalSettings
+        /// </summary>
+        /// <returns>True se valido o se non ci sono vincoli, False se fuori range</returns>
+        private bool ValidateScheduleTime()
+        {
+            // Se non c'è orario inserito, non serve validare
+            if (_ticket?.Time == null)
+                return true;
+
+            // Se non ci sono impostazioni globali o orari non configurati, permetti tutto
+            if (_globalSettings == null || 
+                !_globalSettings.ScheduleTimeStart.HasValue || 
+                !_globalSettings.ScheduleTimeEnd.HasValue)
+                return true;
+
+            var ticketTime = _ticket.Time.Value;
+            var scheduleStart = _globalSettings.ScheduleTimeStart.Value;
+            var scheduleEnd = _globalSettings.ScheduleTimeEnd.Value;
+
+            // Controlla se l'orario è fuori range
+            if (ticketTime < scheduleStart || ticketTime > scheduleEnd)
+            {
+                // Mostra notifica warning
+                NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Warning,
+                    Summary = "⚠️ Orario fuori dall'intervallo consentito",
+                    Detail = $"L'orario inserito ({ticketTime:HH:mm}) è fuori dall'intervallo configurato ({scheduleStart:HH:mm} - {scheduleEnd:HH:mm}). " +
+                             "Verifica le impostazioni o modifica l'orario del ticket.",
+                    Duration = 8000 // 8 secondi
+                });
+
+                return false; // Blocca il salvataggio
+            }
+
+            return true; // Orario valido
         }
 
         

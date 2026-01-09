@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +12,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Settings.GlobalSettings
 {
@@ -23,10 +25,13 @@ namespace CRM.Client.Pages.Settings.GlobalSettings
         IAGRestClientService RestClientServer { get; set; }
 
         [Inject]
-        private NavigationManager NavigationManager { get; set; }
+        NavigationManager NavigationManager { get; set; }
 
         [Inject]
-        private HttpClient _http { get; set; }
+        IHeaderService HeaderService { get; set; }
+
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         private bool _saving = false;
       
@@ -40,15 +45,18 @@ namespace CRM.Client.Pages.Settings.GlobalSettings
         
         private List<Logo> _loghi;
 
+        private PageHeaderModel? _pageHeader = null;
+
         protected override async Task OnInitializedAsync()
         {
-            
             try
             {
-
-                _settings = await RestClientServer.GetFirst<GlobalSetting>(ConstHelper.GlobalSettingsPath);
+                
                 await LoadLoghi();
                 await LoadCompany();
+                _settings = await RestClientServer.GetFirst<GlobalSetting>(ConstHelper.GlobalSettingsPath);
+
+                _pageHeader = await HeaderService.Create(PageMode);
                 StateHasChanged();
             }
             catch (Exception ex)
@@ -71,8 +79,6 @@ namespace CRM.Client.Pages.Settings.GlobalSettings
                 request.RagioneSociale = args.Filter;
             }
 
-
-
             var response = await RestClientServer.GetListPag<CompanyFilter, Company>(request, ConstHelper.CompaniesPath); 
 
             if (response != null)
@@ -82,23 +88,20 @@ namespace CRM.Client.Pages.Settings.GlobalSettings
             }
         }
 
+       
+
         private async Task LoadLoghi()
         {
-            var loghi = await RestClientServer.Get<Logo, LogosFilterModel>(new LogosFilterModel(), ConstHelper.LogosPath);
-            _loghi = loghi.Items;
+            var loghi = await RestClientServer.GetList<Logo, LogosFilterModel>(new LogosFilterModel(), ConstHelper.LogosPath);
+            _loghi = loghi ?? new List<Logo>();
 
         }
 
 
         protected async Task HandleValidSubmit()
         {
-            
-
             try
-            {
-                _settings.ScheduleTimeStart = DateTime.Today + _settings.ScheduleTimeStart.TimeOfDay;
-                _settings.ScheduleTimeEnd = DateTime.Today + _settings.ScheduleTimeEnd.TimeOfDay;
-                _saving = true;
+            { 
                 StateHasChanged();
 
                 var  resp = await RestClientServer.Post<GlobalSetting, int>(_settings, ConstHelper.GlobalSettingsPath); 
@@ -125,8 +128,5 @@ namespace CRM.Client.Pages.Settings.GlobalSettings
         {
             NavigationManager.NavigateTo("/Settings");
         }
-
-       
-
     }
 }

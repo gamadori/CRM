@@ -90,8 +90,7 @@ namespace CRM.Client.Pages.Tickets
 
         private int _pageSize = 10;
 
-        private DateTime _minTime;
-        private DateTime _maxTime;
+       
 
         private bool _backDisabled = true;
 
@@ -116,7 +115,7 @@ namespace CRM.Client.Pages.Tickets
             {
                 _user = await _userService.Get();
                 
-                await TaskMinMaxTime();
+               
 
                 if (_user.CanManageOtherCompany)
                 {
@@ -456,17 +455,7 @@ namespace CRM.Client.Pages.Tickets
             JSRuntime.InvokeVoidAsync("ShowModal", "dlgError");
         }
 
-        private async Task TaskMinMaxTime()
-        {
-            GlobalSetting _settings = await RestClientService.GetFirst<GlobalSetting>(ConstHelper.GlobalSettingsPath);
-
-            if (_settings != null)
-            {
-                _minTime = DateTime.Today + _settings.ScheduleTimeStart.TimeOfDay;
-                _maxTime = DateTime.Today + _settings.ScheduleTimeEnd.TimeOfDay;
-            }
-        }
-
+       
         private void SetCompany(int idCompany)
         {
             var company = _companies.Where(x => x.Id == idCompany).FirstOrDefault();

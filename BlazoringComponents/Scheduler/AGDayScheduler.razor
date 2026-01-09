@@ -1,36 +1,231 @@
 ﻿@using Models
 @typeparam TItem
 
-<div class="container">
-    <div class="row">
-   
-        <div class="col border @_dayTickets.BgBody">
-
-            <div>
-               
+<div class="modern-scheduler-container day-view">
+    <!-- Vista singolo giorno -->
+    <div class="day-detail-container">
+        <div class="day-detail-column @GetDayCellClass(_dayTickets)">
+            <!-- Header del giorno -->
+            <div class="day-detail-header">
                 <AGDayHead Day="@_dayTickets" OnSelect="OnSelect"></AGDayHead>
+            </div>
+           
+            <!-- Contenuto ticket -->
+            <div class="day-detail-content">
                 @if (_dayTickets.Tickets.Any())
                 {
-                    @foreach (var t in _dayTickets.Tickets)
-                    {
-                        <div class="row">
-                            <div class="col">
-                                <CascadingValue Value="t" TValue="SchedulerTicket">
+                    <div class="tickets-timeline">
+                        @foreach (var ticket in _dayTickets.Tickets)
+                        {
+                            <div class="timeline-item">
+                                <CascadingValue Value="ticket" TValue="SchedulerTicket">
                                     <AGTicketScheduler OpenModal="OpenModal"></AGTicketScheduler>
                                 </CascadingValue>
                             </div>
-                        </div>
-                    }
+                        }
+                    </div>
                 }
                 else
                 {
-                    <AGEmptyScheduler IsHoliday="@_dayTickets.IsHoliday"></AGEmptyScheduler>
+                    <div class="empty-day-detail">
+                        <AGEmptyScheduler IsHoliday="@_dayTickets.IsHoliday"></AGEmptyScheduler>
+                    </div>
                 }
             </div>
         </div>
-
-    
     </div>
 </div>
+
+<style>
+    .modern-scheduler-container.day-view {
+        background: #f8f9fa;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        min-height: 600px;
+    }
+
+    /* Container dettaglio giorno */
+    .day-detail-container {
+        padding: 1.5rem;
+        background: white;
+    }
+
+    .day-detail-column {
+        background: white;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        min-height: 550px;
+        border: 2px solid #e5e7eb;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    .day-detail-column:hover {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Tipi di giorno */
+    .day-detail-column.holiday {
+        background: linear-gradient(180deg, #fef2f2 0%, #fff 100%);
+        border-color: #fecaca;
+    }
+
+    .day-detail-column.today {
+        background: linear-gradient(180deg, #dbeafe 0%, #fff 100%);
+        border-color: #3b82f6;
+        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+    }
+
+    /* Header dettaglio */
+    .day-detail-header {
+        flex-shrink: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0;
+        border-radius: 10px 10px 0 0;
+        margin: -2px -2px 0 -2px;
+    }
+
+    /* Contenuto dettaglio */
+    .day-detail-content {
+        flex: 1;
+        padding: 2rem;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .day-detail-content::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .day-detail-content::-webkit-scrollbar-track {
+        background: #f3f4f6;
+        border-radius: 4px;
+    }
+
+    .day-detail-content::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
+    .day-detail-content::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Timeline tickets */
+    .tickets-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .timeline-item {
+        animation: fadeInUp 0.4s ease-out;
+        position: relative;
+        padding-left: 2rem;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        border-radius: 2px;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .timeline-item:hover::before {
+        width: 6px;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .empty-day-detail {
+        height: 100%;
+        min-height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        font-size: 1rem;
+        background: linear-gradient(135deg, #f9fafb 0%, #fff 100%);
+        border-radius: 8px;
+        padding: 3rem;
+    }
+
+    /* Responsive */
+    @@media (max-width: 1200px) {
+        .day-detail-container {
+            padding: 1rem;
+        }
+
+        .day-detail-column {
+            min-height: 450px;
+        }
+
+        .day-detail-content {
+            padding: 1.5rem;
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .modern-scheduler-container.day-view {
+            border-radius: 0;
+            min-height: auto;
+        }
+
+        .day-detail-container {
+            padding: 0.75rem;
+        }
+
+        .day-detail-column {
+            min-height: 350px;
+        }
+
+        .day-detail-content {
+            padding: 1rem;
+        }
+
+        .timeline-item {
+            padding-left: 1.5rem;
+        }
+
+        .empty-day-detail {
+            min-height: 300px;
+            padding: 2rem 1rem;
+        }
+    }
+</style>
+
+@code {
+    private string GetDayCellClass(DayTickets day)
+    {
+        var classes = new List<string>();
+
+        if (day.IsHoliday)
+            classes.Add("holiday");
+
+        if (day.Date.Date == DateTime.Today)
+            classes.Add("today");
+
+        return string.Join(" ", classes);
+    }
+}
 
 

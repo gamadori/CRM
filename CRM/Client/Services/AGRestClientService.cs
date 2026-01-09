@@ -239,7 +239,7 @@ namespace CRM.Client.Services
                 var qs = CreateQueryString<F>(data);
 
 
-                var response = await _http.GetAsync(pathService + qs);
+                var response = await _http.GetAsync($"{pathService}/list{qs}");
 
                 
 
@@ -264,8 +264,9 @@ namespace CRM.Client.Services
                 exception.Redirect();
                 return null;
             }
-            catch
+            catch (Exception ex)
             {
+
                 return null;
             }
         }

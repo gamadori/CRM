@@ -104,6 +104,9 @@ builder.Services.AddSingleton<OpenAIChatService>();
 
 builder.Services.AddScoped<ILogosService, LogosService>();
 
+builder.Services.AddScoped<ITicketStatesService, TicketStatesService>();
+
+
 // ✅ AGGIUNTO: Servizio per generare PDF dei ticket
 builder.Services.AddScoped<ITicketPdfGenerator, TicketPdfGenerator>();
 

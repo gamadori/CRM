@@ -2,61 +2,282 @@
 @using Models
 @typeparam TItem
 
-<div class="container-fluid bg-success" style="min-width: 900px;">
-
-    <div class="row">
+<div class="modern-scheduler-container">
+    <!-- Header con i giorni della settimana -->
+    <div class="scheduler-header">
         @foreach (var weekDay in _weekDays)
         {
-            <div class="col border @DayHelper.GetBgHeader(weekDay.IsHoliday)  text-center">
-                    @weekDay.Name
-                </div>
-            
+            <div class="day-header @(weekDay.IsHoliday ? "holiday-header" : "")">
+                <span class="day-name">@weekDay.Name</span>
+            </div>
         }
     </div>
     
-    @foreach (var week in _monthTickets)
-    {
-        
-        <div class="row">
-           
-            @foreach (var day in week)
-            {
-                <div class="col border  @day.BgBody">
-
-                    <div>
-                        <AGDayHead Day="@day" OnSelect="OnSelect"></AGDayHead>
+    <!-- Griglia calendario -->
+    <div class="scheduler-grid">
+        @foreach (var week in _monthTickets)
+        {
+            <div class="scheduler-week">
+                @foreach (var day in week)
+                {
+                    <div class="day-cell @GetDayCellClass(day)" @onclick="() => OnDayClick(day.Date)">
+                        <!-- Header del giorno -->
+                        <div class="day-cell-header">
+                            <AGDayHead Day="@day" OnSelect="OnSelect"></AGDayHead>
+                        </div>
                        
-                        @if (day.Tickets.Count() > 0)
-                        {
-                            @for (int i = 0; i < day.Tickets.Count && i < MaxNumDaylyTicket; ++i)
+                        <!-- Contenuto ticket -->
+                        <div class="day-cell-content">
+                            @if (day.Tickets.Any())
                             {
-                                <div class="row">
-                                    <div class="col">
+                                @for (int i = 0; i < day.Tickets.Count && i < MaxNumDaylyTicket; ++i)
+                                {
+                                    <div class="ticket-item">
                                         <CascadingValue Value="day.Tickets[i]" TValue="SchedulerTicket">
                                             <AGTicketScheduler OpenModal="OpenModal"></AGTicketScheduler>
                                         </CascadingValue>
                                     </div>
-                                </div>
-                            }
-                            if (day.Tickets.Count > MaxNumDaylyTicket)
-                            {
-                                <div class="row">
-                                    <div class="col">
-                                            <AGTicketOthersScheduler Day="@day.Date" Desc="@day.DescOthers" 
-                                                                    OpenDaylyScheduler="OpenDaylyScheduler"></AGTicketOthersScheduler>
+                                }
+                                
+                                @if (day.Tickets.Count > MaxNumDaylyTicket)
+                                {
+                                    <div class="more-tickets">
+                                        <AGTicketOthersScheduler Day="@day.Date" 
+                                                                Desc="@day.DescOthers" 
+                                                                OpenDaylyScheduler="OpenDaylyScheduler">
+                                        </AGTicketOthersScheduler>
                                     </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="empty-day">
+                                    <AGEmptyScheduler IsHoliday="day.IsHoliday"></AGEmptyScheduler>
                                 </div>
                             }
-                        }
-                        else
-                        {
-                            <AGEmptyScheduler IsHoliday="day.IsHoliday"></AGEmptyScheduler>
-                        }
+                        </div>
                     </div>
-                </div>
-            }
-        </div>
+                }
+            </div>
+        }
+    </div>
+</div>
 
+<style>
+    .modern-scheduler-container {
+        background: #f8f9fa;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        min-width: 900px;
     }
 
-</div>
+    /* Header giorni settimana */
+    .scheduler-header {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem 0.5rem;
+        gap: 1px;
+    }
+
+    .day-header {
+        text-align: center;
+        padding: 0.75rem 0.5rem;
+        color: white;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .day-header.holiday-header {
+        background: rgba(220, 38, 38, 0.2);
+        border-radius: 8px;
+    }
+
+    .day-name {
+        display: block;
+    }
+
+    /* Griglia settimane */
+    .scheduler-grid {
+        background: white;
+        padding: 0;
+    }
+
+    .scheduler-week {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+        background: #e5e7eb;
+    }
+
+    /* Celle giorno */
+    .day-cell {
+        background: white;
+        min-height: 120px;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .day-cell:hover {
+        background: #f9fafb;
+        box-shadow: inset 0 0 0 2px #667eea;
+        z-index: 10;
+        transform: scale(1.02);
+    }
+
+    /* Tipi di giorni */
+    .day-cell.holiday {
+        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    }
+
+    .day-cell.holiday:hover {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    }
+
+    .day-cell.other-month {
+        background: #f3f4f6;
+        opacity: 0.6;
+    }
+
+    .day-cell.other-month:hover {
+        opacity: 0.8;
+    }
+
+    .day-cell.today {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        box-shadow: inset 0 0 0 2px #3b82f6;
+    }
+
+    .day-cell.today:hover {
+        background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+    }
+
+    /* Header cella */
+    .day-cell-header {
+        flex-shrink: 0;
+    }
+
+    /* Contenuto cella */
+    .day-cell-content {
+        flex: 1;
+        padding: 0.5rem;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .day-cell-content::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .day-cell-content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .day-cell-content::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 2px;
+    }
+
+    .day-cell-content::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Ticket items */
+    .ticket-item {
+        margin-bottom: 0.5rem;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .more-tickets {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 2px dashed #e5e7eb;
+    }
+
+    .empty-day {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        font-size: 0.875rem;
+    }
+
+    /* Responsive */
+    @@media (max-width: 1200px) {
+        .day-cell {
+            min-height: 100px;
+        }
+
+        .day-header {
+            font-size: 0.85rem;
+            padding: 0.5rem;
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .modern-scheduler-container {
+            min-width: unset;
+            border-radius: 0;
+        }
+
+        .scheduler-header {
+            padding: 0.75rem 0.25rem;
+        }
+
+        .day-header {
+            font-size: 0.75rem;
+            padding: 0.5rem 0.25rem;
+        }
+
+        .day-cell {
+            min-height: 80px;
+        }
+
+        .day-cell-content {
+            padding: 0.25rem;
+        }
+    }
+</style>
+
+@code {
+    private string GetDayCellClass(DayTickets day)
+    {
+        var classes = new List<string>();
+
+        if (day.IsHoliday)
+            classes.Add("holiday");
+
+        if (!day.IsMonthCurrent)
+            classes.Add("other-month");
+
+        if (day.Date.Date == DateTime.Today)
+            classes.Add("today");
+
+        return string.Join(" ", classes);
+    }
+
+    private async Task OnDayClick(DateTime date)
+    {
+        await OnSelect.InvokeAsync(date);
+    }
+}

@@ -465,4 +465,34 @@
   <data name="logevents" xml:space="preserve">
     <value>Log ed Eventi</value>
   </data>
+  <data name="ProductTypes" xml:space="preserve">
+    <value>Tipi Prodotto</value>
+  </data>
+  <data name="TicketStates" xml:space="preserve">
+    <value>Stati dei Ticket</value>
+  </data>
+  <data name="ServiceTypes" xml:space="preserve">
+    <value>Tipi di Servizio</value>
+  </data>
+  <data name="ProductsSettings" xml:space="preserve">
+    <value>Settaggi Prodotto</value>
+  </data>
+  <data name="GlobalSettings" xml:space="preserve">
+    <value>Settaggi Globali</value>
+  </data>
+  <data name="eTicketStatesCreated" xml:space="preserve">
+    <value>Creato</value>
+  </data>
+  <data name="eTicketStatesClosed" xml:space="preserve">
+    <value>Chiuso</value>
+  </data>
+  <data name="eTicketStatesAssigned" xml:space="preserve">
+    <value>Assegnato</value>
+  </data>
+  <data name="eTicketStatesProcessing" xml:space="preserve">
+    <value>In Lavorazione</value>
+  </data>
+  <data name="eTicketStatesExpired" xml:space="preserve">
+    <value>Scaduto</value>
+  </data>
 </root>

@@ -493,6 +493,51 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Assigned.
+        /// </summary>
+        public static string eTicketStatesAssigned {
+            get {
+                return ResourceManager.GetString("eTicketStatesAssigned", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Closed.
+        /// </summary>
+        public static string eTicketStatesClosed {
+            get {
+                return ResourceManager.GetString("eTicketStatesClosed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Created.
+        /// </summary>
+        public static string eTicketStatesCreated {
+            get {
+                return ResourceManager.GetString("eTicketStatesCreated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Expired.
+        /// </summary>
+        public static string eTicketStatesExpired {
+            get {
+                return ResourceManager.GetString("eTicketStatesExpired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a In progress.
+        /// </summary>
+        public static string eTicketStatesProcessing {
+            get {
+                return ResourceManager.GetString("eTicketStatesProcessing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Event Type.
         /// </summary>
         public static string EventType {
@@ -516,6 +561,15 @@ namespace CRM.Shared.Resources {
         public static string From {
             get {
                 return ResourceManager.GetString("From", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Global Settings.
+        /// </summary>
+        public static string GlobalSettings {
+            get {
+                return ResourceManager.GetString("GlobalSettings", resourceCulture);
             }
         }
         
@@ -764,6 +818,24 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Products Settings.
+        /// </summary>
+        public static string ProductsSettings {
+            get {
+                return ResourceManager.GetString("ProductsSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Product Types.
+        /// </summary>
+        public static string ProductTypes {
+            get {
+                return ResourceManager.GetString("ProductTypes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Projects.
         /// </summary>
         public static string Progetti {
@@ -899,6 +971,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Service Types.
+        /// </summary>
+        public static string ServiceTypes {
+            get {
+                return ResourceManager.GetString("ServiceTypes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a .
         /// </summary>
         public static string Set_the_date_of_the_event {
@@ -1012,6 +1093,15 @@ namespace CRM.Shared.Resources {
         public static string TICKETS_in_Lavorazione {
             get {
                 return ResourceManager.GetString("TICKETS in Lavorazione", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Ticket States.
+        /// </summary>
+        public static string TicketStates {
+            get {
+                return ResourceManager.GetString("TicketStates", resourceCulture);
             }
         }
         

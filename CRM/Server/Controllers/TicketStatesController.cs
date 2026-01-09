@@ -1,15 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using CRM.Client.Models;
+using CRM.Client.Services;
+using CRM.Server.Data;
+using CRM.Server.Services;
+using CRM.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using CRM.Server.Data;
-using CRM.Shared;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace CRM.Server.Controllers
 {
@@ -17,130 +20,108 @@ namespace CRM.Server.Controllers
     [ApiController]
     public class TicketStatesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
-        public TicketStatesController(ApplicationDbContext context)
-        {
-            _context = context;
+        private readonly ITicketStatesService _service;
 
+        private readonly ILogEventService _logEventService;
+        public TicketStatesController(ITicketStatesService service, ILogEventService logEventService)
+        {
+            _service = service;
+            _logEventService = logEventService;
            
         }
-
+        // GET: api/Companies
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TicketState>>> GetTicketState([FromQuery] TicketStateFilter args)
+        public async Task<PagingResponse<TicketState>?> GetPage([FromQuery] TicketStateFilter? args = null)
         {
-            int totalPage;
-
-            var ticketStates = _context.TicketStates.OrderBy(x => x.State).AsQueryable();
-
-           
-            if (args.Description?.Length > 0)
+            try
             {
-                ticketStates = ticketStates.Where(x => x.Description.Contains(args.Description));
+                var items = await _service.GetPagingAsync(args) ?? new PagingResponse<TicketState>();
+
+
+                return items;
             }
-
-            int count = ticketStates.Count();
-
-            if (args.PageSize > 0)
+            catch (Exception ex)
             {
-                ticketStates = ticketStates.Skip((args.PageNumber - 1) * args.PageSize).Take(args.PageSize);
-                totalPage = (int)Math.Ceiling(count / (double)args.PageSize);
+                await _logEventService.RegisterAsync(nameof(TicketStatesController), nameof(GetPage), LogEvent.EventsTypes.Error, ex);
+                return null;
             }
-            else
-            {
-                totalPage = 1;
-
-            }
-            bool nextPage = args.PageNumber < totalPage;
-            bool previousPage = args.PageNumber > 1;
-
-            var paginationMetadata = new
-            {
-                totalCunt = count,
-                pageSize = args.PageSize,
-                currentPage = args.PageNumber,
-                totalPage = totalPage,
-                previousPage = previousPage,
-                nextPage = nextPage
-            };
-            HttpContext.Response.Headers.Add("Paging-Header", JsonConvert.SerializeObject(paginationMetadata));
-
-            return await ticketStates.ToListAsync();
         }
-        // GET: api/TicketStates/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<TicketState>> GetTicketState(int id)
+        [HttpGet("list")]
+        public async Task<IEnumerable<TicketState?>> GetItems([FromQuery] TicketStateFilter? args = null)
         {
-            var ticketState = await _context.TicketStates.FindAsync(id);
+            try
+            {
+                var items = await _service.GetListAsync(args);
 
-            if (ticketState == null)
+                if (items == null)
+                {
+                    return Enumerable.Empty<TicketState>();
+                }
+                return items;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketStatesController), nameof(GetItems), LogEvent.EventsTypes.Error, ex);
+                return Enumerable.Empty<TicketState>();
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<TicketState>> Get(int id)
+        {
+            var item = await _service.GetItemAsync(id);
+
+            if (item == null)
             {
                 return NotFound();
             }
-
-            return ticketState;
+            return item;
         }
 
-        // PUT: api/TicketStates/5
+        // PUT: api/Companies/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTicketState(int id, TicketState ticketState)
+        public async Task<ActionResult<APIResponseMessage<Article>>> Put(int id, TicketState item)
         {
-            if (id != ticketState.Id)
+            if (id != item.Id)
             {
                 return BadRequest();
             }
+            var resp = await _service.PostAsync(item);
 
-            _context.Entry(ticketState).State = EntityState.Modified;
+            if (resp == null)
+                return Problem("Error saving Ticket State");
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!TicketStateExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            return Ok(resp);
         }
 
-        // POST: api/TicketStates
+        // POST: api/Companies
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<TicketState>> PostTicketState(TicketState ticketState)
+        public async Task<ActionResult<APIResponseMessage<TicketState>>> Post(TicketState item)
         {
-            _context.TicketStates.Add(ticketState);
-            await _context.SaveChangesAsync();
+            var resp = await _service.PostAsync(item);
 
-            return CreatedAtAction("GetTicketState", new { id = ticketState.Id }, ticketState);
+            if (resp == null)
+                return StatusCode(StatusCodes.Status500InternalServerError, "Post return null");
+
+            return Ok(resp);
         }
 
-        // DELETE: api/TicketStates/5
+        // DELETE: api/Companies/5
+        //[AuthorizeRole(ePolicy.AdminRole)]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTicketState(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var ticketState = await _context.TicketStates.FindAsync(id);
-            if (ticketState == null)
+            var resp = await _service.DeleteAsync(id);
+
+            if (!resp)
             {
-                return NotFound();
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error On Deleded Ticket State");
             }
-
-            _context.TicketStates.Remove(ticketState);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool TicketStateExists(int id)
-        {
-            return _context.TicketStates.Any(e => e.Id == id);
+            else
+                return NoContent();
         }
     }
 }

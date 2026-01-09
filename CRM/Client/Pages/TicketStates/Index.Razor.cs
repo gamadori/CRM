@@ -1,192 +1,224 @@
-﻿using CRM.Client.Helpers;
+﻿using BlazoringComponents;
+using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
+using Radzen;
+using Radzen.Blazor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using BlazoringComponents;
-using Radzen;
 
 namespace CRM.Client.Pages.TicketStates
 {
     [Authorize]
     public partial class Index: ComponentBase
     {
-        
+        [Inject]
+        NavigationManager NavigationManager { get; set; } = default!;
 
         [Inject]
-        private NavigationManager NavigationManager { get; set; }
-
-        
-        [Inject]
-        IAGRestClientService RestClientService { get; set; }
-
-        [Inject] 
-        private IJSRuntime JSRuntime { get; set; }
+        ITicketStatesService TicketService { get; set; } = default!;
 
         [Inject]
-        private INavMenuService navMenuService { get; set; }
+        DialogService DialogService { get; set; } = default!;
 
-        
-        [Parameter]
-        public Action<int> OnClickDetails { get; set; }
+        [Inject]
+        IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; } = default!;
 
-        [Parameter]
-        public Action<int?> OnClickEdit { get; set; }
-        
-        [Parameter]
-        public Action<int> OnClickDelete { get; set; }
-
-        [Parameter]
-        public string MessagePrepareDelete { get; set; }
-
-        [Parameter]
-        public bool CmdDetails { get; set; } = true;
-
-        [Parameter]
-        public bool CmdEdit { get; set; } = true;
-
-        [Parameter]
-        public bool CmdDelete { get; set; } = true;
-
-        
-
-
-        private IQueryable<TicketState> _states = null;
-
-
-
-        private PagingHeaderModel _paging = new PagingHeaderModel();
+        private List<TicketState>? _items;
 
         private TicketStateFilter _filter = new TicketStateFilter();
 
-        private string _messageDelete = "";
+        private int _totalCount = 0;
 
-        private string _header;
+        private RadzenDataGrid<TicketState> _grdTicketState = default!;
 
-        private TicketState _ticketState ;
+        private bool _loading = true;
 
+        private List<TicketState> _itemsToUpdate = new List<TicketState>();
 
+        private List<TicketState> _itemsToInsert = new List<TicketState>();
 
-        protected override void OnInitialized()
+        private async Task LoadData(LoadDataArgs? args = null)
         {
-            navMenuService.CallRequestRefresh();
-            StateHasChanged();
-        }
-
-        public async Task<IEnumerable<TicketState>> LoadData()
-        {
-            var template = Enumerable.Empty<TicketState>().AsQueryable();
-            try
+            _loading = true;
+            if (args != null)
             {
-                
-                _header = "Ticket Stati";
+                _filter.Skip = args?.Skip;
+                _filter.Top = args?.Top;
 
+                _filter.OrderBy = args?.OrderBy;
+                _filter.Filter = args?.Filter;
 
-                var pagingResponse = await RestClientService.Get<TicketState, TicketStateFilter>(_filter, ConstHelper.TicketStatesPath);
-
-                _states = pagingResponse.Items.AsQueryable();
-                _paging = pagingResponse.MetaData;
-
-                template = _states;
-                
-                return template;
             }
 
-            catch (Exception ex)
+            var resp = await TicketService.GetPagingAsync(_filter);
+
+            _items = resp?.Items ?? new List<TicketState>();
+            _totalCount = resp?.MetaData?.TotalCount ?? 0;
+
+            // Initialize nullable enum helper idState from underlying int State
+            if (_items != null)
             {
-                Console.WriteLine(ex.Message, ex);
-                return template;
-            }
-            finally
-            {
-                
-            }
-     
-        }
-
-
-        protected void OnChangeDescriptionsFilter(ChangeEventArgs args)
-        {
-            _filter.Description = args.Value.ToString();
-            StateHasChanged();
-        }
-
-        protected void Details(int idTicketState)
-        {
-            if (OnClickDetails != null)
-            {
-                OnClickDetails(idTicketState);
-            }
-            else
-                NavigationManager.NavigateTo($"/TicketStates/Details/{idTicketState}");
-        }
-
-        
-
-        protected void Edit(int id)
-        {
-            if (OnClickEdit != null)
-                OnClickEdit(id);
-            else
-                NavigationManager.NavigateTo($"/TicketStates/{id}/Edit");
-        }
-        protected void Cancel()
-        {
-            NavigationManager.NavigateTo("/TicketStates");
-        }
-        protected void NewItem()
-        {
-            if (OnClickEdit != null)
-                OnClickEdit(null);
-            else
-                NavigationManager.NavigateTo("/TicketStates/Edit");
-        }
-
-        protected async Task Delete()
-        {
-           
-            await JSRuntime.InvokeAsync<object>("CloseModal", "dlgDelete");
-
-            if (_ticketState != null)
-            {
-                if (OnClickDelete != null)
-                    OnClickDelete(_ticketState.Id);
-                else
+                foreach (var it in _items)
                 {
-                    await RestClientService.Delete<int>(_ticketState.Id, ConstHelper.TicketStatesPath);
-
-                    StateHasChanged();
-                    //await LoadData();
+                    try
+                    {
+                        it.idState = Enum.IsDefined(typeof(eTicketStates), it.State) ? (eTicketStates?)((eTicketStates)it.State) : null;
+                    }
+                    catch
+                    {
+                        it.idState = null;
+                    }
                 }
             }
-        }
 
-        protected void PrepareDelete(TicketState item)
-        {
-            _ticketState = item;
-
-           
-            if (MessagePrepareDelete != null && MessagePrepareDelete.Length > 0)
-                _messageDelete = string.Format(MessagePrepareDelete, $"{ _ticketState.Description}");
-            else
-                _messageDelete = $"Eliminare definitivamente il Tipo di : {_ticketState.Description}";
+            _loading = false;
 
             StateHasChanged();
-            JSRuntime.InvokeVoidAsync("ShowModal", "dlgDelete");
+        }
+
+        private async Task Delete(TicketState item)
+        {
+            if (await DialogService.Confirm($"{Localize["Eliminare definitivamente lo stato"]}: {item.Description}") == true)
+            {
+                await TicketService.DeleteAsync(item.Id);
+
+                await LoadData();
+            }
+        }
+
+        async Task EditRow(TicketState item)
+        {
+            if (!_grdTicketState.IsValid)
+                return;
+
+            Reset();
+
+            _itemsToUpdate.Add(item);
+            await _grdTicketState.EditRow(item);
+        }
+
+        private async Task OnUpdateRow(TicketState item)
+        {
+            Reset(item);
+
+            // Sync nullable enum back to int field before saving
+            if (item.idState.HasValue)
+            {
+                item.State = (int)item.idState.Value;
+            }
+
+            var resp = await TicketService.PostAsync(item);
+
+            await _grdTicketState.Reload();
 
         }
 
-        void OnChangeCompany(object value, string name)
+        private void CancelEdit(TicketState item)
         {
-            var str = value;
+            Reset(item);
+
+            _grdTicketState.CancelEditRow(item);
+
+        }
+
+        private async Task DeleteRow(TicketState item)
+        {
+            Reset(item);
+
+            if (await DialogService.Confirm($"{Localize["Eliminare definitivamente lo stato"]}: {item.Description}?") != true)
+            {
+                _grdTicketState.CancelEditRow(item);
+                return;
+            }
+            if (_items != null && _items.Contains(item))
+            {
+                await TicketService.DeleteAsync(item.Id);
+
+                await _grdTicketState.Reload();
+            }
+            else
+            {
+                _grdTicketState.CancelEditRow(item);
+                await _grdTicketState.Reload();
+            }
+        }
+
+        async Task InsertRow()
+        {
+            if (!_grdTicketState.IsValid)
+                return;
+
+            Reset();
+
+            var item = new TicketState();
+
+            // initialize helper enum
+            item.idState = null;
+
+            _itemsToInsert.Add(item);
+            await _grdTicketState.InsertRow(item);
+        }
+
+        async Task InsertAfterRow(TicketState row)
+        {
+            if (!_grdTicketState.IsValid) return;
+            Reset();
+
+            var item = new TicketState();
+            item.idState = null;
+            _itemsToInsert.Add(item);
+
+            await _grdTicketState.InsertAfterRow(item, row);
+        }
+
+        async Task OnCreateRow(TicketState item)
+        {
+            // Sync enum to int before creating
+            if (item.idState.HasValue)
+            {
+                item.State = (int)item.idState.Value;
+            }
+
+            var resp = await TicketService.PostAsync(item);
+            Reset(item);
+            await _grdTicketState.Reload();
+        }
+
+
+        void Reset(TicketState item)
+        {
+            _itemsToInsert.Remove(item);
+            _itemsToUpdate.Remove(item);
+        }
+
+
+        private void Reset()
+        {
+            _itemsToUpdate.Clear();
+            _itemsToInsert.Clear();
+        }
+
+        private async Task SaveRow(TicketState item)
+        {
+            if (!_grdTicketState.IsValid)
+                return;
+            await _grdTicketState.UpdateRow(item);
+        }
+        private void OnChange(string value, string name)
+        {
+        }
+        private void OnError(UploadErrorEventArgs args, string name)
+        {
         }
     }
 }
