@@ -142,6 +142,7 @@ namespace CRM.Client.Pages.Tickets
             }
             
             await LoadUsers();
+
             if (IdUser != null)
             {
                 _filterState = true;
@@ -196,7 +197,7 @@ namespace CRM.Client.Pages.Tickets
                 paging.IdCompany = IdCompany;
                 paging.IdProject = IdProject;
 
-                if (_filterState)
+                if (_idUser != null)
                     paging.IdUserAssigned = _idUser;
                 else
                     paging.IdUserAssigned = null;
@@ -305,12 +306,12 @@ namespace CRM.Client.Pages.Tickets
                 if (IdProject != null)
                     NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info/{IdProject}");
                 else if (IdCompany != null)
-                    NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info/Company/{IdCompany}");
+                    NavigationManager.NavigateTo($"Companies/{IdCompany}/Tickets/{idTicket}");
                 else if (_idUser != null)
-                    NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info/{TypeSearch}/{IdUser}");
+                    NavigationManager.NavigateTo($"/Tickets/{idTicket}/{TypeSearch}/{_idUser}");
                 else if (TypeSearch != (int)TicketTypeSearch.All)
                 {
-                    NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info/filter/{TypeSearch}");
+                    NavigationManager.NavigateTo($"/Tickets/{idTicket}/filter/{TypeSearch}");
                 }
                 else
                     NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info");
@@ -404,6 +405,7 @@ namespace CRM.Client.Pages.Tickets
 
         private async Task OnChangeIdUser()
         {
+            IdUser = _idUser;
             await LoadData();
         }
 

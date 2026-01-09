@@ -1,127 +1,529 @@
 ﻿@page "/Tickets/Preview/{Id:int}"
 
-<div class="container">
-
-    @if (_ticket == null)
-    {
+@if (_ticket == null)
+{
+    <div class="preview-loading">
         <Waiting></Waiting>
-    }
-    else
-    {
-       @* <BlazorHeader Header="@($"{Localize["Ticket #"]} {_ticket.Id}")"></BlazorHeader>
-*@
-    
-        <div class="row rounded-3 bg-light">
-            <div class="co">
-
-                <div class="row g-3">
-                    <div class="alert alert-warning" role="alert">
-                        <h4 class="alert-heading">Descrizione</h4>
-                         <p class="note-report">@_ticket.Description</p>  
-                    </div>
-
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th scope="col"></th>
-                                <th scope="col"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <th scope="row"><DisplayName For="@(() => _ticket.State)" /></th>
-                                <td style="background-color:@_ticket.StateColor"><span style="mix-blend-mode: difference;color:white">@_ticket.StateDesc</span></td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><DisplayName For="@(() => _ticket.DateOpened)" /></th>
-                                <td>@_ticket.DateOpened.ToString("G")</td>
-
-                            </tr>
-                            <tr>
-                                <th scope="row"><DisplayName For="@(() => _ticket.Company)" /></th>
-                                <td><span>@_ticket.Company.RagioneSociale</span></td>
-
-                            </tr>
-                            <tr>
-                                <th scope="row"><DisplayName For="@(() => _ticket.IdType)" /></th>
-                                <td><span>@_ticket.TicketType.Desc</span></td>
-                            </tr>
-
-                            @if (_ticket.TicketType.Date != (int)PropertyStates.No)
-                            {
-                                <tr>
-                                    <th scope="row"><DisplayName For="@(() => _ticket.Date)" /></th>
-                                    <td><span>@_ticket.Date?.ToShortDateString()</span></td>
-                                </tr>
-
-                                <tr>
-                                    <th scope="row"><DisplayName For="@(() => _ticket.DateEnd)" /></th>
-                                    <td><span>@_ticket.DateEnd?.ToShortTimeString()</span></td>
-                                </tr>
-
-                                <tr>
-                                    <th scope="row"><DisplayName For="@(() => _ticket.Date)" /></th>
-                                    <td><span>@_ticket.Date?.ToShortDateString()</span></td>
-                                </tr>
-                            }
-                            @if (_ticket.TicketType.IdArticolo != (int)PropertyStates.No)
-                            {
-                                <tr>
-                                    <th scope="row"><DisplayName For="@(() => _ticket.IdArticle)" /></th>
-                                    <td><span>@_ticket.Article?.NameComplete</span></td>
-                                </tr>
-
-
-                            }
-                            <tr>
-                                <th scope="row"><DisplayName For="@(() => _ticket.IdUserOpened)" /></th>
-                                <td><span>@_userOpened?.NameComplete</span></td>
-                            </tr>
-                            
-                            @* ✅ MODIFICATO: Visualizza tutti gli utenti assegnati *@
-                            <tr>
-                                <th scope="row">
-                                    @if (_assignedUsers.Count > 1)
-                                    {
-                                        <span>@Localize["Assigned Users"] (@_assignedUsers.Count)</span>
-                                    }
-                                    else
-                                    {
-                                        <DisplayName For="@(() => _ticket.IdUserAssigned)" />
-                                    }
-                                </th>
-                                <td>
-                                    @if (_assignedUsers.Any())
-                                    {
-                                        <ul class="list-unstyled mb-0">
-                                            @foreach (var user in _assignedUsers)
-                                            {
-                                                <li class="py-1">
-                                                    @if (_assignedUsers.IndexOf(user) == 0)
-                                                    {
-                                                        <span class="badge bg-primary me-1">★</span>
-                                                        <strong>@user.NameComplete</strong>
-                                                        <small class="text-muted ms-1">(principale)</small>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="badge bg-secondary me-1">👤</span>
-                                                        <span>@user.NameComplete</span>
-                                                    }
-                                                </li>
-                                            }
-                                        </ul>
-                                    }
-                                    else
-                                    {
-                                        <em class="text-muted">@Localize["Not Assigned"]</em>
-                                    }
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+    </div>
+}
+else
+{
+    <div class="modern-preview-container">
+        <!-- Header Card -->
+        <div class="preview-header-card">
+            <div class="header-content">
+                <div class="ticket-number">
+                    <span class="material-icons">confirmation_number</span>
+                    <h3>Ticket #@_ticket.Id</h3>
+                </div>
+                <div class="ticket-status" style="background: @_ticket.StateColor">
+                    <span class="status-text">@_ticket.StateDesc</span>
                 </div>
             </div>
         </div>
+
+        <!-- Description Card -->
+        <div class="description-card">
+            <div class="card-header-modern">
+                <span class="material-icons">description</span>
+                <h5>Descrizione</h5>
+            </div>
+            <div class="card-body-modern">
+                <p class="description-text">@_ticket.Description</p>
+            </div>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="info-grid">
+            <!-- Date/Time Section -->
+            @if (_ticket.TicketType.Date != (int)PropertyStates.No)
+            {
+                <div class="info-card">
+                    <div class="info-card-header">
+                        <span class="material-icons">event</span>
+                        <span class="info-label">Data e Orario</span>
+                    </div>
+                    <div class="info-card-body">
+                        <div class="info-row">
+                            <span class="info-key"><DisplayName For="@(() => _ticket.Date)" /></span>
+                            <span class="info-value">@(_ticket.Date?.ToShortDateString() ?? "-")</span>
+                        </div>
+                        @if (_ticket.TicketType.Time != (int)PropertyStates.No)
+                        {
+                            <div class="info-row">
+                                <span class="info-key"><DisplayName For="@(() => _ticket.Time)" /></span>
+                                <span class="info-value time-badge">
+                                    @if (_ticket.Time.HasValue)
+                                    {
+                                        <span class="material-icons">schedule</span>
+                                        @_ticket.Time.Value.ToString("HH:mm")
+                                    }
+                                    else
+                                    {
+                                        <text>-</text>
+                                    }
+                                </span>
+                            </div>
+                        }
+                        @if (_ticket.TicketType.DateEnd != (int)PropertyStates.No)
+                        {
+                            <div class="info-row">
+                                <span class="info-key"><DisplayName For="@(() => _ticket.DateEnd)" /></span>
+                                <span class="info-value">@(_ticket.DateEnd?.ToShortDateString() ?? "-")</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Company & Contact -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <span class="material-icons">business</span>
+                    <span class="info-label">Cliente</span>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-row">
+                        <span class="info-key"><DisplayName For="@(() => _ticket.Company)" /></span>
+                        <span class="info-value company-name">@_ticket.Company.RagioneSociale</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_ticket.Article?.NameComplete) && _ticket.TicketType.IdArticolo != (int)PropertyStates.No)
+                    {
+                        <div class="info-row">
+                            <span class="info-key"><DisplayName For="@(() => _ticket.IdArticle)" /></span>
+                            <span class="info-value">@_ticket.Article?.NameComplete</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Ticket Type -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <span class="material-icons">category</span>
+                    <span class="info-label">Tipo e Dettagli</span>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-row">
+                        <span class="info-key"><DisplayName For="@(() => _ticket.IdType)" /></span>
+                        <span class="info-value">@_ticket.TicketType.Desc</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-key"><DisplayName For="@(() => _ticket.DateOpened)" /></span>
+                        <span class="info-value">@_ticket.DateOpened.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Section -->
+            <div class="info-card users-card">
+                <div class="info-card-header">
+                    <span class="material-icons">people</span>
+                    <span class="info-label">Utenti</span>
+                </div>
+                <div class="info-card-body">
+                    <!-- User Opened -->
+                    <div class="info-row">
+                        <span class="info-key"><DisplayName For="@(() => _ticket.IdUserOpened)" /></span>
+                        <span class="info-value">
+                            <div class="user-badge-inline">
+                                <span class="user-avatar-small">@GetUserInitials(_userOpened?.NameComplete)</span>
+                                <span>@_userOpened?.NameComplete</span>
+                            </div>
+                        </span>
+                    </div>
+
+                    <!-- Assigned Users -->
+                    <div class="assigned-users-section">
+                        <div class="assigned-header">
+                            <span class="assigned-label">
+                                @if (_assignedUsers.Count > 1)
+                                {
+                                    <text>@Localize["Assigned Users"] (@_assignedUsers.Count)</text>
+                                }
+                                else
+                                {
+                                    <DisplayName For="@(() => _ticket.IdUserAssigned)" />
+                                }
+                            </span>
+                        </div>
+                        <div class="assigned-users-list">
+                            @if (_assignedUsers.Any())
+                            {
+                                @foreach (var user in _assignedUsers)
+                                {
+                                    var isMain = _assignedUsers.IndexOf(user) == 0;
+                                    <div class="assigned-user-item @(isMain ? "main-user" : "")">
+                                        <span class="user-avatar">@GetUserInitials(user.NameComplete)</span>
+                                        <div class="user-info">
+                                            <span class="user-name">@user.NameComplete</span>
+                                            @if (isMain)
+                                            {
+                                                <span class="main-badge">★ Principale</span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="no-users">
+                                    <span class="material-icons">person_off</span>
+                                    <em>@Localize["Not Assigned"]</em>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .preview-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
     }
-</div>
+
+    .modern-preview-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Header Card */
+    .preview-header-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .ticket-number {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: white;
+    }
+
+    .ticket-number .material-icons {
+        font-size: 2rem;
+    }
+
+    .ticket-number h3 {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 700;
+    }
+
+    .ticket-status {
+        padding: 0.5rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .status-text {
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+        mix-blend-mode: difference;
+    }
+
+    /* Description Card */
+    .description-card {
+        background: white;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .card-header-modern {
+        background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%);
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-bottom: 2px solid #fbbf24;
+    }
+
+    .card-header-modern .material-icons {
+        color: #d97706;
+        font-size: 1.5rem;
+    }
+
+    .card-header-modern h5 {
+        margin: 0;
+        color: #92400e;
+        font-weight: 600;
+    }
+
+    .card-body-modern {
+        padding: 1.5rem;
+    }
+
+    .description-text {
+        margin: 0;
+        color: #374151;
+        font-size: 1rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+
+    /* Info Grid */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .info-card-header {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-bottom: 2px solid #0ea5e9;
+    }
+
+    .info-card-header .material-icons {
+        color: #0284c7;
+        font-size: 1.25rem;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #0c4a6e;
+        font-size: 0.95rem;
+    }
+
+    .info-card-body {
+        padding: 1.25rem;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f3f4f6;
+        gap: 1rem;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-key {
+        color: #6b7280;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .info-value {
+        color: #1f2937;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .company-name {
+        color: #667eea;
+    }
+
+    .time-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: rgba(102, 126, 234, 0.1);
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+        color: #667eea !important;
+    }
+
+    .time-badge .material-icons {
+        font-size: 1rem;
+    }
+
+    /* Users Card */
+    .users-card {
+        grid-column: 1 / -1;
+    }
+
+    .user-badge-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .user-avatar-small {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 50%;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .assigned-users-section {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 2px solid #e5e7eb;
+    }
+
+    .assigned-header {
+        margin-bottom: 1rem;
+    }
+
+    .assigned-label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.95rem;
+    }
+
+    .assigned-users-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .assigned-user-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .assigned-user-item:hover {
+        background: #f3f4f6;
+    }
+
+    .assigned-user-item.main-user {
+        background: linear-gradient(90deg, #dbeafe 0%, #f9fafb 100%);
+        border-left: 3px solid #667eea;
+    }
+
+    .user-avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 50%;
+        font-size: 0.85rem;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .assigned-user-item.main-user .user-avatar {
+        border: 2px solid #667eea;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex: 1;
+    }
+
+    .user-name {
+        color: #374151;
+        font-weight: 500;
+    }
+
+    .main-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .no-users {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 2rem;
+        color: #9ca3af;
+    }
+
+    .no-users .material-icons {
+        font-size: 2rem;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .modern-preview-container {
+            padding: 1rem;
+        }
+
+        .preview-header-card {
+            padding: 1rem 1.25rem;
+        }
+
+        .ticket-number h3 {
+            font-size: 1.5rem;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .info-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .info-value {
+            text-align: left;
+        }
+    }
+</style>

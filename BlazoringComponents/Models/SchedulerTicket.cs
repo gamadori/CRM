@@ -11,8 +11,10 @@ namespace BlazoringComponents.Models
         public string Id { get; set; }
         public DateTime DateStart { get; set; }
 
-        public DateTime? TimeStart { get; set; }
-       
+        public TimeOnly? TimeStart { get; set; }
+
+        public TimeOnly? TimeEnd { get; set; }
+
         public DateTime DateEnd { get; set; }
 
         public string BackGroundColor { get; set; }

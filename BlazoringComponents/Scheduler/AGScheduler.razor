@@ -2,83 +2,112 @@
 @using Radzen
 @using Radzen.Blazor
 
-<h3>Scheduler</h3>
-
-<nav class="navbar navbar-fill navbar-light" style="overflow:scroll">
-    <div class="container-fluid">
-
-        @Filter
-
-        <div class="form-floating">
-           
-            <input type="date" @onchange="OnChangeDate" class="form-control" id="dataCurrent" value="@DateCurrent.Date.ToString("yyyy-MM-dd")" disabled="@DateLocked" />
-            <label for="dataCurrent">@Localize["Date"]</label>
-        </div>
-        
-        <div class="d-flex justify-content-center">
-            <h4 class="color-primary">@_period</h4>
+<div class="modern-scheduler-wrapper">
+    <!-- Modern Toolbar -->
+    <div class="scheduler-toolbar">
+        <!-- Left: Filter -->
+        <div class="toolbar-section toolbar-left">
+            @Filter
         </div>
 
+        <!-- Center: Navigation & Date -->
+        <div class="toolbar-section toolbar-center">
+            <div class="date-navigation">
+                <!-- Previous Button -->
+                <RadzenButton Icon="chevron_left" 
+                             ButtonStyle="ButtonStyle.Primary" 
+                             Variant="Variant.Flat" 
+                             Size="ButtonSize.Medium" 
+                             Disabled="@DateLocked"
+                             Click="Previous"
+                             class="nav-btn" />
 
-        <div class="btn-group" role="group" aria-label="Basic example">
-            @*<RadzenButton ButtonStyle="ButtonStyle.Secondary" Disabled=@DateLocked ButtonType="ButtonType.Button" Click="Previous">&lt;</RadzenButton>
-            <RadzenButton ButtonStyle="ButtonStyle.Primary" Disabled=@DateLocked ButtonType="ButtonType.Button" Click="Next">&gt;</RadzenButton>*@
-            <button type="button" class="btn btn-primary" @onclick="Previous">&lt;</button>
-            <button type="button" class="btn btn-primary" @onclick="Next">&gt;</button>
+                <!-- Date Picker & Period -->
+                <div class="date-info-container">
+                    <div class="date-picker-wrapper">
+                        <input type="date" 
+                               @onchange="OnChangeDate" 
+                               class="form-control date-input" 
+                               id="dataCurrent" 
+                               value="@DateCurrent.Date.ToString("yyyy-MM-dd")" 
+                               disabled="@DateLocked" />
+                        <span class="material-icons date-icon">calendar_today</span>
+                    </div>
+                    <div class="period-display">
+                        <h5 class="period-text">@_period</h5>
+                    </div>
+                </div>
+
+                <!-- Next Button -->
+                <RadzenButton Icon="chevron_right" 
+                             ButtonStyle="ButtonStyle.Primary" 
+                             Variant="Variant.Flat" 
+                             Size="ButtonSize.Medium" 
+                             Disabled="@DateLocked"
+                             Click="Next"
+                             class="nav-btn" />
+
+                <!-- Today Button -->
+                <RadzenButton Text="@Localize["Today"]" 
+                             Icon="today"
+                             ButtonStyle="ButtonStyle.Success" 
+                             Variant="Variant.Flat" 
+                             Size="ButtonSize.Medium" 
+                             Disabled="@DateLocked"
+                             Click="Today"
+                             class="today-btn" />
+            </div>
         </div>
-        
-        <Radzen.Blazor.RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Disabled=@DateLocked ButtonType="Radzen.ButtonType.Button" Click="Today">@Localize["Today"]</Radzen.Blazor.RadzenButton>
-        
-        <div class="d-flex justify-content-end">
-          
-            <RadzenSelectBar @bind-Value="CurrentView" Change="ViewChanged" TValue="SchedulerViews">
+
+        <!-- Right: View Selector -->
+        <div class="toolbar-section toolbar-right">
+            <RadzenSelectBar @bind-Value="CurrentView" Change="ViewChanged" TValue="SchedulerViews" class="view-selector">
                 <Items>
-
-                    <RadzenSelectBarItem Text=@Localize["Month"] Icon="calendar_view_month" Value="SchedulerViews.Month" />
-                    <RadzenSelectBarItem Text=@Localize["Week"] Icon="calendar_view_week" Value="SchedulerViews.Week" />
-                    <RadzenSelectBarItem Text=@Localize["Day"] Icon="calendar_view_day" Value="SchedulerViews.Day" />
-
+                    <RadzenSelectBarItem Text="@Localize["Month"]" Icon="calendar_view_month" Value="SchedulerViews.Month" />
+                    <RadzenSelectBarItem Text="@Localize["Week"]" Icon="calendar_view_week" Value="SchedulerViews.Week" />
+                    <RadzenSelectBarItem Text="@Localize["Day"]" Icon="calendar_view_day" Value="SchedulerViews.Day" />
                 </Items>
             </RadzenSelectBar>
         </div>
-       
     </div>
-</nav>
 
-<CascadingValue Value="Items" TValue="IEnumerable<TItem>" Name="Tickets">
-    <CascadingValue Value="DateCurrent.Date" TValue="DateTime" Name="DateCurrent">
-        <CascadingValue Value="DateProperty" TValue="string" Name="DateProperty">
-            <CascadingValue Value="TimeProperty" TValue="string" Name="TimeProperty">
-                <CascadingValue Value="DateEndProperty" TValue="string" Name="DateEndProperty">
-                    <CascadingValue Value="CompanyProperty" TValue="string" Name="CompanyProperty">
-                        <CascadingValue Value="UserProperty" TValue="string" Name="UserProperty">
-                            <CascadingValue Value="BackColorProperty" TValue="string" Name="BackColorProperty">
-                                <CascadingValue Value="DescriptionProperty" TValue="string" Name="DescriptionProperty">
-                                    <CascadingValue Value="DateLocked" TValue="bool" Name="DateLocked">
-                                        <CascadingValue Value="CurrentView" TValue="SchedulerViews" Name="CurrentView">
-                                            <CascadingValue Value="OnNewTicket" TValue="EventCallback<DateTime>" Name="OnNewTicket">
-                                                <CascadingValue Value="ViewMode" TValue="SchedulerViewMode" Name="ViewMode">
+    <!-- Scheduler Content -->
+    <div class="scheduler-content">
+        <CascadingValue Value="Items" TValue="IEnumerable<TItem>" Name="Tickets">
+            <CascadingValue Value="DateCurrent.Date" TValue="DateTime" Name="DateCurrent">
+                <CascadingValue Value="DateProperty" TValue="string" Name="DateProperty">
+                    <CascadingValue Value="TimeProperty" TValue="string" Name="TimeProperty">
+                        <CascadingValue Value="DateEndProperty" TValue="string" Name="DateEndProperty">
+                            <CascadingValue Value="CompanyProperty" TValue="string" Name="CompanyProperty">
+                                <CascadingValue Value="UserProperty" TValue="string" Name="UserProperty">
+                                    <CascadingValue Value="BackColorProperty" TValue="string" Name="BackColorProperty">
+                                        <CascadingValue Value="DescriptionProperty" TValue="string" Name="DescriptionProperty">
+                                            <CascadingValue Value="DateLocked" TValue="bool" Name="DateLocked">
+                                                <CascadingValue Value="CurrentView" TValue="SchedulerViews" Name="CurrentView">
+                                                    <CascadingValue Value="OnNewTicket" TValue="EventCallback<DateTime>" Name="OnNewTicket">
+                                                        <CascadingValue Value="ViewMode" TValue="SchedulerViewMode" Name="ViewMode">
 
-                                                    @if (Loading)
-                                                    {
-                                                        <WaitingSpinner></WaitingSpinner>
-                                                    }
-                                                    else
-                                                    {
-                                                        @if (CurrentView == SchedulerViews.Week)
-                                                        {
-                                                            <AGWeekScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal"></AGWeekScheduler>
-                                                        }
-                                                        else if (CurrentView == SchedulerViews.Day)
-                                                        {
-                                                            <AGDayScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal"></AGDayScheduler>
-                                                        }
-                                                        else
-                                                        {
-                                                            <AGMonthScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal" OpenDaylyScheduler="OpenDaylyScheduler"></AGMonthScheduler>
-
-                                                        }
-                                                    }
+                                                            @if (Loading)
+                                                            {
+                                                                <WaitingSpinner></WaitingSpinner>
+                                                            }
+                                                            else
+                                                            {
+                                                                @if (CurrentView == SchedulerViews.Week)
+                                                                {
+                                                                    <AGWeekScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal"></AGWeekScheduler>
+                                                                }
+                                                                else if (CurrentView == SchedulerViews.Day)
+                                                                {
+                                                                    <AGDayTimelineScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal"></AGDayTimelineScheduler>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <AGMonthScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal" OpenDaylyScheduler="OpenDaylyScheduler"></AGMonthScheduler>
+                                                                }
+                                                            }
+                                                        </CascadingValue>
+                                                    </CascadingValue>
                                                 </CascadingValue>
                                             </CascadingValue>
                                         </CascadingValue>
@@ -90,10 +119,11 @@
                 </CascadingValue>
             </CascadingValue>
         </CascadingValue>
-    </CascadingValue>
-</CascadingValue>
+    </div>
+</div>
 
-<div class="offcanvas offcanvas-top h-auto"  tabindex="-1" id="modalDetails" aria-labelledby="offcanvasTopLabel">
+<!-- Detail Modal -->
+<div class="offcanvas offcanvas-top h-auto" tabindex="-1" id="modalDetails" aria-labelledby="offcanvasTopLabel">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="offcanvasTopLabel">@($"{Localize["Ticket"]} #{_id}")</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -103,17 +133,232 @@
         @if (_id != null && Details != null)
         {
             @Details(_id)
-            
         }
     </div>
 
     <div class="offcanvas-footer">
         <div class="container">
             <div class="m-3">
-               
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="offcanvas">@Localize["Close"]</button>
                 <button type="button" class="btn btn-primary" @onclick="()=>OpenTicket(_id)">@Localize["Open"]</button>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .modern-scheduler-wrapper {
+        background: #f8f9fa;
+        min-height: 100vh;
+    }
+
+    /* Toolbar */
+    .scheduler-toolbar {
+        background: white;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+    .toolbar-section {
+        display: flex;
+        align-items: center;
+    }
+
+    .toolbar-left {
+        justify-content: flex-start;
+    }
+
+    .toolbar-center {
+        justify-content: center;
+    }
+
+    .toolbar-right {
+        justify-content: flex-end;
+    }
+
+    /* Date Navigation */
+    .date-navigation {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    .nav-btn {
+        transition: all 0.3s ease;
+    }
+
+    .nav-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .today-btn {
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .today-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+
+    /* Date Info Container */
+    .date-info-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+        min-width: 280px;
+    }
+
+    /* Date Picker */
+    .date-picker-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .date-input {
+        padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #374151;
+        background: white;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+    .date-input:hover:not(:disabled) {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .date-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+    }
+
+    .date-input:disabled {
+        background: #f3f4f6;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .date-icon {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #667eea;
+        font-size: 20px;
+        pointer-events: none;
+    }
+
+    /* Period Display */
+    .period-display {
+        text-align: center;
+        padding: 0.25rem 0.75rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .period-text {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        white-space: nowrap;
+    }
+
+    /* View Selector */
+    .view-selector {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        border-radius: 8px;
+    }
+
+    /* Scheduler Content */
+    .scheduler-content {
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive */
+    @@media (max-width: 1400px) {
+        .scheduler-toolbar {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .toolbar-section {
+            justify-content: center !important;
+        }
+
+        .date-navigation {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .date-navigation {
+            padding: 0.5rem 0.75rem;
+            gap: 0.75rem;
+        }
+
+        .date-info-container {
+            min-width: 240px;
+        }
+
+        .period-text {
+            font-size: 1rem;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .scheduler-toolbar {
+            padding: 1rem;
+        }
+
+        .date-navigation {
+            flex-direction: column;
+            gap: 0.75rem;
+            padding: 1rem;
+        }
+
+        .date-info-container {
+            width: 100%;
+        }
+
+        .nav-btn,
+        .today-btn {
+            width: 100%;
+        }
+
+        .period-text {
+            font-size: 0.95rem;
+        }
+    }
+</style>

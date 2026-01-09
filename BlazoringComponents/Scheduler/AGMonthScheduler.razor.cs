@@ -94,7 +94,7 @@ namespace BlazoringComponents.Scheduler
                 var model = new SchedulerTicket();
                 model.Id = item.GetPropertyValue<object>("Id").ToString();
                 model.DateStart = item.GetPropertyValue<DateTime>(DateProperty).Date;
-                model.TimeStart = item.GetPropertyValue<DateTime>(TimeProperty);
+                model.TimeStart = item.GetPropertyValue<TimeOnly>(TimeProperty);
                 model.DateEnd = item.GetPropertyValue<DateTime>(DateEndProperty).Date;
                 model.User = item.GetPropertyValue<string>(UserProperty);
                 model.Company = item.GetPropertyValue<string>(CompanyProperty);

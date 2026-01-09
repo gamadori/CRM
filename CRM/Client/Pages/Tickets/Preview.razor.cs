@@ -169,5 +169,30 @@ namespace CRM.Client.Pages.Tickets
 
         }
 
+        /// <summary>
+        /// ✅ NUOVO: Estrae le iniziali dal nome completo dell'utente
+        /// </summary>
+        private string GetUserInitials(string fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+                return "?";
+
+            var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2)
+            {
+                return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+            }
+            else if (parts.Length == 1 && parts[0].Length >= 2)
+            {
+                return parts[0].Substring(0, 2).ToUpper();
+            }
+            else if (parts.Length == 1)
+            {
+                return parts[0][0].ToString().ToUpper();
+            }
+
+            return "?";
+        }
+
     }
 }

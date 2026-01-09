@@ -30,7 +30,10 @@ else
                 <nav aria-label="breadcrumb" class="mb-2">
                     <ol class="breadcrumb mb-0">
                         <li class="breadcrumb-item">
-                            <a href="/" class="text-decoration-none">
+                            <a href="/" 
+                               class="text-decoration-none breadcrumb-link"
+                               @onclick="@(() => NavigateToUrl("/"))"
+                               @onclick:preventDefault="true">
                                 <span class="material-icons" style="font-size: 16px; vertical-align: middle;">home</span>
                             </a>
                         </li>
@@ -45,7 +48,12 @@ else
                                 <li class="breadcrumb-item">
                                     @if (!string.IsNullOrEmpty(item.Url))
                                     {
-                                        <a href="@item.Url" class="text-decoration-none">@item.Text</a>
+                                        <a href="@item.Url" 
+                                           class="text-decoration-none breadcrumb-link"
+                                           @onclick="@(() => NavigateToUrl(item.Url))"
+                                           @onclick:preventDefault="true">
+                                            @item.Text
+                                        </a>
                                     }
                                     else
                                     {
@@ -127,18 +135,39 @@ else
         color: #6c757d;
     }
 
-    .breadcrumb-item a {
+    .breadcrumb-link {
         color: #667eea;
-        transition: color 0.2s ease;
+        transition: all 0.2s ease;
+        position: relative;
+        cursor: pointer;
     }
 
-    .breadcrumb-item a:hover {
+    .breadcrumb-link:hover {
         color: #5a67d8;
+    }
+
+    .breadcrumb-link:active {
+        transform: scale(0.95);
     }
 
     .breadcrumb-item.active {
         color: #6c757d;
         font-weight: 500;
+    }
+
+    /* Loading animation quando si forza il reload */
+    @@keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.6;
+        }
+    }
+
+    .breadcrumb-link.loading {
+        animation: pulse 0.5s ease-in-out;
+        pointer-events: none;
     }
 
     @@keyframes fadeInDown {
@@ -236,6 +265,39 @@ else
             {
                 // ignore errors
             }
+        }
+    }
+
+    /// <summary>
+    /// ? NUOVO: Naviga all'URL specificato, forzando il reload se è la stessa pagina
+    /// </summary>
+    private void NavigateToUrl(string url)
+    {
+        if (string.IsNullOrEmpty(url))
+            return;
+
+        // Normalizza gli URL per il confronto (rimuovi trailing slash, query params, ecc.)
+        var currentPath = new Uri(NavigationManager.Uri).LocalPath.TrimEnd('/');
+        var targetPath = url.TrimEnd('/');
+
+        // Se l'URL è relativo, convertilo in assoluto per il confronto
+        if (!url.StartsWith("http"))
+        {
+            var absoluteUrl = NavigationManager.ToAbsoluteUri(url);
+            targetPath = absoluteUrl.LocalPath.TrimEnd('/');
+        }
+
+        if (currentPath.Equals(targetPath, StringComparison.OrdinalIgnoreCase))
+        {
+            // ? STESSO URL: Forza reload completo della pagina
+            Console.WriteLine($"?? Breadcrumb: Force reload same page: {url}");
+            NavigationManager.NavigateTo(url, forceLoad: true);
+        }
+        else
+        {
+            // ? URL DIVERSO: Navigazione normale Blazor (no page reload)
+            Console.WriteLine($"?? Breadcrumb: Navigate to: {url}");
+            NavigationManager.NavigateTo(url, forceLoad: false);
         }
     }
 

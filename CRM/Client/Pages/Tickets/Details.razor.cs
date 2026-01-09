@@ -68,6 +68,9 @@ namespace CRM.Client.Pages.Tickets
         public string BackUrl { get; set; }
 
         [Parameter]
+        public int? IdCompany { get; set; }
+
+        [Parameter]
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
 

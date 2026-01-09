@@ -67,7 +67,7 @@ namespace CRM.Server.Controllers
             
             if (state != null)
             {
-                var items = tickets.Where(x => x.IdState != state.Id);
+                var items = tickets.Where(x=>x.Closed != true);
 
                 if (filter?.IdUser != null)
                     items = items.Where(x => x.IdUserAssigned == filter.IdUser);

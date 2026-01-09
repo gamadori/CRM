@@ -1,0 +1,506 @@
+@page "/Tickets/Timeline"
+@using Models
+@using Radzen
+@using Radzen.Blazor
+
+<div class="timeline-scheduler-container">
+    <!-- Toolbar Header -->
+    <div class="timeline-toolbar">
+        <div class="toolbar-left">
+            <RadzenButton Click="@GoBackToScheduler" Icon="arrow_back" ButtonStyle="ButtonStyle.Light" 
+                         Variant="Variant.Flat" Size="ButtonSize.Medium" Text="@Localize["Torna al Calendario"]" />
+        </div>
+
+        <div class="toolbar-center">
+            <RadzenButton Click="@PreviousDay" Icon="chevron_left" ButtonStyle="ButtonStyle.Primary" 
+                         Variant="Variant.Flat" Size="ButtonSize.Medium" />
+            
+            <RadzenButton Click="@Today" Text="@Localize["Oggi"]" ButtonStyle="ButtonStyle.Success" 
+                         Variant="Variant.Flat" Size="ButtonSize.Medium" class="mx-2" />
+            
+            <h4 class="current-date-label">@DateCurrent.ToString("dddd, dd MMMM yyyy")</h4>
+            
+            <RadzenButton Click="@NextDay" Icon="chevron_right" ButtonStyle="ButtonStyle.Primary" 
+                         Variant="Variant.Flat" Size="ButtonSize.Medium" />
+        </div>
+
+        <div class="toolbar-right">
+            <RadzenButton Click="@(() => NewTicket(null))" Icon="add" ButtonStyle="ButtonStyle.Success" 
+                         Variant="Variant.Flat" Size="ButtonSize.Medium" Text="@Localize["Nuovo Ticket"]" />
+        </div>
+    </div>
+
+    <!-- Filtro Utente -->
+    <div class="timeline-filter">
+        <div class="form-floating" style="max-width: 400px;">
+            <RadzenDropDownDataGrid class="form-control" @bind-value="@IdUserAssigned" TValue="string" 
+                                   AllowFiltering="true" AllowClear="true" Change="OnChangeIdUser" 
+                                   FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive
+                                   Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id">
+                <Columns>
+                    <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" 
+                                                 Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
+                    <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" 
+                                                 Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
+                </Columns>
+            </RadzenDropDownDataGrid>
+            <label>@Localize["Filtra per Utente"]</label>
+        </div>
+    </div>
+
+    <!-- Timeline principale -->
+    @if (_loading)
+    {
+        <div class="timeline-loading">
+            <RadzenProgressBarCircular ShowValue="true" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Large">
+                <Template><Waiting></Waiting></Template>
+            </RadzenProgressBarCircular>
+        </div>
+    }
+    else
+    {
+        <div class="timeline-content">
+            <!-- Ticket senza orario -->
+            @if (_ticketsWithoutTime.Any())
+            {
+                <div class="no-time-section">
+                    <div class="section-header">
+                        <span class="material-icons">event_available</span>
+                        <h5>@Localize["Ticket senza orario specifico"] (@_ticketsWithoutTime.Count)</h5>
+                    </div>
+                    <div class="tickets-grid">
+                        @foreach (var ticket in _ticketsWithoutTime)
+                        {
+                            <div class="ticket-card no-time" style="border-left-color: @ticket.BackColor">
+                                <div class="ticket-card-header">
+                                    <span class="ticket-id">#@ticket.Id</span>
+                                    @if (ticket.AssignedUserNames.Any())
+                                    {
+                                        <div class="assigned-users">
+                                            @foreach (var userName in ticket.AssignedUserNames.Take(3))
+                                            {
+                                                <span class="user-badge" title="@userName">@GetUserInitials(userName)</span>
+                                            }
+                                            @if (ticket.AssignedUserNames.Count > 3)
+                                            {
+                                                <span class="user-badge more">+@(ticket.AssignedUserNames.Count - 3)</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                <div class="ticket-card-body">
+                                    <div class="ticket-company">@ticket.Company</div>
+                                    <div class="ticket-description">@ticket.Description</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Timeline oraria -->
+            <div class="timeline-grid">
+                @foreach (var slot in _timeSlots)
+                {
+                    var hasTickets = _ticketsByTimeSlot.ContainsKey(slot) && _ticketsByTimeSlot[slot].Any();
+                    <div class="timeline-slot @(hasTickets ? "has-tickets" : "")">
+                        <div class="time-label">
+                            <span class="time-text">@slot.Label</span>
+                            <span class="time-range">@slot.Start.ToString("HH:mm") - @slot.End.ToString("HH:mm")</span>
+                        </div>
+                        <div class="slot-content">
+                            @if (hasTickets)
+                            {
+                                @foreach (var ticket in _ticketsByTimeSlot[slot])
+                                {
+                                    <div class="ticket-card timed" style="border-left-color: @ticket.BackColor" 
+                                         @onclick="@(() => ShowTicketDetails(ticket.Id))">
+                                        <div class="ticket-card-header">
+                                            <span class="ticket-time">@ticket.Time?.ToString("HH:mm")</span>
+                                            <span class="ticket-id">#@ticket.Id</span>
+                                            @if (ticket.AssignedUserNames.Any())
+                                            {
+                                                <div class="assigned-users">
+                                                    @foreach (var userName in ticket.AssignedUserNames.Take(2))
+                                                    {
+                                                        <span class="user-badge" title="@userName">@GetUserInitials(userName)</span>
+                                                    }
+                                                    @if (ticket.AssignedUserNames.Count > 2)
+                                                    {
+                                                        <span class="user-badge more">+@(ticket.AssignedUserNames.Count - 2)</span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="ticket-card-body">
+                                            <div class="ticket-company">@ticket.Company</div>
+                                            <div class="ticket-description">@ticket.Description</div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="empty-slot" @onclick="@(() => NewTicket(slot.Start))">
+                                    <span class="material-icons">add_circle_outline</span>
+                                    <span>@Localize["Aggiungi ticket"]</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .timeline-scheduler-container {
+        background: #f8f9fa;
+        min-height: 100vh;
+        padding: 1.5rem;
+    }
+
+    /* Toolbar */
+    .timeline-toolbar {
+        background: white;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .toolbar-left, .toolbar-right {
+        flex: 0 0 auto;
+    }
+
+    .toolbar-center {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .current-date-label {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #333;
+        min-width: 300px;
+        text-align: center;
+    }
+
+    /* Filtro */
+    .timeline-filter {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Loading */
+    .timeline-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+    }
+
+    /* Timeline Content */
+    .timeline-content {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    /* No Time Section */
+    .no-time-section {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        color: #667eea;
+    }
+
+    .section-header .material-icons {
+        font-size: 28px;
+    }
+
+    .section-header h5 {
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .tickets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+    }
+
+    /* Timeline Grid */
+    .timeline-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .timeline-slot {
+        display: grid;
+        grid-template-columns: 150px 1fr;
+        gap: 1rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        transition: background 0.2s ease;
+    }
+
+    .timeline-slot:hover {
+        background: #f9fafb;
+    }
+
+    .timeline-slot.has-tickets {
+        background: linear-gradient(90deg, #f0f9ff 0%, white 20%);
+    }
+
+    /* Time Label */
+    .time-label {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        padding-right: 1rem;
+        border-right: 3px solid #667eea;
+    }
+
+    .time-text {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #667eea;
+        line-height: 1;
+    }
+
+    .time-range {
+        font-size: 0.75rem;
+        color: #9ca3af;
+        margin-top: 0.25rem;
+    }
+
+    /* Slot Content */
+    .slot-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        min-height: 60px;
+    }
+
+    /* Ticket Card */
+    .ticket-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        border-left: 4px solid #667eea;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .ticket-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        transform: translateX(4px);
+    }
+
+    .ticket-card.timed {
+        background: linear-gradient(135deg, #fff 0%, #f9fafb 100%);
+    }
+
+    .ticket-card.no-time {
+        background: linear-gradient(135deg, #fef3c7 0%, #fff 100%);
+    }
+
+    .ticket-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .ticket-time {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+
+    .ticket-id {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #6b7280;
+        background: #f3f4f6;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .assigned-users {
+        display: flex;
+        gap: 0.25rem;
+        margin-left: auto;
+    }
+
+    .user-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 50%;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 2px solid white;
+    }
+
+    .user-badge.more {
+        background: #9ca3af;
+        font-size: 0.7rem;
+    }
+
+    .ticket-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .ticket-company {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.95rem;
+    }
+
+    .ticket-description {
+        color: #6b7280;
+        font-size: 0.875rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Empty Slot */
+    .empty-slot {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1.5rem;
+        border: 2px dashed #e5e7eb;
+        border-radius: 8px;
+        color: #9ca3af;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .empty-slot:hover {
+        border-color: #667eea;
+        background: #f0f9ff;
+        color: #667eea;
+    }
+
+    .empty-slot .material-icons {
+        font-size: 24px;
+    }
+
+    /* Responsive */
+    @@media (max-width: 1200px) {
+        .timeline-slot {
+            grid-template-columns: 120px 1fr;
+        }
+
+        .time-text {
+            font-size: 1.25rem;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .timeline-scheduler-container {
+            padding: 1rem;
+        }
+
+        .timeline-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .toolbar-center {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .current-date-label {
+            font-size: 1.1rem;
+            min-width: unset;
+        }
+
+        .timeline-slot {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+
+        .time-label {
+            align-items: flex-start;
+            border-right: none;
+            border-bottom: 2px solid #667eea;
+            padding-right: 0;
+            padding-bottom: 0.5rem;
+        }
+
+        .tickets-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+@code {
+    private string GetUserInitials(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "?";
+
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        else if (parts.Length == 1 && parts[0].Length >= 2)
+        {
+            return parts[0].Substring(0, 2).ToUpper();
+        }
+        else if (parts.Length == 1)
+        {
+            return parts[0][0].ToString().ToUpper();
+        }
+
+        return "?";
+    }
+
+    private async Task ShowTicketDetails(int ticketId)
+    {
+        await DialogService.OpenAsync<Preview>(
+            $"Ticket #{ticketId}",
+            new Dictionary<string, object> { { "IdTicket", ticketId }, { "ViewCommands", false } },
+            new DialogOptions { Width = "800px", Height = "auto" }
+        );
+    }
+}

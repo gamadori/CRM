@@ -1,71 +1,357 @@
 ﻿@using Radzen
 @using Radzen.Blazor
 
-<RadzenCard Class="alert p-1" Style="@_styleTicket" MouseLeave="CloseTooltip" MouseEnter=@(args => ShowTooltip(args))
-         @onclick="HandleCardClick">
-    <div class="row">
-        <span style="mix-blend-mode: difference; color: white">
-            <small class="fw-bold">
-                @Ticket.Company
-            </small>
-        </span>
-    </div>
-    <div class="row position-relative">
+<div class="modern-ticket-card" 
+     style="border-left-color: @Ticket.BackGroundColor" 
+     @onclick="HandleCardClick"
+     @onmouseleave="CloseTooltip">
+    
+    <div class="ticket-card-header">
+        <!-- Time (se disponibile) -->
+        @if (Ticket.TimeStart.HasValue && Ticket.TimeStart.Value != TimeOnly.MinValue)
+        {
+            <span class="ticket-time">@Ticket.TimeStart.Value.ToString("HH:mm")</span>
+        }
+        
+        <!-- Ticket ID -->
+        <span class="ticket-id">#@Ticket.Id</span>
+
+        <!-- Assigned Users Badges -->
         @if (Ticket.AssignedUserNames != null && Ticket.AssignedUserNames.Any())
         {
-            @* ✅ VISUALIZZAZIONE MULTIPLA: Badge utenti con contatore *@
-            <span style="mix-blend-mode: difference; color: white" title="@GetAssignedUsersTooltip()">
-                @Ticket.AssignedUserNames.First()
-                @if (Ticket.AssignedUserNames.Count > 1)
+            <div class="assigned-users">
+                @foreach (var userName in Ticket.AssignedUserNames.Take(3))
                 {
-                    <span class="badge bg-primary ms-1" title="Clicca per vedere tutti gli utenti"
-                          @onclick="ToggleUsersPanel" @onclick:stopPropagation="true"
-                          style="cursor: pointer;">
-                        +@(Ticket.AssignedUserNames.Count - 1)
+                    <span class="user-badge" title="@userName">@GetUserInitials(userName)</span>
+                }
+                @if (Ticket.AssignedUserNames.Count > 3)
+                {
+                    <span class="user-badge more" 
+                          title="@GetAssignedUsersTooltip()"
+                          @onclick="ToggleUsersPanel" 
+                          @onclick:stopPropagation="true">
+                        +@(Ticket.AssignedUserNames.Count - 3)
                     </span>
                 }
-            </span>
-            
-            @* 📋 Pannello elenco utenti *@
-            @if (_showUsersPanel && Ticket.AssignedUserNames.Count > 1)
-            {
-                <div class="users-panel position-absolute bg-white border rounded shadow-sm p-2"
-                     style="top: 100%; left: 0; z-index: 1050; min-width: 200px; max-width: 300px;"
-                     @onclick:stopPropagation="true">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong class="text-dark" style="font-size: 0.85rem;">Utenti Assegnati</strong>
-                        <button type="button" class="btn-close btn-close-sm" @onclick="ToggleUsersPanel" 
-                                aria-label="Close" style="font-size: 0.7rem;"></button>
-                    </div>
-                    <ul class="list-unstyled mb-0" style="font-size: 0.8rem;">
-                        @foreach (var userName in Ticket.AssignedUserNames)
-                        {
-                            <li class="text-dark py-1 border-bottom">
-                                @if (Ticket.AssignedUserNames.IndexOf(userName) == 0)
-                                {
-                                    <span>⭐ <strong>@userName</strong></span>
-                                }
-                                else
-                                {
-                                    <span>👤 @userName</span>
-                                }
-                            </li>
-                        }
-                    </ul>
-                </div>
-            }
+            </div>
         }
         else if (!string.IsNullOrEmpty(Ticket.User))
         {
-            @* ⚠️ FALLBACK: Visualizzazione singola (legacy) *@
-            <span style="mix-blend-mode: difference; color: white">@Ticket.User</span>
-        }
-        else
-        {
-            @* Nessun utente assegnato *@
-            <span style="mix-blend-mode: difference; color: white">
-                <em>Non Assegnato</em>
-            </span>
+            <div class="assigned-users">
+                <span class="user-badge" title="@Ticket.User">@GetUserInitials(Ticket.User)</span>
+            </div>
         }
     </div>
-</RadzenCard>
+
+    <div class="ticket-card-body">
+        <div class="ticket-company">@Ticket.Company</div>
+        <div class="ticket-description" title="@Ticket.Description">@Ticket.Description</div>
+    </div>
+
+    <!-- Users Panel (popup) -->
+    @if (_showUsersPanel && Ticket.AssignedUserNames != null && Ticket.AssignedUserNames.Count > 1)
+    {
+        <div class="users-panel-overlay" 
+             @onclick="ToggleUsersPanel" 
+             @onclick:stopPropagation="true">
+            <div class="users-panel" @onclick:stopPropagation="true">
+                <div class="users-panel-header">
+                    <strong>👥 Utenti Assegnati (@Ticket.AssignedUserNames.Count)</strong>
+                    <button type="button" class="btn-close-custom" @onclick="ToggleUsersPanel">×</button>
+                </div>
+                <ul class="users-list">
+                    @foreach (var userName in Ticket.AssignedUserNames)
+                    {
+                        var isMain = Ticket.AssignedUserNames.IndexOf(userName) == 0;
+                        <li class="user-item @(isMain ? "main-user" : "")">
+                            <span class="user-avatar">@GetUserInitials(userName)</span>
+                            <span class="user-name">@userName</span>
+                            @if (isMain)
+                            {
+                                <span class="main-badge">Principale</span>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .modern-ticket-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        border-left: 4px solid #667eea;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .modern-ticket-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        transform: translateX(4px);
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Header */
+    .ticket-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .ticket-time {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .ticket-id {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #6b7280;
+        background: #f3f4f6;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .assigned-users {
+        display: flex;
+        gap: 0.25rem;
+        margin-left: auto;
+    }
+
+    .user-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 50%;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 2px solid white;
+        transition: all 0.3s ease;
+    }
+
+    .user-badge:hover {
+        transform: scale(1.15);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    .user-badge.more {
+        background: #9ca3af;
+        font-size: 0.7rem;
+        cursor: pointer;
+    }
+
+    .user-badge.more:hover {
+        background: #6b7280;
+    }
+
+    /* Body */
+    .ticket-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .ticket-company {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.95rem;
+    }
+
+    .ticket-description {
+        color: #6b7280;
+        font-size: 0.875rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        line-height: 1.4;
+    }
+
+    /* Users Panel Overlay */
+    .users-panel-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Users Panel */
+    .users-panel {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        min-width: 320px;
+        max-width: 400px;
+        animation: slideUp 0.3s ease-out;
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .users-panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        border-bottom: 2px solid #e5e7eb;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .users-panel-header strong {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .btn-close-custom {
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: background 0.2s ease;
+    }
+
+    .btn-close-custom:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Users List */
+    .users-list {
+        list-style: none;
+        margin: 0;
+        padding: 0.5rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .user-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        transition: background 0.2s ease;
+    }
+
+    .user-item:hover {
+        background: #f9fafb;
+    }
+
+    .user-item.main-user {
+        background: linear-gradient(90deg, #f0f9ff 0%, white 100%);
+        border-left: 3px solid #667eea;
+    }
+
+    .user-avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 50%;
+        font-size: 0.85rem;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .user-item.main-user .user-avatar {
+        border: 2px solid #667eea;
+    }
+
+    .user-name {
+        flex: 1;
+        font-size: 0.95rem;
+        color: #374151;
+        font-weight: 500;
+    }
+
+    .main-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    /* Scrollbar */
+    .users-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .users-list::-webkit-scrollbar-track {
+        background: #f3f4f6;
+        border-radius: 3px;
+    }
+
+    .users-list::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+
+    .users-list::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+</style>

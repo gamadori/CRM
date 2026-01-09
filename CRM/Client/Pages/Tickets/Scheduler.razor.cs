@@ -317,5 +317,24 @@ namespace CRM.Client.Pages.Tickets
         {
             DialogService.Close();
         }
+
+        /// <summary>
+        /// ✅ NUOVO: Naviga alla vista Timeline mantenendo filtri e data corrente
+        /// </summary>
+        private void SwitchToTimeline()
+        {
+            var queryParams = new List<string>();
+
+            if (!string.IsNullOrEmpty(_idUser))
+            {
+                queryParams.Add($"userId={Uri.EscapeDataString(_idUser)}");
+            }
+
+            queryParams.Add($"date={Uri.EscapeDataString(_dateCurrent.ToString("yyyy-MM-dd"))}");
+
+            var queryString = queryParams.Any() ? "?" + string.Join("&", queryParams) : "";
+
+            NavigationManager.NavigateTo($"/Tickets/Timeline{queryString}");
+        }
     }
 }

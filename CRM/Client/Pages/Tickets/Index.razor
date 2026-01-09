@@ -3,6 +3,7 @@
 @page "/Tickets/Index/{TypeSearch:int}"
 @page "/Tickets/Index/{TypeSearch:int}/{IdUser}"
 @page "/Companies/{IdCompany:int}/Tickets"
+@page "/USers/{IdUser:int}/Tickets"
 
 @using Radzen
 @using Radzen.Blazor
@@ -12,13 +13,8 @@
 
 @if (_ticketView != null && _user != null)
 {
-    
-        
-
-        <PageHeader Model="@_pageHeader">
-        </PageHeader>
-   
-
+    <PageHeader Model="@_pageHeader">
+    </PageHeader>
 
     <RadzenDataGrid @ref="grdTickets" IsLoading="@_isLoading" Count="@_numRecords" Responsive="@_isResponsable" Data="@_ticketView?.Items" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
                 AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowColumnResize=true

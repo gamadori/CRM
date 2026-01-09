@@ -287,9 +287,10 @@ namespace CRM.Server.Controllers
                     MinuteWork = x.TicketInterventions.Sum(y=>y.Minute),
                     Invoiced = x.Invoiced,
                     Description = x.Description,
-                    ContactName = x.Contact != null ? x.Contact.Name : ""
-                    
-                    
+                    ContactName = x.Contact != null ? x.Contact.Name : "",
+                    Time = x.Time,
+
+
                 });                
                 
 
