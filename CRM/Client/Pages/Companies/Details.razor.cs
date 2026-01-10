@@ -52,6 +52,9 @@ namespace CRM.Client.Pages.Companies
         [Parameter]
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
+        [Parameter]
+        public Company? Company { get; set; }
+
         private Company _company = null;
 
         private PageHeaderModel? _pageHeader = null;
@@ -68,11 +71,15 @@ namespace CRM.Client.Pages.Companies
                 {
                     path += $"/{Id}";
 
-                    _company = await Http.GetFromJsonAsync<Company>(path);
+                    if (Company != null)
+                        _company = Company;
+                    else
+                        _company = await Http.GetFromJsonAsync<Company>(path);
                 }
                 else
                     _company = new Company();
 
+               
                 _pageHeader = await HeaderService.Create(PageMode);
                
             }

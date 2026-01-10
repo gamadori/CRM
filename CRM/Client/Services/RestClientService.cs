@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Identity;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -47,6 +48,9 @@ namespace CRM.Client.Services
 
         protected readonly string _pathService;
 
+        // Simple in-flight requests cache to deduplicate concurrent identical GET by id calls
+        private readonly ConcurrentDictionary<string, Task<T>> _inFlightGetById = new();
+
         //protected readonly SignOutSessionStateManager _signOutManager;
         //protected readonly NavigationManager _navigation;
 
@@ -62,9 +66,45 @@ namespace CRM.Client.Services
             {
                 if (id == null)
                     return null;
-                T response = await _http.GetFromJsonAsync<T>(_pathService + $"/{id}");
 
-                return response;
+                string key = $"GET:{_pathService}/{id}";
+
+                // If an identical request is already in flight return its task
+                if (_inFlightGetById.TryGetValue(key, out var existingTask))
+                {
+                    try
+                    {
+                        return await existingTask;
+                    }
+                    catch
+                    {
+                        // If the existing task failed, remove it so we can try again below
+                        _inFlightGetById.TryRemove(key, out _);
+                        throw;
+                    }
+                }
+
+                // Create the task and add to dictionary before starting the request to ensure other callers share it
+                var task = GetInternal(id);
+                if (!_inFlightGetById.TryAdd(key, task))
+                {
+                    // Another thread added it in the meantime, use that one
+                    if (_inFlightGetById.TryGetValue(key, out var racedTask))
+                    {
+                        return await racedTask;
+                    }
+                }
+
+                try
+                {
+                    var result = await task;
+                    return result;
+                }
+                finally
+                {
+                    // remove from cache when finished
+                    _inFlightGetById.TryRemove(key, out _);
+                }
             }
             catch (AccessTokenNotAvailableException exception)
             {
@@ -73,7 +113,6 @@ namespace CRM.Client.Services
             }
             catch (Exception ex)
             {
-                
                 Console.WriteLine(ex.Message);
                 if (ex.Message.Contains("401"))
                 {
@@ -81,6 +120,11 @@ namespace CRM.Client.Services
                 }
                 return null;
             }
+        }
+
+        private async Task<T> GetInternal(K id)
+        {
+            return await _http.GetFromJsonAsync<T>(_pathService + $"/{id}");
         }
 
        

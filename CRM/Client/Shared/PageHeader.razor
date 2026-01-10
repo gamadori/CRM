@@ -219,7 +219,7 @@ else
     [Parameter]
     public RenderFragment? Filters { get; set; }
 
-    [Inject]
+    // [Inject]
     public IHeaderService HeaderService { get; set; }
 
     [Inject]
@@ -229,7 +229,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await EnsureBreadcrumbsAsync();
+       // await EnsureBreadcrumbsAsync();
         if (!_subscribed)
         {
             NavigationManager.LocationChanged += OnLocationChanged;
@@ -239,12 +239,12 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        await EnsureBreadcrumbsAsync();
+       // await EnsureBreadcrumbsAsync();
     }
 
     private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
-        await EnsureBreadcrumbsAsync();
+        //await EnsureBreadcrumbsAsync();
         await InvokeAsync(StateHasChanged);
     }
 

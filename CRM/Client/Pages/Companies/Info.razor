@@ -47,7 +47,7 @@ else
     {
         if (_partialView == PartialViews.Details)
         {
-            <Details Id="@Id" OnClickEdit="EditCompany" OnClickCancel="CancelCompany" PageMode="@PageModality.Child"></Details>
+            <Details Id="@Id" OnClickEdit="EditCompany" Company=@_company OnClickCancel="CancelCompany" PageMode="@PageModality.Child"></Details>
         }
         else
         {

@@ -83,7 +83,7 @@ namespace CRM.Client.Pages.Companies
             }
             await LoadCompany();
             InitializeViewOptions();
-            _pageHeader = _pageHeader = await HeaderService.Create();  //HeaderService.Create(ConstHelper.ClientCompaniesPath, Id, _company?.RagioneSociale, false, ConstHelper.ClientCompaniesPath);
+            _pageHeader  = await HeaderService.Create();  
 
         }
         private void InitializeViewOptions()
@@ -100,11 +100,6 @@ namespace CRM.Client.Pages.Companies
         private async Task LoadCompany()
         {
             _company = await companiesService.GetItem<Company, int>(Id, ConstHelper.CompaniesPath);
-
-            
-
-            
-
         }
         private void EditCompany()
         {

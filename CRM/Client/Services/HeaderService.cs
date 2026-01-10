@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using QLNet;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -25,6 +26,11 @@ namespace CRM.Client.Services
             StringComparer.OrdinalIgnoreCase
         );
 
+        // Cache per nomi risorsa (es. companies:5 -> RagioneSociale) per evitare molte chiamate identiche
+        private readonly ConcurrentDictionary<string, string> _nameCache = new(StringComparer.OrdinalIgnoreCase);
+        // In-flight requests to deduplicate concurrent fetches
+        private readonly ConcurrentDictionary<string, Task<string>> _inFlightNameRequests = new();
+
         public HeaderService(NavigationManager navigationManager, IAGRestClientService restClient, ILocalizationService localizationService)
         {
             _navigationManager = navigationManager;
@@ -35,8 +41,20 @@ namespace CRM.Client.Services
         private string GetLocalizedString(string key) => _localizationService.GetLocalizedString(key);
         private bool GetLocalizedResourceNotFound(string key) => _localizationService.IsResourceNotFound(key);
 
-        public async Task<PageHeaderModel> Create(PageModality pageModality = PageModality.Visualization)
+        public async Task<PageHeaderModel?> Create(PageModality pageModality = PageModality.Visualization)
         {
+            if (pageModality == PageModality.Child)
+            {
+                return new PageHeaderModel
+                {
+                    Title = string.Empty,
+                    Subtitle = null,
+                    BreadcrumbItems = new List<BreadcrumbItem>(),
+                    Icon = string.Empty,
+                    PageMode = pageModality,
+                    DialogTitle = null
+                };
+            }
             var url = GetUrl();
             var segments = url.Split('?', '#')[0]
                 .Split('/', StringSplitOptions.RemoveEmptyEntries)
@@ -157,39 +175,44 @@ namespace CRM.Client.Services
 
             try
             {
-                return domainSegment switch
-                {
-                    "companies" or "company" => 
-                        (await _restClient.GetItem<Company, int>((int)domainId, ConstHelper.CompaniesPath))?.RagioneSociale,
-                    
-                    "articles" or "article" => 
-                        GetArticleName(await _restClient.GetItem<Article, int>((int)domainId, ConstHelper.ArticlesPath)),
-                    
-                    "products" or "product" => 
-                        (await _restClient.GetItem<Product, int>((int)domainId, ConstHelper.Products))?.Name,
-                    
-                    "users" or "user" => 
-                        (await _restClient.GetItem<ApplicationUser, string>((string)domainId, ConstHelper.UsersPath))?.NameComplete,
-                    
-                    "tickets" or "ticket" => 
-                        (await _restClient.GetItem<Ticket, int>((int)domainId, ConstHelper.TicketPath))?.Numero,
-                    
-                    "contacts" or "contact" => 
-                        (await _restClient.GetItem<Contact, int>((int)domainId, ConstHelper.ContactsPath))?.NameComplete,
-                    
-                    "deals" or "deal" => 
-                        (await _restClient.GetItem<Deal, int>((int)domainId, ConstHelper.DealsPath))?.Name,
-                    
-                    "tickettypes" or "tickettype" => 
-                        (await _restClient.GetItem<TicketType, int>((int)domainId, ConstHelper.TicketTypesPath))?.Desc,
-                    
-                    "tickettypeslanguages" or "tickettypeslanguage" => 
-                        (await _restClient.GetItem<TicketTypeLanguage, int>((int)domainId, ConstHelper.TicketTypesLanguagesPath))?.Name,
+                string cacheKey = $"{domainSegment}:{domainId}";
 
-                    "productacctypes" or "productacctype" =>
-                        (await _restClient.GetItem<ProductAccessoryType, int>((int)domainId, ConstHelper.ProductAccTypesPath))?.Name,   
-                    _ => null
-                };
+                return await GetNameCachedAsync(cacheKey, async () =>
+                {
+                    return domainSegment switch
+                    {
+                        "companies" or "company" => 
+                            (await _restClient.GetItem<Company, int>((int)domainId, ConstHelper.CompaniesPath))?.RagioneSociale,
+                        
+                        "articles" or "article" => 
+                            GetArticleName(await _restClient.GetItem<Article, int>((int)domainId, ConstHelper.ArticlesPath)),
+                        
+                        "products" or "product" => 
+                            (await _restClient.GetItem<Product, int>((int)domainId, ConstHelper.Products))?.Name,
+                        
+                        "users" or "user" => 
+                            (await _restClient.GetItem<ApplicationUser, string>((string)domainId, ConstHelper.UsersPath))?.NameComplete,
+                        
+                        "tickets" or "ticket" => 
+                            (await _restClient.GetItem<Ticket, int>((int)domainId, ConstHelper.TicketPath))?.Numero,
+                        
+                        "contacts" or "contact" => 
+                            (await _restClient.GetItem<Contact, int>((int)domainId, ConstHelper.ContactsPath))?.NameComplete,
+                        
+                        "deals" or "deal" => 
+                            (await _restClient.GetItem<Deal, int>((int)domainId, ConstHelper.DealsPath))?.Name,
+                        
+                        "tickettypes" or "tickettype" => 
+                            (await _restClient.GetItem<TicketType, int>((int)domainId, ConstHelper.TicketTypesPath))?.Desc,
+                        
+                        "tickettypeslanguages" or "tickettypeslanguage" => 
+                            (await _restClient.GetItem<TicketTypeLanguage, int>((int)domainId, ConstHelper.TicketTypesLanguagesPath))?.Name,
+
+                        "productacctypes" or "productacctype" =>
+                            (await _restClient.GetItem<ProductAccessoryType, int>((int)domainId, ConstHelper.ProductAccTypesPath))?.Name,   
+                        _ => null
+                    };
+                });
             }
             catch
             {
@@ -361,43 +384,99 @@ namespace CRM.Client.Services
             if (!isNumeric && !isGuid)
                 return segment;
 
+            string cacheKey = $"{previousSegment}:{segment}";
+
             try
             {
-                return previousSegment switch
+                return await GetNameCachedAsync(cacheKey, async () =>
                 {
-                    "companies" when isNumeric => 
-                        (await _restClient.GetItem<Company, int>(int.Parse(segment), ConstHelper.CompaniesPath))?.RagioneSociale ?? segment,
-                    
-                    "articles" or "article" when isNumeric => 
-                        GetArticleName(await _restClient.GetItem<Article, int>(int.Parse(segment), ConstHelper.ArticlesPath)) ?? segment,
-                    
-                    "products" or "product" when isNumeric => 
-                        (await _restClient.GetItem<Product, int>(int.Parse(segment), ConstHelper.Products))?.Name ?? segment,
-                    
-                    "tickets" or "ticket" when isNumeric => 
-                        (await _restClient.GetItem<Ticket, int>(int.Parse(segment), ConstHelper.TicketPath))?.Numero ?? segment,
-                    
-                    "users" or "user" when isGuid => 
-                        (await _restClient.GetItem<ApplicationUser, string>(Guid.Parse(segment).ToString(), ConstHelper.UsersPath))?.NameComplete ?? segment,
-                    
-                    "users" or "user" when isNumeric => 
-                        (await _restClient.GetItem<ApplicationUser, string>(segment, ConstHelper.UsersPath))?.NameComplete ?? segment,
-                    
-                    "contacts" or "contact" when isNumeric => 
-                        (await _restClient.GetItem<Contact, int>(int.Parse(segment), ConstHelper.ContactsPath))?.NameComplete ?? segment,
-                    
-                    "tickettypes" or "tickettype" when isNumeric => 
-                        (await _restClient.GetItem<TicketType, int>(int.Parse(segment), ConstHelper.TicketTypesPath))?.Desc ?? segment,
-                    "ProductAccTypes" or "productacctype" when isNumeric =>
-                        (await _restClient.GetItem<ProductAccessoryType, int>(int.Parse(segment), ConstHelper.ProductAccTypesPath))?.Name ?? segment,
+                    if (!isNumeric && !isGuid)
+                        return segment;
 
-                    _ => segment
-                };
+                    return previousSegment switch
+                    {
+                        "companies" when isNumeric => 
+                            (await _restClient.GetItem<Company, int>(int.Parse(segment), ConstHelper.CompaniesPath))?.RagioneSociale ?? segment,
+                        
+                        "articles" or "article" when isNumeric => 
+                            GetArticleName(await _restClient.GetItem<Article, int>(int.Parse(segment), ConstHelper.ArticlesPath)) ?? segment,
+                        
+                        "products" or "product" when isNumeric => 
+                            (await _restClient.GetItem<Product, int>(int.Parse(segment), ConstHelper.Products))?.Name ?? segment,
+                        
+                        "tickets" or "ticket" when isNumeric => 
+                            (await _restClient.GetItem<Ticket, int>(int.Parse(segment), ConstHelper.TicketPath))?.Numero ?? segment,
+                        
+                        "users" or "user" when isGuid => 
+                            (await _restClient.GetItem<ApplicationUser, string>(Guid.Parse(segment).ToString(), ConstHelper.UsersPath))?.NameComplete ?? segment,
+                        
+                        "users" or "user" when isNumeric => 
+                            (await _restClient.GetItem<ApplicationUser, string>(segment, ConstHelper.UsersPath))?.NameComplete ?? segment,
+                        
+                        "contacts" or "contact" when isNumeric => 
+                            (await _restClient.GetItem<Contact, int>(int.Parse(segment), ConstHelper.ContactsPath))?.NameComplete ?? segment,
+                        
+                        "tickettypes" or "tickettype" when isNumeric => 
+                            (await _restClient.GetItem<TicketType, int>(int.Parse(segment), ConstHelper.TicketTypesPath))?.Desc ?? segment,
+                        "ProductAccTypes" or "productacctype" when isNumeric =>
+                            (await _restClient.GetItem<ProductAccessoryType, int>(int.Parse(segment), ConstHelper.ProductAccTypesPath))?.Name ?? segment,
+
+                        _ => segment
+                    };
+                });
             }
             catch
             {
                 return segment;
             }
+        }
+
+        private async Task<string> GetNameCachedAsync(string key, Func<Task<string>> fetcher)
+        {
+            if (string.IsNullOrEmpty(key))
+                return null;
+
+            if (_nameCache.TryGetValue(key, out var cached) && !string.IsNullOrEmpty(cached))
+                return cached;
+
+            // If already fetching, return the same task
+            if (_inFlightNameRequests.TryGetValue(key, out var inFlight))
+            {
+                try
+                {
+                    return await inFlight;
+                }
+                catch
+                {
+                    // remove failed in-flight task
+                    _inFlightNameRequests.TryRemove(key, out _);
+                    throw;
+                }
+            }
+
+            var task = Task.Run(async () =>
+            {
+                try
+                {
+                    var result = await fetcher();
+                    if (!string.IsNullOrEmpty(result))
+                        _nameCache[key] = result;
+                    return result;
+                }
+                finally
+                {
+                    _inFlightNameRequests.TryRemove(key, out _);
+                }
+            });
+
+            if (!_inFlightNameRequests.TryAdd(key, task))
+            {
+                // race: use existing
+                if (_inFlightNameRequests.TryGetValue(key, out var existing))
+                    return await existing;
+            }
+
+            return await task;
         }
 
         private static string ToTitle(string value)
