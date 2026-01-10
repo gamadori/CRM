@@ -60,17 +60,20 @@ namespace CRM.Client.Helpers
             }
             return "?" + string.Join("&", paramList);
         }
-        public static string BuildQueryString(Dictionary<string, object> queryStringParams)
+        public static string BuildQueryString(Dictionary<string, object?> queryStringParams)
         {
             List<string> paramList = new List<string>();
             foreach (var parameter in queryStringParams)
             {
                 string value;
-                if (parameter.Value.GetType() == typeof(DateTime) || parameter.Value.GetType() == typeof(DateTime?))
-                    value = ((DateTime)parameter.Value).ToString("yyyy-MM-dd");
-                else
-                    value = parameter.Value.ToString();
-                paramList.Add(parameter.Key + "=" + value);
+                if (parameter.Value != null)
+                {
+                    if (parameter.Value.GetType() == typeof(DateTime) || parameter.Value.GetType() == typeof(DateTime?))
+                        value = ((DateTime)parameter.Value).ToString("yyyy-MM-dd");
+                    else
+                        value = parameter.Value.ToString();
+                    paramList.Add(parameter.Key + "=" + value);
+                }
             }
             return "?" + string.Join("&", paramList);
         }

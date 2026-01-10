@@ -31,6 +31,7 @@ namespace CRM.Client.Models
         public List<string> AssignedUserNames { get; set; } = new List<string>();
 
         public string BackColor { get; set; }
+        
         public string Company { get; set; }
 
         public string Description { get; set; }
@@ -38,5 +39,15 @@ namespace CRM.Client.Models
         public int Status { get; set; }
 
         public bool Expired { get; set; }
+
+        /// <summary>
+        /// ✅ NUOVO: Colore dello stato del ticket (es. #28a745 per "Aperto")
+        /// </summary>
+        public string StatusColor { get; set; }
+
+        /// <summary>
+        /// ✅ NUOVO: Descrizione testuale dello stato (es. "Aperto", "In Lavorazione", "Chiuso")
+        /// </summary>
+        public string StatusText { get; set; }
     }
 }

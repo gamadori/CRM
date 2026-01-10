@@ -2,7 +2,7 @@
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using Syncfusion.Compression.Zip;
+
 using System;
 using System.Linq;
 using System.Net.Http;

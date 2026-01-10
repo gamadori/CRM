@@ -12,7 +12,6 @@ using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 using Radzen;
 using Radzen.Blazor;
-using Syncfusion.Blazor.Grids;
 using System;
 using System.Collections.Generic;
 using System.Linq;

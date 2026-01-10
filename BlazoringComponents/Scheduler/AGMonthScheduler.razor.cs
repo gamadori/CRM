@@ -104,6 +104,10 @@ namespace BlazoringComponents.Scheduler
                 // ✅ REFACTORED: Usa GetPropertyValueSafe per gestione sicura reflection
                 model.AssignedUserNames = item.GetPropertyValueSafe<List<string>>("AssignedUserNames", new List<string>());
                 
+                // ✅ NUOVO: Popola STATO del ticket
+                model.StatusColor = item.GetPropertyValueSafe<string>("StatusColor", string.Empty);
+                model.StatusText = item.GetPropertyValueSafe<string>("StatusText", string.Empty);
+                
                 tickets.Add(model);
             }
 

@@ -19,7 +19,15 @@ namespace BlazoringComponents.Models
 
         public string BackGroundColor { get; set; }
 
+        /// <summary>
+        /// ✅ Colore dello stato del ticket (es. #28a745 per "Aperto")
+        /// </summary>
         public string StatusColor { get; set; }
+
+        /// <summary>
+        /// ✅ NUOVO: Descrizione testuale dello stato (es. "Aperto", "In Lavorazione", "Chiuso")
+        /// </summary>
+        public string StatusText { get; set; }
 
         public string Company { get; set; }
 

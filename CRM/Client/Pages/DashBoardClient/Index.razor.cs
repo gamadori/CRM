@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
-using Syncfusion.Blazor.Grids;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,10 +20,6 @@ namespace CRM.Client.Pages.DashBoardClient
     [Authorize]
     public partial class Index : ComponentBase, INotificationHandler<MsgNotify>, IDisposable
     {
-
-
-
-
         [Inject]
         private NavigationManager NavigationManager { get; set; }
 

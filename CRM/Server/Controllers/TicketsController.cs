@@ -774,6 +774,10 @@ namespace CRM.Server.Controllers
                 case TicketTypeSearch.ToBeInvoiced:
                     tickets = tickets.Where(x => x.Invoiced == false);
                     break;
+
+                case TicketTypeSearch.Closed:
+                    tickets = tickets.Where(x => x.Closed);
+                    break;
             }
 
             return tickets;

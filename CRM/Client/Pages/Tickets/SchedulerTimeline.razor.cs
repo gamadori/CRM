@@ -214,7 +214,13 @@ namespace CRM.Client.Pages.Tickets
                         AssignedUserIds = assignedUsers.Select(u => u.Id).ToList(),
                         AssignedUserNames = assignedUsers.Select(u => u.NameComplete).ToList(),
                         BackColor = backColor,
-                        Description = t.Description
+                        Description = t.Description,
+                        
+                        // ? NUOVO: Popola STATO del ticket
+                        Status = t.IdState ?? 0,
+                        Expired = t.DateExpired.HasValue && t.DateExpired.Value < DateTime.Now,
+                        StatusColor = t.StateColor,
+                        StatusText = t.State  // ? FIX: Usa State invece di StateDesc
                     };
 
                     _allTickets.Add(ticketViewModel);

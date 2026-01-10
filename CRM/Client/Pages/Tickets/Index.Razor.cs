@@ -10,7 +10,6 @@ using Microsoft.JSInterop;
 using Radzen;
 using Radzen.Blazor;
 using Radzen.Blazor.Rendering;
-using Syncfusion.Blazor.DropDowns;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -395,7 +394,7 @@ namespace CRM.Client.Pages.Tickets
 
         }
 
-        protected async void OnChangeFilter(bool state)
+        protected async void OnChangeFilter()
         {
 
             

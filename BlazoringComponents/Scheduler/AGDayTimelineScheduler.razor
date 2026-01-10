@@ -55,7 +55,11 @@
                     {
                         @foreach (var ticket in _ticketsByTimeSlot[slot])
                         {
-                            <div class="ticket-card timed" style="border-left-color: @ticket.BackGroundColor"
+                            <CascadingValue Value="ticket" TValue="SchedulerTicket">
+                                <AGTicketScheduler OpenModal="OpenModal"></AGTicketScheduler>
+                            </CascadingValue>
+
+                            @* <div class="ticket-card timed" style="border-left-color: @ticket.BackGroundColor"
                                  @onclick="() => OpenModal(ticket.Id)">
                                 <div class="ticket-card-header">
                                     <span class="ticket-time">@(ticket.TimeStart.HasValue ? ticket.TimeStart.Value.ToString("HH:mm") : "--:--")</span>
@@ -78,7 +82,7 @@
                                     <div class="ticket-company">@ticket.Company</div>
                                     <div class="ticket-description">@ticket.Description</div>
                                 </div>
-                            </div>
+                            </div> *@
                         }
                     }
                     else

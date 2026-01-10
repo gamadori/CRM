@@ -16,6 +16,14 @@
         <!-- Ticket ID -->
         <span class="ticket-id">#@Ticket.Id</span>
 
+        <!-- ✅ NUOVO: Status Badge -->
+        @if (!string.IsNullOrEmpty(Ticket.StatusText))
+        {
+            <span class="ticket-status-badge" style="background-color: @Ticket.StatusColor">
+                @Ticket.StatusText
+            </span>
+        }
+
         <!-- Assigned Users Badges -->
         @if (Ticket.AssignedUserNames != null && Ticket.AssignedUserNames.Any())
         {
@@ -132,6 +140,20 @@
         background: #f3f4f6;
         padding: 0.25rem 0.5rem;
         border-radius: 4px;
+    }
+
+    /* ✅ NUOVO: Status Badge */
+    .ticket-status-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        mix-blend-mode: normal;
+        white-space: nowrap;
     }
 
     .assigned-users {

@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 using Radzen;
-using Syncfusion.Blazor.Grids;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -199,7 +198,13 @@ namespace CRM.Client.Pages.Tickets
                         AssignedUserNames = assignedUsers.Select(u => u.NameComplete).ToList(),
                         
                         BackColor = backColor,
-                        Description = t.Description
+                        Description = t.Description,
+
+                        // ✅ NUOVO: Popola STATO del ticket
+                        Status = t.IdState ?? 0,
+                        Expired = t.DateExpired.HasValue && t.DateExpired.Value < DateTime.Now,
+                        StatusColor = t.StateColor,
+                        StatusText = t.State  // ✅ FIX: Usa State invece di StateDesc
 
                     }); 
                 }

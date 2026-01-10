@@ -85,7 +85,7 @@ namespace CRM.Client.Pages.DashBoard
             filter.IdUser = _userId;
             _model = await _service.Get(filter);
 
-            var qs = UriHelper.BuildQueryString(new Dictionary<string, object> { { "userId", _userId}, { "fromDate", DateTime.Now.AddDays(-7) } });
+            var qs = UriHelper.BuildQueryString(new Dictionary<string, object?> { { "userId", _userId}, { "fromDate", DateTime.Now.AddDays(-7) } });
            _recentActivities = await Http.GetFromJsonAsync<List<ActivityModel>>($"api/LogEvents/activities?{qs}");
 
             GraphTicketStatus();

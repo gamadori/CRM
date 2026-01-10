@@ -122,7 +122,10 @@ namespace BlazoringComponents.Scheduler
                     Description = item.GetPropertyValue<string>(DescriptionProperty),
                     BackGroundColor = item.GetPropertyValue<string>(BackColorProperty),
                     AssignedUserNames = item.GetPropertyValueSafe<List<string>>("AssignedUserNames", new List<string>()),
-                   
+                    
+                    // ? NUOVO: Popola STATO del ticket
+                    StatusColor = item.GetPropertyValueSafe<string>("StatusColor", string.Empty),
+                    StatusText = item.GetPropertyValueSafe<string>("StatusText", string.Empty)
                 };
 
                 // Filtra solo i ticket del giorno corrente

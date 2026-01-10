@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 using Radzen;
-using Syncfusion.Blazor.Grids;
 using System;
 using System.Collections.Generic;
 using System.Linq;

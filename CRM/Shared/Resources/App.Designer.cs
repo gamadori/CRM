@@ -829,6 +829,15 @@ namespace CRM.Shared.Resources {
         /// <summary>
         ///   Cerca una stringa localizzata simile a Product Types.
         /// </summary>
+        public static string Productstypes {
+            get {
+                return ResourceManager.GetString("Productstypes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Product Types.
+        /// </summary>
         public static string ProductTypes {
             get {
                 return ResourceManager.GetString("ProductTypes", resourceCulture);

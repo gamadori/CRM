@@ -499,4 +499,7 @@
   <data name="eTicketStatesExpired" xml:space="preserve">
     <value>Expired</value>
   </data>
+  <data name="Productstypes" xml:space="preserve">
+    <value>Product Types</value>
+  </data>
 </root>

@@ -12,7 +12,7 @@
 <RtzDisplayName For="For" Text="@Label">
     <ChildContent>
         <RadzenDropDown TValue="int" Data="@_enumValues" TextProperty="@nameof(EnumItem.DisplayName)" ValueProperty="@nameof(EnumItem.Value)"
-                        Value="@CurrentValue" ValueChanged="OnValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" 
+                        Value="@CurrentValue" Change="Change" ValueChanged="OnValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" 
                         FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="@AllowClear" Placeholder="@Placeholder"
                         Disabled="@Disabled" />
     </ChildContent>
@@ -36,6 +36,9 @@
 
     [Parameter]
     public string Placeholder { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback Change { get; set; }
 
     [Parameter]
     public Expression<Func<int>>? For { get; set; }
@@ -64,6 +67,7 @@
     [Parameter]
     public string? Label { get; set; }
 
+    
     protected override void OnInitialized()
     {
         base.OnInitialized();
