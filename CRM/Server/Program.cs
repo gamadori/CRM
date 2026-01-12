@@ -235,7 +235,6 @@ using (var scope = scopeFactory.CreateScope())
     RolesHelper.CreateUserRoles(scope.ServiceProvider).Wait();
 }
 
-SyncfusionLicenseProvider.RegisterLicense("Mgo+DSMBaFt8QHFqVkBrXVNbdV5dVGpAd0N3RGlcdlR1fUUmHVdTRHRcQ11iTX9adEdmUXdWdXQ=");
 
 
 app.Run();
