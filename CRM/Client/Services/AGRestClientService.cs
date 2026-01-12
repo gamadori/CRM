@@ -10,6 +10,7 @@ using System;
 using System.Net.Http.Json;
 using System.Linq;
 using CRM.Shared.Helper;
+using System.Collections.Concurrent;
 
 namespace CRM.Client.Services
 {
@@ -17,21 +18,77 @@ namespace CRM.Client.Services
     {
         protected readonly HttpClient _http;
 
+        // Generic caches to centralize name/id fetching deduplication
+        private readonly ConcurrentDictionary<string, object> _itemCache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, Task<object>> _inFlightItemRequests = new(StringComparer.OrdinalIgnoreCase);
+
         public AGRestClientService(HttpClient http)
         {
             _http = http;
         }
 
-       
+        private string BuildCacheKey(string pathService, object id)
+        {
+            return $"{pathService}:{id}";
+        }
 
         public async Task<T?> GetItem<T, K>(K id, string pathService) where T : class
         {
-            T? response;
+            if (id == null)
+                return null;
 
-           
-            response = await _http.GetFromJsonAsync<T?>($"{pathService}/{id}");
+            string key = BuildCacheKey(pathService, id);
 
-            return response;
+            if (_itemCache.TryGetValue(key, out var cached) && cached is T cachedT)
+                return cachedT;
+
+            if (_inFlightItemRequests.TryGetValue(key, out var inFlight))
+            {
+                try
+                {
+                    var obj = await inFlight;
+                    return obj as T;
+                }
+                catch
+                {
+                    _inFlightItemRequests.TryRemove(key, out _);
+                    throw;
+                }
+            }
+
+            var task = Task.Run(async () =>
+            {
+                try
+                {
+                    var result = await _http.GetFromJsonAsync<T>($"{pathService}/{id}");
+                    return (object)result;
+                }
+                catch
+                {
+                    return (object)null;
+                }
+            });
+
+            if (!_inFlightItemRequests.TryAdd(key, task))
+            {
+                if (_inFlightItemRequests.TryGetValue(key, out var existing))
+                {
+                    var res = await existing;
+                    return res as T;
+                }
+            }
+
+            try
+            {
+                var obj = await task;
+                if (obj != null)
+                    _itemCache[key] = obj;
+                return obj as T;
+            }
+            finally
+            {
+                _inFlightItemRequests.TryRemove(key, out _);
+            }
         }
 
         public async Task<BreadCrumb<T>> GetWithBreadCrumb<T, K>(K id, string root, string pathService)
@@ -75,10 +132,6 @@ namespace CRM.Client.Services
                 return null;
             }
         }
-
-       
-
-        
 
         public async Task<T?> GetFirst<T>(string pathService) where T : class
         {
@@ -136,7 +189,6 @@ namespace CRM.Client.Services
             {
                 
                 
-
                 if  (data.Top == null || data.Skip == null)
                 {
                     data.Top = ConstHelper.PageSize;
@@ -190,7 +242,7 @@ namespace CRM.Client.Services
 
             try
             {
-             
+            
 
                 var response = await _http.GetAsync(pathService);
 
@@ -207,7 +259,6 @@ namespace CRM.Client.Services
                 }
                 else
                     return null;
-
 
 
             }
@@ -255,7 +306,6 @@ namespace CRM.Client.Services
                 }
                 else
                     return null;
-
 
 
             }

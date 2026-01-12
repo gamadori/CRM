@@ -728,7 +728,7 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a .
+        ///   Cerca una stringa localizzata simile a New Ticket.
         /// </summary>
         public static string New_Ticket {
             get {
@@ -935,6 +935,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Select the Product.
+        /// </summary>
+        public static string Select_the_product {
+            get {
+                return ResourceManager.GetString("Select the product", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Select the type of Ticket.
         /// </summary>
         public static string Select_the_type_of_Ticket {
@@ -971,15 +980,6 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a Select the customer.
-        /// </summary>
-        public static string Selezionare_il_Cliente {
-            get {
-                return ResourceManager.GetString("Selezionare il Cliente", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Cerca una stringa localizzata simile a Service Types.
         /// </summary>
         public static string ServiceTypes {
@@ -989,7 +989,7 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a .
+        ///   Cerca una stringa localizzata simile a Set the date of the event.
         /// </summary>
         public static string Set_the_date_of_the_event {
             get {
@@ -998,7 +998,7 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a .
+        ///   Cerca una stringa localizzata simile a Set the time of the event.
         /// </summary>
         public static string Set_the_time_of_the_event {
             get {
@@ -1034,7 +1034,7 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a .
+        ///   Cerca una stringa localizzata simile a Surname.
         /// </summary>
         public static string Surname {
             get {

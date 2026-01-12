@@ -498,4 +498,7 @@
   <data name="Productstypes" xml:space="preserve">
     <value>Tipi Prodotto</value>
   </data>
+  <data name="Select the product" xml:space="preserve">
+    <value>Selezionare il Prodotto</value>
+  </data>
 </root>

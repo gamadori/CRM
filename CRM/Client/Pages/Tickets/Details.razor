@@ -191,34 +191,85 @@ else
         {
             <div class="card-footer bg-light border-top py-3">
                 <div class="d-flex gap-2 flex-wrap">
-                    <BlazorButton Template="TemplateButton.Back" Text="@Localize["Lista Tickets"]" OnClick="Annulla" />
+                    <RedGButton RGButtonType="RGButtonType.Back" Text="@Localize["Lista Tickets"]" Click="Annulla"></RedGButton>
 
                     @if (_ticket.Permits.Edit())
                     {
-                        <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+                        <RedGButton RGButtonType="RGButtonType.Edit" Click="Edit" AutoLabel=true />
                     }
 
                     @if (_ticket.Permits.Assign())
                     {
-                        <BlazorButton OnClick="PrepareAssign" Style="@BtnStyle.Danger" Icon="assignment_ind" Text=@Localize["Assign"]></BlazorButton>
+                        <RedGButton RGButtonType="RGButtonType.AssignTicket" Click="PrepareAssign" Text=@Localize["Assign"] />
                     }
 
                     @if (!_ticket.Closed && _ticket.Permits.Close())
                     {
-                        <BlazorButton OnClick="@TicketClose" Style="@BtnStyle.Warning" Icon="archive" Text="Chiudi"></BlazorButton>
+                        <RedGButton RGButtonType="RGButtonType.CloseTicket" Click="TicketClose" Text=@Localize["Chiudi Ticket"] />
                     }
 
-                   
-
-                    @* ✅ PULSANTE PDF - Scarica PDF con QuestPDF *@
-                    <BlazorButton OnClick="@DownloadPdf" 
-                                  Style="@BtnStyle.Info" 
-                                  Icon="picture_as_pdf" 
-                                  Text="Scarica PDF"
-                                  Disabled="_isDownloadingPdf">
-                    </BlazorButton>
+                    <RedGButton RGButtonType="RGButtonType.Download" Text="@Localize["Download PDF"]" Click="DownloadPdf" Disabled="_isDownloadingPdf"></RedGButton>
                 </div>
             </div>
         }
     </div>
 }
+
+<style>
+    /* ✅ STILI BADGE UTENTI */
+    .assigned-users-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .user-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        color: white;
+        font-size: 0.9rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
+    }
+
+    .user-badge:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .user-avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        font-weight: 600;
+        font-size: 0.75rem;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .user-name {
+        font-weight: 500;
+    }
+
+    .badge-primary-indicator {
+        color: #ffd700;
+        font-size: 1rem;
+        margin-left: 0.25rem;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    }
+
+    /* ✅ RESPONSIVE: Badge utenti full-width su mobile */
+    @@media (max-width: 576px) {
+        .user-badge {
+            flex: 1 1 100%;
+            justify-content: space-between;
+        }
+    }
+</style>

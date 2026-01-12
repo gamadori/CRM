@@ -133,6 +133,10 @@ namespace CRM.Client.Pages.Tickets
 
         private GlobalSetting? _globalSettings = null;
 
+        // ✅ NUOVO: Multi-user assignment
+        private HashSet<string> _selectedUserIds = new HashSet<string>();
+        private List<ApplicationUser> _filteredUsers = new List<ApplicationUser>();
+        private string _searchQuery = string.Empty;
 
         protected override async Task OnInitializedAsync()
         {
@@ -153,6 +157,9 @@ namespace CRM.Client.Pages.Tickets
                     path += $"/{Id}";
                     _header = Localize["Ticket Edit"];
                     _ticket = await _service.Get(Id.Value);
+                    
+                    // ✅ NUOVO: Carica gli utenti già assegnati al ticket
+                    await LoadAssignedUsers();
                 }
                 else
                 {
@@ -190,6 +197,39 @@ namespace CRM.Client.Pages.Tickets
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Carica gli utenti già assegnati al ticket
+        /// </summary>
+        private async Task LoadAssignedUsers()
+        {
+            try
+            {
+                if (_ticket == null || _ticket.Id == 0)
+                    return;
+
+                var response = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{_ticket.Id}/assigned-users");
+                if (response != null && response.Any())
+                {
+                    _selectedUserIds = new HashSet<string>(response);
+                }
+                else if (!string.IsNullOrEmpty(_ticket.IdUserAssigned))
+                {
+                    // Fallback per retrocompatibilità
+                    _selectedUserIds.Add(_ticket.IdUserAssigned);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento utenti assegnati: {ex.Message}");
+                
+                // Fallback su utente legacy
+                if (!string.IsNullOrEmpty(_ticket.IdUserAssigned))
+                {
+                    _selectedUserIds.Add(_ticket.IdUserAssigned);
+                }
             }
         }
 
@@ -294,6 +334,11 @@ namespace CRM.Client.Pages.Tickets
             var response = await _serviceUser.Get(request);
 
             _users = response.Items.ToList();
+            
+            // ✅ FIX: Inizializza lista filtrata escludendo utenti già selezionati
+            _filteredUsers = _users
+                .Where(u => !_selectedUserIds.Contains(u.Id))
+                .ToList();
     
             StateHasChanged();
       
@@ -318,6 +363,79 @@ namespace CRM.Client.Pages.Tickets
             StateHasChanged();
         }
 
+        /// <summary>
+        /// ✅ NUOVO: Gestisce la ricerca utenti in tempo reale
+        /// </summary>
+        private void OnSearchChanged(string searchQuery)
+        {
+            _searchQuery = searchQuery?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(_searchQuery))
+            {
+                // ✅ FIX: Escludi utenti già selezionati dalla lista disponibile
+                _filteredUsers = _users
+                    .Where(u => !_selectedUserIds.Contains(u.Id))
+                    .ToList();
+            }
+            else
+            {
+                // ✅ FIX: Escludi utenti già selezionati + applica filtro ricerca
+                _filteredUsers = _users
+                    .Where(u => !_selectedUserIds.Contains(u.Id) &&
+                               (u.NameComplete.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                                u.Email.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+            }
+
+            StateHasChanged();
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Toggle selezione utente
+        /// </summary>
+        private void ToggleUser(string userId)
+        {
+            if (_selectedUserIds.Contains(userId))
+            {
+                _selectedUserIds.Remove(userId);
+            }
+            else
+            {
+                _selectedUserIds.Add(userId);
+            }
+
+            // ✅ FIX: Aggiorna la lista filtrata per rimuovere/aggiungere l'utente
+            OnSearchChanged(_searchQuery);
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Rimuove un utente dalla selezione
+        /// </summary>
+        private void RemoveUser(string userId)
+        {
+            _selectedUserIds.Remove(userId);
+            
+            // ✅ FIX: Aggiorna la lista filtrata per mostrare di nuovo l'utente rimosso
+            OnSearchChanged(_searchQuery);
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Ottieni iniziali dal nome completo
+        /// </summary>
+        private string GetInitials(string fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+                return "?";
+
+            var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0)
+                return "?";
+
+            if (parts.Length == 1)
+                return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+
+            return (parts[0][0].ToString() + parts[^1][0].ToString()).ToUpper();
+        }
 
         protected async Task HandleValidSubmit()
         {
@@ -337,7 +455,24 @@ namespace CRM.Client.Pages.Tickets
                     _ticket.DateOpened = DateTime.Now;
                     
                 }
+
+                // ✅ NUOVO: Sincronizza IdUserAssigned con il primo utente selezionato (retrocompatibilità)
+                if (_selectedUserIds.Any())
+                {
+                    _ticket.IdUserAssigned = _selectedUserIds.First();
+                }
+                else
+                {
+                    _ticket.IdUserAssigned = null;
+                }
+
                 _ticket = (await _service.Post(_ticket)).Data;
+
+                // ✅ NUOVO: Salva le assegnazioni multiple tramite API
+                if (_ticket?.Id > 0)
+                {
+                    await SaveMultipleAssignments(_ticket.Id);
+                }
                 
                 if (OnClickSave != null)
                     OnClickSave();
@@ -353,6 +488,41 @@ namespace CRM.Client.Pages.Tickets
             {
                 _isLoading = false;
                 WaitingClose();
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Salva le assegnazioni multiple degli utenti al ticket
+        /// </summary>
+        private async Task SaveMultipleAssignments(int ticketId)
+        {
+            try
+            {
+                var assignmentData = new
+                {
+                    ticketId = ticketId,
+                    userIds = _selectedUserIds.ToList()
+                };
+
+                var response = await HttpClient.PostAsJsonAsync($"api/Tickets/{ticketId}/assign-users", assignmentData);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorMsg = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Errore assegnazione utenti: {errorMsg}");
+                    
+                    NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Warning,
+                        Summary = Localize["Warning"],
+                        Detail = Localize["Failed to assign users"],
+                        Duration = 4000
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore salvataggio assegnazioni: {ex.Message}");
             }
         }
 
@@ -473,8 +643,15 @@ namespace CRM.Client.Pages.Tickets
 
                 if (userDate.IdUser != null)
                 {
+                    // ✅ NUOVO: Aggiungi utente alla selezione multipla invece di sostituire
+                    if (!_selectedUserIds.Contains(userDate.IdUser))
+                    {
+                        _selectedUserIds.Add(userDate.IdUser);
+                    }
+                    
+                    // Mantieni retrocompatibilità
                     _ticket.IdUserAssigned = userDate.IdUser;
-                    _ddUser.SelectItem(_ticket.IdUserAssigned, true);
+                    _ddUser?.SelectItem(_ticket.IdUserAssigned, true);
                 }
                 
             }

@@ -234,7 +234,7 @@ namespace CRM.Server.Controllers
                     if (args.ViewNotAssigned)
                         tickets = tickets.Where(x => (x.IdUserAssigned == args.IdUserAssigned || x.IdUserAssigned == null));
                     else
-                        tickets = tickets.Where(x => x.AssignedUsers.Where(y=>y.IdUser == args.IdUserAssigned).Any());
+                        tickets = tickets.Where(x =>x.IdUserAssigned == args.IdUserAssigned || x.AssignedUsers.Where(y=>y.IdUser == args.IdUserAssigned).Any());
                 }
 
                 if (args.IdProject != null)

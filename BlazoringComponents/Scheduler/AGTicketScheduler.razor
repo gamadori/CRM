@@ -19,7 +19,7 @@
         <!-- ✅ NUOVO: Status Badge -->
         @if (!string.IsNullOrEmpty(Ticket.StatusText))
         {
-            <span class="ticket-status-badge" style="background-color: @Ticket.StatusColor">
+            <span class="ticket-status-badge" style="background-color: @Ticket.StatusColor; color: @GetTextColorForBackground(Ticket.StatusColor)">
                 @Ticket.StatusText
             </span>
         }

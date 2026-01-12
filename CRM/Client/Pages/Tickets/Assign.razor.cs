@@ -117,7 +117,11 @@ namespace CRM.Client.Pages.Tickets
 
                 var response = await _usersService.GetList(request);
                 _users = response.Items;
-                _filteredUsers = _users;
+                
+                // ✅ FIX: Inizializza lista filtrata escludendo utenti già selezionati
+                _filteredUsers = _users
+                    .Where(u => !_selectedUserIds.Contains(u.Id))
+                    .ToList();
 
                 StateHasChanged();
             }
@@ -196,13 +200,18 @@ namespace CRM.Client.Pages.Tickets
 
             if (string.IsNullOrWhiteSpace(_searchQuery))
             {
-                _filteredUsers = _users;
+                // ✅ FIX: Escludi utenti già selezionati dalla lista disponibile
+                _filteredUsers = _users
+                    .Where(u => !_selectedUserIds.Contains(u.Id))
+                    .ToList();
             }
             else
             {
+                // ✅ FIX: Escludi utenti già selezionati + applica filtro ricerca
                 _filteredUsers = _users
-                    .Where(u => u.NameComplete.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
-                               u.Email.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase))
+                    .Where(u => !_selectedUserIds.Contains(u.Id) &&
+                               (u.NameComplete.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                                u.Email.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
             }
 
@@ -223,7 +232,8 @@ namespace CRM.Client.Pages.Tickets
                 _selectedUserIds.Add(userId);
             }
 
-            StateHasChanged();
+            // ✅ FIX: Aggiorna la lista filtrata per rimuovere/aggiungere l'utente
+            OnSearchChanged(_searchQuery);
         }
 
         /// <summary>
@@ -232,7 +242,9 @@ namespace CRM.Client.Pages.Tickets
         private void RemoveUser(string userId)
         {
             _selectedUserIds.Remove(userId);
-            StateHasChanged();
+            
+            // ✅ FIX: Aggiorna la lista filtrata per mostrare di nuovo l'utente rimosso
+            OnSearchChanged(_searchQuery);
         }
 
         /// <summary>

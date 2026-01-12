@@ -14,14 +14,14 @@ namespace CRM.Client.Validators
 
         public TicketEditValidator(IStringLocalizer<CRM.Shared.Resources.App> localize)
         {
-            RuleFor(x => x.IdCompany).NotEmpty().WithMessage(localize["Select the Client"]);
-            RuleFor(x => x.IdType).NotEmpty().WithMessage(localize["Select the type of Ticket"]);
+            RuleFor(x => x.IdCompany).NotEmpty().WithMessage(localize["Select the Client"].Value ?? "Select the Client");
+            RuleFor(x => x.IdType).NotEmpty().WithMessage(localize["Select the type of Ticket"].Value ?? "Select the type of Ticket");
 
-            RuleFor(x => x.IdArticle).NotEmpty().When(x => x.TicketType != null && x.TicketType?.IdArticolo == (int)PropertyStates.Required).WithMessage(localize["Select the article"]);
+            RuleFor(x => x.IdArticle).NotEmpty().When(x => x.TicketType != null && x.TicketType?.IdArticolo == (int)PropertyStates.Required).WithMessage(localize["Select the article"].Value ?? "Select the article");
 
-            RuleFor(x => x.Date).NotEmpty().When(x => x.TicketType != null && x.TicketType?.Date == (int)PropertyStates.Required).WithMessage(localize["Set the date of the event"]);
-            RuleFor(x => x.Time).NotEmpty().When(x => x.TicketType != null && x.TicketType?.Time == (int)PropertyStates.Required).WithMessage(localize["Set the time of the event"]);
-            RuleFor(x => x.Description).NotEmpty().MinimumLength(10).WithMessage(localize["The description must be at least 10 characters long"]);
+            RuleFor(x => x.Date).NotEmpty().When(x => x.TicketType != null && x.TicketType?.Date == (int)PropertyStates.Required).WithMessage(localize["Set the date of the event"].Value ?? "Set the date of the event");
+            RuleFor(x => x.Time).NotEmpty().When(x => x.TicketType != null && x.TicketType?.Time == (int)PropertyStates.Required).WithMessage(localize["Set the time of the event"].Value ?? "Set the time of the event");
+            RuleFor(x => x.Description).NotEmpty().MinimumLength(10).WithMessage(localize["The description must be at least 10 characters long"].Value ?? "The description must be at least 10 characters long");
         }
 
 

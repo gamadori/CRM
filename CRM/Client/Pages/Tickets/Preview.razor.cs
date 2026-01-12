@@ -129,9 +129,11 @@ namespace CRM.Client.Pages.Tickets
                 }
                 else
                 {
-                    // Fallback: Se non ci sono utenti in TicketUserAssignments, usa IdUserAssigned legacy
+                    // ✅ FIX: Fallback SOLO se la tabella TicketUserAssignments è vuota
+                    // E solo se IdUserAssigned legacy esiste
                     if (!string.IsNullOrEmpty(_ticket.IdUserAssigned) && _userAssigned != null)
                     {
+                        _assignedUsers.Clear();
                         _assignedUsers.Add(_userAssigned);
                     }
                 }
@@ -140,9 +142,10 @@ namespace CRM.Client.Pages.Tickets
             {
                 Console.WriteLine($"Errore caricamento utenti assegnati: {ex.Message}");
                 
-                // Fallback in caso di errore: usa utente legacy
-                if (_userAssigned != null)
+                // ✅ FIX: Fallback in caso di errore SOLO se lista è vuota
+                if (!_assignedUsers.Any() && _userAssigned != null && !string.IsNullOrEmpty(_ticket.IdUserAssigned))
                 {
+                    _assignedUsers.Clear();
                     _assignedUsers.Add(_userAssigned);
                 }
             }

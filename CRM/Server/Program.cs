@@ -65,18 +65,6 @@ builder.Services.AddScoped<ILogEventService, LogEventService>();
 builder.Services.AddScoped<IPermitsService, PermitsService>();
 builder.Services.AddScoped<IEmailSender, EmailService>();
 builder.Services.AddScoped<IEmailSenderPlus, EmailService>();
-//builder.Services.AddSingleton<IAPIEmailSender>(sp =>
-//    new SendGridEmailSender(
-//        builder.Configuration["Email:SendGridKey"]!,
-//        builder.Configuration["Email:From"]!
-//    ));
-
-//builder.Services.AddSingleton<IAPIEmailSender>(sp =>
-//    new BrevoEmailSender(
-//        sp.GetRequiredService<IHttpClientFactory>().CreateClient(),
-//        builder.Configuration["Email:BrevoKey"]!,
-//        builder.Configuration["Email:From"]!
-//    ));
 
 builder.Services.AddTransient<INoticeService, NoticeService>();
 
@@ -247,9 +235,6 @@ using (var scope = scopeFactory.CreateScope())
     RolesHelper.CreateUserRoles(scope.ServiceProvider).Wait();
 }
 
-//SyncfusionLicenseProvider.RegisterLicense("NTE2MjAzQDMxMzkyZTMyMmUzMFQzVFRJaW8zTWwrNVdzS2ovWUVKY0NPZWNPQkVoYUlMZVNXNy8vZ0hNZU09");
-//SyncfusionLicenseProvider.RegisterLicense("NTkyMDU1QDMxMzkyZTM0MmUzMGg2WENXaVArb29Tc01NMTl5VlpVekdRN2RrSWpHOThGN0VwV3NPOWczOFE9");
-//SyncfusionLicenseProvider.RegisterLicense("go+DSMBMAY9C3t2VVhiQlFadVlJXGFWfVJpTGpQdk5xdV9DaVZUTWY/P1ZhSXxRdkxiW35ZcXZQQGlbUUc=");
 SyncfusionLicenseProvider.RegisterLicense("Mgo+DSMBaFt8QHFqVkBrXVNbdV5dVGpAd0N3RGlcdlR1fUUmHVdTRHRcQ11iTX9adEdmUXdWdXQ=");
 
 

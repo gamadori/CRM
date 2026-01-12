@@ -15,10 +15,13 @@ namespace RedG.Client.Components
         Cancel,
         Back,
         Download,
+        DownloadPdf,
         View,
         Close,
         Confirm,
-        Translate
+        Translate,
+        AssignTicket,
+        CloseTicket
     }
     public class RedGButton: RadzenButton
     {
@@ -76,6 +79,12 @@ namespace RedG.Client.Components
                     ButtonStyle = Radzen.ButtonStyle.Warning;
                     break;
 
+                case RGButtonType.DownloadPdf:
+                    Icon = "picture_as_pdf";
+                    ButtonStyle = Radzen.ButtonStyle.Warning;
+                    break;
+
+
                 case RGButtonType.View:
 
                     Icon = "visibility";
@@ -95,6 +104,15 @@ namespace RedG.Client.Components
                     Icon = "translate";
                     ButtonStyle = Radzen.ButtonStyle.Warning;
                     break;
+                case RGButtonType.AssignTicket:
+                    Icon= "assignment_ind";
+                    ButtonStyle = Radzen.ButtonStyle.Info;
+                    break;
+                case RGButtonType.CloseTicket:
+                    Icon = "assignment_turned_in";
+                    ButtonStyle = Radzen.ButtonStyle.Success;
+                    break;
+
             }
         }
     }

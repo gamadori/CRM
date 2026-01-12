@@ -315,9 +315,6 @@
   <data name="Seleziona la Ditta..." xml:space="preserve">
     <value>Select the Company...</value>
   </data>
-  <data name="Selezionare il Cliente" xml:space="preserve">
-    <value>Select the customer</value>
-  </data>
   <data name="Settings" xml:space="preserve">
     <value>System Settings</value>
   </data>
@@ -374,7 +371,7 @@
     <value />
   </data>
   <data name="New Ticket" xml:space="preserve">
-    <value />
+    <value>New Ticket</value>
   </data>
   <data name="Save" xml:space="preserve">
     <value>Save</value>
@@ -389,13 +386,13 @@
     <value>Select the type of Ticket</value>
   </data>
   <data name="Set the date of the event" xml:space="preserve">
-    <value />
+    <value>Set the date of the event</value>
   </data>
   <data name="Set the time of the event" xml:space="preserve">
-    <value />
+    <value>Set the time of the event</value>
   </data>
   <data name="Surname" xml:space="preserve">
-    <value />
+    <value>Surname</value>
   </data>
   <data name="Ticket Edit" xml:space="preserve">
     <value>Ticket Edit</value>
@@ -501,5 +498,8 @@
   </data>
   <data name="Productstypes" xml:space="preserve">
     <value>Product Types</value>
+  </data>
+  <data name="Select the product" xml:space="preserve">
+    <value>Select the Product</value>
   </data>
 </root>

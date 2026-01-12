@@ -161,5 +161,113 @@ namespace BlazoringComponents.Scheduler
 
             return "?";
         }
+
+        /// <summary>
+        /// ✅ NUOVO: Calcola il colore del testo in base alla luminosità dello sfondo
+        /// Restituisce nero per sfondi chiari, bianco per sfondi scuri
+        /// </summary>
+        private string GetTextColorForBackground(string backgroundColor)
+        {
+            if (string.IsNullOrWhiteSpace(backgroundColor))
+                return "#000000"; // Default nero
+
+            try
+            {
+                // Rimuovi spazi e converti in lowercase
+                var color = backgroundColor.Trim().ToLowerInvariant();
+
+                int r, g, b;
+
+                // Gestisci formato #RGB o #RRGGBB
+                if (color.StartsWith("#"))
+                {
+                    color = color.Substring(1);
+                    
+                    if (color.Length == 3)
+                    {
+                        // Formato #RGB -> espandi a #RRGGBB
+                        r = Convert.ToInt32(color.Substring(0, 1) + color.Substring(0, 1), 16);
+                        g = Convert.ToInt32(color.Substring(1, 1) + color.Substring(1, 1), 16);
+                        b = Convert.ToInt32(color.Substring(2, 1) + color.Substring(2, 1), 16);
+                    }
+                    else if (color.Length == 6)
+                    {
+                        // Formato #RRGGBB
+                        r = Convert.ToInt32(color.Substring(0, 2), 16);
+                        g = Convert.ToInt32(color.Substring(2, 2), 16);
+                        b = Convert.ToInt32(color.Substring(4, 2), 16);
+                    }
+                    else
+                    {
+                        return "#000000"; // Formato non valido
+                    }
+                }
+                // Gestisci formato rgb(r, g, b)
+                else if (color.StartsWith("rgb(") && color.EndsWith(")"))
+                {
+                    var rgbValues = color.Substring(4, color.Length - 5).Split(',');
+                    if (rgbValues.Length == 3)
+                    {
+                        r = int.Parse(rgbValues[0].Trim());
+                        g = int.Parse(rgbValues[1].Trim());
+                        b = int.Parse(rgbValues[2].Trim());
+                    }
+                    else
+                    {
+                        return "#000000"; // Formato non valido
+                    }
+                }
+                // Gestisci colori nominali comuni
+                else
+                {
+                    var namedColor = ParseNamedColor(color);
+                    if (namedColor.HasValue)
+                    {
+                        r = namedColor.Value.r;
+                        g = namedColor.Value.g;
+                        b = namedColor.Value.b;
+                    }
+                    else
+                    {
+                        return "#000000"; // Colore non riconosciuto
+                    }
+                }
+
+                // Calcola la luminosità relativa usando la formula WCAG
+                // https://www.w3.org/TR/WCAG20/#relativeluminancedef
+                double luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+                // Se la luminosità è > 0.5, usa testo scuro, altrimenti chiaro
+                return luminance > 0.5 ? "#000000" : "#FFFFFF";
+            }
+            catch
+            {
+                // In caso di errore, usa nero come default
+                return "#000000";
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Parse colori nominali comuni
+        /// </summary>
+        private (int r, int g, int b)? ParseNamedColor(string colorName)
+        {
+            return colorName switch
+            {
+                "white" => (255, 255, 255),
+                "black" => (0, 0, 0),
+                "red" => (255, 0, 0),
+                "green" => (0, 128, 0),
+                "blue" => (0, 0, 255),
+                "yellow" => (255, 255, 0),
+                "orange" => (255, 165, 0),
+                "purple" => (128, 0, 128),
+                "pink" => (255, 192, 203),
+                "gray" or "grey" => (128, 128, 128),
+                "lightgray" or "lightgrey" => (211, 211, 211),
+                "darkgray" or "darkgrey" => (169, 169, 169),
+                _ => null
+            };
+        }
     }
 }
