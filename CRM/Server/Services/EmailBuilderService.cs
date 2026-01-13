@@ -79,10 +79,8 @@ namespace CRM.Server.Services
                 return CreateEmail(fromName, from, to, subject, attachments, html, keyValues, logo, cc);
             }
             else
-            {
-                await _logEventService.RegisterAsync(nameof(EmailBuilderService), nameof(CreateEmail), LogEvent.EventsTypes.Warning, "Email Template non settato");
-                return null;
-            }
+                return CreateEmail(fromName, from, to, subject, attachments, message, keyValues, logo, cc);
+            
         }
 
         public MimeMessage CreateEmail(string fromName, string from, List<string> to, string subject, List<string> attachments, string html, Dictionary<string, string>? keyValues, Logo? logo, string? cc = null)

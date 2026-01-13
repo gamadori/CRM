@@ -1,6 +1,8 @@
 using CRM.Client.Helpers;
+using CRM.Client.Services;
 using CRM.Client.Shared.Components;
 using CRM.Shared;
+using CRM.Shared.Resources.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
@@ -19,6 +21,9 @@ namespace CRM.Client.Pages.TicketInterventions
     {
         [Inject]
         private IJSRuntime JS { get; set; } = default!;
+
+        [Inject]
+        private IBaseRestService<TicketIntervention, TicketInterventionFilter, int> _service { get; set; }
 
         [Inject]
         private HttpClient Http { get; set; } = default!;
@@ -40,6 +45,11 @@ namespace CRM.Client.Pages.TicketInterventions
         private bool _showSignatureOverlay;
         private bool _hasSignature;
         private bool _isSigning;
+        private bool _isSending;
+        private string _signatureStatus = string.Empty;
+        private string _signatureEmail = string.Empty;
+        private string _signerName = string.Empty;
+        private TicketIntervention? _ticketIntervention = null;
 
         private ElementReference containerRef;
         private ElementReference pdfHostRef;
@@ -49,6 +59,7 @@ namespace CRM.Client.Pages.TicketInterventions
         {
             if (firstRender)
             {
+                _ticketIntervention = await _service.Get(Id);
                 _initialized = true;
                 await LoadReport();
                 await CheckSignature();
@@ -94,7 +105,10 @@ namespace CRM.Client.Pages.TicketInterventions
 
         private void GoToDetails()
         {
-            NavigationManager.NavigateTo($"/TicketInterventions/{Id}");
+            if (_ticketIntervention != null)
+                NavigationManager.NavigateTo($"Tickets/{_ticketIntervention.Id}/intervention/{Id}");
+            else
+                NavigationManager.NavigateTo($"/TicketsIntervention/{Id}");
         }
 
         private async Task ReportUploadDialog()
@@ -237,17 +251,101 @@ namespace CRM.Client.Pages.TicketInterventions
         {
             try
             {
-                var signature = await Http.GetStringAsync($"{ConstHelper.TicketsInterventionsPath}/GetSignature/{Id}");
-                _hasSignature = !string.IsNullOrWhiteSpace(signature);
+                // Ottieni dettagli intervento per verificare stato firma
+                var intervention = await Http.GetFromJsonAsync<TicketIntervention>(
+                    $"{ConstHelper.TicketsInterventionsPath}/{Id}"
+                );
+
+                if (intervention != null)
+                {
+                    _hasSignature = !string.IsNullOrWhiteSpace(intervention.CustomerSignature);
+                    _signatureStatus = intervention.SignatureStatus.ToString();
+                    _signatureEmail = intervention.SignatureEmail ?? string.Empty;
+                    _signerName = intervention.SignatureName ?? string.Empty;
+                }
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Errore verifica firma: {ex.Message}");
                 _hasSignature = false;
+                _signatureStatus = string.Empty;
+                _signatureEmail = string.Empty;
             }
         }
 
-        private void OpenSignatureOverlay()
+        /// <summary>
+        /// Apre dialog per rinviare email di conferma (con possibilità di modificare l'email)
+        /// </summary>
+        private async Task OpenResendConfirmationDialog()
+        {
+            var result = await DialogService.OpenAsync<ResendConfirmationEmailDialog>(
+                "Rinvia Email Conferma Firma",
+                new Dictionary<string, object>
+                {
+                    { "CurrentEmail", _signatureEmail },
+                    { "SignerName", _signerName }
+                },
+                new DialogOptions { Width = "500px", Height = "auto" }
+            );
+
+            if (result is string newEmail && !string.IsNullOrWhiteSpace(newEmail))
+            {
+                await ResendConfirmationEmail(newEmail);
+            }
+        }
+
+        /// <summary>
+        /// Rinvia l'email di conferma firma
+        /// </summary>
+        private async Task ResendConfirmationEmail(string email)
+        {
+            _isSending = true;
+            StateHasChanged();
+
+            try
+            {
+                var response = await Http.PostAsJsonAsync(
+                    $"{ConstHelper.TicketsInterventionsPath}/ResendSignatureConfirmation/{Id}",
+                    new { Email = email }
+                );
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _signatureEmail = email; // Aggiorna email visualizzata
+                    
+                    await DialogService.Alert(
+                        $"Email di conferma rinviata con successo a: {email}",
+                        "Successo",
+                        new AlertOptions { OkButtonText = "OK" }
+                    );
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    await DialogService.Alert(
+                        $"Errore durante l'invio: {error}",
+                        "Errore",
+                        new AlertOptions { OkButtonText = "OK" }
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Errore rinvio email: {ex.Message}");
+                await DialogService.Alert(
+                    $"Errore: {ex.Message}",
+                    "Errore",
+                    new AlertOptions { OkButtonText = "OK" }
+                );
+            }
+            finally
+            {
+                _isSending = false;
+                StateHasChanged();
+            }
+        }
+
+        private async Task OpenSignatureOverlay()
         {
             _showSignatureOverlay = true;
             StateHasChanged();

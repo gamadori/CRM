@@ -39,7 +39,10 @@ namespace CRM.Shared
         NoticeNewUser,
 
         [Display(Name = "Nuovo Messaggio di Chat")]
-        NoticeNewChatMessage
+        NoticeNewChatMessage,
+
+        [Display(Name = "Conferma Firma")]
+        SignatureConfirm,
 
     }
 

@@ -162,7 +162,35 @@ else
                             <div class="accordion-item">
                                 <h2 class="accordion-header" id="panelsStayOpen-headingFour">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseFour" aria-expanded="true" aria-controls="panelsStayOpen-collapseFour">
-                                        Customer Signature <span class="badge text-bg-success ms-2">Signed</span>
+                                        Customer Signature 
+                                        
+                                        @* Badge stato firma *@
+                                        @if (_ticketIntervention.SignatureStatus == CRM.Shared.SignatureStatus.Pending)
+                                        {
+                                            <span class="badge text-bg-warning ms-2">
+                                                <i class="material-icons" style="font-size: 14px; vertical-align: middle;">schedule</i>
+                                                In Attesa di Conferma
+                                            </span>
+                                        }
+                                        else if (_ticketIntervention.SignatureStatus == CRM.Shared.SignatureStatus.Verified)
+                                        {
+                                            <span class="badge text-bg-success ms-2">
+                                                <i class="material-icons" style="font-size: 14px; vertical-align: middle;">verified</i>
+                                                Confermata
+                                            </span>
+                                        }
+                                        else if (_ticketIntervention.SignatureStatus == CRM.Shared.SignatureStatus.Rejected)
+                                        {
+                                            <span class="badge text-bg-danger ms-2">
+                                                <i class="material-icons" style="font-size: 14px; vertical-align: middle;">cancel</i>
+                                                Rifiutata
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-success ms-2">Signed</span>
+                                        }
+
                                         @if (!string.IsNullOrWhiteSpace(_ticketIntervention.SignatureName))
                                         {
                                             <span class="text-primary ms-2" style="font-size: 0.85rem; font-weight: 600;">
@@ -179,6 +207,54 @@ else
                                 </h2>
                                 <div id="panelsStayOpen-collapseFour" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingFour">
                                     <div class="accordion-body bg-light">
+                                        @* Alert conferma in attesa *@
+                                        @if (_ticketIntervention.SignatureStatus == CRM.Shared.SignatureStatus.Pending)
+                                        {
+                                            <div class="alert alert-warning d-flex align-items-start gap-2 mb-3">
+                                                <i class="material-icons" style="font-size: 24px;">warning</i>
+                                                <div class="flex-grow-1">
+                                                    <strong>Firma in Attesa di Conferma</strong>
+                                                    <p class="mb-2">
+                                                        Email di conferma inviata a: <strong>@_ticketIntervention.SignatureEmail</strong>
+                                                    </p>
+                                                    <p class="mb-0 small text-muted">
+                                                        La firma diventerà valida solo dopo la conferma tramite email.
+                                                    </p>
+                                                </div>
+                                                @if (_ticketIntervention.Permits.Edit())
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-warning" @onclick="OpenResendConfirmationDialog" disabled="@_isSendingEmail">
+                                                        <i class="material-icons" style="font-size: 16px; vertical-align: middle;">forward_to_inbox</i>
+                                                        @(_isSendingEmail ? "Invio..." : "Rinvia Email")
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+                                        else if (_ticketIntervention.SignatureStatus == CRM.Shared.SignatureStatus.Verified && _ticketIntervention.SignatureConfirmedDate.HasValue)
+                                        {
+                                            <div class="alert alert-success d-flex align-items-center gap-2 mb-3">
+                                                <i class="material-icons" style="font-size: 24px;">check_circle</i>
+                                                <div>
+                                                    <strong>Firma Confermata</strong>
+                                                    <p class="mb-0 small">
+                                                        Confermata il @_ticketIntervention.SignatureConfirmedDate.Value.ToString("g")
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        }
+                                        else if (_ticketIntervention.SignatureStatus == CRM.Shared.SignatureStatus.Rejected)
+                                        {
+                                            <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+                                                <i class="material-icons" style="font-size: 24px;">error</i>
+                                                <div>
+                                                    <strong>Firma Rifiutata</strong>
+                                                    <p class="mb-0 small">
+                                                        Il cliente ha rifiutato la firma tramite email.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        }
+
                                         @if (!string.IsNullOrWhiteSpace(_ticketIntervention.SignatureName))
                                         {
                                             <div class="text-center mb-3">

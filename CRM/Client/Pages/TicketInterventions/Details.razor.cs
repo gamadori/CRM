@@ -1,5 +1,6 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Services;
+using CRM.Client.Shared.Components;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -75,6 +76,8 @@ namespace CRM.Client.Pages.TicketInterventions
         private MsgBoxComand _msgBoxComand;
 
         private bool _creatingReport = false;
+        private bool _isSendingEmail = false;
+
         protected override async Task OnInitializedAsync()
         {
             await LoadData();
@@ -244,6 +247,81 @@ namespace CRM.Client.Pages.TicketInterventions
         private void CloseReportView()
         {
 
+        }
+
+        /// <summary>
+        /// Apre dialog per rinviare email di conferma firma
+        /// </summary>
+        private async Task OpenResendConfirmationDialog()
+        {
+            if (_ticketIntervention == null) return;
+
+            var result = await DialogService.OpenAsync<ResendConfirmationEmailDialog>(
+                "Rinvia Email Conferma Firma",
+                new Dictionary<string, object>
+                {
+                    { "CurrentEmail", _ticketIntervention.SignatureEmail ?? string.Empty },
+                    { "SignerName", _ticketIntervention.SignatureName ?? string.Empty }
+                },
+                new DialogOptions { Width = "500px", Height = "auto" }
+            );
+
+            if (result is string newEmail && !string.IsNullOrWhiteSpace(newEmail))
+            {
+                await ResendConfirmationEmail(newEmail);
+            }
+        }
+
+        /// <summary>
+        /// Rinvia l'email di conferma firma
+        /// </summary>
+        private async Task ResendConfirmationEmail(string email)
+        {
+            _isSendingEmail = true;
+            StateHasChanged();
+
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync(
+                    $"{ConstHelper.TicketsInterventionsPath}/ResendSignatureConfirmation/{_ticketIntervention.Id}",
+                    new { Email = email }
+                );
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // Aggiorna email nell'oggetto corrente
+                    _ticketIntervention.SignatureEmail = email;
+                    
+                    await DialogService.Alert(
+                        $"Email di conferma rinviata con successo a: {email}",
+                        "Successo",
+                        new AlertOptions { OkButtonText = "OK" }
+                    );
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    await DialogService.Alert(
+                        $"Errore durante l'invio: {error}",
+                        "Errore",
+                        new AlertOptions { OkButtonText = "OK" }
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Errore rinvio email: {ex.Message}");
+                await DialogService.Alert(
+                    $"Errore: {ex.Message}",
+                    "Errore",
+                    new AlertOptions { OkButtonText = "OK" }
+                );
+            }
+            finally
+            {
+                _isSendingEmail = false;
+                StateHasChanged();
+            }
         }
     }
 }

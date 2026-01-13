@@ -16,6 +16,19 @@
             <span class="ps-2">@(_hasSignature ? "Rifirma Documento" : "Firma Documento")</span>
         </button>
 
+        <!-- ? NUOVO: Bottone Rinvio Email (visibile solo se firma PENDING) -->
+        @if (_signatureStatus == "Pending" && !string.IsNullOrEmpty(_signatureEmail))
+        {
+            <button type="button" class="btn btn-sm btn-warning" @onclick="OpenResendConfirmationDialog" disabled="@_isSending">
+                <i class="material-icons middle">forward_to_inbox</i>
+                <span class="ps-2">@(_isSending ? "Invio..." : "Rinvia Email Conferma")</span>
+            </button>
+            <small class="text-muted">
+                <i class="material-icons" style="font-size:14px; vertical-align:middle;">schedule</i>
+                Conferma firma in attesa per: @_signatureEmail
+            </small>
+        }
+
         <button type="button" class="btn btn-sm btn-light" @onclick="ReportUploadDialog">
             <i class="material-icons middle text-secondary">file_upload</i>
             <span class="ps-2 text-secondary">Carica Report</span>

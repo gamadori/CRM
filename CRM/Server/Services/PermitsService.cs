@@ -77,6 +77,7 @@ namespace CRM.Server.Services
 
         }
         
+        
         /// <summary>
         /// Verifica se l'utente loggato può accedere ai dati dell'aziende a lui non collegato
         /// </summary>

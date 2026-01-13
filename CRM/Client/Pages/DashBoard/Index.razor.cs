@@ -145,6 +145,13 @@ namespace CRM.Client.Pages.DashBoard
             NavigationManager.NavigateTo($"/Settings/Users/true");
         }
 
+        protected void InterventionsPendingSignature()
+        {
+            // Naviga alla lista interventi con filtro per firme pending
+            // TODO: creare pagina dedicata o modificare Index interventi per supportare filtro SignatureStatus
+            NavigationManager.NavigateTo("/TicketsIntervention/PendingSignatures");
+        }
+
         protected async Task OnClickNew1()
         {
             await dialogService.Confirm($"{Localize["Confermare l'utente"]}", Localize["Conferma Utente"], null);

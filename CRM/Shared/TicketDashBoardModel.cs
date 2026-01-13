@@ -22,6 +22,8 @@ namespace CRM.Shared
 
         public int ChatMessageToRead { get; set; }
 
+        public int InterventionsPendingSignature { get; set; }
+
         public List<Ticket> Tickets { get; set; }   
 
 

@@ -123,6 +123,24 @@ else
                             </RadzenCard>
                         </div>
                     }
+                    @if (_model.InterventionsPendingSignature > 0)
+                    {
+                        <div class="col-12 col-sm-6 col-xl-3">
+                            <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #fff3e6 0%, #fff 100%);" @onclick="InterventionsPendingSignature">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div>
+                                        <p class="text-muted text-uppercase small fw-semibold mb-1 d-flex align-items-center gap-1">
+                                            <span class="material-icons" style="font-size: 16px;">schedule</span>
+                                            FIRME IN ATTESA
+                                        </p>
+                                        <h3 class="fw-bold mb-0" style="color: #f59e0b;">@_model.InterventionsPendingSignature</h3>
+                                        <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Conferma Email Richiesta</small>
+                                    </div>
+                                    <span class="material-icons" style="font-size: 32px; color: #f59e0b;">draw</span>
+                                </div>
+                            </RadzenCard>
+                        </div>
+                    }
                 </div>
             </div>
         </div>

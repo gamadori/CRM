@@ -21,7 +21,8 @@ using CRM.Client.Helpers;
 using CRM.Server.Extensions;
 using CRM.Shared.Resources.Models;
 using Microsoft.AspNetCore.Authorization;
-using CRM.Client.Services; // ✅ AGGIUNTO
+using CRM.Client.Services;
+using Microsoft.Identity.Client; // ✅ AGGIUNTO
 
 namespace CRM.Server.Controllers
 {
@@ -59,30 +60,34 @@ namespace CRM.Server.Controllers
         {
             try
             {
-                var items = _context.TicketsInterventions.Include(x => x.TicketInterventionsTypes).AsQueryable();
+                //var items = _context.TicketsInterventions.Include(x => x.TicketInterventionsTypes).AsQueryable();
 
-                if (!await _permitsService.CanAccessOtherCompany())
-                {
-                    int? idCompany = await _permitsService.GetIdCompany();
-                    items = items.Where(x => x.Ticket.IdCompany == idCompany);
+                //if (!await _permitsService.CanAccessOtherCompany())
+                //{
+                //    int? idCompany = await _permitsService.GetIdCompany();
+                //    items = items.Where(x => x.Ticket.IdCompany == idCompany);
+                //}
+                //if (args != null)
+                //{
+                //    if (args.OrderBy != null)
+                //        items = items.OrderBy(args.OrderBy);
 
-                }
-                if (args != null)
-                {
-                    if (args.OrderBy != null)
-                        items = items.OrderBy(args.OrderBy);
+                //    if (args.IdTicket != null)
+                //        items = items.Where(x => x.IdTicket == args.IdTicket);
 
-                    if (args.IdTicket != null)
-                        items = items.Where(x => x.IdTicket == args.IdTicket);
-
-                    if (args.Filter != null)
-                        items = items.Where(args.Filter);
-
-                    
-                    PagingHelper.ResponsePaging<TicketIntervention, TicketInterventionFilter>(HttpContext, items, args);
+                //    if (args.Filter != null)
+                //        items = items.Where(args.Filter);
 
                     
-                }
+                //    PagingHelper.ResponsePaging<TicketIntervention, TicketInterventionFilter>(HttpContext, items, args);
+                    
+
+                //}
+                var items = await Filter(args);
+
+                if (items == null)
+                    return new List<TicketIntervention>();
+
                 var list = await items.ToListAsync();
 
                 foreach (var item in list)
@@ -105,13 +110,25 @@ namespace CRM.Server.Controllers
             }
         }
 
+        [HttpGet("signature-pendig")]
+        public async Task<ActionResult> PendingSignatures(TicketInterventionFilter? args)
+        {
+            var items = await Filter(args);
+            
+            if (items == null)
+                return Problem("Empty");
+
+            var list = await items
+                .Where(x => x.SignatureStatus == CRM.Shared.SignatureStatus.Pending)
+                .ToListAsync();
+            
+            return Ok(list);
+
+        }
         // GET: api/TicketInterventions/5
         [HttpGet("{id}")]
         public async Task<ActionResult<TicketIntervention>> GetTicketIntervention(int id)
         {
-
-
-
             var ticketIntervention = await _context.TicketsInterventions.Include(x=>x.TicketInterventionsTypes).Where(x => x.Id == id).FirstOrDefaultAsync();
 
             if (ticketIntervention == null)
@@ -569,6 +586,53 @@ namespace CRM.Server.Controllers
             }
         }
 
+        private async Task<IQueryable<TicketIntervention>?> Filter(TicketInterventionFilter? args = null)
+        {
+            try
+            {
+                var items = _context.TicketsInterventions.Include(x => x.TicketInterventionsTypes).AsQueryable();
+
+
+                List<int>? companies = null;
+
+                if (!await _permitsService.BelongsToMainCompany())
+                {
+                    companies = await _permitsService.GetIdCompanies() ?? new();
+
+                    items = items.Where(x => companies.Contains(x.Ticket.IdCompany));
+                }
+
+                if (args?.SignaturePending == true)
+                {
+                    items = items.Where(x => x.SignatureStatus == CRM.Shared.SignatureStatus.Pending);
+                
+                }
+
+                if (args != null)
+                {
+                    if (args.OrderBy != null)
+                        items = items.OrderBy(args.OrderBy);
+
+                    if (args.IdTicket != null)
+                        items = items.Where(x => x.IdTicket == args.IdTicket);
+
+                    if (args.Filter != null)
+                        items = items.Where(args.Filter);
+
+                    PagingHelper.ResponsePaging<TicketIntervention, TicketInterventionFilter>(HttpContext, items, args);
+
+                }
+                
+
+
+                return items;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketInterventionsController), nameof(GetTicketIntervention), LogEvent.EventsTypes.Error, ex);
+                return null;
+            }
+        }
         private void ClearOtpState(TicketIntervention intervention)
         {
             intervention.SignatureOtpHash = null;
@@ -621,13 +685,31 @@ namespace CRM.Server.Controllers
                 intervention.SignatureName = signatureData.SignerName;
                 intervention.SignatureEmail = signatureData.SignerEmail;
                 intervention.SignatureDate = DateTime.Now;
-                intervention.SignatureStatus = CRM.Shared.SignatureStatus.Pending; // ✅ FIX: Usa namespace completo
+                intervention.SignatureStatus = CRM.Shared.SignatureStatus.Pending;
                 intervention.SignatureConfirmationToken = confirmationToken;
                 
                 _context.Entry(intervention).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
 
-                // Invia email di conferma
+                // Prepara allegati (report PDF se esiste)
+                List<string> attachments = new List<string>();
+                string reportPath = _archiveService.GetPath(id, "pdf");
+                
+                if (System.IO.File.Exists(reportPath))
+                {
+                    attachments.Add(reportPath);
+                }
+                else
+                {
+                    // Se il report non esiste, generalo prima di inviare l'email
+                    var generatedPath = await CreatePdf(id);
+                    if (!string.IsNullOrEmpty(generatedPath))
+                    {
+                        attachments.Add(generatedPath);
+                    }
+                }
+
+                // Invia email di conferma con allegato
                 var confirmationUrl = $"{Request.Scheme}://{Request.Host}/ConfirmSignature?token={confirmationToken}&id={id}&action=confirm";
                 var rejectUrl = $"{Request.Scheme}://{Request.Host}/ConfirmSignature?token={confirmationToken}&id={id}&action=reject";
                 
@@ -645,6 +727,8 @@ namespace CRM.Server.Controllers
                                 <li>Tecnico: {intervention.User?.NameComplete}</li>
                             </ul>
                         </div>
+
+                        <p>📎 <strong>In allegato trovi il report firmato dell'intervento.</strong></p>
 
                         <p><strong style='color: #dc3545;'>⚠️ Azione Richiesta:</strong></p>
                         <p>Per rendere valida la firma, conferma cliccando il pulsante qui sotto:</p>
@@ -667,19 +751,29 @@ namespace CRM.Server.Controllers
                     </div>
                 ";
 
-                await _emailSender.SendEmailAsync(signatureData.SignerEmail, subject, message);
+                // Usa l'overload con allegati e EmailsTypes.InvioDocumento
+                List<string> recipients = new List<string> { signatureData.SignerEmail };
+                await _emailSender.SendEmailAsync(
+                    recipients,
+                    EmailsTypes.SignatureConfirm,
+                    attachments.Count > 0 ? attachments : null,
+                    subject,
+                    message,
+                    null, // keyValues
+                    null  // cc
+                );
 
                 await _logEventService.RegisterAsync(
                     nameof(TicketInterventionsController),
                     nameof(SaveSignatureWithEmailConfirmation),
                     LogEvent.EventsTypes.Info,
-                    $"Firma salvata (PENDING) per intervention #{id} - Firmatario: {signatureData.SignerName} - Email: {signatureData.SignerEmail}");
+                    $"Firma salvata (PENDING) per intervention #{id} - Firmatario: {signatureData.SignerName} - Email: {signatureData.SignerEmail} - Allegati: {attachments.Count}");
 
                 return Ok(new SignatureSaveResponse
                 {
                     Success = true,
                     Status = "pending",
-                    Message = $"Firma salvata. Email di conferma inviata a {MaskEmail(signatureData.SignerEmail)}",
+                    Message = $"Firma salvata. Email di conferma con report allegato inviata a {MaskEmail(signatureData.SignerEmail)}",
                     ConfirmationRequired = true
                 });
             }
@@ -798,14 +892,16 @@ namespace CRM.Server.Controllers
         }
 
         /// <summary>
-        /// Salva la firma digitale del cliente con nome firmatario (DEPRECATO: usa SaveSignatureWithEmailConfirmation)
+        /// Rinvia email di conferma firma (se l'utente non l'ha ricevuta o ha sbagliato email)
         /// </summary>
-        [HttpPost("SaveSignature/{id}")]
-        public async Task<ActionResult<bool>> SaveCustomerSignature(int id, [FromBody] SignatureData signatureData)
+        [HttpPost("ResendSignatureConfirmation/{id}")]
+        public async Task<ActionResult> ResendSignatureConfirmation(int id, [FromBody] ResendEmailRequest request)
         {
             try
             {
-                var intervention = await _context.TicketsInterventions.FindAsync(id);
+                var intervention = await _context.TicketsInterventions
+                    .Include(x => x.Ticket)
+                    .FirstOrDefaultAsync(x => x.Id == id);
                 
                 if (intervention == null)
                     return NotFound();
@@ -813,58 +909,118 @@ namespace CRM.Server.Controllers
                 if (!await _permitsService.CanGetTicket(intervention.IdTicket))
                     return Problem("Not Permits");
 
-                intervention.CustomerSignature = signatureData.Signature;
-                intervention.SignatureDate = DateTime.Now;
-                intervention.SignatureName = signatureData.SignerName;
-                
+                // Verifica che ci sia una firma in pending
+                if (intervention.SignatureStatus != CRM.Shared.SignatureStatus.Pending)
+                {
+                    return BadRequest(new { error = "Nessuna firma in attesa di conferma" });
+                }
+
+                // Aggiorna email se diversa
+                var oldEmail = intervention.SignatureEmail;
+                var newEmail = request.Email?.Trim();
+
+                if (string.IsNullOrWhiteSpace(newEmail))
+                {
+                    return BadRequest(new { error = "Email non valida" });
+                }
+
+                intervention.SignatureEmail = newEmail;
+
+                // Genera nuovo token se email cambiata (per sicurezza)
+                if (oldEmail != newEmail)
+                {
+                    intervention.SignatureConfirmationToken = Guid.NewGuid().ToString("N");
+                }
+
                 _context.Entry(intervention).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
 
-                await _logEventService.RegisterAsync(
-                    nameof(TicketInterventionsController),
-                    nameof(SaveCustomerSignature),
-                    LogEvent.EventsTypes.Info,
-                    $"Firma salvata per intervention #{id} - Firmatario: {signatureData.SignerName} - Timestamp: {intervention.SignatureDate:g}");
-
-                return Ok(true);
-            }
-            catch (Exception ex)
-            {
-                await _logEventService.RegisterAsync(
-                    nameof(TicketInterventionsController),
-                    nameof(SaveCustomerSignature),
-                    LogEvent.EventsTypes.Error,
-                    $"Errore salvataggio firma: {ex.Message}");
-                return StatusCode(500, false);
-            }
-        }
-
-        /// <summary>
-        /// Ottiene la firma del cliente
-        /// </summary>
-        [HttpGet("GetSignature/{id}")]
-        public async Task<ActionResult<string>> GetCustomerSignature(int id)
-        {
-            try
-            {
-                var intervention = await _context.TicketsInterventions.FindAsync(id);
+                // Prepara allegati (report PDF)
+                List<string> attachments = new List<string>();
+                string reportPath = _archiveService.GetPath(id, "pdf");
                 
-                if (intervention == null)
-                    return NotFound();
+                if (System.IO.File.Exists(reportPath))
+                {
+                    attachments.Add(reportPath);
+                }
+                else
+                {
+                    var generatedPath = await CreatePdf(id);
+                    if (!string.IsNullOrEmpty(generatedPath))
+                    {
+                        attachments.Add(generatedPath);
+                    }
+                }
 
-                if (!await _permitsService.CanDownloadInterventionReport(id))
-                    return Problem("Not Permits");
+                // Invia email con nuovo/stesso token
+                var confirmationUrl = $"{Request.Scheme}://{Request.Host}/ConfirmSignature?token={intervention.SignatureConfirmationToken}&id={id}&action=confirm";
+                var rejectUrl = $"{Request.Scheme}://{Request.Host}/ConfirmSignature?token={intervention.SignatureConfirmationToken}&id={id}&action=reject";
+                
+                var subject = $"[RINVIO] Conferma Firma Intervento #{intervention.Ticket.Id}";
+                var message = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                        <h2 style='color: #0066cc;'>Conferma Firma Digitale</h2>
+                        <p>Gentile <strong>{intervention.SignatureName}</strong>,</p>
+                        <p>Questo è un <strong>rinvio</strong> dell'email di conferma per il verbale di intervento <strong>#{intervention.Ticket.Id}</strong>.</p>
+                        
+                        <div style='background: #f8f9fa; padding: 15px; border-left: 4px solid #0066cc; margin: 20px 0;'>
+                            <p style='margin: 0;'><strong>Dettagli Intervento:</strong></p>
+                            <ul style='margin: 10px 0;'>
+                                <li>Data: {intervention.StartDateTime:dd/MM/yyyy}</li>
+                                <li>Tecnico: {intervention.User?.NameComplete}</li>
+                            </ul>
+                        </div>
 
-                return Ok(intervention.CustomerSignature ?? "");
+                        <p>📎 <strong>In allegato trovi il report firmato dell'intervento.</strong></p>
+
+                        <p><strong style='color: #dc3545;'>⚠️ Azione Richiesta:</strong></p>
+                        <p>Per rendere valida la firma, conferma cliccando il pulsante qui sotto:</p>
+                        
+                        <div style='text-align: center; margin: 30px 0;'>
+                            <a href='{confirmationUrl}' 
+                               style='background: #28a745; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>
+                                ✅ CONFERMA FIRMA
+                            </a>
+                        </div>
+
+                        <p style='color: #6c757d; font-size: 12px;'>
+                            Se non hai firmato questo documento, ignora questa email o 
+                            <a href='{rejectUrl}'>clicca qui per rifiutare</a>.
+                        </p>
+
+                        <p style='color: #6c757d; font-size: 12px;'>
+                            Questo link è valido per 7 giorni e può essere usato una sola volta.
+                        </p>
+                    </div>
+                ";
+
+                List<string> recipients = new List<string> { newEmail };
+                await _emailSender.SendEmailAsync(
+                    recipients,
+                    EmailsTypes.InvioDocumento,
+                    attachments.Count > 0 ? attachments : null,
+                    subject,
+                    message,
+                    null,
+                    null
+                );
+
+                await _logEventService.RegisterAsync(
+                    nameof(TicketInterventionsController),
+                    nameof(ResendSignatureConfirmation),
+                    LogEvent.EventsTypes.Info,
+                    $"Email conferma firma RINVIATA per intervention #{id} - Email: {oldEmail} → {newEmail}");
+
+                return Ok(new { success = true, message = $"Email rinviata a {newEmail}" });
             }
             catch (Exception ex)
             {
                 await _logEventService.RegisterAsync(
                     nameof(TicketInterventionsController),
-                    nameof(GetCustomerSignature),
+                    nameof(ResendSignatureConfirmation),
                     LogEvent.EventsTypes.Error,
-                    $"Errore recupero firma: {ex.Message}");
-                return StatusCode(500, "");
+                    $"Errore rinvio email: {ex.Message}");
+                return StatusCode(500, new { error = "Errore durante l'invio" });
             }
         }
 
@@ -1090,6 +1246,14 @@ namespace CRM.Server.Controllers
         public string Status { get; set; } = string.Empty; // "pending", "verified"
         public string Message { get; set; } = string.Empty;
         public bool ConfirmationRequired { get; set; }
+    }
+
+    /// <summary>
+    /// Richiesta rinvio email conferma
+    /// </summary>
+    public class ResendEmailRequest
+    {
+        public string Email { get; set; } = string.Empty;
     }
 
     public enum SignatureStatus

@@ -40,7 +40,7 @@ namespace CRM.Server.Controllers
         [HttpGet]
         public async Task<ActionResult<TicketDashBoardModel>> Get([FromQuery] TicketDashBoardModelFilter filter)
         {
-            int? idCompany;
+            int? idCompany = null;
             string idUser = await _permitsService.IdUser();
 
             TicketDashBoardModel model = new TicketDashBoardModel();
@@ -97,6 +97,26 @@ namespace CRM.Server.Controllers
                 model.UsersNeedConfirm = 0;
 
             model.ChatMessageToRead = await _context.TicketChatReads.Where(x => x.IdUser == idUser && x.Displayed == false).CountAsync();
+
+            // Conta interventi con firma in attesa di conferma (Pending)
+            var interventionsQuery = _context.TicketsInterventions.AsQueryable();
+            
+            if (idCompany.HasValue)
+            {
+                // Filtra per azienda se necessario
+                interventionsQuery = interventionsQuery.Where(x => x.Ticket.IdCompany == idCompany);
+            }
+
+            if (filter?.IdUser != null)
+            {
+                // Filtra per utente se specificato
+                interventionsQuery = interventionsQuery.Where(x => x.IdUser == filter.IdUser);
+            }
+
+            model.InterventionsPendingSignature = await interventionsQuery
+                .Where(x => x.SignatureStatus == CRM.Shared.SignatureStatus.Pending && 
+                           !string.IsNullOrEmpty(x.CustomerSignature))
+                .CountAsync();
 
             return model;
         }

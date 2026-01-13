@@ -181,5 +181,7 @@ namespace CRM.Shared
         public DateTime? DateTo { get; set; }
 
         public int? SupportType { get; set; }
+
+        public bool? SignaturePending { get; set; } = null;
     }
 }

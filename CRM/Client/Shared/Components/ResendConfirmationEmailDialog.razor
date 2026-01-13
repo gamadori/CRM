@@ -1,0 +1,118 @@
+@inject DialogService DialogService
+
+<div class="p-3">
+    <div class="alert alert-info d-flex align-items-start gap-2 mb-3">
+        <i class="material-icons" style="font-size: 24px;">info</i>
+        <div>
+            <strong>Rinvio Email di Conferma</strong>
+            <p class="mb-0 mt-1">
+                Puoi modificare l'indirizzo email prima di rinviare la conferma.
+                Il cliente riceverà una nuova email con il link per confermare la firma.
+            </p>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">
+            <i class="material-icons" style="font-size: 18px; vertical-align: middle;">person</i>
+            Firmatario
+        </label>
+        <input type="text" class="form-control" value="@SignerName" readonly disabled />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">
+            <i class="material-icons" style="font-size: 18px; vertical-align: middle;">email</i>
+            Indirizzo Email
+        </label>
+        <input type="email" 
+               class="form-control @(_emailError ? "is-invalid" : "")" 
+               @bind="Email" 
+               placeholder="Es: mario.rossi@example.com"
+               @oninput="OnEmailInput" />
+        @if (_emailError)
+        {
+            <div class="invalid-feedback d-block">
+                <i class="material-icons" style="font-size: 14px; vertical-align: middle;">error</i>
+                Inserisci un indirizzo email valido
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(CurrentEmail) && Email != CurrentEmail)
+        {
+            <small class="form-text text-warning">
+                <i class="material-icons" style="font-size: 14px; vertical-align: middle;">warning</i>
+                Email modificata da: <strong>@CurrentEmail</strong>
+            </small>
+        }
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-light" @onclick="Cancel">
+            <i class="material-icons middle">close</i>
+            Annulla
+        </button>
+        <button type="button" 
+                class="btn btn-primary" 
+                @onclick="Confirm"
+                disabled="@(string.IsNullOrWhiteSpace(Email) || _emailError)">
+            <i class="material-icons middle">forward_to_inbox</i>
+            Rinvia Email
+        </button>
+    </div>
+</div>
+
+<style>
+    .material-icons.middle {
+        vertical-align: middle;
+        font-size: 20px;
+    }
+</style>
+
+@code {
+    [Parameter] public string CurrentEmail { get; set; } = string.Empty;
+    [Parameter] public string SignerName { get; set; } = string.Empty;
+
+    private string Email { get; set; } = string.Empty;
+    private bool _emailError = false;
+
+    protected override void OnInitialized()
+    {
+        Email = CurrentEmail;
+    }
+
+    private void OnEmailInput(ChangeEventArgs e)
+    {
+        Email = e.Value?.ToString() ?? string.Empty;
+        ValidateEmail();
+    }
+
+    private void ValidateEmail()
+    {
+        if (string.IsNullOrWhiteSpace(Email))
+        {
+            _emailError = false;
+            return;
+        }
+
+        // Regex semplice per validazione email
+        var emailRegex = new System.Text.RegularExpressions.Regex(
+            @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase
+        );
+
+        _emailError = !emailRegex.IsMatch(Email);
+    }
+
+    private void Confirm()
+    {
+        if (string.IsNullOrWhiteSpace(Email) || _emailError)
+            return;
+
+        DialogService.Close(Email.Trim());
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(null);
+    }
+}

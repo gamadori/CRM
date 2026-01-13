@@ -97,6 +97,9 @@ namespace CRM.Client.Pages.Tickets
         [Parameter]
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
+        [Parameter]
+        public int? IdIntervention { get; set; } = null;
+
         protected TicketViews selectView = TicketViews.Ticket;
 
         private PartialViews _partialView = PartialViews.Details;
@@ -131,10 +134,9 @@ namespace CRM.Client.Pages.Tickets
 
         protected override async Task OnInitializedAsync()
         {
+            
             await FindResponsiveness();
             await LoadTicket();
-
-
             
             if (IdProject != null)
             {
@@ -149,7 +151,7 @@ namespace CRM.Client.Pages.Tickets
                 
 
             }
-           
+            
             
             if (IdAttachment != null)
             {
@@ -161,6 +163,12 @@ namespace CRM.Client.Pages.Tickets
             {
                 selectView = TicketViews.Chat;
                
+                _partialView = PartialViews.Details;
+            }
+            else if (IdIntervention != null)
+            {
+                selectView = TicketViews.Interventi;
+                _idIntervention = IdIntervention;
                 _partialView = PartialViews.Details;
             }
 

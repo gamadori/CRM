@@ -132,7 +132,7 @@ builder.Services.AddScoped<IInterventionPdfGenerator, InterventionPdfGenerator>(
 builder.Services.AddScoped<ISignatureOtpService, SignatureOtpService>();
 
 builder.Services.AddSingleton<WTelegramService>();
-builder.Services.AddHostedService(provider => provider.GetService<WTelegramService>());
+builder.Services.AddHostedService(provider => provider.GetRequiredService<WTelegramService>());
 
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 
