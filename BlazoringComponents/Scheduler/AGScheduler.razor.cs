@@ -135,6 +135,9 @@ namespace BlazoringComponents.Scheduler
         private object _id = null;
 
         private DateTime _dateCurrent = DateTime.Today;
+
+        private bool _isMobile = false;
+
         public async Task Update()
         {
             await Period(true);
@@ -143,10 +146,39 @@ namespace BlazoringComponents.Scheduler
 
         protected override async Task OnInitializedAsync()
         {
-            
+            await CheckIfMobile();
             await Period();
             await base.OnInitializedAsync();
         }
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (firstRender)
+            {
+                await CheckIfMobile();
+                if (_isMobile && CurrentView == SchedulerViews.Month)
+                {
+                    CurrentView = SchedulerViews.Week;
+                    await CurrentViewChanged.InvokeAsync(CurrentView);
+                    await Period();
+                    StateHasChanged();
+                }
+            }
+            await base.OnAfterRenderAsync(firstRender);
+        }
+
+        private async Task CheckIfMobile()
+        {
+            try
+            {
+                _isMobile = await JSRuntime.InvokeAsync<bool>("eval", "window.innerWidth <= 768");
+            }
+            catch
+            {
+                _isMobile = false;
+            }
+        }
+
         protected override async Task OnParametersSetAsync()
         {
            
@@ -167,6 +199,13 @@ namespace BlazoringComponents.Scheduler
 
         private async Task ViewChanged()
         {
+            await CheckIfMobile();
+            
+            if (_isMobile && CurrentView == SchedulerViews.Month)
+            {
+                CurrentView = SchedulerViews.Week;
+            }
+
             await CurrentViewChanged.InvokeAsync(CurrentView);
 
             await Period();

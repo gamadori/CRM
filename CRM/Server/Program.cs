@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
 using Syncfusion.Licensing;
+using System.Security.Cryptography.X509Certificates;
 using static System.Formats.Asn1.AsnWriter;
 
 
@@ -41,13 +42,27 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => options.S
 
 
 
-builder.Services.AddIdentityServer()
+var identityServerBuilder = builder.Services.AddIdentityServer()
     .AddApiAuthorization<ApplicationUser, ApplicationDbContext>(options =>
     {
         options.IdentityResources["openid"].UserClaims.Add("role");
         options.ApiResources.Single().UserClaims.Add("role");
-
     });
+    
+var certSubject = builder.Configuration["IdentityServer:Key:Name"];
+if (!string.IsNullOrWhiteSpace(certSubject))
+{
+    using var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
+    store.Open(OpenFlags.ReadOnly);
+    var cert = store.Certificates
+        .Find(X509FindType.FindBySubjectDistinguishedName, certSubject, validOnly: false)
+        .OfType<X509Certificate2>()
+        .FirstOrDefault(c => c.HasPrivateKey);
+    if (cert != null)
+    {
+        identityServerBuilder.AddSigningCredential(cert);
+    }
+}
 
 
 builder.Services.AddAuthentication()
@@ -65,6 +80,18 @@ builder.Services.AddScoped<ILogEventService, LogEventService>();
 builder.Services.AddScoped<IPermitsService, PermitsService>();
 builder.Services.AddScoped<IEmailSender, EmailService>();
 builder.Services.AddScoped<IEmailSenderPlus, EmailService>();
+//builder.Services.AddSingleton<IAPIEmailSender>(sp =>
+//    new SendGridEmailSender(
+//        builder.Configuration["Email:SendGridKey"]!,
+//        builder.Configuration["Email:From"]!
+//    ));
+
+//builder.Services.AddSingleton<IAPIEmailSender>(sp =>
+//    new BrevoEmailSender(
+//        sp.GetRequiredService<IHttpClientFactory>().CreateClient(),
+//        builder.Configuration["Email:BrevoKey"]!,
+//        builder.Configuration["Email:From"]!
+//    ));
 
 builder.Services.AddTransient<INoticeService, NoticeService>();
 
@@ -235,6 +262,10 @@ using (var scope = scopeFactory.CreateScope())
     RolesHelper.CreateUserRoles(scope.ServiceProvider).Wait();
 }
 
+//SyncfusionLicenseProvider.RegisterLicense("NTE2MjAzQDMxMzkyZTMyMmUzMFQzVFRJaW8zTWwrNVdzS2ovWUVKY0NPZWNPQkVoYUlMZVNXNy8vZ0hNZU09");
+//SyncfusionLicenseProvider.RegisterLicense("NTkyMDU1QDMxMzkyZTM0MmUzMGg2WENXaVArb29Tc01NMTl5VlpVekdRN2RrSWpHOThGN0VwV3NPOWczOFE9");
+//SyncfusionLicenseProvider.RegisterLicense("go+DSMBMAY9C3t2VVhiQlFadVlJXGFWfVJpTGpQdk5xdV9DaVZUTWY/P1ZhSXxRdkxiW35ZcXZQQGlbUUc=");
+SyncfusionLicenseProvider.RegisterLicense("Mgo+DSMBaFt8QHFqVkBrXVNbdV5dVGpAd0N3RGlcdlR1fUUmHVdTRHRcQ11iTX9adEdmUXdWdXQ=");
 
 
 app.Run();

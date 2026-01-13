@@ -1,0 +1,525 @@
+/* Shared ticket preview/detail styles (migrated from `Preview.razor` and `Details.razor`) */
+
+.preview-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+}
+
+.modern-preview-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    animation: fadeIn 0.4s ease-out;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Allow more columns / width on large displays */
+@media (min-width: 1400px) {
+    .modern-preview-container {
+        max-width: 1600px;
+    }
+
+    .info-grid {
+        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header Card */
+.preview-header-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+    box-sizing: border-box;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.ticket-number {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: white;
+}
+
+.ticket-number .material-icons {
+    font-size: 2rem;
+}
+
+.ticket-number h3 {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    word-break: break-word;
+}
+
+.ticket-status {
+    padding: 0.5rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.status-text {
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+    mix-blend-mode: difference;
+    word-break: break-word;
+}
+
+/* Description Card */
+.description-card {
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.card-header-modern {
+    background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 2px solid #fbbf24;
+}
+
+.card-header-modern .material-icons {
+    color: #d97706;
+    font-size: 1.5rem;
+}
+
+.card-header-modern h5 {
+    margin: 0;
+    color: #92400e;
+    font-weight: 600;
+}
+
+.card-body-modern {
+    padding: 1.5rem;
+    box-sizing: border-box;
+}
+
+.description-text {
+    margin: 0;
+    color: #374151;
+    font-size: 1rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.info-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+.info-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.info-card-header {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 2px solid #0ea5e9;
+}
+
+.info-card-header .material-icons {
+    color: #0284c7;
+    font-size: 1.25rem;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #0c4a6e;
+    font-size: 0.95rem;
+}
+
+.info-card-body {
+    padding: 1.25rem;
+    box-sizing: border-box;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-key {
+    color: #6b7280;
+    font-size: 0.9rem;
+    font-weight: 500;
+    word-break: break-word;
+    min-width: 0;
+}
+
+.info-value {
+    color: #1f2937;
+    font-weight: 600;
+    text-align: right;
+    word-break: break-word;
+    min-width: 0;
+}
+
+.company-name {
+    color: #667eea;
+}
+
+.time-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    color: #667eea !important;
+}
+
+.time-badge .material-icons {
+    font-size: 1rem;
+}
+
+/* Users Card */
+.users-card {
+    grid-column: 1 / -1;
+}
+
+.user-badge-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-avatar-small {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.assigned-users-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid #e5e7eb;
+}
+
+.assigned-header {
+    margin-bottom: 1rem;
+}
+
+.assigned-label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.95rem;
+}
+
+.assigned-users-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.assigned-user-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.assigned-user-item:hover {
+    background: #f3f4f6;
+}
+
+.assigned-user-item.main-user {
+    background: linear-gradient(90deg, #dbeafe 0%, #f9fafb 100%);
+    border-left: 3px solid #667eea;
+}
+
+.user-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+/* Legacy avatar inside `.user-badge` (Details old multi-badge) should keep contrast */
+.user-badge .user-avatar {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.assigned-user-item.main-user .user-avatar {
+    border: 2px solid #667eea;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name {
+    color: #374151;
+    font-weight: 500;
+    word-break: break-word;
+    min-width: 0;
+}
+
+.main-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.no-users {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 2rem;
+    color: #9ca3af;
+}
+
+.no-users .material-icons {
+    font-size: 2rem;
+}
+
+/* Legacy badges in Details.razor (kept for compatibility if referenced elsewhere) */
+.assigned-users-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    color: white;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.user-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.badge-primary-indicator {
+    color: #ffd700;
+    font-size: 1rem;
+    margin-left: 0.25rem;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+/* Details-only overrides */
+.ticket-details-page .modern-preview-container {
+    max-width: 1600px;
+}
+
+/* Force more columns consistently on desktop */
+.ticket-details-page .info-grid {
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+}
+
+/* Use a stable label/value layout (not pushed to far right) */
+.ticket-details-page .info-row {
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+.ticket-details-page .info-key {
+    flex: 0 0 220px;
+}
+
+.ticket-details-page .info-value {
+    flex: 1 1 auto;
+    text-align: left;
+}
+
+/* Avatar contrast fixes inside Details assigned users list */
+.ticket-details-page .assigned-user-item .user-avatar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modern-preview-container {
+        padding: 1rem;
+    }
+
+    .preview-header-card {
+        padding: 1rem 1.25rem;
+    }
+
+    .ticket-number h3 {
+        font-size: 1.5rem;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    /* Reset Details desktop grid override on mobile */
+    .ticket-details-page .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .info-value {
+        text-align: left;
+        width: 100%;
+    }
+
+    /* Override Details-specific fixed width on mobile */
+    .ticket-details-page .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .ticket-details-page .info-key {
+        flex: 0 0 auto;
+        width: 100%;
+    }
+
+    .ticket-details-page .info-value {
+        width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .user-badge {
+        flex: 1 1 100%;
+        justify-content: space-between;
+    }
+
+    /* Reduce container padding on very small screens */
+    .modern-preview-container {
+        padding: 0.75rem;
+    }
+
+    .preview-header-card {
+        padding: 0.75rem 1rem;
+    }
+
+    .ticket-number h3 {
+        font-size: 1.25rem;
+    }
+
+    .ticket-number .material-icons {
+        font-size: 1.5rem;
+    }
+
+    .status-text {
+        font-size: 1rem;
+    }
+
+    .info-card-body {
+        padding: 1rem;
+    }
+
+    .card-body-modern {
+        padding: 1rem;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    /* Also reset Details grid override on very small screens */
+    .ticket-details-page .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Prevent grid overflow by allowing cards to shrink fully */
+    .info-card {
+        min-width: 0;
+        width: 100%;
+    }
+}

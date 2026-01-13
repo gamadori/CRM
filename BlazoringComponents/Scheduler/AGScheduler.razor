@@ -63,7 +63,7 @@
         <div class="toolbar-section toolbar-right">
             <RadzenSelectBar @bind-Value="CurrentView" Change="ViewChanged" TValue="SchedulerViews" class="view-selector">
                 <Items>
-                    <RadzenSelectBarItem Text="@Localize["Month"]" Icon="calendar_view_month" Value="SchedulerViews.Month" />
+                    <RadzenSelectBarItem Text="@Localize["Month"]" Icon="calendar_view_month" Value="SchedulerViews.Month" class="month-view-option" />
                     <RadzenSelectBarItem Text="@Localize["Week"]" Icon="calendar_view_week" Value="SchedulerViews.Week" />
                     <RadzenSelectBarItem Text="@Localize["Day"]" Icon="calendar_view_day" Value="SchedulerViews.Day" />
                 </Items>
@@ -359,6 +359,11 @@
 
         .period-text {
             font-size: 0.95rem;
+        }
+
+        /* Hide Month view option on mobile */
+        .month-view-option {
+            display: none !important;
         }
     }
 </style>

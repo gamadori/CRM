@@ -1,5 +1,6 @@
 @using CRM.Client.Models
 @using CRM.Client.Services
+@using static CRM.Client.Helpers.PageHelper
 @* Modern Page Header Component *@
 
 @if (!Visible || Model == null)
@@ -200,6 +201,7 @@ else
 
 @code {
 
+
     [Parameter]
 
     public PageHeaderModel? Model { get; set; } = null;
@@ -219,7 +221,10 @@ else
     [Parameter]
     public RenderFragment? Filters { get; set; }
 
-    // [Inject]
+    [Parameter]
+    public PageModality PageMode { get; set; } = PageModality.Visualization;
+
+    [Inject]
     public IHeaderService HeaderService { get; set; }
 
     [Inject]
@@ -229,7 +234,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-       // await EnsureBreadcrumbsAsync();
+        await LoadDataAsync();
+
+        // await EnsureBreadcrumbsAsync();
         if (!_subscribed)
         {
             NavigationManager.LocationChanged += OnLocationChanged;
@@ -237,9 +244,10 @@ else
         }
     }
 
+
     protected override async Task OnParametersSetAsync()
     {
-       // await EnsureBreadcrumbsAsync();
+        // await EnsureBreadcrumbsAsync();
     }
 
     private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
@@ -250,6 +258,8 @@ else
 
     private async Task EnsureBreadcrumbsAsync()
     {
+
+
         if (Model != null) // && (Model.BreadcrumbItems == null || !Model.BreadcrumbItems.Any()))
         {
             try
@@ -260,6 +270,22 @@ else
                     Model.BreadcrumbItems = list;
                     await InvokeAsync(StateHasChanged);
                 }
+            }
+            catch
+            {
+                // ignore errors
+            }
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        if (Model == null)
+        {
+            try
+            {
+                Model = await HeaderService.Create(PageMode);
+                StateHasChanged();
             }
             catch
             {

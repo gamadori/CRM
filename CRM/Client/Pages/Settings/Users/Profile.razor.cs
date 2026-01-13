@@ -54,7 +54,7 @@ namespace CRM.Client.Pages.Settings.Users
         {
             try
             {
-                _languages = await HttpClient.GetFromJsonAsync<List<Language>>(ConstHelper.LanguagesPath);
+                _languages = await HttpClient.GetFromJsonAsync<List<Language>>($"{ConstHelper.LanguagesPath}/list") ?? new List<Language>(); // await HttpClient.GetFromJsonAsync<List<Language>>(ConstHelper.LanguagesPath);
 
                 _user = await HttpClient.GetFromJsonAsync<UserModel>($"{ConstHelper.UserSignedPath}/Profile");
                 

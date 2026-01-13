@@ -3,16 +3,16 @@
 @using Radzen
 @using Radzen.Blazor
 
-<BlazorHeader Header="@Localize["Profilo Utente"]">
-</BlazorHeader>
-
 
 @if (_user == null)
 {
     <Waiting></Waiting>
 }
 else
-{   <EditForm Model="@_user" OnValidSubmit="HandleValidSubmit" class="mb-3">
+{   
+    <PageHeader ></PageHeader>
+
+    <EditForm Model="@_user" OnValidSubmit="HandleValidSubmit" class="mb-3">
      <div class="row rounded-3 bg-light">
         <div class="col-md-8">
 
@@ -53,20 +53,19 @@ else
                                 <LanguageSelectorDb Languages="@_languages"  @bind-Value="@_user.LanguageCode" /> @_user.LanguageCode
                             </td>
                         </tr>
-                         <tr>
-                            <td><DisplayName For="@(()=>_user.Photo)" /></td>
-                            <td>
-                                <div id="div-avatar" class="e-avatar e-avatar-xlarge e-avatar-circle image">
-                                    <img src="@_user.Photo" alt="avatar" /> 
-                                </div>  
-                            </td>
-                        </tr>
                         <tr>
                             <td><DisplayName For="@(()=>_user.Photo)" /></td>
                             <td>
-                                            
-                                <RadzenFileInput  Accept="Image/*" ImageStyle="max-width:400px" @bind-Value="@_user.Photo" @onchange="PhotoChange" TValue="string" ChooseText="@Localize["Seleziona"]" />
-                                
+                                <div class="avatar-upload-container">
+                                   
+                                    <RadzenFileInput Accept="image/*" 
+                                                    ImageStyle="max-width:400px" 
+                                                    @bind-Value="@_user.Photo" 
+                                                    @onchange="PhotoChange" 
+                                                    TValue="string" 
+                                                    ChooseText="@Localize["Seleziona"]" 
+                                                    class="avatar-file-input" />
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -76,8 +75,58 @@ else
     </div>
     <BlazorButton Style="BtnStyle.Primary"  Template="TemplateButton.Submit" Label="true" Text="@Localize["Save Changes"]"></BlazorButton>
     </EditForm>
-     
-    
-    
-    
 }
+
+<style>
+    .avatar-upload-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .avatar-preview-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .avatar-preview-wrapper:hover .avatar-upload-overlay {
+        opacity: 1;
+    }
+
+    .avatar-upload-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        cursor: pointer;
+    }
+
+    .avatar-upload-overlay .material-icons {
+        color: white;
+        font-size: 2rem;
+    }
+
+    .avatar-file-input {
+        width: 100%;
+        max-width: 400px;
+    }
+
+    @@media (max-width: 768px) {
+        .avatar-upload-container {
+            align-items: center;
+        }
+
+        .avatar-file-input {
+            width: 100%;
+        }
+    }
+</style>
