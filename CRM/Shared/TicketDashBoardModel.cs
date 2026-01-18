@@ -16,6 +16,8 @@ namespace CRM.Shared
 
         public int TicketAssigned { get; set; }
 
+        public int TicketsClosed { get; set; }
+
         public int TicketsExpired { get; set; }
 
         public int UsersNeedConfirm { get; set; }

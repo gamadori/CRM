@@ -99,7 +99,7 @@
                   Height="300"
                   RequireOtp="true"
                   OnOtpRequired="OnSignatureWithEmailConfirmation"
-                  OnCancelled="@(() => _showSignatureOverlay = false)" />
+                  OnCancelled="@(() => _showSignatureOverlay = false)" IdCompany="_ticketIntervention?.Ticket?.IdCompany" />
 
 <!-- Dialog Upload Report -->
 <DialogUpload Id="dlgUploadFile" 

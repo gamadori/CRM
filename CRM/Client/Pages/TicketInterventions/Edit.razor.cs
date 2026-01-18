@@ -152,6 +152,7 @@ namespace CRM.Client.Pages.TicketInterventions
                 exception.Redirect();
             }
         }
+
         private void ValueStartDateTimeChangeHandler()
         {
             if (_ticketIntervention.StartDateTime < _ticketIntervention.EndDateTime)
@@ -216,49 +217,11 @@ namespace CRM.Client.Pages.TicketInterventions
             }
         }
 
-       
+      
 
         private void OnUpdateArticles()
         {
             StateHasChanged();
-        }
-
-        /// <summary>
-        /// Gestisce la pulizia della firma
-        /// </summary>
-        private void OnSignatureCleared()
-        {
-            _ticketIntervention.CustomerSignature = null;
-            StateHasChanged();
-        }
-
-        /// <summary>
-        /// Carica la firma esistente quando il componente è pronto
-        /// </summary>
-        protected override async Task OnAfterRenderAsync(bool firstRender)
-        {
-            // ✅ Carica firma solo UNA VOLTA quando:
-            // 1. Non è già stata caricata
-            // 2. Il componente SignaturePad è stato renderizzato
-            // 3. _ticketIntervention è stato caricato
-            // 4. C'è una firma salvata
-            if (!_signatureLoaded && 
-                _signaturePad != null && 
-                _ticketIntervention != null && 
-                !string.IsNullOrWhiteSpace(_ticketIntervention.CustomerSignature))
-            {
-                try
-                {
-                    await _signaturePad.SetSignatureAsync(_ticketIntervention.CustomerSignature);
-                    _signatureLoaded = true; // ✅ Marca come caricata
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Errore caricamento firma: {ex.Message}");
-                }
-            }
-            
-            await base.OnAfterRenderAsync(firstRender);
         }
     }
 }

@@ -160,6 +160,56 @@ else
                                         </div>
                                     </div>
                                 </div> *@
+
+                                <!-- ✅ NUOVO: Sezione Note Spese con Estrazione Automatica Receipt -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingReceipt">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReceipt" aria-expanded="false" aria-controls="collapseReceipt">
+                                            <i class="material-icons me-2">receipt_long</i>
+                                            Note Spese & Scontrini
+                                            @if (_ticketIntervention.ExtractedTotalAmount.HasValue)
+                                            {
+                                                <span class="badge bg-success ms-2">
+                                                    Estratto: @_ticketIntervention.ExtractedTotalAmount.Value.ToString("C2")
+                                                </span>
+                                            }
+                                        </button>
+                                    </h2>
+                                    <div id="collapseReceipt" class="accordion-collapse collapse" aria-labelledby="headingReceipt">
+                                        <div class="accordion-body">
+                                            <ReceiptUploader AttachmentFileId="_ticketIntervention.ReceiptAttachmentFileId"
+                                                           OnExtractionConfirmed="OnReceiptExtractionConfirmed" />
+                                            
+                                            @if (_ticketIntervention.ExtractedTotalAmount.HasValue)
+                                            {
+                                                <div class="alert alert-info mt-3">
+                                                    <strong>
+                                                        <i class="material-icons align-middle">info</i>
+                                                        Dati Estratti Salvati:
+                                                    </strong>
+                                                    <ul class="mb-0 mt-2">
+                                                        @if (_ticketIntervention.ExtractedTotalAmount.HasValue)
+                                                        {
+                                                            <li>Totale: <strong>@_ticketIntervention.ExtractedTotalAmount.Value.ToString("C2")</strong></li>
+                                                        }
+                                                        @if (_ticketIntervention.ExtractedTaxAmount.HasValue)
+                                                        {
+                                                            <li>IVA: @_ticketIntervention.ExtractedTaxAmount.Value.ToString("C2")</li>
+                                                        }
+                                                        @if (_ticketIntervention.ExtractedTransactionDate.HasValue)
+                                                        {
+                                                            <li>Data: @_ticketIntervention.ExtractedTransactionDate.Value.ToString("dd/MM/yyyy")</li>
+                                                        }
+                                                        @if (!string.IsNullOrEmpty(_ticketIntervention.ExtractedMerchantName))
+                                                        {
+                                                            <li>Commerciante: @_ticketIntervention.ExtractedMerchantName</li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                
                             <div class="col-12">

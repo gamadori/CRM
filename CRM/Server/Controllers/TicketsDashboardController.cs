@@ -50,6 +50,7 @@ namespace CRM.Server.Controllers
 
             var tickets = _context.Tickets.AsQueryable();
 
+            
             if (!await _permitsService.CanAccessOtherCompany())
             {
                
@@ -61,24 +62,28 @@ namespace CRM.Server.Controllers
                 // Puo visualizzare solo i dati personali
                 filter.IdUser = idUser;
             }
-            /* Ricerca dei ticket non chiusi */
-            var state = await _context.TicketStates.Where(x => x.State == (int)eTicketStates.Closed).FirstOrDefaultAsync();
 
-            
-            if (state != null)
+            if (filter?.IdUser != null)
             {
-                var items = tickets.Where(x=>x.Closed != true);
-
-                if (filter?.IdUser != null)
-                    items = items.Where(x => x.IdUserAssigned == filter.IdUser);
-                if (model.IsClient)
-                    model.TicketsWorking = await items.CountAsync();
-                else
-                {
-                    model.TicketsWorking = await items.Where(x => x.IdUserAssigned != null).CountAsync();
-                    model.TicketsExpired = await items.Where(x => date > x.DateExpired).CountAsync();
-                }
+                tickets = tickets.Where(x=>x.AssignedUsers.Where(u=>u.IdUser == filter.IdUser).Any() || x.IdUserAssigned == filter.IdUser);  
             }
+            /* Ricerca dei ticket non chiusi */
+            
+            model.TicketsClosed = await tickets.Where(x => x.Closed == true).CountAsync();
+
+            var items = tickets.Where(x=>x.Closed != true);
+
+            if (filter?.IdUser != null)
+                items = items.Where(x => x.IdUserAssigned == filter.IdUser);
+
+            if (model.IsClient)
+                model.TicketsWorking = await items.CountAsync();
+            else
+            {
+                model.TicketsWorking = await items.Where(x => x.IdUserAssigned != null).CountAsync();
+                model.TicketsExpired = await items.Where(x => date > x.DateExpired).CountAsync();
+            }
+            
             /* Ricerca dei Ticket che possono essere assegnati dall'utente */
             if (await _permitsService.CanAssignTicket())
             {
@@ -88,7 +93,7 @@ namespace CRM.Server.Controllers
                 model.TicketsNotAssigned = 0;
 
             model.TicketAssigned = await tickets.Where(x => x.IdUserAssigned == idUser).CountAsync();
-
+            
             if (await _permitsService.IsAdmin(idUser))
             {
                 model.UsersNeedConfirm = await _context.Users.Where(x =>!x.IsDeleted && x.AdminConfirmed == false).CountAsync();

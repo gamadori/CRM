@@ -34,7 +34,6 @@ namespace CRM.Client.Pages.DashBoard
 
         [Inject]
         IBaseRestService<ApplicationUser, UsersFilterModel, string> _serviceUser { get; set; }
-
         
         
         [Inject]
@@ -223,7 +222,7 @@ namespace CRM.Client.Pages.DashBoard
             {
                 new TicketStatusChartModel { Status = Localize["Not Assigned"], Count = _model.TicketsNotAssigned },
                 new TicketStatusChartModel { Status = Localize["Working"], Count = _model.TicketsWorking },
-                new TicketStatusChartModel { Status = Localize["Assigned"], Count = _model.TicketAssigned },
+                new TicketStatusChartModel { Status = Localize["Closed"], Count = _model.TicketAssigned },
                 new TicketStatusChartModel { Status = Localize["Expired"], Count = _model.TicketsExpired }
             };
         }

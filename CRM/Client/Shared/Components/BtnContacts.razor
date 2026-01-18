@@ -1,6 +1,7 @@
 ﻿
-<button type="button" @onclick="@OpenContacts" class="input-group-text" disabled=@Disabled>
+@* <button type="button" @onclick="@OpenContacts" class="input-group-text" disabled=@Disabled>
     <span class="material-symbols-outlined">
-        &#xe0ba
+        
     </span>
-</button>
+</button> *@
+<RadzenButton ButtonStyle=ButtonStyle.Light Click=@OpenContacts Disabled=@Disabled Icon="person" Text=@Text />

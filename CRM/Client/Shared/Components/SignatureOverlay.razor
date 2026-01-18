@@ -1,4 +1,9 @@
+@using Microsoft.Extensions.Localization
+@using Radzen
 @inject IJSRuntime JS
+@inject DialogService DialogService
+@inject HttpClient Http
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 @if (Visible)
 {
@@ -16,21 +21,37 @@
 
             <!-- Canvas Area -->
             <div class="signature-overlay-body">
-                <!-- ? Input Nome Firmatario -->
+                <!-- Input Nome Firmatario con bottone ricerca contatto -->
                 <div class="mb-3">
                     <label class="form-label" style="font-weight: 600; color: #495057;">
                         <i class="material-icons" style="font-size: 18px; vertical-align: middle;">person</i>
                         Nome e Cognome del Firmatario
                     </label>
-                    <input type="text" 
-                           class="form-control" 
-                           @bind="SignerName" 
-                           placeholder="Es: Mario Rossi"
-                           maxlength="200"
-                           style="font-size: 16px;" />
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               @bind="SignerName" 
+                               placeholder="Es: Mario Rossi"
+                               maxlength="200"
+                               style="font-size: 16px;" />
+                        <button type="button" 
+                                class="btn btn-outline-secondary" 
+                                @onclick="OpenContactsDialog" 
+                                disabled="@(!IdCompany.HasValue)"
+                                title="Seleziona contatto">
+                            <i class="material-icons">person_search</i>
+                        </button>
+                    </div>
+                    @if (!IdCompany.HasValue)
+                    {
+                        <small class="form-text text-muted">
+                            <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
+                            Ricerca contatto disponibile solo se l'azienda è specificata
+                        </small>
+                    }
                 </div>
 
-                <!-- ? NUOVO: Input Email Firmatario -->
+                <!-- Input Email Firmatario -->
                 <div class="mb-3">
                     <label class="form-label" style="font-weight: 600; color: #495057;">
                         <i class="material-icons" style="font-size: 18px; vertical-align: middle;">email</i>
@@ -161,22 +182,28 @@
     [Parameter] public string Title { get; set; } = "Firma del Cliente";
     [Parameter] public int Width { get; set; } = 700;
     [Parameter] public int Height { get; set; } = 300;
-    [Parameter] public bool RequireOtp { get; set; } = false; // ? Flag per richiedere OTP
+    [Parameter] public bool RequireOtp { get; set; } = false;
     [Parameter] public EventCallback<string> OnSignatureSaved { get; set; }
     [Parameter] public EventCallback<(string signature, string signerName)> OnSignatureWithNameSaved { get; set; }
-    [Parameter] public EventCallback<(string signature, string signerName, string signerEmail)> OnOtpRequired { get; set; } // ? AGGIORNATO con email
+    [Parameter] public EventCallback<(string signature, string signerName, string signerEmail)> OnOtpRequired { get; set; }
     [Parameter] public EventCallback OnCancelled { get; set; }
+    [Parameter] public int? IdCompany { get; set; }
 
     private string CanvasId = $"signatureOverlay_{Guid.NewGuid():N}";
     private bool _initialized = false;
     private string SignerName { get; set; } = string.Empty;
-    private string SignerEmail { get; set; } = string.Empty; // ? NUOVO
+    private string SignerEmail { get; set; } = string.Empty;
+    private bool _isOpeningNewContact = false;
+    private bool _wasVisible = false; // ? Traccia se era visibile nel render precedente
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (Visible && !_initialized)
+        // ? Reinizializza se l'overlay è appena diventato visibile (transizione false ? true)
+        bool justBecameVisible = Visible && !_wasVisible;
+        _wasVisible = Visible;
+
+        if ((firstRender || justBecameVisible) && Visible && !_initialized)
         {
-            // Retry logic per aspettare caricamento JavaScript
             for (int i = 0; i < 10; i++)
             {
                 try
@@ -198,6 +225,12 @@
                 }
             }
         }
+        
+        // ? Se l'overlay è stato nascosto, resetta il flag initialized
+        if (!Visible && _initialized)
+        {
+            _initialized = false;
+        }
     }
 
     private async Task Clear()
@@ -208,6 +241,134 @@
         }
     }
 
+    private async Task OpenContactsDialog()
+    {
+        if (!IdCompany.HasValue) return;
+
+        try
+        {
+            Visible = false;
+            StateHasChanged();
+            await Task.Delay(150);
+
+            var contactId = await DialogService.OpenSideAsync<CRM.Client.Pages.Contacts.Index>(
+                Localize["Seleziona il contatto..."],
+                new Dictionary<string, object>()
+                {
+                    { "IdCompany", IdCompany },
+                    { "PageMode", CRM.Client.Helpers.PageHelper.PageModality.Dialog },
+                    { "OnClickNew", EventCallback.Factory.Create(this, OpenNewContactDialog) }
+                },
+                new SideDialogOptions
+                {
+                    Position = DialogPosition.Top,
+                    ShowMask = true,
+                    Height = "auto",
+                    Style = "max-height: 90%;"
+                });
+
+            if (contactId is int id && id > 0)
+            {
+                await LoadContactData(id);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Errore apertura dialog contatti: {ex.Message}");
+        }
+        finally
+        {
+            // ? Riapri overlay SOLO se non stiamo aprendo nuovo contatto
+            if (!_isOpeningNewContact)
+            {
+                Visible = true;
+                StateHasChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Apre dialog per creare nuovo contatto
+    /// </summary>
+    private async Task OpenNewContactDialog()
+    {
+        _isOpeningNewContact = true;
+        
+        try
+        {
+            // ? CHIUDI ESPLICITAMENTE il dialog lista contatti
+            DialogService.CloseSide();
+            
+            // ? Aspetta che il dialog si chiuda completamente e Radzen rilasci le risorse
+            await Task.Delay(500);
+            
+            Action onSave = () =>
+            {
+                // Il callback viene chiamato PRIMA che il dialog ritorni l'Id
+                // Non serve fare nulla qui, l'Id viene ritornato da OpenSideAsync
+            };
+
+            Action onCancel = () =>
+            {
+                DialogService.CloseSide();
+            };
+
+            // Apri dialog creazione contatto
+            var newContactId = await DialogService.OpenSideAsync<CRM.Client.Pages.Contacts.Edit>(
+                Localize["Nuovo Contatto"],
+                new Dictionary<string, object>()
+                {
+                    { "IdCompany", IdCompany },
+                    { "PageMode", CRM.Client.Helpers.PageHelper.PageModality.Dialog },
+                    { "OnClickSave", onSave },
+                    { "OnClickCancel", onCancel }
+                },
+                new SideDialogOptions
+                {
+                    Position = DialogPosition.Top,
+                    ShowMask = true,
+                    Height = "auto",
+                    Style = "max-height: 90%;"
+                });
+
+            // ? OpenSideAsync ora ritorna l'Id del contatto salvato
+            if (newContactId is int id && id > 0)
+            {
+                await LoadContactData(id);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Errore creazione nuovo contatto: {ex.Message}");
+        }
+        finally
+        {
+            _isOpeningNewContact = false;
+            Visible = true;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Carica dati contatto e popola i campi firma
+    /// </summary>
+    private async Task LoadContactData(int contactId)
+    {
+        try
+        {
+            var contact = await Http.GetFromJsonAsync<CRM.Shared.Contact>($"{CRM.Client.Helpers.ConstHelper.ContactsPath}/{contactId}");
+            if (contact != null)
+            {
+                SignerName = contact.NameComplete ?? string.Empty;
+                SignerEmail = contact.Email ?? string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Errore caricamento contatto: {ex.Message}");
+        }
+    }
+
     private async Task Save()
     {
         if (!_initialized) return;
@@ -215,7 +376,7 @@
         try
         {
             var isEmpty = await JS.InvokeAsync<bool>("signaturePad.isEmpty");
-            
+
             if (isEmpty)
             {
                 // TODO: Mostra messaggio "Firma vuota"
@@ -237,7 +398,7 @@
             }
 
             var signatureBase64 = await JS.InvokeAsync<string>("signaturePad.getSignature");
-            
+
             if (!string.IsNullOrWhiteSpace(signatureBase64))
             {
                 // ? NUOVO: Se richiede OTP, invia callback OtpRequired
@@ -255,7 +416,7 @@
                     // Fallback per compatibilità
                     await OnSignatureSaved.InvokeAsync(signatureBase64);
                 }
-                
+
                 _initialized = false; // Reset per prossima apertura
                 SignerName = string.Empty; // Reset nome
                 SignerEmail = string.Empty; // Reset email
@@ -271,7 +432,7 @@
     {
         _initialized = false;
         SignerName = string.Empty;
-        SignerEmail = string.Empty; // ? Reset email
+        SignerEmail = string.Empty;
         await OnCancelled.InvokeAsync();
     }
 }

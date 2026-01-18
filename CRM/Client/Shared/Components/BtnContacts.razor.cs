@@ -23,7 +23,10 @@ namespace CRM.Client.Shared.Components
         public EventCallback<int?> OnGetContacts { get; set; }
 
         [Parameter]
-        public int? IdCompany { get; set; } 
+        public int? IdCompany { get; set; }
+
+        [Parameter]
+        public string Text { get; set; } = string.Empty;
 
         private async Task OpenContacts()
         {

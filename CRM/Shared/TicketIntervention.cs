@@ -100,6 +100,78 @@ namespace CRM.Shared
         [Display(Name = "Stato Firma")]
         public SignatureStatus SignatureStatus { get; set; } = SignatureStatus.Pending;
 
+        // ✅ NUOVI CAMPI PER ESTRAZIONE AUTOMATICA RECEIPT/FATTURE (Azure Form Recognizer)
+
+        /// <summary>
+        /// ID del file attachment contenente lo scontrino/fattura (se presente)
+        /// </summary>
+        [Display(Name = "ID Receipt Attachment")]
+        public int? ReceiptAttachmentFileId { get; set; }
+
+        /// <summary>
+        /// Importo totale estratto automaticamente dallo scontrino
+        /// </summary>
+        [Display(Name = "Importo Totale Estratto")]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? ExtractedTotalAmount { get; set; }
+
+        /// <summary>
+        /// Importo IVA estratto
+        /// </summary>
+        [Display(Name = "IVA Estratta")]
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? ExtractedTaxAmount { get; set; }
+
+        /// <summary>
+        /// Data transazione estratta dallo scontrino
+        /// </summary>
+        [Display(Name = "Data Transazione Estratta")]
+        public DateTime? ExtractedTransactionDate { get; set; }
+
+        /// <summary>
+        /// Nome commerciante estratto
+        /// </summary>
+        [Display(Name = "Commerciante Estratto")]
+        [MaxLength(200)]
+        public string? ExtractedMerchantName { get; set; }
+
+        /// <summary>
+        /// Descrizione estratta automaticamente (commerciante + data + totale)
+        /// </summary>
+        [Display(Name = "Descrizione Estratta")]
+        [MaxLength(500)]
+        public string? ExtractedDescription { get; set; }
+
+        /// <summary>
+        /// Valuta estratta (EUR, USD, ecc.)
+        /// </summary>
+        [Display(Name = "Valuta")]
+        [MaxLength(10)]
+        public string? ExtractedCurrency { get; set; }
+
+        /// <summary>
+        /// Confidence media dell'estrazione (0-1)
+        /// </summary>
+        [Display(Name = "Confidence Estrazione")]
+        public float? ExtractionConfidence { get; set; }
+
+        /// <summary>
+        /// Data e ora dell'elaborazione automatica
+        /// </summary>
+        [Display(Name = "Data Elaborazione Receipt")]
+        public DateTime? ReceiptProcessedDate { get; set; }
+
+        /// <summary>
+        /// Se true, i dati estratti sono stati confermati dall'utente
+        /// </summary>
+        [Display(Name = "Dati Estratti Confermati")]
+        public bool ExtractionConfirmed { get; set; } = false;
+
+        /// <summary>
+        /// JSON raw dei campi estratti (per debug/audit)
+        /// </summary>
+        public string? ExtractedFieldsJson { get; set; }
+
         /// <summary>
         /// Token univoco per conferma firma via email
         /// </summary>

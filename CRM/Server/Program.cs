@@ -131,6 +131,9 @@ builder.Services.AddScoped<IInterventionPdfGenerator, InterventionPdfGenerator>(
 // ✅ NUOVO: Servizio OTP per verifica firma
 builder.Services.AddScoped<ISignatureOtpService, SignatureOtpService>();
 
+// ✅ NUOVO: Servizio per elaborazione scontrini/fatture con Azure Form Recognizer
+builder.Services.AddScoped<IReceiptProcessorService, ReceiptProcessorService>();
+
 builder.Services.AddSingleton<WTelegramService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<WTelegramService>());
 
@@ -138,7 +141,7 @@ builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: "MyAllowSpecificOrigins",
+    options.AddPolicy(name: "RedGPolicy",
                       builder =>
                       {
                           builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
@@ -240,7 +243,7 @@ app.UseIdentityServer();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseCors("MyPolicy");
+app.UseCors("RedGPolicy");
 app.UseEndpoints(endpoints => {
     app.MapControllers();
 });
@@ -261,11 +264,6 @@ using (var scope = scopeFactory.CreateScope())
 {
     RolesHelper.CreateUserRoles(scope.ServiceProvider).Wait();
 }
-
-//SyncfusionLicenseProvider.RegisterLicense("NTE2MjAzQDMxMzkyZTMyMmUzMFQzVFRJaW8zTWwrNVdzS2ovWUVKY0NPZWNPQkVoYUlMZVNXNy8vZ0hNZU09");
-//SyncfusionLicenseProvider.RegisterLicense("NTkyMDU1QDMxMzkyZTM0MmUzMGg2WENXaVArb29Tc01NMTl5VlpVekdRN2RrSWpHOThGN0VwV3NPOWczOFE9");
-//SyncfusionLicenseProvider.RegisterLicense("go+DSMBMAY9C3t2VVhiQlFadVlJXGFWfVJpTGpQdk5xdV9DaVZUTWY/P1ZhSXxRdkxiW35ZcXZQQGlbUUc=");
-SyncfusionLicenseProvider.RegisterLicense("Mgo+DSMBaFt8QHFqVkBrXVNbdV5dVGpAd0N3RGlcdlR1fUUmHVdTRHRcQ11iTX9adEdmUXdWdXQ=");
 
 
 app.Run();

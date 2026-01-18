@@ -37,6 +37,9 @@ namespace CRM.Client.Pages.Contacts
 
         [Inject]
         IHeaderService HeaderService { get; set; }
+        
+        [Inject]
+        DialogService DialogService { get; set; }
 
         [Parameter]
         public int? Id { get; set; }
@@ -122,8 +125,15 @@ namespace CRM.Client.Pages.Contacts
 
                 if (resp != null && resp.State)
                 {
+                    // ✅ Chiudi il dialog ritornando l'Id del contatto (nuovo o aggiornato)
+                    int contactId = resp.Data?.Id ?? _contact.Id;
+                    
                     if (OnClickSave != null)
+                    {
                         OnClickSave();
+                        // ✅ Chiudi il dialog Radzen ritornando l'Id
+                        DialogService.CloseSide(contactId);
+                    }
                     else
                         NavigationManager.NavigateTo($"/{ConstHelper.ClientContactsPath}");
                 }
@@ -152,10 +162,7 @@ namespace CRM.Client.Pages.Contacts
                 StateHasChanged();
                 _contact.IdCompany = (int)id;
                 StateHasChanged();
-
             }
-            
         }
-
     }
 }

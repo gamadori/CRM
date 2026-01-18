@@ -17,7 +17,7 @@
     </PageHeader>
 
     <RadzenDataGrid @ref="grdTickets" IsLoading="@_isLoading" Count="@_numRecords" Responsive="@_isResponsable" Data="@_ticketView?.Items" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
-                AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowColumnResize=true
+                AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowColumnResize=true 
                     PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="TicketModel" EmptyText="Nessun Ticket" CellRender="@CellRender" CellClick="@OnCellClick" >
         
         <HeaderTemplate>
@@ -43,63 +43,59 @@
             </div>
         </HeaderTemplate>
         <Columns>
-            @if (ColVisible())
-            {
-                <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Id)"  FormatString="{0:000000}" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Id), typeof(Ticket))" />
-            }
+            <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Id)"  FormatString="{0:000000}" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Id), typeof(Ticket))" />
              <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Date)"  FormatString="{0:d}" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Date), typeof(Ticket))" />
  
 
             <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Company)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdCompany), typeof(Ticket))" Type="typeof(string)" 
                 FilterProperty="Company.RagioneSociale" SortProperty="Company.RagioneSociale"   />
 
-            @if (ColVisible())
+           
+            <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Product)"  Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdProduct), typeof(Ticket))" Type="typeof(string)"
+            FilterProperty="Product.Name" />
+
+
+            <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Article)"  Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdArticle), typeof(Ticket))" Type="typeof(string)"
+            FilterProperty="Article.SerialNumber" />
+
+            <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.IdUserAssigned)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdUserAssigned), typeof(Ticket))" FilterProperty="@nameof(TicketModel.IdUserAssigned)" FilterValue="@_userFilter" FilterOperator="FilterOperator.Equals">
+                <Template Context="item">
+                    <UserData IdUser="@item.IdUserAssigned"></UserData>
+                </Template>
+                <FilterTemplate>
+
+                    <FilterDropDown Items="@_users" TItem="ApplicationUser" TValue="string" @bind-Value=@_userFilter  UniqueID="@grdTickets.UniqueID" Property=@nameof(TicketModel.IdUserAssigned) TextProperty="@nameof(ApplicationUser.NameComplete)"
+                    ValueProperty="Id"></FilterDropDown>
+                </FilterTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn Context="item" TItem="TicketModel" Property="@nameof(TicketModel.State)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdState), typeof(Ticket))" Filterable="true" Sortable="true" TextAlign="Radzen.TextAlign.Center">
+                <Template Context="item">
+                    <span style="mix-blend-mode: difference; color: white">
+
+                        @Localize[item.State ?? eTicketStates.Created.ToString()]
+                    </span>
+                </Template>
+
+            </RadzenDataGridColumn>
+            @if (_user != null && _user.IsAdmin)
             {
-                <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Product)"  Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdProduct), typeof(Ticket))" Type="typeof(string)"
-                FilterProperty="Product.Name" />
-
-
-                <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Article)"  Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdArticle), typeof(Ticket))" Type="typeof(string)"
-                FilterProperty="Article.SerialNumber" />
-
-                <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.IdUserAssigned)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdUserAssigned), typeof(Ticket))" FilterProperty="@nameof(TicketModel.IdUserAssigned)" FilterValue="@_userFilter" FilterOperator="FilterOperator.Equals">
-                    <Template Context="item">
-                        <UserData IdUser="@item.IdUserAssigned"></UserData>
-                    </Template>
-                    <FilterTemplate>
-
-                        <FilterDropDown Items="@_users" TItem="ApplicationUser" TValue="string" @bind-Value=@_userFilter  UniqueID="@grdTickets.UniqueID" Property=@nameof(TicketModel.IdUserAssigned) TextProperty="@nameof(ApplicationUser.NameComplete)"
-                        ValueProperty="Id"></FilterDropDown>
-                    </FilterTemplate>
-                </RadzenDataGridColumn>
-
-                <RadzenDataGridColumn Context="item" TItem="TicketModel" Property="@nameof(TicketModel.State)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdState), typeof(Ticket))" Filterable="true" Sortable="true" TextAlign="Radzen.TextAlign.Center">
-                    <Template Context="item">
-                        <span style="mix-blend-mode: difference; color: white">
-
-                            @Localize[item.State ?? eTicketStates.Created.ToString()]
-                        </span>
-                    </Template>
-
-                </RadzenDataGridColumn>
-                @if (_user != null && _user.IsAdmin)
-                {
-                    <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Invoiced)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Invoiced), typeof(Ticket))" Type="typeof(bool)" />
-                }
-                @* <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
-                    <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Invoiced)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Invoiced), typeof(Ticket))" Type="typeof(string)" />
-                </AuthorizeView> *@
-                <RadzenDataGridColumn TItem="TicketModel" Context="item" Title="@TranslateHelper.GetDisplayName(nameof(TicketModel.MinuteWorkFormatted), typeof(TicketModel))">
-                    <Template>
-                    <span>@DateTimeHelper.MinuteFormat(item?.MinuteWork)</span>
-                    </Template>
-                    <FooterTemplate>
-                            <b> @_ticketView?.Total</b>
-                    </FooterTemplate>
-                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Invoiced)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Invoiced), typeof(Ticket))" Type="typeof(bool)" />
+            }
+            @* <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Invoiced)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Invoiced), typeof(Ticket))" Type="typeof(string)" />
+            </AuthorizeView> *@
+            <RadzenDataGridColumn TItem="TicketModel" Context="item" Title="@TranslateHelper.GetDisplayName(nameof(TicketModel.MinuteWorkFormatted), typeof(TicketModel))">
+                <Template>
+                <span>@DateTimeHelper.MinuteFormat(item?.MinuteWork)</span>
+                </Template>
+                <FooterTemplate>
+                        <b> @_ticketView?.Total</b>
+                </FooterTemplate>
+            </RadzenDataGridColumn>
 
                
-            }
+            
             <RadzenDataGridColumn Context="item" TItem="TicketModel" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.JustifyAll">
                 <Template Context="item">
                    
@@ -107,11 +103,9 @@
                    
                     <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" title="Details" Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item?.Id))">
                     </RadzenButton>
-                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" title="Edit" Disabled=@(!item.Permits.Edit()) Click="@(args => Edit(item?.Id))"
-                        Visible="@ColVisible()">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" title="Edit" Disabled=@(!item.Permits.Edit()) Click="@(args => Edit(item?.Id))">
                     </RadzenButton>
-                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" title="Delete" Disabled=@(!item.Permits.Delete()) Click="@(args => Delete(item?.Id))"
-                        Visible="@ColVisible()">
+                    <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" title="Delete" Disabled=@(!item.Permits.Delete()) Click="@(args => Delete(item?.Id))">
                     </RadzenButton>
                     
                     

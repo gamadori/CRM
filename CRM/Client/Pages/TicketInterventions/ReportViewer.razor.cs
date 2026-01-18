@@ -244,7 +244,7 @@ namespace CRM.Client.Pages.TicketInterventions
 
         private void Close()
         {
-            NavigationManager.NavigateTo("/TicketsIntervention/Index");
+            GoToDetails();
         }
 
         private async Task CheckSignature()

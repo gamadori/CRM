@@ -115,7 +115,7 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _isMobile = false;
 
-        private bool _isResponsable = false;
+        private bool _isResponsable = true;
 
         private string _userFilter = null;
 
