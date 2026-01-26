@@ -340,3 +340,6 @@ ASALocalRun/
 healthchecksdb
 /CRM/Server/WTelegram.session
 /CRM/Server/appsettings.json
+
+# Upload files and archives
+CRM/Server/Archives/
