@@ -47,6 +47,16 @@ namespace CRM.Client.Pages.Tickets
         [Parameter]
         public int Id { get; set; }
 
+        // ✅ NUOVO: Parametri opzionali per nuovo ticket
+        [Parameter]
+        public Ticket TicketData { get; set; }
+
+        [Parameter]
+        public HashSet<string> PreselectedUserIds { get; set; }
+
+        [Parameter]
+        public EventCallback<HashSet<string>> OnUsersSelected { get; set; }
+
         [Parameter]
         public EventCallback OnClose { get; set; }
 
@@ -59,10 +69,30 @@ namespace CRM.Client.Pages.Tickets
         // ✅ NUOVO: Mappa del carico di lavoro per ogni utente
         private Dictionary<string, UserWorkloadInfo> _userWorkloadMap = new();
         private bool _isLoadingWorkload = false;
+        
+        // ✅ NUOVO: Flag per distinguere nuovo ticket da ticket esistente
+        private bool _isNewTicket => Id == 0 || _ticket?.Id == 0;
 
         protected override async Task OnInitializedAsync()
         {
-            await LoadData();
+            // ✅ FIX: Gestisci caso nuovo ticket vs ticket esistente
+            if (_isNewTicket)
+            {
+                // Nuovo ticket: usa i dati passati come parametri
+                _ticket = TicketData ?? new Ticket { Date = DateTime.Today };
+                
+                // Usa gli utenti preselezionati se forniti
+                if (PreselectedUserIds != null && PreselectedUserIds.Any())
+                {
+                    _selectedUserIds = new HashSet<string>(PreselectedUserIds);
+                }
+            }
+            else
+            {
+                // Ticket esistente: carica dal server
+                await LoadData();
+            }
+            
             await LoadUsers();
             
             // ✅ NUOVO: Carica il workload dopo aver caricato gli utenti
@@ -111,12 +141,13 @@ namespace CRM.Client.Pages.Tickets
             {
                 UsersFilterModel request = new UsersFilterModel
                 {
-                    IdTicketToAssign = Id,
+                    IdTicketToAssign = _isNewTicket ? null : (int?)Id,
+                    TicketTypeToAssign = _ticket?.IdType,
                     PageSize = 0
                 };
 
-                var response = await _usersService.GetList(request);
-                _users = response.Items;
+                var response = await _usersService.Get(request);
+                _users = response.Items.ToList();
                 
                 // ✅ FIX: Inizializza lista filtrata escludendo utenti già selezionati
                 _filteredUsers = _users
@@ -272,21 +303,20 @@ namespace CRM.Client.Pages.Tickets
         {
             try
             {
-                // ✅ RIMOSSA VALIDAZIONE: Permettere zero utenti per rimuovere tutte le assegnazioni
-                // La validazione "almeno 1 utente" viene rimossa per permettere di disassegnare tutti
-                // if (!_selectedUserIds.Any())
-                // {
-                //     NotificationService.Notify(new NotificationMessage
-                //     {
-                //         Severity = NotificationSeverity.Warning,
-                //         Summary = Localize["Warning"],
-                //         Detail = Localize["Please select at least one user"],
-                //         Duration = 3000
-                //     });
-                //     return;
-                // }
+                // ✅ FIX: Per nuovo ticket, restituisci solo gli utenti selezionati senza salvare
+                if (_isNewTicket)
+                {
+                    // Restituisci gli utenti selezionati tramite callback
+                    if (OnUsersSelected.HasDelegate)
+                    {
+                        await OnUsersSelected.InvokeAsync(_selectedUserIds);
+                    }
+                    
+                    DialogService.Close(_selectedUserIds); // Passa gli utenti selezionati
+                    return;
+                }
 
-                // ✅ NUOVO: Chiamata API per salvare assegnazioni multiple (anche lista vuota)
+                // ✅ Ticket esistente: salva su server come prima
                 var assignmentData = new
                 {
                     ticketId = Id,

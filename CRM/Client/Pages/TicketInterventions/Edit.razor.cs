@@ -223,5 +223,74 @@ namespace CRM.Client.Pages.TicketInterventions
         {
             StateHasChanged();
         }
+
+        /// <summary>
+        /// Gestisce la pulizia della firma
+        /// </summary>
+        private void OnSignatureCleared()
+        {
+            _ticketIntervention.CustomerSignature = null;
+            StateHasChanged();
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Gestisce i dati estratti dal componente ReceiptUploader
+        /// </summary>
+        private void OnReceiptExtractionConfirmed(CRM.Shared.DTOs.ReceiptExtractionResult result)
+        {
+            if (result == null || !result.Success)
+                return;
+
+            // Popola i campi del modello TicketIntervention con i dati estratti
+            _ticketIntervention.ExtractedTotalAmount = result.TotalAmount;
+            _ticketIntervention.ExtractedTaxAmount = result.TaxAmount;
+            _ticketIntervention.ExtractedTransactionDate = result.TransactionDate;
+            _ticketIntervention.ExtractedMerchantName = result.MerchantName;
+            _ticketIntervention.ExtractedDescription = result.Description;
+            _ticketIntervention.ExtractedCurrency = result.Currency ?? "EUR";
+            _ticketIntervention.ExtractionConfidence = result.AverageConfidence;
+            _ticketIntervention.ReceiptProcessedDate = DateTime.Now;
+            _ticketIntervention.ExtractionConfirmed = true;
+
+            // Salva JSON raw per audit
+            _ticketIntervention.ExtractedFieldsJson = System.Text.Json.JsonSerializer.Serialize(result);
+
+            // Popola automaticamente le note se vuote
+            if (string.IsNullOrWhiteSpace(_ticketIntervention.Note) && !string.IsNullOrEmpty(result.Description))
+            {
+                _ticketIntervention.Note = $"Spesa: {result.Description}";
+            }
+
+            StateHasChanged();
+        }
+
+        /// <summary>
+        /// Carica la firma esistente quando il componente è pronto
+        /// </summary>
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            // ✅ Carica firma solo UNA VOLTA quando:
+            // 1. Non è già stata caricata
+            // 2. Il componente SignaturePad è stato renderizzato
+            // 3. _ticketIntervention è stato caricato
+            // 4. C'è una firma salvata
+            if (!_signatureLoaded && 
+                _signaturePad != null && 
+                _ticketIntervention != null && 
+                !string.IsNullOrWhiteSpace(_ticketIntervention.CustomerSignature))
+            {
+                try
+                {
+                    await _signaturePad.SetSignatureAsync(_ticketIntervention.CustomerSignature);
+                    _signatureLoaded = true; // ✅ Marca come caricata
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Errore caricamento firma: {ex.Message}");
+                }
+            }
+            
+            await base.OnAfterRenderAsync(firstRender);
+        }
     }
 }

@@ -681,5 +681,79 @@ namespace CRM.Client.Pages.Tickets
         {
             dialogService.Close();
         }
+
+        /// <summary>
+        /// ✅ AGGIORNATO: Apre il dialog di assegnazione utenti usando Assign.razor
+        /// </summary>
+        private async Task OpenUserSelectionDialog()
+        {
+            try
+            {
+                var parameters = new Dictionary<string, object>();
+                
+                // ✅ FIX: Passa parametri diversi per nuovo ticket vs ticket esistente
+                if (_ticket?.Id > 0)
+                {
+                    // Ticket esistente: passa solo l'Id
+                    parameters.Add("Id", _ticket.Id);
+                }
+                else
+                {
+                    // Nuovo ticket: passa i dati del ticket e gli utenti preselezionati
+                    parameters.Add("Id", 0);
+                    parameters.Add("TicketData", _ticket);
+                    parameters.Add("PreselectedUserIds", _selectedUserIds);
+                }
+
+                var options = new DialogOptions
+                {
+                    Width = "900px",
+                    Height = "80vh",
+                    Resizable = true,
+                    Draggable = true,
+                    CloseDialogOnEsc = true
+                };
+
+                var result = await dialogService.OpenAsync<Assign>(
+                    Localize["Assign Users"], 
+                    parameters, 
+                    options
+                );
+
+                // ✅ FIX: Gestisci risultato diverso per nuovo ticket vs ticket esistente
+                if (result != null)
+                {
+                    if (_ticket?.Id > 0)
+                    {
+                        // Ticket esistente: ricarica dal server
+                        if (result.Equals(true))
+                        {
+                            await LoadAssignedUsers();
+                            StateHasChanged();
+                        }
+                    }
+                    else
+                    {
+                        // Nuovo ticket: aggiorna la selezione locale
+                        if (result is HashSet<string> selectedUsers)
+                        {
+                            _selectedUserIds = selectedUsers;
+                            
+                            // Aggiorna la lista filtrata
+                            _filteredUsers = _users
+                                .Where(u => !_selectedUserIds.Contains(u.Id))
+                                .ToList();
+                            
+
+                            StateHasChanged();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore apertura dialog assegnazione utenti: {ex.Message}");
+            }
+        }
     }
 }

@@ -1,0 +1,317 @@
+@using CRM.Shared.DTOs
+@using Microsoft.Extensions.Localization
+@using System.IO
+@inject HttpClient Http
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+<div class="receipt-uploader-container">
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-3">
+        <i class="material-icons text-primary me-2" style="font-size: 28px;">receipt_long</i>
+        <h6 class="mb-0">Carica Scontrino/Fattura per Estrazione Automatica</h6>
+    </div>
+
+    @if (!_isProcessing && _extractionResult == null)
+    {
+        <!-- Upload Area -->
+        <div class="upload-area">
+            <InputFile OnChange="OnFileSelected" accept="image/*,.pdf" class="d-none" id="@_uploadId" />
+            <label for="@_uploadId" class="upload-label">
+                <i class="material-icons upload-icon">cloud_upload</i>
+                <p class="mb-2"><strong>Clicca per caricare scontrino o fattura</strong></p>
+                <p class="text-muted small mb-0">Formati: JPG, PNG, PDF • Max 10 MB</p>
+            </label>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                <i class="material-icons align-middle">error_outline</i>
+                @_errorMessage
+            </div>
+        }
+    }
+
+    @if (_isProcessing)
+    {
+        <!-- Processing State -->
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <p class="text-muted">
+                <i class="material-icons align-middle">auto_awesome</i>
+                Estrazione automatica in corso con Azure AI...
+            </p>
+        </div>
+    }
+
+    @if (_extractionResult != null)
+    {
+        <!-- Extraction Result -->
+        <div class="extraction-result">
+            @if (_extractionResult.Success)
+            {
+                <div class="alert alert-success">
+                    <i class="material-icons me-2">check_circle</i>
+                    <strong>Estrazione completata!</strong>
+                    <small class="ms-2">
+                        Confidence: @GetConfidenceText() • @_extractionResult.ProcessingTimeMs ms
+                    </small>
+                </div>
+
+                <!-- Extracted Fields -->
+                <div class="row g-3">
+                    @if (_extractionResult.TotalAmount.HasValue)
+                    {
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                <i class="material-icons align-middle" style="font-size: 18px;">euro</i>
+                                Totale
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control form-control-lg fw-bold" 
+                                       @bind="_extractionResult.TotalAmount" step="0.01" />
+                                <span class="input-group-text">@(_extractionResult.Currency ?? "EUR")</span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (_extractionResult.TaxAmount.HasValue)
+                    {
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">IVA</label>
+                            <input type="number" class="form-control" @bind="_extractionResult.TaxAmount" step="0.01" />
+                        </div>
+                    }
+
+                    @if (_extractionResult.TransactionDate.HasValue)
+                    {
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Data Transazione</label>
+                            <input type="date" class="form-control" 
+                                   value="@_extractionResult.TransactionDate.Value.ToString("yyyy-MM-dd")" 
+                                   @onchange="e => _extractionResult.TransactionDate = DateTime.Parse(e.Value.ToString())" />
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_extractionResult.MerchantName))
+                    {
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Commerciante</label>
+                            <input type="text" class="form-control" @bind="_extractionResult.MerchantName" />
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_extractionResult.Description))
+                    {
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Descrizione</label>
+                            <textarea class="form-control" rows="2" @bind="_extractionResult.Description"></textarea>
+                        </div>
+                    }
+                </div>
+
+                @if (_extractionResult.LineItems != null && _extractionResult.LineItems.Any())
+                {
+                    <div class="mt-4">
+                        <h6><i class="material-icons align-middle">list</i> Righe (@_extractionResult.LineItems.Count)</h6>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Descrizione</th>
+                                    <th class="text-center">Qtà</th>
+                                    <th class="text-end">Prezzo</th>
+                                    <th class="text-end">Totale</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in _extractionResult.LineItems)
+                                {
+                                    <tr>
+                                        <td>@item.Description</td>
+                                        <td class="text-center">@item.Quantity</td>
+                                        <td class="text-end">@item.UnitPrice?.ToString("C2")</td>
+                                        <td class="text-end fw-bold">@item.TotalPrice?.ToString("C2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmExtraction">
+                        <i class="material-icons align-middle">check</i> Conferma Dati
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" @onclick="Reset">
+                        <i class="material-icons align-middle">refresh</i> Riprova
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-warning">
+                    <i class="material-icons align-middle">warning</i>
+                    <strong>Estrazione non riuscita</strong>
+                    <p class="mb-0 small mt-1">@_extractionResult.ErrorMessage</p>
+                </div>
+                <button type="button" class="btn btn-outline-primary" @onclick="Reset">
+                    Carica un altro file
+                </button>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .receipt-uploader-container {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+
+    .upload-area {
+        border: 2px dashed #cbd5e1;
+        border-radius: 0.5rem;
+        padding: 3rem 2rem;
+        text-align: center;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .upload-area:hover {
+        border-color: #0d6efd;
+        background: #f0f7ff;
+    }
+
+    .upload-label {
+        cursor: pointer;
+        margin: 0;
+        display: block;
+    }
+
+    .upload-icon {
+        font-size: 48px;
+        color: #0d6efd;
+    }
+
+    .extraction-result {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .material-icons.align-middle {
+        vertical-align: middle;
+        font-size: 20px;
+    }
+</style>
+
+@code {
+    // ? AttachmentFileId ora è OPZIONALE - non più richiesto per il nuovo flusso
+    [Parameter] public int? AttachmentFileId { get; set; }
+    [Parameter] public EventCallback<ReceiptExtractionResult> OnExtractionConfirmed { get; set; }
+
+    private ReceiptExtractionResult _extractionResult;
+    private bool _isProcessing = false;
+    private string _errorMessage;
+    private string _uploadId = $"receipt-upload-{Guid.NewGuid():N}";
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _errorMessage = null;
+        var file = e.File;
+
+        if (file.Size > 10 * 1024 * 1024)
+        {
+            _errorMessage = "File troppo grande. Massimo 10 MB.";
+            return;
+        }
+
+        await ProcessFile(file);
+    }
+
+    private async Task ProcessFile(IBrowserFile file)
+    {
+        _isProcessing = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            // ? FIX: Leggi i byte PRIMA di qualsiasi operazione
+            byte[] fileBytes;
+            try
+            {
+                using var originalStream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+                using var memoryStream = new MemoryStream();
+                await originalStream.CopyToAsync(memoryStream);
+                fileBytes = memoryStream.ToArray();
+            }
+            catch (Exception ex)
+            {
+                _errorMessage = $"Errore lettura file: {ex.Message}";
+                _isProcessing = false;
+                StateHasChanged();
+                return;
+            }
+
+            // ? Ora usa i byte per creare il contenuto HTTP
+            using var content = new MultipartFormDataContent();
+            using var byteContent = new ByteArrayContent(fileBytes);
+            
+            byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                file.ContentType ?? "application/octet-stream");
+            
+            content.Add(byteContent, "file", file.Name);
+
+            var response = await Http.PostAsync("api/ReceiptProcessor/upload-and-process", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _extractionResult = await response.Content.ReadFromJsonAsync<ReceiptExtractionResult>();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _errorMessage = $"Errore elaborazione: {response.StatusCode} - {errorContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Errore: {ex.Message}";
+        }
+        finally
+        {
+            _isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmExtraction()
+    {
+        if (_extractionResult != null && OnExtractionConfirmed.HasDelegate)
+        {
+            await OnExtractionConfirmed.InvokeAsync(_extractionResult);
+        }
+    }
+
+    private void Reset()
+    {
+        _extractionResult = null;
+        _errorMessage = null;
+        _isProcessing = false;
+        StateHasChanged();
+    }
+
+    private string GetConfidenceText()
+    {
+        if (_extractionResult?.AverageConfidence.HasValue == true)
+        {
+            var percentage = _extractionResult.AverageConfidence.Value * 100;
+            return $"{percentage:F1}%";
+        }
+        return "N/A";
+    }
+}

@@ -1204,3 +1204,62 @@ body.dark-theme .logo {
 .rz-dropdown {
     width: max-content !important;
 }
+
+#uploadWithDragAndDrop {
+    left: 0;
+    --rz-upload-button-bar-background-color: transparent;
+    --rz-upload-button-bar-padding: 0;
+}
+
+    #uploadWithDragAndDrop .rz-fileupload-buttonbar .rz-fileupload-choose {
+        width: 100%;
+        text-align: center;
+        font-size: 16px;
+        padding: 60px 0;
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        #uploadWithDragAndDrop .rz-fileupload-buttonbar .rz-fileupload-choose:hover {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
+        }
+
+    #uploadWithDragAndDrop .rz-fileupload-content {
+        display: none;
+    }
+
+.upload-icon-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.upload-icon {
+    font-size: 64px;
+    color: #0d6efd;
+}
+
+.upload-text {
+    font-size: 16px;
+    color: #495057;
+    font-weight: 500;
+}
+
+.upload-hint {
+    font-size: 14px;
+    color: #6c757d;
+}
+
+.file-list-card {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+}
+
+.e-upload-actions {
+    display: none;
+}

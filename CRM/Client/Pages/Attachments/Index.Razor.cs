@@ -42,7 +42,7 @@ namespace CRM.Client.Pages.Attachments
 
 
         [Parameter]
-        public int IdParent { get; set; }
+        public int? IdParent { get; set; }
 
         [Parameter]
         public AttachmentTypes AttachmentType { get; set; }

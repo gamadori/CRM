@@ -91,7 +91,7 @@ namespace CRM.Server.Services
                 }
 
                 // Recupera i byte del file dall'archivio
-                var fileBytes = _archiveService.GetAttachment(file.Id, Path.GetExtension(file.Name));
+                var fileBytes = _archiveService.GetAttachment(file.Id, file.Name);
 
                 if (fileBytes == null || fileBytes.Length == 0)
                 {

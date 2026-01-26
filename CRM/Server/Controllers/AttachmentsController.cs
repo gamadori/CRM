@@ -167,7 +167,8 @@ namespace CRM.Server.Controllers
                
                 foreach (var f in item.Files)
                 {
-                    _archiveService.SaveAttachments(f.Id, f.ContentType, f.Content);
+                    var ext = Path.GetExtension(f.Name);
+                    _archiveService.SaveAttachments(f.Id, ext, f.Content);
                 }
 
                 await _context.SaveChangesAsync();
@@ -202,9 +203,9 @@ namespace CRM.Server.Controllers
 
                 foreach (var f in item.Files)
                 {
-                    f.ContentType = Path.GetExtension(f.Name);
+                    var ext = Path.GetExtension(f.Name);
 
-                    _archiveService.SaveAttachments(f.Id, f.ContentType, f.Content);
+                    _archiveService.SaveAttachments(f.Id, ext, f.Content);
                     
                 }
                 await SendEmail(item);
@@ -283,7 +284,7 @@ namespace CRM.Server.Controllers
                     var file = attachment.Files.First();
                     header.ContentType = MimeKit.MimeTypes.GetMimeType(file.Name);
                     header.Name = file.Name;
-                    bytes = _archiveService.GetAttachment(file.Id, file.ContentType);
+                    bytes = _archiveService.GetAttachment(file.Id, file.Name);
 
                     
                 }
@@ -302,7 +303,7 @@ namespace CRM.Server.Controllers
 
                                 using (var entryStream = entry.Open())
                                 {
-                                    entryStream.Write(_archiveService.GetAttachment(f.Id, f.ContentType));
+                                    entryStream.Write(_archiveService.GetAttachment(f.Id, f.Name));
                                 }
                             }
                            
@@ -336,7 +337,7 @@ namespace CRM.Server.Controllers
                 
                 header.ContentType = MimeKit.MimeTypes.GetMimeType(file.Name);
                 header.Name = file.Name;
-                bytes = _archiveService.GetAttachment(file.Id, file.ContentType);
+                bytes = _archiveService.GetAttachment(file.Id, file.Name);
 
 
                 HttpContext.Response.Headers.Add(ConstHelper.FileHeader,
@@ -370,7 +371,7 @@ namespace CRM.Server.Controllers
                    JsonConvert.SerializeObject(header));
 
 
-                bytes = _archiveService.GetAttachment(file.Id, Path.GetExtension(file.Name));
+                bytes = _archiveService.GetAttachment(file.Id, file.Name);
 
                 return File(
                     bytes,
@@ -392,7 +393,7 @@ namespace CRM.Server.Controllers
                 if (file == null)
                     return NotFound();
 
-                var originalBytes = _archiveService.GetAttachment(file.Id, Path.GetExtension(file.Name));
+                var originalBytes = _archiveService.GetAttachment(file.Id, file.Name);
                 var contentType = MimeKit.MimeTypes.GetMimeType(file.Name);
 
                 // Se è già PDF, restituisci direttamente

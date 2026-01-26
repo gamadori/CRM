@@ -69,6 +69,9 @@ namespace CRM.Server.Services
                 return 0;
             }
         }
+
+
+
         public string GetAttachment64(int id, string ext)
         {
             byte[] content;
@@ -77,9 +80,33 @@ namespace CRM.Server.Services
             return Convert.ToBase64String(content);
         }
 
-        public byte[] GetAttachment(int id, string ext)
+        public byte[]? GetAttachment(int id)
+        {
+            var item = _context.Attachments.FirstOrDefault(a => a.Id == id);
+
+            if (item == null)
+                return null;
+
+            var ext = Path.GetExtension(item.Name);
+
+            return GetAttachment(id, ext);
+        }
+        public byte[] GetAttachment(int id, string name)
         {
             byte[] content;
+
+           var ext = Path.GetExtension(name);
+
+            string path = GetPath(id, ext);
+            content = File.ReadAllBytes(path);
+            return content;
+        }
+
+        public byte[] GetAttachmentByExt(int id, string ext)
+        {
+            byte[] content;
+
+
             string path = GetPath(id, ext);
             content = File.ReadAllBytes(path);
             return content;

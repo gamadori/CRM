@@ -55,6 +55,7 @@ else
                                   Width="200px"
                                   >
                 <Template Context="item">
+                    <RedGButton RGButtonType="RGButtonType.Download" Click=@(() => Download(item.Id))></RedGButton>
                     <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
                     <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
                     <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item.Id))></RedGButton>

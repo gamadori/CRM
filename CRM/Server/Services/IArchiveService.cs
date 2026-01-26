@@ -30,8 +30,13 @@ namespace CRM.Server.Services
 
         int Save(string name, string content);
 
+
         string GetAttachment64(int id, string ext);
 
-        byte[] GetAttachment(int id, string ext);
+        public byte[]? GetAttachment(int id);
+
+        byte[] GetAttachment(int id, string fileName);
+
+        byte[] GetAttachmentByExt(int id, string ext);
     }
 }

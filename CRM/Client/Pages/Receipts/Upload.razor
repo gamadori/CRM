@@ -1,0 +1,443 @@
+﻿@page "/receipts/upload"
+@using CRM.Shared.DTOs
+@using Microsoft.Extensions.Localization
+@using System.IO
+@inject HttpClient Http
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+@inject NavigationManager Nav
+
+<PageTitle>Carica Scontrino/Fattura - Test Azure Form Recognizer</PageTitle>
+
+<div class="container-fluid px-4 py-3">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold text-dark mb-1">
+                <i class="material-icons align-middle me-2" style="font-size: 32px;">receipt_long</i>
+                Test Estrazione Automatica Scontrini
+            </h2>
+            <p class="text-muted">Carica un'immagine o PDF di uno scontrino/fattura per testare Azure Form Recognizer</p>
+        </div>
+    </div>
+
+    <!-- Health Check Azure -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="material-icons align-middle">health_and_safety</i>
+                Stato Servizio Azure
+            </h5>
+            @if (_healthCheckLoading)
+            {
+                <div class="spinner-border spinner-border-sm me-2"></div>
+                <span>Verifica in corso...</span>
+            }
+            else if (_healthStatus != null)
+            {
+                <div class="alert @(_healthStatus.healthy ? "alert-success" : "alert-warning") mb-0">
+                    <strong>@(_healthStatus.healthy ? "✓ Connesso" : "⚠ Non configurato")</strong>
+                    <p class="mb-0 small mt-1">@_healthStatus.message</p>
+                    <small class="text-muted">@_healthStatus.timestamp.ToString("yyyy-MM-dd HH:mm:ss")</small>
+                </div>
+            }
+            <button class="btn btn-sm btn-outline-primary mt-2" @onclick="CheckHealth">
+                <i class="material-icons align-middle" style="font-size: 16px;">refresh</i>
+                Ricontrolla
+            </button>
+        </div>
+    </div>
+
+    <!-- Upload Area -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="material-icons align-middle">cloud_upload</i>
+                Carica File
+            </h5>
+
+            @if (!_isProcessing && _extractionResult == null)
+            {
+                <div class="upload-zone">
+                    <InputFile OnChange="OnFileSelected" accept="image/*,.pdf" class="d-none" id="receipt-file" />
+                    <label for="receipt-file" class="upload-label">
+                        <i class="material-icons upload-icon">add_photo_alternate</i>
+                        <p class="mb-2"><strong>Clicca per selezionare scontrino/fattura</strong></p>
+                        <p class="text-muted small mb-0">JPG, PNG o PDF • Massimo 10 MB</p>
+                    </label>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger mt-3">
+                        <i class="material-icons align-middle">error</i>
+                        @_errorMessage
+                    </div>
+                }
+            }
+
+            @if (_isProcessing)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                    <h5 class="text-muted">Elaborazione in corso...</h5>
+                    <p class="small">Azure Form Recognizer sta analizzando il documento</p>
+                </div>
+            }
+
+            @if (_extractionResult != null)
+            {
+                <div class="extraction-result-panel">
+                    @if (_extractionResult.Success)
+                    {
+                        <div class="alert alert-success">
+                            <i class="material-icons me-2">check_circle</i>
+                            <strong>Estrazione completata con successo!</strong>
+                            <div class="small mt-1">
+                                Tipo: @_extractionResult.DocumentType • 
+                                Confidence: @GetConfidencePercent() • 
+                                Tempo: @_extractionResult.ProcessingTimeMs ms
+                            </div>
+                        </div>
+
+                        <!-- Campi Estratti -->
+                        <div class="row g-3 mb-4">
+                            @if (_extractionResult.TotalAmount.HasValue)
+                            {
+                                <div class="col-md-4">
+                                    <div class="result-card">
+                                        <label class="result-label">💶 Totale</label>
+                                        <div class="result-value">
+                                            @_extractionResult.TotalAmount.Value.ToString("C2") @_extractionResult.Currency
+                                        </div>
+                                        <small class="text-muted">Confidence: @GetFieldConfidence(_extractionResult.TotalConfidence)</small>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (_extractionResult.TaxAmount.HasValue)
+                            {
+                                <div class="col-md-4">
+                                    <div class="result-card">
+                                        <label class="result-label">🧾 IVA</label>
+                                        <div class="result-value">@_extractionResult.TaxAmount.Value.ToString("C2")</div>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (_extractionResult.SubtotalAmount.HasValue)
+                            {
+                                <div class="col-md-4">
+                                    <div class="result-card">
+                                        <label class="result-label">Subtotale</label>
+                                        <div class="result-value">@_extractionResult.SubtotalAmount.Value.ToString("C2")</div>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (_extractionResult.TransactionDate.HasValue)
+                            {
+                                <div class="col-md-6">
+                                    <div class="result-card">
+                                        <label class="result-label">📅 Data Transazione</label>
+                                        <div class="result-value">@_extractionResult.TransactionDate.Value.ToString("dd/MM/yyyy")</div>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(_extractionResult.MerchantName))
+                            {
+                                <div class="col-md-6">
+                                    <div class="result-card">
+                                        <label class="result-label">🏪 Commerciante</label>
+                                        <div class="result-value">@_extractionResult.MerchantName</div>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(_extractionResult.MerchantAddress))
+                            {
+                                <div class="col-12">
+                                    <div class="result-card">
+                                        <label class="result-label">📍 Indirizzo</label>
+                                        <div class="result-value small">@_extractionResult.MerchantAddress</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Line Items -->
+                        @if (_extractionResult.LineItems != null && _extractionResult.LineItems.Any())
+                        {
+                            <h6 class="mb-3">📋 Dettaglio Righe (@_extractionResult.LineItems.Count)</h6>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Descrizione</th>
+                                            <th class="text-center">Quantità</th>
+                                            <th class="text-end">Prezzo Unit.</th>
+                                            <th class="text-end">Totale</th>
+                                            <th class="text-center">Conf.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in _extractionResult.LineItems)
+                                        {
+                                            <tr>
+                                                <td>@item.Description</td>
+                                                <td class="text-center">@item.Quantity</td>
+                                                <td class="text-end">@item.UnitPrice?.ToString("C2")</td>
+                                                <td class="text-end fw-bold">@item.TotalPrice?.ToString("C2")</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-secondary">@GetFieldConfidence(item.Confidence)</span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+
+                        <button class="btn btn-primary me-2" @onclick="Reset">
+                            <i class="material-icons align-middle">refresh</i>
+                            Carica Altro File
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger">
+                            <i class="material-icons align-middle">error</i>
+                            <strong>Errore durante l'estrazione</strong>
+                            <p class="mb-0 mt-2">@_extractionResult.ErrorMessage</p>
+                        </div>
+                        <button class="btn btn-outline-primary" @onclick="Reset">Riprova</button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Istruzioni -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">
+                <i class="material-icons align-middle">info</i>
+                Come Funziona
+            </h5>
+            <ol class="mb-0">
+                <li>Carica un'immagine (JPG/PNG) o PDF di uno scontrino o fattura</li>
+                <li>Azure Form Recognizer analizza il documento con AI</li>
+                <li>I campi vengono estratti automaticamente (totale, IVA, data, righe prodotti)</li>
+                <li>Puoi modificare i valori estratti prima di confermarli</li>
+            </ol>
+            <div class="alert alert-info mt-3 mb-0">
+                <strong>⚠️ Nota:</strong> Questa è una pagina di test. Per usare la funzionalità negli interventi, 
+                vai su <strong>Ticket → Interventi → Modifica</strong> e usa la sezione "Note Spese & Scontrini".
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .upload-zone {
+        border: 3px dashed #cbd5e1;
+        border-radius: 0.75rem;
+        padding: 4rem 2rem;
+        text-align: center;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .upload-zone:hover {
+        border-color: #0d6efd;
+        background: #e7f3ff;
+    }
+
+    .upload-label {
+        cursor: pointer;
+        margin: 0;
+        display: block;
+    }
+
+    .upload-icon {
+        font-size: 72px;
+        color: #0d6efd;
+    }
+
+    .result-card {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        border-left: 4px solid #0d6efd;
+    }
+
+    .result-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    .result-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #212529;
+    }
+
+    .extraction-result-panel {
+        margin-top: 2rem;
+    }
+
+    .material-icons.align-middle {
+        vertical-align: middle;
+        font-size: 20px;
+    }
+</style>
+
+@code {
+    private ReceiptExtractionResult _extractionResult;
+    private bool _isProcessing = false;
+    private string _errorMessage;
+    private bool _healthCheckLoading = true;
+    private HealthCheckResponse _healthStatus;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckHealth();
+    }
+
+    private async Task CheckHealth()
+    {
+        _healthCheckLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.GetAsync("api/ReceiptProcessor/health");
+            if (response.IsSuccessStatusCode)
+            {
+                _healthStatus = await response.Content.ReadFromJsonAsync<HealthCheckResponse>();
+            }
+        }
+        catch (Exception ex)
+        {
+            _healthStatus = new HealthCheckResponse
+            {
+                healthy = false,
+                message = $"Errore connessione: {ex.Message}",
+                timestamp = DateTime.Now
+            };
+        }
+        finally
+        {
+            _healthCheckLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _errorMessage = null;
+        var file = e.File;
+
+        if (file.Size > 10 * 1024 * 1024)
+        {
+            _errorMessage = "File troppo grande. Massimo 10 MB.";
+            return;
+        }
+
+        await ProcessFile(file);
+    }
+
+    private async Task ProcessFile(IBrowserFile file)
+    {
+        _isProcessing = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            // ✅ FIX: Leggi i byte PRIMA di qualsiasi operazione
+            byte[] fileBytes;
+            try
+            {
+                using var originalStream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+                using var memoryStream = new MemoryStream();
+                await originalStream.CopyToAsync(memoryStream);
+                fileBytes = memoryStream.ToArray();
+            }
+            catch (Exception ex)
+            {
+                _errorMessage = $"Errore lettura file: {ex.Message}";
+                _isProcessing = false;
+                StateHasChanged();
+                return;
+            }
+
+            // ✅ Ora usa i byte per creare il contenuto HTTP
+            using var content = new MultipartFormDataContent();
+            using var byteContent = new ByteArrayContent(fileBytes);
+            
+            byteContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                file.ContentType ?? "application/octet-stream");
+            
+            content.Add(byteContent, "file", file.Name);
+
+            var response = await Http.PostAsync("api/ReceiptProcessor/upload-and-process", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _extractionResult = await response.Content.ReadFromJsonAsync<ReceiptExtractionResult>();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _errorMessage = $"Errore elaborazione: {response.StatusCode} - {errorContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Errore: {ex.Message}";
+        }
+        finally
+        {
+            _isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Reset()
+    {
+        _extractionResult = null;
+        _errorMessage = null;
+        _isProcessing = false;
+        StateHasChanged();
+    }
+
+    private string GetConfidencePercent()
+    {
+        if (_extractionResult?.AverageConfidence.HasValue == true)
+        {
+            return $"{(_extractionResult.AverageConfidence.Value * 100):F1}%";
+        }
+        return "N/A";
+    }
+
+    private string GetFieldConfidence(float? confidence)
+    {
+        if (confidence.HasValue)
+        {
+            return $"{(confidence.Value * 100):F0}%";
+        }
+        return "-";
+    }
+
+    private class HealthCheckResponse
+    {
+        public bool healthy { get; set; }
+        public string service { get; set; }
+        public DateTime timestamp { get; set; }
+        public string message { get; set; }
+    }
+}

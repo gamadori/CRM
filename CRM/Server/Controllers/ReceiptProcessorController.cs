@@ -160,6 +160,81 @@ namespace CRM.Server.Controllers
         }
 
         /// <summary>
+        /// ? NUOVO: Upload diretto file + elaborazione immediata (senza attachment già salvato)
+        /// </summary>
+        /// <param name="file">File caricato (multipart/form-data)</param>
+        /// <returns>Risultato estrazione</returns>
+        [HttpPost("upload-and-process")]
+        [ProducesResponseType(typeof(ReceiptExtractionResult), 200)]
+        public async Task<ActionResult<ReceiptExtractionResult>> UploadAndProcess(IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest(new ReceiptExtractionResult
+                    {
+                        Success = false,
+                        ErrorMessage = "Nessun file caricato"
+                    });
+                }
+
+                if (file.Length > 10 * 1024 * 1024) // 10 MB
+                {
+                    return BadRequest(new ReceiptExtractionResult
+                    {
+                        Success = false,
+                        ErrorMessage = "File troppo grande. Massimo 10 MB."
+                    });
+                }
+
+                _logger.LogInformation("Upload e processing file {FileName} ({Size} bytes)", file.FileName, file.Length);
+
+                // Leggi i byte del file
+                byte[] fileBytes;
+                using (var memoryStream = new MemoryStream())
+                {
+                    await file.CopyToAsync(memoryStream);
+                    fileBytes = memoryStream.ToArray();
+                }
+
+                // Processa direttamente i byte
+                var result = await _receiptProcessor.ProcessReceiptFromBytesAsync(
+                    fileBytes,
+                    file.FileName,
+                    useCustomModel: false,
+                    customModelId: null);
+
+                if (result.Success)
+                {
+                    await _logEventService.RegisterAsync(
+                        nameof(ReceiptProcessorController),
+                        "UploadAndProcess",
+                        LogEvent.EventsTypes.Info,
+                        $"Receipt processato: {file.FileName}, Totale={result.TotalAmount}");
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Errore durante upload e processing");
+                
+                await _logEventService.RegisterAsync(
+                    nameof(ReceiptProcessorController),
+                    "UploadAndProcess",
+                    LogEvent.EventsTypes.Error,
+                    ex);
+
+                return StatusCode(500, new ReceiptExtractionResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Errore interno: {ex.Message}"
+                });
+            }
+        }
+
+        /// <summary>
         /// Verifica la configurazione e connettività con Azure Form Recognizer
         /// </summary>
         /// <returns>Stato del servizio</returns>

@@ -122,69 +122,45 @@ else
                                         <DisplayName For="@(() => _ticket.IdUserAssigned)" />
                                     </RadzenLabel>
 
-                                    <!-- ✅ Selected Users Badges -->
+                                    <!-- ✅ Selected Users Display -->
                                     @if (_selectedUserIds.Any())
                                     {
-                                        <div class="selected-users-container">
-                                            @foreach (var userId in _selectedUserIds.ToList())
+                                        <div class="selected-users-display">
+                                            @foreach (var userId in _selectedUserIds.Take(3).ToList())
                                             {
                                                 var user = _users.FirstOrDefault(u => u.Id == userId);
                                                 if (user != null)
                                                 {
                                                     var isMain = _selectedUserIds.ToList().IndexOf(userId) == 0;
-                                                    <div class="selected-user-badge @(isMain ? "main-user" : "")">
-                                                        <span class="user-avatar">@GetInitials(user.NameComplete)</span>
-                                                        <span class="user-name">@user.NameComplete</span>
+                                                    <div class="user-badge-compact @(isMain ? "main-user" : "")">
+                                                        <span class="user-avatar-compact">@GetInitials(user.NameComplete)</span>
+                                                        <span class="user-name-compact">@user.NameComplete</span>
                                                         @if (isMain)
                                                         {
-                                                            <span class="main-label">★</span>
+                                                            <span class="main-star">★</span>
                                                         }
-                                                        <button type="button" class="remove-btn" @onclick="() => RemoveUser(userId)">×</button>
                                                     </div>
                                                 }
+                                            }
+                                            @if (_selectedUserIds.Count > 3)
+                                            {
+                                                <div class="more-users">+@(_selectedUserIds.Count - 3) @Localize["more"]</div>
                                             }
                                         </div>
                                     }
                                     else
                                     {
-                                        <div class="no-users-selected">
-                                            <span class="material-icons">person_off</span>
+                                        <div class="no-users-compact">
                                             <em>@Localize["No users assigned"]</em>
                                         </div>
                                     }
 
-                                    <!-- ✅ Search and User List -->
-                                    <div class="user-selection-panel">
-                                        <RadzenTextBox Placeholder="@Localize["Search users..."]" 
-                                                       @bind-Value="_searchQuery" 
-                                                       @oninput="@(args => OnSearchChanged(args.Value?.ToString()))"
-                                                       class="user-search-input" />
-
-                                        <div class="user-list">
-                                            @foreach (var user in _filteredUsers.Take(10))
-                                            {
-                                                var isSelected = _selectedUserIds.Contains(user.Id);
-                                                <div class="user-item @(isSelected ? "selected" : "")" 
-                                                     @onclick="() => ToggleUser(user.Id)">
-                                                    <span class="user-avatar-small">@GetInitials(user.NameComplete)</span>
-                                                    <div class="user-info">
-                                                        <span class="user-name">@user.NameComplete</span>
-                                                        <span class="user-email">@user.Email</span>
-                                                    </div>
-                                                    @if (isSelected)
-                                                    {
-                                                        <span class="material-icons check-icon">check_circle</span>
-                                                    }
-                                                </div>
-                                            }
-                                            @if (!_filteredUsers.Any())
-                                            {
-                                                <div class="no-results">
-                                                    <em>@Localize["No users found"]</em>
-                                                </div>
-                                            }
-                                        </div>
-                                    </div>
+                                    <!-- ✅ Button to Open Assign Dialog -->
+                                    <RadzenButton Text="@(_selectedUserIds.Any() ? Localize["Manage Assignments"] : Localize["Assign Users"])" 
+                                                  Icon="@(_selectedUserIds.Any() ? "edit" : "group_add")" 
+                                                  Click="OpenUserSelectionDialog" 
+                                                  ButtonStyle="ButtonStyle.Secondary"
+                                                  Style="margin-top: 0.5rem;" />
                                 </RadzenStack>
                             </RadzenColumn>
                         </RadzenRow>
@@ -283,231 +259,88 @@ else
     </EditForm>
 }
 <style>
-    /* ✅ Selected Users Container */
-    .selected-users-container {
+    /* ✅ Compact Selected Users Display */
+    .selected-users-display {
         display: flex;
         flex-wrap: wrap;
         gap: 0.5rem;
-        margin-bottom: 1rem;
         padding: 0.75rem;
         background: #f9fafb;
         border-radius: 8px;
         border: 1px solid #e5e7eb;
+        margin-bottom: 0.5rem;
     }
 
-    .selected-user-badge {
+    .user-badge-compact {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.5rem 0.75rem;
+        padding: 0.4rem 0.6rem;
         background: white;
         border: 2px solid #e5e7eb;
         border-radius: 8px;
-        transition: all 0.2s ease;
+        font-size: 0.85rem;
     }
 
-    .selected-user-badge.main-user {
+    .user-badge-compact.main-user {
         background: linear-gradient(90deg, #dbeafe 0%, white 100%);
         border-color: #667eea;
     }
 
-    .selected-user-badge:hover {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        transform: translateY(-1px);
-    }
-
-    .user-avatar {
+    .user-avatar-compact {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border-radius: 50%;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 600;
         flex-shrink: 0;
     }
 
-    .user-name {
+    .user-name-compact {
         font-weight: 500;
         color: #374151;
+        font-size: 0.85rem;
+    }
+
+    .main-star {
+        color: #667eea;
         font-size: 0.9rem;
     }
 
-    .main-label {
-        color: #667eea;
-        font-size: 1rem;
-        margin-left: 0.25rem;
-    }
-
-    .remove-btn {
-        background: transparent;
-        border: none;
-        color: #9ca3af;
-        font-size: 1.5rem;
-        line-height: 1;
-        cursor: pointer;
-        padding: 0;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        transition: all 0.2s ease;
-        margin-left: 0.25rem;
-    }
-
-    .remove-btn:hover {
-        background: #fee2e2;
-        color: #dc2626;
-    }
-
-    /* ✅ No Users Selected */
-    .no-users-selected {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 1.5rem;
-        color: #9ca3af;
-        background: #f9fafb;
-        border-radius: 8px;
-        border: 2px dashed #e5e7eb;
-        margin-bottom: 1rem;
-    }
-
-    .no-users-selected .material-icons {
-        font-size: 1.5rem;
-    }
-
-    /* ✅ User Selection Panel */
-    .user-selection-panel {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .user-search-input {
-        width: 100%;
-        padding: 0.75rem;
-        border: 2px solid #e5e7eb;
-        border-radius: 8px;
-        font-size: 0.95rem;
-    }
-
-    .user-search-input:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    /* ✅ User List */
-    .user-list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        max-height: 300px;
-        overflow-y: auto;
-        padding: 0.5rem;
-        background: #f9fafb;
-        border-radius: 8px;
-        border: 1px solid #e5e7eb;
-    }
-
-    .user-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        background: white;
-        border: 2px solid transparent;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .user-item:hover {
-        border-color: #667eea;
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
-    }
-
-    .user-item.selected {
-        background: linear-gradient(90deg, #dbeafe 0%, white 100%);
-        border-color: #667eea;
-    }
-
-    .user-avatar-small {
+    .more-users {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        width: 36px;
-        height: 36px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 50%;
+        padding: 0.4rem 0.6rem;
+        background: #e5e7eb;
+        border-radius: 8px;
         font-size: 0.85rem;
-        font-weight: 600;
-        flex-shrink: 0;
+        color: #6b7280;
+        font-weight: 500;
     }
 
-    .user-info {
-        display: flex;
-        flex-direction: column;
-        gap: 0.125rem;
-        flex: 1;
-    }
-
-    .user-email {
-        font-size: 0.8rem;
+    .no-users-compact {
+        padding: 0.75rem;
         color: #9ca3af;
-    }
-
-    .check-icon {
-        color: #10b981;
-        font-size: 1.5rem;
-    }
-
-    .no-results {
+        background: #f9fafb;
+        border-radius: 8px;
+        border: 1px dashed #e5e7eb;
         text-align: center;
-        padding: 2rem;
-        color: #9ca3af;
-    }
-
-    /* ✅ Scrollbar Styling */
-    .user-list::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .user-list::-webkit-scrollbar-track {
-        background: #f3f4f6;
-        border-radius: 3px;
-    }
-
-    .user-list::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 3px;
-    }
-
-    .user-list::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+        font-size: 0.9rem;
     }
 
     /* ✅ Responsive */
     @@media (max-width: 768px) {
-        .selected-users-container {
+        .selected-users-display {
             flex-direction: column;
         }
 
-        .selected-user-badge {
+        .user-badge-compact {
             width: 100%;
-            justify-content: space-between;
-        }
-
-        .user-list {
-            max-height: 200px;
         }
     }
 </style>

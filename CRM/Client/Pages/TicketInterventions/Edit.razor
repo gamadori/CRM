@@ -177,8 +177,8 @@ else
                                     </h2>
                                     <div id="collapseReceipt" class="accordion-collapse collapse" aria-labelledby="headingReceipt">
                                         <div class="accordion-body">
-                                            <ReceiptUploader AttachmentFileId="_ticketIntervention.ReceiptAttachmentFileId"
-                                                           OnExtractionConfirmed="OnReceiptExtractionConfirmed" />
+                                            <!-- ✅ RIMOSSO AttachmentFileId - non più necessario! -->
+                                            <ReceiptUploader OnExtractionConfirmed="OnReceiptExtractionConfirmed" />
                                             
                                             @if (_ticketIntervention.ExtractedTotalAmount.HasValue)
                                             {

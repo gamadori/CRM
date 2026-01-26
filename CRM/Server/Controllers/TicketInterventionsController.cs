@@ -326,7 +326,7 @@ namespace CRM.Server.Controllers
                     var ticketIntervention = await _context.TicketsInterventions.FindAsync(id);
                     if (ticketIntervention != null && ticketIntervention.HasAttachments)
                     {
-                        byte[] bytes = _archiveService.GetAttachment(id, "pdf");
+                        byte[] bytes = _archiveService.GetAttachmentByExt(id, "pdf");
 
                         AttachmentResponse header = new AttachmentResponse();
                         var name = $"{id}.pdf";
@@ -363,7 +363,7 @@ namespace CRM.Server.Controllers
                     var ticketIntervention = await _context.TicketsInterventions.FindAsync(id);
                     if (ticketIntervention != null && ticketIntervention.HasAttachments)
                     {
-                        byte[] bytes = _archiveService.GetAttachment(id, "pdf");
+                        byte[] bytes = _archiveService.GetAttachmentByExt(id, "pdf");
 
                         // Restituisci SOLO la stringa Base-64 senza il prefisso data URI
                         return Convert.ToBase64String(bytes);
