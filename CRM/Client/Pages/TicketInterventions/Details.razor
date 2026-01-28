@@ -283,48 +283,41 @@ else
                     <br>
 
                     <div>
-@*
-                        @if (_creatingReport)
-                        {
-                            <Waiting Message=@Localize["Creazione Report..."]></Waiting>
-                        }
-                        else
-                        {*@
 
-                            <BlazorButton Template="TemplateButton.Back" OnClick="Annulla" Text="Interventi" />
+                        <BlazorButton Template="TemplateButton.Back" OnClick="Annulla" Text="Interventi" />
+
+                        @if (_ticketIntervention.Permits.Edit())
+                        {
+                            <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
+                        }
+
+                        @if (_ticketIntervention.HasAttachments)
+                        {
 
                             @if (_ticketIntervention.Permits.Edit())
                             {
-                                <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
-                            }
-
-                            @if (_ticketIntervention.HasAttachments)
-                            {
-
-                                @if (_ticketIntervention.Permits.Edit())
-                                {
-                                    <DropDownBtn Text="@Localize["Report"]" CssClass="btn-success" IconMaterial="picture_as_pdf">
-                                        <DropDownBrnItem Text="@Localize["View Report"]"  IconMaterial="visibility" OnClickEvent="ReportView" />
-                                        <DropDownBrnItem Text="@Localize["Download Report"]" IconMaterial="file_download" OnClickEvent="DownloadReport" />
-                                    </DropDownBtn>
-                                }
-                                else
-                                {
-                                
-                                    <BlazorButton CssClass="btn-success" OnClick="DownloadReport" Text=@Localize["Download Report"] Template="TemplateButton.Download"></BlazorButton>
-                                }
-
-                            }
-
-                            else if (_ticketIntervention.Permits.Edit() && (!_ticketIntervention.HasAttachments || !_ticketIntervention.AttachmentExist))
-                            {
-                                 <DropDownBtn Text="@Localize["Report"]" CssClass="btn-success" IconMaterial="picture_as_pdf">
-                                    <DropDownBrnItem Text="@Localize["Create Report"]" IconMaterial="create" OnClickEvent="CreateReportPrepare" />
-                                    <DropDownBrnItem Text="@Localize["Upload Report"]" IconMaterial="file_upload" OnClickEvent="ReportUploadDialog" />
+                                <DropDownBtn Text="@Localize["Report"]" CssClass="btn-success" IconMaterial="picture_as_pdf">
+                                    <DropDownBrnItem Text="@Localize["View Report"]"  IconMaterial="visibility" OnClickEvent="ReportView" />
+                                    <DropDownBrnItem Text="@Localize["Download Report"]" IconMaterial="file_download" OnClickEvent="DownloadReport" />
                                 </DropDownBtn>
-
                             }
-                        @*}*@
+                            else
+                            {
+                                
+                                <BlazorButton CssClass="btn-success" OnClick="DownloadReport" Text=@Localize["Download Report"] Template="TemplateButton.Download"></BlazorButton>
+                            }
+
+                        }
+
+                        else if (_ticketIntervention.Permits.Edit() && (!_ticketIntervention.HasAttachments || !_ticketIntervention.AttachmentExist))
+                        {
+                                <DropDownBtn Text="@Localize["Report"]" CssClass="btn-success" IconMaterial="picture_as_pdf">
+                                <DropDownBrnItem Text="@Localize["Create Report"]" IconMaterial="create" OnClickEvent="CreateReportPrepare" />
+                                <DropDownBrnItem Text="@Localize["Upload Report"]" IconMaterial="file_upload" OnClickEvent="ReportUploadDialog" />
+                            </DropDownBtn>
+
+                        }
+                      
 
                     </div>
                 </div>

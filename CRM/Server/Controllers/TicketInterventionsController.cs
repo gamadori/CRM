@@ -60,29 +60,7 @@ namespace CRM.Server.Controllers
         {
             try
             {
-                //var items = _context.TicketsInterventions.Include(x => x.TicketInterventionsTypes).AsQueryable();
-
-                //if (!await _permitsService.CanAccessOtherCompany())
-                //{
-                //    int? idCompany = await _permitsService.GetIdCompany();
-                //    items = items.Where(x => x.Ticket.IdCompany == idCompany);
-                //}
-                //if (args != null)
-                //{
-                //    if (args.OrderBy != null)
-                //        items = items.OrderBy(args.OrderBy);
-
-                //    if (args.IdTicket != null)
-                //        items = items.Where(x => x.IdTicket == args.IdTicket);
-
-                //    if (args.Filter != null)
-                //        items = items.Where(args.Filter);
-
-                    
-                //    PagingHelper.ResponsePaging<TicketIntervention, TicketInterventionFilter>(HttpContext, items, args);
-                    
-
-                //}
+                
                 var items = await Filter(args);
 
                 if (items == null)
@@ -267,13 +245,13 @@ namespace CRM.Server.Controllers
         }
 
         [HttpGet("Report/{id}")]
-        public async Task<bool> CreateDocPdf(int id)
+        public async Task<bool> CreateDocPdf(int id, [FromQuery] string? languageCode = null)
         {
 
            
 
             
-                if ((await CreatePdf(id)) != null)
+                if ((await CreatePdf(id, languageCode)) != null)
                 {
                     var ticketIntervention = await _context.TicketsInterventions.FindAsync(id);
                     ticketIntervention.HasAttachments = true;

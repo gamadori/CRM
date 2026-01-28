@@ -106,14 +106,14 @@ namespace CRM.Client.Pages.TicketInterventions
         }
 
 
-        protected void Edit()
+        private void Edit()
         {
             if (OnClickEdit != null)
                 OnClickEdit();
             else
                 NavigationManager.NavigateTo($"/TicketsIntervention/{Id}/Edit");
         }
-        protected void Annulla()
+        private void Annulla()
         {
             if (OnClickCancel != null)
                 OnClickCancel();
@@ -121,18 +121,27 @@ namespace CRM.Client.Pages.TicketInterventions
                 NavigationManager.NavigateTo("/TicketsIntervention/Index");
         }
 
-        protected void SendInvitation()
+        private void SendInvitation()
         {
 
         }
 
-        protected async Task ReportCreate()
+        
+        private async Task ReportCreate(string? languageCode = null)
         {
             await JSRuntime.InvokeVoidAsync("ShowModal", "dlgWaitingBox");
             
             _creatingReport = true;
             StateHasChanged();
-            var resp = await _httpClient.GetFromJsonAsync<bool>($"{ConstHelper.TicketsInterventionsPath}/Report/{_ticketIntervention.Id}");
+
+            // Passa il parametro lingua all'API
+            var url = $"{ConstHelper.TicketsInterventionsPath}/Report/{_ticketIntervention.Id}";
+            if (!string.IsNullOrWhiteSpace(languageCode))
+            {
+                url += $"?languageCode={languageCode}";
+            }
+
+            var resp = await _httpClient.GetFromJsonAsync<bool>(url);
 
             await JSRuntime.InvokeVoidAsync("CloseModal", "dlgWaitingBox");
 
@@ -142,7 +151,6 @@ namespace CRM.Client.Pages.TicketInterventions
                 _message = "Report Creato con successo";
 
                 await ReportViewAsync();
-
             }
             else
             {
@@ -150,30 +158,47 @@ namespace CRM.Client.Pages.TicketInterventions
                 _message = "Report NON creato: Errore durante la sua creazione";
 
                 await LoadData();
-                
             }
+            
             _creatingReport = false;
             StateHasChanged();
         }
 
-        protected async Task ReportViewAsync()
+        private async Task ReportViewAsync()
         {
             // Naviga direttamente alla pagina ReportViewer invece di aprire una dialog
             NavigationManager.NavigateTo($"/TicketInterventions/ReportViewer/{_ticketIntervention.Id}");
         }
 
-        protected async void ReportView()
+        private async void ReportView()
         {
             await ReportViewAsync();
         }
 
-        protected async Task CreateReportPrepare()
+        private async Task CreateReportPrepare()
         {
-
-
             if (_ticketIntervention == null)
                 return;
 
+            // Mostra dialog selezione lingua
+            var selectedLanguageCode = await DialogService.OpenAsync<LanguageSelectionDialog>(
+                Localize["Select Report Language"],
+                null,
+                new DialogOptions 
+                { 
+                    Width = "600px", 
+                    Height = "auto",
+                    CloseDialogOnOverlayClick = false
+                }
+            );
+
+            // Se l'utente ha annullato, esci
+            if (selectedLanguageCode == null || string.IsNullOrWhiteSpace(selectedLanguageCode.ToString()))
+            {
+                return;
+            }
+
+            // Mostra conferma se report già esistente
             if (_ticketIntervention.AttachmentExist)
                 _msgBox = Localize["AttentionReportAlreadyPresent"];
             else
@@ -181,18 +206,17 @@ namespace CRM.Client.Pages.TicketInterventions
 
             if (await DialogService.Confirm(_msgBox) == true)
             {
-
-                await ReportCreate();
+                await ReportCreate(selectedLanguageCode.ToString());
             }
             
 
         }
 
-        
 
-     
 
-        protected async Task DownloadReport()
+
+
+        private async Task DownloadReport()
         {
 
             if (await DialogService.Confirm(Localize["Download Report?"]) == true)
@@ -217,7 +241,7 @@ namespace CRM.Client.Pages.TicketInterventions
                 }
             }
         }
-        protected async void ReportUploadDialog()
+        private async void ReportUploadDialog()
         {
             await JSRuntime.InvokeVoidAsync("ShowModal", "dlgUploadFile");
         }
