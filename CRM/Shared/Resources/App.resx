@@ -416,7 +416,7 @@
     <value>Management of registered companies</value>
   </data>
   <data name="Manage Tickets" xml:space="preserve">
-    <value>Management Tickets</value>
+    <value>Ticket Management</value>
   </data>
   <data name="TicketNumber" xml:space="preserve">
     <value>Ticket Number</value>
@@ -501,5 +501,116 @@
   </data>
   <data name="Select the product" xml:space="preserve">
     <value>Select the Product</value>
+  </data>
+  <data name="Customer Dashboard" xml:space="preserve">
+    <value>Customer Dashboard</value>
+  </data>
+  <data name="Welcome to your support portal" xml:space="preserve">
+    <value>Welcome to your support portal</value>
+  </data>
+  <data name="Open a new request" xml:space="preserve">
+    <value>Open a new request</value>
+  </data>
+  <data name="Tickets in Process" xml:space="preserve">
+    <value>Tickets in Process</value>
+  </data>
+  <data name="Requests currently handled" xml:space="preserve">
+    <value>Requests currently handled</value>
+  </data>
+  <data name="View all tickets" xml:space="preserve">
+    <value>View all tickets</value>
+  </data>
+  <data name="New Messages" xml:space="preserve">
+    <value>New Messages</value>
+  </data>
+  <data name="Chat with support" xml:space="preserve">
+    <value>Chat with support</value>
+  </data>
+  <data name="View your products" xml:space="preserve">
+    <value>View your products</value>
+  </data>
+  <data name="Company Data" xml:space="preserve">
+    <value>Company Data</value>
+  </data>
+  <data name="Manage your data" xml:space="preserve">
+    <value>Manage your data</value>
+  </data>
+  <data name="Minute of Intervention" xml:space="preserve">
+    <value>Minute of Intervention</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="Company Name" xml:space="preserve">
+    <value>Company Name</value>
+  </data>
+  <data name="VAT ID" xml:space="preserve">
+    <value>VAT ID</value>
+  </data>
+  <data name="Address" xml:space="preserve">
+    <value>Address</value>
+  </data>
+  <data name="ZIP" xml:space="preserve">
+    <value>ZIP</value>
+  </data>
+  <data name="City" xml:space="preserve">
+    <value>City</value>
+  </data>
+  <data name="Country" xml:space="preserve">
+    <value>Country</value>
+  </data>
+  <data name="Our technician" xml:space="preserve">
+    <value>Our technician</value>
+  </data>
+  <data name="has intervened at" xml:space="preserve">
+    <value>has intervened at</value>
+  </data>
+  <data name="for:" xml:space="preserve">
+    <value>for:</value>
+  </data>
+  <data name="Machines/Devices" xml:space="preserve">
+    <value>Machines/Devices</value>
+  </data>
+  <data name="Service began" xml:space="preserve">
+    <value>Service began</value>
+  </data>
+  <data name="Service ended" xml:space="preserve">
+    <value>Service ended</value>
+  </data>
+  <data name="Activities" xml:space="preserve">
+    <value>Activities</value>
+  </data>
+  <data name="Customer Declaration" xml:space="preserve">
+    <value>Customer Declaration</value>
+  </data>
+  <data name="The undersigned declares..." xml:space="preserve">
+    <value>The undersigned declares to have received the service as described above.</value>
+  </data>
+  <data name="The customer declares..." xml:space="preserve">
+    <value>The customer declares that the intervention has been completed satisfactorily.</value>
+  </data>
+  <data name="Any reserves must be..." xml:space="preserve">
+    <value>Any reserves must be communicated in writing within 8 days.</value>
+  </data>
+  <data name="The customer authorizes..." xml:space="preserve">
+    <value>The customer authorizes the processing of personal data in accordance with current regulations.</value>
+  </data>
+  <data name="Replaced and Mounted Parts" xml:space="preserve">
+    <value>Replaced and Mounted Parts</value>
+  </data>
+  <data name="Notes or Reserves" xml:space="preserve">
+    <value>Notes or Reserves</value>
+  </data>
+  <data name="Tick if no comments" xml:space="preserve">
+    <value>Tick if no comments</value>
+  </data>
+  <data name="Accepted on" xml:space="preserve">
+    <value>Accepted on</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>Page</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>of</value>
   </data>
 </root>

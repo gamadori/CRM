@@ -501,4 +501,115 @@
   <data name="Select the product" xml:space="preserve">
     <value>Selezionare il Prodotto</value>
   </data>
+  <data name="Customer Dashboard" xml:space="preserve">
+    <value>Dashboard Cliente</value>
+  </data>
+  <data name="Welcome to your support portal" xml:space="preserve">
+    <value>Benvenuto nel tuo portale di assistenza</value>
+  </data>
+  <data name="Open a new request" xml:space="preserve">
+    <value>Apri una nuova richiesta</value>
+  </data>
+  <data name="Tickets in Process" xml:space="preserve">
+    <value>Tickets in Lavorazione</value>
+  </data>
+  <data name="Requests currently handled" xml:space="preserve">
+    <value>Richieste attualmente gestite</value>
+  </data>
+  <data name="View all tickets" xml:space="preserve">
+    <value>Visualizza Tutti i Tickets</value>
+  </data>
+  <data name="New Messages" xml:space="preserve">
+    <value>Nuovi Messaggi</value>
+  </data>
+  <data name="Chat with support" xml:space="preserve">
+    <value>Chatta con il supporto</value>
+  </data>
+  <data name="View your products" xml:space="preserve">
+    <value>Visualizza i tuoi prodotti</value>
+  </data>
+  <data name="Company Data" xml:space="preserve">
+    <value>Dati Azienda</value>
+  </data>
+  <data name="Manage your data" xml:space="preserve">
+    <value>Gestisci i tuoi dati</value>
+  </data>
+  <data name="Minute of Intervention" xml:space="preserve">
+    <value>Verbale di Intervento</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Cliente</value>
+  </data>
+  <data name="Company Name" xml:space="preserve">
+    <value>Ragione Sociale</value>
+  </data>
+  <data name="VAT ID" xml:space="preserve">
+    <value>Partita IVA</value>
+  </data>
+  <data name="Address" xml:space="preserve">
+    <value>Indirizzo</value>
+  </data>
+  <data name="ZIP" xml:space="preserve">
+    <value>CAP</value>
+  </data>
+  <data name="City" xml:space="preserve">
+    <value>Città</value>
+  </data>
+  <data name="Country" xml:space="preserve">
+    <value>Stato</value>
+  </data>
+  <data name="Our technician" xml:space="preserve">
+    <value>Il nostro tecnico</value>
+  </data>
+  <data name="has intervened at" xml:space="preserve">
+    <value>è intervenuto presso</value>
+  </data>
+  <data name="for:" xml:space="preserve">
+    <value>per:</value>
+  </data>
+  <data name="Machines/Devices" xml:space="preserve">
+    <value>Macchine/Dispositivi</value>
+  </data>
+  <data name="Service began" xml:space="preserve">
+    <value>Servizio iniziato</value>
+  </data>
+  <data name="Service ended" xml:space="preserve">
+    <value>Servizio terminato</value>
+  </data>
+  <data name="Activities" xml:space="preserve">
+    <value>Attività</value>
+  </data>
+  <data name="Customer Declaration" xml:space="preserve">
+    <value>Dichiarazione del Cliente</value>
+  </data>
+  <data name="The undersigned declares..." xml:space="preserve">
+    <value>Il sottoscritto dichiara di aver ricevuto il servizio come descritto sopra.</value>
+  </data>
+  <data name="The customer declares..." xml:space="preserve">
+    <value>Il cliente dichiara che l'intervento è stato completato in modo soddisfacente.</value>
+  </data>
+  <data name="Any reserves must be..." xml:space="preserve">
+    <value>Eventuali riserve devono essere comunicate per iscritto entro 8 giorni.</value>
+  </data>
+  <data name="The customer authorizes..." xml:space="preserve">
+    <value>Il cliente autorizza il trattamento dei dati personali ai sensi delle normative vigenti.</value>
+  </data>
+  <data name="Replaced and Mounted Parts" xml:space="preserve">
+    <value>Parti Sostituite e Montate</value>
+  </data>
+  <data name="Notes or Reserves" xml:space="preserve">
+    <value>Note o Riserve</value>
+  </data>
+  <data name="Tick if no comments" xml:space="preserve">
+    <value>Spuntare se nessun commento</value>
+  </data>
+  <data name="Accepted on" xml:space="preserve">
+    <value>Accettato in data</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>Pagina</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>di</value>
+  </data>
 </root>

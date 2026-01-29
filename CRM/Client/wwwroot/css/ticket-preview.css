@@ -392,7 +392,10 @@
 
 /* Details-only overrides */
 .ticket-details-page .modern-preview-container {
-    max-width: 1600px;
+    max-width: 100%;
+    margin: 0;
+    margin-left: 0;
+    padding-left: 0;
 }
 
 /* Force more columns consistently on desktop */

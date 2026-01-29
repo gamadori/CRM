@@ -135,6 +135,28 @@ namespace CRM.Server.Controllers
             }
         }
 
+        [HttpGet("GetCodeLanguage")]
+        public async Task<ActionResult<string>> GetCodeLanguage()
+        {
+            try
+            {
+                var code = await _languagesService.GetCodeLanguage();
+                if (code != null)
+                {
+                    return Ok(code);
+                }
+                else
+                {
+                    return NotFound("No language Code set.");
+                }
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(LanguagesController), nameof(GetCodeLanguage), LogEvent.EventsTypes.Error, ex);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving language ID.");
+            }
+        }
+
         [HttpPost("SetIdLanguage")]
         public async Task<IActionResult> SetIdLanguage([FromBody] int id)
         {
@@ -157,7 +179,7 @@ namespace CRM.Server.Controllers
             }
         }
 
-        [HttpPost("SeCodeLanguage")]
+        [HttpPost("SetCodeLanguage")]
         public async Task<IActionResult> SetCodeLanguage([FromBody] string code)
         {
             try

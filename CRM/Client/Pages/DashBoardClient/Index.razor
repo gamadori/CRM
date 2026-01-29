@@ -1,131 +1,544 @@
 ﻿@page "/DashBoardClient"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
-@*@layout  MainLayoutCustomer*@
 
 @if (_tickets == null)
 {
-    <Waiting></Waiting>
+    <div class="dashboard-loading">
+        <Waiting></Waiting>
+    </div>
 }
 else
 {
-
-<div class="container">
-        <div class="row m-3 d-flex justify-content-around">
-            <div class="card shadow h-100 m-3" style="width: 320px;">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-
-                                <a @onclick="AddTicket" class="stretched-link text-decoration-none" style="cursor: pointer;">@Localize["Nuovo Ticket"]</a>
-                            </div>
-                            
-                        </div>
-                        <div class="col-auto">
-
-                            <i class="material-icons md-48 text-warning">
-                                add_comment
-                            </i>
-                        </div>
-                    </div>
+    <div class="dashboard-client-container">
+        <!-- Hero Header -->
+        <div class="dashboard-hero">
+            <div class="hero-content">
+                <div class="hero-icon">
+                    <span class="material-icons">dashboard</span>
+                </div>
+                <div class="hero-text">
+                    <h2>@Localize["Customer Dashboard"]</h2>
+                    <p>@Localize["Welcome to your support portal"]</p>
                 </div>
             </div>
-            <div class="card shadow h-100 m-3" style="width: 320px;">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                <a @onclick="TicketWorking" class="stretched-link text-decoration-none" style="cursor: pointer;">@Localize["TICKETS in Lavorazione"]</a>
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold badge bg-success">@_tickets.TicketsWorking</div>
-                        </div>
-                        <div class="col-auto">
+        </div>
 
-                            <i class="material-icons md-48 text-success">
-                                support_agent
-                            </i>
-                        </div>
+        <!-- Stats Cards Grid -->
+        <div class="dashboard-stats-grid">
+            <!-- New Ticket Card -->
+            <div class="dashboard-card card-primary" @onclick="AddTicket">
+                <div class="card-icon-wrapper">
+                    <div class="card-icon">
+                        <span class="material-icons">add_circle</span>
                     </div>
                 </div>
-            </div>
-            <div class="card shadow h-100 m-3" style="width: 320px;">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                <a @onclick="Tickets" class="stretched-link text-decoration-none" style="cursor: pointer;">@Localize["Storico TICKETS"]</a>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-
-                            <i class="material-icons md-48 text-primary">
-                                support_agent
-                            </i>
-                        </div>
-                    </div>
+                <div class="card-content">
+                    <h3 class="card-title">@Localize["New Ticket"]</h3>
+                    <p class="card-description">@Localize["Open a new request"]</p>
+                </div>
+                <div class="card-arrow">
+                    <span class="material-icons">arrow_forward</span>
                 </div>
             </div>
-            
-            <div class="card shadow h-100 py-2" style="width: 320px;">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
 
-                                <a @onclick="TicketsNewMessage" class="stretched-link text-decoration-none" style="cursor: pointer;">CHAT Clienti NUOVI MESSAGGI</a>
-                            </div>
-                            <div class="badge bg-info">@_tickets.ChatMessageToRead</div>
-                        </div>
-                        <div class="col-auto">
-
-                            <i class="material-icons md-48 text-info">
-                                chat
-                            </i>
-                        </div>
+            <!-- Working Tickets Card -->
+            <div class="dashboard-card card-success" @onclick="TicketWorking">
+                <div class="card-icon-wrapper">
+                    <div class="card-icon">
+                        <span class="material-icons">support_agent</span>
                     </div>
+                    <div class="card-badge">@_tickets.TicketsWorking</div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">@Localize["Tickets in Process"]</h3>
+                    <p class="card-description">@Localize["Requests currently handled"]</p>
+                </div>
+                <div class="card-arrow">
+                    <span class="material-icons">arrow_forward</span>
                 </div>
             </div>
-            <div class="card shadow h-100 m-3" style="width: 320px;">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
 
-                                <a @onclick="Articles" class="stretched-link text-decoration-none" style="cursor: pointer;">@Localize["Prodotti"]</a>
-                            </div>
-                            
-                        </div>
-                        <div class="col-auto">
-
-                            <i class="material-icons md-48 text-warning">
-                                camera
-                            </i>
-                        </div>
+            <!-- Closed Tickets Card -->
+            <div class="dashboard-card card-info" @onclick="Tickets">
+                <div class="card-icon-wrapper">
+                    <div class="card-icon">
+                        <span class="material-icons">history</span>
                     </div>
+                    <div class="card-badge">@_tickets.TicketsClosed</div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">@Localize["Tickets History"]</h3>
+                    <p class="card-description">@Localize["View all tickets"]</p>
+                </div>
+                <div class="card-arrow">
+                    <span class="material-icons">arrow_forward</span>
                 </div>
             </div>
-            <div class="card shadow h-100 m-3" style="width: 320px;">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
 
-                                <a @onclick="ComapanyDetails" class="stretched-link text-decoration-none" style="cursor: pointer;">@Localize["Dati Azienda"]</a>
-                            </div>
-                            
-                        </div>
-                        <div class="col-auto">
-
-                            <i class="material-icons md-48 text-warning">
-                                apartment
-                            </i>
-                        </div>
+            <!-- New Messages Card -->
+            <div class="dashboard-card card-warning" @onclick="TicketsNewMessage">
+                <div class="card-icon-wrapper">
+                    <div class="card-icon">
+                        <span class="material-icons">chat_bubble</span>
                     </div>
+                    @if (_tickets.ChatMessageToRead > 0)
+                    {
+                        <div class="card-badge pulse">@_tickets.ChatMessageToRead</div>
+                    }
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">@Localize["New Messages"]</h3>
+                    <p class="card-description">@Localize["Chat with support"]</p>
+                </div>
+                <div class="card-arrow">
+                    <span class="material-icons">arrow_forward</span>
                 </div>
             </div>
-           
+
+            <!-- Products Card -->
+            <div class="dashboard-card card-purple" @onclick="Articles">
+                <div class="card-icon-wrapper">
+                    <div class="card-icon">
+                        <span class="material-icons">inventory_2</span>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">@Localize["Products"]</h3>
+                    <p class="card-description">@Localize["View your products"]</p>
+                </div>
+                <div class="card-arrow">
+                    <span class="material-icons">arrow_forward</span>
+                </div>
+            </div>
+
+            <!-- Company Details Card -->
+            <div class="dashboard-card card-teal" @onclick="ComapanyDetails">
+                <div class="card-icon-wrapper">
+                    <div class="card-icon">
+                        <span class="material-icons">business</span>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <h3 class="card-title">@Localize["Company Data"]</h3>
+                    <p class="card-description">@Localize["Manage your data"]</p>
+                </div>
+                <div class="card-arrow">
+                    <span class="material-icons">arrow_forward</span>
+                </div>
+            </div>
         </div>
     </div>
-
 }
+
+<style>
+    .dashboard-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+    }
+
+    .dashboard-client-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Hero Header */
+    .dashboard-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 16px;
+        padding: 2.5rem;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-hero::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    @@keyframes float {
+        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+        33% { transform: translate(30px, -30px) rotate(120deg); }
+        66% { transform: translate(-20px, 20px) rotate(240deg); }
+    }
+
+    .hero-content {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+    }
+
+    .hero-icon .material-icons {
+        font-size: 48px;
+        color: white;
+    }
+
+    .hero-text h2 {
+        margin: 0;
+        color: white;
+        font-size: 2rem;
+        font-weight: 700;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .hero-text p {
+        margin: 0.5rem 0 0 0;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.1rem;
+    }
+
+    /* Dashboard Cards Grid */
+    .dashboard-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    /* Dashboard Card */
+    .dashboard-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.75rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        border: 2px solid transparent;
+    }
+
+    .dashboard-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        transition: height 0.3s ease;
+    }
+
+    .dashboard-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .dashboard-card:hover::before {
+        height: 100%;
+        opacity: 0.05;
+    }
+
+    .dashboard-card:active {
+        transform: translateY(-4px);
+    }
+
+    /* Card Color Variants */
+    .card-primary::before { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .card-primary:hover { border-color: #667eea; }
+    .card-primary .card-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .card-primary .card-arrow { color: #667eea; }
+
+    .card-success::before { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .card-success:hover { border-color: #10b981; }
+    .card-success .card-icon { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .card-success .card-arrow { color: #10b981; }
+
+    .card-info::before { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .card-info:hover { border-color: #3b82f6; }
+    .card-info .card-icon { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .card-info .card-arrow { color: #3b82f6; }
+
+    .card-warning::before { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .card-warning:hover { border-color: #f59e0b; }
+    .card-warning .card-icon { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .card-warning .card-arrow { color: #f59e0b; }
+
+    .card-purple::before { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+    .card-purple:hover { border-color: #8b5cf6; }
+    .card-purple .card-icon { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+    .card-purple .card-arrow { color: #8b5cf6; }
+
+    .card-teal::before { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); }
+    .card-teal:hover { border-color: #14b8a6; }
+    .card-teal .card-icon { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); }
+    .card-teal .card-arrow { color: #14b8a6; }
+
+    /* Card Icon */
+    .card-icon-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+    }
+
+    .card-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        border-radius: 14px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        transition: transform 0.3s ease;
+    }
+
+    .dashboard-card:hover .card-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+
+    .card-icon .material-icons {
+        font-size: 36px;
+        color: white;
+    }
+
+    /* Card Badge */
+    .card-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: white;
+        color: #1f2937;
+        font-weight: 700;
+        font-size: 1rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        min-width: 32px;
+        text-align: center;
+    }
+
+    .card-badge.pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+    }
+
+    /* Card Content */
+    .card-content {
+        flex: 1;
+    }
+
+    .card-title {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+        line-height: 1.3;
+    }
+
+    .card-description {
+        margin: 0;
+        font-size: 0.95rem;
+        color: #6b7280;
+        line-height: 1.4;
+    }
+
+    /* Card Arrow */
+    .card-arrow {
+        align-self: center;
+        transition: transform 0.3s ease;
+    }
+
+    .card-arrow .material-icons {
+        font-size: 28px;
+        opacity: 0.5;
+    }
+
+    .dashboard-card:hover .card-arrow {
+        transform: translateX(6px);
+    }
+
+    .dashboard-card:hover .card-arrow .material-icons {
+        opacity: 1;
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .dashboard-client-container {
+            padding: 1rem;
+        }
+
+        .dashboard-hero {
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-content {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .hero-icon {
+            width: 64px;
+            height: 64px;
+        }
+
+        .hero-icon .material-icons {
+            font-size: 36px;
+        }
+
+        .hero-text h2 {
+            font-size: 1.5rem;
+        }
+
+        .hero-text p {
+            font-size: 1rem;
+        }
+
+        .dashboard-stats-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .dashboard-card {
+            padding: 1.5rem;
+        }
+
+        .card-icon {
+            width: 56px;
+            height: 56px;
+        }
+
+        .card-icon .material-icons {
+            font-size: 30px;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+        }
+
+        .card-description {
+            font-size: 0.9rem;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .dashboard-client-container {
+            padding: 0.75rem;
+        }
+
+        .dashboard-hero {
+            padding: 1.25rem;
+            border-radius: 12px;
+        }
+
+        .dashboard-card {
+            padding: 1.25rem;
+            border-radius: 12px;
+        }
+
+        .card-badge {
+            font-size: 0.875rem;
+            padding: 0.3rem 0.6rem;
+        }
+    }
+
+    /* Tablet: 2 columns */
+    @@media (min-width: 769px) and (max-width: 1199px) {
+        .dashboard-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* Desktop: 3 columns */
+    @@media (min-width: 1200px) {
+        .dashboard-stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    /* Large Desktop: More spacing */
+    @@media (min-width: 1600px) {
+        .dashboard-client-container {
+            max-width: 1800px;
+        }
+
+        .dashboard-stats-grid {
+            gap: 2rem;
+        }
+
+        .dashboard-card {
+            padding: 2rem;
+        }
+    }
+
+    /* Dark mode support (optional) */
+    @@media (prefers-color-scheme: dark) {
+        .dashboard-card {
+            background: #1f2937;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            color: #f9fafb;
+        }
+
+        .card-description {
+            color: #d1d5db;
+        }
+
+        .card-badge {
+            background: #374151;
+            color: white;
+        }
+    }
+
+    /* Accessibility improvements */
+    .dashboard-card:focus-visible {
+        outline: 3px solid #667eea;
+        outline-offset: 2px;
+    }
+
+    .dashboard-card {
+        -webkit-tap-highlight-color: transparent;
+    }
+</style>

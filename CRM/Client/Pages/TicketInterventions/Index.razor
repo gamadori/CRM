@@ -54,8 +54,8 @@
         <RadzenDataGridColumn Context="item" TItem="TicketIntervention"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
                 <Template Context="item">
                     <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
-                    <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
-                    <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item.Id))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id)) Disabled=@(!item.Permits.Edit())></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item.Id)) Disabled=@(!item.Permits.Delete())></RedGButton>
 
                 </Template>
         </RadzenDataGridColumn>

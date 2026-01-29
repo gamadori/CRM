@@ -50,7 +50,7 @@ namespace CRM.Client.Services
         {
             try
             {
-                var code = await _http.GetFromJsonAsync<string>($"{_pathService}/GetCodeLanguage");
+                var code = await _http.GetStringAsync($"{_pathService}/GetCodeLanguage");
 
                 return code;
             }

@@ -268,7 +268,7 @@ namespace CRM.Server.Services
 
                 return list;
             }
-            return new List<int>();
+            return new List<int>() { idCompany };
         }
 
         /// <summary>

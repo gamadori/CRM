@@ -395,7 +395,7 @@
     <value />
   </data>
   <data name="Manage Tickets" xml:space="preserve">
-    <value />
+    <value>Gestion des Tickets</value>
   </data>
   <data name="TicketNumber" xml:space="preserve">
     <value />
@@ -480,5 +480,116 @@
   </data>
   <data name="Select the product" xml:space="preserve">
     <value>Sélectionnez le produit</value>
+  </data>
+  <data name="Customer Dashboard" xml:space="preserve">
+    <value>Tableau de bord client</value>
+  </data>
+  <data name="Welcome to your support portal" xml:space="preserve">
+    <value>Bienvenue sur votre portail d'assistance</value>
+  </data>
+  <data name="Open a new request" xml:space="preserve">
+    <value>Ouvrir une nouvelle demande</value>
+  </data>
+  <data name="Tickets in Process" xml:space="preserve">
+    <value>Tickets en cours de traitement</value>
+  </data>
+  <data name="Requests currently handled" xml:space="preserve">
+    <value>Les demandes actuellement traitées</value>
+  </data>
+  <data name="View all tickets" xml:space="preserve">
+    <value>Voir tous les tickets</value>
+  </data>
+  <data name="New Messages" xml:space="preserve">
+    <value>Nouveaux messages</value>
+  </data>
+  <data name="Chat with support" xml:space="preserve">
+    <value>Discutez avec l'assistance</value>
+  </data>
+  <data name="View your products" xml:space="preserve">
+    <value>Consultez vos produits</value>
+  </data>
+  <data name="Company Data" xml:space="preserve">
+    <value>Données de l'entreprise</value>
+  </data>
+  <data name="Manage your data" xml:space="preserve">
+    <value>Gérez vos données</value>
+  </data>
+  <data name="Minute of Intervention" xml:space="preserve">
+    <value>Rapport d’Intervention</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="Company Name" xml:space="preserve">
+    <value>Raison Sociale</value>
+  </data>
+  <data name="VAT ID" xml:space="preserve">
+    <value>N° TVA</value>
+  </data>
+  <data name="Address" xml:space="preserve">
+    <value>Adresse</value>
+  </data>
+  <data name="ZIP" xml:space="preserve">
+    <value>Code Postal</value>
+  </data>
+  <data name="City" xml:space="preserve">
+    <value>Ville</value>
+  </data>
+  <data name="Country" xml:space="preserve">
+    <value>Pays</value>
+  </data>
+  <data name="Our technician" xml:space="preserve">
+    <value>Notre technicien</value>
+  </data>
+  <data name="has intervened at" xml:space="preserve">
+    <value>est intervenu chez</value>
+  </data>
+  <data name="for:" xml:space="preserve">
+    <value>pour:</value>
+  </data>
+  <data name="Machines/Devices" xml:space="preserve">
+    <value>Machines/Appareils</value>
+  </data>
+  <data name="Service began" xml:space="preserve">
+    <value>Service commencé</value>
+  </data>
+  <data name="Service ended" xml:space="preserve">
+    <value>Service terminé</value>
+  </data>
+  <data name="Activities" xml:space="preserve">
+    <value>Activités</value>
+  </data>
+  <data name="Customer Declaration" xml:space="preserve">
+    <value>Déclaration du Client</value>
+  </data>
+  <data name="The undersigned declares..." xml:space="preserve">
+    <value>Le soussigné déclare avoir reçu le service tel que décrit ci-dessus.</value>
+  </data>
+  <data name="The customer declares..." xml:space="preserve">
+    <value>Le client déclare que l’intervention a été réalisée de manière satisfaisante.</value>
+  </data>
+  <data name="Any reserves must be..." xml:space="preserve">
+    <value>Toute réserve doit être communiquée par écrit dans un délai de 8 jours.</value>
+  </data>
+  <data name="The customer authorizes..." xml:space="preserve">
+    <value>Le client autorise le traitement des données personnelles conformément à la réglementation en vigueur.</value>
+  </data>
+  <data name="Replaced and Mounted Parts" xml:space="preserve">
+    <value>Pièces Remplacées et Installées</value>
+  </data>
+  <data name="Notes or Reserves" xml:space="preserve">
+    <value>Notes ou Réserves</value>
+  </data>
+  <data name="Tick if no comments" xml:space="preserve">
+    <value>Cocher si aucun commentaire</value>
+  </data>
+  <data name="Accepted on" xml:space="preserve">
+    <value>Accepté le</value>
+  </data>
+  <data name="Page" xml:space="preserve">
+    <value>Page</value>
+  </data>
+  <data name="of" xml:space="preserve">
+    <value>de</value>
   </data>
 </root>

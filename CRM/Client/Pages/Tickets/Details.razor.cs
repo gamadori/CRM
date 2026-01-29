@@ -135,8 +135,14 @@ namespace CRM.Client.Pages.Tickets
                 _assignedUsers.Clear();
                 await InvokeAsync(StateHasChanged); // Forza render con lista vuota
                 
+                // ? DEBUG: Log chiamata API
+                Console.WriteLine($"[Details.LoadAssignedUsers] Chiamata API: api/Tickets/{Id}/assigned-users");
+                
                 // Ottieni gli ID degli utenti assegnati
                 var userIds = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{Id}/assigned-users");
+                
+                // ? DEBUG: Log risposta
+                Console.WriteLine($"[Details.LoadAssignedUsers] Ricevuti {userIds?.Count ?? 0} ID utenti: {string.Join(", ", userIds ?? new List<string>())}");
                 
                 if (userIds != null && userIds.Any())
                 {
@@ -145,23 +151,35 @@ namespace CRM.Client.Pages.Tickets
                     {
                         try
                         {
+                            Console.WriteLine($"[Details.LoadAssignedUsers] Caricamento dati utente: {userId}");
                             var user = await HttpClient.GetFromJsonAsync<ApplicationUser>($"api/Users/{userId}");
+                            
                             if (user != null)
                             {
+                                Console.WriteLine($"[Details.LoadAssignedUsers] Utente caricato: {user.NameComplete} (ID: {user.Id})");
                                 _assignedUsers.Add(user);
+                            }
+                            else
+                            {
+                                Console.WriteLine($"[Details.LoadAssignedUsers] ATTENZIONE: Utente {userId} non trovato (null)");
                             }
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"Errore caricamento utente {userId}: {ex.Message}");
+                            Console.WriteLine($"[Details.LoadAssignedUsers] ERRORE caricamento utente {userId}: {ex.Message}");
                         }
                     }
+                    
+                    Console.WriteLine($"[Details.LoadAssignedUsers] Totale utenti caricati: {_assignedUsers.Count}");
                 }
-                // ? ELSE rimosso: se userIds è vuota, _assignedUsers resta vuota (corretto!)
+                else
+                {
+                    Console.WriteLine($"[Details.LoadAssignedUsers] Nessun utente assegnato al ticket #{Id}");
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Errore caricamento utenti assegnati: {ex.Message}");
+                Console.WriteLine($"[Details.LoadAssignedUsers] ERRORE caricamento utenti assegnati: {ex.Message}");
                 // ? In caso di errore, assicurati che la lista sia vuota
                 _assignedUsers.Clear();
             }
@@ -170,6 +188,8 @@ namespace CRM.Client.Pages.Tickets
                 _isLoadingUsers = false;
                 // ? IMPORTANTE: Forza sempre il render finale
                 await InvokeAsync(StateHasChanged);
+                
+                Console.WriteLine($"[Details.LoadAssignedUsers] Completato. _isLoadingUsers=false, _assignedUsers.Count={_assignedUsers.Count}");
             }
         }
 

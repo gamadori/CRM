@@ -133,22 +133,25 @@ namespace CRM.Server.Reports.Pdf
 
         private static void HeaderBlock(IContainer container, InterventionReportData data)
         {
-            container.PaddingBottom(8).Row(row =>
+            container.Column(column =>
             {
-                row.RelativeItem().Column(col =>
+                column.Item().PaddingBottom(8).Row(row =>
                 {
-                    col.Item().Text(data.ProviderCompanyName).SemiBold().FontSize(12);
-                    col.Item().Text(data.ProviderAddressLine);
-                    col.Item().Text(data.ProviderContactsLine);
-                    col.Item().Text(data.ProviderEmailWebLine);
-                    col.Item().Text(data.ProviderLegalLine).FontColor(Colors.Grey.Darken1).FontSize(9);
+                    row.RelativeItem().Column(col =>
+                    {
+                        col.Item().Text(data.ProviderCompanyName).SemiBold().FontSize(12);
+                        col.Item().Text(data.ProviderAddressLine);
+                        col.Item().Text(data.ProviderContactsLine);
+                        col.Item().Text(data.ProviderEmailWebLine);
+                        col.Item().Text(data.ProviderLegalLine).FontColor(Colors.Grey.Darken1).FontSize(9);
+                    });
+
+                    // If you have a logo image: row.ConstantItem(120).Height(50).Image(logoBytes);
+                    row.ConstantItem(1).Width(0); // placeholder
                 });
 
-                // If you have a logo image: row.ConstantItem(120).Height(50).Image(logoBytes);
-                row.ConstantItem(1).Width(0); // placeholder
+                column.Item().LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
             });
-
-            container.LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
         }
 
         private static void TitleBlock(IContainer container, string title)

@@ -193,20 +193,28 @@ namespace CRM.Server.Controllers
         {
             ApplicationUser? user = null;
 
-            if (id == null || id.Length == 0 || await _permitsService.IsClient())
+            if (string.IsNullOrEmpty(id))
             {
+                // Se l'ID è vuoto, restituisci l'utente corrente
                 if (HttpContext?.User?.Identity != null)
                 {
                     user = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
-                    user.Company = await _context.Companies.FindAsync(user.IdCompany);
+                    if (user != null)
+                    {
+                        user.Company = await _context.Companies.FindAsync(user.IdCompany);
+                    }
                 }
-
             }
             else
             {
+                // Altrimenti restituisci l'utente richiesto
                 user = await _userManager.Users.Where(x => x.Id == id).FirstOrDefaultAsync();
-                user.Company = await _context.Companies.FindAsync(user.IdCompany);
+                if (user != null)
+                {
+                    user.Company = await _context.Companies.FindAsync(user.IdCompany);
+                }
             }
+            
             if (user == null)
                 user = new ApplicationUser();
 

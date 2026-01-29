@@ -26,12 +26,8 @@ namespace CRM.Client.Pages.DashBoardClient
         [Inject]
         IAGRestClientService RestClientService { get; set; }
 
-        //private IReportService<TicketDashBoardModel, TicketDashBoardModelFilter> _service { get; set; }
-
         [Inject]
         private IJSRuntime JSRuntime { get; set; }
-
-       
 
         [Inject]
         private IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }

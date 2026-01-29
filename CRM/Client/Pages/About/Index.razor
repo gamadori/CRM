@@ -1,50 +1,231 @@
 ﻿@page "/About"
 
-<h3>System Info</h3>
-
-@if (_data != null)
+@if (_data == null)
 {
-    <div class="container">
-
-    
-        <RadzenCard class="rz-background-color-success-light rz-shadow-0 rz-border-radius-0 rz-p-8" style="margin: 1rem calc(-1 * var(--rz-card-padding));">
-            <RadzenText TextStyle="TextStyle.H6" class="rz-color-on-primary-light"><strong>Server Information</strong></RadzenText>
-            <RadzenRow RowGap="0">
-                <RadzenColumn SizeSM="4">
-                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-on-primary-light rz-display-flex rz-mt-4 rz-mb-0">Name</RadzenText>
-                    <RadzenText TextStyle="TextStyle.Body1" class="rz-color-on-primary-light"><b>@(_data?.Name)</b></RadzenText>
-                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-on-primary-light rz-display-flex rz-mt-4 rz-mb-0">Description</RadzenText>
-                    <RadzenText TextStyle="TextStyle.Body1" class="rz-color-on-primary-light"><b>@(_data.Description)</b></RadzenText>
-                </RadzenColumn>
-                <RadzenColumn SizeSM="8">
-                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-on-primary-light rz-display-flex rz-mt-4 rz-mb-0">Version</RadzenText>
-                    <RadzenText TextStyle="TextStyle.Body1" class="rz-color-on-primary-light"><b>@(_data?.Version)</b></RadzenText>
-                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-on-primary-light rz-display-flex rz-mt-4 rz-mb-0">Date</RadzenText>
-                    <RadzenText TextStyle="TextStyle.Body1" class="rz-color-on-primary-light"><b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:d}", _data?.Date)</b></RadzenText>
-                </RadzenColumn>
-            </RadzenRow>
-        </RadzenCard>
-
-        <RadzenCard class="rz-background-color-info-light rz-shadow-0 rz-border-radius-0 rz-p-8" style="margin: 1rem calc(-1 * var(--rz-card-padding));">
-            <RadzenText TextStyle="TextStyle.H6" class="rz-color-on-primary-light"><strong>Client Information</strong></RadzenText>
-            <RadzenRow RowGap="0">
-                <RadzenColumn SizeSM="4">
-                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-on-primary-light rz-display-flex rz-mt-4 rz-mb-0">Name</RadzenText>
-                    <RadzenText TextStyle="TextStyle.Body1" class="rz-color-on-primary-light"><b>@(_dataClient?.Name)</b></RadzenText>
-                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-on-primary-light rz-display-flex rz-mt-4 rz-mb-0">Description</RadzenText>
-                    <RadzenText TextStyle="TextStyle.Body1" class="rz-color-on-primary-light"><b>@(_dataClient.Description)</b></RadzenText>
-                </RadzenColumn>
-                <RadzenColumn SizeSM="8">
-                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-on-primary-light rz-display-flex rz-mt-4 rz-mb-0">Version</RadzenText>
-                    <RadzenText TextStyle="TextStyle.Body1" class="rz-color-on-primary-light"><b>@(_dataClient?.Version)</b></RadzenText>
-                    <RadzenText TextStyle="TextStyle.Overline" class="rz-color-on-primary-light rz-display-flex rz-mt-4 rz-mb-0">Date</RadzenText>
-                    <RadzenText TextStyle="TextStyle.Body1" class="rz-color-on-primary-light"><b>@String.Format(new System.Globalization.CultureInfo("en-US"), "{0:d}", _dataClient?.Date)</b></RadzenText>
-                </RadzenColumn>
-            </RadzenRow>
-        </RadzenCard>
+    <div class="about-loading">
+        <Waiting></Waiting>
     </div>
 }
 else
 {
-    <Waiting></Waiting>
+    <div class="about-container">
+        <!-- Simple Header -->
+        <div class="about-header">
+            <div class="header-icon">
+                <span class="material-icons">info</span>
+            </div>
+            <h1>System Information</h1>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="info-grid">
+            <!-- Server Card -->
+            <div class="info-card">
+                <div class="card-header">
+                    <span class="material-icons">dns</span>
+                    <h3>Server</h3>
+                </div>
+                <div class="card-content">
+                    <div class="info-row">
+                        <span class="label">Name</span>
+                        <span class="value">@(_data?.Name ?? "N/A")</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Description</span>
+                        <span class="value">@(_data?.Description ?? "N/A")</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Version</span>
+                        <span class="value version">@(_data?.Version ?? "0.0.0")</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Build Date</span>
+                        <span class="value">@_data.Date.ToString("dd/MM/yyyy")</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Card -->
+            <div class="info-card">
+                <div class="card-header">
+                    <span class="material-icons">devices</span>
+                    <h3>Client</h3>
+                </div>
+                <div class="card-content">
+                    <div class="info-row">
+                        <span class="label">Name</span>
+                        <span class="value">@(_dataClient?.Name ?? "N/A")</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Description</span>
+                        <span class="value">@(_dataClient?.Description ?? "N/A")</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Version</span>
+                        <span class="value version">@(_dataClient?.Version ?? "0.0.0")</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Build Date</span>
+                        <span class="value">@_dataClient.Date.ToString("dd/MM/yyyy")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 }
+
+<style>
+    .about-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+    }
+
+    .about-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    /* Simple Header */
+    .about-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .header-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        background: #f3f4f6;
+        border-radius: 50%;
+        margin-bottom: 1rem;
+    }
+
+    .header-icon .material-icons {
+        font-size: 32px;
+        color: #6b7280;
+    }
+
+    .about-header h1 {
+        margin: 0;
+        font-size: 1.875rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    /* Info Grid */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1.5rem;
+    }
+
+    /* Info Card */
+    .info-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1.25rem 1.5rem;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .card-header .material-icons {
+        font-size: 24px;
+        color: #6b7280;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    /* Card Content */
+    .card-content {
+        padding: 1.5rem;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #6b7280;
+    }
+
+    .value {
+        font-size: 0.9375rem;
+        font-weight: 500;
+        color: #1f2937;
+        text-align: right;
+    }
+
+    .value.version {
+        font-family: 'Courier New', monospace;
+        background: #f3f4f6;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .about-container {
+            padding: 1rem;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .about-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .header-icon {
+            width: 56px;
+            height: 56px;
+        }
+
+        .header-icon .material-icons {
+            font-size: 28px;
+        }
+
+        .card-content {
+            padding: 1rem;
+        }
+
+        .info-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+
+        .value {
+            text-align: left;
+        }
+    }
+</style>

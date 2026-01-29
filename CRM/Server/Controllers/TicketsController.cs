@@ -1923,6 +1923,11 @@ namespace CRM.Server.Controllers
 
                 if (ticket == null)
                 {
+                    await _logEventService.RegisterAsync(
+                        nameof(TicketsController),
+                        nameof(GetAssignedUsers),
+                        LogEvent.EventsTypes.Warning,
+                        $"Ticket #{id} non trovato");
                     return NotFound($"Ticket con ID {id} non trovato");
                 }
 
@@ -1931,10 +1936,22 @@ namespace CRM.Server.Controllers
                     .Select(au => au.IdUser)
                     .ToList();
 
+                // ? DEBUG: Log di cosa viene restituito
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController),
+                    nameof(GetAssignedUsers),
+                    LogEvent.EventsTypes.Info,
+                    $"Ticket #{id}: Restituiti {userIds.Count} utenti assegnati: {string.Join(", ", userIds)}");
+
                 return Ok(userIds);
             }
             catch (Exception ex)
             {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController),
+                    nameof(GetAssignedUsers),
+                    LogEvent.EventsTypes.Error,
+                    $"Errore GetAssignedUsers per ticket #{id}: {ex.Message}");
                 return StatusCode(500, $"Errore interno: {ex.Message}");
             }
         }

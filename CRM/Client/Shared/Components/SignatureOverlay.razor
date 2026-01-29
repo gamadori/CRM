@@ -379,21 +379,63 @@
 
             if (isEmpty)
             {
-                // TODO: Mostra messaggio "Firma vuota"
+                // Nascondi overlay temporaneamente per mostrare l'alert sopra
+                var wasVisible = Visible;
+                Visible = false;
+                StateHasChanged();
+                await Task.Delay(50); // Breve delay per permettere il rendering
+                
+                await DialogService.Alert(
+                    "La firma è vuota. Firma nel riquadro bianco prima di confermare.",
+                    "Firma Richiesta",
+                    new AlertOptions { OkButtonText = "OK" }
+                );
+                
+                // Ripristina l'overlay
+                Visible = wasVisible;
+                StateHasChanged();
                 return;
             }
 
             // ? VALIDAZIONE: Nome obbligatorio
             if (string.IsNullOrWhiteSpace(SignerName))
             {
-                // TODO: Mostra messaggio "Inserisci nome e cognome"
+                // Nascondi overlay temporaneamente per mostrare l'alert sopra
+                var wasVisible = Visible;
+                Visible = false;
+                StateHasChanged();
+                await Task.Delay(50);
+                
+                await DialogService.Alert(
+                    "Inserisci il nome e cognome del firmatario.",
+                    "Nome Richiesto",
+                    new AlertOptions { OkButtonText = "OK" }
+                );
+                
+                // Ripristina l'overlay
+                Visible = wasVisible;
+                StateHasChanged();
                 return;
             }
 
             // ? VALIDAZIONE: Email obbligatoria
             if (string.IsNullOrWhiteSpace(SignerEmail))
             {
-                // TODO: Mostra messaggio "Inserisci email per conferma"
+                // Nascondi overlay temporaneamente per mostrare l'alert sopra
+                var wasVisible = Visible;
+                Visible = false;
+                StateHasChanged();
+                await Task.Delay(50);
+                
+                await DialogService.Alert(
+                    "Inserisci l'email per la conferma della firma.",
+                    "Email Richiesta",
+                    new AlertOptions { OkButtonText = "OK" }
+                );
+                
+                // Ripristina l'overlay
+                Visible = wasVisible;
+                StateHasChanged();
                 return;
             }
 
@@ -425,6 +467,22 @@
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Errore salvataggio firma overlay: {ex.Message}");
+            
+            // Nascondi overlay temporaneamente per mostrare l'alert sopra
+            var wasVisible = Visible;
+            Visible = false;
+            StateHasChanged();
+            await Task.Delay(50);
+            
+            await DialogService.Alert(
+                $"Errore durante il salvataggio della firma: {ex.Message}",
+                "Errore",
+                new AlertOptions { OkButtonText = "OK" }
+            );
+            
+            // Ripristina l'overlay
+            Visible = wasVisible;
+            StateHasChanged();
         }
     }
 

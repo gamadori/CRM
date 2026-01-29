@@ -61,11 +61,38 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Accepted on.
+        /// </summary>
+        public static string Accepted_on {
+            get {
+                return ResourceManager.GetString("Accepted on", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Activities.
+        /// </summary>
+        public static string Activities {
+            get {
+                return ResourceManager.GetString("Activities", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Add Files.
         /// </summary>
         public static string AddFiles {
             get {
                 return ResourceManager.GetString("AddFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Address.
+        /// </summary>
+        public static string Address {
+            get {
+                return ResourceManager.GetString("Address", resourceCulture);
             }
         }
         
@@ -84,6 +111,15 @@ namespace CRM.Shared.Resources {
         public static string Allegati {
             get {
                 return ResourceManager.GetString("Allegati", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Any reserves must be communicated in writing within 8 days..
+        /// </summary>
+        public static string Any_reserves_must_be___ {
+            get {
+                return ResourceManager.GetString("Any reserves must be...", resourceCulture);
             }
         }
         
@@ -268,11 +304,38 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Chat with support.
+        /// </summary>
+        public static string Chat_with_support {
+            get {
+                return ResourceManager.GetString("Chat with support", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a .
         /// </summary>
         public static string Check_your_mailbox_to_confirm_your_account {
             get {
                 return ResourceManager.GetString("Check your mailbox to confirm your account", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a City.
+        /// </summary>
+        public static string City {
+            get {
+                return ResourceManager.GetString("City", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Client.
+        /// </summary>
+        public static string Client {
+            get {
+                return ResourceManager.GetString("Client", resourceCulture);
             }
         }
         
@@ -300,6 +363,24 @@ namespace CRM.Shared.Resources {
         public static string Companies {
             get {
                 return ResourceManager.GetString("Companies", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Company Data.
+        /// </summary>
+        public static string Company_Data {
+            get {
+                return ResourceManager.GetString("Company Data", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Company Name.
+        /// </summary>
+        public static string Company_Name {
+            get {
+                return ResourceManager.GetString("Company Name", resourceCulture);
             }
         }
         
@@ -349,6 +430,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Country.
+        /// </summary>
+        public static string Country {
+            get {
+                return ResourceManager.GetString("Country", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Create Report.
         /// </summary>
         public static string Create_Report {
@@ -363,6 +453,24 @@ namespace CRM.Shared.Resources {
         public static string Create_Report_ {
             get {
                 return ResourceManager.GetString("Create Report?", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Customer Dashboard.
+        /// </summary>
+        public static string Customer_Dashboard {
+            get {
+                return ResourceManager.GetString("Customer Dashboard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Customer Declaration.
+        /// </summary>
+        public static string Customer_Declaration {
+            get {
+                return ResourceManager.GetString("Customer Declaration", resourceCulture);
             }
         }
         
@@ -556,6 +664,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a for:.
+        /// </summary>
+        public static string for_ {
+            get {
+                return ResourceManager.GetString("for:", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a From.
         /// </summary>
         public static string From {
@@ -570,6 +687,15 @@ namespace CRM.Shared.Resources {
         public static string GlobalSettings {
             get {
                 return ResourceManager.GetString("GlobalSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a has intervened at.
+        /// </summary>
+        public static string has_intervened_at {
+            get {
+                return ResourceManager.GetString("has intervened at", resourceCulture);
             }
         }
         
@@ -637,6 +763,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Machines/Devices.
+        /// </summary>
+        public static string Machines_Devices {
+            get {
+                return ResourceManager.GetString("Machines/Devices", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Management of registered companies.
         /// </summary>
         public static string Manage_Companies {
@@ -646,11 +781,29 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a Management Tickets.
+        ///   Cerca una stringa localizzata simile a Ticket Management.
         /// </summary>
         public static string Manage_Tickets {
             get {
                 return ResourceManager.GetString("Manage Tickets", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Manage your data.
+        /// </summary>
+        public static string Manage_your_data {
+            get {
+                return ResourceManager.GetString("Manage your data", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Minute of Intervention.
+        /// </summary>
+        public static string Minute_of_Intervention {
+            get {
+                return ResourceManager.GetString("Minute of Intervention", resourceCulture);
             }
         }
         
@@ -728,6 +881,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a New Messages.
+        /// </summary>
+        public static string New_Messages {
+            get {
+                return ResourceManager.GetString("New Messages", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a New Ticket.
         /// </summary>
         public static string New_Ticket {
@@ -773,6 +935,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Notes or Reserves.
+        /// </summary>
+        public static string Notes_or_Reserves {
+            get {
+                return ResourceManager.GetString("Notes or Reserves", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a New Ticket.
         /// </summary>
         public static string Nuovo_Ticket {
@@ -782,11 +953,47 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a of.
+        /// </summary>
+        public static string of {
+            get {
+                return ResourceManager.GetString("of", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Open.
         /// </summary>
         public static string Open {
             get {
                 return ResourceManager.GetString("Open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Open a new request.
+        /// </summary>
+        public static string Open_a_new_request {
+            get {
+                return ResourceManager.GetString("Open a new request", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Our technician.
+        /// </summary>
+        public static string Our_technician {
+            get {
+                return ResourceManager.GetString("Our technician", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Page.
+        /// </summary>
+        public static string Page {
+            get {
+                return ResourceManager.GetString("Page", resourceCulture);
             }
         }
         
@@ -868,6 +1075,24 @@ namespace CRM.Shared.Resources {
         public static string Ragione_Sociale {
             get {
                 return ResourceManager.GetString("Ragione Sociale", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Replaced and Mounted Parts.
+        /// </summary>
+        public static string Replaced_and_Mounted_Parts {
+            get {
+                return ResourceManager.GetString("Replaced and Mounted Parts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Requests currently handled.
+        /// </summary>
+        public static string Requests_currently_handled {
+            get {
+                return ResourceManager.GetString("Requests currently handled", resourceCulture);
             }
         }
         
@@ -980,6 +1205,24 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Service began.
+        /// </summary>
+        public static string Service_began {
+            get {
+                return ResourceManager.GetString("Service began", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Service ended.
+        /// </summary>
+        public static string Service_ended {
+            get {
+                return ResourceManager.GetString("Service ended", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Service Types.
         /// </summary>
         public static string ServiceTypes {
@@ -1043,11 +1286,47 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a The customer authorizes the processing of personal data in accordance with current regulations..
+        /// </summary>
+        public static string The_customer_authorizes___ {
+            get {
+                return ResourceManager.GetString("The customer authorizes...", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a The customer declares that the intervention has been completed satisfactorily..
+        /// </summary>
+        public static string The_customer_declares___ {
+            get {
+                return ResourceManager.GetString("The customer declares...", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a The description must be at least 10 characters long.
         /// </summary>
         public static string The_description_must_be_at_least_10_characters_long {
             get {
                 return ResourceManager.GetString("The description must be at least 10 characters long", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a The undersigned declares to have received the service as described above..
+        /// </summary>
+        public static string The_undersigned_declares___ {
+            get {
+                return ResourceManager.GetString("The undersigned declares...", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Tick if no comments.
+        /// </summary>
+        public static string Tick_if_no_comments {
+            get {
+                return ResourceManager.GetString("Tick if no comments", resourceCulture);
             }
         }
         
@@ -1102,6 +1381,15 @@ namespace CRM.Shared.Resources {
         public static string TICKETS_in_Lavorazione {
             get {
                 return ResourceManager.GetString("TICKETS in Lavorazione", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Tickets in Process.
+        /// </summary>
+        public static string Tickets_in_Process {
+            get {
+                return ResourceManager.GetString("Tickets in Process", resourceCulture);
             }
         }
         
@@ -1187,11 +1475,38 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a VAT ID.
+        /// </summary>
+        public static string VAT_ID {
+            get {
+                return ResourceManager.GetString("VAT ID", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a View all tickets.
+        /// </summary>
+        public static string View_all_tickets {
+            get {
+                return ResourceManager.GetString("View all tickets", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a View Report.
         /// </summary>
         public static string View_Report {
             get {
                 return ResourceManager.GetString("View Report", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a View your products.
+        /// </summary>
+        public static string View_your_products {
+            get {
+                return ResourceManager.GetString("View your products", resourceCulture);
             }
         }
         
@@ -1205,11 +1520,29 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Welcome to your support portal.
+        /// </summary>
+        public static string Welcome_to_your_support_portal {
+            get {
+                return ResourceManager.GetString("Welcome to your support portal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a In Progress.
         /// </summary>
         public static string Working {
             get {
                 return ResourceManager.GetString("Working", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a ZIP.
+        /// </summary>
+        public static string ZIP {
+            get {
+                return ResourceManager.GetString("ZIP", resourceCulture);
             }
         }
     }

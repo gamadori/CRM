@@ -70,18 +70,18 @@ else
             <!-- Header Section -->
             <div class="row align-items-center">
                 <div class="col">
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center justify-content-start">
                         @if (!string.IsNullOrEmpty(Model.Icon))
                         {
                             <div class="header-icon-box bg-primary bg-opacity-10 rounded-3 p-2 me-3">
                                 <span class="material-icons text-primary" style="font-size: 32px;">@Model.Icon</span>
                             </div>
                         }
-                        <div>
-                            <h4 class="fw-bold text-dark mb-1">@Model.Title</h4>
+                        <div class="text-start">
+                            <h4 class="fw-bold text-dark mb-1 text-start">@Model.Title</h4>
                             @if (!string.IsNullOrEmpty(Model.Subtitle))
                             {
-                                <p class="text-muted mb-0">@Model.Subtitle</p>
+                                <p class="text-muted mb-0 text-start">@Model.Subtitle</p>
                             }
                         </div>
                     </div>

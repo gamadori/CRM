@@ -146,15 +146,34 @@ namespace CRM.Client.Pages.TicketInterventions
 
         private async Task ReportCreatePrepare()
         {
+            // Mostra dialog selezione lingua
+            var selectedLanguageCode = await DialogService.OpenAsync<LanguageSelectionDialog>(
+                Localize["Select Report Language"],
+                null,
+                new DialogOptions 
+                { 
+                    Width = "600px", 
+                    Height = "auto",
+                    CloseDialogOnOverlayClick = false
+                }
+            );
+
+            // Se l'utente ha annullato, esci
+            if (selectedLanguageCode == null || string.IsNullOrWhiteSpace(selectedLanguageCode.ToString()))
+            {
+                return;
+            }
+
+            // Mostra conferma
             var message = Localize["Ricreare il report? Il report esistente sarà sovrascritto."];
             
             if (await DialogService.Confirm(message, Localize["Conferma"], new ConfirmOptions { OkButtonText = "Sì", CancelButtonText = "No" }) == true)
             {
-                await ReportCreate();
+                await ReportCreate(selectedLanguageCode.ToString());
             }
         }
 
-        private async Task ReportCreate()
+        private async Task ReportCreate(string? languageCode = null)
         {
             try
             {
@@ -162,17 +181,36 @@ namespace CRM.Client.Pages.TicketInterventions
                 _loadingMessage = "Generazione report in corso...";
                 StateHasChanged();
 
-                var success = await Http.GetFromJsonAsync<bool>($"{ConstHelper.TicketsInterventionsPath}/Report/{Id}");
+                // Passa il parametro lingua all'API
+                var url = $"{ConstHelper.TicketsInterventionsPath}/Report/{Id}";
+                if (!string.IsNullOrWhiteSpace(languageCode))
+                {
+                    url += $"?languageCode={languageCode}";
+                }
+
+                var success = await Http.GetFromJsonAsync<bool>(url);
 
                 if (success)
                 {
                     await LoadReport();
+                    
+                    await DialogService.Alert(
+                        Localize["Report creato con successo"],
+                        Localize["Successo"],
+                        new AlertOptions { OkButtonText = "OK" }
+                    );
                 }
                 else
                 {
                     _loadingMessage = "Errore durante la generazione del report";
                     _loaded = true;
                     StateHasChanged();
+                    
+                    await DialogService.Alert(
+                        Localize["Errore durante la generazione del report"],
+                        Localize["Errore"],
+                        new AlertOptions { OkButtonText = "OK" }
+                    );
                 }
             }
             catch (Exception ex)
@@ -181,6 +219,12 @@ namespace CRM.Client.Pages.TicketInterventions
                 _loadingMessage = $"Errore: {ex.Message}";
                 _loaded = true;
                 StateHasChanged();
+                
+                await DialogService.Alert(
+                    $"{Localize["Errore"]}: {ex.Message}",
+                    Localize["Errore"],
+                    new AlertOptions { OkButtonText = "OK" }
+                );
             }
         }
 

@@ -767,6 +767,50 @@ namespace CRM.Server.Controllers
         }
 
         /// <summary>
+        /// Salva la firma digitale del cliente (senza conferma email)
+        /// </summary>
+        [HttpPost("SaveSignature/{id}")]
+        public async Task<ActionResult> SaveSignature(int id, [FromBody] SignatureData signatureData)
+        {
+            try
+            {
+                var intervention = await _context.TicketsInterventions.FindAsync(id);
+                
+                if (intervention == null)
+                    return NotFound();
+
+                if (!await _permitsService.CanGetTicket(intervention.IdTicket))
+                    return Problem("Not Permits");
+
+                // Salva firma direttamente (senza conferma)
+                intervention.CustomerSignature = signatureData.Signature;
+                intervention.SignatureName = signatureData.SignerName;
+                intervention.SignatureDate = DateTime.Now;
+                intervention.SignatureStatus = CRM.Shared.SignatureStatus.Verified;
+                
+                _context.Entry(intervention).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
+
+                await _logEventService.RegisterAsync(
+                    nameof(TicketInterventionsController),
+                    nameof(SaveSignature),
+                    LogEvent.EventsTypes.Info,
+                    $"Firma salvata per intervention #{id} - Firmatario: {signatureData.SignerName}");
+
+                return Ok(new { success = true, message = "Firma salvata con successo" });
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketInterventionsController),
+                    nameof(SaveSignature),
+                    LogEvent.EventsTypes.Error,
+                    $"Errore salvataggio firma: {ex.Message}");
+                return StatusCode(500, new { error = "Errore salvataggio firma" });
+            }
+        }
+
+        /// <summary>
         /// Conferma firma tramite link email (API per pagina Blazor)
         /// </summary>
         [HttpGet("ConfirmSignature")]
@@ -805,6 +849,33 @@ namespace CRM.Server.Controllers
                     nameof(ConfirmSignature),
                     LogEvent.EventsTypes.Info,
                     $"Firma confermata per intervention #{id} - Email: {intervention.SignatureEmail}");
+
+                // ✅ RIGENERA PDF con stato Verified
+                try
+                {
+                    await _logEventService.RegisterAsync(
+                        nameof(TicketInterventionsController),
+                        nameof(ConfirmSignature),
+                        LogEvent.EventsTypes.Info,
+                        $"Rigenerazione PDF dopo conferma firma per intervention #{id}");
+
+                    await CreatePdf(id);
+
+                    await _logEventService.RegisterAsync(
+                        nameof(TicketInterventionsController),
+                        nameof(ConfirmSignature),
+                        LogEvent.EventsTypes.Info,
+                        $"PDF rigenerato con successo dopo conferma firma per intervention #{id}");
+                }
+                catch (Exception pdfEx)
+                {
+                    // Log errore ma non bloccare la conferma
+                    await _logEventService.RegisterAsync(
+                        nameof(TicketInterventionsController),
+                        nameof(ConfirmSignature),
+                        LogEvent.EventsTypes.Error,
+                        $"Errore rigenerazione PDF per intervention #{id}: {pdfEx.Message}");
+                }
 
                 return Ok(new { 
                     success = true, 
