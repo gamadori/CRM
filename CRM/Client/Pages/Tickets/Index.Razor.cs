@@ -383,7 +383,8 @@ namespace CRM.Client.Pages.Tickets
            
             if (args.Column.Property == nameof(TicketModel.State))
             {
-                args.Attributes.Add("style", $"background-color: {args.Data.StateColor};");
+                var textColor = GetContrastColor(args.Data.StateColor);
+                args.Attributes.Add("style", $"background-color: {args.Data.StateColor}; color: {textColor};");
 
                 
             }
@@ -392,6 +393,47 @@ namespace CRM.Client.Pages.Tickets
                 args.Attributes.Add("style", $"background-color: var(--rz-secondary-lighter);");
             }
 
+        }
+
+        /// <summary>
+        /// Calcola il colore del testo (bianco o nero) in base alla luminosità del colore di sfondo
+        /// </summary>
+        private string GetContrastColor(string backgroundColor)
+        {
+            if (string.IsNullOrWhiteSpace(backgroundColor))
+                return "#000000";
+
+            // Rimuovi il # se presente
+            var hex = backgroundColor.TrimStart('#');
+
+            // Gestisci formati shorthand (#RGB -> #RRGGBB)
+            if (hex.Length == 3)
+            {
+                hex = $"{hex[0]}{hex[0]}{hex[1]}{hex[1]}{hex[2]}{hex[2]}";
+            }
+
+            // Assicurati che sia un hex valido
+            if (hex.Length != 6)
+                return "#000000";
+
+            try
+            {
+                // Converti hex in RGB
+                var r = Convert.ToInt32(hex.Substring(0, 2), 16);
+                var g = Convert.ToInt32(hex.Substring(2, 2), 16);
+                var b = Convert.ToInt32(hex.Substring(4, 2), 16);
+
+                // Calcola la luminosità relativa usando la formula WCAG
+                // https://www.w3.org/TR/WCAG20/#relativeluminancedef
+                var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+                // Se la luminosità è > 0.5, usa testo nero, altrimenti bianco
+                return luminance > 0.5 ? "#000000" : "#ffffff";
+            }
+            catch
+            {
+                return "#000000";
+            }
         }
 
         protected async void OnChangeFilter()

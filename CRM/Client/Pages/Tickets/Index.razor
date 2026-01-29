@@ -71,10 +71,7 @@
 
             <RadzenDataGridColumn Context="item" TItem="TicketModel" Property="@nameof(TicketModel.State)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdState), typeof(Ticket))" Filterable="true" Sortable="true" TextAlign="Radzen.TextAlign.Center">
                 <Template Context="item">
-                    <span style="mix-blend-mode: difference; color: white">
-
-                        @Localize[item.State ?? eTicketStates.Created.ToString()]
-                    </span>
+                    @Localize[item.State ?? eTicketStates.Created.ToString()]
                 </Template>
 
             </RadzenDataGridColumn>
@@ -121,5 +118,4 @@ else
 {
     <Waiting></Waiting>
 }
-    
     

@@ -11,7 +11,6 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 1.5rem;
-    animation: fadeIn 0.4s ease-out;
     width: 100%;
     box-sizing: border-box;
 }
@@ -27,25 +26,13 @@
     }
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Header Card */
+/* Header Card - Simplified */
 .preview-header-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 12px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
     padding: 1.5rem 2rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
     box-sizing: border-box;
 }
 
@@ -61,61 +48,61 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    color: white;
+    color: #495057;
 }
 
 .ticket-number .material-icons {
     font-size: 2rem;
+    color: #6c757d;
 }
 
 .ticket-number h3 {
     margin: 0;
     font-size: 1.75rem;
-    font-weight: 700;
+    font-weight: 600;
     word-break: break-word;
+    color: #212529;
 }
 
 .ticket-status {
     padding: 0.5rem 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
 }
 
 .status-text {
     color: white;
     font-weight: 600;
-    font-size: 1.1rem;
-    mix-blend-mode: difference;
+    font-size: 1rem;
     word-break: break-word;
 }
 
-/* Description Card */
+/* Description Card - Simplified */
 .description-card {
     background: white;
-    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
     margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     overflow: hidden;
     box-sizing: border-box;
 }
 
 .card-header-modern {
-    background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%);
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
     padding: 1rem 1.5rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    border-bottom: 2px solid #fbbf24;
 }
 
 .card-header-modern .material-icons {
-    color: #d97706;
+    color: #6c757d;
     font-size: 1.5rem;
 }
 
 .card-header-modern h5 {
     margin: 0;
-    color: #92400e;
+    color: #495057;
     font-weight: 600;
 }
 
@@ -126,14 +113,14 @@
 
 .description-text {
     margin: 0;
-    color: #374151;
+    color: #495057;
     font-size: 1rem;
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
 }
 
-/* Info Grid */
+/* Info Grid - Simplified */
 .info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -144,36 +131,30 @@
 
 .info-card {
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
     overflow: hidden;
-    transition: all 0.3s ease;
     box-sizing: border-box;
     min-width: 0;
 }
 
-.info-card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
-}
-
 .info-card-header {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
     padding: 1rem 1.25rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    border-bottom: 2px solid #0ea5e9;
 }
 
 .info-card-header .material-icons {
-    color: #0284c7;
+    color: #6c757d;
     font-size: 1.25rem;
 }
 
 .info-label {
     font-weight: 600;
-    color: #0c4a6e;
+    color: #495057;
     font-size: 0.95rem;
 }
 
@@ -205,25 +186,25 @@
 }
 
 .info-value {
-    color: #1f2937;
-    font-weight: 600;
+    color: #212529;
+    font-weight: 500;
     text-align: right;
     word-break: break-word;
     min-width: 0;
 }
 
 .company-name {
-    color: #667eea;
+    color: #0d6efd;
 }
 
 .time-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    background: rgba(102, 126, 234, 0.1);
+    background: #e7f1ff;
     padding: 0.25rem 0.75rem;
-    border-radius: 6px;
-    color: #667eea !important;
+    border-radius: 4px;
+    color: #0d6efd !important;
 }
 
 .time-badge .material-icons {
@@ -247,7 +228,7 @@
     justify-content: center;
     width: 24px;
     height: 24px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #6c757d;
     color: #fff;
     border-radius: 50%;
     font-size: 0.7rem;
@@ -258,7 +239,7 @@
 .assigned-users-section {
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 2px solid #e5e7eb;
+    border-top: 1px solid #dee2e6;
 }
 
 .assigned-header {
@@ -267,7 +248,7 @@
 
 .assigned-label {
     font-weight: 600;
-    color: #374151;
+    color: #495057;
     font-size: 0.95rem;
 }
 
@@ -282,18 +263,13 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem;
-    background: #f9fafb;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-
-.assigned-user-item:hover {
-    background: #f3f4f6;
+    background: #f8f9fa;
+    border-radius: 6px;
 }
 
 .assigned-user-item.main-user {
-    background: linear-gradient(90deg, #dbeafe 0%, #f9fafb 100%);
-    border-left: 3px solid #667eea;
+    background: #e7f1ff;
+    border-left: 3px solid #0d6efd;
 }
 
 .user-avatar {
@@ -302,7 +278,7 @@
     justify-content: center;
     width: 36px;
     height: 36px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #6c757d;
     color: #fff;
     border-radius: 50%;
     font-size: 0.85rem;
@@ -310,14 +286,8 @@
     flex-shrink: 0;
 }
 
-/* Legacy avatar inside `.user-badge` (Details old multi-badge) should keep contrast */
-.user-badge .user-avatar {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-}
-
 .assigned-user-item.main-user .user-avatar {
-    border: 2px solid #667eea;
+    background: #0d6efd;
 }
 
 .user-info {
@@ -329,7 +299,7 @@
 }
 
 .user-name {
-    color: #374151;
+    color: #495057;
     font-weight: 500;
     word-break: break-word;
     min-width: 0;
@@ -338,8 +308,8 @@
 .main-badge {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #667eea;
-    background: rgba(102, 126, 234, 0.1);
+    color: #0d6efd;
+    background: rgba(13, 110, 253, 0.1);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     flex-shrink: 0;
@@ -358,7 +328,7 @@
     font-size: 2rem;
 }
 
-/* Legacy badges in Details.razor (kept for compatibility if referenced elsewhere) */
+/* Legacy badges (kept for compatibility) */
 .assigned-users-badges {
     display: flex;
     flex-wrap: wrap;
@@ -370,24 +340,21 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 8px;
+    background: #6c757d;
+    border-radius: 6px;
     color: white;
     font-size: 0.9rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
 }
 
-.user-badge:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+.user-badge .user-avatar {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
 }
 
 .badge-primary-indicator {
-    color: #ffd700;
+    color: #ffc107;
     font-size: 1rem;
     margin-left: 0.25rem;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
 /* Details-only overrides */
@@ -398,12 +365,10 @@
     padding-left: 0;
 }
 
-/* Force more columns consistently on desktop */
 .ticket-details-page .info-grid {
     grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
 }
 
-/* Use a stable label/value layout (not pushed to far right) */
 .ticket-details-page .info-row {
     justify-content: flex-start;
     align-items: flex-start;
@@ -418,10 +383,13 @@
     text-align: left;
 }
 
-/* Avatar contrast fixes inside Details assigned users list */
 .ticket-details-page .assigned-user-item .user-avatar {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #6c757d;
     color: #fff;
+}
+
+.ticket-details-page .assigned-user-item.main-user .user-avatar {
+    background: #0d6efd;
 }
 
 /* Responsive */
@@ -443,7 +411,6 @@
         gap: 1rem;
     }
 
-    /* Reset Details desktop grid override on mobile */
     .ticket-details-page .info-grid {
         grid-template-columns: 1fr;
     }
@@ -459,7 +426,6 @@
         width: 100%;
     }
 
-    /* Override Details-specific fixed width on mobile */
     .ticket-details-page .info-row {
         flex-direction: column;
         align-items: flex-start;
@@ -481,7 +447,6 @@
         justify-content: space-between;
     }
 
-    /* Reduce container padding on very small screens */
     .modern-preview-container {
         padding: 0.75rem;
     }
@@ -515,12 +480,10 @@
         gap: 0.75rem;
     }
 
-    /* Also reset Details grid override on very small screens */
     .ticket-details-page .info-grid {
         grid-template-columns: 1fr;
     }
 
-    /* Prevent grid overflow by allowing cards to shrink fully */
     .info-card {
         min-width: 0;
         width: 100%;
