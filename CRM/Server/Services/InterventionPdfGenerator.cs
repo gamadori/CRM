@@ -36,100 +36,144 @@ namespace CRM.Server.Services
 
         public async Task<byte[]> GenerateInterventionPdfAsync(int interventionId, string languageCode = "en")
         {
-            var settings = await _context.GlobalSettings.FirstOrDefaultAsync();
-            if ( settings != null)
+            var logFile = Path.Combine(Path.GetTempPath(), $"pdf_generation_{interventionId}_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+            
+            void Log(string message)
             {
-                _logoId = settings.LogoReport;
-                _company = await _context.Companies.FirstOrDefaultAsync(c => c.Id == settings.IdHeadQuarter);
+                var logMessage = $"[{DateTime.Now:HH:mm:ss.fff}] {message}";
+                Console.WriteLine(logMessage);
+                File.AppendAllText(logFile, logMessage + Environment.NewLine);
             }
             
-            // Carica le traduzioni per la lingua selezionata
-            var labels = await LoadLabelsAsync(_context, languageCode);
-
-            // Recupera l'intervento with tutte le relazioni necessarie
-            var intervention = await _context.TicketsInterventions
-                .Include(x => x.Ticket)
-                    .ThenInclude(t => t.Company)
-                .Include(x => x.User)
-                .Include(x => x.TicketInterventionsTypes)
-                    .ThenInclude(it => it.InterventionTypeLanguages)
-                        .ThenInclude(itl => itl.Language)
-                .Include(x => x.TicketInterventionArticles)
-                    .ThenInclude(a => a.Product)
-                .Include(x => x.TicketInterventionArticles)
-                    .ThenInclude(a => a.Article)
-                .FirstOrDefaultAsync(x => x.Id == interventionId);
-
-            if (intervention == null)
+            Log($"========== INIZIO GENERAZIONE PDF #{interventionId} ==========");
+            Log($"File log: {logFile}");
+            Log($"Lingua richiesta: {languageCode}");
+            
+            try
             {
-                throw new InvalidOperationException($"Intervention #{interventionId} non trovato");
+                var settings = await _context.GlobalSettings.FirstOrDefaultAsync();
+                Log($"Settings caricati: {settings != null}");
+                
+                if (settings != null)
+                {
+                    _logoId = settings.LogoReport;
+                    _company = await _context.Companies.FirstOrDefaultAsync(c => c.Id == settings.IdHeadQuarter);
+                    Log($"LogoId: {_logoId}, Company: {_company?.RagioneSociale ?? "NULL"}");
+                }
+                
+                Log($"Inizio caricamento labels...");
+                // Carica le traduzioni per la lingua selezionata
+                var labels = await LoadLabelsAsync(_context, languageCode);
+                Log($"Labels caricati - MinuteOfIntervention: '{labels.MinuteOfIntervention}'");
+
+                Log($"Caricamento intervention dal database...");
+                // Recupera l'intervento con tutte le relazioni necessarie
+                var intervention = await _context.TicketsInterventions
+                    .Include(x => x.Ticket)
+                        .ThenInclude(t => t.Company)
+                    .Include(x => x.User)
+                    .Include(x => x.TicketInterventionsTypes)
+                        .ThenInclude(it => it.InterventionTypeLanguages)
+                            .ThenInclude(itl => itl.Language)
+                    .Include(x => x.TicketInterventionArticles)
+                        .ThenInclude(a => a.Product)
+                    .Include(x => x.TicketInterventionArticles)
+                        .ThenInclude(a => a.Article)
+                    .FirstOrDefaultAsync(x => x.Id == interventionId);
+
+                if (intervention == null)
+                {
+                    Log($"ERRORE: Intervention #{interventionId} NON TROVATO!");
+                    throw new InvalidOperationException($"Intervention #{interventionId} non trovato");
+                }
+                
+                Log($"Intervention caricato: Ticket #{intervention.IdTicket}, User: {intervention.User?.NameComplete}");
+                // Configura la licenza QuestPDF
+                QuestPDF.Settings.License = LicenseType.Community;
+
+                Log($"Inizio generazione documento QuestPDF...");
+                // Genera il documento
+                var document = Document.Create(container =>
+                {
+                    container.Page(page =>
+                    {
+                        ConfigurePage(page);
+
+                        page.Header().Element(c => HeaderBlock(c, labels));
+
+                        page.Content().PaddingTop(10).Column(col =>
+                        {
+                            col.Item().Element(c => TitleBlock(c, labels.MinuteOfIntervention));
+
+                            col.Item().PaddingTop(8).Element(c => ClientBlock(c, intervention.Ticket.Company, labels));
+
+                            col.Item().PaddingTop(10).Element(c => TechnicianAndPurposeBlock(c, intervention, labels));
+
+                            if (intervention.TicketInterventionArticles != null && intervention.TicketInterventionArticles.Any())
+                            {
+                                col.Item().PaddingTop(10).Element(c => MachinesBlock(c, intervention.TicketInterventionArticles.ToList(), labels));
+                            }
+
+                            col.Item().PaddingTop(10).Element(c => ServiceTimesBlock(c, intervention, labels));
+
+                            if (!string.IsNullOrWhiteSpace(intervention.Activities))
+                            {
+                                col.Item().PaddingTop(10).Element(c => ActivitiesBlock(c, intervention.Activities, labels));
+                            }
+
+                            col.Item().PaddingTop(10).Element(c => CustomerDeclarationBlock(c, labels));
+                        });
+
+                        page.Footer().Element(c => FooterBlock(c, labels));
+                    });
+
+                    // Pagina 2: Parti sostituite, Note e Firma
+                    container.Page(page =>
+                    {
+                        ConfigurePage(page);
+
+                        page.Header().Element(c => HeaderBlock(c, labels));
+
+                        page.Content().PaddingTop(10).Column(col =>
+                        {
+                            col.Item().Element(c => TitleBlock(c, labels.ReplacedAndMountedParts));
+
+                            // Mostra sempre la sezione con almeno 2 righe vuote se non ci sono dati
+                            col.Item().PaddingTop(8).Element(c => TextAreaBlock(c, labels.ReplacedAndMountedParts, intervention.MountedParts));
+
+                            if (!string.IsNullOrWhiteSpace(intervention.Note))
+                            {
+                                col.Item().PaddingTop(12).Element(c => NotesBlock(c, intervention.Note, labels));
+                            }
+
+                            col.Item().PaddingTop(12).Element(c => RenderSignatureSection(c, labels, intervention.CustomerSignature, intervention.SignatureDate, intervention.SignatureName, intervention.SignatureStatus));
+                        });
+
+                        page.Footer().Element(c => FooterBlock(c, labels));
+                    });
+                });
+
+                Log($"Generazione bytes PDF...");
+                var pdfBytes = document.GeneratePdf();
+                Log($"========== PDF GENERATO CON SUCCESSO: {pdfBytes.Length} bytes ==========");
+                
+                return pdfBytes;
             }
-
-            // Configura la licenza QuestPDF
-            QuestPDF.Settings.License = LicenseType.Community;
-
-            // Genera il documento
-            var document = Document.Create(container =>
+            catch (Exception ex)
             {
-                container.Page(page =>
+                Log($"========== ERRORE FATALE ==========");
+                Log($"Exception Type: {ex.GetType().Name}");
+                Log($"Message: {ex.Message}");
+                Log($"StackTrace: {ex.StackTrace}");
+                
+                if (ex.InnerException != null)
                 {
-                    ConfigurePage(page);
-
-                    page.Header().Element(c => HeaderBlock(c, labels));
-
-                    page.Content().PaddingTop(10).Column(col =>
-                    {
-                        col.Item().Element(c => TitleBlock(c, labels.MinuteOfIntervention));
-
-                        col.Item().PaddingTop(8).Element(c => ClientBlock(c, intervention.Ticket.Company, labels));
-
-                        col.Item().PaddingTop(10).Element(c => TechnicianAndPurposeBlock(c, intervention, labels));
-
-                        if (intervention.TicketInterventionArticles != null && intervention.TicketInterventionArticles.Any())
-                        {
-                            col.Item().PaddingTop(10).Element(c => MachinesBlock(c, intervention.TicketInterventionArticles.ToList(), labels));
-                        }
-
-                        col.Item().PaddingTop(10).Element(c => ServiceTimesBlock(c, intervention, labels));
-
-                        if (!string.IsNullOrWhiteSpace(intervention.Activities))
-                        {
-                            col.Item().PaddingTop(10).Element(c => ActivitiesBlock(c, intervention.Activities, labels));
-                        }
-
-                        col.Item().PaddingTop(10).Element(c => CustomerDeclarationBlock(c, labels));
-                    });
-
-                    page.Footer().Element(c => FooterBlock(c, labels));
-                });
-
-                // Pagina 2: Parti sostituite, Note e Firma
-                container.Page(page =>
-                {
-                    ConfigurePage(page);
-
-                    page.Header().Element(c => HeaderBlock(c, labels));
-
-                    page.Content().PaddingTop(10).Column(col =>
-                    {
-                        col.Item().Element(c => TitleBlock(c, labels.ReplacedAndMountedParts));
-
-                        // Mostra sempre la sezione con almeno 2 righe vuote se non ci sono dati
-                        col.Item().PaddingTop(8).Element(c => TextAreaBlock(c, labels.ReplacedAndMountedParts, intervention.MountedParts));
-
-                        if (!string.IsNullOrWhiteSpace(intervention.Note))
-                        {
-                            col.Item().PaddingTop(12).Element(c => NotesBlock(c, intervention.Note, labels));
-                        }
-
-                        col.Item().PaddingTop(12).Element(c => RenderSignatureSection(c, labels, intervention.CustomerSignature, intervention.SignatureDate, intervention.SignatureName, intervention.SignatureStatus));
-                    });
-
-                    page.Footer().Element(c => FooterBlock(c, labels));
-                });
-            });
-
-            return document.GeneratePdf();
+                    Log($"InnerException: {ex.InnerException.Message}");
+                    Log($"InnerException StackTrace: {ex.InnerException.StackTrace}");
+                }
+                
+                throw;
+            }
         }
 
         private  void ConfigurePage(PageDescriptor page)
@@ -390,7 +434,7 @@ namespace CRM.Server.Services
 
                     row.RelativeItem().Column(signatureCol =>
                     {
-                        // Se c'è una firma digitale, mostrala
+                        // Se c'è una firma digitale, mostramala
                         if (!string.IsNullOrWhiteSpace(customerSignatureBase64))
                         {
                             try
@@ -589,63 +633,51 @@ namespace CRM.Server.Services
 
         private async Task<InterventionReportLabels> LoadLabelsAsync(ApplicationDbContext context, string languageCode)
         {
-            // Imposta la cultura corrente in base al languageCode
+            Console.WriteLine($"[PDF] LoadLabelsAsync - Lingua richiesta: {languageCode}");
+            
             var culture = new System.Globalization.CultureInfo(languageCode);
             
-            // Salva la cultura originale
-            var originalCulture = System.Globalization.CultureInfo.CurrentCulture;
-            var originalUICulture = System.Globalization.CultureInfo.CurrentUICulture;
+            // Usa direttamente il ResourceManager della classe App
+            var resourceManager = CRM.Shared.Resources.App.ResourceManager;
+            
+            Console.WriteLine($"[PDF] Caricamento traduzioni con cultura: {culture.Name}");
 
-            try
+            var labels = new InterventionReportLabels
             {
-                // Imposta temporaneamente la cultura desiderata
-                System.Globalization.CultureInfo.CurrentCulture = culture;
-                System.Globalization.CultureInfo.CurrentUICulture = culture;
+                CultureCode = languageCode,
+                
+                // Usa GetString con la cultura specifica
+                MinuteOfIntervention = resourceManager.GetString("Minute of Intervention", culture) ?? "Minute of Intervention",
+                Client = resourceManager.GetString("Client", culture) ?? "Client",
+                CompanyName = resourceManager.GetString("Company Name", culture) ?? "Company Name",
+                VatId = resourceManager.GetString("VAT ID", culture) ?? "VAT ID",
+                Address = resourceManager.GetString("Address", culture) ?? "Address",
+                Zip = resourceManager.GetString("ZIP", culture) ?? "ZIP",
+                City = resourceManager.GetString("City", culture) ?? "City",
+                Country = resourceManager.GetString("Country", culture) ?? "Country",
+                OurTechnician = resourceManager.GetString("Our technician", culture) ?? "Our technician",
+                HasIntervenedAt = resourceManager.GetString("has intervened at", culture) ?? "has intervened at",
+                For = resourceManager.GetString("for:", culture) ?? "for:",
+                MachinesDevices = resourceManager.GetString("Machines/Devices", culture) ?? "Machines/Devices",
+                ServiceBegan = resourceManager.GetString("Service began", culture) ?? "Service began",
+                ServiceEnded = resourceManager.GetString("Service ended", culture) ?? "Service ended",
+                Activities = resourceManager.GetString("Activities", culture) ?? "Activities",
+                CustomerDeclaration = resourceManager.GetString("Customer Declaration", culture) ?? "Customer Declaration",
+                Declaration1 = resourceManager.GetString("The undersigned declares...", culture) ?? "The undersigned declares...",
+                Declaration2 = resourceManager.GetString("The customer declares...", culture) ?? "The customer declares...",
+                Declaration3 = resourceManager.GetString("Any reserves must be...", culture) ?? "Any reserves must be...",
+                Declaration4 = resourceManager.GetString("The customer authorizes...", culture) ?? "The customer authorizes...",
+                ReplacedAndMountedParts = resourceManager.GetString("Replaced and Mounted Parts", culture) ?? "Replaced and Mounted Parts",
+                NotesOrReserves = resourceManager.GetString("Notes or Reserves", culture) ?? "Notes or Reserves",
+                TickIfNoComments = resourceManager.GetString("Tick if no comments", culture) ?? "Tick if no comments",
+                AcceptedOn = resourceManager.GetString("Accepted on", culture) ?? "Accepted on",
+                Page = resourceManager.GetString("Page", culture) ?? "Page",
+                Of = resourceManager.GetString("of", culture) ?? "of"
+            };
 
-                // Crea un nuovo localizer con la cultura corrente
-                var localizer = _localizerFactory.Create(typeof(CRM.Shared.Resources.App));
+            Console.WriteLine($"[PDF] Labels caricati - MinuteOfIntervention: '{labels.MinuteOfIntervention}'");
 
-                var labels = new InterventionReportLabels
-                {
-                    CultureCode = languageCode,
-                    
-                    // Carica tutte le traduzioni dalle risorse
-                    MinuteOfIntervention = localizer["Minute of Intervention"],
-                    Client = localizer["Client"],
-                    CompanyName = localizer["Company Name"],
-                    VatId = localizer["VAT ID"],
-                    Address = localizer["Address"],
-                    Zip = localizer["ZIP"],
-                    City = localizer["City"],
-                    Country = localizer["Country"],
-                    OurTechnician = localizer["Our technician"],
-                    HasIntervenedAt = localizer["has intervened at"],
-                    For = localizer["for:"],
-                    MachinesDevices = localizer["Machines/Devices"],
-                    ServiceBegan = localizer["Service began"],
-                    ServiceEnded = localizer["Service ended"],
-                    Activities = localizer["Activities"],
-                    CustomerDeclaration = localizer["Customer Declaration"],
-                    Declaration1 = localizer["The undersigned declares..."],
-                    Declaration2 = localizer["The customer declares..."],
-                    Declaration3 = localizer["Any reserves must be..."],
-                    Declaration4 = localizer["The customer authorizes..."],
-                    ReplacedAndMountedParts = localizer["Replaced and Mounted Parts"],
-                    NotesOrReserves = localizer["Notes or Reserves"],
-                    TickIfNoComments = localizer["Tick if no comments"],
-                    AcceptedOn = localizer["Accepted on"],
-                    Page = localizer["Page"],
-                    Of = localizer["of"]
-                };
-
-                return await Task.FromResult(labels);
-            }
-            finally
-            {
-                // Ripristina la cultura originale
-                System.Globalization.CultureInfo.CurrentCulture = originalCulture;
-                System.Globalization.CultureInfo.CurrentUICulture = originalUICulture;
-            }
+            return await Task.FromResult(labels);
         }
     }
 }
