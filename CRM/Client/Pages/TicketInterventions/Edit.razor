@@ -15,13 +15,13 @@ else
 
     <EditForm Model="@_ticketIntervention" OnValidSubmit="HandleValidSubmit">
          <RadzenRow Gap="1rem" class="mb-3">
-            <RadzenColumn Size="12" SizeSM="6">
+            <RadzenColumn Size="12" SizeSM="8">
                 <RadzenStack>
                     <BlazoringComponents.Validators.FluentValidationValidator ValidatorType="typeof(Validators.TicketInterventionValidator)" />
                     <DataAnnotationsValidator />
                     <ValidationSummary />
                     <RadzenRow>
-                        <RadzenColumn Size="12" SizeSM="6">
+                        <RadzenColumn Size="12" SizeSM="12">
                             <RadzenStack>
                                 <RedGDropDownGrid TItem="ApplicationUser" TValue="string" ValueProperty="Id" TextProperty="NameComplete"
                                               @bind-Value="@_ticketIntervention.IdUser" For="@(() => _ticketIntervention.IdUser)"
@@ -126,6 +126,27 @@ else
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- ✅ NUOVO: Gestione Orari Lavoro/Viaggio -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingTimes">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTimes" aria-expanded="false" aria-controls="collapseTimes">
+                                            <i class="material-icons me-2">schedule</i>
+                                            Orari di Lavoro e Viaggio
+                                            @if (_interventionTimes != null && _interventionTimes.Any())
+                                            {
+                                                <span class="badge bg-primary ms-2">@_interventionTimes.Count periodi</span>
+                                            }
+                                        </button>
+                                    </h2>
+                                    <div id="collapseTimes" class="accordion-collapse collapse" aria-labelledby="headingTimes">
+                                        <div class="accordion-body">
+                                            <InterventionTimesManager IdIntervention="@_ticketIntervention.Id" 
+                                                                      @bind-Times="_interventionTimes" />
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="accordion-item">
                                     <h2 class="accordion-header" id="heading4">
                                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
@@ -177,7 +198,7 @@ else
                                     </h2>
                                     <div id="collapseReceipt" class="accordion-collapse collapse" aria-labelledby="headingReceipt">
                                         <div class="accordion-body">
-                                            <!-- ✅ RIMOSSO AttachmentFileId - non più necessario! -->
+                                            
                                             <ReceiptUploader OnExtractionConfirmed="OnReceiptExtractionConfirmed" />
                                             
                                             @if (_ticketIntervention.ExtractedTotalAmount.HasValue)

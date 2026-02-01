@@ -280,13 +280,10 @@
     <value>Partita IVA</value>
   </data>
   <data name="Products" xml:space="preserve">
-    <value>Catalogo</value>
+    <value>Prodotti</value>
   </data>
   <data name="Product data" xml:space="preserve">
     <value>Dati Prodotto</value>
-  </data>
-  <data name="Progetti" xml:space="preserve">
-    <value>Progetti</value>
   </data>
   <data name="Prosegui" xml:space="preserve">
     <value>Prosegui</value>
@@ -315,7 +312,7 @@
   <data name="Seleziona la Ditta..." xml:space="preserve">
     <value>Seleziona la Ditta...</value>
   </data>
-  <data name="Settings" xml:space="preserve">
+  <data name="System Settings" xml:space="preserve">
     <value>Impostazioni Sistema</value>
   </data>
   <data name="Storico TICKETS" xml:space="preserve">
@@ -611,5 +608,23 @@
   </data>
   <data name="of" xml:space="preserve">
     <value>di</value>
+  </data>
+  <data name="Catalog" xml:space="preserve">
+    <value>Catalogo</value>
+  </data>
+  <data name="Projects" xml:space="preserve">
+    <value>Progetti</value>
+  </data>
+  <data name="Deals" xml:space="preserve">
+    <value>Opportunità</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settaggi</value>
+  </data>
+  <data name="Push Notifications" xml:space="preserve">
+    <value>Notifiche Push</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Ricerca</value>
   </data>
 </root>

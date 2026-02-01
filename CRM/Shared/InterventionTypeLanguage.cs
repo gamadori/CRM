@@ -11,6 +11,7 @@ namespace CRM.Shared
     {
         public int Id { get; set; }
 
+        [ForeignKey(nameof(InterventionType))]
         public int IdInterventionType { get; set; }
 
         [ForeignKey("Language")]
@@ -18,22 +19,11 @@ namespace CRM.Shared
 
         public string Name { get; set; }
 
+        public virtual InterventionType InterventionType { get; set; }
 
         public virtual Language Language { get; set; }
     }
 
-    public class InterventionTypeLang
-    {
-        public int Id { get; set; }
-
-       
-        public int IdLanguage { get; set; }
-
-        public string Language { get; set; }
-
-        public string Name { get; set; }
-
-    }
 
     public class InterventionTypeLangFilter: PagingParameterModel
     {

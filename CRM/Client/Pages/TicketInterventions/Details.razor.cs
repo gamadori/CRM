@@ -68,6 +68,8 @@ namespace CRM.Client.Pages.TicketInterventions
         
         private TicketIntervention _ticketIntervention = null;
 
+        private List<TicketInterventionTimeModel> _interventionTimes = new List<TicketInterventionTimeModel>();
+
         private string _typeMessage;
         private string _message = null;
 
@@ -91,8 +93,10 @@ namespace CRM.Client.Pages.TicketInterventions
 
                 if (Id != null)
                 {
-
                     _ticketIntervention = await _service.Get(Id.Value);
+                    
+                    // ✅ Carica gli orari di lavoro/viaggio
+                    await LoadInterventionTimes();
                 }
                 else
                     _ticketIntervention = new TicketIntervention();
@@ -102,6 +106,29 @@ namespace CRM.Client.Pages.TicketInterventions
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
+            }
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Carica gli orari di lavoro/viaggio dell'intervento
+        /// </summary>
+        private async Task LoadInterventionTimes()
+        {
+            try
+            {
+                if (Id == null) return;
+
+                var times = await _httpClient.GetFromJsonAsync<List<TicketInterventionTime>>($"api/TicketInterventionTime/{Id}");
+                
+                if (times != null)
+                {
+                    _interventionTimes = times.Select(t => t.ToModel()).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento tempi: {ex.Message}");
+                _interventionTimes = new List<TicketInterventionTimeModel>();
             }
         }
 

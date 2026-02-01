@@ -67,6 +67,7 @@ namespace CRM.Server.Services
                 Log($"Labels caricati - MinuteOfIntervention: '{labels.MinuteOfIntervention}'");
 
                 Log($"Caricamento intervention dal database...");
+
                 // Recupera l'intervento con tutte le relazioni necessarie
                 var intervention = await _context.TicketsInterventions
                     .Include(x => x.Ticket)
@@ -555,7 +556,7 @@ namespace CRM.Server.Services
                 .Text("");
         }
 
-        private static void FooterBlock(IContainer container, InterventionReportLabels labels)
+        private  void FooterBlock(IContainer container, InterventionReportLabels labels)
         {
             container.Column(col =>
             {
@@ -565,9 +566,10 @@ namespace CRM.Server.Services
                 {
                     row.RelativeItem().Column(c =>
                     {
-                        c.Item().Text("VIA SELVA 23/25 - IT").FontSize(9);
-                        c.Item().Text("Tel. +39 0543 481142 / Fax +39 0543 480770").FontSize(9);
-                        c.Item().Text("info@a-plusautomation.com").FontSize(9);
+                        c.Item().Text(_company?.RagioneSociale).FontSize(9);
+                        c.Item().Text($"{_company?.Indirizzo} {_company?.Cap} {_company?.Citta} {_company?.Provincia} {_company?.Stato}").FontSize(9);
+                        c.Item().Text($"Tel. {_company?.Telefono} / Fax {_company?.Fax}").FontSize(9);
+                        c.Item().Text(_company?.Email).FontSize(9);
                     });
 
                     row.ConstantItem(120).AlignRight().DefaultTextStyle(x => x.FontSize(9)).Text(t =>

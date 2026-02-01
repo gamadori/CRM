@@ -23,7 +23,7 @@ else
                         <span class="material-icons">confirmation_number</span>
                         <h3>Ticket #@_ticket.Id</h3>
                     </div>
-                    <div class="ticket-status" style="background: @_ticket.StateColor">
+                    <div class="ticket-status" style="background: @GetContrastBackgroundColor(_ticket.StateColor); color: @GetContrastTextColor(_ticket.StateColor);">
                         <span class="status-text">@_ticket.State</span>
                     </div>
                 </div>

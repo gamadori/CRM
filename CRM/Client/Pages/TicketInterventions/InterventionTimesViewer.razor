@@ -1,0 +1,263 @@
+﻿@using CRM.Shared
+@using Radzen
+@using Radzen.Blazor
+
+@if (Times == null || !Times.Any())
+{
+    <div class="alert alert-info d-flex align-items-center gap-2">
+        <i class="material-icons">info</i>
+        <span>Nessun orario registrato per questo intervento.</span>
+    </div>
+}
+else
+{
+    <!-- Riepilogo -->
+    <div class="times-summary mb-3">
+        <div class="row g-2">
+            <div class="col-6 col-md-3">
+                <div class="summary-card-small work">
+                    <span class="material-icons">work</span>
+                    <div class="summary-info-small">
+                        <span class="summary-label-small">Lavoro</span>
+                        <span class="summary-value-small">@FormatDuration(TotalWorkMinutes)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="summary-card-small travel">
+                    <span class="material-icons">directions_car</span>
+                    <div class="summary-info-small">
+                        <span class="summary-label-small">Viaggio</span>
+                        <span class="summary-value-small">@FormatDuration(TotalTravelMinutes)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="summary-card-small billable">
+                    <span class="material-icons">attach_money</span>
+                    <div class="summary-info-small">
+                        <span class="summary-label-small">Fatturabile</span>
+                        <span class="summary-value-small">@FormatDuration(TotalBillableMinutes)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="summary-card-small km">
+                    <span class="material-icons">speed</span>
+                    <div class="summary-info-small">
+                        <span class="summary-label-small">Km Totali</span>
+                        <span class="summary-value-small">@TotalKilometers km</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista periodi -->
+    <div class="times-list">
+        @foreach (var time in Times.OrderBy(t => t.StartDateTime))
+        {
+            <div class="time-item @GetTimeTypeClass(time.TimeType)">
+                <div class="time-header">
+                    <div class="time-type">
+                        <span class="material-icons">@GetTimeTypeIcon(time.TimeType)</span>
+                        <strong>@time.TimeTypeDescription</strong>
+                    </div>
+                    <div class="time-duration">
+                        <span class="material-icons" style="font-size: 18px;">timer</span>
+                        <strong>@time.DurationFormatted</strong>
+                    </div>
+                </div>
+                
+                <div class="time-details">
+                    <div class="time-period">
+                        <span class="material-icons" style="font-size: 16px;">schedule</span>
+                        <span>@time.StartDateTime.ToString("dd/MM/yyyy HH:mm") → @time.EndDateTime.ToString("HH:mm")</span>
+                    </div>
+                    
+                    @if (time.TimeType == InterventionTimeType.Travel && time.TravelKilometers.HasValue)
+                    {
+                        <div class="time-km">
+                            <span class="material-icons" style="font-size: 16px;">speed</span>
+                            <span>@time.TravelKilometers km</span>
+                        </div>
+                    }
+                    
+                    <div class="time-billable">
+                        @if (time.IsBillable)
+                        {
+                            <span class="badge bg-success">✓ Fatturabile</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">✗ Non Fatturabile</span>
+                        }
+                    </div>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(time.Notes))
+                {
+                    <div class="time-notes">
+                        <span class="material-icons" style="font-size: 14px;">note</span>
+                        <em>@time.Notes</em>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+<style>
+    .times-summary {
+        margin-bottom: 1rem;
+    }
+
+    .summary-card-small {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.75rem;
+        background: white;
+        border-radius: 6px;
+        border-left: 3px solid #6c757d;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .summary-card-small.work { border-left-color: #0d6efd; }
+    .summary-card-small.travel { border-left-color: #ffc107; }
+    .summary-card-small.billable { border-left-color: #198754; }
+    .summary-card-small.km { border-left-color: #6c757d; }
+
+    .summary-card-small .material-icons {
+        font-size: 24px;
+        color: #6c757d;
+    }
+
+    .summary-card-small.work .material-icons { color: #0d6efd; }
+    .summary-card-small.travel .material-icons { color: #ffc107; }
+    .summary-card-small.billable .material-icons { color: #198754; }
+
+    .summary-info-small {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        flex: 1;
+    }
+
+    .summary-label-small {
+        font-size: 0.75rem;
+        color: #6c757d;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .summary-value-small {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #212529;
+    }
+
+    .times-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .time-item {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-left: 4px solid #0d6efd;
+        border-radius: 6px;
+        padding: 1rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .time-item.work { border-left-color: #0d6efd; }
+    .time-item.travel { border-left-color: #ffc107; }
+    .time-item.break { border-left-color: #6c757d; }
+
+    .time-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .time-type {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.05rem;
+    }
+
+    .time-type .material-icons {
+        font-size: 20px;
+    }
+
+    .time-duration {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: #0d6efd;
+    }
+
+    .time-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+        font-size: 0.9rem;
+        color: #495057;
+    }
+
+    .time-period,
+    .time-km,
+    .time-billable {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .time-notes {
+        display: flex;
+        align-items: start;
+        gap: 0.25rem;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #f0f0f0;
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+
+    @@media (max-width: 768px) {
+        .summary-card-small {
+            padding: 0.5rem;
+        }
+
+        .summary-card-small .material-icons {
+            font-size: 20px;
+        }
+
+        .summary-label-small {
+            font-size: 0.7rem;
+        }
+
+        .summary-value-small {
+            font-size: 0.9rem;
+        }
+
+        .time-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .time-details {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+    }
+</style>

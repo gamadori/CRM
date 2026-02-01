@@ -1,0 +1,273 @@
+@using CRM.Shared
+@using Radzen
+@using Radzen.Blazor
+
+<div class="intervention-times-container">
+    <!-- Header con riepilogo -->
+    <div class="times-summary mb-3">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="summary-card work">
+                    <span class="material-icons">work</span>
+                    <div class="summary-info">
+                        <span class="summary-label">@Localize["WorkTime"]</span>
+                        <span class="summary-value">@FormatDuration(TotalWorkMinutes)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card travel">
+                    <span class="material-icons">directions_car</span>
+                    <div class="summary-info">
+                        <span class="summary-label">@Localize["TravelTime"]</span>
+                        <span class="summary-value">@FormatDuration(TotalTravelMinutes)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card billable">
+                    <span class="material-icons">attach_money</span>
+                    <div class="summary-info">
+                        <span class="summary-label">@Localize["BillableTime"]</span>
+                        <span class="summary-value">@FormatDuration(TotalBillableMinutes)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="summary-card km">
+                    <span class="material-icons">speed</span>
+                    <div class="summary-info">
+                        <span class="summary-label">@Localize["TotalKilometers"]</span>
+                        <span class="summary-value">@TotalKilometers km</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Griglia tempi -->
+    <RadzenDataGrid @ref="_timesGrid" 
+                    AllowFiltering="false" 
+                    AllowPaging="true" 
+                    PageSize="10" 
+                    AllowSorting="true" 
+                    Data="@Times" 
+                    TItem="TicketInterventionTimeModel" 
+                    IsLoading="@_isLoading">
+        <HeaderTemplate>
+            <RadzenButton Icon="add_circle_outline" 
+                          ButtonStyle="ButtonStyle.Success" 
+                          Size="ButtonSize.Small" 
+                          Click="@OpenAddDialog" 
+                          Text="@Localize["AddTimePeriod"]" />
+        </HeaderTemplate>
+        
+        <Columns>
+            <!-- Tipo -->
+            <RadzenDataGridColumn TItem="TicketInterventionTimeModel" 
+                                  Property="@nameof(TicketInterventionTimeModel.TimeType)" 
+                                  Title="Tipo" 
+                                  Width="150px">
+                <Template Context="item">
+                    <span class="badge @GetTimeTypeBadgeClass(item.TimeType)">
+                        <span class="material-icons" style="font-size: 16px; vertical-align: middle;">
+                            @GetTimeTypeIcon(item.TimeType)
+                        </span>
+                        @item.TimeTypeDescription
+                    </span>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- Data/Ora Inizio -->
+            <RadzenDataGridColumn TItem="TicketInterventionTimeModel" 
+                                  Property="@nameof(TicketInterventionTimeModel.StartDateTime)" 
+                                  Title="Inizio" 
+                                  Width="180px">
+                <Template Context="item">
+                    @item.StartDateTime.ToString("dd/MM/yyyy HH:mm")
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- Data/Ora Fine -->
+            <RadzenDataGridColumn TItem="TicketInterventionTimeModel" 
+                                  Property="@nameof(TicketInterventionTimeModel.EndDateTime)" 
+                                  Title="Fine" 
+                                  Width="180px">
+                <Template Context="item">
+                    @item.EndDateTime.ToString("dd/MM/yyyy HH:mm")
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- Durata -->
+            <RadzenDataGridColumn TItem="TicketInterventionTimeModel" 
+                                  Property="@nameof(TicketInterventionTimeModel.DurationMinutes)" 
+                                  Title="Durata" 
+                                  Width="100px">
+                <Template Context="item">
+                    <strong>@item.DurationFormatted</strong>
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- Km (solo per viaggi) -->
+            <RadzenDataGridColumn TItem="TicketInterventionTimeModel" 
+                                  Property="@nameof(TicketInterventionTimeModel.TravelKilometers)" 
+                                  Title="Km" 
+                                  Width="80px">
+                <Template Context="item">
+                    @if (item.TimeType == InterventionTimeType.Travel && item.TravelKilometers.HasValue)
+                    {
+                        <span>@item.TravelKilometers km</span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- Fatturabile -->
+            <RadzenDataGridColumn TItem="TicketInterventionTimeModel" 
+                                  Property="@nameof(TicketInterventionTimeModel.IsBillable)" 
+                                  Title="Fatturabile" 
+                                  Width="100px"
+                                  TextAlign="TextAlign.Center">
+                <Template Context="item">
+                    @if (item.IsBillable)
+                    {
+                        <span class="badge bg-success">? Sì</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">? No</span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- Note -->
+            <RadzenDataGridColumn TItem="TicketInterventionTimeModel" 
+                                  Property="@nameof(TicketInterventionTimeModel.Notes)" 
+                                  Title="Note">
+                <Template Context="item">
+                    @if (!string.IsNullOrEmpty(item.Notes))
+                    {
+                        <small class="text-muted">@item.Notes</small>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <!-- Azioni -->
+            <RadzenDataGridColumn TItem="TicketInterventionTimeModel" 
+                                  Filterable="false" 
+                                  Sortable="false" 
+                                  TextAlign="TextAlign.Center" 
+                                  Width="120px">
+                <Template Context="item">
+                    <RadzenButton Icon="edit" 
+                                  ButtonStyle="ButtonStyle.Light" 
+                                  Size="ButtonSize.Small"
+                                  Click="@(() => OpenEditDialog(item))" />
+                    <RadzenButton Icon="delete" 
+                                  ButtonStyle="ButtonStyle.Danger" 
+                                  Size="ButtonSize.Small"
+                                  Click="@(() => DeleteRow(item))" />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</div>
+
+<style>
+    .intervention-times-container {
+        margin: 1rem 0;
+    }
+
+    .times-summary {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .summary-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 1rem;
+        background: white;
+        border-radius: 8px;
+        border-left: 4px solid #6c757d;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .summary-card.work {
+        border-left-color: #0d6efd;
+    }
+
+    .summary-card.travel {
+        border-left-color: #ffc107;
+    }
+
+    .summary-card.billable {
+        border-left-color: #198754;
+    }
+
+    .summary-card.km {
+        border-left-color: #6c757d;
+    }
+
+    .summary-card .material-icons {
+        font-size: 32px;
+        color: #6c757d;
+    }
+
+    .summary-card.work .material-icons {
+        color: #0d6efd;
+    }
+
+    .summary-card.travel .material-icons {
+        color: #ffc107;
+    }
+
+    .summary-card.billable .material-icons {
+        color: #198754;
+    }
+
+    .summary-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .summary-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .summary-value {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #212529;
+    }
+
+    .badge.bg-work {
+        background-color: #0d6efd !important;
+    }
+
+    .badge.bg-travel {
+        background-color: #ffc107 !important;
+        color: #000 !important;
+    }
+
+    .badge.bg-break {
+        background-color: #6c757d !important;
+    }
+
+    /* Fix per RadzenDropDown troncato nelle celle della griglia */
+    .intervention-times-container .rz-datatable-data td {
+        overflow: visible !important;
+    }
+
+    .intervention-times-container .rz-dropdown {
+        min-width: 170px;
+    }
+
+    .intervention-times-container .rz-dropdown-panel {
+        z-index: 1000;
+        min-width: 170px;
+    }
+</style>

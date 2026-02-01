@@ -312,14 +312,61 @@ namespace CRM.Client.Pages.Tickets
             if (string.IsNullOrWhiteSpace(fullName))
                 return "?";
 
+
             var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 0)
                 return "?";
 
+
             if (parts.Length == 1)
                 return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
 
+
             return (parts[0][0].ToString() + parts[^1][0].ToString()).ToUpper();
+        }
+
+        /// <summary>
+        /// Calcola il colore del testo (bianco o nero) in base alla luminosità del colore di sfondo
+        /// </summary>
+        private string GetContrastTextColor(string backgroundColor)
+        {
+            if (string.IsNullOrWhiteSpace(backgroundColor))
+                return "#000000";
+
+            var hex = backgroundColor.TrimStart('#');
+
+
+            if (hex.Length == 3)
+            {
+                hex = $"{hex[0]}{hex[0]}{hex[1]}{hex[1]}{hex[2]}{hex[2]}";
+            }
+
+
+            if (hex.Length != 6)
+                return "#000000";
+
+            try
+            {
+                var r = Convert.ToInt32(hex.Substring(0, 2), 16);
+                var g = Convert.ToInt32(hex.Substring(2, 2), 16);
+                var b = Convert.ToInt32(hex.Substring(4, 2), 16);
+
+                var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+                return luminance > 0.5 ? "#000000" : "#ffffff";
+            }
+            catch
+            {
+                return "#000000";
+            }
+        }
+
+        /// <summary>
+        /// Restituisce il colore di sfondo originale
+        /// </summary>
+        private string GetContrastBackgroundColor(string backgroundColor)
+        {
+            return backgroundColor ?? "#6c757d";
         }
 
         private void BackToUrl()

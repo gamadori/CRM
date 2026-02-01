@@ -4,6 +4,7 @@ using CRM.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CRM.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260131214811_Update12")]
+    partial class Update12
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2032,21 +2035,8 @@ namespace CRM.Server.Migrations
                     b.Property<int>("IdTicketIntervention")
                         .HasColumnType("int");
 
-                    b.Property<bool>("IsBillable")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<DateTime>("StartDateTime")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("TimeType")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("TravelKilometers")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

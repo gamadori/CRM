@@ -268,9 +268,6 @@
   <data name="Product data" xml:space="preserve">
     <value>Données sur le produit</value>
   </data>
-  <data name="Progetti" xml:space="preserve">
-    <value>Projets</value>
-  </data>
   <data name="Prosegui" xml:space="preserve">
     <value>Continuer</value>
   </data>
@@ -298,7 +295,7 @@
   <data name="Seleziona la Ditta..." xml:space="preserve">
     <value>Sélectionnez l'entreprise...</value>
   </data>
-  <data name="Settings" xml:space="preserve">
+  <data name="System Settings" xml:space="preserve">
     <value>Paramètres système</value>
   </data>
   <data name="Storico TICKETS" xml:space="preserve">
@@ -378,6 +375,9 @@
   </data>
   <data name="Ticket Edit" xml:space="preserve">
     <value>Editer le ticket</value>
+  </data>
+  <data name="ToBeInvoiced" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
   </data>
   <data name="AddFiles" xml:space="preserve">
     <value />
@@ -591,5 +591,23 @@
   </data>
   <data name="of" xml:space="preserve">
     <value>de</value>
+  </data>
+  <data name="Catalog" xml:space="preserve">
+    <value>Catalogue</value>
+  </data>
+  <data name="Projects" xml:space="preserve">
+    <value>Projets</value>
+  </data>
+  <data name="Deals" xml:space="preserve">
+    <value>Offres</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Paramètres</value>
+  </data>
+  <data name="Push Notifications" xml:space="preserve">
+    <value>Notifications push</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Recherche</value>
   </data>
 </root>

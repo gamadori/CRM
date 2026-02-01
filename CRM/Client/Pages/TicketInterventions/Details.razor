@@ -157,6 +157,25 @@ else
                                 </div>
                             </div>
                         </div>
+                        <!-- ✅ NUOVO: Orari di Lavoro e Viaggio -->
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="panelsStayOpen-headingTimes">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTimes" aria-expanded="true" aria-controls="panelsStayOpen-collapseTimes">
+                                    <i class="material-icons me-2">schedule</i>
+                                    Orari di Lavoro e Viaggio
+                                    @if (_interventionTimes != null && _interventionTimes.Any())
+                                    {
+                                        <span class="badge bg-primary ms-2">@_interventionTimes.Count periodi</span>
+                                    }
+                                </button>
+                            </h2>
+                            <div id="panelsStayOpen-collapseTimes" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingTimes">
+                                <div class="accordion-body">
+                                    <InterventionTimesViewer Times="@_interventionTimes" />
+                                </div>
+                            </div>
+                        </div>
+
                         @if (!string.IsNullOrWhiteSpace(_ticketIntervention.CustomerSignature))
                         {
                             <div class="accordion-item">

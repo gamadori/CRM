@@ -20,6 +20,7 @@ namespace CRM.Shared
         Product,
         Article,
         DXF,
+        Service
     }
 
    

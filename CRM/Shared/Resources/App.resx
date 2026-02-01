@@ -280,13 +280,10 @@
     <value>VAT number</value>
   </data>
   <data name="Products" xml:space="preserve">
-    <value>Catalog</value>
+    <value>Products</value>
   </data>
   <data name="Product data" xml:space="preserve">
     <value>Product data</value>
-  </data>
-  <data name="Progetti" xml:space="preserve">
-    <value>Projects</value>
   </data>
   <data name="Prosegui" xml:space="preserve">
     <value>Continue</value>
@@ -315,7 +312,7 @@
   <data name="Seleziona la Ditta..." xml:space="preserve">
     <value>Select the Company...</value>
   </data>
-  <data name="Settings" xml:space="preserve">
+  <data name="System Settings" xml:space="preserve">
     <value>System Settings</value>
   </data>
   <data name="Storico TICKETS" xml:space="preserve">
@@ -612,5 +609,23 @@
   </data>
   <data name="of" xml:space="preserve">
     <value>of</value>
+  </data>
+  <data name="Catalog" xml:space="preserve">
+    <value>Catalog</value>
+  </data>
+  <data name="Projects" xml:space="preserve">
+    <value>Projects</value>
+  </data>
+  <data name="Deals" xml:space="preserve">
+    <value>Deals</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Push Notifications" xml:space="preserve">
+    <value>Push Notifications</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Search</value>
   </data>
 </root>

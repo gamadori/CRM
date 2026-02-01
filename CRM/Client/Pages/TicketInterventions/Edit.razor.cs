@@ -67,6 +67,9 @@ namespace CRM.Client.Pages.TicketInterventions
 
         private string _header;
 
+        // ✅ NUOVO: Lista tempi intervento (lavoro/viaggio/pause)
+        private List<TicketInterventionTimeModel> _interventionTimes = new List<TicketInterventionTimeModel>();
+
         // ✅ AGGIUNTO: Riferimento al componente SignaturePad
         private SignaturePad _signaturePad;
 

@@ -144,6 +144,9 @@
   <data name="ButtonCancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="ButtonPrint" xml:space="preserve">
+    <value>Print</value>
+  </data>
   <data name="Cancella Azienda" xml:space="preserve">
     <value>Cancelar la empresa</value>
   </data>
@@ -249,9 +252,6 @@
   <data name="Product data" xml:space="preserve">
     <value>Datos del producto</value>
   </data>
-  <data name="Progetti" xml:space="preserve">
-    <value>Proyectos</value>
-  </data>
   <data name="Prosegui" xml:space="preserve">
     <value>Continuar</value>
   </data>
@@ -279,7 +279,7 @@
   <data name="Seleziona la Ditta..." xml:space="preserve">
     <value>Selecciona la empresa...</value>
   </data>
-  <data name="Settings" xml:space="preserve">
+  <data name="System Settings" xml:space="preserve">
     <value>Configuración del sistema</value>
   </data>
   <data name="Storico TICKETS" xml:space="preserve">
@@ -361,6 +361,9 @@
     <value>Editar Ticket</value>
   </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="ToBeInvoiced" type="System.Resources.ResXNullRef, System.Windows.Forms">
+    <value />
+  </data>
   <data name="AddFiles" type="System.Resources.ResXNullRef, System.Windows.Forms">
     <value />
   </data>
@@ -573,5 +576,23 @@
   </data>
   <data name="of" xml:space="preserve">
     <value>de</value>
+  </data>
+  <data name="Catalog" xml:space="preserve">
+    <value>Catálogo</value>
+  </data>
+  <data name="Projects" xml:space="preserve">
+    <value>Proyectos</value>
+  </data>
+  <data name="Deals" xml:space="preserve">
+    <value>Ofertas</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Ajustes</value>
+  </data>
+  <data name="Push Notifications" xml:space="preserve">
+    <value>Notificaciones push</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Buscar</value>
   </data>
 </root>

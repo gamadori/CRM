@@ -19,7 +19,7 @@ namespace CRM.Shared
         public string Description { get; set; }
 
         [JsonIgnore]
-        public virtual ICollection<TicketIntervention> TicketsInterventionType { get; set; }
+        public virtual ICollection<TicketIntervention> TicketsInterventions { get; set; }
 
         
         public virtual ICollection<InterventionTypeLanguage> InterventionTypeLanguages { get; set; }
