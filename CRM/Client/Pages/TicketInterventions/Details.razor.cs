@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
+using Radzen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Radzen;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.TicketInterventions
 {
@@ -53,10 +54,14 @@ namespace CRM.Client.Pages.TicketInterventions
         [Parameter]
         public Action OnClickPdfViewer { get; set; }
 
+        [Parameter]
         public Action OnClosePdfViewer { get; set; }
 
         [Parameter]
         public bool ViewCommands { get; set; } = true;
+
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         protected enum MsgBoxComand
         {

@@ -1,31 +1,42 @@
 ﻿@page "/Attachments/Upload/{Id:int}"
 @using System.IO
+@using Microsoft.AspNetCore.Components.Forms
 
 <style>
-    #uploadWithDragAndDrop {
-        left: 0;
-        --rz-upload-button-bar-background-color: transparent;
-        --rz-upload-button-bar-padding: 0;
+    .upload-dropzone {
+        border: 3px dashed #cbd5e1;
+        border-radius: 0.75rem;
+        padding: 4rem 2rem;
+        text-align: center;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
     }
 
-        #uploadWithDragAndDrop .rz-fileupload-buttonbar .rz-fileupload-choose {
-            width: 100%;
-            text-align: center;
-            font-size: 16px;
-            padding: 100px 0;
-        }
+    .upload-dropzone:hover {
+        border-color: #0d6efd;
+        background: #e7f3ff;
+    }
 
-        #uploadWithDragAndDrop .rz-fileupload-content {
-            display: none;
-        }
+    .upload-dropzone input[type="file"] {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .upload-icon {
+        font-size: 72px;
+        color: #0d6efd;
+    }
 
     .file-list-card {
         margin-bottom: 0.5rem;
         padding: 0.5rem;
-    }
-
-    .e-upload-actions {
-        display: none;
     }
 </style>
 
@@ -49,42 +60,46 @@ else
                     <p class="mb-0 text-dark">@_attachment.Name</p>
                 </div>
             </div>
+            
             <div class="mb-3">
-                <RadzenCard Variant="Variant.Outlined">
-                    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Drag and drop files to upload</RadzenText>
-                    <RadzenUpload id="uploadWithDragAndDrop" Style="width: 100%" Change="OnChange" ChooseText="@Localize["Drag and drop qui o click Selezionare Files"]"
-                                  Auto="false" Multiple="true" InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "select file" } })">
-                        <ChildContent>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="mb-3">Drag and drop files to upload</h6>
+                        <div class="upload-dropzone">
+                            <InputFile OnChange="@OnInputFileChange" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.dxf" id="fileUpload" />
                             <div class="upload-icon-container">
                                 <span class="material-icons upload-icon">cloud_upload</span>
-
-                                <div class="upload-hint">PDF, DOC, DOCX, XLS, XLSX, DXF, Images,  (Max 20MB)</div>
+                                <p class="mt-3 mb-2"><strong>@Localize["Drag and drop qui o click Selezionare Files"]</strong></p>
+                                <p class="text-muted small mb-0">PDF, DOC, DOCX, XLS, XLSX, DXF, Images (Max 20MB)</p>
                             </div>
-                        </ChildContent>
-                    </RadzenUpload>
-                </RadzenCard>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             @if (_filesWithNames != null && _filesWithNames.Any())
             {
                 <div class="mb-3">
-                    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3" class="mb-2">File selezionati</RadzenText>
+                    <h6 class="mb-2">File selezionati</h6>
                     @foreach (var fileItem in _filesWithNames)
                     {
-                        <RadzenCard class="file-list-card">
-                            <div class="row align-items-center g-1">
-                                <div class="col-md-6">
-                                    <RadzenTextBox @bind-Value="fileItem.NewName" Style="width: 100%" Placeholder="Nome file" />
-                                </div>
-                                <div class="col-md-4">
-                                    <RadzenText TextStyle="TextStyle.Body2">@fileItem.Extension</RadzenText>
-                                </div>
-                                <div class="col-md-2 text-end">
-                                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" 
-                                                  Click="@(() => RemoveFile(fileItem))" />
+                        <div class="card file-list-card">
+                            <div class="card-body">
+                                <div class="row align-items-center g-1">
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control" @bind="fileItem.NewName" placeholder="Nome file" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted">@fileItem.Extension (@FormatFileSize(fileItem.FileBytes.Length))</small>
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        <button class="btn btn-sm btn-danger" @onclick="@(() => RemoveFile(fileItem))">
+                                            <span class="material-icons" style="font-size: 16px;">delete</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </RadzenCard>
+                        </div>
                     }
                 </div>
             }

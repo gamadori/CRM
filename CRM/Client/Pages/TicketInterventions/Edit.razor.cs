@@ -14,6 +14,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.TicketInterventions
 {
@@ -53,6 +54,9 @@ namespace CRM.Client.Pages.TicketInterventions
         [Parameter]
         public Action OnClickCancel { get; set; }
 
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
+
         private TicketIntervention _ticketIntervention = new TicketIntervention();
 
         private List<Article> _products = new List<Article>();
@@ -74,6 +78,9 @@ namespace CRM.Client.Pages.TicketInterventions
         private SignaturePad _signaturePad;
 
         private bool _signatureLoaded = false; // ✅ Flag per evitare loop infiniti
+
+        // ✅ FIX: Controlla l'espansione della sezione Receipt con CSS invece di Bootstrap collapse
+        private bool _isReceiptSectionExpanded = false;
        
         protected override async Task OnInitializedAsync()
         {

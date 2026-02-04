@@ -160,32 +160,12 @@ else
                                         </div>
                                     </div>
                                 </div>
-                                @* <div class="accordion-item">
-                                    <h2 class="accordion-header" id="heading5">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-                                            Customer Signature
-                                            @if (!string.IsNullOrWhiteSpace(_ticketIntervention.CustomerSignature))
-                                            {
-                                                <span class="badge text-bg-success ms-2">Signed</span>
-                                            }
-                                        </button>
-                                    </h2>
-                                    <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="heading5">
-                                        <div class="accordion-body">
-                                            <SignaturePad @ref="_signaturePad"
-                                                          Label="Customer Signature"
-                                                          Width="600"
-                                                          Height="200"
-                                                          ShowSaveButton="false"
-                                                          OnSignatureCleared="OnSignatureCleared" />
-                                        </div>
-                                    </div>
-                                </div> *@
-
+                                
                                 <!-- ✅ NUOVO: Sezione Note Spese con Estrazione Automatica Receipt -->
                                 <div class="accordion-item">
                                     <h2 class="accordion-header" id="headingReceipt">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReceipt" aria-expanded="false" aria-controls="collapseReceipt">
+                                        <button class="accordion-button @(_isReceiptSectionExpanded ? "" : "collapsed")" type="button" 
+                                                @onclick="@(() => _isReceiptSectionExpanded = !_isReceiptSectionExpanded)">
                                             <i class="material-icons me-2">receipt_long</i>
                                             Note Spese & Scontrini
                                             @if (_ticketIntervention.ExtractedTotalAmount.HasValue)
@@ -196,9 +176,9 @@ else
                                             }
                                         </button>
                                     </h2>
-                                    <div id="collapseReceipt" class="accordion-collapse collapse" aria-labelledby="headingReceipt">
+                                    <!-- ✅ FIX: Usa CSS invece di Bootstrap collapse per evitare problemi con Blazor file references -->
+                                    <div class="accordion-body-wrapper" style="display: @(_isReceiptSectionExpanded ? "block" : "none")">
                                         <div class="accordion-body">
-                                            
                                             <ReceiptUploader OnExtractionConfirmed="OnReceiptExtractionConfirmed" />
                                             
                                             @if (_ticketIntervention.ExtractedTotalAmount.HasValue)

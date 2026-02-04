@@ -1,0 +1,81 @@
+﻿@page "/intervention/{Id:int}/Info"
+@page "/intervention/{Id:int}"
+@page "/intervention/{Id:int}/{TypeSearch:int}/{IdUser}"
+@page "/intervention/{id:int}/attachment/{IdAttachment:int}"
+@page "/intervention/{id:int}/filter/{TypeSearch:int}"
+@page "/Companies/{IdCompany:int}/Tickets/{IdTicket:int}/intervention/{Id:int}"
+@page "/Companies/{IdCompany:int}/Articles/{IdArticle:int}/Tickets/{IdTicket:int}/intervention/{Id:int}"
+@page "/Articles/{IdArticle:int}/Tickets/{IdTicket:int}/intervention/{Id:int}"
+@page "/Projects/{IdProject:int}/Tickets/{IdTicket:int}/intervention/{Id:int}"
+@page "/Tickets/{IdTicket:int}/intervention/{Id:int}"
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using static CRM.Client.Helpers.PageHelper
+
+@if (_intervention == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <PageHeader PageMode=@PageMode>
+    </PageHeader>
+     <div class="d-none d-md-block mb-3">
+        <RadzenSelectBar Size="@_buttonSize" @bind-Value="selectView" TValue="InterventionViews" Change="@((args) => Change(args, "SelectBar with single selection"))">
+            <Items>
+                <RadzenSelectBarItem Text=@Localize["Intervention Data"] Icon="format_list_bulleted" Value="InterventionViews.Intervention" />
+                <RadzenSelectBarItem Text=@Localize["Attachments"] Icon="attach_file" Value="InterventionViews.Allegati" />
+              
+            </Items>
+
+        </RadzenSelectBar>
+    </div>
+    <!-- Mobile: Dropdown -->
+    <div class="d-md-none mb-3">
+        <RadzenDropDown @bind-Value="selectView" TValue="InterventionViews"
+                        Change="@((args) => Change(args, "SelectBar with single selection"))"
+                        Data="@_viewOptions"
+                        TextProperty="Text"
+                        ValueProperty="Value"
+                        Style="width: 100%;"
+                        Placeholder="Seleziona vista..." />
+    </div>
+
+    @if (selectView == InterventionViews.Intervention)
+    {
+        if (_partialView == PartialViews.Details)
+        {
+            <Details Id="@Id" PageMode="PageModality.Child" OnClickEdit="EditIntervention" OnClickCancel="GotoIndex"></Details>
+        }
+        else
+        {
+            <Edit Id="@Id" PageMode="PageModality.Child" OnClickSave="(async () => await SaveIntervention())" OnClickCancel="CancelIntervention"></Edit>
+        }
+    }
+    else if (selectView == InterventionViews.Allegati)
+    {
+        if (_partialView == PartialViews.Index)
+        {
+            <CRM.Client.Pages.Attachments.Index OnClickEdit="IndexEditAttachment" OnClickDetails="IndexDetailsAttachment" IdParent="@Id" AttachmentType="AttachmentTypes.Service"></CRM.Client.Pages.Attachments.Index>
+        }
+        else if (_partialView == PartialViews.Edit)
+        {
+            <CRM.Client.Pages.Attachments.Edit Id="@_idAttachment" IdParent="@Id" AttachmentType=AttachmentTypes.Service OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Edit>
+        }
+        else if (_partialView == PartialViews.Details)
+        {
+            <CRM.Client.Pages.Attachments.Details Id="@_idAttachment"  OnClickCancel="CloseAttachment" 
+                                                  OnClickEdit="DetailsEditAttachment" OnClickAddFile="AddFileAttachment"></CRM.Client.Pages.Attachments.Details>
+        }
+        else if (_partialView == PartialViews.AddFiles)
+        {
+            <CRM.Client.Pages.Attachments.Upload Id="@_idAttachment.Value" OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Upload>
+        }
+
+
+    }
+    
+    
+
+}

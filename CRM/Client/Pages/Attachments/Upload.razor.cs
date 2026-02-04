@@ -8,16 +8,13 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
-using Radzen;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
-using static System.Net.WebRequestMethods;
 
 namespace CRM.Client.Pages.Attachments
 {
@@ -50,11 +47,8 @@ namespace CRM.Client.Pages.Attachments
 
         private Attachment _attachment = null;
 
-        private string _fileUrl = string.Empty;
-
         private string _errorMessage = null;
 
-        //Variabile per la Progress Bar
         private bool _waitingUpload = false;
 
         private List<FileWithName> _filesWithNames = new();
@@ -79,18 +73,57 @@ namespace CRM.Client.Pages.Attachments
                 NavigationManager.NavigateTo($"/Attachments/{Id}");
         }
 
-        void OnChange(UploadChangeEventArgs args)
+        // ✅ FIX: Usa InputFileChangeEventArgs (nativo Blazor) invece di Radzen
+        private async Task OnInputFileChange(InputFileChangeEventArgs e)
         {
-            foreach (var file in args.Files)
+            _errorMessage = null;
+
+            try
             {
-                _filesWithNames.Add(new FileWithName
+                const long maxFileSize = 20 * 1024 * 1024; // 20MB
+
+                foreach (var file in e.GetMultipleFiles(50))
                 {
-                    FileInfo = file,
-                    NewName = Path.GetFileNameWithoutExtension(file.Name),
-                    Extension = Path.GetExtension(file.Name)
-                });
+                    try
+                    {
+                        if (file.Size > maxFileSize)
+                        {
+                            _errorMessage = $"File {file.Name} troppo grande (max 20MB)";
+                            continue;
+                        }
+
+                        // ✅ CRITICO: Leggi i bytes IMMEDIATAMENTE 
+                        byte[] fileBytes;
+                        using var stream = file.OpenReadStream(maxFileSize);
+                        using var memoryStream = new MemoryStream();
+                        await stream.CopyToAsync(memoryStream);
+                        fileBytes = memoryStream.ToArray();
+
+                        _filesWithNames.Add(new FileWithName
+                        {
+                            OriginalFileName = file.Name,
+                            NewName = Path.GetFileNameWithoutExtension(file.Name),
+                            Extension = Path.GetExtension(file.Name),
+                            FileBytes = fileBytes,
+                            ContentType = file.ContentType,
+                            Size = file.Size
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        _errorMessage = $"Errore lettura file {file.Name}: {ex.Message}";
+                        Console.WriteLine($"Errore lettura file: {ex}");
+                    }
+                }
+
+                StateHasChanged();
             }
-            StateHasChanged();
+            catch (Exception ex)
+            {
+                _errorMessage = $"Errore durante la selezione dei file: {ex.Message}";
+                Console.WriteLine($"Errore OnInputFileChange: {ex}");
+                StateHasChanged();
+            }
         }
 
         private void RemoveFile(FileWithName file)
@@ -115,7 +148,7 @@ namespace CRM.Client.Pages.Attachments
                     return;
                 }
 
-                var filesToUpload = await LoadFilesAsync();
+                var filesToUpload = PrepareFilesForUpload();
                 
                 if (filesToUpload == null || !filesToUpload.Any())
                 {
@@ -155,7 +188,7 @@ namespace CRM.Client.Pages.Attachments
             }
         }
 
-        private async Task<List<AttachmentFile>> LoadFilesAsync()
+        private List<AttachmentFile> PrepareFilesForUpload()
         {
             List<AttachmentFile> items = new List<AttachmentFile>();
             
@@ -165,20 +198,16 @@ namespace CRM.Client.Pages.Attachments
                 {
                     foreach (var fileWrapper in _filesWithNames)
                     {
-                        var file = fileWrapper.FileInfo;
-                        if (file != null)
+                        if (fileWrapper.FileBytes != null)
                         {
-                            var stream = file.OpenReadStream(ConstHelper.MaxAllowSize);
-                            byte[] buf = await stream.CopyToArrayAsync();
-                            stream.Close();
-
                             var finalName = $"{fileWrapper.NewName}{fileWrapper.Extension}";
 
                             AttachmentFile f = new AttachmentFile()
                             {
-                                Content = Convert.ToBase64String(buf),
+                                Content = Convert.ToBase64String(fileWrapper.FileBytes),
                                 Name = finalName,
-                                Size = file.Size
+                                Size = fileWrapper.Size,
+                                ContentType = fileWrapper.ContentType
                             };
 
                             items.Add(f);
@@ -189,17 +218,33 @@ namespace CRM.Client.Pages.Attachments
             }
             catch (Exception ex)
             {
-                _errorMessage = $"Errore durante la lettura dei file: {ex.Message}";
+                _errorMessage = $"Errore durante la preparazione dei file: {ex.Message}";
                 Console.WriteLine(ex);
                 return null;
             }
         }
 
+        private string FormatFileSize(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB" };
+            double len = bytes;
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                len = len / 1024;
+            }
+            return $"{len:0.##} {sizes[order]}";
+        }
+
         public class FileWithName
         {
-            public Radzen.FileInfo FileInfo { get; set; }
+            public string OriginalFileName { get; set; }
             public string NewName { get; set; }
             public string Extension { get; set; }
+            public byte[] FileBytes { get; set; }
+            public string ContentType { get; set; }
+            public long Size { get; set; }
         }
     }
 }

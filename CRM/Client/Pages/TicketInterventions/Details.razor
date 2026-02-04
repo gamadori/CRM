@@ -12,6 +12,9 @@
 }
 else
 {
+    <PageHeader PageMode="@PageMode">
+    </PageHeader>
+
     @if (_message != null)
     {
 
@@ -49,7 +52,7 @@ else
                             </tr>
                             <tr>
                                 <th scope="row">
-                                    <DisplayName For="@(() => _ticketIntervention.User.NameComplete)" />
+                                    <DisplayName For="@(() => _ticketIntervention.IdUser)" />
                                 </th>
                                 <td>
                                     <span>@_ticketIntervention.User?.NameComplete</span>
@@ -64,15 +67,7 @@ else
                                     <span>@Helpers.UtilityHelper.GetDisplayName((TypesSupport)_ticketIntervention.SupportType)</span>
                                 </td>
                             </tr>
-                            <tr>
-                                <th scope="row">
-                                    <DisplayName For="@(() => _ticketIntervention.IdUser)" />
-                                </th>
-
-                                <td>
-                                    <span>@_ticketIntervention.User?.NameComplete</span>
-                                </td>
-                            </tr>
+                           
                             <tr>
                                 <th scope="row">
                                     <DisplayName For="@(() => _ticketIntervention.Minute)" />

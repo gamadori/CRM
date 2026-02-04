@@ -134,22 +134,20 @@ namespace CRM.Client.Pages.Tickets
 
         protected override async Task OnInitializedAsync()
         {
-            
+            var view = GetQueryStringParameter("view");
+
+
             await FindResponsiveness();
+            
             await LoadTicket();
             
             if (IdProject != null)
             {
                 await GetProject();
-                
-
             }
             else if (IdCompany != null)
             {
-                
                 await GetCompany();
-                
-
             }
             
             
@@ -165,11 +163,10 @@ namespace CRM.Client.Pages.Tickets
                
                 _partialView = PartialViews.Details;
             }
-            else if (IdIntervention != null)
+            else if (view != null && view.Any())
             {
                 selectView = TicketViews.Interventi;
-                _idIntervention = IdIntervention;
-                _partialView = PartialViews.Details;
+                _partialView = PartialViews.Index;
             }
 
             _pageHeader = await HeaderService.Create();
@@ -357,11 +354,13 @@ namespace CRM.Client.Pages.Tickets
 
         private void InterventionDetails(int id)
         {
-            selectView = TicketViews.Interventi;
-            _partialView = PartialViews.Details;
-            _idIntervention = id;
-
-            StateHasChanged();
+            var uri = new Uri(NavigationManager.Uri);
+            var url = uri.GetLeftPart(UriPartial.Path);
+           
+            url = System.Text.RegularExpressions.Regex.Replace(url, "info", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            url = url.TrimEnd('/');
+            NavigationManager.NavigateTo($"{url}/intervention/{id}");
+            
         }
 
 
@@ -384,6 +383,8 @@ namespace CRM.Client.Pages.Tickets
             }
 
             StateHasChanged();
+           
+            
         }
         #endregion
 
@@ -485,6 +486,13 @@ namespace CRM.Client.Pages.Tickets
 
             if (_isMobile)
                 _buttonSize = ButtonSize.Small;
+        }
+
+        private string GetQueryStringParameter(string key)
+        {
+            var uri = new Uri(NavigationManager.Uri);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            return query[key];
         }
 
     }
