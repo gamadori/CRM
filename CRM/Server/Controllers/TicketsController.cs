@@ -13,7 +13,6 @@ using CRM.Server.Extensions;
 using CRM.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Linq.Dynamic.Core;
-using Syncfusion.Blazor.Data;
 using CRM.Shared.Helper;
 using CRM.Server.Helpers;
 using Microsoft.CodeAnalysis.CSharp;
@@ -27,6 +26,8 @@ using SelectPdf;
 using System.Runtime.Serialization.Formatters.Binary;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Configuration;
+using CRM.Server.Models;
+using CRM.Shared.DTOs;
 
 namespace CRM.Server.Controllers
 {
@@ -328,35 +329,7 @@ namespace CRM.Server.Controllers
             }
         }
 
-        //[HttpGet("Details/{id}")]
-        //public async Task<ActionResult<Ticket>> GetTicketDetails(int id)
-        //{
-
-        //    var ticket = await _context.Tickets.Include(x => x.Company).Include(x => x.TicketType)
-        //        .Include(x => x.Article).ThenInclude(x => x.Product).Where(x => x.Id == id).FirstOrDefaultAsync();
-
-
-        //    if (ticket == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    else if (await _permits.CanGetObject(ticket.IdCompany))
-        //    {
-        //        await TicketSetState(ticket);
-
-        //        return ticket;
-
-
-
-        //    }
-        //    else
-        //    {
-        //        await _logEventService.RegisterAsync(nameof(TicketsController), nameof(GetTicket), LogEvent.EventsTypes.Error, GlobalMessages.PermitsErrors);
-        //        return BadRequest();
-        //    }
-
-
-        //}
+        
         [HttpGet("{id}")]
         public async Task<ActionResult<Ticket>> GetTicket(int id)
         {
@@ -420,6 +393,7 @@ namespace CRM.Server.Controllers
                 UserClosed = (x.UserClosed != null) ? x.UserClosed.NameComplete : "",
                 MinuteWork = x.TicketInterventions.Sum(y => y.Minute),
                 Description = x.Description,
+                IdType = x.IdType,
                 DescType = (x.TicketType.Languages.Where(x => x.IdLanguage == idLang).Any()) ? x.TicketType.Languages.Where(x => x.IdLanguage == idLang).FirstOrDefault().Name: "",
                 TicketType = x.TicketType,
                 ContactName = x.Contact != null ? x.Contact.NameComplete : "",
@@ -599,7 +573,7 @@ namespace CRM.Server.Controllers
             return await _permits.GetUsersCanAssignTicket(id);
         }
 
-        [HttpGet("TypeUsersToAssign/{id}")]
+        [HttpGet("TypeUsersToAssign/{idType}")]
         public async Task<List<ApplicationUser>> TicketTypeGetUserToAssign(int idType)
         {
             return await _permits.GetUsersCanAssignTicketType(idType);
@@ -2372,12 +2346,8 @@ namespace CRM.Server.Controllers
 
         
     }
+
    
-    public class AssignUsersRequest
-    {
-        public int TicketId { get; set; }
-        public List<string> UserIds { get; set; } = new List<string>();
-    }
 
     /// <summary>
     /// ✅ NUOVO: Model per richiesta subscription push

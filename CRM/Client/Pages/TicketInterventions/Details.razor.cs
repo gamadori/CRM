@@ -24,8 +24,8 @@ namespace CRM.Client.Pages.TicketInterventions
     public partial class Details : ComponentBase
     {
         
-        [Inject]
-        private IBaseRestService<TicketIntervention, TicketInterventionFilter, int> _service { get; set; }
+        //[Inject]
+        //private IBaseRestService<TicketIntervention, TicketInterventionFilter, int> _service { get; set; }
 
         [Inject]
         private HttpClient _httpClient { get; set; }
@@ -41,6 +41,13 @@ namespace CRM.Client.Pages.TicketInterventions
 
         [Inject]
         DialogService DialogService { get; set; }
+
+        [Inject]
+        ITicketInterventionsService Service { get; set; }
+
+        // ✅ NUOVO: Inject UserService per caricare i dettagli utenti
+        [Inject]
+        private IBaseRestService<ApplicationUser, UsersFilterModel, string> _userService { get; set; }
 
         [Parameter]
         public int? Id { get; set; }
@@ -75,6 +82,10 @@ namespace CRM.Client.Pages.TicketInterventions
 
         private List<TicketInterventionTimeModel> _interventionTimes = new List<TicketInterventionTimeModel>();
 
+        // ✅ NUOVO: Lista utenti assegnati all'intervento
+        private List<ApplicationUser> _assignedUsers = new List<ApplicationUser>();
+        private bool _isLoadingUsers = false;
+
         private string _typeMessage;
         private string _message = null;
 
@@ -98,10 +109,14 @@ namespace CRM.Client.Pages.TicketInterventions
 
                 if (Id != null)
                 {
-                    _ticketIntervention = await _service.Get(Id.Value);
+                    _ticketIntervention = await Service.GetItemAsync(Id.Value);
+                    //_ticketIntervention = await _service.Get(Id.Value);
                     
                     // ✅ Carica gli orari di lavoro/viaggio
                     await LoadInterventionTimes();
+
+                    // ✅ NUOVO: Carica gli utenti assegnati
+                    await LoadAssignedUsers();
                 }
                 else
                     _ticketIntervention = new TicketIntervention();
@@ -137,6 +152,60 @@ namespace CRM.Client.Pages.TicketInterventions
             }
         }
 
+        /// <summary>
+        /// ✅ NUOVO: Carica gli utenti assegnati all'intervento
+        /// </summary>
+        private async Task LoadAssignedUsers()
+        {
+            try
+            {
+                _isLoadingUsers = true;
+                StateHasChanged();
+
+                var userIds = await _httpClient.GetFromJsonAsync<List<string>>($"api/TicketInterventionUsers/intervention/{Id}/assigned-users");
+                
+                if (userIds != null && userIds.Any())
+                {
+                    // Carica i dettagli degli utenti
+                    _assignedUsers.Clear();
+                    foreach (var userId in userIds)
+                    {
+                        var user = await _userService.Get(userId);
+                        if (user != null)
+                        {
+                            _assignedUsers.Add(user);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento utenti assegnati: {ex.Message}");
+            }
+            finally
+            {
+                _isLoadingUsers = false;
+                StateHasChanged();
+            }
+        }
+
+        /// <summary>
+        /// Ottieni iniziali dal nome completo
+        /// </summary>
+        private string GetUserInitials(string fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+                return "?";
+
+            var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0)
+                return "?";
+
+            if (parts.Length == 1)
+                return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+
+            return (parts[0][0].ToString() + parts[^1][0].ToString()).ToUpper();
+        }
 
         private void Edit()
         {

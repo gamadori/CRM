@@ -1,28 +1,29 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using CRM.Client.Helpers;
+using CRM.Client.Services;
 using CRM.Server.Data;
-using CRM.Shared;
-using CRM.Server.Services;
-using Newtonsoft.Json;
-using CRM.Server.Helpers;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using System.Linq.Dynamic.Core;
-using System.IO;
-using Microsoft.AspNetCore.Hosting;
-using System.Data;
-using CRM.Shared.Extensions;
-using SelectPdf;
-using CRM.Client.Helpers;
 using CRM.Server.Extensions;
+using CRM.Server.Helpers;
+using CRM.Server.Models;
+using CRM.Server.Services;
+using CRM.Shared;
+using CRM.Shared.Extensions;
 using CRM.Shared.Resources.Models;
 using Microsoft.AspNetCore.Authorization;
-using CRM.Client.Services;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client; // ✅ AGGIUNTO
+using Newtonsoft.Json;
+using SelectPdf;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Linq.Dynamic.Core;
+using System.Threading.Tasks;
 
 namespace CRM.Server.Controllers
 {
@@ -66,20 +67,22 @@ namespace CRM.Server.Controllers
                 if (items == null)
                     return new List<TicketIntervention>();
 
-                var list = await items.ToListAsync();
-
-                foreach (var item in list)
+                
+                foreach (var item in items)
                 {
                     int? idCompany = await TicketGetIdCompany(item.IdTicket);
 
                     if (idCompany != null)
                     {
+                       
+                        var mainUserId = item.AssignedUsers.FirstOrDefault()?.IdUser;
                         item.Permits = await _permitsService.ObjectPermits(idCompany, item.IdUser);
-                        item.UserName = (await _context.Users.FindAsync(item.IdUser))?.UserName;
+                        
+                       
                     }
                 }
 
-                return list;
+                return Ok(items);
             }
             catch (Exception ex)
             {
@@ -107,7 +110,10 @@ namespace CRM.Server.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<TicketIntervention>> GetTicketIntervention(int id)
         {
-            var ticketIntervention = await _context.TicketsInterventions.Include(x=>x.TicketInterventionsTypes).Where(x => x.Id == id).FirstOrDefaultAsync();
+            var ticketIntervention = await _context.TicketsInterventions
+                .Include(x => x.TicketInterventionsTypes)
+                .Where(x => x.Id == id)
+                .FirstOrDefaultAsync();
 
             if (ticketIntervention == null)
             {
@@ -115,7 +121,6 @@ namespace CRM.Server.Controllers
             }
             else if (!await _permitsService.CanGetObject(await TicketGetIdCompany(ticketIntervention.IdTicket)))
             {
-
                 return BadRequest();
             }
 
@@ -125,12 +130,35 @@ namespace CRM.Server.Controllers
             }
 
             ticketIntervention.AttachmentExist = ExistReport(id);
+          
             ticketIntervention.Permits = await _permitsService.ObjectPermits(ticketIntervention.Ticket.IdCompany, ticketIntervention.IdUser);
+            
+            ticketIntervention.InterventionArticles = await _context.TicketInterventionArticles
+                .Where(x => x.IdTicketIntervention == id)
+                .Select(x => new TicketInterventionArticleModel()
+                {
+                    Id = Guid.NewGuid(),
+                    IdArticle = x.IdArticle,
+                    IdProduct = x.IdProduct,
+                    Description = x.Description,
+                    IdTicketIntervention = x.IdTicketIntervention,
+                    IdLink = x.Id,
+                    Product = x.Product.Name,
+                    Article = x.Article.SerialNumber
+                }).ToListAsync();
+
+            ticketIntervention.Users = await _context.TicketInterventionUser
+                .Where(x => x.IdIntervention == id)
+                .Select(x => new UserModel
+                {
+                    Id = x.IdUser,
+                    Name = x.User.Name,
+                    Surname = x.User.Surname,
+                    Email = x.User.Email
 
 
-            ticketIntervention.InterventionArticles = await _context.TicketInterventionArticles.Where(x=>x.IdTicketIntervention == id).Select(x=> new TicketInterventionArticleModel() {Id = Guid.NewGuid(), IdArticle = x.IdArticle, IdProduct = x.IdProduct, 
-                Description = x.Description, IdTicketIntervention = x.IdTicketIntervention, IdLink = x.Id, Product =  x.Product.Name, Article =  x.Article.SerialNumber
-            }).ToListAsync();
+                    // Add other properties as needed
+                }).ToListAsync();
 
             return ticketIntervention;
         }
@@ -213,7 +241,8 @@ namespace CRM.Server.Controllers
             try
             {
 
-                
+                ticketIntervention.IdUser = await _permitsService.IdUser();
+
                 _context.TicketsInterventions.Add(ticketIntervention);
                 await _context.SaveChangesAsync();
                 await InterventionType(ticketIntervention.Id, ticketIntervention.InterventionsTypesId);
@@ -244,6 +273,113 @@ namespace CRM.Server.Controllers
             return NoContent();
         }
 
+        // ==========================================
+        // POST: api/Tickets/{id}/assign-users
+        // Assegna multipli utenti a un ticket
+        // ==========================================
+        [HttpPost("{id}/assign-users")]
+        public async Task<IActionResult> AssignUsers(int id, [FromBody] List<string> userIds)
+        {
+            try
+            {
+                var ticket = await _context.TicketsInterventions
+                    .Include(t => t.AssignedUsers)
+                    .FirstOrDefaultAsync(t => t.Id == id);
+
+                if (ticket == null)
+                {
+                    return NotFound($"Ticket con ID {id} non trovato");
+                }
+
+                var currentUserId = await _permitsService.IdUser();
+
+                // ✅ NUOVO: Memorizza utenti attualmente assegnati (PRIMA della rimozione)
+                var previouslyAssignedUserIds = ticket.AssignedUsers
+                    .Select(au => au.IdUser)
+                    .ToHashSet();
+
+                // Rimuovi tutte le assegnazioni esistenti
+                _context.TicketInterventionUser.RemoveRange(ticket.AssignedUsers);
+
+                // Nuovo set di utenti assegnati
+                var newlyAssignedUserIds = new HashSet<string>();
+
+                // ✅ NUOVO: Gestisci il caso di lista vuota (rimozione totale assegnazioni)
+                if (userIds != null && userIds.Any())
+                {
+                    // Aggiungi le nuove assegnazioni
+                    foreach (var userId in userIds)
+                    {
+                        // Verifica che l'utente esista
+                        var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+                        if (!userExists)
+                        {
+                            return BadRequest($"Utente con ID {userId} non trovato");
+                        }
+
+                        var assignment = new TicketInterventionUser
+                        {
+                            IdIntervention = id,                           
+                            IdUser = userId
+                           
+                        };
+
+                        _context.TicketInterventionUser.Add(assignment);
+                        newlyAssignedUserIds.Add(userId);
+                    }
+                    
+                }
+                else
+                {
+                    // ✅ CASO LISTA VUOTA: Rimuovi tutte le assegnazioni
+                    ticket.AssignedUsers = null;
+
+                    await _logEventService.RegisterAsync(
+                        nameof(TicketInterventionsController),
+                        nameof(AssignUsers),
+                        LogEvent.EventsTypes.Info,
+                        $"Ticket #{id}: tutte le assegnazioni rimosse da utente {currentUserId}");
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Log operazione
+                var action = userIds?.Any() == true
+                    ? $"Assegnati {userIds.Count} utenti"
+                    : "Rimosse tutte le assegnazioni";
+
+                await _logEventService.RegisterAsync(
+                    nameof(TicketInterventionsController),
+                    nameof(AssignUsers),
+                    LogEvent.EventsTypes.Info,
+                    $"Ticket #{id}: {action}");
+
+                // ✅ NUOVO: Calcola utenti aggiunti e rimossi
+                var addedUsers = newlyAssignedUserIds.Except(previouslyAssignedUserIds).ToList();
+                var removedUsers = previouslyAssignedUserIds.Except(newlyAssignedUserIds).ToList();
+
+
+                return Ok(new
+                {
+                    message = userIds?.Any() == true
+                        ? "Utenti assegnati con successo"
+                        : "Tutte le assegnazioni rimosse con successo",
+                    assignedCount = userIds?.Count ?? 0,
+                    addedCount = addedUsers.Count,
+                    removedCount = removedUsers.Count
+                });
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController),
+                    nameof(AssignUsers),
+                    LogEvent.EventsTypes.Error,
+                    $"Errore assegnazione utenti ticket #{id}: {ex.Message}");
+
+                return StatusCode(500, $"Errore interno: {ex.Message}");
+            }
+        }
         [HttpGet("Report/{id}")]
         public async Task<bool> CreateDocPdf(int id, [FromQuery] string? languageCode = null)
         {
@@ -702,7 +838,7 @@ namespace CRM.Server.Controllers
                             <p style='margin: 0;'><strong>Dettagli Intervento:</strong></p>
                             <ul style='margin: 10px 0;'>
                                 <li>Data: {intervention.StartDateTime:dd/MM/yyyy}</li>
-                                <li>Tecnico: {intervention.User?.NameComplete}</li>
+                                <li>Tecnici: {string.Join(", ", intervention.AssignedUsers.Select(u => u.User.NameComplete))}</li>
                             </ul>
                         </div>
 
@@ -1016,7 +1152,7 @@ namespace CRM.Server.Controllers
                             <p style='margin: 0;'><strong>Dettagli Intervento:</strong></p>
                             <ul style='margin: 10px 0;'>
                                 <li>Data: {intervention.StartDateTime:dd/MM/yyyy}</li>
-                                <li>Tecnico: {intervention.User?.NameComplete}</li>
+                                <li>Tecnici: {string.Join(", ", intervention.AssignedUsers.Select(u => u.User.NameComplete))}</li>
                             </ul>
                         </div>
 
@@ -1107,7 +1243,7 @@ namespace CRM.Server.Controllers
             try
             {
                 var intervention = await _context.TicketsInterventions
-                    .Include(x => x.User)
+                    .Include(x => x.AssignedUsers)
                     .FirstOrDefaultAsync(x => x.Id == id);
 
                 if (intervention == null)

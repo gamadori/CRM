@@ -74,5 +74,7 @@ namespace CRM.Shared
 
         public int IdLink { get; set; }
 
+        
+
     }
 }

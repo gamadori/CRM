@@ -15,7 +15,6 @@ using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
-using Syncfusion.Licensing;
 using System.Security.Cryptography.X509Certificates;
 using static System.Formats.Asn1.AsnWriter;
 
@@ -122,6 +121,7 @@ builder.Services.AddScoped<ILogosService, LogosService>();
 builder.Services.AddScoped<ITicketStatesService, TicketStatesService>();
 
 
+
 // ✅ AGGIUNTO: Servizio per generare PDF dei ticket
 builder.Services.AddScoped<ITicketPdfGenerator, TicketPdfGenerator>();
 
@@ -138,6 +138,9 @@ builder.Services.AddSingleton<WTelegramService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<WTelegramService>());
 
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
+
+// ✅ NUOVO: Servizio per gestione feedback ticket
+builder.Services.AddScoped<CRM.Shared.Services.ITicketFeedbackService, TicketFeedbackService>();
 
 builder.Services.AddCors(options =>
 {

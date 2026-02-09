@@ -20,22 +20,50 @@ else
                     <BlazoringComponents.Validators.FluentValidationValidator ValidatorType="typeof(Validators.TicketInterventionValidator)" />
                     <DataAnnotationsValidator />
                     <ValidationSummary />
+                    
+                    <!-- ✅ NUOVO: Sezione Utenti Assegnati -->
                     <RadzenRow>
-                        <RadzenColumn Size="12" SizeSM="12">
-                            <RadzenStack>
-                                <RedGDropDownGrid TItem="ApplicationUser" TValue="string" ValueProperty="Id" TextProperty="NameComplete"
-                                              @bind-Value="@_ticketIntervention.IdUser" For="@(() => _ticketIntervention.IdUser)"
-                                            Data=@_users AllowFiltering="true">
-                                    <ChildColumns>
-                                        <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
-                                        <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
-
-                                    </ChildColumns>
-                                 </RedGDropDownGrid>
-
-                            </RadzenStack>
+                        <RadzenColumn Size="12">
+                            <RadzenFieldset Text="Utenti Assegnati">
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    @if (_selectedUserIds != null && _selectedUserIds.Any())
+                                    {
+                                        @foreach (var userId in _selectedUserIds)
+                                        {
+                                            var user = _users.FirstOrDefault(u => u.Id == userId);
+                                            if (user != null)
+                                            {
+                                                var isMain = _selectedUserIds.ToList().IndexOf(userId) == 0;
+                                                <div class="badge bg-@(isMain ? "primary" : "secondary") p-2">
+                                                    <i class="material-icons" style="font-size: 16px; vertical-align: middle;">person</i>
+                                                    @user.NameComplete
+                                                    @if (isMain)
+                                                    {
+                                                        <span class="ms-1" title="Utente principale">★</span>
+                                                    }
+                                                </div>
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <em class="text-muted">Nessun utente selezionato</em>
+                                    }
+                                </div>
+                                <button type="button" 
+                                        class="btn btn-sm btn-outline-primary" 
+                                        @onclick="OpenAssignUsersDialog">
+                                    <i class="material-icons" style="font-size: 16px; vertical-align: middle;">group_add</i>
+                                    Seleziona Utenti (@(_selectedUserIds?.Count ?? 0))
+                                </button>
+                                <small class="text-muted d-block mt-2">
+                                    <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
+                                    Solo utenti assegnati al ticket possono essere selezionati. Il primo utente è considerato il principale.
+                                </small>
+                            </RadzenFieldset>
                         </RadzenColumn>
                     </RadzenRow>
+
                     <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="4">
                             <RadzenStack>

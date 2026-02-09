@@ -93,9 +93,11 @@ namespace CRM.Server.Controllers
 
                  
                 if (args.IdTicketType != null && args.IdTicketType > 0)
-                    users = users.Where(x => x.TicketTypes.Where(y => y.Id == args.IdTicketType).Any());
+                    users = users.Where(x => x.TicketTypes.Where(y => y.Id == args.IdTicketType).Any() || x.Groups.Where(g=>g.TicketTypes.Where(t=>t.Id == args.IdTicketType).Any()).Any());
 
-                
+                if (args.IdTicketAssigned != null && args.IdTicketAssigned > 0)
+                    users = users.Where(x => x.UserAssignedTickets.Where(t => t.Id == args.IdTicketAssigned).Any());
+
                 if (args.NameComplete != null && args.NameComplete.Length > 0)
                 {
                    

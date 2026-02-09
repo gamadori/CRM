@@ -35,6 +35,14 @@ namespace CRM.Client.Pages.TicketInterventions
         private RadzenDataGrid<TicketInterventionTimeModel> _timesGrid;
         private bool _isLoading = false;
 
+        // Contatore per ID temporanei negativi (per elementi non ancora salvati)
+        private int _tempIdCounter = -1;
+
+        /// <summary>
+        /// Indica se il componente lavora in modalità "in memoria" (nuovo intervento non ancora salvato)
+        /// </summary>
+        private bool IsInMemoryMode => IdIntervention <= 0;
+
         // Lista dei tipi di intervento per il dropdown
         private List<InterventionTimeType> _timeTypes = Enum.GetValues(typeof(InterventionTimeType)).Cast<InterventionTimeType>().ToList();
 
@@ -46,7 +54,7 @@ namespace CRM.Client.Pages.TicketInterventions
 
         protected override async Task OnInitializedAsync()
         {
-            if (IdIntervention > 0)
+            if (!IsInMemoryMode)
             {
                 await LoadTimes();
             }
@@ -158,6 +166,18 @@ namespace CRM.Client.Pages.TicketInterventions
         /// </summary>
         private async Task CreateTime(TicketInterventionTimeModel item)
         {
+            if (IsInMemoryMode)
+            {
+                // Modalità in memoria: aggiungi alla lista locale con ID temporaneo
+                item.Id = _tempIdCounter--;
+                item.IdTicketIntervention = 0;
+                Times.Add(item);
+                await TimesChanged.InvokeAsync(Times);
+                StateHasChanged();
+                return;
+            }
+
+            // Modalità persistente: salva su API
             try
             {
                 _isLoading = true;
@@ -221,6 +241,25 @@ namespace CRM.Client.Pages.TicketInterventions
         /// </summary>
         private async Task UpdateTime(TicketInterventionTimeModel item)
         {
+            if (IsInMemoryMode)
+            {
+                // Modalità in memoria: aggiorna nella lista locale
+                var existing = Times.FirstOrDefault(t => t.Id == item.Id);
+                if (existing != null)
+                {
+                    existing.StartDateTime = item.StartDateTime;
+                    existing.EndDateTime = item.EndDateTime;
+                    existing.TimeType = item.TimeType;
+                    existing.Notes = item.Notes;
+                    existing.IsBillable = item.IsBillable;
+                    existing.TravelKilometers = item.TravelKilometers;
+                }
+                await TimesChanged.InvokeAsync(Times);
+                StateHasChanged();
+                return;
+            }
+
+            // Modalità persistente: aggiorna su API
             try
             {
                 _isLoading = true;
@@ -256,6 +295,16 @@ namespace CRM.Client.Pages.TicketInterventions
         {
             if (await DialogService.Confirm($"Eliminare il periodo dalle {item.StartDateTime:HH:mm} alle {item.EndDateTime:HH:mm}?") == true)
             {
+                if (IsInMemoryMode)
+                {
+                    // Modalità in memoria: rimuovi dalla lista locale
+                    Times.Remove(item);
+                    await TimesChanged.InvokeAsync(Times);
+                    StateHasChanged();
+                    return;
+                }
+
+                // Modalità persistente: elimina da API
                 try
                 {
                     _isLoading = true;

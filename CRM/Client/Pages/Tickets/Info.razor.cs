@@ -136,6 +136,11 @@ namespace CRM.Client.Pages.Tickets
         {
             var view = GetQueryStringParameter("view");
 
+            //if (GetSubSet() == "intervention")
+            //{
+            //    selectView = TicketViews.Interventi;
+            //    _partialView = PartialViews.Index;
+            //}
 
             await FindResponsiveness();
             
@@ -358,8 +363,14 @@ namespace CRM.Client.Pages.Tickets
             var url = uri.GetLeftPart(UriPartial.Path);
            
             url = System.Text.RegularExpressions.Regex.Replace(url, "info", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            
             url = url.TrimEnd('/');
-            NavigationManager.NavigateTo($"{url}/intervention/{id}");
+            if (!url.Contains("interventions"))
+            {
+                url += "/interventions";
+            }
+
+            NavigationManager.NavigateTo($"{url}/{id}");
             
         }
 
@@ -495,5 +506,15 @@ namespace CRM.Client.Pages.Tickets
             return query[key];
         }
 
+        private string GetSubSet()
+        {
+            var uri = new Uri(NavigationManager.Uri);
+            var segments = uri.Segments.Select(s => s.Trim('/')).Where(s => !string.IsNullOrEmpty(s)).ToArray();
+
+            if (segments.Length == 0)
+                return string.Empty;
+            else
+                return segments[segments.Length - 1];
+        }
     }
 }

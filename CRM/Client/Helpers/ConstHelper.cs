@@ -74,6 +74,8 @@ namespace CRM.Client.Helpers
 
         public static string TicketsInterventionsPath = "api/TicketInterventions";
 
+        public static string TicketInterventionUsersPath = "api/TicketInterventionUsers";
+
         public static string TicketInterventionsTypesPath = "api/TicketInterventionsTypes";
 
         public static string ContractTypeTicketTypesPath = "api/ContractTypeTicketTypes";
@@ -180,6 +182,8 @@ namespace CRM.Client.Helpers
         public static string ClientSettingsPath = "Settings"; 
         
         public static string ClientTicketsPath = "Tickets";
+
+        
 
         public static string ClientLogEventsPath = "Settings/LogEvents";
         public static int PageSize = 10;

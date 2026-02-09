@@ -2,7 +2,9 @@
 using CRM.Client.Pages.Groups;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using CRM.Shared.Models;
+using FluentValidation;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
@@ -14,6 +16,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace CRM.Client.Pages.Tickets
 {
@@ -23,10 +26,14 @@ namespace CRM.Client.Pages.Tickets
         private NavigationManager NavigationManager { get; set; }
 
         [Inject]
-        private ITicketService _service { get; set; }
+        private ITicketService TicketService { get; set; }
 
         [Inject]
-        private IBaseRestService<ApplicationUser, UsersFilterModel, string> _usersService { get; set; }
+        private ITicketInterventionUsersService InterventionsUserService { get; set; }
+
+
+        [Inject]
+        private IBaseRestService<ApplicationUser, UsersFilterModel, string> UsersService { get; set; }
 
         [Inject]
         DialogService DialogService { get; set; }
@@ -47,9 +54,14 @@ namespace CRM.Client.Pages.Tickets
         [Parameter]
         public int Id { get; set; }
 
-        // ✅ NUOVO: Parametri opzionali per nuovo ticket
         [Parameter]
-        public Ticket TicketData { get; set; }
+        public int? TicketId { get; set; }
+
+        [Parameter]
+        public int? TicketTypeId { get; set; }
+
+        [Parameter]
+        public DateTime? Date { get; set; }
 
         [Parameter]
         public HashSet<string> PreselectedUserIds { get; set; }
@@ -60,9 +72,14 @@ namespace CRM.Client.Pages.Tickets
         [Parameter]
         public EventCallback OnClose { get; set; }
 
+        // ✅ NUOVO: Flag per distinguere se viene usato per Interventi
+        [Parameter]
+        public bool IsForIntervention { get; set; } = false;
+
         private List<ApplicationUser> _users = new List<ApplicationUser>();
         private List<ApplicationUser> _filteredUsers = new List<ApplicationUser>();
-        private Ticket _ticket;
+        private List<ApplicationUser> _ticketAssignedUsers = new List<ApplicationUser>(); // ✅ Utenti assegnati al ticket
+
         private HashSet<string> _selectedUserIds = new HashSet<string>();
         private string _searchQuery = string.Empty;
 
@@ -70,42 +87,75 @@ namespace CRM.Client.Pages.Tickets
         private Dictionary<string, UserWorkloadInfo> _userWorkloadMap = new();
         private bool _isLoadingWorkload = false;
         
-        // ✅ NUOVO: Flag per distinguere nuovo ticket da ticket esistente
-        private bool _isNewTicket => Id == 0 || _ticket?.Id == 0;
+        private bool _isLoadingPage = true;
+
 
         protected override async Task OnInitializedAsync()
         {
-            // ✅ FIX: Gestisci caso nuovo ticket vs ticket esistente
-            if (_isNewTicket)
+            if (PreselectedUserIds != null)
             {
-                // Nuovo ticket: usa i dati passati come parametri
-                _ticket = TicketData ?? new Ticket { Date = DateTime.Today };
-                
-                // Usa gli utenti preselezionati se forniti
-                if (PreselectedUserIds != null && PreselectedUserIds.Any())
-                {
-                    _selectedUserIds = new HashSet<string>(PreselectedUserIds);
-                }
+                _selectedUserIds = PreselectedUserIds != null ? new HashSet<string>(PreselectedUserIds) : new HashSet<string>();
             }
             else
-            {
-                // Ticket esistente: carica dal server
-                await LoadData();
-            }
+                await LoadAssignedUsers();
+
+            await LoadUserAsync();
             
-            await LoadUsers();
+            _filteredUsers = _users.Where(u => !_selectedUserIds.Contains(u.Id)).ToList();
             
-            // ✅ NUOVO: Carica il workload dopo aver caricato gli utenti
             await LoadUserWorkload();
+
+            _isLoadingPage = false;
         }
 
         private async Task LoadData()
         {
-            _ticket = await _service.Get(Id);
             
             // ✅ NUOVO: Carica gli utenti già assegnati
             await LoadAssignedUsers();
         }
+
+       
+
+        private async Task LoadUserAsync()
+        {
+            if (IsForIntervention)
+            {
+                // Carica tutti gli utenti assegnati al ticket
+                await LoadUserTicketAssigned();
+            }
+            else
+            {
+                // Carica tutti gli utenti che possono essere assegnati al tipo di ticket
+                await LoadUserTicketToAssign();
+            }
+            _filteredUsers = _users.Where(u => !_selectedUserIds.Contains(u.Id)).ToList();
+        }
+
+        private async Task LoadUserTicketToAssign()
+        {
+            UsersFilterModel request = new UsersFilterModel
+            {
+                TicketTypeToAssign = TicketTypeId,
+                PageSize = 0
+            };
+
+            var response = await UsersService.Get(request);
+            _users = response.Items.ToList();
+        }
+
+        private async Task LoadUserTicketAssigned()
+        {
+            UsersFilterModel request = new UsersFilterModel
+            {
+                IdTicketAssigned = TicketId,
+                PageSize = 0
+            };
+
+            var response = await UsersService.Get(request);
+            _users = response.Items.ToList();
+        }
+
 
         /// <summary>
         /// Carica gli utenti già assegnati al ticket
@@ -114,16 +164,13 @@ namespace CRM.Client.Pages.Tickets
         {
             try
             {
-                var response = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{Id}/assigned-users");
-                if (response != null)
+                if (IsForIntervention)
                 {
-                    _selectedUserIds = new HashSet<string>(response);
+                    _selectedUserIds = await InterventionsUserService.LoadAssignedUsers(Id);
                 }
-
-                // Aggiungi anche l'utente principale se presente (retrocompatibilità)
-                if (!string.IsNullOrEmpty(_ticket.IdUserAssigned))
+                else
                 {
-                    _selectedUserIds.Add(_ticket.IdUserAssigned);
+                    _selectedUserIds = await TicketService.LoadAssignedUsers(Id);
                 }
             }
             catch (Exception ex)
@@ -133,41 +180,35 @@ namespace CRM.Client.Pages.Tickets
         }
 
         /// <summary>
-        /// Carica tutti gli utenti disponibili per l'assegnazione
+        /// ✅ NUOVO: Carica gli utenti assegnati al ticket (per filtrare gli interventi)
         /// </summary>
-        private async Task LoadUsers()
+        private async Task LoadTicketAssignedUsers()
         {
             try
             {
-                UsersFilterModel request = new UsersFilterModel
+                var ticketId =  Id;
+                if (ticketId == 0) return;
+
+                var response = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{ticketId}/assigned-users");
+                if (response != null && response.Any())
                 {
-                    IdTicketToAssign = _isNewTicket ? null : (int?)Id,
-                    TicketTypeToAssign = _ticket?.IdType,
-                    PageSize = 0
-                };
-
-                var response = await _usersService.Get(request);
-                _users = response.Items.ToList();
-                
-                // ✅ FIX: Inizializza lista filtrata escludendo utenti già selezionati
-                _filteredUsers = _users
-                    .Where(u => !_selectedUserIds.Contains(u.Id))
-                    .ToList();
-
-                StateHasChanged();
+                    _ticketAssignedUsers = _users.Where(u => response.Contains(u.Id)).ToList();
+                }
+               
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Errore caricamento utenti: {ex.Message}");
+                Console.WriteLine($"Errore caricamento utenti ticket: {ex.Message}");
             }
         }
+
 
         /// <summary>
         /// ✅ NUOVO: Carica il carico di lavoro (workload) di ogni utente per la data del ticket
         /// </summary>
         private async Task LoadUserWorkload()
         {
-            if (_ticket?.Date == null)
+            if (Date == null)
             {
                 Console.WriteLine("LoadUserWorkload: Ticket.Date is null, skip workload calculation");
                 return;
@@ -178,7 +219,7 @@ namespace CRM.Client.Pages.Tickets
                 _isLoadingWorkload = true;
                 StateHasChanged();
 
-                var date = _ticket.Date.Value.Date;
+                var date = Date.Value.Date;
                 var url = $"api/Tickets/user-workload?date={date:yyyy-MM-dd}";
 
                 Console.WriteLine($"LoadUserWorkload: Fetching from {url}");
@@ -301,10 +342,11 @@ namespace CRM.Client.Pages.Tickets
         /// </summary>
         protected async Task HandleValidSubmit()
         {
+            HttpResponseMessage response;
             try
             {
-                // ✅ FIX: Per nuovo ticket, restituisci solo gli utenti selezionati senza salvare
-                if (_isNewTicket)
+                // ✅ FIX: Per nuovo ticket/intervento, restituisci solo gli utenti selezionati senza salvare
+                if (Id == 0)
                 {
                     // Restituisci gli utenti selezionati tramite callback
                     if (OnUsersSelected.HasDelegate)
@@ -316,15 +358,27 @@ namespace CRM.Client.Pages.Tickets
                     return;
                 }
 
-                // ✅ Ticket esistente: salva su server come prima
-                var assignmentData = new
+                // ✅ Ticket/Intervento esistente: salva su server come prima
+                var assignmentData = new AssignUsersRequest
                 {
-                    ticketId = Id,
-                    userIds = _selectedUserIds.ToList()
+                    TicketId = Id,
+                    UserIds = _selectedUserIds.ToList()
                 };
+                
+                if (IsForIntervention)
+                {
+                    response = await InterventionsUserService.AssignUsersToIntervention(Id, assignmentData);
 
-                var response = await HttpClient.PostAsJsonAsync($"api/Tickets/{Id}/assign-users", assignmentData);
+                    //response = await HttpClient.PostAsJsonAsync($"api/TicketInterventionUsers/intervention/{Id}/assign-users", assignmentData);
+                }
+                else
+                {
+                    
+                    response = await TicketService.AssignUsers(Id, assignmentData);
 
+                    //response = await HttpClient.PostAsJsonAsync($"api/Tickets/{Id}/assign-users", assignmentData);
+                }
+                
                 if (response.IsSuccessStatusCode)
                 {
                     // ✅ Messaggio diverso in base al numero di utenti
@@ -344,15 +398,19 @@ namespace CRM.Client.Pages.Tickets
                     if (OnClose.HasDelegate)
                         await OnClose.InvokeAsync();
                     
-                    DialogService.Close(true); // Passa true per indicare successo
+                    // ✅ FIX: Restituisci sempre gli utenti selezionati invece di true
+                    DialogService.Close(_selectedUserIds);
                 }
                 else
                 {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Errore API: {response.StatusCode} - {errorContent}");
+                    
                     NotificationService.Notify(new NotificationMessage
                     {
                         Severity = NotificationSeverity.Error,
                         Summary = Localize["Error"],
-                        Detail = Localize["Failed to assign users"],
+                        Detail = $"{Localize["Failed to assign users"]}: {errorContent}",
                         Duration = 4000
                     });
                 }
@@ -370,6 +428,7 @@ namespace CRM.Client.Pages.Tickets
             }
         }
 
+        
         protected void Cancel()
         {
             DialogService.Close(false); // Passa false per indicare annullamento
@@ -398,10 +457,10 @@ namespace CRM.Client.Pages.Tickets
         private async Task OpenSchedulerForUser(string userId)
         {
             var user = _users.FirstOrDefault(u => u.Id == userId);
-            if (user == null || _ticket?.Date == null) return;
+            if (user == null || Date == null) return;
 
             // Costruisci URL con parametri query string
-            var date = _ticket.Date.Value.ToString("yyyy-MM-dd");
+            var date = Date.Value.ToString("yyyy-MM-dd");
             var baseUri = NavigationManager.BaseUri.TrimEnd('/');
             var url = $"{baseUri}/Tickets/Schedule?userId={userId}&date={date}";
             

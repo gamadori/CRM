@@ -27,6 +27,8 @@ namespace CRM.Shared
         public string State { get; set; }
 
         
+        public int IdType { get; set; }
+
         [Display(Name = nameof(Ticket.IdType), ResourceType = typeof(Resources.Models.Ticket))]
 
         public string DescType { get; set; }

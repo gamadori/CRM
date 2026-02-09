@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
 using Radzen.Blazor;
-using Syncfusion.Blazor.Popups;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -53,7 +52,7 @@ namespace CRM.Client.Pages.Projects
 
         private bool _dialogVisible = false;
 
-        private SfDialog _dialogPopUp;
+       
 
         private RadzenDropDown<int?> _ddCompany;
         private RadzenDropDown<string?> _ddUsers;

@@ -31,6 +31,8 @@ namespace CRM.Shared
 
         public int? IdTicketToAssign { get; set; }
 
+        public int? IdTicketAssigned { get; set; }
+
         public int? IdProject { get; set; } = null;
 
         public int? IdProjectParent { get; set; } = null;

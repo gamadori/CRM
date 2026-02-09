@@ -72,7 +72,7 @@ namespace CRM.Server.Services
                 var intervention = await _context.TicketsInterventions
                     .Include(x => x.Ticket)
                         .ThenInclude(t => t.Company)
-                    .Include(x => x.User)
+                    .Include(x => x.AssignedUsers).ThenInclude(x=>x.User)
                     .Include(x => x.TicketInterventionsTypes)
                         .ThenInclude(it => it.InterventionTypeLanguages)
                             .ThenInclude(itl => itl.Language)
@@ -88,7 +88,7 @@ namespace CRM.Server.Services
                     throw new InvalidOperationException($"Intervention #{interventionId} non trovato");
                 }
                 
-                Log($"Intervention caricato: Ticket #{intervention.IdTicket}, User: {intervention.User?.NameComplete}");
+                Log($"Intervention caricato: Ticket #{intervention.IdTicket}, Users: {string.Join(", ", intervention.AssignedUsers.Select(u => $"{u.User.Name} {u.User.Surname}"))}");
                 // Configura la licenza QuestPDF
                 QuestPDF.Settings.License = LicenseType.Community;
 
@@ -307,7 +307,7 @@ namespace CRM.Server.Services
         {
             container.Border(1).BorderColor(Colors.Grey.Lighten2).Padding(10).Column(col =>
             {
-                col.Item().Text($"{labels.OurTechnician} {intervention.User?.NameComplete ?? "N/A"}").SemiBold();
+                col.Item().Text($"{labels.OurTechnician} {string.Join(", ", intervention.AssignedUsers.Select(u => u.User.NameComplete))    }").SemiBold();
                 
                 col.Item().PaddingTop(2).Text($"{labels.HasIntervenedAt} {intervention.Ticket?.Company?.RagioneSociale ?? "your premises"} {labels.For} ");
 

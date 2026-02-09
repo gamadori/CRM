@@ -1,6 +1,5 @@
 ﻿@using  System.Globalization
 @using CRM.Shared.Models
-@using Syncfusion.Blazor.DropDowns
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Nav
 @inject HttpClient http
@@ -72,15 +71,16 @@ else
         }
     }
 
-    private async Task OnChange(SelectEventArgs<Language> args)
-    {
-        if (AutoSetting)
-        {
-            var code = args.ItemData.LanguageCode;
-            await http.PostAsJsonAsync<string>($"{ConstHelper.UserSignedPath}/Language", code);
-            Culture = new CultureInfo(code);
-        }
-    }
+   
+    // private async Task OnChange(SelectEventArgs<Language> args)
+    // {
+    //     if (AutoSetting)
+    //     {
+    //         var code = args.ItemData.LanguageCode;
+    //         await http.PostAsJsonAsync<string>($"{ConstHelper.UserSignedPath}/Language", code);
+    //         Culture = new CultureInfo(code);
+    //     }
+    // }
 
     private async Task OnComboChange(string code)
     {

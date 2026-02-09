@@ -11,8 +11,6 @@ using Microsoft.Extensions.Primitives;
 using System.Reflection;
 using System.Linq.Expressions;
 using System.Linq.Dynamic.Core;
-using Syncfusion.Blazor;
-using Syncfusion.Blazor.Data;
 using CRM.Server.Helpers;
 using CRM.Server.Services;
 using CRM.Client.Services;

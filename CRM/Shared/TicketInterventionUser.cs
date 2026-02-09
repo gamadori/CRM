@@ -23,4 +23,12 @@ namespace CRM.Shared
 
         public virtual ApplicationUser User { get; set; }
     }
+
+    public class TicketInterventionUserFilter : PagingParameterModel
+    {
+
+        public string IdUser { get; set; }
+
+        
+    }
 }

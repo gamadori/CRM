@@ -1,12 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using CRM.Server.Data;
+using CRM.Server.Models;
+using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using CRM.Server.Data;
-using CRM.Shared;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace CRM.Server.Controllers
 {
@@ -108,9 +110,121 @@ namespace CRM.Server.Controllers
             return NoContent();
         }
 
+        // ✅ NUOVO: GET /api/TicketInterventionUsers/intervention/{id}/assigned-users
+        // Recupera gli utenti assegnati a un intervento specifico
+        [HttpGet("intervention/{id}/assigned-users")]
+        public async Task<ActionResult<List<string>>> GetInterventionAssignedUsers(int id)
+        {
+            try
+            {
+                var intervention = await _context.TicketsInterventions
+                    .Include(i => i.AssignedUsers)
+                        .ThenInclude(au => au.User)
+                    .FirstOrDefaultAsync(i => i.Id == id);
+
+                if (intervention == null)
+                {
+                    return NotFound($"Intervention con ID {id} non trovato");
+                }
+
+                // Restituisce la lista degli ID utenti assegnati
+                var userIds = intervention.AssignedUsers
+                    .Select(au => au.IdUser)
+                    .ToList();
+
+                return Ok(userIds);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Errore interno: {ex.Message}");
+            }
+        }
+
+        
+        // ✅ NUOVO: POST /api/TicketInterventionUsers/intervention/{id}/assign-users
+        // Assegna multipli utenti a un intervento (sostituisce assegnazioni esistenti)
+        [HttpPost("intervention/{id}/assign-users")]
+        public async Task<IActionResult> AssignUsersToIntervention(int id, [FromBody] AssignUsersRequest assignUsers)
+        {
+            try
+            {
+                var intervention = await _context.TicketsInterventions
+                    .Include(i => i.AssignedUsers)
+                    .Include(i => i.Ticket)
+                        .ThenInclude(t => t.AssignedUsers) // ✅ Include utenti assegnati al ticket
+                    .FirstOrDefaultAsync(i => i.Id == id);
+
+                if (intervention == null)
+                {
+                    return NotFound($"Intervention con ID {id} non trovato");
+                }
+
+                // ✅ VALIDAZIONE: Verifica che gli utenti selezionati siano tra quelli assegnati al ticket
+                var ticketUserIds = intervention.Ticket.AssignedUsers
+                    .Select(au => au.IdUser)
+                    .ToHashSet();
+
+                // Se il ticket non ha utenti multipli, usa IdUserAssigned come fallback
+                if (!ticketUserIds.Any() && !string.IsNullOrEmpty(intervention.Ticket.IdUserAssigned))
+                {
+                    ticketUserIds.Add(intervention.Ticket.IdUserAssigned);
+                }
+
+                // Verifica che ci sia almeno un utente da assegnare
+                if (assignUsers.UserIds == null || !assignUsers.UserIds.Any())
+                {
+                    return BadRequest("Almeno un utente deve essere assegnato all'intervento");
+                }
+
+                foreach (var userId in assignUsers.UserIds)
+                {
+                    if (!ticketUserIds.Contains(userId))
+                    {
+                        var user = await _context.Users.FindAsync(userId);
+                        return BadRequest($"Utente {user?.NameComplete ?? userId} non è assegnato al ticket #{intervention.IdTicket}. Solo utenti del ticket possono essere assegnati all'intervento.");
+                    }
+                }
+
+                // Rimuovi tutte le assegnazioni esistenti
+                _context.TicketInterventionUser.RemoveRange(intervention.AssignedUsers);
+
+                // Aggiungi le nuove assegnazioni
+                foreach (var userId in assignUsers.UserIds)
+                {
+                    var assignment = new TicketInterventionUser
+                    {
+                        IdIntervention = id,
+                        IdUser = userId
+                    };
+
+                    _context.TicketInterventionUser.Add(assignment);
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { 
+                    message = "Utenti assegnati con successo all'intervento", 
+                    assignedCount = assignUsers.UserIds.Count
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Errore interno: {ex.Message}");
+            }
+        }
+
         private bool TicketInterventionUserExists(int id)
         {
             return _context.TicketInterventionUser.Any(e => e.Id == id);
         }
+    }
+
+    /// <summary>
+    /// ✅ NUOVO: DTO per assegnazione multipla utenti a un intervento
+    /// </summary>
+    public class AssignInterventionUsersRequest
+    {
+        public int InterventionId { get; set; }
+        public List<string> UserIds { get; set; } = new List<string>();
     }
 }

@@ -595,4 +595,7 @@
   <data name="Search" xml:space="preserve">
     <value>Buscar</value>
   </data>
+  <data name="Interventions" xml:space="preserve">
+    <value>Servicios</value>
+  </data>
 </root>

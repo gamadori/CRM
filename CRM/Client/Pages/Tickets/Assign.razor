@@ -3,81 +3,62 @@
 @using Radzen
 @using Radzen.Blazor
 
-@if (_ticket != null)
+@if (!_isLoadingPage)
 {
     <div class="assign-users-container">
         <!-- Header con titolo e badge count -->
         <div class="assign-header">
             <div class="d-flex align-items-center justify-content-between mb-3">
-                <h5 class="mb-0">
-                    <span class="material-icons me-2">groups</span>
+                <h5 class="mb-0 d-flex align-items-center">
+                    <span class="material-icons me-2 text-primary">groups</span>
                     @Localize["Assign Users"]
                 </h5>
-                <span class="badge bg-primary rounded-pill">
+                <span class="badge bg-primary bg-opacity-75 rounded-pill px-3 py-2 fs-6">
+                    <i class="bi bi-person-check me-1"></i>
                     @_selectedUserIds.Count @Localize["selected"]
                 </span>
             </div>
         </div>
 
         <!-- Sezione ricerca utenti -->
-        <div class="search-section mb-3">
-            <RadzenTextBox 
-                @bind-Value="@_searchQuery" 
-                Placeholder="@Localize["Search users..."]"
-                class="w-100"
-                @oninput="@(args => OnSearchChanged(args.Value?.ToString()))"
-                Style="padding: 0.75rem;">
-                <i class="material-icons" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #6c757d;">search</i>
-            </RadzenTextBox>
+        <div class="search-section mb-4">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <RadzenTextBox 
+                    @bind-Value="@_searchQuery" 
+                    Placeholder="@Localize["Search users..."]"
+                    class="form-control border-start-0"
+                    @oninput="@(args => OnSearchChanged(args.Value?.ToString()))"
+                    Style="padding: 0.75rem; border-left: none;">
+                </RadzenTextBox>
+            </div>
         </div>
 
-        <!-- Lista utenti già assegnati (chips/badges) -->
-        @if (_selectedUserIds.Any())
-        {
-            <div class="assigned-users-section mb-3">
-                <label class="form-label fw-semibold">@Localize["Assigned Users"]:</label>
-                <div class="d-flex flex-wrap gap-2">
+        <!-- Utenti Selezionati -->
+        <div class="selected-users-section mb-4">
+            <label class="form-label fw-semibold text-secondary mb-2">
+                <i class="bi bi-person-check-fill me-1 text-success"></i>
+                @Localize["Selected Users"] (@_selectedUserIds.Count)
+            </label>
+            
+            @if (_selectedUserIds.Any())
+            {
+                <div class="selected-users-container">
                     @foreach (var userId in _selectedUserIds.ToList())
                     {
                         var user = _users.FirstOrDefault(u => u.Id == userId);
                         if (user != null)
                         {
-                            <div class="user-badge">
-                                <span class="user-avatar">@GetInitials(user.NameComplete)</span>
-                                <span class="user-name">@user.NameComplete</span>
+                            <div class="selected-user-chip">
+                                <span class="chip-avatar">@GetInitials(user.NameComplete)</span>
+                                <span class="chip-name">@user.NameComplete</span>
                                 <button type="button" 
-                                        class="btn-remove" 
+                                        class="chip-remove" 
                                         @onclick="() => RemoveUser(userId)"
                                         title="@Localize["Remove"]">
-                                    <span class="material-icons">close</span>
-                                </button>
-                            </div>
-                        }
-                    }
-                </div>
-            </div>
-        }
-
-        <!-- Selected Users Summary (Top Section) -->
-        <div class="selected-users-summary mb-4">
-            <h6 class="mb-3 fw-bold text-primary">
-                <i class="bi bi-people-fill me-2"></i>
-                @Localize["Selected Users"] (@_selectedUserIds.Count)
-            </h6>
-            
-            @if (_selectedUserIds.Any())
-            {
-                <div class="selected-badges-container">
-                    @foreach (var userId in _selectedUserIds)
-                    {
-                        var user = _users.FirstOrDefault(u => u.Id == userId);
-                        if (user != null)
-                        {
-                            <div class="selected-user-badge">
-                                <span class="user-avatar-small">@GetInitials(user.NameComplete)</span>
-                                <span class="user-name-small">@user.NameComplete</span>
-                                <button type="button" class="btn-remove" @onclick="() => RemoveUser(userId)" title="@Localize["Remove"]">
-                                    <i class="bi bi-x"></i>
+                                    <i class="bi bi-x-lg"></i>
                                 </button>
                             </div>
                         }
@@ -86,24 +67,26 @@
             }
             else
             {
-                <!-- ✅ NUOVO: Messaggio informativo quando nessun utente è selezionato -->
-                <div class="alert alert-info d-flex align-items-center mb-0" role="alert">
-                    <i class="bi bi-info-circle-fill me-2"></i>
-                    <div>
-                        <strong>@Localize["No users assigned"]</strong><br/>
-                        <small>@Localize["Click 'Save' to remove all assignments or select users below"]</small>
+                <div class="alert alert-light border d-flex align-items-start mb-0" role="alert">
+                    <i class="bi bi-info-circle text-info me-2 fs-5"></i>
+                    <div class="text-start">
+                        <span class="fw-medium">@Localize["No users assigned"]</span>
+                        <small class="d-block text-muted">@Localize["Click 'Save' to remove all assignments or select users below"]</small>
                     </div>
                 </div>
             }
         </div>
 
-        <!-- Lista utenti disponibili (card selezionabili) -->
+        <!-- Lista utenti disponibili -->
         <div class="available-users-section">
-            <label class="form-label fw-semibold">@Localize["Available Users"]:</label>
+            <label class="form-label fw-semibold text-secondary mb-2">
+                <i class="bi bi-people me-1"></i>
+                @Localize["Available Users"]
+            </label>
             
             @if (_filteredUsers.Any())
             {
-                <div class="users-grid">
+                <div class="users-list">
                     @foreach (var user in _filteredUsers)
                     {
                         var isSelected = _selectedUserIds.Contains(user.Id);
@@ -112,22 +95,24 @@
                         <div class="user-card @(isSelected ? "selected" : "")" 
                              @onclick="() => ToggleUser(user.Id)">
                             <div class="user-card-content">
-                                <div class="user-avatar-large">
+                                <div class="user-avatar-large @(isSelected ? "avatar-selected" : "")">
                                     @GetInitials(user.NameComplete)
                                 </div>
                                 <div class="user-info">
                                     <div class="user-name-full">
-                                        @user.NameComplete
+                                        <span>@user.NameComplete</span>
                                         
-                                        <!-- ✅ NUOVO: Badge workload inline -->
-                                        <span class="workload-badge @workload.BadgeClass" 
-                                              title="@workload.TicketCount ticket assegnati per questa giornata">
-                                            @workload.Icon @workload.BadgeText
-                                        </span>
+                                        <!-- Workload Badge -->
+                                        @if (workload.TicketCount > 0)
+                                        {
+                                            <span class="workload-indicator @workload.BadgeClass" 
+                                                  title="@workload.TicketCount ticket assegnati per questa giornata">
+                                                @workload.Icon @workload.TicketCount
+                                            </span>
+                                        }
                                     </div>
                                     <div class="user-email">@user.Email</div>
                                     
-                                    <!-- ✅ NUOVO: Link scheduler (opzionale) -->
                                     @if (workload.TicketCount > 0)
                                     {
                                         <button type="button" 
@@ -135,14 +120,14 @@
                                                 @onclick:stopPropagation="true"
                                                 @onclick="async () => await OpenSchedulerForUser(user.Id)"
                                                 title="Vedi calendario completo in nuova scheda">
-                                            📅 Vedi dettagli (@workload.TicketCount)
+                                            <i class="bi bi-calendar3 me-1"></i>Vedi dettagli
                                         </button>
                                     }
                                 </div>
                                 @if (isSelected)
                                 {
                                     <div class="check-icon">
-                                        <span class="material-icons">check_circle</span>
+                                        <i class="bi bi-check-circle-fill text-success fs-4"></i>
                                     </div>
                                 }
                             </div>
@@ -152,28 +137,29 @@
             }
             else
             {
-                <div class="alert alert-info">
-                    <span class="material-icons me-2">info</span>
+                <div class="alert alert-light border d-flex align-items-center">
+                    <i class="bi bi-search text-muted me-2 fs-5"></i>
                     @Localize["No users found"]
                 </div>
             }
         </div>
 
         <!-- Footer con azioni -->
-        <div class="assign-footer mt-4">
-            <div class="d-flex gap-2 justify-content-end">
-                <RadzenButton 
-                    Click="Cancel" 
-                    ButtonStyle="ButtonStyle.Light" 
-                    Icon="close"
-                    Text="@Localize["Cancel"]" />
-                
+        <div class="assign-footer mt-4 pt-3 border-top">
+            <div class="d-flex gap-2 justify-content-start">
                 <RadzenButton 
                     Click="HandleValidSubmit" 
                     ButtonStyle="ButtonStyle.Primary" 
                     Icon="done"
                     Text="@Localize["Save Assignments"]"
-                   />
+                    class="px-4" />
+                
+                <RadzenButton 
+                    Click="Cancel" 
+                    ButtonStyle="ButtonStyle.Light" 
+                    Icon="close"
+                    Text="@Localize["Cancel"]"
+                    class="px-4" />
             </div>
         </div>
     </div>
@@ -182,3 +168,254 @@ else
 {
     <Waiting></Waiting>
 }
+
+<style>
+    .assign-users-container {
+        padding: 1rem;
+        max-height: 80vh;
+        overflow-y: auto;
+        text-align: left;
+    }
+
+    /* Selected Users Chips */
+    .selected-users-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        border: 1px solid #e9ecef;
+    }
+
+    .selected-user-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.75rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 2rem;
+        font-size: 0.875rem;
+        color: #ffffff;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+        transition: all 0.2s ease;
+    }
+
+    .selected-user-chip:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+    }
+
+    .chip-avatar {
+        width: 26px;
+        height: 26px;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #ffffff;
+        text-transform: uppercase;
+    }
+
+    .chip-name {
+        color: #ffffff;
+        font-weight: 500;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .chip-remove {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #ffffff;
+        transition: all 0.2s ease;
+        padding: 0;
+    }
+
+    .chip-remove:hover {
+        background: rgba(255, 255, 255, 0.4);
+        transform: scale(1.1);
+    }
+
+    .chip-remove i {
+        font-size: 0.75rem;
+    }
+
+    /* User Cards List - Allineato a sinistra */
+    .users-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 0.5rem;
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+
+    .user-card {
+        background: #ffffff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: left;
+    }
+
+    .user-card:hover {
+        border-color: #667eea;
+        background: #fafbff;
+    }
+
+    .user-card.selected {
+        background: #f0f4ff;
+        border-color: #667eea;
+        border-width: 2px;
+    }
+
+    .user-card-content {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        justify-content: flex-start;
+    }
+
+    .user-avatar-large {
+        width: 40px;
+        height: 40px;
+        background: #6c757d;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #ffffff;
+        text-transform: uppercase;
+        flex-shrink: 0;
+    }
+
+    .user-avatar-large.avatar-selected {
+        background: #667eea;
+    }
+
+    .user-info {
+        flex: 1;
+        min-width: 0;
+        text-align: left;
+    }
+
+    .user-name-full {
+        font-weight: 600;
+        color: #212529;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .user-email {
+        font-size: 0.8rem;
+        color: #6c757d;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: left;
+    }
+
+    .check-icon {
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+
+    /* Workload Indicator */
+    .workload-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.15rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .workload-indicator.badge-success {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .workload-indicator.badge-warning {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .workload-indicator.badge-danger {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    /* Scheduler Link Button */
+    .btn-scheduler-link {
+        background: none;
+        border: none;
+        color: #667eea;
+        font-size: 0.75rem;
+        padding: 0.25rem 0;
+        cursor: pointer;
+        text-decoration: none;
+        transition: color 0.2s;
+        text-align: left;
+    }
+
+    .btn-scheduler-link:hover {
+        color: #5a67d8;
+        text-decoration: underline;
+    }
+
+    /* Footer - Allineato a sinistra */
+    .assign-footer {
+        background: #ffffff;
+        position: sticky;
+        bottom: 0;
+    }
+
+    /* Scrollbar styling */
+    .users-list::-webkit-scrollbar,
+    .assign-users-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .users-list::-webkit-scrollbar-track,
+    .assign-users-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+
+    .users-list::-webkit-scrollbar-thumb,
+    .assign-users-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+    }
+
+    .users-list::-webkit-scrollbar-thumb:hover,
+    .assign-users-container::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+</style>

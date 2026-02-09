@@ -3,5 +3,6 @@
     public interface ITicketsService
     {
         Task<List<(string?, string?)>> GetEmails(int idTicket);
+
     }
 }

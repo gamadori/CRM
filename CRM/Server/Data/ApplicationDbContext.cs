@@ -50,6 +50,32 @@ namespace CRM.Server.Data
                 .HasForeignKey(tua => tua.IdUser)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // ✅ Relazione many-to-many per TicketInterventionUser
+            modelBuilder.Entity<TicketInterventionUser>()
+                .HasOne(tiu => tiu.TicketIntervention)
+                .WithMany(ti => ti.AssignedUsers)
+                .HasForeignKey(tiu => tiu.IdIntervention)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TicketInterventionUser>()
+                .HasOne(tiu => tiu.User)
+                .WithMany()
+                .HasForeignKey(tiu => tiu.IdUser)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ✅ NUOVO: Configurazione TicketFeedback
+            modelBuilder.Entity<TicketFeedback>()
+                .HasOne(tf => tf.Ticket)
+                .WithMany()
+                .HasForeignKey(tf => tf.IdTicket)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TicketFeedback>()
+                .HasOne(tf => tf.User)
+                .WithMany()
+                .HasForeignKey(tf => tf.IdUser)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // ✅ CONFIGURAZIONE STATI ARTICOLO - Previene cicli di cascade
             modelBuilder.Entity<ArticleDomainState>()
                 .HasOne(ads => ads.Domain)
@@ -268,6 +294,9 @@ namespace CRM.Server.Data
         public DbSet<ArticleDomainState> ArticleDomainStates => Set<ArticleDomainState>();
 
         public DbSet<ArticleEvent> ArticleEvents => Set<ArticleEvent>();
+
+        // ✅ NUOVO: DbSet per i feedback dei ticket
+        public DbSet<TicketFeedback> TicketFeedbacks => Set<TicketFeedback>();
 
 
 

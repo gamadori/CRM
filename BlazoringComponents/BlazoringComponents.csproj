@@ -22,8 +22,7 @@
     <PackageReference Include="Microsoft.Extensions.Localization" Version="9.0.4" />
     <PackageReference Include="QLNet" Version="1.13.1" />
     <PackageReference Include="Radzen.Blazor" Version="5.7.4" />
-    <PackageReference Include="Syncfusion.Blazor.Core" Version="23.1.40" />
-    <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="23.1.40" />
+
   </ItemGroup>
 
 

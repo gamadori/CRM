@@ -1860,6 +1860,43 @@ namespace CRM.Server.Migrations
                     b.ToTable("TicketChatReads");
                 });
 
+            modelBuilder.Entity("CRM.Shared.TicketFeedback", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdTicket")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdUser")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdTicket");
+
+                    b.HasIndex("IdUser");
+
+                    b.ToTable("TicketFeedbacks");
+                });
+
             modelBuilder.Entity("CRM.Shared.TicketIntervention", b =>
                 {
                     b.Property<int>("Id")
@@ -1915,8 +1952,7 @@ namespace CRM.Server.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("IdUser")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Minute")
                         .HasColumnType("int");
@@ -1978,8 +2014,6 @@ namespace CRM.Server.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("IdTicket");
-
-                    b.HasIndex("IdUser");
 
                     b.ToTable("TicketsInterventions");
                 });
@@ -3185,6 +3219,25 @@ namespace CRM.Server.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("CRM.Shared.TicketFeedback", b =>
+                {
+                    b.HasOne("CRM.Shared.Ticket", "Ticket")
+                        .WithMany()
+                        .HasForeignKey("IdTicket")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Ticket");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CRM.Shared.TicketIntervention", b =>
                 {
                     b.HasOne("CRM.Shared.Ticket", "Ticket")
@@ -3193,15 +3246,7 @@ namespace CRM.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CRM.Shared.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("IdUser")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Ticket");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CRM.Shared.TicketInterventionArticle", b =>
@@ -3241,14 +3286,15 @@ namespace CRM.Server.Migrations
             modelBuilder.Entity("CRM.Shared.TicketInterventionUser", b =>
                 {
                     b.HasOne("CRM.Shared.TicketIntervention", "TicketIntervention")
-                        .WithMany()
+                        .WithMany("AssignedUsers")
                         .HasForeignKey("IdIntervention")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("CRM.Shared.ApplicationUser", "User")
                         .WithMany()
-                        .HasForeignKey("IdUser");
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("TicketIntervention");
 
@@ -3467,6 +3513,8 @@ namespace CRM.Server.Migrations
 
             modelBuilder.Entity("CRM.Shared.TicketIntervention", b =>
                 {
+                    b.Navigation("AssignedUsers");
+
                     b.Navigation("TicketInterventionArticles");
 
                     b.Navigation("TicketInterventionTime");

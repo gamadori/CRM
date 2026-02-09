@@ -1,11 +1,9 @@
 ﻿@page "/TicketInterventions/Details/{Id:int}"
 @page "/TicketInterventions/{Id:int}"
-@using Syncfusion.Blazor.SplitButtons
+
 @using BlazoringComponents.DropDownButton
 @using CRM.Shared.Helper
 
-<h3>Intervento</h3>
-<hr />
 @if (_ticketIntervention == null || _creatingReport)
 {
     <Waiting></Waiting>
@@ -52,10 +50,33 @@ else
                             </tr>
                             <tr>
                                 <th scope="row">
-                                    <DisplayName For="@(() => _ticketIntervention.IdUser)" />
+                                    <DisplayName For="@(() => _ticketIntervention.AssignedUsers)" />
                                 </th>
                                 <td>
-                                    <span>@_ticketIntervention.User?.NameComplete</span>
+                                    <!-- ✅ NUOVO: Visualizza utenti multipli invece di solo uno -->
+                                    @if (_isLoadingUsers)
+                                    {
+                                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        <span class="ms-2">Caricamento...</span>
+                                    }
+                                    else if (_assignedUsers != null && _assignedUsers.Any())
+                                    {
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @foreach (var user in _assignedUsers)
+                                            {
+                                                var isMain = _assignedUsers.IndexOf(user) == 0;
+                                                <div class="badge bg-@(isMain ? "primary" : "secondary") p-2 d-flex align-items-center gap-1">
+                                                    <span class="user-avatar-small">@GetUserInitials(user.NameComplete)</span>
+                                                    <span>@user.NameComplete</span>
+                                                    @if (isMain)
+                                                    {
+                                                        <span title="Utente principale">★</span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    
                                 </td>
                             </tr>
                             <tr>

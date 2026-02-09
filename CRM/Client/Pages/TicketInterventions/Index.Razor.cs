@@ -15,6 +15,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.TicketInterventions
 {
@@ -70,10 +71,18 @@ namespace CRM.Client.Pages.TicketInterventions
         [Parameter]
         public int? IdTicket { get; set; } = null;
 
+        [Parameter] 
+        public int? IdProject { get; set; } = null;
+
+        [Parameter]
+        public int? IdCompany { get; set; } = null;
+
+
         [Parameter]
         public string PageTitle { get; set; } = "Interventi";
 
-        
+        [Parameter]
+        public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         private IQueryable<TicketIntervention> _ticketInterventions = null;
 
@@ -211,7 +220,18 @@ namespace CRM.Client.Pages.TicketInterventions
                 OnClickDetails(id);
             }
             else
-                NavigationManager.NavigateTo($"/TicketInterventions/{id}");
+            {
+                
+                if (IdProject != null)
+                    NavigationManager.NavigateTo($"Projects/{IdProject}/Tickets/{IdTicket}/interventions/{id}/info");
+
+                else if (IdCompany != null)
+                    NavigationManager.NavigateTo($"Companies/{IdCompany}/Tickets/{IdTicket}/interventions/{id}/info");
+                else
+                    NavigationManager.NavigateTo($"/Tickets/{IdTicket}/interventions/{id}/info");
+            }
+
+          
         }
 
 

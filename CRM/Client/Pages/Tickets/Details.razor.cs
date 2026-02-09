@@ -276,7 +276,7 @@ namespace CRM.Client.Pages.Tickets
         {
             var result = await DialogService.OpenAsync<Assign>(
                 Localize["Assign Users"],
-                new Dictionary<string, object> { { "Id", Id } },
+                new Dictionary<string, object> { { "Id", Id }, { "Date", _ticket.Date }, {"TicketTypeId", _ticket.IdType   } },
                 new DialogOptions 
                 { 
                     Width = "900px", 

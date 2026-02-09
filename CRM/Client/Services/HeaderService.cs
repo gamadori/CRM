@@ -326,7 +326,8 @@ namespace CRM.Client.Services
             var path = url.Split('?', '#')[0];
             var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries)
                 .Where(s => !s.Equals("details", StringComparison.OrdinalIgnoreCase) 
-                         && !s.Equals("index", StringComparison.OrdinalIgnoreCase))
+                         && !s.Equals("index", StringComparison.OrdinalIgnoreCase)
+                         && !s.Equals("info", StringComparison.OrdinalIgnoreCase))
                 .ToArray();
 
             if (segments.Length == 0)

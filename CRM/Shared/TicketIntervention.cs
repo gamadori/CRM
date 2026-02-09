@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace CRM.Shared
@@ -37,12 +38,9 @@ namespace CRM.Shared
         [ForeignKey("Ticket")]
         public int IdTicket { get; set; }
 
-        [ForeignKey("User")]
-        [Display(Name = "User")]
-        [Required]
         public string IdUser { get; set; }
 
-       
+
         [Display(Name = "Tipo Supporto")]
         public int SupportType { get; set; }
 
@@ -54,7 +52,7 @@ namespace CRM.Shared
         public string MountedParts { get; set; }
 
         [Display(Name = "Nota")]
-        public string Note { get; set; }
+        public string? Note { get; set; }
 
         [Display(Name = "Data e Orario di Inizio")]
         public DateTime StartDateTime { get; set; }
@@ -228,9 +226,18 @@ namespace CRM.Shared
 
         [NotMapped]
         public List<TicketInterventionArticleModel> InterventionArticles { get; set; } = new List<TicketInterventionArticleModel>();
+
+        [NotMapped]
+        public List<UserModel> Users { get; set; } = new List<UserModel>();
+
         public virtual Ticket Ticket { get; set; }
 
-        public virtual ApplicationUser User { get; set; }
+        /// <summary>
+        /// ✅ FONTE DI VERITÀ: Collezione di tutti gli utenti assegnati all'intervento
+        /// Il primo elemento è considerato l'utente principale
+        /// </summary>
+        [JsonIgnore]
+        public virtual ICollection<TicketInterventionUser> AssignedUsers { get; set; } = new List<TicketInterventionUser>();
 
         [Display(Name = "Tipi di Intervento")]
         public virtual ICollection<InterventionType> TicketInterventionsTypes { get; set; }

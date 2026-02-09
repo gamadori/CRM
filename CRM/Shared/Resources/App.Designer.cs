@@ -736,6 +736,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Services.
+        /// </summary>
+        public static string Interventions {
+            get {
+                return ResourceManager.GetString("Interventions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Languages.
         /// </summary>
         public static string Languages {

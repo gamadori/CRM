@@ -115,7 +115,7 @@ namespace CRM.Server.Controllers
             if (filter?.IdUser != null)
             {
                 // Filtra per utente se specificato
-                interventionsQuery = interventionsQuery.Where(x => x.IdUser == filter.IdUser);
+                interventionsQuery = interventionsQuery.Where(x => x.AssignedUsers.Where(u => u.IdUser == filter.IdUser).Any());
             }
 
             model.InterventionsPendingSignature = await interventionsQuery

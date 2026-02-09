@@ -1,5 +1,6 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using CRM.Shared.Models;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using System;
@@ -79,6 +80,39 @@ namespace CRM.Client.Services
             {
                 Console.WriteLine($"Errore semantic search: {ex.Message}");
                 return new SemanticSearchResponse();
+            }
+        }
+
+        public async Task<HashSet<string>?> LoadAssignedUsers(int IdTicket)
+        {
+            try
+            {
+                var response = await _http.GetFromJsonAsync<List<string>>($"{_pathService}/{IdTicket}/assigned-users");
+                if (response != null)
+                {
+                    return new HashSet<string>(response);
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento utenti intervento: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<HttpResponseMessage> AssignUsers(int idTicket, AssignUsersRequest Users)
+        {
+            try
+            {
+                var response = await _http.PostAsJsonAsync($"{_pathService}/{idTicket}/assign-users", Users);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore assegnazione utenti al Ticket: {ex.Message}");
+                return new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError);
+
             }
         }
     }

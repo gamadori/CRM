@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch.Internal;
 using Microsoft.EntityFrameworkCore;
 using Org.BouncyCastle.Crypto;
-using Syncfusion.Blazor.DropDowns;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -778,7 +777,8 @@ namespace CRM.Server.Services
             return permits;
         }
 
-        
+       
+
         public async Task<bool> CanGetObject(int? objIdCompany)
         {
             var resp = await CompanyCanAccess(objIdCompany);
@@ -1141,7 +1141,10 @@ namespace CRM.Server.Services
         public async Task<int> InterventionPermits(int idIntervention)
         {
             int permits = 0;
-            var intervention = await _context.TicketsInterventions.FindAsync(idIntervention);
+            var intervention = await _context.TicketsInterventions
+                .Include(i => i.AssignedUsers)
+                .Include(i => i.Ticket)
+                .FirstOrDefaultAsync(i => i.Id == idIntervention);
 
             string idUser = await IdUser();
             if (intervention != null)
@@ -1155,7 +1158,10 @@ namespace CRM.Server.Services
                     {
                         permits = PermitsHelper.SetInsert(permits);
                     }
-                    if (await CanDeleteIntervention(intervention.IdUser))
+                    
+                    // ✅ Verifica se l'utente corrente è tra quelli assegnati
+                    var assignedUserIds = intervention.AssignedUsers.Select(au => au.IdUser).ToList();
+                    if (await CanDeleteIntervention(assignedUserIds.FirstOrDefault()))
                     {
                         permits = PermitsHelper.SetDelete(permits);
                         permits = PermitsHelper.SetEdit(permits);

@@ -211,6 +211,7 @@ namespace CRM.Client.Pages.Tickets
                     return;
 
                 var response = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{_ticket.Id}/assigned-users");
+
                 if (response != null && response.Any())
                 {
                     _selectedUserIds = new HashSet<string>(response);
@@ -695,15 +696,19 @@ namespace CRM.Client.Pages.Tickets
                 if (_ticket?.Id > 0)
                 {
                     // Ticket esistente: passa solo l'Id
+                    parameters.Add("TicketTypeId", _ticket.IdType);
                     parameters.Add("Id", _ticket.Id);
                 }
                 else
                 {
                     // Nuovo ticket: passa i dati del ticket e gli utenti preselezionati
                     parameters.Add("Id", 0);
-                    parameters.Add("TicketData", _ticket);
-                    parameters.Add("PreselectedUserIds", _selectedUserIds);
+                    parameters.Add("TicketTypeId", _ticket.IdType);
+                    
+                   
                 }
+                parameters.Add("PreselectedUserIds", _selectedUserIds);
+                parameters.Add("Date", _ticket.Date);
 
                 var options = new DialogOptions
                 {

@@ -127,11 +127,7 @@ namespace CRM.Client.Pages.Tickets
 
         protected async override Task OnInitializedAsync()
         {
-            //#if DEBUG
-            //            await Task.Delay(10000);
-            //#endif
-
-            //navMenuService.CallRequestRefresh();
+           
             await FindResponsiveness();
             _user = await _userService.Get();
             
@@ -149,7 +145,7 @@ namespace CRM.Client.Pages.Tickets
             }
             await LoadData();
 
-            //_pageHeader = HeaderService.Create(ConstHelper.ClientTicketsPath, null, null, false, ConstHelper.ClientTicketsPath, null, PageMode);
+           
             _pageHeader = await HeaderService.Create(PageMode);
             StateHasChanged();
         }
@@ -304,10 +300,13 @@ namespace CRM.Client.Pages.Tickets
             {
                 if (IdProject != null)
                     NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info/{IdProject}");
+
                 else if (IdCompany != null)
                     NavigationManager.NavigateTo($"Companies/{IdCompany}/Tickets/{idTicket}");
+
                 else if (_idUser != null)
                     NavigationManager.NavigateTo($"/Tickets/{idTicket}/{TypeSearch}/{_idUser}");
+
                 else if (TypeSearch != (int)TicketTypeSearch.All)
                 {
                     NavigationManager.NavigateTo($"/Tickets/{idTicket}/filter/{TypeSearch}");

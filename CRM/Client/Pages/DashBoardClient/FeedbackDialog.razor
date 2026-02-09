@@ -1,0 +1,317 @@
+@using CRM.Shared.DTOs
+@using CRM.Shared.Services
+@using Microsoft.Extensions.Localization
+@inject ITicketFeedbackService FeedbackService
+@inject Radzen.DialogService DialogService
+@inject Radzen.NotificationService NotificationService
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+<div class="feedback-dialog">
+    <div class="ticket-info">
+        <span class="ticket-label">Ticket #@Ticket.TicketId</span>
+        <p class="ticket-desc">@Ticket.Description</p>
+        @if (Ticket.DateClosed.HasValue)
+        {
+            <span class="ticket-closed-date">
+                <span class="material-icons">event</span>
+                @Localize["Closed on"] @Ticket.DateClosed.Value.ToString("dd/MM/yyyy")
+            </span>
+        }
+    </div>
+
+    <div class="rating-section">
+        <label class="rating-label">@Localize["How would you rate our service?"]</label>
+        <div class="star-rating">
+            @for (int i = 1; i <= 5; i++)
+            {
+                var starValue = i;
+                <button type="button" 
+                        class="star-btn @(starValue <= _selectedRating ? "active" : "")"
+                        @onclick="() => SetRating(starValue)"
+                        title="@GetRatingText(starValue)">
+                    <span class="material-icons">@(starValue <= _selectedRating ? "star" : "star_border")</span>
+                </button>
+            }
+        </div>
+        <span class="rating-text">@GetRatingText(_selectedRating)</span>
+    </div>
+
+    <div class="comment-section">
+        <label class="comment-label">@Localize["Comment (optional)"]</label>
+        <textarea @bind="_comment" 
+                  rows="3" 
+                  maxlength="1000"
+                  placeholder="@Localize["Tell us more about your experience..."]"
+                  class="comment-input"></textarea>
+        <span class="char-count">@(_comment?.Length ?? 0)/1000</span>
+    </div>
+
+    <div class="dialog-actions">
+        <button type="button" class="btn-cancel" @onclick="Cancel">
+            @Localize["Cancel"]
+        </button>
+        <button type="button" 
+                class="btn-submit" 
+                @onclick="SubmitFeedback"
+                disabled="@(_selectedRating == 0 || _isSubmitting)">
+            @if (_isSubmitting)
+            {
+                <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            @Localize["Submit"]
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public TicketPendingFeedback Ticket { get; set; }
+
+    private int _selectedRating = 0;
+    private string _comment = "";
+    private bool _isSubmitting = false;
+
+    private void SetRating(int rating)
+    {
+        _selectedRating = rating;
+    }
+
+    private string GetRatingText(int rating)
+    {
+        return rating switch
+        {
+            1 => Localize["Very Poor"],
+            2 => Localize["Poor"],
+            3 => Localize["Average"],
+            4 => Localize["Good"],
+            5 => Localize["Excellent"],
+            _ => Localize["Select a rating"]
+        };
+    }
+
+    private async Task SubmitFeedback()
+    {
+        if (_selectedRating == 0)
+            return;
+
+        _isSubmitting = true;
+
+        try
+        {
+            var request = new TicketFeedbackRequest
+            {
+                IdTicket = Ticket.TicketId,
+                Rating = _selectedRating,
+                Comment = string.IsNullOrWhiteSpace(_comment) ? null : _comment.Trim()
+            };
+
+            await FeedbackService.CreateFeedbackAsync(request);
+
+            NotificationService.Notify(new Radzen.NotificationMessage
+            {
+                Severity = Radzen.NotificationSeverity.Success,
+                Summary = Localize["Thank you!"],
+                Detail = Localize["Your feedback has been submitted"],
+                Duration = 3000
+            });
+
+            DialogService.Close(true);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new Radzen.NotificationMessage
+            {
+                Severity = Radzen.NotificationSeverity.Error,
+                Summary = Localize["Error"],
+                Detail = ex.Message,
+                Duration = 4000
+            });
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+}
+
+<style>
+    .feedback-dialog {
+        padding: 0.5rem;
+    }
+
+    .ticket-info {
+        background: #f9fafb;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.25rem;
+        border: 1px solid #e5e7eb;
+    }
+
+    .ticket-label {
+        font-weight: 600;
+        color: #3b82f6;
+        font-size: 0.9rem;
+    }
+
+    .ticket-desc {
+        margin: 0.5rem 0;
+        color: #374151;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .ticket-closed-date {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #6b7280;
+        font-size: 0.8rem;
+    }
+
+    .ticket-closed-date .material-icons {
+        font-size: 14px;
+    }
+
+    .rating-section {
+        text-align: center;
+        margin-bottom: 1.25rem;
+    }
+
+    .rating-label {
+        display: block;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+    }
+
+    .star-rating {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .star-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0.25rem;
+        transition: transform 0.15s ease;
+    }
+
+    .star-btn:hover {
+        transform: scale(1.15);
+    }
+
+    .star-btn .material-icons {
+        font-size: 36px;
+        color: #d1d5db;
+        transition: color 0.15s ease;
+    }
+
+    .star-btn:hover .material-icons,
+    .star-btn.active .material-icons {
+        color: #f59e0b;
+    }
+
+    .rating-text {
+        display: block;
+        color: #6b7280;
+        font-size: 0.85rem;
+        min-height: 1.25rem;
+    }
+
+    .comment-section {
+        margin-bottom: 1.25rem;
+    }
+
+    .comment-label {
+        display: block;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .comment-input {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        resize: vertical;
+        transition: border-color 0.2s ease;
+    }
+
+    .comment-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+    }
+
+    .comment-input::placeholder {
+        color: #9ca3af;
+    }
+
+    .char-count {
+        display: block;
+        text-align: right;
+        color: #9ca3af;
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+    }
+
+    .dialog-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #f3f4f6;
+    }
+
+    .btn-cancel {
+        padding: 0.6rem 1.25rem;
+        background: #ffffff;
+        color: #6b7280;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-cancel:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    .btn-submit {
+        padding: 0.6rem 1.5rem;
+        background: #3b82f6;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+        background: #2563eb;
+    }
+
+    .btn-submit:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+    }
+</style>

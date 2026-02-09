@@ -13,8 +13,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Syncfusion.Blazor;
-using Syncfusion.Licensing;
 using System.Globalization;
 using Microsoft.JSInterop;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -36,7 +34,7 @@ namespace CRM.Client
 
             
 
-            SyncfusionLicenseProvider.RegisterLicense("Mjc2MDcwNEAzMjMzMmUzMDJlMzBLSklZZ3pRMGZDcDN3Q0g5em9oRVU3TVdOVWJXQmtHK0t3SnZFVEUwOFVVPQ==");
+            
 
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("#app");
@@ -114,6 +112,11 @@ namespace CRM.Client
             builder.Services.AddScoped<ILogosService, ProxyLogosService>();
             builder.Services.AddScoped<ILogEventService, ProxyLogEventService>();
             builder.Services.AddScoped<ITicketStatesService, ProxyTicketsStates>();
+            builder.Services.AddScoped<ITicketInterventionsService, ProxyTicketInterventionsService>();
+            builder.Services.AddScoped<ITicketInterventionUsersService, ProxyTicketInterventionUsersService>();
+
+            // ? NUOVO: Servizio per gestione feedback ticket
+            builder.Services.AddScoped<CRM.Shared.Services.ITicketFeedbackService, ProxyTicketFeedbackService>();
 
             builder.Services.AddTransient<IManyToManyService<TicketTypeUser>, ManyToManyService<TicketTypeUser>>(sp =>
             {
@@ -191,7 +194,7 @@ namespace CRM.Client
             
 
            
-            builder.Services.AddSyncfusionBlazor();
+           
             
 
 

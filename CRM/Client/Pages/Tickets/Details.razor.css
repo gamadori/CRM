@@ -1,4 +1,425 @@
 /* ========================================
+   TICKET DETAILS - MODERN CLEAN DESIGN
+   Colori sobri, chiari, quasi bianchi
+   ======================================== */
+
+/* Container principale */
+.ticket-details-page {
+    background: #fafbfc;
+    min-height: 100vh;
+    padding-bottom: 2rem;
+}
+
+.modern-preview-container {
+    max-width: 1200px;
+    margin: 0;
+    padding: 1.5rem;
+}
+
+/* Header Card - Ticket Number & Status */
+.preview-header-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.ticket-number {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ticket-number .material-icons {
+    font-size: 1.75rem;
+    color: #5c6bc0;
+    opacity: 0.8;
+}
+
+.ticket-number h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2d3748;
+    letter-spacing: -0.02em;
+}
+
+.ticket-status {
+    padding: 0.5rem 1.25rem;
+    border-radius: 50px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Description Card */
+.description-card {
+    background: #ffffff;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.card-header-modern {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: #f8f9fb;
+    border-bottom: 1px solid #e8ecf1;
+}
+
+.card-header-modern .material-icons {
+    font-size: 1.25rem;
+    color: #64748b;
+}
+
+.card-header-modern h5 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.card-body-modern {
+    padding: 1.5rem;
+}
+
+.description-text {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #374151;
+    white-space: pre-wrap;
+    text-align: left;
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+}
+
+/* Info Cards */
+.info-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.info-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.info-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.875rem 1.25rem;
+    background: #f8f9fb;
+    border-bottom: 1px solid #e8ecf1;
+}
+
+.info-card-header .material-icons {
+    font-size: 1.15rem;
+    color: #64748b;
+}
+
+.info-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.info-card-body {
+    padding: 1rem 1.25rem;
+}
+
+/* Info Rows */
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.info-row:first-child {
+    padding-top: 0;
+}
+
+.info-key {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-weight: 500;
+    flex-shrink: 0;
+    text-align: left;
+}
+
+.info-value {
+    font-size: 0.9rem;
+    color: #1e293b;
+    font-weight: 500;
+    text-align: right;
+    word-break: break-word;
+}
+
+.company-name {
+    color: #3b82f6;
+    font-weight: 600;
+}
+
+.time-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f1f5f9;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.time-badge .material-icons {
+    font-size: 0.95rem;
+    color: #64748b;
+}
+
+/* ========================================
+   ASSIGNED USERS SECTION - Clean Design
+   ======================================== */
+
+.assigned-users-section {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f1f5f9;
+}
+
+.assigned-header {
+    margin-bottom: 0.75rem;
+}
+
+.assigned-label {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.assigned-users-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.assigned-user-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.875rem;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.assigned-user-item:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.assigned-user-item.main-user {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-color: #bae6fd;
+}
+
+.assigned-user-item.main-user:hover {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+}
+
+.user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #ffffff;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.main-user .user-avatar {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+    flex: 1;
+    text-align: left;
+}
+
+.user-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+
+.main-badge {
+    font-size: 0.7rem;
+    color: #0369a1;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.no-users {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #fafafa;
+    border-radius: 8px;
+    color: #94a3b8;
+    font-size: 0.875rem;
+}
+
+.no-users .material-icons {
+    font-size: 1.25rem;
+    opacity: 0.6;
+}
+
+/* Users Card - Span full width on larger screens */
+.users-card {
+    grid-column: span 1;
+}
+
+@media (min-width: 992px) {
+    .users-card {
+        grid-column: span 2;
+    }
+}
+
+/* Footer Actions Card */
+.card.border-0.shadow-sm.mt-4 {
+    background: #ffffff;
+    border-radius: 12px !important;
+    border: 1px solid #e8ecf1 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+.card.border-0.shadow-sm.mt-4 .card-body {
+    padding: 1.25rem 1.5rem;
+    justify-content: flex-start;
+}
+
+/* Loading State */
+.preview-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    background: #fafbfc;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modern-preview-container {
+        padding: 1rem;
+    }
+
+    .preview-header-card {
+        padding: 1rem 1.25rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .ticket-number h3 {
+        font-size: 1.25rem;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .info-value {
+        text-align: left;
+    }
+
+    .assigned-user-item {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .ticket-details-page {
+        background: white;
+    }
+
+    .info-card,
+    .description-card,
+    .preview-header-card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+
+    .card.border-0.shadow-sm.mt-4 {
+        display: none;
+    }
+}
+
+/* ========================================
    TICKET DETAILS - ASSIGNED USERS BADGES
    ======================================== */
 

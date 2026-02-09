@@ -8,11 +8,13 @@ namespace CRM.Server.Services
         private readonly ApplicationDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IPermitsService _permitsService;
+
         public TicketsService(ApplicationDbContext context,  IHttpContextAccessor httpContextAccessor, IPermitsService permitsService)
         {
             _context = context;
             _httpContextAccessor = httpContextAccessor;
             _permitsService = permitsService;
+          
         }
 
         public async Task<List<(string?, string?)>> GetEmails(int idTicket)
@@ -66,5 +68,7 @@ namespace CRM.Server.Services
 
             return addresses;
         }
+
+        
     }
 }

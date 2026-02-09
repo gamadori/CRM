@@ -1,12 +1,14 @@
 ﻿@page "/TicketInterventions"
 @page "/TicketInterventions/Index"
+@page "/Tickets/{IdTicket:int}/interventions"
+@page "/Projects/{IdProject:int}/Tickets/{IdTicket:int}/interventions"
+@page "/Companies/{IdCompany:int}/Tickets/{IdTicket:int}/interventions"
+
 @using CRM.Shared.Helper
 @using CRM.Client.Shared.Filters
 
-<BlazorHeader Header="@Localize["Interventi"]"></BlazorHeader>
-
-
-
+<PageHeader PageMode=@PageMode>
+</PageHeader>
 @if (_ticketInterventions != null)
 {
     <RadzenDataGrid @ref="grdInterventions"  IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_ticketInterventions" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
