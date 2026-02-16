@@ -47,7 +47,8 @@ namespace CRM.Server.Controllers
         private readonly OpenAIEmbeddingService _embeddingService;
         private readonly ITicketPdfGenerator _pdfGenerator;
         private readonly IPushNotificationService _pushService;
-        
+        private readonly ITicketsService _ticketsService;
+
         // ✅ NUOVO: Aggiungi IConfiguration
         private readonly IConfiguration _configuration;
 
@@ -63,7 +64,8 @@ namespace CRM.Server.Controllers
             OpenAIEmbeddingService embeddingService, 
             ITicketPdfGenerator pdfGenerator, 
             IPushNotificationService pushService,
-            IConfiguration configuration) // ✅ AGGIUNTO
+            IConfiguration configuration,
+            ITicketsService ticketsService) // ✅ AGGIUNTO
         {
             _context = context;
             _userManager = userManager;
@@ -77,7 +79,8 @@ namespace CRM.Server.Controllers
             _embeddingService = embeddingService;
             _pdfGenerator = pdfGenerator;
             _pushService = pushService;
-            _configuration = configuration; // ✅ AGGIUNTO
+            _configuration = configuration;
+            _ticketsService = ticketsService;
         }
 
         [HttpGet("search")]
@@ -276,7 +279,7 @@ namespace CRM.Server.Controllers
                     DateOpened = x.DateOpened,
                     DateEnd = x.DateEnd,
                     DateClosed = x.DateClosed,
-                    Company = x.Company.RagioneSociale,
+                    Company = x.Company!.RagioneSociale,
                     Product = (x.Product != null) ? x.Product.Name: "",
                     Article = (x.Article != null) ? x.Article.SerialNumber : "",
                     Project = (x.Project != null) ? x.Project.Name: "",
@@ -290,7 +293,8 @@ namespace CRM.Server.Controllers
                     Description = x.Description,
                     ContactName = x.Contact != null ? x.Contact.Name : "",
                     Time = x.Time,
-
+                    Closed = x.Closed,
+                    
 
                 });                
                 
@@ -397,8 +401,9 @@ namespace CRM.Server.Controllers
                 DescType = (x.TicketType.Languages.Where(x => x.IdLanguage == idLang).Any()) ? x.TicketType.Languages.Where(x => x.IdLanguage == idLang).FirstOrDefault().Name: "",
                 TicketType = x.TicketType,
                 ContactName = x.Contact != null ? x.Contact.NameComplete : "",
-                CloseDescription = x.CloseDescription
-                
+                CloseDescription = x.CloseDescription,
+                Closed = x.Closed,
+
             }).FirstOrDefaultAsync();
 
             
@@ -451,7 +456,7 @@ namespace CRM.Server.Controllers
             {
                 return BadRequest();
             }
-
+            
             var changeAssigned = await TicketChangeAssigned(id, ticket.IdUserAssigned);
 
             if (! await _permits.CanEditTicket())
@@ -459,6 +464,8 @@ namespace CRM.Server.Controllers
                 await _logEventService.RegisterAsync(nameof(TicketsController), nameof(PutTicket), LogEvent.EventsTypes.Error, "Attempt to Edit without rights");
                 return BadRequest();
             }
+            ticket.IdCompanyAssigned = 
+                (ticket.IdUserAssigned != null) ? _context.Users.Where(x => x.Id == ticket.IdUserAssigned).Select(x => x.IdCompany).FirstOrDefault() : null;     // Azienda dell'utente assegnato
             _context.Entry(ticket).State = EntityState.Modified;
             if (!await _permits.IsAdmin())
                 _context.Entry(ticket).Property(x => x.Invoiced).IsModified = false;
@@ -470,6 +477,7 @@ namespace CRM.Server.Controllers
 
                 if (changeAssigned)
                 {
+
                     await SendEmailUserAssigned(ticket);
                 }
             }
@@ -498,7 +506,7 @@ namespace CRM.Server.Controllers
 
             try
             {
-                var settings = await _context.GlobalSettings.FirstOrDefaultAsync();
+               // var settings = await _context.GlobalSettings.FirstOrDefaultAsync();
 
                 day = await GetDayBeforeExpired(ticket.Id);
 
@@ -568,15 +576,15 @@ namespace CRM.Server.Controllers
         }
 
         [HttpGet("UsersToAssign/{id}")]
-        public async Task<List<ApplicationUser>> TicketGetUserToAssign(int id)
+        public async Task<List<UserModel>> TicketGetUserToAssign(int id)
         {
-            return await _permits.GetUsersCanAssignTicket(id);
+            return await _ticketsService.GetUsersCanAssignTicketAsync(id);
         }
 
         [HttpGet("TypeUsersToAssign/{idType}")]
-        public async Task<List<ApplicationUser>> TicketTypeGetUserToAssign(int idType)
+        public async Task<List<UserModel>> TicketTypeGetUserToAssign(int idType)
         {
-            return await _permits.GetUsersCanAssignTicketType(idType);
+            return await _ticketsService.GetUsersCanAssignTicketTypeAsync(idType);
         }
 
         [HttpPut("TicketClose/{id}")]

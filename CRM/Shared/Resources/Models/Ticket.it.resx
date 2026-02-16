@@ -204,4 +204,7 @@
   <data name="Invoiced" xml:space="preserve">
     <value>Fatturata</value>
   </data>
+  <data name="IdCompanyAssigned" xml:space="preserve">
+    <value>Ditta Assegnata</value>
+  </data>
 </root>

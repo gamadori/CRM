@@ -227,6 +227,30 @@ else
                                 <span class="info-key"><DisplayName For="@(() => _ticket.DateClosed)" /></span>
                                 <span class="info-value">@_ticket.DateClosed?.ToString("dd/MM/yyyy HH:mm")</span>
                             </div>
+                            @* Feedback - cliccabile per dettagli *@
+                            <div class="info-row">
+                                <span class="info-key">Feedback</span>
+                                <span class="info-value">
+                                    @if (_isLoadingFeedback)
+                                    {
+                                        <span class="spinner-border spinner-border-sm" style="width:12px;height:12px;"></span>
+                                    }
+                                    else if (_feedback != null)
+                                    {
+                                        <span style="cursor:pointer;" @onclick="ShowFeedbackDetails" title="Clicca per dettagli">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                <span class="@(i <= _feedback.Rating ? "text-warning" : "text-muted")" style="font-size:14px;">★</span>
+                                            }
+                                            <span class="material-icons text-muted ms-1" style="font-size:14px;vertical-align:middle;">open_in_new</span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted" style="font-size:0.85rem;">—</span>
+                                    }
+                                </span>
+                            </div>
                         }
                     </div>
                 </div>

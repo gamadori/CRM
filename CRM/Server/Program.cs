@@ -140,7 +140,7 @@ builder.Services.AddHostedService(provider => provider.GetRequiredService<WTeleg
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 
 // ✅ NUOVO: Servizio per gestione feedback ticket
-builder.Services.AddScoped<CRM.Shared.Services.ITicketFeedbackService, TicketFeedbackService>();
+builder.Services.AddScoped<ITicketFeedbackService, TicketFeedbackService>();
 
 builder.Services.AddCors(options =>
 {

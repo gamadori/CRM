@@ -1,7 +1,6 @@
+@using CRM.Client.Services
 @using CRM.Shared.DTOs
-@using CRM.Shared.Services
 @using Microsoft.Extensions.Localization
-@inject ITicketFeedbackService FeedbackService
 @inject Radzen.DialogService DialogService
 @inject Radzen.NotificationService NotificationService
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize
@@ -64,6 +63,9 @@
 </div>
 
 @code {
+    [Inject]
+    ITicketFeedbackService FeedbackService { get; set; }
+
     [Parameter]
     public TicketPendingFeedback Ticket { get; set; }
 

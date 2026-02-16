@@ -1,32 +1,34 @@
+using CRM.Client.Helpers;
+using CRM.Shared;
+using CRM.Shared.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
-using CRM.Shared.DTOs;
-using CRM.Shared.Services;
 
 namespace CRM.Client.Services
 {
     /// <summary>
     /// Implementazione client del servizio TicketFeedback.
-    /// Effettua chiamate HTTP al controller.
     /// </summary>
-    public class ProxyTicketFeedbackService : ITicketFeedbackService
+    /// ProxyRestClientService<LogEvent, int, LogEventFilterModel, object>
+    public class ProxyTicketFeedbackService : ProxyRestClientService<TicketFeedback, TicketFeedbackResponse, int, TicketFeedbackFilterModel, object>, ITicketFeedbackService
     {
-        private readonly HttpClient _httpClient;
-        private const string BaseUrl = "api/TicketFeedback";
+        
+        private const string BaseUrl = "api/TicketFeedbacks";
 
-        public ProxyTicketFeedbackService(HttpClient httpClient)
+        public ProxyTicketFeedbackService(HttpClient http) : base(http, BaseUrl)
         {
-            _httpClient = httpClient;
+
         }
+
 
         public async Task<List<TicketPendingFeedback>> GetPendingFeedbacksAsync()
         {
             try
             {
-                var result = await _httpClient.GetFromJsonAsync<List<TicketPendingFeedback>>($"{BaseUrl}/pending");
+                var result = await _http.GetFromJsonAsync<List<TicketPendingFeedback>>($"{BaseUrl}/pending");
                 return result ?? new List<TicketPendingFeedback>();
             }
             catch (Exception ex)
@@ -40,7 +42,7 @@ namespace CRM.Client.Services
         {
             try
             {
-                var result = await _httpClient.GetFromJsonAsync<int>($"{BaseUrl}/pending/count");
+                var result = await _http.GetFromJsonAsync<int>($"{BaseUrl}/pending/count");
                 return result;
             }
             catch (Exception ex)
@@ -52,7 +54,7 @@ namespace CRM.Client.Services
 
         public async Task<TicketFeedbackResponse> CreateFeedbackAsync(TicketFeedbackRequest request)
         {
-            var response = await _httpClient.PostAsJsonAsync(BaseUrl, request);
+            var response = await _http.PostAsJsonAsync(BaseUrl, request);
             response.EnsureSuccessStatusCode();
             
             var result = await response.Content.ReadFromJsonAsync<TicketFeedbackResponse>();
@@ -63,7 +65,7 @@ namespace CRM.Client.Services
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<TicketFeedbackResponse>($"{BaseUrl}/{id}");
+                return await _http.GetFromJsonAsync<TicketFeedbackResponse>($"{BaseUrl}/{id}");
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -75,7 +77,7 @@ namespace CRM.Client.Services
         {
             try
             {
-                return await _httpClient.GetFromJsonAsync<TicketFeedbackResponse>($"{BaseUrl}/ticket/{ticketId}");
+                return await _http.GetFromJsonAsync<TicketFeedbackResponse>($"{BaseUrl}/ticket/{ticketId}");
             }
             catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -87,7 +89,7 @@ namespace CRM.Client.Services
         {
             try
             {
-                var response = await _httpClient.PostAsync($"{BaseUrl}/skip/{ticketId}", null);
+                var response = await _http.PostAsync($"{BaseUrl}/skip/{ticketId}", null);
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
@@ -102,7 +104,7 @@ namespace CRM.Client.Services
             try
             {
                 var url = unreadOnly ? $"{BaseUrl}?unreadOnly=true" : BaseUrl;
-                var result = await _httpClient.GetFromJsonAsync<List<TicketFeedbackResponse>>(url);
+                var result = await _http.GetFromJsonAsync<List<TicketFeedbackResponse>>(url);
                 return result ?? new List<TicketFeedbackResponse>();
             }
             catch (Exception ex)
@@ -116,13 +118,27 @@ namespace CRM.Client.Services
         {
             try
             {
-                var response = await _httpClient.PutAsync($"{BaseUrl}/{id}/read", null);
+                var response = await _http.PutAsync($"{BaseUrl}/{id}/read", null);
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Errore MarkAsReadAsync: {ex.Message}");
                 return false;
+            }
+        }
+
+        public async Task<AverageFeedbackDTO> AverageRateAsync()
+        {
+            try
+            {
+                var result = await _http.GetFromJsonAsync<AverageFeedbackDTO>($"{BaseUrl}/average");
+                return result ?? new AverageFeedbackDTO();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore AverageRateAsync: {ex.Message}");
+                return new AverageFeedbackDTO();
             }
         }
     }

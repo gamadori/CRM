@@ -1263,3 +1263,28 @@ body.dark-theme .logo {
 .e-upload-actions {
     display: none;
 }
+
+.comment-truncate {
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rating-stars {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.rating-stars .material-icons {
+    font-size: 18px;
+}
+
+.rating-stars .star-filled {
+    color: #ffc107;
+}
+
+.rating-stars .star-empty {
+    color: #d1d5db;
+}

@@ -15,7 +15,14 @@ using CRM.Client.Helpers;
 
 namespace CRM.Client.Services
 {
-    public class ProxyRestClientService<T, K, F, S> : IDataService<T, K, F, S>
+    public class ProxyRestClientService<T, K, F, S> : ProxyRestClientService<T, T, K, F, S>
+    {
+        public ProxyRestClientService(HttpClient http, string pathService)
+            : base(http, pathService)
+        {
+        }
+    }     
+    public class ProxyRestClientService<T, M, K, F, S> : IDataService<T, M, K, F, S>
     {
         protected readonly HttpClient _http;
 
@@ -34,17 +41,17 @@ namespace CRM.Client.Services
         /// <remarks>This method performs an HTTP GET request to the specified service path combined with
         /// the identifier. Ensure that the service path and identifier are correctly formatted to avoid request
         /// errors.</remarks>
-        /// <typeparam name="T">The type of the item to retrieve. Must be a reference type.</typeparam>
+        /// <typeparam name="M">The type of the item to retrieve. Must be a reference type.</typeparam>
         /// <typeparam name="K">The type of the identifier used to locate the item.</typeparam>
         /// <param name="id">The identifier of the item to retrieve. This is appended to the service path to form the request URL.</param>
         /// <param name="pathService">The base path of the service from which to retrieve the item. This should be a valid URL segment.</param>
         /// <returns>A task representing the asynchronous operation. The task result contains the item of type <typeparamref
-        /// name="T"/> if found; otherwise, <see langword="null"/>.</returns>
-        public async Task<T?> GetItemAsync(K id)
+        /// name="M"/> if found; otherwise, <see langword="null"/>.</returns>
+        public async Task<M?> GetItemAsync(K id)
         {
-            T? response;
+            M? response;
 
-            response = await _http.GetFromJsonAsync<T?>($"{_pathService}/{id}");
+            response = await _http.GetFromJsonAsync<M?>($"{_pathService}/{id}");
 
             return response;
         }
@@ -55,11 +62,11 @@ namespace CRM.Client.Services
         /// <typeparam name="T">The type of the object to retrieve. Must be a reference type.</typeparam>
         /// <param name="pathService">The service path from which to retrieve the object. Cannot be null or empty.</param>
         /// <returns>A task representing the asynchronous operation. The task result contains the object of type <typeparamref
-        /// name="T"/> retrieved from the service, or <see langword="null"/> if no object is found.</returns>
-        public async Task<T?> GetFirstAsync()
+        /// name="M"/> retrieved from the service, or <see langword="null"/> if no object is found.</returns>
+        public async Task<M?> GetFirstAsync()
         {
 
-            T? response = await _http.GetFromJsonAsync<T?>($"{_pathService}");
+            M? response = await _http.GetFromJsonAsync<M?>($"{_pathService}");
 
             return response;
         }
@@ -72,14 +79,14 @@ namespace CRM.Client.Services
         /// to the specified service endpoint. If the response is successful, it deserializes the content into an <see
         /// cref="ObjectView{M, S}"/> and extracts the items and metadata to form the <see cref="PagingResponse{M,
         /// S}"/>.</remarks>
-        /// <typeparam name="T">The type of the items in the response.</typeparam>
+        /// <typeparam name="M">The type of the items in the response.</typeparam>
         /// <typeparam name="S">The type of the metadata associated with the response.</typeparam>
         /// <typeparam name="F">The type of the filter or query parameters used to construct the request.</typeparam>
         /// <param name="data">The filter or query parameters used to construct the request. Cannot be null.</param>
         /// <param name="pathService">The service endpoint path to which the request is sent. Cannot be null or empty.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a <see cref="PagingResponse{M,
         /// S}"/> with the items and metadata if the request is successful; otherwise, <see langword="null"/>.</returns>
-        public async Task<PagingResponse<T, S>?> GetSummaryAsync(F? data)
+        public async Task<PagingResponse<M, S>?> GetSummaryAsync(F? data)
         {
             try
             {
@@ -90,7 +97,7 @@ namespace CRM.Client.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    PagingResponse<T, S> item = JsonSerializer.Deserialize<PagingResponse<T, S>>(content, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true }) ?? new();
+                    PagingResponse<M, S> item = JsonSerializer.Deserialize<PagingResponse<M, S>>(content, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true }) ?? new();
                     
                     return item;
                 }
@@ -120,8 +127,8 @@ namespace CRM.Client.Services
         /// <param name="data">The data used to generate the query string for the request. This data is serialized into query parameters.</param>
         /// <param name="pathService">The service endpoint path to which the request is sent.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains a <see
-        /// cref="PagingResponse{T}"/> object if the request is successful; otherwise, <see langword="null"/>.</returns>
-        public async Task<PagingResponse<T>?> GetPagingAsync(F? data)
+        /// cref="PagingResponse{M}"/> object if the request is successful; otherwise, <see langword="null"/>.</returns>
+        public async Task<PagingResponse<M>?> GetPagingAsync(F? data)
         {
             try
             {
@@ -132,7 +139,7 @@ namespace CRM.Client.Services
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    PagingResponse<T> item = JsonSerializer.Deserialize<PagingResponse<T>>(content, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true }) ?? new();
+                    PagingResponse<M> item = JsonSerializer.Deserialize<PagingResponse<M>>(content, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true }) ?? new();
 
                     return item;
                 }
@@ -159,12 +166,12 @@ namespace CRM.Client.Services
         /// Data utilizzare se nel controller è presente un metodo Get che restituisca la lista
         /// dei dati non paginizzata
         /// </summary>
-        /// <typeparam name="T">return Data Type</typeparam>
+        /// <typeparam name="M">return Data Type</typeparam>
         /// <typeparam name="F">search filter</typeparam>
         /// <param name="data"></param>
         /// <param name="pathService"></param>
         /// <returns></returns>
-        public async Task<List<T>?> GetListAsync(F? data)
+        public async Task<List<M>?> GetListAsync(F? data)
         {
             try
             {
@@ -176,7 +183,7 @@ namespace CRM.Client.Services
                 {
                     var content = await response.Content.ReadAsStringAsync();
 
-                    return JsonSerializer.Deserialize<List<T>>(content, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true }) ?? new();
+                    return JsonSerializer.Deserialize<List<M>>(content, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true }) ?? new();
                 }
                 else
                     return null;
@@ -205,10 +212,10 @@ namespace CRM.Client.Services
         /// <param name="pathService">The service path to which the request is sent. This should be a valid URI path.</param>
         /// <returns>An <see cref="APIResponseMessage{T}"/> containing the response data, status code, and a success state. If
         /// the request is successful, the response data will contain the deserialized object of type <typeparamref
-        /// name="T"/>.</returns>
-        public async Task<APIResponseMessage<T>> PostAsync(T item)
+        /// name="M"/>.</returns>
+        public async Task<APIResponseMessage<M>> PostAsync(T item)
         {
-            APIResponseMessage<T> data = new APIResponseMessage<T>();
+            APIResponseMessage<M> data = new APIResponseMessage<M>();
             try
             {
                 HttpResponseMessage resp;
@@ -226,9 +233,9 @@ namespace CRM.Client.Services
                     
                     if (resp.StatusCode != System.Net.HttpStatusCode.NoContent)
                     {
-                        data = JsonSerializer.Deserialize<APIResponseMessage<T>>(await resp.Content.ReadAsStringAsync(),
+                        data = JsonSerializer.Deserialize<APIResponseMessage<M>>(await resp.Content.ReadAsStringAsync(),
                             new JsonSerializerOptions() { PropertyNameCaseInsensitive = true }) ??
-                                new APIResponseMessage<T>() { State = false, Message = "null" };
+                                new APIResponseMessage<M>() { State = false, Message = "null" };
                     }
                     else
                     {
@@ -252,7 +259,7 @@ namespace CRM.Client.Services
             catch (AccessTokenNotAvailableException exception)
             {
                 exception.Redirect();
-                return new APIResponseMessage<T>() { State = false, Code = System.Net.HttpStatusCode.Unauthorized };
+                return new APIResponseMessage<M>() { State = false, Code = System.Net.HttpStatusCode.Unauthorized };
             }
             catch (Exception ex)
             {

@@ -11,6 +11,17 @@
 }
 else
 {
+    <!-- Info utenti se più di uno -->
+    @if (ShowMultiplier)
+    {
+        <div class="alert alert-light d-flex align-items-center gap-2 mb-3 py-2">
+            <i class="material-icons text-primary">group</i>
+            <span>
+                I totali dei tempi sono calcolati per <strong>@EffectiveUsersCount utenti</strong> assegnati all'intervento.
+            </span>
+        </div>
+    }
+
     <!-- Riepilogo -->
     <div class="times-summary mb-3">
         <div class="row g-2">
@@ -20,6 +31,10 @@ else
                     <div class="summary-info-small">
                         <span class="summary-label-small">Lavoro</span>
                         <span class="summary-value-small">@FormatDuration(TotalWorkMinutes)</span>
+                        @if (ShowMultiplier)
+                        {
+                            <span class="summary-calc-small">@FormatDuration(BaseWorkMinutes) × @EffectiveUsersCount</span>
+                        }
                     </div>
                 </div>
             </div>
@@ -29,6 +44,10 @@ else
                     <div class="summary-info-small">
                         <span class="summary-label-small">Viaggio</span>
                         <span class="summary-value-small">@FormatDuration(TotalTravelMinutes)</span>
+                        @if (ShowMultiplier)
+                        {
+                            <span class="summary-calc-small">@FormatDuration(BaseTravelMinutes) × @EffectiveUsersCount</span>
+                        }
                     </div>
                 </div>
             </div>
@@ -38,6 +57,10 @@ else
                     <div class="summary-info-small">
                         <span class="summary-label-small">Fatturabile</span>
                         <span class="summary-value-small">@FormatDuration(TotalBillableMinutes)</span>
+                        @if (ShowMultiplier)
+                        {
+                            <span class="summary-calc-small">@FormatDuration(BaseBillableMinutes) × @EffectiveUsersCount</span>
+                        }
                     </div>
                 </div>
             </div>
@@ -66,6 +89,10 @@ else
                     <div class="time-duration">
                         <span class="material-icons" style="font-size: 18px;">timer</span>
                         <strong>@time.DurationFormatted</strong>
+                        @if (ShowMultiplier)
+                        {
+                            <span class="text-muted ms-1" style="font-size: 0.85rem;">(× @EffectiveUsersCount = @FormatDuration(time.DurationMinutes * EffectiveUsersCount))</span>
+                        }
                     </div>
                 </div>
                 
@@ -155,6 +182,12 @@ else
         font-size: 1rem;
         font-weight: 600;
         color: #212529;
+    }
+
+    .summary-calc-small {
+        font-size: 0.7rem;
+        color: #6c757d;
+        font-style: italic;
     }
 
     .times-list {

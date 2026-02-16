@@ -196,6 +196,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Billable Time.
+        /// </summary>
+        public static string BillableTime {
+            get {
+                return ResourceManager.GetString("BillableTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Cancel.
         /// </summary>
         public static string ButtonCancel {
@@ -1403,6 +1412,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Ticket Feedbacks.
+        /// </summary>
+        public static string Ticketfeedbacks {
+            get {
+                return ResourceManager.GetString("Ticketfeedbacks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Ticket Management.
         /// </summary>
         public static string TicketManagement {
@@ -1511,6 +1529,51 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Total Billable Minutes.
+        /// </summary>
+        public static string TotalBillableMinutes {
+            get {
+                return ResourceManager.GetString("TotalBillableMinutes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Total Kilometers.
+        /// </summary>
+        public static string TotalKilometers {
+            get {
+                return ResourceManager.GetString("TotalKilometers", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Total Travel Minutes.
+        /// </summary>
+        public static string TotalTravelMinutes {
+            get {
+                return ResourceManager.GetString("TotalTravelMinutes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Total Work Minutes.
+        /// </summary>
+        public static string TotalWorkMinutes {
+            get {
+                return ResourceManager.GetString("TotalWorkMinutes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Travel Time.
+        /// </summary>
+        public static string TravelTime {
+            get {
+                return ResourceManager.GetString("TravelTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a User.
         /// </summary>
         public static string User {
@@ -1588,6 +1651,15 @@ namespace CRM.Shared.Resources {
         public static string Working {
             get {
                 return ResourceManager.GetString("Working", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Work Time.
+        /// </summary>
+        public static string WorkTime {
+            get {
+                return ResourceManager.GetString("WorkTime", resourceCulture);
             }
         }
         

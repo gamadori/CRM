@@ -1,0 +1,70 @@
+﻿@page "/TicketFeedbacks"
+@using CRM.Shared.DTOs
+
+@if (_items == null)
+{
+    <Waiting></Waiting>
+    return;
+}
+<PageHeader Model="@_pageHeader">
+</PageHeader>
+
+<RadzenDataGrid @ref="_grdItems" IsLoading="@_isLoading" Count="@_totalCount" Responsive=true Data="@_items" LoadData="@LoadDataAsync" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                AllowSorting="true" AllowFiltering="true" AllowPaging="true"
+                PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="TicketFeedbackResponse" AllowAlternatingRows=false>
+
+    <HeaderTemplate>
+        
+            
+    </HeaderTemplate>
+
+    <Columns>
+       
+        <RadzenDataGridColumn TItem="TicketFeedbackResponse" Property="@nameof(TicketFeedbackResponse.CreatedAt)" Title=@TranslateHelper.GetDisplayName(nameof(TicketFeedback.CreatedAt), typeof(TicketFeedback)) />
+
+        <RadzenDataGridColumn TItem="TicketFeedbackResponse" Property="@nameof(TicketFeedbackResponse.IdTicket)" Title=@TranslateHelper.GetDisplayName(nameof(TicketFeedback.IdTicket), typeof(TicketFeedback))>
+           <Template Context="item">
+                <a href="@($"/Tickets/{item.IdTicket}/Info")" class="text-blue-600 hover:underline">
+                    @item.IdTicket
+                </a>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="TicketFeedbackResponse" Property="@nameof(TicketFeedbackResponse.Company)" Title=@TranslateHelper.GetDisplayName(nameof(TicketFeedbackResponse.Company), typeof(TicketFeedbackResponse)) />
+
+        <RadzenDataGridColumn TItem="TicketFeedbackResponse" Property="@nameof(TicketFeedbackResponse.User)" Title=@TranslateHelper.GetDisplayName(nameof(TicketFeedbackResponse.User), typeof(TicketFeedbackResponse)) />
+
+
+        <RadzenDataGridColumn TItem="TicketFeedbackResponse" Property="@nameof(TicketFeedbackResponse.Rating)" Title=@TranslateHelper.GetDisplayName(nameof(TicketFeedback.Rating), typeof(TicketFeedback)) Sortable="true" Filterable="true">
+            <Template Context="item">
+                <div class="rating-stars">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        var filled = i <= item.Rating;
+                        <span class="material-icons @(filled ? "star-filled" : "star-empty")">@(filled ? "star" : "star_border")</span>
+                    }
+                </div>
+            </Template>
+        </RadzenDataGridColumn>
+        
+        <RadzenDataGridColumn TItem="TicketFeedbackResponse" Property="@nameof(TicketFeedbackResponse.Comment)" Title=@TranslateHelper.GetDisplayName(nameof(TicketFeedback.Comment), typeof(TicketFeedback))>
+            <Template Context="item">
+                <div class="comment-truncate" title="@item.Comment">
+                    @item.Comment
+                </div>
+            </Template>
+        </RadzenDataGridColumn>
+           
+        <RadzenDataGridColumn Context="item" TItem="TicketFeedbackResponse" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+            <Template Context="item">
+
+                <RedGButton RGButtonType="RGButtonType.View" Click=@(() => OnDetails(item.Id))></RedGButton>
+                
+            </Template>
+        </RadzenDataGridColumn>
+
+    </Columns>
+</RadzenDataGrid>
+
+
+
+

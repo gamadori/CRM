@@ -1,6 +1,7 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using CRM.Shared.Resources;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -34,8 +35,10 @@ namespace CRM.Client.Pages.DashBoard
 
         [Inject]
         IBaseRestService<ApplicationUser, UsersFilterModel, string> _serviceUser { get; set; }
-        
-        
+
+        [Inject]        
+        ITicketFeedbackService _ticketFeedbackService { get; set; }
+
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
@@ -52,22 +55,16 @@ namespace CRM.Client.Pages.DashBoard
 
         private List<ApplicationUser> _users;
 
-        private List<TicketStatusChartModel> _ticketStatusChart = new();
-
-        private List<ActivityModel> _recentActivities = new();
+        private AverageFeedbackDTO _averageFeedback = null;
 
         protected override async Task OnInitializedAsync()
         {
-
-            
             DynamicNotificationHandlers.Register(this);
-            //_user = await _userService.Get();
 
             await GetCurrentUser();
             _userId = _currentUserId;
             await LoadUsers();
             await LoadData();
-            
         }
 
         public async Task Handle(MsgNotify notification, System.Threading.CancellationToken cancellationToken)
@@ -75,7 +72,6 @@ namespace CRM.Client.Pages.DashBoard
             var id = notification.Id;
             var sender = notification.Sender;
             await LoadData();
-
         }
 
         private async Task LoadData()
@@ -83,14 +79,10 @@ namespace CRM.Client.Pages.DashBoard
             TicketDashBoardModelFilter filter = new TicketDashBoardModelFilter();
             filter.IdUser = _userId;
             _model = await _service.Get(filter);
-
-            var qs = UriHelper.BuildQueryString(new Dictionary<string, object?> { { "userId", _userId}, { "fromDate", DateTime.Now.AddDays(-7) } });
-           _recentActivities = await Http.GetFromJsonAsync<List<ActivityModel>>($"api/LogEvents/activities?{qs}");
-
-            GraphTicketStatus();
-
+            _averageFeedback = await _ticketFeedbackService.AverageRateAsync();
             StateHasChanged();
         }
+
         protected void AddTicket()
         {
             NavigationManager.NavigateTo("/Tickets/Create");
@@ -99,7 +91,6 @@ namespace CRM.Client.Pages.DashBoard
         protected void TicketWorking()
         {
             NavigationManager.NavigateTo(Url($"/Tickets/Index/{(int)TicketTypeSearch.Working}"));
-          
         }
 
         protected void TicketExpired()
@@ -116,7 +107,6 @@ namespace CRM.Client.Pages.DashBoard
         {
             NavigationManager.NavigateTo(Url($"/Tickets/Index/{(int)TicketTypeSearch.NewMessage}"));
         }
-
 
         protected void TicketAll()
         {
@@ -138,7 +128,6 @@ namespace CRM.Client.Pages.DashBoard
             NavigationManager.NavigateTo($"/Tickets/Index/{(int)TicketTypeSearch.ToBeInvoiced}");
         }
 
-
         protected void UsersNeedConfirm()
         {
             NavigationManager.NavigateTo($"/Settings/Users/true");
@@ -146,16 +135,79 @@ namespace CRM.Client.Pages.DashBoard
 
         protected void InterventionsPendingSignature()
         {
-            // Naviga alla lista interventi con filtro per firme pending
-            // TODO: creare pagina dedicata o modificare Index interventi per supportare filtro SignatureStatus
             NavigationManager.NavigateTo("/TicketsIntervention/PendingSignatures");
         }
 
         protected async Task OnClickNew1()
         {
             await dialogService.Confirm($"{Localize["Confermare l'utente"]}", Localize["Conferma Utente"], null);
+        }
 
-            //dialogService.OnClose += async (s) => await OnClickClose(s);
+        /// <summary>
+        /// Naviga alla pagina dei feedback
+        /// </summary>
+        protected void ViewAllFeedbacks()
+        {
+            NavigationManager.NavigateTo("/TicketFeedbacks");
+        }
+
+        /// <summary>
+        /// Naviga ai dettagli del ticket (e segna il feedback come letto)
+        /// </summary>
+        protected async Task ViewTicketDetails(int ticketId)
+        {
+            try
+            {
+                var feedback = _model.RecentFeedbacks?.FirstOrDefault(f => f.TicketId == ticketId);
+                if (feedback != null && !feedback.IsRead)
+                {
+                    await Http.PutAsync($"api/TicketFeedback/{feedback.Id}/read", null);
+                }
+            }
+            catch
+            {
+                // Ignora errori nel segnare come letto
+            }
+
+            NavigationManager.NavigateTo($"/Tickets/{ticketId}/Details");
+        }
+
+        /// <summary>
+        /// Tronca il nome dell'azienda se troppo lungo
+        /// </summary>
+        private string TruncateCompanyName(string name, int maxLength = 25)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return "-";
+            
+            return name.Length <= maxLength ? name : name.Substring(0, maxLength) + "...";
+        }
+
+        /// <summary>
+        /// Restituisce un colore in base al rating (rosso-giallo-verde)
+        /// </summary>
+        private string GetRatingColor(decimal rating)
+        {
+            return rating switch
+            {
+                >= 4.5m => "#22c55e", // Verde scuro - Eccellente
+                >= 4.0m => "#84cc16", // Verde chiaro - Ottimo
+                >= 3.5m => "#eab308", // Giallo - Buono
+                >= 3.0m => "#f97316", // Arancione - Sufficiente
+                >= 2.0m => "#ef4444", // Rosso - Scarso
+                _ => "#dc2626"        // Rosso scuro - Pessimo
+            };
+        }
+
+        /// <summary>
+        /// Genera il testo del pulsante "Vedi Tutte"
+        /// </summary>
+        private string GetViewAllButtonText()
+        {
+            if (_averageFeedback?.Companies == null)
+                return "Vedi Tutte";
+            
+            return $"Vedi Tutte ({_averageFeedback.Companies.Count} aziende)";
         }
 
         private async Task GetCurrentUser()
@@ -165,7 +217,6 @@ namespace CRM.Client.Pages.DashBoard
 
             if (user.Identity.IsAuthenticated)
             {
-
                 _currentUserId = user.Claims.Where(a => a.Type == "sub").Select(a => a.Value).FirstOrDefault();
             }
             else
@@ -178,8 +229,6 @@ namespace CRM.Client.Pages.DashBoard
         {
             UsersFilterModel request = new UsersFilterModel();
 
-           
-
             var response = await _serviceUser.GetList(request);
 
             _users = response.Items.ToList();
@@ -189,13 +238,11 @@ namespace CRM.Client.Pages.DashBoard
 
         protected async void OnChangeIdUser()
         {
-            //StateHasChanged();
             await LoadData();
         }
 
         public void Dispose()
         {
-
             DynamicNotificationHandlers.Unregister(this);
         }
 
@@ -214,25 +261,9 @@ namespace CRM.Client.Pages.DashBoard
             }
         }
 
-        private void GraphTicketStatus()
-        {
-           
-
-            _ticketStatusChart = new List<TicketStatusChartModel>
-            {
-                new TicketStatusChartModel { Status = Localize["Not Assigned"], Count = _model.TicketsNotAssigned },
-                new TicketStatusChartModel { Status = Localize["Working"], Count = _model.TicketsWorking },
-                new TicketStatusChartModel { Status = Localize["Closed"], Count = _model.TicketAssigned },
-                new TicketStatusChartModel { Status = Localize["Expired"], Count = _model.TicketsExpired }
-            };
-        }
-
         private async Task ReloadDashboard() 
         {
             await LoadData();
         }
-
     }
-    public class TicketStatusChartModel { public string Status { get; set; } public int Count { get; set; } }
-
 }

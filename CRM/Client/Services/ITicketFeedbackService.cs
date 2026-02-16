@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using CRM.Shared;
 using CRM.Shared.DTOs;
 
-namespace CRM.Shared.Services
+namespace CRM.Client.Services
 {
     /// <summary>
     /// Interfaccia per la gestione dei feedback dei ticket.
@@ -11,7 +12,7 @@ namespace CRM.Shared.Services
     /// - Server: TicketFeedbackService (accesso diretto al DB)
     /// - Client: ProxyTicketFeedbackService (chiamate HTTP)
     /// </summary>
-    public interface ITicketFeedbackService
+    public interface ITicketFeedbackService : IDataService<TicketFeedback, TicketFeedbackResponse, int, TicketFeedbackFilterModel, object>
     {
         /// <summary>
         /// Ottiene i ticket chiusi in attesa di feedback per l'utente corrente
@@ -52,5 +53,10 @@ namespace CRM.Shared.Services
         /// Segna un feedback come letto (solo admin)
         /// </summary>
         Task<bool> MarkAsReadAsync(int id);
+
+        /// <summary>
+        /// Ottiene la valutazione media dei feedback
+        /// </summary>
+        Task<AverageFeedbackDTO> AverageRateAsync();
     }
 }

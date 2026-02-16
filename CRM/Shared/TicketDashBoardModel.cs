@@ -26,9 +26,33 @@ namespace CRM.Shared
 
         public int InterventionsPendingSignature { get; set; }
 
+        /// <summary>
+        /// Numero di feedback non letti dai clienti
+        /// </summary>
+        public int UnreadFeedbacksCount { get; set; }
+
+        /// <summary>
+        /// Lista dei feedback recenti non letti
+        /// </summary>
+        public List<FeedbackSummary> RecentFeedbacks { get; set; } = new();
+
         public List<Ticket> Tickets { get; set; }   
+    }
 
-
+    /// <summary>
+    /// Riepilogo feedback per la dashboard
+    /// </summary>
+    public class FeedbackSummary
+    {
+        public int Id { get; set; }
+        public int TicketId { get; set; }
+        public string TicketDescription { get; set; }
+        public string CompanyName { get; set; }
+        public string UserName { get; set; }
+        public int Rating { get; set; }
+        public string Comment { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public bool IsRead { get; set; }
     }
 
     public class TicketDashBoardModelFilter

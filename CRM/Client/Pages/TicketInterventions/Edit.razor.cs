@@ -244,7 +244,8 @@ namespace CRM.Client.Pages.TicketInterventions
                 var resp = await _service.Post(_ticketIntervention);
                 if (resp != null && resp.State)
                 {
-                    _ticketIntervention = resp.Data;
+                    if (resp.Data != null)
+                        _ticketIntervention = resp.Data;
                     await SaveUserAssignments(_ticketIntervention.Id);
                     
                     // Salva gli intervalli di tempo se presenti (per nuovi interventi)

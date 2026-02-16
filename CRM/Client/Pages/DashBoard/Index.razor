@@ -17,12 +17,11 @@ else
             <div class="col-12 col-md-8">
                 <div class="dashboard-hero">
                     <h2 class="fw-bold text-dark mb-1 dashboard-title">Dashboard</h2>
-                    <p class="text-muted dashboard-subtitle">Benvenuto nel tuo pannello di controllo</p>
+                    <p class="text-muted dashboard-subtitle">Pannello di controllo</p>
                 </div>
             </div>
             <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
-                <RedGButton Icon="refresh" Text="Aggiorna" Style="margin-right: 8px;" Click="ReloadDashboard" ButtonStyle="ButtonStyle.Secondary" />
-                <RedGButton Icon="notifications" Text="Notifiche" Click="ShowNotifications" ButtonStyle="ButtonStyle.Info" />
+                <RedGButton Icon="refresh" Text="Aggiorna" Click="ReloadDashboard" ButtonStyle="ButtonStyle.Secondary" />
             </div>
         </div>
 
@@ -32,8 +31,8 @@ else
             <div class="row mb-4">
                 <RadzenCard class="dashboard-toolbar">
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 col-lg-4">
+                        <div class="row align-items-end">
+                            <div class="col-md-4 col-lg-3">
                                 <RedGDropDownGrid Label="@Localize["User"]" TItem="ApplicationUser" @bind-value="@_userId" TValue="string" Data="@_users" Change="OnChangeIdUser" TextProperty="NameComplete" ValueProperty="Id">
                                     <ChildColumns>
                                         <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
@@ -41,7 +40,7 @@ else
                                     </ChildColumns>
                                 </RedGDropDownGrid>
                             </div>
-                            <div class="col-md-6 col-lg-8">
+                            <div class="col-md-8 col-lg-9">
                                 <div class="d-flex flex-wrap gap-2">
                                     <RedGButton Icon="add_box" Text="@Localize["Nuovo Ticket"]" Click="AddTicket" ButtonStyle="ButtonStyle.Primary" />
                                     <RedGButton Icon="list" Text="@Localize["Storico TICKETS"]" Click="TicketAll" ButtonStyle="ButtonStyle.Secondary" />
@@ -52,159 +51,462 @@ else
                                     </AuthorizeView>
                                 </div>
                             </div>
-                            </div>
+                        </div>
                     </div>
                 </RadzenCard>
-                
             </div>
         }
 
-      
-
         <!-- KPI Cards -->
-        <div class="row g-4 mb-4">
-            <div class="col-12">
-                <div class="row g-4">
-                    <div class="col-12 col-sm-6 col-xl-3">
-                        <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #fffbe6 0%, #fff 100%);" @onclick="TicketNotAssigned">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <div>
-                                    <p class="text-muted text-uppercase small fw-semibold mb-1">TICKET @Localize[TicketTypeSearch.NotAssigned.ToString()]</p>
-                                    <h3 class="fw-bold mb-0 text-warning">@_model.TicketsNotAssigned</h3>
-                                </div>
-                                <span class="material-icons text-warning" style="font-size: 32px;">support_agent</span>
-                            </div>
-                        </RadzenCard>
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-4 col-xl-2">
+                <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #fffbe6 0%, #fff 100%);" @onclick="TicketNotAssigned">
+                    <div class="text-center">
+                        <span class="material-icons text-warning mb-2" style="font-size: 28px;">assignment_late</span>
+                        <p class="text-muted text-uppercase small fw-semibold mb-1">Non Assegnati</p>
+                        <h3 class="fw-bold mb-0 text-warning">@_model.TicketsNotAssigned</h3>
                     </div>
-                    <div class="col-12 col-sm-6 col-xl-3">
-                        <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #e6fff7 0%, #fff 100%);" @onclick="TicketWorking">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <div>
-                                    <p class="text-muted text-uppercase small fw-semibold mb-1">TICKET @Localize[TicketTypeSearch.Working.ToString()]</p>
-                                    <h3 class="fw-bold mb-0 text-success">@_model.TicketsWorking</h3>
-                                </div>
-                                <span class="material-icons text-success" style="font-size: 32px;">support_agent</span>
-                            </div>
-                        </RadzenCard>
+                </RadzenCard>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #e6fff7 0%, #fff 100%);" @onclick="TicketWorking">
+                    <div class="text-center">
+                        <span class="material-icons text-success mb-2" style="font-size: 28px;">engineering</span>
+                        <p class="text-muted text-uppercase small fw-semibold mb-1">In Lavorazione</p>
+                        <h3 class="fw-bold mb-0 text-success">@_model.TicketsWorking</h3>
                     </div>
-                    <div class="col-12 col-sm-6 col-xl-3">
-                        <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #ffe6e6 0%, #fff 100%);" @onclick="TicketExpired">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <div>
-                                    <p class="text-muted text-uppercase small fw-semibold mb-1">TICKET @Localize[TicketTypeSearch.Expired.ToString()]</p>
-                                    <h3 class="fw-bold mb-0 text-danger">@_model.TicketsExpired</h3>
-                                </div>
-                                <span class="material-icons text-danger" style="font-size: 32px;">support_agent</span>
-                            </div>
-                        </RadzenCard>
+                </RadzenCard>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #ffe6e6 0%, #fff 100%);" @onclick="TicketExpired">
+                    <div class="text-center">
+                        <span class="material-icons text-danger mb-2" style="font-size: 28px;">schedule</span>
+                        <p class="text-muted text-uppercase small fw-semibold mb-1">Scaduti</p>
+                        <h3 class="fw-bold mb-0 text-danger">@_model.TicketsExpired</h3>
                     </div>
-                    <div class="col-12 col-sm-6 col-xl-3">
-                        <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #e6f0ff 0%, #fff 100%);" @onclick="TicketsNewMessage">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <div>
-                                    <p class="text-muted text-uppercase small fw-semibold mb-1">CHAT NUOVI MESSAGGI</p>
-                                    <h3 class="fw-bold mb-0 text-info">@_model.ChatMessageToRead</h3>
-                                </div>
-                                <span class="material-icons text-info" style="font-size: 32px;">chat</span>
-                            </div>
-                        </RadzenCard>
+                </RadzenCard>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #e6f0ff 0%, #fff 100%);" @onclick="TicketsNewMessage">
+                    <div class="text-center">
+                        <span class="material-icons text-info mb-2" style="font-size: 28px;">chat</span>
+                        <p class="text-muted text-uppercase small fw-semibold mb-1">Nuovi Messaggi</p>
+                        <h3 class="fw-bold mb-0 text-info">@_model.ChatMessageToRead</h3>
                     </div>
-                    @if (_model.UsersNeedConfirm > 0)
-                    {
-                        <div class="col-12 col-sm-6 col-xl-3">
-                            <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #e6f7ff 0%, #fff 100%);" @onclick="UsersNeedConfirm">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <div>
-                                        <p class="text-muted text-uppercase small fw-semibold mb-1">UTENTI DA CONFERMARE</p>
-                                        <h3 class="fw-bold mb-0 text-info">@_model.UsersNeedConfirm</h3>
-                                    </div>
-                                    <span class="material-icons text-info" style="font-size: 32px;">people</span>
-                                </div>
-                            </RadzenCard>
+                </RadzenCard>
+            </div>
+            @if (_model.InterventionsPendingSignature > 0)
+            {
+                <div class="col-6 col-md-4 col-xl-2">
+                    <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #fff3e6 0%, #fff 100%);" @onclick="InterventionsPendingSignature">
+                        <div class="text-center">
+                            <span class="material-icons mb-2" style="font-size: 28px; color: #f59e0b;">draw</span>
+                            <p class="text-muted text-uppercase small fw-semibold mb-1">Firme Pending</p>
+                            <h3 class="fw-bold mb-0" style="color: #f59e0b;">@_model.InterventionsPendingSignature</h3>
                         </div>
-                    }
-                    @if (_model.InterventionsPendingSignature > 0)
-                    {
-                        <div class="col-12 col-sm-6 col-xl-3">
-                            <RadzenCard class="dashboard-card h-100 shadow-sm border-0" style="cursor:pointer; background: linear-gradient(135deg, #fff3e6 0%, #fff 100%);" @onclick="InterventionsPendingSignature">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <div>
-                                        <p class="text-muted text-uppercase small fw-semibold mb-1 d-flex align-items-center gap-1">
-                                            <span class="material-icons" style="font-size: 16px;">schedule</span>
-                                            FIRME IN ATTESA
-                                        </p>
-                                        <h3 class="fw-bold mb-0" style="color: #f59e0b;">@_model.InterventionsPendingSignature</h3>
-                                        <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Conferma Email Richiesta</small>
-                                    </div>
-                                    <span class="material-icons" style="font-size: 32px; color: #f59e0b;">draw</span>
-                                </div>
-                            </RadzenCard>
+                    </RadzenCard>
+                </div>
+            }
+            @if (_model.UsersNeedConfirm > 0)
+            {
+                <div class="col-6 col-md-4 col-xl-2">
+                    <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #e6f7ff 0%, #fff 100%);" @onclick="UsersNeedConfirm">
+                        <div class="text-center">
+                            <span class="material-icons text-info mb-2" style="font-size: 28px;">person_add</span>
+                            <p class="text-muted text-uppercase small fw-semibold mb-1">Utenti da Confermare</p>
+                            <h3 class="fw-bold mb-0 text-info">@_model.UsersNeedConfirm</h3>
                         </div>
-                    }
+                    </RadzenCard>
+                </div>
+            }
+        </div>
+
+        <!-- Average Feedback Section -->
+        @if (_averageFeedback != null && _averageFeedback.Companies.Any())
+        {
+            <div class="row mb-4">
+                <div class="col-12">
+                    <RadzenCard class="shadow-sm border-0">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                <span class="material-icons" style="color: #f59e0b;">analytics</span>
+                                Media Valutazioni Clienti
+                            </h5>
+                            <div class="overall-rating d-flex align-items-center gap-2">
+                                <span class="text-muted">Media Globale:</span>
+                                <div class="overall-stars">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        var filled = i <= Math.Round(_averageFeedback.OverallAverage);
+                                        <span class="material-icons @(filled ? "star-filled" : "star-empty")">star</span>
+                                    }
+                                </div>
+                                <span class="overall-value">@_averageFeedback.OverallAverage.ToString("0.0")</span>
+                                <span class="text-muted">(@_averageFeedback.TotalFeedbacks feedback)</span>
+                            </div>
+                        </div>
+
+                        <div class="company-ratings-grid">
+                            @foreach (var company in _averageFeedback.Companies.OrderByDescending(c => c.Average).Take(6))
+                            {
+                                <div class="company-rating-card">
+                                    <div class="company-rating-header">
+                                        <span class="company-name" title="@company.Name">@TruncateCompanyName(company.Name)</span>
+                                        <span class="company-feedbacks">@company.TotalFeedbacks feedback</span>
+                                    </div>
+                                    <div class="company-rating-body">
+                                        <div class="rating-bar-container">
+                                            <div class="rating-bar" style="width: @(company.Average / 5 * 100)%; background: @GetRatingColor(company.Average);"></div>
+                                        </div>
+                                        <div class="rating-details">
+                                            <div class="rating-stars">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    var filled = i <= Math.Round(company.Average);
+                                                    <span class="material-icons star-sm @(filled ? "star-filled" : "star-empty")">star</span>
+                                                }
+                                            </div>
+                                            <span class="rating-value">@company.Average.ToString("0.0")</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        @if (_averageFeedback.Companies.Count > 6)
+                        {
+                            <div class="text-center mt-3">
+                                <RedGButton Icon="visibility" Text="@GetViewAllButtonText()" Click="ViewAllFeedbacks" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+                            </div>
+                        }
+                    </RadzenCard>
                 </div>
             </div>
-        </div>
+        }
 
-        <!-- Chart & Attività Recenti affiancati -->
-        <div class="row g-4 mb-4">
-            <div class="col-12 col-lg-6">
-                <RadzenCard class="shadow-sm border-0 h-100">
-                    <h6 class="fw-bold mb-3">
-                        <span class="material-icons me-2 text-primary">bar_chart</span>Ticket per stato
-                    </h6>
-                    <RadzenChart Style="height:320px;">
-                        <RadzenColumnSeries Data="@_ticketStatusChart" CategoryProperty="Status" ValueProperty="Count" />
-                        <RadzenCategoryAxis Padding="0.2" />
-                        <RadzenValueAxis />
-                    </RadzenChart>
-                </RadzenCard>
-            </div>
-            <div class="col-12 col-lg-6">
-                <RadzenCard class="h-100 shadow-sm border-0">
-                    <h6 class="fw-bold mb-3">
-                        <span class="material-icons me-2 text-info">notifications</span>Attività Recenti
-                    </h6>
-                    <div style="max-height:320px;overflow-y:auto;overflow-x:hidden;">
-                        <RadzenTimeline Data="@_recentActivities">
-                            <Items>
-                                @foreach (var activity in _recentActivities)
+        <!-- Feedback Section -->
+        @if (_model.UnreadFeedbacksCount > 0 || (_model.RecentFeedbacks != null && _model.RecentFeedbacks.Any()))
+        {
+            <div class="row mb-4">
+                <div class="col-12">
+                    <RadzenCard class="shadow-sm border-0">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                                <span class="material-icons text-primary">rate_review</span>
+                                Feedback dai Clienti
+                                @if (_model.UnreadFeedbacksCount > 0)
                                 {
-                                    <RadzenTimelineItem>
-                                        <PointContent>
-                                            <RadzenIcon Icon="@activity.Icon" />
-                                        </PointContent>
-                                        <LabelContent>
-                                            <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-m-0">@activity.Date</RadzenText>
-                                        </LabelContent>
-                                        <ChildContent>
-                                            <div class="activity-description">@activity.Description</div>
-                                        </ChildContent>
-                                    </RadzenTimelineItem>
+                                    <span class="badge bg-danger">@_model.UnreadFeedbacksCount nuovi</span>
                                 }
-                            </Items>
-                        </RadzenTimeline>
+                            </h5>
+                            <RedGButton Icon="visibility" Text="Vedi Tutti" Click="ViewAllFeedbacks" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+                        </div>
+
+                        @if (_model.RecentFeedbacks != null && _model.RecentFeedbacks.Any())
+                        {
+                            <div class="feedback-list">
+                                @foreach (var feedback in _model.RecentFeedbacks)
+                                {
+                                    <div class="feedback-item @(feedback.IsRead ? "" : "unread")" @onclick="() => ViewTicketDetails(feedback.TicketId)">
+                                        <div class="feedback-header">
+                                            <div class="feedback-info">
+                                                <span class="feedback-company">@feedback.CompanyName</span>
+                                                <span class="feedback-ticket">Ticket #@feedback.TicketId</span>
+                                            </div>
+                                            <div class="feedback-rating">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    <span class="material-icons star @(i <= feedback.Rating ? "filled" : "")">star</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="feedback-body">
+                                            @if (!string.IsNullOrWhiteSpace(feedback.Comment))
+                                            {
+                                                <p class="feedback-comment">"@feedback.Comment"</p>
+                                            }
+                                            else
+                                            {
+                                                <p class="feedback-comment no-comment"><em>Nessun commento</em></p>
+                                            }
+                                        </div>
+                                        <div class="feedback-footer">
+                                            <span class="feedback-user">
+                                                <span class="material-icons">person</span>
+                                                @feedback.UserName
+                                            </span>
+                                            <span class="feedback-date">
+                                                <span class="material-icons">schedule</span>
+                                                @feedback.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                            </span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center text-muted py-4">
+                                <span class="material-icons" style="font-size: 48px;">sentiment_satisfied</span>
+                                <p class="mt-2">Nessun feedback recente</p>
+                            </div>
+                        }
+                    </RadzenCard>
+                </div>
+            </div>
+        }
+
+        <!-- Quick Stats -->
+        <div class="row g-3">
+            <div class="col-md-6 col-lg-3">
+                <RadzenCard class="h-100 shadow-sm border-0 stat-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                            <span class="material-icons">assignment_turned_in</span>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Ticket Chiusi</p>
+                            <h4 class="fw-bold mb-0">@_model.TicketsClosed</h4>
+                        </div>
                     </div>
                 </RadzenCard>
             </div>
+            <div class="col-md-6 col-lg-3">
+                <RadzenCard class="h-100 shadow-sm border-0 stat-card">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-success bg-opacity-10 text-success">
+                            <span class="material-icons">assignment_ind</span>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Assegnati a Me</p>
+                            <h4 class="fw-bold mb-0">@_model.TicketAssigned</h4>
+                        </div>
+                    </div>
+                </RadzenCard>
+            </div>
+            @if (_model.UnreadFeedbacksCount > 0)
+            {
+                <div class="col-md-6 col-lg-3">
+                    <RadzenCard class="h-100 shadow-sm border-0 stat-card" style="cursor:pointer;" @onclick="ViewAllFeedbacks">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                                <span class="material-icons">star_rate</span>
+                            </div>
+                            <div>
+                                <p class="text-muted small mb-0">Feedback da Leggere</p>
+                                <h4 class="fw-bold mb-0">@_model.UnreadFeedbacksCount</h4>
+                            </div>
+                        </div>
+                    </RadzenCard>
+                </div>
+            }
         </div>
-
-       
     </div>
 }
 
 <style>
-.activity-description {
-    white-space: normal;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    word-break: break-word;
-    max-width: 100%;
-}
-</style>
+    .kpi-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    }
 
-@code {
-    private void ShowNotifications() { /* TODO: implement notification logic */ }
-}
+    .stat-card .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .stat-card .stat-icon .material-icons {
+        font-size: 24px;
+    }
+
+    /* Average Feedback Styles */
+    .overall-rating {
+        background: #fffbeb;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid #fcd34d;
+    }
+    .overall-stars .material-icons {
+        font-size: 20px;
+    }
+    .overall-stars .star-filled {
+        color: #f59e0b;
+    }
+    .overall-stars .star-empty {
+        color: #d1d5db;
+    }
+    .overall-value {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #f59e0b;
+    }
+
+    .company-ratings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
+        gap: 16px;
+    }
+
+    .company-rating-card {
+        background: #f9fafb;
+        border-radius: 10px;
+        padding: 16px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s ease;
+        max-width: 320px;
+    }
+    .company-rating-card:hover {
+        background: #f3f4f6;
+        border-color: #d1d5db;
+    }
+
+    .company-rating-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+    .company-name {
+        font-weight: 600;
+        color: #1f2937;
+        font-size: 0.95rem;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .company-feedbacks {
+        font-size: 0.75rem;
+        color: #6b7280;
+        background: #e5e7eb;
+        padding: 2px 8px;
+        border-radius: 12px;
+    }
+
+    .rating-bar-container {
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+    .rating-bar {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+
+    .rating-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .rating-stars .star-sm {
+        font-size: 16px;
+    }
+    .rating-stars .star-filled {
+        color: #f59e0b;
+    }
+    .rating-stars .star-empty {
+        color: #d1d5db;
+    }
+    .rating-value {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #374151;
+    }
+
+    /* Feedback Styles */
+    .feedback-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .feedback-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-left: 4px solid #dee2e6;
+    }
+    .feedback-item:hover {
+        background: #e9ecef;
+        transform: translateX(4px);
+    }
+    .feedback-item.unread {
+        border-left-color: #0d6efd;
+        background: #f0f7ff;
+    }
+
+    .feedback-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+    }
+    .feedback-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .feedback-company {
+        font-weight: 600;
+        color: #212529;
+    }
+    .feedback-ticket {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .feedback-rating {
+        display: flex;
+        gap: 2px;
+    }
+    .feedback-rating .star {
+        font-size: 18px;
+        color: #dee2e6;
+    }
+    .feedback-rating .star.filled {
+        color: #ffc107;
+    }
+
+    .feedback-body {
+        margin-bottom: 8px;
+    }
+    .feedback-comment {
+        margin: 0;
+        color: #495057;
+        font-style: italic;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+    .feedback-comment.no-comment {
+        color: #adb5bd;
+    }
+
+    .feedback-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    .feedback-user, .feedback-date {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .feedback-user .material-icons, .feedback-date .material-icons {
+        font-size: 14px;
+    }
+</style>

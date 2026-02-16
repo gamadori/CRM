@@ -613,4 +613,28 @@
   <data name="Interventions" xml:space="preserve">
     <value>Services</value>
   </data>
+  <data name="Ticketfeedbacks" xml:space="preserve">
+    <value>Ticket Feedbacks</value>
+  </data>
+  <data name="WorkTime" xml:space="preserve">
+    <value>Temps de travail</value>
+  </data>
+  <data name="TotalWorkMinutes" xml:space="preserve">
+    <value>Durée totale de travail (minutes)</value>
+  </data>
+  <data name="TravelTime" xml:space="preserve">
+    <value>Temps de trajet</value>
+  </data>
+  <data name="TotalTravelMinutes" xml:space="preserve">
+    <value>Durée totale du trajet (minutes)</value>
+  </data>
+  <data name="BillableTime" xml:space="preserve">
+    <value>Temps facturable</value>
+  </data>
+  <data name="TotalBillableMinutes" xml:space="preserve">
+    <value>Total des minutes facturables</value>
+  </data>
+  <data name="TotalKilometers" xml:space="preserve">
+    <value>Kilomètres totaux</value>
+  </data>
 </root>

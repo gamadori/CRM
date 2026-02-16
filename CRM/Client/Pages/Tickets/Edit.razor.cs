@@ -467,7 +467,22 @@ namespace CRM.Client.Pages.Tickets
                     _ticket.IdUserAssigned = null;
                 }
 
-                _ticket = (await _service.Post(_ticket)).Data;
+                var response = await _service.Post(_ticket);
+                
+                // ✅ FIX: Controllo null sul risultato del POST
+                if (response?.Data == null)
+                {
+                    NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = Localize["Error"],
+                        Detail = Localize["Failed to save ticket"],
+                        Duration = 4000
+                    });
+                    return;
+                }
+                
+                _ticket = response.Data;
 
                 // ✅ NUOVO: Salva le assegnazioni multiple tramite API
                 if (_ticket?.Id > 0)

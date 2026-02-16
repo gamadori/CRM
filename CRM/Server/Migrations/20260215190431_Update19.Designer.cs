@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CRM.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260204162349_Update17")]
-    partial class Update17
+    [Migration("20260215190431_Update19")]
+    partial class Update19
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1724,6 +1724,9 @@ namespace CRM.Server.Migrations
                     b.Property<int>("IdCompany")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdCompanyAssigned")
+                        .HasColumnType("int");
+
                     b.Property<int?>("IdContact")
                         .HasColumnType("int");
 
@@ -1861,6 +1864,43 @@ namespace CRM.Server.Migrations
                     b.HasIndex("IdUser");
 
                     b.ToTable("TicketChatReads");
+                });
+
+            modelBuilder.Entity("CRM.Shared.TicketFeedback", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdTicket")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdUser")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdTicket");
+
+                    b.HasIndex("IdUser");
+
+                    b.ToTable("TicketFeedbacks");
                 });
 
             modelBuilder.Entity("CRM.Shared.TicketIntervention", b =>
@@ -3181,6 +3221,25 @@ namespace CRM.Server.Migrations
                         .HasForeignKey("IdUser");
 
                     b.Navigation("TicketChat");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CRM.Shared.TicketFeedback", b =>
+                {
+                    b.HasOne("CRM.Shared.Ticket", "Ticket")
+                        .WithMany()
+                        .HasForeignKey("IdTicket")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Ticket");
 
                     b.Navigation("User");
                 });

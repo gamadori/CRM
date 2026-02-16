@@ -5,15 +5,15 @@
 namespace CRM.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class Update17 : Migration
+    public partial class Update19 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "IdUser",
-                table: "TicketsInterventions",
-                type: "nvarchar(max)",
+            migrationBuilder.AddColumn<int>(
+                name: "IdCompanyAssigned",
+                table: "Tickets",
+                type: "int",
                 nullable: true);
         }
 
@@ -21,8 +21,8 @@ namespace CRM.Server.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "IdUser",
-                table: "TicketsInterventions");
+                name: "IdCompanyAssigned",
+                table: "Tickets");
         }
     }
 }

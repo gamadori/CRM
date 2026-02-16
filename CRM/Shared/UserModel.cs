@@ -78,6 +78,34 @@ namespace CRM.Shared
 
     }
 
+    public static class UserModelExtension
+    {
+        public static UserModel ToUserModel(this ApplicationUser user)
+        {
+            if (user == null)
+                return null;
+            return new UserModel
+            {
+                Id = user.Id,
+                IdCompany = user.IdCompany,
+               
+                Name = user.Name,
+                Surname = user.Surname,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                LanguageCode = user.LanguageCode,
+                Company = user.Company != null ? user.Company.RagioneSociale : null,
+                UserName = user.UserName,
+                Color = user.Color,
+                Photo = user.Photo,
+                Enabled = user.Enabled,
+                AdminConfirmed = user.AdminConfirmed,
+                AvatarTxt = $"{user.Name.Substring(0, 1)}{user.Surname.Substring(0, 1)}",
+               
+            };
+        }
+    }
+
     //public class LoginModel
     //{
     //    public string UserName { get; set; }

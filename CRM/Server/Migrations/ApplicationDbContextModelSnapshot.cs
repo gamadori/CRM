@@ -1721,6 +1721,9 @@ namespace CRM.Server.Migrations
                     b.Property<int>("IdCompany")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdCompanyAssigned")
+                        .HasColumnType("int");
+
                     b.Property<int?>("IdContact")
                         .HasColumnType("int");
 

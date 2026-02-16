@@ -1,4 +1,5 @@
-﻿@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
+﻿@using CRM.Client.Services
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 <!-- Modern Top Bar -->
 <div class="top-row navbar navbar-dark modern-topbar">
@@ -103,11 +104,17 @@
                         <span class="badge bg-primary ms-auto">AI</span>
                     </NavLink>
 
-                    
-                    <NavLink class="nav-link submenu-link" href="settings/push-notifications" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">add_alert</span>
-                        <span class="nav-text">@Localize["Push Notifications"]</span>
-                    </NavLink>
+                    <!-- Feedback Clienti (NUOVO) -->
+                    <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                        <NavLink class="nav-link submenu-link" href="TicketFeedbacks" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                            <span class="material-icons nav-icon">rate_review</span>
+                            <span class="nav-text">Feedback Clienti</span>
+                            @if (_unreadFeedbacksCount > 0)
+                            {
+                                <span class="badge bg-danger ms-auto">@_unreadFeedbacksCount</span>
+                            }
+                        </NavLink>
+                    </AuthorizeView>
                 </div>
             }
         </div>
@@ -134,6 +141,9 @@
 </div>
 
 @code {
+    [Inject]
+    ITicketFeedbackService TicketFeedbacksService { get; set; }
+
     private bool collapseNavMenu = true;
 
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
@@ -145,6 +155,8 @@
     private bool _hasPageName = true;
 
     private bool _expandMenuProdotti = false;
+
+    private int _unreadFeedbacksCount = 0;
 
     private void MenuHomeClicked()
     {
@@ -167,5 +179,27 @@
     private void CloseNavMenu()
     {
         collapseNavMenu = true;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUnreadFeedbacksCount();
+    }
+
+    private async Task LoadUnreadFeedbacksCount()
+    {
+        try
+        {
+            // TODO: Implementare chiamata API per ottenere il count dei feedback non letti
+            // var count = await HttpClient.GetFromJsonAsync<int>("api/TicketFeedback/pending/count");
+            // _unreadFeedbacksCount = count;
+            var unread = await TicketFeedbacksService.GetListAsync(new TicketFeedbackFilterModel { IsRead = false });
+
+            _unreadFeedbacksCount = unread.Count(); // Placeholder per ora
+        }
+        catch
+        {
+            _unreadFeedbacksCount = 0;
+        }
     }
 }

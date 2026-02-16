@@ -1,4 +1,6 @@
 ﻿using CRM.Server.Data;
+using CRM.Shared;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace CRM.Server.Services
@@ -8,13 +10,14 @@ namespace CRM.Server.Services
         private readonly ApplicationDbContext _context;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IPermitsService _permitsService;
-
-        public TicketsService(ApplicationDbContext context,  IHttpContextAccessor httpContextAccessor, IPermitsService permitsService)
+        private readonly UserManager<ApplicationUser> _userManager;
+        public TicketsService(ApplicationDbContext context,  IHttpContextAccessor httpContextAccessor, 
+            IPermitsService permitsService, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _httpContextAccessor = httpContextAccessor;
             _permitsService = permitsService;
-          
+            _userManager = userManager;
         }
 
         public async Task<List<(string?, string?)>> GetEmails(int idTicket)
@@ -69,6 +72,65 @@ namespace CRM.Server.Services
             return addresses;
         }
 
-        
+        public async Task<List<UserModel>> GetUsersCanAssignTicketAsync(int idTicket)
+        {
+
+            List<UserModel> usersToAssign = new List<UserModel>();
+
+
+            var ticket = await _context.Tickets.FindAsync(idTicket);
+
+            if (ticket != null)
+            {
+                return await GetUsersCanAssignTicketTypeAsync(ticket.IdType);
+            }
+            else
+                return new List<UserModel>();
+        }
+        public async Task<List<UserModel>> GetUsersCanAssignTicketTypeAsync(int idType)
+        {
+            List<UserModel> usersToAssign = new List<UserModel>();
+            List<int> groups;
+            List<string> users;
+            List<int>? idCompanies = await _permitsService.GetIdCompanies();
+
+            if (idCompanies == null || !idCompanies.Any())
+                return new List<UserModel>();
+
+            groups = _context.Groups.Where(x => x.TicketTypes.Where(y => y.Id == idType).Any()).Select(x => x.Id).ToList();
+            users = _context.Users
+                .Where(x => x.TicketTypes.Where(y => y.Id == idType
+                    && x.IdCompany != null && idCompanies.Contains(x.IdCompany.Value)).Any())
+                .Select(x => x.Id).ToList();
+
+            if (groups.Any() || users.Any())
+            {
+                if (groups.Any())
+                {
+                    var list = await _context.Users.Where(x => x.Groups.Where(y => groups.Contains(y.Id)).Any()).ToListAsync();
+                    usersToAssign.AddRange(list.Select(x=>x.ToUserModel()));
+                }
+
+                if (users.Any())
+                {
+
+                    var list = await _userManager.Users.Where(x => users.Contains(x.Id)).Select(x=>x.ToUserModel()).ToListAsync();
+                    list = list.Where(x => !usersToAssign.Contains(x)).ToList();
+
+                    usersToAssign.AddRange(list);
+                }
+            }
+            else
+            {
+                var settings = await _context.GlobalSettings.FirstOrDefaultAsync();
+
+                if (settings != null && await _permitsService.BelongsToMainCompany())
+                {
+                    usersToAssign = await _userManager.Users.Where(x => x.IdCompany != null && idCompanies.Contains( x.IdCompany.Value)).Select(x=>x.ToUserModel()).ToListAsync();
+                }
+            }
+
+            return usersToAssign.ToList();
+        }
     }
 }

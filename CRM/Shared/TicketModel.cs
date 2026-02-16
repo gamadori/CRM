@@ -68,9 +68,19 @@ namespace CRM.Shared
         [Display(Name = nameof(Ticket.MinuteWork), ResourceType = typeof(Resources.Models.Ticket))]
         public int MinuteWork { get; set; }
 
+        [Display(Name = nameof(TicketModel.MinuteTravel), ResourceType = typeof(Resources.Models.TicketModel))]
+        public int MinuteTravel { get; set; }
+
         [Display(Name = nameof(TicketModel.MinuteWorkFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
         public string MinuteWorkFormatted { get; set; }
-        
+
+        [Display(Name = nameof(TicketModel.MinuteTravelFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
+        public string MinuteTravelFormatted { get; set; }
+
+        [Display(Name = nameof(TicketModel.MinuteTotalFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
+        public string MinuteTotalFormatted { get; set; }
+
+
         [Display(Name = nameof(Ticket.IdUserOpened), ResourceType = typeof(Resources.Models.Ticket))]
         public string IdUserOpened { get; set; }
 
@@ -119,6 +129,7 @@ namespace CRM.Shared
         public string Project { get; set; }
 
         public bool Invoiced { get; set; }
+
         public string StateColor { get; set; }
 
         public int Permits { get; set; }

@@ -116,7 +116,7 @@ namespace CRM.Client
             builder.Services.AddScoped<ITicketInterventionUsersService, ProxyTicketInterventionUsersService>();
 
             // ? NUOVO: Servizio per gestione feedback ticket
-            builder.Services.AddScoped<CRM.Shared.Services.ITicketFeedbackService, ProxyTicketFeedbackService>();
+            builder.Services.AddScoped<ITicketFeedbackService, ProxyTicketFeedbackService>();
 
             builder.Services.AddTransient<IManyToManyService<TicketTypeUser>, ManyToManyService<TicketTypeUser>>(sp =>
             {

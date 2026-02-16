@@ -2,7 +2,7 @@
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
-using CRM.Shared.Services;
+
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;

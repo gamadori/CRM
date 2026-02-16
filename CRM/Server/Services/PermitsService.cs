@@ -261,13 +261,16 @@ namespace CRM.Server.Services
         {
             var company = await _context.Companies.FindAsync(idCompany);
 
-            if (company != null && company.CompanyType == CompanyTypes.Reseller)
+            if (company.CompanyType == CompanyTypes.HeadCompany)
+                return await _context.Companies.Select(x=>x.Id).ToListAsync();
+            else if (company != null && company.CompanyType == CompanyTypes.Reseller)
             {
                 var list = await _context.Companies.Where(x => x.IdReseller == idCompany || x.Id == idCompany).Select(x => x.Id).ToListAsync();
 
                 return list;
             }
-            return new List<int>() { idCompany };
+            else 
+                return new List<int>() { idCompany };
         }
 
         /// <summary>
@@ -304,6 +307,28 @@ namespace CRM.Server.Services
         public async Task<List<string>> GetCompanyIdUsers(int? idCompany)
         {
             return await _context.Users.Where(x => x.IdCompany == idCompany).Select(x=>x.Id).ToListAsync();
+        }
+
+        /// <summary>
+        /// Se è almeno utente Standard visualizza gli username degli utenti della ditta a cui appartiene l'utente loggato e 
+        /// gli utenti della ditte di riventitori che appartengono alla ditta dell'utente loggato,
+        /// Se è solo client visualizza solo se stesso
+        /// </summary>
+        /// <returns></returns>
+        public async Task<List<string>> GetUsers()
+        {
+            // Se è solo client visualizza solo se stesso
+            
+            var user = await GetUser();
+            
+            if (!(await IsStandardUser()))
+            {
+                return new List<string>() { user.UserName };
+            }
+            var idcompany = user.IdCompany;
+            var companies = await GetIdCompanies((int)idcompany);
+
+            return await _context.Users.Where(x => x.IdCompany != null && companies.Contains(x.IdCompany.Value)).Select(x => x.UserName).ToListAsync();
         }
         #region Tickets
 

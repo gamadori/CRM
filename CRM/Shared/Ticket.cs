@@ -162,7 +162,11 @@ namespace CRM.Shared
         [Display(Name = nameof(Ticket.IdGroupAssigned), ResourceType = typeof(Resources.Models.Ticket))]
         public int? IdGroupAssigned { get; set; }
 
+        [Display(Name = nameof(Ticket.IdCompanyAssigned), ResourceType = typeof(Resources.Models.Ticket))]
+        public int? IdCompanyAssigned { get; set; }
+
         public int Progress { get; set; }
+
 
         public string Numero { get; set; }
 
@@ -181,6 +185,7 @@ namespace CRM.Shared
         [Display(Name = nameof(Ticket.IdUserClosed), ResourceType = typeof(Resources.Models.Ticket))]
         public string? IdUserClosed { get; set; } = null;
 
+       
 
         [ForeignKey("Project")]
         [Display(Name = nameof(Ticket.IdProject), ResourceType = typeof(Resources.Models.Ticket))]

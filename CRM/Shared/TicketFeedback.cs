@@ -55,4 +55,14 @@ namespace CRM.Shared
         public virtual Ticket Ticket { get; set; }
         public virtual ApplicationUser User { get; set; }
     }
+
+    public class TicketFeedbackFilterModel: PagingParameterModel
+    {
+        public int? IdTicket { get; set; }
+        public string? IdUser { get; set; }
+        public bool? IsRead { get; set; }
+
+        public int? Rate { get; set; }
+        
+    }
 }

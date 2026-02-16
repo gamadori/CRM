@@ -1,20 +1,108 @@
+using CRM.Client.Models;
+using CRM.Client.Services;
+using CRM.Server.Services;
+using CRM.Shared;
 using CRM.Shared.DTOs;
-using CRM.Shared.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Azure;
 
 namespace CRM.Server.Controllers
 {
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class TicketFeedbackController : ControllerBase
+    public class TicketFeedbacksController : ControllerBase
     {
         private readonly ITicketFeedbackService _feedbackService;
 
-        public TicketFeedbackController(ITicketFeedbackService feedbackService)
+        private readonly ILogEventService _logEventService;
+
+        private readonly IPermitsService _permitsService;
+        public TicketFeedbacksController(ITicketFeedbackService feedbackService, ILogEventService logEventService, IPermitsService permitsService)
         {
             _feedbackService = feedbackService;
+            _logEventService = logEventService;
+            _permitsService = permitsService;
+        }
+
+        [HttpGet]
+        public async Task<PagingResponse<TicketFeedbackResponse>?> GetPage([FromQuery] TicketFeedbackFilterModel? args = null)
+        {
+            try
+            {
+                var items = await _feedbackService.GetPagingAsync(args);
+
+                return items;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketFeedbacksController), nameof(GetPage), LogEvent.EventsTypes.Error, ex);
+                return null;
+            }
+        }
+
+        [HttpGet("list")]
+        public async Task<IEnumerable<TicketFeedbackResponse>?> GetItems([FromQuery] TicketFeedbackFilterModel? args = null)
+        {
+            try
+            {
+                var items = await _feedbackService.GetListAsync(args);
+                if (items == null)
+                {
+                    return Enumerable.Empty<TicketFeedbackResponse>();
+                }
+                return items;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketFeedbacksController), nameof(GetItems), LogEvent.EventsTypes.Error, ex);
+                return Enumerable.Empty<TicketFeedbackResponse>();
+            }
+        }
+
+
+        //[HttpGet("{id}")]
+        //public async Task<ActionResult<TicketFeedbackResponse>> Get(int id)
+        //{
+        //    var item = await _feedbackService.GetItemAsync(id);
+
+        //    if (item == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    return item;
+        //}
+
+        // PUT: api/Companies/5
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult<APIResponseMessage<TicketFeedback>>> Put(int id, TicketFeedback item)
+        {
+            if (id != item.Id)
+            {
+                return BadRequest();
+            }
+            var resp = await _feedbackService.PostAsync(item);
+
+            if (resp == null)
+                return Problem("Error saving settings");
+
+            return Ok(resp);
+        }
+
+        // POST: api/Companies
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpPost]
+        public async Task<ActionResult<APIResponseMessage<TicketFeedback>>> Post(TicketFeedback item)
+        {
+            var resp = await _feedbackService.PostAsync(item);
+
+            if (resp == null)
+                return StatusCode(StatusCodes.Status500InternalServerError, "Post return null");
+
+            return Ok(resp);
         }
 
         /// <summary>
@@ -128,23 +216,23 @@ namespace CRM.Server.Controllers
             }
         }
 
-        /// <summary>
-        /// Ottiene tutti i feedback (solo per admin)
-        /// </summary>
-        [HttpGet]
-        [Authorize(Policy = "AdminRole")]
-        public async Task<ActionResult<List<TicketFeedbackResponse>>> GetAllFeedbacks([FromQuery] bool unreadOnly = false)
-        {
-            try
-            {
-                var feedbacks = await _feedbackService.GetAllFeedbacksAsync(unreadOnly);
-                return Ok(feedbacks);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Errore interno: {ex.Message}");
-            }
-        }
+        ///// <summary>
+        ///// Ottiene tutti i feedback (solo per admin)
+        ///// </summary>
+        //[HttpGet]
+        //[Authorize(Policy = "AdminRole")]
+        //public async Task<ActionResult<List<TicketFeedbackResponse>>> GetAllFeedbacks([FromQuery] bool unreadOnly = false)
+        //{
+        //    try
+        //    {
+        //        var feedbacks = await _feedbackService.GetAllFeedbacksAsync(unreadOnly);
+        //        return Ok(feedbacks);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, $"Errore interno: {ex.Message}");
+        //    }
+        //}
 
         /// <summary>
         /// Segna un feedback come letto (solo per admin)
@@ -189,6 +277,23 @@ namespace CRM.Server.Controllers
             catch (InvalidOperationException ex)
             {
                 return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Errore interno: {ex.Message}");
+            }
+        }
+
+        [HttpGet("average")]
+        public async Task<ActionResult<AverageFeedbackDTO>> AverageRate()
+        {
+            try
+            {
+                var averageFeedback = await _feedbackService.AverageRateAsync();
+
+
+
+                return Ok(averageFeedback);
             }
             catch (Exception ex)
             {

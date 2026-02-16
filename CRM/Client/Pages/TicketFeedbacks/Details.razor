@@ -1,0 +1,71 @@
+﻿@page "/TicketFeedbacks/{Id:int}"
+@using Microsoft.Extensions.Localization
+@using RedG.Client.Components
+@inject NavigationManager Nav
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+@if (_item == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <PageHeader Model="@_pageHeader" Visible=@(PageMode != PageHelper.PageModality.Dialog)>
+    </PageHeader>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            
+            <RedGDetailField Icon="badge" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _item.CreatedAt)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_item.CreatedAt</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="category" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _item.IdTicket)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_item.IdTicket</p></ChildContent>
+            </RedGDetailField>
+            <RedGDetailField Icon="category" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _item.Company)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_item.Company</p></ChildContent>
+            </RedGDetailField>
+            <RedGDetailField Icon="category" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _item.User)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_item.User</p></ChildContent>
+            </RedGDetailField>
+            <RedGDetailField Icon="category" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _item.Rating)" /></LabelContent>
+                <ChildContent>
+                    <div class="rating-stars">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            var filled = i <= _item.Rating;
+                            <span class="material-icons @(filled ? "star-filled" : "star-empty")">@(filled ? "star" : "star_border")</span>
+                        }
+                    </div>
+                </ChildContent>
+            </RedGDetailField>
+            <RedGDetailField Icon="description">
+                <LabelContent><DisplayName For="@(() => _item.Comment)" /></LabelContent>
+                <ChildContent>
+                    @if (!string.IsNullOrWhiteSpace(_item.Comment))
+                    {
+                        <p class="mb-0 text-dark">@_item.Comment</p>
+                    }
+                    else
+                    {
+                        <p class="mb-0 text-muted fst-italic">Nessuna Commento disponibile</p>
+                    }
+                </ChildContent>
+            </RedGDetailField>
+        </div>
+
+        <!-- Footer con azioni -->
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <RedGButton RGButtonType="RGButtonType.Back" Click="@(() => Nav.NavigateTo("/TicketFeedbacks"))" Text="@Localize["Lista Feedbacks"]" />
+               
+            </div>
+        </div>
+    </div>
+}

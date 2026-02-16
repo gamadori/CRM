@@ -123,6 +123,42 @@ namespace CRM.Server.Controllers
                            !string.IsNullOrEmpty(x.CustomerSignature))
                 .CountAsync();
 
+            // ✅ Carica feedback non letti (solo per admin/superuser)
+            if (!model.IsClient)
+            {
+                var feedbacksQuery = _context.TicketFeedbacks
+                    .Include(f => f.Ticket)
+                        .ThenInclude(t => t.Company)
+                    .Include(f => f.User)
+                    .Where(f => !f.IsRead);
+
+                // Filtra per azienda se necessario
+                if (idCompany.HasValue)
+                {
+                    feedbacksQuery = feedbacksQuery.Where(f => f.Ticket.IdCompany == idCompany);
+                }
+
+                model.UnreadFeedbacksCount = await feedbacksQuery.CountAsync();
+
+                // Carica gli ultimi 10 feedback non letti
+                model.RecentFeedbacks = await feedbacksQuery
+                    .OrderByDescending(f => f.CreatedAt)
+                    .Take(10)
+                    .Select(f => new FeedbackSummary
+                    {
+                        Id = f.Id,
+                        TicketId = f.IdTicket,
+                        TicketDescription = f.Ticket.Description ?? "",
+                        CompanyName = f.Ticket.Company.RagioneSociale,
+                        UserName = f.User.Name + " " + f.User.Surname,
+                        Rating = f.Rating,
+                        Comment = f.Comment,
+                        CreatedAt = f.CreatedAt,
+                        IsRead = f.IsRead
+                    })
+                    .ToListAsync();
+            }
+
             return model;
         }
 

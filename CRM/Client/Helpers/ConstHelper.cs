@@ -186,6 +186,9 @@ namespace CRM.Client.Helpers
         
 
         public static string ClientLogEventsPath = "Settings/LogEvents";
+
+        public static string ClientTicketFeedbacksPath = "TicketFeedbacks";
+
         public static int PageSize = 10;
 
         public static string PagingSummaryFormatShort = "Page {0} of {1} ({2})";

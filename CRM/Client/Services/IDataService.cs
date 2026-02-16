@@ -23,6 +23,24 @@ namespace CRM.Client.Services
 
     }
 
+    public interface IDataService<T, M, K, F, S>
+    {
+        Task<M?> GetItemAsync(K id);
+
+        Task<M?> GetFirstAsync();
+
+        Task<PagingResponse<M, S>?> GetSummaryAsync(F? data);
+
+        Task<PagingResponse<M>?> GetPagingAsync(F? data);
+
+        Task<List<M>?> GetListAsync(F? data);
+
+        Task<APIResponseMessage<M>> PostAsync(T item);
+
+        Task<bool> DeleteAsync(K id);
+
+    }
+
     public interface IDataService<T>
     {
 
