@@ -40,24 +40,23 @@ namespace CRM.Shared
 
         public string IdUser { get; set; }
 
-
-        [Display(Name = "Tipo Supporto")]
+        [Display(Name = nameof(TicketIntervention.SupportType), ResourceType = typeof(Resources.Models.TicketIntervention))]
         public int SupportType { get; set; }
 
+        [Display(Name = nameof(TicketIntervention.Activities), ResourceType = typeof(Resources.Models.TicketIntervention))]
         [Required]
-        [Display(Name = "Attività svolte")]
         public string Activities { get; set; }
 
-        [Display(Name = "Parti Sostituite o Montate")]
+        [Display(Name = nameof(TicketIntervention.MountedParts), ResourceType = typeof(Resources.Models.TicketIntervention))]
         public string MountedParts { get; set; }
 
-        [Display(Name = "Nota")]
+        [Display(Name = nameof(TicketIntervention.Note), ResourceType = typeof(Resources.Models.TicketIntervention))]
         public string? Note { get; set; }
 
-        [Display(Name = "Data e Orario di Inizio")]
+        [Display(Name = nameof(TicketIntervention.StartDateTime), ResourceType = typeof(Resources.Models.TicketIntervention))]
         public DateTime StartDateTime { get; set; }
 
-        [Display(Name = "Orario di Fine")]
+        [Display(Name = nameof(TicketIntervention.EndDateTime), ResourceType = typeof(Resources.Models.TicketIntervention))]
         public DateTime EndDateTime { get; set; }
 
         public bool HasAttachments { get; set; }
@@ -71,31 +70,31 @@ namespace CRM.Shared
         /// <summary>
         /// Firma del cliente in formato Base64 (PNG)
         /// </summary>
-        [Display(Name = "Firma Cliente")]
+        [Display(Name = nameof(TicketIntervention.CustomerSignature), ResourceType = typeof(Resources.Models.TicketIntervention))]
         public string? CustomerSignature { get; set; }
 
         /// <summary>
         /// Data e ora in cui è stata apposta la firma digitale
         /// </summary>
-        [Display(Name = "Data Firma")]
+        [Display(Name = nameof(TicketIntervention.SignatureDate), ResourceType = typeof(Resources.Models.TicketIntervention))]
         public DateTime? SignatureDate { get; set; }
 
         /// <summary>
         /// Nome completo di chi ha firmato il documento
         /// </summary>
-        [Display(Name = "Nome Firmatario")]
+        [Display(Name = nameof(TicketIntervention.SignatureName), ResourceType = typeof(Resources.Models.TicketIntervention))]
         public string? SignatureName { get; set; }
 
         /// <summary>
         /// Email del firmatario per conferma
         /// </summary>
-        [Display(Name = "Email Firmatario")]
+        [Display(Name = nameof(TicketIntervention.SignatureEmail), ResourceType = typeof(Resources.Models.TicketIntervention))]
         public string? SignatureEmail { get; set; }
 
         /// <summary>
         /// Stato verifica firma: Pending, Verified, Rejected
         /// </summary>
-        [Display(Name = "Stato Firma")]
+        [Display(Name = nameof(TicketIntervention.SignatureStatus), ResourceType = typeof(Resources.Models.TicketIntervention))]
         public SignatureStatus SignatureStatus { get; set; } = SignatureStatus.Pending;
 
         // ✅ NUOVI CAMPI PER ESTRAZIONE AUTOMATICA RECEIPT/FATTURE (Azure Form Recognizer)

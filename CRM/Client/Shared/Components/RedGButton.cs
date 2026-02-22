@@ -65,7 +65,8 @@ namespace RedG.Client.Components
                     break;
 
                 case RGButtonType.Cancel:
-                    Text = Localize["Cancel"];
+                    if (AutoLabel)
+                        Text = Localize["Cancel"];
                     Icon = "cancel";
                     ButtonStyle = Radzen.ButtonStyle.Light;
                     break;

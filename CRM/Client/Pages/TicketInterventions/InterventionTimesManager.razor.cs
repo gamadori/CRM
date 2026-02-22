@@ -116,6 +116,7 @@ namespace CRM.Client.Pages.TicketInterventions
 
             if (result is TicketInterventionTimeModel timeModel)
             {
+                await _timesGrid.RefreshDataAsync(); //
                 await CreateTime(timeModel);
             }
         }

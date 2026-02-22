@@ -1,0 +1,43 @@
+@page "/Settings/Folders/Details/{Id:int}"
+
+<PageHeader></PageHeader>
+
+@if (_isLoading)
+{
+    <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+}
+else if (_folder != null)
+{
+    <RadzenCard>
+        <div class="row">
+            <div class="col-md-6">
+                <RadzenLabel Text="ID" />
+                <RadzenTextBox Value="@_folder.Id.ToString()" Disabled="true" Style="width:100%;" />
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <RadzenLabel Text="@Localize["Nome"]" />
+                <RadzenTextBox Value="@_folder.Name" Disabled="true" Style="width:100%;" />
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <RadzenLabel Text="@Localize["Description"]" />
+                <RadzenTextArea Value="@_folder.Description" Disabled="true" Style="width:100%;" Rows="3" />
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col">
+                <RadzenButton Icon="edit" Text="@Localize["Modifica"]" Click="@GoToEdit" ButtonStyle="ButtonStyle.Primary" Class="me-2" />
+                <RadzenButton Icon="arrow_back" Text="@Localize["Indietro"]" Click="@GoBack" ButtonStyle="ButtonStyle.Light" />
+            </div>
+        </div>
+    </RadzenCard>
+}
+else
+{
+    <RadzenAlert AlertStyle="AlertStyle.Warning" ShowIcon="true">
+        @Localize["ElementoNonTrovato"]
+    </RadzenAlert>
+}

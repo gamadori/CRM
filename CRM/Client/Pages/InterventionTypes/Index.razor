@@ -3,9 +3,7 @@
 @page "/Settings/InterventionTypes/Index"
 
 
-<BlazorHeader Header="@Localize["Tipi di Intervento"]"></BlazorHeader>
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
-
+<PageHeader ></PageHeader>
 <div class=row>
     <div class="col">
         <RadzenButton Icon="add_circle_outline" style="margin-bottom: 10px" Text="@Localize["Nuovo Tipo"]" Click="@InsertRow" Disabled=@(_interventionType != null) />
@@ -54,8 +52,7 @@
                 <RadzenButton ButtonStyle="ButtonStyle.Warning" Icon="translate" Class="m-1" Click="@(args => LanguageRow(item))" @onclick:stopPropagation="true">
                 </RadzenButton>
             </Template>
-            <EditTemplate Context="item">
-            </EditTemplate>
+           
         </RadzenDataGridColumn>
 
 

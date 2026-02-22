@@ -1,6 +1,7 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
@@ -28,11 +29,10 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
         HttpClient HttpClient { get; set; }
 
         [Inject]
-        IBaseRestService<InterventionTypeLanguage, InterventionTypeLangFilter, int> _service { get; set; }
+        IInterventionTypeLangsService _service { get; set; }
 
         [Inject]
-        IBaseRestService<InterventionType, InterventionTypeFilter, int> _serviceInt { get; set; }
-
+        IInterventionTypesService _serviceInt { get; set; }
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
@@ -58,11 +58,11 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
 
         private InterventionTypeLangFilter _filter = new InterventionTypeLangFilter() { PageSize = 10, Skip = 0, Top = 10 };
 
-        private RadzenDataGrid<InterventionTypeLanguage> _interventionGrid;
+        private RadzenDataGrid<InterventionTypeLangDTO> _interventionGrid;
 
-        private List<InterventionTypeLanguage> _interventionTypeLangs = new List<InterventionTypeLanguage>();
+        private List<InterventionTypeLangDTO> _interventionTypeLangs = new List<InterventionTypeLangDTO>();
 
-        private InterventionTypeLanguage _interventionTypeLang;
+        private InterventionTypeLangDTO _interventionTypeLang;
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
@@ -70,21 +70,15 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
 
         private bool _isLoading = false;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
-
         private List<Language> _languages;
 
-        private InterventionType _interventionType;
+        private InterventionTypeDTO _interventionType;
 
         protected override async Task OnInitializedAsync()
         {
             await GetInterventions();
             await GetLanguages();
             await GetInterventionType();
-
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "Settings" });
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Tipi Intervento"], Url = "Settings/InterventionTypes" });
-            _bread.Add(new BreadcrumbModel() { Title = _interventionType.Name, Url = null });
 
             await base.OnInitializedAsync();
         }
@@ -104,7 +98,7 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
                 _filter.IdInterventionType = IdInterventionType;
 
 
-                PagingResponse<InterventionTypeLanguage> pagingResponse = await _service.Get(_filter);
+                PagingResponse<InterventionTypeLangDTO> pagingResponse = await _service.GetPagingAsync(_filter);
 
                 if (pagingResponse != null)
                 {
@@ -113,9 +107,6 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
                 }
                 else
                     Notify("Error", NotificationSeverity.Error);
-
-
-
             }
             catch (AccessTokenNotAvailableException exception)
             {
@@ -123,15 +114,12 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
             }
             catch (HttpRequestException ex)
             {
-
                 Notify(ex.Message, NotificationSeverity.Error);
-
             }
 
             catch (Exception ex)
             {
                 Notify(ex.Message, NotificationSeverity.Error);
-
             }
             finally
             {
@@ -142,15 +130,13 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
 
         private async Task GetInterventionType()
         {
-            _interventionType = await _serviceInt.Get(IdInterventionType);
+            _interventionType = await _serviceInt.GetItemAsync(IdInterventionType);
         }
         private async Task GetLanguages()
         {
             try
             {
                 _languages = await HttpClient.GetFromJsonAsync<List<Language>>($"{ConstHelper.LanguagesPath}/list");
-
-
 
             }
             catch (AccessTokenNotAvailableException exception)
@@ -174,20 +160,31 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
 
             }
         }
-       
 
-        async Task EditRow(InterventionTypeLanguage interventionType)
+        private string? GetFlag(int id)
+        {
+            // Carica le bandiere per tutte le lingue presenti
+            var lang = _languages.FirstOrDefault(x => x.Id == id);
+            return lang?.Flag;
+        }
+        async Task EditRow(InterventionTypeLangDTO interventionType)
         {
             await _interventionGrid.EditRow(interventionType);
         }
 
-        async Task OnUpdateRow(InterventionTypeLanguage item)
+        async Task OnUpdateRow(InterventionTypeLangDTO item)
         {
             if (item == _interventionTypeLang)
             {
                 _interventionTypeLang = null;
             }
-            var resp = await _service.Post(item);
+            var resp = await _service.PostAsync(new InterventionTypeLanguage()
+            {
+                Id = item.Id,
+                IdInterventionType = item.IdInterventionType,
+                IdLanguage = item.IdLanguage,
+                Name = item.Name
+            });
 
             if (resp != null && !resp.State)
             {
@@ -200,7 +197,7 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
 
         }
 
-        private async Task SaveRow(InterventionTypeLanguage item)
+        private async Task SaveRow(InterventionTypeLangDTO item)
         {
             if (item == _interventionTypeLang)
             {
@@ -212,7 +209,7 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
            // await GetInterventions();
         }
 
-        private async Task CancelEdit(InterventionTypeLanguage item)
+        private void CancelEdit(InterventionTypeLangDTO item)
         {
             if (item == _interventionTypeLang)
             {
@@ -224,7 +221,7 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
            
         }
 
-        async Task DeleteRow(InterventionTypeLanguage item)
+        async Task DeleteRow(InterventionTypeLangDTO item)
         {
             if (await DialogService.Confirm(Localize["Eliminare il Tipo di intervento?"], Localize["Elimina"]))
             {
@@ -233,7 +230,7 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
                     _interventionTypeLang = null;
                 }
 
-                await _service.Delete(item.Id);
+                await _service.DeleteAsync(item.Id);
                 await GetInterventions();
             }
         }
@@ -246,16 +243,26 @@ namespace CRM.Client.Pages.InterventionTypeLanguages
 
         async Task InsertRow()
         {
-            _interventionTypeLang = new InterventionTypeLanguage() {  IdInterventionType = IdInterventionType};
+            _interventionTypeLang = new InterventionTypeLangDTO() {  IdInterventionType = IdInterventionType};
             await _interventionGrid.InsertRow(_interventionTypeLang);
         }
 
-        async Task OnCreateRow(InterventionTypeLanguage item)
+        async Task OnCreateRow(InterventionTypeLangDTO item)
         {
-            await _service.Post(item);
+            await _service.PostAsync(new InterventionTypeLanguage()
+            {
+                IdInterventionType = item.IdInterventionType,
+                IdLanguage = item.IdLanguage,
+                Name = item.Name
+            });
 
             await GetInterventions();
             
+        }
+
+        private async Task<string?> GetFlagAsync(int idLanguage)
+        {
+            return await _service.GetFlagAsync(idLanguage);
         }
     }
 }

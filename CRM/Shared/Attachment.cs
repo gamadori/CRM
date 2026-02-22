@@ -54,12 +54,15 @@ namespace CRM.Shared
         [MaxLength(100)]
         public string Description { get; set; }
 
+        [ForeignKey(nameof(Folder))]
+        public int? FolderId { get; set; }
+
         [Display(Name = "Data")]
         public DateTime? CreatedOn { get; set; }
 
         [Required]
         [Display(Name = "User")]
-        [ForeignKey("User")]
+        [ForeignKey(nameof(User))]
         public string IdUser { get; set; }
 
         [NotMapped]
@@ -72,7 +75,9 @@ namespace CRM.Shared
         public virtual ApplicationUser User { get; set; }
 
         public virtual ICollection<AttachmentFile> Files { get; set; }
-        
+
+        public virtual Folder? Folder { get; set; }
+
     }
 
 

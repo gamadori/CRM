@@ -25,9 +25,9 @@
             }
         </HeaderTemplate>
     <Columns>
-        <RadzenDataGridColumn TItem="TicketIntervention" Property="@nameof(TicketIntervention.StartDateTime)" Title="@Localize["Data Inizio"]"  />
+        <RadzenDataGridColumn TItem="TicketIntervention" Property="@nameof(TicketIntervention.StartDateTime)" Title="@Localize["Date"]"  />
        
-        <RadzenDataGridColumn TItem="TicketIntervention" Property="@nameof(TicketIntervention.EndDateTime)" Title="@Localize["Data Fine"]" />
+        @* <RadzenDataGridColumn TItem="TicketIntervention" Property="@nameof(TicketIntervention.EndDateTime)" Title="@Localize["Data Fine"]" /> *@
         <RadzenDataGridColumn  TItem="TicketIntervention"  Property="UserName" Title="@Localize["User Name"]"  Filterable="true" FilterProperty="User.UserName" FilterValue="@_filterUserName" FilterOperator="FilterOperator.Contains"  
             SortProperty="User.UserName">
         

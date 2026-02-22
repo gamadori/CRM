@@ -1102,6 +1102,51 @@ namespace CRM.Server.Migrations
                     b.ToTable("EmailTemplates");
                 });
 
+            modelBuilder.Entity("CRM.Shared.Folder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Folders");
+                });
+
+            modelBuilder.Entity("CRM.Shared.FolderLanguage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("FolderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LanguageId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FolderId");
+
+                    b.HasIndex("LanguageId");
+
+                    b.ToTable("FolderLanguages");
+                });
+
             modelBuilder.Entity("CRM.Shared.GlobalSetting", b =>
                 {
                     b.Property<int>("Id")
@@ -2977,6 +3022,25 @@ namespace CRM.Server.Migrations
                         .HasForeignKey("IdLogo");
 
                     b.Navigation("Logo");
+                });
+
+            modelBuilder.Entity("CRM.Shared.FolderLanguage", b =>
+                {
+                    b.HasOne("CRM.Shared.Folder", "Folder")
+                        .WithMany()
+                        .HasForeignKey("FolderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.Language", "Language")
+                        .WithMany()
+                        .HasForeignKey("LanguageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Folder");
+
+                    b.Navigation("Language");
                 });
 
             modelBuilder.Entity("CRM.Shared.InterventionTypeLanguage", b =>

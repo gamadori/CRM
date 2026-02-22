@@ -125,6 +125,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>EmailTemplates.resx</DependentUpon>
     </Compile>
+    <Compile Update="Resources\Models\Folder.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Folder.resx</DependentUpon>
+    </Compile>
     <Compile Update="Resources\Models\Product.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -149,6 +154,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Ticket.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Models\TicketIntervention.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>TicketIntervention.resx</DependentUpon>
     </Compile>
     <Compile Update="Resources\Models\TicketModel.Designer.cs">
       <DesignTime>True</DesignTime>
@@ -281,6 +291,10 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>EmailTemplates.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Models\Folder.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Folder.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Update="Resources\Models\Product.it.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
     </EmbeddedResource>
@@ -310,6 +324,10 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Ticket.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Models\TicketIntervention.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>TicketIntervention.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Update="Resources\Models\TicketModel.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TicketModel.Designer.cs</LastGenOutput>
@@ -337,6 +355,7 @@
 
   <ItemGroup>
     <Folder Include="Constants\" />
+    <Folder Include="Resources\Controllers\" />
     <Folder Include="Services\" />
   </ItemGroup>
 </Project>

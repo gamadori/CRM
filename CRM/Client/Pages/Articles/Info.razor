@@ -73,11 +73,11 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Attachments.Index ReadOnly="true" IdParent="@_article.IdProduct" AttachmentType=@AttachmentTypes.Product  OnClickDetails="IndexProductDetailsAttachment"></CRM.Client.Pages.Attachments.Index>
+            <CRM.Client.Pages.Attachments.Index ReadOnly="false" IdParent="@_article.IdProduct" AttachmentType=@AttachmentTypes.Product  OnClickDetails="IndexProductDetailsAttachment"></CRM.Client.Pages.Attachments.Index>
         }
         else
         {
-            <CRM.Client.Pages.Attachments.Details ReadOnly="true" Id="@_idAttachment" OnClickCancel="CloseProductAttachment"
+            <CRM.Client.Pages.Attachments.Details ReadOnly="false" Id="@_idAttachment" OnClickCancel="CloseProductAttachment"
                                                   OnClickEdit="DetailsEditAttachment" ></CRM.Client.Pages.Attachments.Details>
         }
         

@@ -80,6 +80,8 @@ namespace CRM.Server.Services
                         .ThenInclude(a => a.Product)
                     .Include(x => x.TicketInterventionArticles)
                         .ThenInclude(a => a.Article)
+                    .Include(x=>x.TicketInterventionTime)
+              
                     .FirstOrDefaultAsync(x => x.Id == interventionId);
 
                 if (intervention == null)
@@ -344,25 +346,143 @@ namespace CRM.Server.Services
             });
         }
 
+        //private static void ServiceTimesBlock(IContainer container, TicketIntervention intervention, InterventionReportLabels labels)
+        //{
+        //    container.Border(1).BorderColor(Colors.Grey.Lighten2).Padding(10).Table(t =>
+        //    {
+        //        t.ColumnsDefinition(cols =>
+        //        {
+        //            cols.ConstantColumn(180);
+        //            cols.RelativeColumn();
+        //            cols.ConstantColumn(180);
+        //            cols.RelativeColumn();
+        //        });
+
+        //        t.Cell().Element(LabelCell).Text(labels.ServiceBegan);
+        //        t.Cell().Element(ValueCell).Text(intervention.StartDateTime.ToString("g"));
+        //        t.Cell().Element(LabelCell).Text(labels.ServiceEnded);
+        //        t.Cell().Element(ValueCell).Text(intervention.EndDateTime.ToString("g"));
+
+
+        //    });
+        //}
         private static void ServiceTimesBlock(IContainer container, TicketIntervention intervention, InterventionReportLabels labels)
         {
-            container.Border(1).BorderColor(Colors.Grey.Lighten2).Padding(10).Table(t =>
+            container.Border(1).BorderColor(Colors.Grey.Lighten2).Padding(10).Column(col =>
             {
-                t.ColumnsDefinition(cols =>
-                {
-                    cols.ConstantColumn(180);
-                    cols.RelativeColumn();
-                    cols.ConstantColumn(180);
-                    cols.RelativeColumn();
-                });
+                col.Item().Text("Tempi di Servizio").SemiBold();
 
-                t.Cell().Element(LabelCell).Text(labels.ServiceBegan);
-                t.Cell().Element(ValueCell).Text(intervention.StartDateTime.ToString("g"));
-                t.Cell().Element(LabelCell).Text(labels.ServiceEnded);
-                t.Cell().Element(ValueCell).Text(intervention.EndDateTime.ToString("g"));
+                if (intervention.TicketInterventionTime != null && intervention.TicketInterventionTime.Any())
+                {
+                    // Tutti i tempi in ordine cronologico
+                    var allTimes = intervention.TicketInterventionTime
+                        .OrderBy(t => t.StartDateTime)
+                        .ToList();
+
+                    col.Item().PaddingTop(6).Table(t =>
+                    {
+                        t.ColumnsDefinition(cols =>
+                        {
+                            cols.RelativeColumn(1.2f); // Tipo
+                            cols.RelativeColumn(2);    // Inizio
+                            cols.RelativeColumn(2);    // Fine
+                            cols.RelativeColumn(1);    // Durata
+                            cols.RelativeColumn(0.8f); // Km
+                           // cols.RelativeColumn(0.6f); // Fatt.
+                        });
+
+                        // Header
+                        t.Cell().Element(HeaderCell).Text("Tipo");
+                        t.Cell().Element(HeaderCell).Text("Inizio");
+                        t.Cell().Element(HeaderCell).Text("Fine");
+                        t.Cell().Element(HeaderCell).Text("Durata");
+                        t.Cell().Element(HeaderCell).Text("Km");
+                        // t.Cell().Element(HeaderCell).Text("Fatt.");
+
+                        foreach (var time in allTimes)
+                        {
+                            var typeIcon = time.TimeType switch
+                            {
+                                InterventionTimeType.Work => "Lavoro",
+                                InterventionTimeType.Travel => "Viaggio",
+                                InterventionTimeType.Break => "Pausa",
+                                _ => "—"
+                            };
+
+                            t.Cell().Element(ValueCell).Text(typeIcon).FontSize(8);
+                            t.Cell().Element(ValueCell).Text(time.StartDateTime.ToString("dd/MM HH:mm")).FontSize(8);
+                            t.Cell().Element(ValueCell).Text(time.EndDateTime.ToString("dd/MM HH:mm")).FontSize(8);
+                            t.Cell().Element(ValueCell).Text(FormatDuration(time.StartDateTime, time.EndDateTime)).FontSize(8);
+                            t.Cell().Element(ValueCell).Text(time.TimeType == InterventionTimeType.Travel ? (time.TravelKilometers?.ToString() ?? "—") : "—").FontSize(8);
+                           // t.Cell().Element(ValueCell).Text(time.IsBillable ? "✓" : "—").FontSize(8).FontColor(time.IsBillable ? Colors.Green.Darken1 : Colors.Grey.Medium);
+                        }
+                    });
+
+                    // Calcolo totali
+                    var totalWorkMinutes = allTimes.Where(t => t.TimeType == InterventionTimeType.Work).Sum(t => (int)(t.EndDateTime - t.StartDateTime).TotalMinutes);
+                    var totalTravelMinutes = allTimes.Where(t => t.TimeType == InterventionTimeType.Travel).Sum(t => (int)(t.EndDateTime - t.StartDateTime).TotalMinutes);
+                    var totalBreakMinutes = allTimes.Where(t => t.TimeType == InterventionTimeType.Break).Sum(t => (int)(t.EndDateTime - t.StartDateTime).TotalMinutes);
+                    var billableMinutes = allTimes.Where(t => t.IsBillable).Sum(t => (int)(t.EndDateTime - t.StartDateTime).TotalMinutes);
+                    var totalKm = allTimes.Where(t => t.TimeType == InterventionTimeType.Travel).Sum(t => t.TravelKilometers ?? 0);
+
+                    // Riepilogo compatto
+                    col.Item().PaddingTop(8).Background(Colors.Grey.Lighten4).Padding(6).Row(row =>
+                    {
+                        row.RelativeItem().Text(text =>
+                        {
+                            text.Span("Lavoro: ").SemiBold().FontSize(8);
+                            text.Span($"{FormatMinutes(totalWorkMinutes)}  ").FontSize(8);
+                            text.Span("Viaggio: ").SemiBold().FontSize(8);
+                            text.Span($"{FormatMinutes(totalTravelMinutes)} ({totalKm} km)  ").FontSize(8);
+                            if (totalBreakMinutes > 0)
+                            {
+                                text.Span("Pause: ").SemiBold().FontSize(8);
+                                text.Span($"{FormatMinutes(totalBreakMinutes)}  ").FontSize(8);
+                            }
+                            text.Span("| Fatturabile: ").SemiBold().FontSize(8).FontColor(Colors.Green.Darken2);
+                            text.Span($"{FormatMinutes(billableMinutes)}").FontSize(8).FontColor(Colors.Green.Darken2);
+                        });
+                    });
+                }
+                else
+                {
+                    // Fallback ai vecchi campi
+                    col.Item().PaddingTop(6).Table(t =>
+                    {
+                        t.ColumnsDefinition(cols =>
+                        {
+                            cols.ConstantColumn(100);
+                            cols.RelativeColumn();
+                            cols.ConstantColumn(100);
+                            cols.RelativeColumn();
+                        });
+
+                        t.Cell().Element(LabelCell).Text(labels.ServiceBegan);
+                        t.Cell().Element(ValueCell).Text(intervention.StartDateTime.ToString("g"));
+                        t.Cell().Element(LabelCell).Text(labels.ServiceEnded);
+                        t.Cell().Element(ValueCell).Text(intervention.EndDateTime.ToString("g"));
+                    });
+                }
             });
         }
 
+       
+
+        private static IContainer HeaderCell(IContainer c) =>
+            c.PaddingVertical(3).PaddingRight(4).Background(Colors.Grey.Lighten3).DefaultTextStyle(x => x.SemiBold().FontSize(8));
+
+        private static string FormatDuration(DateTime start, DateTime end)
+        {
+            var duration = end - start;
+            return $"{(int)duration.TotalHours}h {duration.Minutes}m";
+        }
+
+        private static string FormatMinutes(int totalMinutes)
+        {
+            var hours = totalMinutes / 60;
+            var minutes = totalMinutes % 60;
+            return $"{hours}h {minutes}m";
+        }
         private static void ActivitiesBlock(IContainer container, string activities, InterventionReportLabels labels)
         {
             container.Border(1).BorderColor(Colors.Grey.Lighten2).Padding(10).Column(col =>

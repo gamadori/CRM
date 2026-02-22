@@ -298,6 +298,10 @@ namespace CRM.Server.Data
         // ✅ NUOVO: DbSet per i feedback dei ticket
         public DbSet<TicketFeedback> TicketFeedbacks => Set<TicketFeedback>();
 
+        public DbSet<Folder> Folders => Set<Folder>();
+
+        public DbSet<FolderLanguage> FolderLanguages => Set<FolderLanguage>();  
+
 
 
     }

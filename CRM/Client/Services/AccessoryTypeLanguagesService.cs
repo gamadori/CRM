@@ -14,7 +14,7 @@ namespace CRM.Client.Services
     
     public class AccessoryTypeLanguagesService: RestClientService<AccessoryTypeLanguage, AccessoryTypeLanguageFilter, int>, IAccessoryTypeLanguagesService
     {
-        public AccessoryTypeLanguagesService(HttpClient http): base(http, ConstHelper.AccessoryTypeLanguagesPath)
+        public AccessoryTypeLanguagesService(HttpClient http): base(http, ConstHelper.AccessoryTypeLangsPath)
         {
           
         }

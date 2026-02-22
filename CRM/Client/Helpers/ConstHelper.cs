@@ -20,7 +20,7 @@ namespace CRM.Client.Helpers
 
         public static string AccessoryTypesPath = "api/AccessoryTypes";
 
-        public static string AccessoryTypeLanguagesPath = "api/AccessoryTypeLanguages";
+        public static string AccessoryTypeLangsPath = "api/AccessoryTypeLanguages";
 
         public static string CompaniesPath = "api/Companies";
 
@@ -103,7 +103,7 @@ namespace CRM.Client.Helpers
 
         public static string InterventionTypesPath = "api/InterventionTypes";
 
-        public static string InterventionTypeLanguagesPath = "api/InterventionTypeLanguages";
+        public static string InterventionTypeLangsPath = "api/InterventionTypeLangs";
 
         public static string ContactsPath = "api/Contacts";
 
@@ -129,7 +129,9 @@ namespace CRM.Client.Helpers
 
         public static string ItemEventsPath = "api/ItemEvents";
 
+        public static string FoldersPath = "api/Folders";
 
+        public static string FolderLanguagesPath = "api/FolderLanguages";
 
         public static string PagingHeader = "Paging-Header";
 

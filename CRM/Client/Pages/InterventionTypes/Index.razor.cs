@@ -1,5 +1,6 @@
 ﻿using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
@@ -16,14 +17,13 @@ namespace CRM.Client.Pages.InterventionTypes
 {
     public partial class Index : ComponentBase
     {
-        private const string PageFolder = "InterventionTypes";
-
-
+        
         [Inject]
         NavigationManager NavigationManager { get; set; }
 
+       
         [Inject]
-        IBaseRestService<InterventionType, InterventionTypeFilter, int> _service { get; set; }
+        IInterventionTypesService Service { get; set; }
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
@@ -53,18 +53,12 @@ namespace CRM.Client.Pages.InterventionTypes
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
-        private InterventionTypeFilter _pa = new InterventionTypeFilter();
 
         private bool _isLoading = false;
-
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
 
         protected override async Task OnInitializedAsync()
         {
             await GetInterventions();
-
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "Settings" });
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Tipi Intervento"], Url = null });
             await base.OnInitializedAsync();
         }
 
@@ -80,11 +74,16 @@ namespace CRM.Client.Pages.InterventionTypes
                     _filter.OrderBy = args?.OrderBy;
                 }
                 
-                PagingResponse<InterventionType> pagingResponse = await _service.Get(_filter);
+                PagingResponse<InterventionTypeDTO> pagingResponse = await Service.GetPagingAsync(_filter);
 
                 if (pagingResponse != null)
                 {
-                    _interventions = pagingResponse.Items;
+                    _interventions = pagingResponse.Items.Select(i => new InterventionType
+                    {
+                        Id = i.Id,
+                        Name = i.Name,
+                        Description = i.Description
+                    }).ToList();
                     _paging = pagingResponse.MetaData;
                 }
                 else
@@ -127,7 +126,7 @@ namespace CRM.Client.Pages.InterventionTypes
             {
                 _interventionType = null;
             }
-            var resp = await _service.Post(item);
+            var resp = await Service.PostAsync(item);
 
             if (resp != null && !resp.State)
             {
@@ -135,7 +134,7 @@ namespace CRM.Client.Pages.InterventionTypes
 
             }
             else
-                Notify(Localize["Dato Aggiornato"], NotificationSeverity.Success);
+                Notify(Localize["UpdatedData"], NotificationSeverity.Success);
 
 
         }
@@ -161,19 +160,19 @@ namespace CRM.Client.Pages.InterventionTypes
 
             _interventionGrid.CancelEditRow(item);
 
-           await _service.Post(item);
+           await Service.PostAsync(item);
         }
 
         async Task DeleteRow(InterventionType item)
         {
-            if (await DialogService.Confirm(Localize["Eliminare il Tipo di intervento?"], Localize["Elimina"]))
+            if (await DialogService.Confirm(Localize["DeleteIntervention?"], Localize["Delete"]))
             {
                 if (item == _interventionType)
                 {
                     _interventionType = null;
                 }
 
-                await _service.Delete(item.Id);
+                await Service.DeleteAsync(item.Id);
                 await GetInterventions();
             }
         }
@@ -207,7 +206,7 @@ namespace CRM.Client.Pages.InterventionTypes
 
         async void OnCreateRow(InterventionType item)
         {
-            await _service.Post(item);
+            await Service.PostAsync(item);
 
             await GetInterventions();
             

@@ -79,6 +79,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Add.
+        /// </summary>
+        public static string Add {
+            get {
+                return ResourceManager.GetString("Add", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Add Files.
         /// </summary>
         public static string AddFiles {
@@ -93,6 +102,15 @@ namespace CRM.Shared.Resources {
         public static string Address {
             get {
                 return ResourceManager.GetString("Address", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Add Time Period.
+        /// </summary>
+        public static string AddTimePeriod {
+            get {
+                return ResourceManager.GetString("AddTimePeriod", resourceCulture);
             }
         }
         
@@ -165,6 +183,15 @@ namespace CRM.Shared.Resources {
         public static string Assigned {
             get {
                 return ResourceManager.GetString("Assigned", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Assigned Users.
+        /// </summary>
+        public static string AssignedUsers {
+            get {
+                return ResourceManager.GetString("AssignedUsers", resourceCulture);
             }
         }
         
@@ -556,6 +583,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Delete the intervention?.
+        /// </summary>
+        public static string DeleteIntervention {
+            get {
+                return ResourceManager.GetString("DeleteIntervention", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Ticket Description.
         /// </summary>
         public static string Descrizione_del_Ticket {
@@ -588,6 +624,15 @@ namespace CRM.Shared.Resources {
         public static string Displaying_page__0__of__1___total__2__records_ {
             get {
                 return ResourceManager.GetString("Displaying page {0} of {1} (total {2} records)", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Distance Traveled.
+        /// </summary>
+        public static string Distance_Traveled {
+            get {
+                return ResourceManager.GetString("Distance Traveled", resourceCulture);
             }
         }
         
@@ -944,6 +989,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a New Folder.
+        /// </summary>
+        public static string NewFolder {
+            get {
+                return ResourceManager.GetString("NewFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a New {0}.
         /// </summary>
         public static string NewItem {
@@ -994,6 +1048,15 @@ namespace CRM.Shared.Resources {
         public static string of {
             get {
                 return ResourceManager.GetString("of", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Only users assigned to the ticket can be selected. The first user is considered the primary user..
+        /// </summary>
+        public static string OnlyUsersAssigned {
+            get {
+                return ResourceManager.GetString("OnlyUsersAssigned", resourceCulture);
             }
         }
         
@@ -1570,6 +1633,15 @@ namespace CRM.Shared.Resources {
         public static string TravelTime {
             get {
                 return ResourceManager.GetString("TravelTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Updated Data.
+        /// </summary>
+        public static string UpdatedData {
+            get {
+                return ResourceManager.GetString("UpdatedData", resourceCulture);
             }
         }
         

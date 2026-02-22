@@ -43,7 +43,7 @@ namespace CRM.Client.Pages.InterventionTypes
 
         private async Task LoadData()
         {
-            _interventionType = await HttpClient.GetFromJsonAsync<InterventionType>($"{ConstHelper.InterventionTypeLanguagesPath}?Id={Id}");
+            _interventionType = await HttpClient.GetFromJsonAsync<InterventionType>($"{ConstHelper.InterventionTypeLangsPath}?Id={Id}");
         }
 
         protected async Task HandleValidSubmit()
@@ -51,7 +51,7 @@ namespace CRM.Client.Pages.InterventionTypes
             _messageState = "";
             try
             {
-                var resp = await HttpClient.PostAsJsonAsync<InterventionType>(ConstHelper.InterventionTypeLanguagesPath, _interventionType);
+                var resp = await HttpClient.PostAsJsonAsync<InterventionType>(ConstHelper.InterventionTypeLangsPath, _interventionType);
 
 
                 if (resp.IsSuccessStatusCode)

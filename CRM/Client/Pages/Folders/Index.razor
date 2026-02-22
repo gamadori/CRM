@@ -1,0 +1,47 @@
+@page "/Settings/Folders"
+@page "/Settings/Folders/Index"
+
+<PageHeader></PageHeader>
+<div class="row">
+    <div class="col">
+        <RadzenButton Icon="add_circle_outline" style="margin-bottom: 10px" Text="@Localize["NewFolder"]" Click="@InsertRow" Disabled=@(_folder != null) />
+    </div>
+</div>
+
+<RadzenDataGrid @ref="_folderGrid" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true" Responsive="true" 
+                EditMode="DataGridEditMode.Single" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                Data="@_folders" TItem="Folder" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow">
+    <Columns>
+        <RadzenDataGridColumn TItem="Folder" Property="Id" Title="ID" Width="80px" />
+        <RadzenDataGridColumn TItem="Folder" Property="@nameof(Folder.Name)" Title="@Localize["Nome"]">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.Name" Style="width:100%; display: block" Name="Name" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="Folder" Property="@nameof(Folder.Description)" Title="@Localize["Description"]">
+            <EditTemplate Context="item">
+                <RadzenTextBox @bind-Value="item.Description" Style="width:100%; display: block" Name="Description" />
+            </EditTemplate>
+        </RadzenDataGridColumn>
+
+        <RadzenDataGridColumn TItem="Folder" Context="folders" Filterable="false" Sortable="false" TextAlign="TextAlign.Center">
+           @*  <Template Context="item">
+                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Class="m-1" Click="@(args => EditRow(item))" @onclick:stopPropagation="true">
+                </RadzenButton>
+            </Template> *@
+            <EditTemplate Context="item">
+                <RedGButton RGButtonType="RGButtonType.Save" Click="@(() => SaveRow(item))"></RedGButton>
+                <RedGButton RGButtonType="RGButtonType.Cancel" AutoLabel=false Click="@(() => CancelEdit(item))"></RedGButton>
+            </EditTemplate>
+            <Template Context="item">
+                <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => EditRow(item))></RedGButton>
+                <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => DeleteRow(item))></RedGButton>
+                <RedGButton RGButtonType="RGButtonType.Translate" Click=@(() => LanguageRow(item.Id))></RedGButton>
+            </Template>
+        </RadzenDataGridColumn>
+       
+        <RadzenDataGridColumn TItem="Folder" Context="folders" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="60px">
+           
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>

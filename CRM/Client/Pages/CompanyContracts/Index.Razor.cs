@@ -86,7 +86,7 @@ namespace CRM.Client.Pages.CompanyContracts
 
         private string _header = "Company Contracts";
 
-        private bool _filterState = false;
+       
 
         private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>() ;
 

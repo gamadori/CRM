@@ -1,27 +1,27 @@
+using CRM.Client.Handlers;
 using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.Resources;
+using MediatR;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-
+using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
-using System.Globalization;
-using Microsoft.JSInterop;
-using Microsoft.AspNetCore.Components.Authorization;
-using CRM.Shared.Resources;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.SignalR.Client;
-using System.Linq;
-using MediatR;
 using System.Threading;
+using System.Threading.Tasks;
 
 
 namespace CRM.Client
@@ -30,26 +30,19 @@ namespace CRM.Client
     {
         public static async Task Main(string[] args)
         {
-
-
-            
-
-            
-
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("#app");
 
-
+            // Registra il LanguageHandler PRIMA di AddHttpClient
+            builder.Services.AddScoped<LanguageHandler>();
 
             builder.Services.AddHttpClient("CRM.ServerAPI", client => client.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress))
-                .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>();
+                .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>()
+                .AddHttpMessageHandler<LanguageHandler>();
 
             // Supply HttpClient instances that include access tokens when making requests to the server project
+            // IMPORTANTE: Usa SOLO l'HttpClient configurato con IHttpClientFactory, NON crearne uno nuovo
             builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("CRM.ServerAPI"));
-
-            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-
-            
 
             builder.Services.AddApiAuthorization()
                 .AddAccountClaimsPrincipalFactory<RolesClaimsPrincipalFactory>();
@@ -70,9 +63,6 @@ namespace CRM.Client
             });
 
 
-
-
-
             builder.Services.AddMemoryCache();
 
             builder.Services.AddTransient<ITicketService, ProxyTicketsService>();
@@ -83,7 +73,8 @@ namespace CRM.Client
 
             builder.Services.AddTransient<IBreadCrumbService, BreadCrumbService>();
 
-            
+            builder.Services.AddTransient<IInterventionTypesService, ProxyInterventionTypesService>();
+
             builder.Services.AddTransient<IManyToManyService<UserGroupModel>, GroupUsersService>();
             builder.Services.AddTransient<Radzen.DialogService>();
             builder.Services.AddTransient<INavMenuService, NavMenuService>();
@@ -114,6 +105,9 @@ namespace CRM.Client
             builder.Services.AddScoped<ITicketStatesService, ProxyTicketsStates>();
             builder.Services.AddScoped<ITicketInterventionsService, ProxyTicketInterventionsService>();
             builder.Services.AddScoped<ITicketInterventionUsersService, ProxyTicketInterventionUsersService>();
+            builder.Services.AddScoped<IFoldersService, ProxyFoldersService>();
+            builder.Services.AddScoped<IInterventionTypeLangsService, ProxyInterventionTypeLangsService>();
+            builder.Services.AddScoped<IFolderLanguagesService, ProxyFolderLanguagesService>();
 
             // ? NUOVO: Servizio per gestione feedback ticket
             builder.Services.AddScoped<ITicketFeedbackService, ProxyTicketFeedbackService>();
@@ -154,7 +148,7 @@ namespace CRM.Client
               RestClientService<InterventionTypeLanguage, InterventionTypeLangFilter, int>>(sp =>
               {
                   return new RestClientService<InterventionTypeLanguage, InterventionTypeLangFilter, int>(sp.GetRequiredService<HttpClient>(),
-                       ConstHelper.InterventionTypeLanguagesPath);
+                       ConstHelper.InterventionTypeLangsPath);
               });
 
             builder.Services.AddTransient<IBaseRestService<TicketIntervention, TicketInterventionFilter, int>,
@@ -176,28 +170,13 @@ namespace CRM.Client
             });
 
 
-            builder.Services.AddTransient<IManyToManyService<TicketInterventionType>, ManyToManyService<TicketInterventionType>>(sp =>
-            {
-                return new ManyToManyService<TicketInterventionType>(sp.GetRequiredService<HttpClient>(), ConstHelper.TicketTypesUsersPath);
-            });
-
            
-
-
-
-
             builder.Services.AddTransient<IBaseRestService<ApplicationUser, UsersFilterModel, string>, RestClientService<ApplicationUser, UsersFilterModel, string>>(sp =>
             {
                 return new RestClientService<ApplicationUser, UsersFilterModel, string>(sp.GetRequiredService<HttpClient>(), ConstHelper.UsersPath);
             });
 
             
-
-           
-           
-            
-
-
             builder.Services.AddScoped<Radzen.DialogService>();
             builder.Services.AddScoped<Radzen.NotificationService>();
             builder.Services.AddScoped<Radzen.TooltipService>();
@@ -209,14 +188,16 @@ namespace CRM.Client
 
             builder.Services.AddLocalization();
 
-            CultureInfo cultureInfo;
+            // Build dell'app una sola volta
+            var app = builder.Build();
 
-            var jsInterop = builder.Build().Services.GetRequiredService<IJSRuntime>();
+            // Imposta la cultura usando l'app già costruita
+            CultureInfo cultureInfo;
+            var jsInterop = app.Services.GetRequiredService<IJSRuntime>();
             var appLanguage = await jsInterop.InvokeAsync<string>("appCulture.get");
             if (appLanguage != null && appLanguage != "null")
             {
                 cultureInfo = new CultureInfo(appLanguage);
-
             }
             else
             {
@@ -226,8 +207,6 @@ namespace CRM.Client
             CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
             CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 
-
-            var app = builder.Build();
             var navigationManager = app.Services.GetRequiredService<NavigationManager>();
 
             HubHelper.HubConnection = new HubConnectionBuilder()
@@ -236,18 +215,12 @@ namespace CRM.Client
                         .WithAutomaticReconnect()                       
                         .Build();
 
-
-
             HubHelper.HubConnection.On<SerializedNotification>("Notification", async (notificationJson) =>
             {
                 await DynamicNotificationHandlers.Publish(notificationJson);
             });
 
-            
-
             await HubHelper.HubConnection.StartAsync();
-
-
 
             await app.RunAsync();
         }

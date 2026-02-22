@@ -2,7 +2,6 @@ using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Client.Shared.Components;
 using CRM.Shared;
-using CRM.Shared.Resources.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;

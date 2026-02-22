@@ -257,9 +257,16 @@ namespace CRM.Server.Controllers
                     tickets = tickets.Where(args.Filter);
                 }
 
-                
 
-                var totalWork = _context.TicketsInterventions.Where(x => tickets.Contains(x.Ticket)).Sum(y=>y.Minute);
+
+                //var totalWork = _context.TicketsInterventions.Where(x => tickets.Contains(x.Ticket)).Sum(y=>y.Minute);
+                var totalWork = _context.TicketsInterventions
+                .Where(x => tickets.Contains(x.Ticket))
+                .SelectMany(y => y.TicketInterventionTime)
+                .Where(x => x.TimeType == InterventionTimeType.Work)
+                .Sum(z => (int)EF.Functions.DateDiffMinute(z.StartDateTime, z.EndDateTime));
+
+                //var totalWork = _context.TicketsInterventions.Where(x => tickets.Contains(x.Ticket)).Sum(y=>y.TicketInterventionTime.Where(x=>x.TimeType == InterventionTimeType.Work).Sum(z=>z.DurationMinutes));
 
                 int count = tickets != null ? tickets.Count(): 0;
 
@@ -288,13 +295,17 @@ namespace CRM.Server.Controllers
                     IdState = x.IdState,
                     IdUserOpened = x.IdUserOpened,
                     UserAssigned = (x.UserAssigned != null) ? x.UserAssigned.NameComplete : "",
-                    MinuteWork = x.TicketInterventions.Sum(y=>y.Minute),
+                    MinuteWork = x.TicketInterventions
+                         .SelectMany(y => y.TicketInterventionTime.Where(z => z.TimeType == InterventionTimeType.Work))
+                            .Sum(z => (int)EF.Functions.DateDiffMinute(z.StartDateTime, z.EndDateTime)),
+                    MinuteTravel = x.TicketInterventions
+                        .SelectMany(y => y.TicketInterventionTime.Where(z => z.TimeType == InterventionTimeType.Travel))
+                            .Sum(z => (int)EF.Functions.DateDiffMinute(z.StartDateTime, z.EndDateTime)),
                     Invoiced = x.Invoiced,
                     Description = x.Description,
                     ContactName = x.Contact != null ? x.Contact.Name : "",
                     Time = x.Time,
                     Closed = x.Closed,
-                    
 
                 });                
                 
@@ -1767,7 +1778,7 @@ namespace CRM.Server.Controllers
                     .Include(x => x.Company)
                     .Include(x => x.TicketType)
                     .Include(x => x.Article)
-                        .ThenInclude(x => x.Product)
+                        .ThenInclude(x => x!.Product)
                     .Include(x => x.Product)
                     .Include(x => x.Contact)
                     .Include(x => x.UserAssigned)
@@ -2288,7 +2299,7 @@ namespace CRM.Server.Controllers
                     keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Name), user.NameComplete);
                     keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Date), ticket.DateOpened.ToString("g"));
                     
-                    if (ticketWithDetails.Company != null)
+                    if (ticketWithDetails?.Company != null)
                         keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Company), ticketWithDetails.Company.RagioneSociale);
                     
                     if (callbackUrl != null)

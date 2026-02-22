@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+// Aggiungi IHttpContextAccessor per accedere all'HttpContext nei servizi
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddRoles<IdentityRole>()
@@ -120,18 +123,14 @@ builder.Services.AddScoped<ILogosService, LogosService>();
 
 builder.Services.AddScoped<ITicketStatesService, TicketStatesService>();
 
+builder.Services.AddScoped<IInterventionTypesService, InterventionTypesService>();
 
-
-// ✅ AGGIUNTO: Servizio per generare PDF dei ticket
 builder.Services.AddScoped<ITicketPdfGenerator, TicketPdfGenerator>();
 
-// ✅ NUOVO: Servizio per generare PDF degli interventi
 builder.Services.AddScoped<IInterventionPdfGenerator, InterventionPdfGenerator>();
 
-// ✅ NUOVO: Servizio OTP per verifica firma
 builder.Services.AddScoped<ISignatureOtpService, SignatureOtpService>();
 
-// ✅ NUOVO: Servizio per elaborazione scontrini/fatture con Azure Form Recognizer
 builder.Services.AddScoped<IReceiptProcessorService, ReceiptProcessorService>();
 
 builder.Services.AddSingleton<WTelegramService>();
@@ -139,8 +138,13 @@ builder.Services.AddHostedService(provider => provider.GetRequiredService<WTeleg
 
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 
-// ✅ NUOVO: Servizio per gestione feedback ticket
+
 builder.Services.AddScoped<ITicketFeedbackService, TicketFeedbackService>();
+
+builder.Services.AddScoped<IFoldersService, FoldersService>();
+builder.Services.AddScoped<IInterventionTypeLangsService, InterventionTypeLangsService>();
+
+builder.Services.AddScoped<IFolderLanguagesService, FolderLanguagesService>();
 
 builder.Services.AddCors(options =>
 {
@@ -165,6 +169,8 @@ builder.Services.AddAuthorization(options =>
     
 });
 
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
 var supportedCultures = new[] { "en", "it", "fr", "de", "es" };
 
 builder.Services.Configure<RequestLocalizationOptions>(options => {
@@ -172,6 +178,13 @@ builder.Services.Configure<RequestLocalizationOptions>(options => {
     options.SetDefaultCulture(supportedCultures[0])
         .AddSupportedCultures(supportedCultures)
         .AddSupportedUICultures(supportedCultures);
+    // Priorità: Accept-Language header prima del cookie
+    options.RequestCultureProviders = new List<IRequestCultureProvider>
+    {
+        new AcceptLanguageHeaderRequestCultureProvider(),
+        new CookieRequestCultureProvider(),
+        new QueryStringRequestCultureProvider()
+    };
 });
 
 builder.Services.AddControllersWithViews()
@@ -232,12 +245,12 @@ app.UseStaticFiles();
 
 // Culture from the HttpRequest
 
-var localizationOptions = new RequestLocalizationOptions()
-    .SetDefaultCulture(supportedCultures[0])
-    .AddSupportedCultures(supportedCultures)
-    .AddSupportedUICultures(supportedCultures);
+//var localizationOptions = new RequestLocalizationOptions()
+//    .SetDefaultCulture(supportedCultures[0])
+//    .AddSupportedCultures(supportedCultures)
+//    .AddSupportedUICultures(supportedCultures);
     
-app.UseRequestLocalization(localizationOptions);
+app.UseRequestLocalization();
 
 
 app.UseRouting();

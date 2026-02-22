@@ -8,30 +8,34 @@ using System.Threading.Tasks;
 
 namespace CRM.Shared.DTOs
 {
-    public class AttachmentFileDTO
+    public class AttachmentDTO
     {
+        
         public int Id { get; set; }
 
-        [ForeignKey("Attachment")]
-        public int IdAttachment { get; set; }
+        public int IdParent { get; set; }
 
-        [Display(Name = "Nome File")]
+        public AttachmentTypes AttchmentType { get; set; }
+
         public string Name { get; set; }
 
-        [Display(Name = "Tipo File")]
-        [MaxLength(100)]
-        public string ContentType { get; set; }
+        public string Description { get; set; }
 
-        public string Link { get; set; }
+        public int? FolderId { get; set; }
 
-        public bool Selected { get; set; }
+        public DateTime? CreatedOn { get; set; }
 
-        public byte[] Bytes { get; set; }
+        public string IdUser { get; set; }
 
-        [Display(Name = "Dimensione")]
-        public double Size { get; set; }
+        [NotMapped]
+        public bool CanEdit { get; set; }
 
-        public string Content { get; set; }
+        [NotMapped]
+        public bool CanDelete { get; set; }
 
+        public string? NameUser { get; set; }
+
+
+        public string Folder { get; set; }
     }
 }

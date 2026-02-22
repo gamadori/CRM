@@ -654,4 +654,28 @@
   <data name="TotalKilometers" xml:space="preserve">
     <value>Chilometri totali</value>
   </data>
+  <data name="OnlyUsersAssigned" xml:space="preserve">
+    <value>Solo utenti assegnati al ticket possono essere selezionati. Il primo utente è considerato il principale.</value>
+  </data>
+  <data name="AddTimePeriod" xml:space="preserve">
+    <value>Aggiungi periodo di tempo</value>
+  </data>
+  <data name="Distance Traveled" xml:space="preserve">
+    <value>Distanza Percorsa</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Aggiungi</value>
+  </data>
+  <data name="AssignedUsers" xml:space="preserve">
+    <value>Utenti assegnati</value>
+  </data>
+  <data name="DeleteIntervention" xml:space="preserve">
+    <value>Eliminare l'Intervento?</value>
+  </data>
+  <data name="UpdatedData" xml:space="preserve">
+    <value>Dato Aggiornato</value>
+  </data>
+  <data name="NewFolder" xml:space="preserve">
+    <value>Nuova Cartella</value>
+  </data>
 </root>

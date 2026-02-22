@@ -1,0 +1,35 @@
+@page "/Settings/Folders/Edit/{Id:int}"
+@page "/Settings/Folders/Edit"
+
+<PageHeader></PageHeader>
+
+@if (_isLoading)
+{
+    <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+}
+else
+{
+    <RadzenCard>
+        <RadzenTemplateForm TItem="Folder" Data="@_folder" Submit="@OnSubmit">
+            <div class="row">
+                <div class="col-md-6">
+                    <RadzenLabel Text="@Localize["Nome"]" Component="Name" />
+                    <RadzenTextBox @bind-Value="_folder.Name" Style="width:100%;" Name="Name" />
+                    <RadzenRequiredValidator Component="Name" Text="@Localize["CampoObbligatorio"]" />
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <RadzenLabel Text="@Localize["Description"]" Component="Description" />
+                    <RadzenTextArea @bind-Value="_folder.Description" Style="width:100%;" Name="Description" Rows="3" />
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col">
+                    <RadzenButton ButtonType="ButtonType.Submit" Icon="save" Text="@Localize["Salva"]" ButtonStyle="ButtonStyle.Primary" Class="me-2" />
+                    <RadzenButton Icon="arrow_back" Text="@Localize["Annulla"]" Click="@GoBack" ButtonStyle="ButtonStyle.Light" />
+                </div>
+            </div>
+        </RadzenTemplateForm>
+    </RadzenCard>
+}

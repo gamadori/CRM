@@ -24,7 +24,7 @@ else
                 
                     <RadzenRow>
                         <RadzenColumn Size="12">
-                            <RadzenFieldset Text="Utenti Assegnati">
+                            <RadzenFieldset Text="@Localize["AssignedUsers"]">
                                 <div class="d-flex flex-wrap gap-2 mb-3">
                                     @if (_selectedUserIds != null && _selectedUserIds.Any())
                                     {
@@ -58,19 +58,20 @@ else
                                 </button>
                                 <small class="text-muted d-block mt-2">
                                     <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
-                                    Solo utenti assegnati al ticket possono essere selezionati. Il primo utente è considerato il principale.
+                                    @Localize["OnlyUsersAssigned"]
                                 </small>
                             </RadzenFieldset>
                         </RadzenColumn>
                     </RadzenRow>
 
-                    <RadzenRow>
+                   <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="4">
                             <RadzenStack>
-                                    <RedGDateTimePicker ShowTime=true @bind-Value="_ticketIntervention.StartDateTime" DateFormat="g" Change="@ValueStartDateTimeChangeHandler" For="@(() => _ticketIntervention.StartDateTime)" />
+                                    <RedGDateTimePicker  @bind-Value="_ticketIntervention.StartDateTime" DateFormat="g" Change="@ValueStartDateTimeChangeHandler" For="@(() => _ticketIntervention.StartDateTime)" />
                             </RadzenStack>
                         </RadzenColumn>
-       
+                    </RadzenRow>
+                    @*
                         <RadzenColumn Size="12" SizeSM="4">
                             <RadzenStack>
                                 <RedGDateTimePicker ShowTime=true @bind-Value="_ticketIntervention.EndDateTime" DateFormat="g" Change="ValueEndDateTimeChangeHandler" For="@(() => _ticketIntervention.EndDateTime)" />
@@ -81,10 +82,8 @@ else
                                 <RedGNumeric @bind-Value="@_ticketIntervention.Minute" For="@(() => _ticketIntervention.Minute)" />
                             </RadzenStack>
                         </RadzenColumn>
-                    </RadzenRow>
-                     <RadzenRow>
-           
-                    </RadzenRow>
+                    </RadzenRow> *@
+                     
                     <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
@@ -103,6 +102,7 @@ else
                             </RadzenStack>
                         </RadzenColumn>
                     </RadzenRow>
+                    
                 <div class="row">
                     <div class="col">
             

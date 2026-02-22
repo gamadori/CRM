@@ -1,0 +1,65 @@
+﻿@page "/Settings/Folders/{FolderId:int}"
+
+@using CRM.Shared.DTOs
+
+<PageHeader></PageHeader>
+
+@if (_folderLanguages != null && _languages != null)
+{
+    <RadzenDataGrid @ref="_folderGrid" AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true" Responsive=true EditMode="DataGridEditMode.Single" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    Data="_folderLanguages" TItem="FolderLanguageDTO" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" IsLoading=@_isLoading>
+        <HeaderTemplate>
+            <RedGButton RGButtonType="RGButtonType.New" Click="@InsertRow"></RedGButton>
+        </HeaderTemplate>
+        <Columns>
+            <RadzenDataGridColumn TItem="FolderLanguageDTO" Property="Id" Title="ID" Width="120px" />
+
+            <RadzenDataGridColumn TItem="FolderLanguageDTO" Property="Language.Name" Title="@Localize["Lingua"]" Width="230px">
+                <Template Context="item">
+                    @if (item.Language != null)
+                    {
+                    
+                        <RadzenImage Path="@(GetFlag(item.IdLanguage))" style="width: 32px; height: 32px; border-radius: 16px; margin-right: 6px;" />
+                    
+                        @item?.Language
+                    }
+                </Template>
+                <EditTemplate Context="item">
+                    <RadzenDropDown @bind-Value="item.IdLanguage" Data="@_languages" ValueProperty="Id"  Style="width:100%; display: block;">
+                        <Template>
+                                <RadzenImage Path="@((context as Language).Flag)" style="width: 20px; height: 20px; border-radius: 16px; margin-right: 6px;" />
+                             @((context as Language).Name)
+                        </Template>
+                    </RadzenDropDown>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="FolderLanguageDTO" Property="@nameof(FolderLanguageDTO.Name)" Title="@Localize["Nome"]">
+                <EditTemplate Context="item">
+                    <RadzenTextBox @bind-Value="item.Name" Style="width:100%; display: block" Name="Name" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+       
+            <RadzenDataGridColumn TItem="FolderLanguageDTO" Context="interventions" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="120px">
+                <Template Context="item">
+                    
+                    <RedGButton RGButtonType="RGButtonType.Edit" Click="@(() => EditRow(item))"></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Delete" Click="@(() => DeleteRow(item))"></RedGButton>
+                </Template>
+                <EditTemplate Context="item">
+                    <RedGButton RGButtonType="RGButtonType.Save" Click="@(() => SaveRow(item))"></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Cancel" AutoLabel=false Click="@(() => CancelEdit(item))"></RedGButton>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            
+        </Columns>
+    </RadzenDataGrid>
+}
+else
+{
+    <Waiting></Waiting>
+}
+
+
+
+

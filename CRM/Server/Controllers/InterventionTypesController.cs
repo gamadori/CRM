@@ -1,151 +1,145 @@
-﻿using CRM.Client.Services;
-using CRM.Server.Data;
-using CRM.Server.Helpers;
+using CRM.Client.Models;
+using CRM.Client.Services;
 using CRM.Server.Services;
 using CRM.Shared;
-using CRM.Shared.Resources.Models;
+using CRM.Shared.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json;
-using System.Linq.Dynamic.Core;
+using Microsoft.Extensions.Azure;
 
 namespace CRM.Server.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class InterventionTypesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IInterventionTypesService _service;
+
         private readonly ILogEventService _logEventService;
-        public InterventionTypesController(ApplicationDbContext context, ILogEventService logEventService)
+
+        private readonly IPermitsService _permitsService;
+        public InterventionTypesController(IInterventionTypesService service, ILogEventService logEventService, IPermitsService permitsService)
         {
-            _context = context;
+            _service = service;
             _logEventService = logEventService;
+            _permitsService = permitsService;
         }
 
         [HttpGet]
-        public async Task<IEnumerable<InterventionType>?> GetInterventionTypes([FromQuery] InterventionTypeFilter? args = null)
+        public async Task<PagingResponse<InterventionTypeDTO>?> GetPage([FromQuery] InterventionTypeFilter? args = null)
         {
             try
             {
-
-
-                var interventions = _context.InterventionTypes.AsQueryable();
-
-                if (args?.OrderBy != null && args.OrderBy.Length > 0)
-                {
-                    interventions = interventions.OrderBy(args.OrderBy);
-                }
-                else
-                    interventions = interventions.OrderBy(x => x.Name);
-
-               
-                int count = interventions.Count();
-
-                if (args?.Skip != null && args.Top != null)
-                {
-                    interventions = interventions.Skip(args.Skip.Value).Take(args.Top.Value);
-                }
-
-                var paginationMetadata = new
-                {
-                    totalCount = count,
-                };
-                HttpContext.Response.Headers.Add("Paging-Header", JsonConvert.SerializeObject(paginationMetadata));
-                // var list = await companies.ToListAsync();
-                return await interventions.ToListAsync();
+                var items = await _service.GetPagingAsync(args);
+                return items;
             }
             catch (Exception ex)
             {
-                await _logEventService.RegisterAsync(nameof(InterventionTypesController), nameof(GetInterventionTypes), LogEvent.EventsTypes.Error, ex.Message);
+                await _logEventService.RegisterAsync(nameof(InterventionTypesController), nameof(GetPage), LogEvent.EventsTypes.Error, ex);
                 return null;
             }
         }
-       
 
-
-        // GET: api/Projects/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<InterventionType>> GetInterventionType(int id)
+        [HttpGet("list")]
+        public async Task<IEnumerable<InterventionTypeDTO>?> GetItems([FromQuery] InterventionTypeFilter? args = null)
         {
-            var project = await _context.InterventionTypes.FindAsync(id);
-
-            if (project == null)
+            try
             {
-                return NotFound();
+                var items = await _service.GetListAsync(args);
+                if (items == null)
+                {
+                    return Enumerable.Empty<InterventionTypeDTO>();
+                }
+                return items;
             }
-
-            return project;
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(InterventionTypesController), nameof(GetItems), LogEvent.EventsTypes.Error, ex);
+                return Enumerable.Empty<InterventionTypeDTO>();
+            }
         }
 
-        // PUT: api/InterventionType/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutInterventionType(int id, [FromBody] InterventionType intervention)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<InterventionTypeDTO?>> GetItem(int id)
         {
+            try
+            {
+                var item = await _service.GetItemAsync(id);
+                if (item == null)
+                {
+                    return NotFound();
+                }
+                return Ok(item);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(InterventionTypesController), nameof(GetItem), LogEvent.EventsTypes.Error, ex);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
 
-            if (id != intervention.Id)
+
+        // PUT: api/InterventionTypes/5
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult<APIResponseMessage<InterventionTypeDTO>>> Put(int id, InterventionType item)
+        {
+            if (id != item.Id)
             {
                 return BadRequest();
             }
-            _context.Entry(intervention).State = EntityState.Modified;
+            var resp = await _service.PostAsync(item);
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                
-                    return NotFound();
-                
-            }
+            if (resp == null)
+                return Problem("Error saving settings");
 
-            return NoContent();
+            return Ok(resp);
         }
-        
-        // POST: api/Projects
+
+        // POST: api/InterventionTypes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<InterventionType?>> PostInterventionTypet([FromBody] InterventionType interventionType)
+        public async Task<ActionResult<APIResponseMessage<InterventionTypeDTO>>> Post(InterventionType item)
+        {
+            var resp = await _service.PostAsync(item);
+
+            if (resp == null)
+                return StatusCode(StatusCodes.Status500InternalServerError, "Post return null");
+
+            return Ok(resp);
+        }
+
+        // DELETE: api/InterventionTypes/5
+        //[AuthorizeRole(ePolicy.AdminRole)]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var resp = await _service.DeleteAsync(id);
+
+            if (!resp)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error On Deleded Logo");
+            }
+            else
+                return NoContent();
+        }
+
+        [HttpGet("translate/{id}")]
+        public async Task<ActionResult<string>> Translate(int id)
         {
             try
             {
-                _context.InterventionTypes.Add(interventionType);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction("GetInterventionType", new { id = interventionType.Id }, interventionType);
+                return Ok(await _service.Translate(id));
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                await _logEventService.RegisterAsync(nameof(LanguagesController), nameof(PostInterventionTypet), LogEvent.EventsTypes.Error, ex.Message);
-                return null;
+                await _logEventService.RegisterAsync(nameof(InterventionTypesController), nameof(Translate), LogEvent.EventsTypes.Error, ex);
+                return string.Empty;
             }
         }
 
-        // DELETE: api/Projects/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProject(int id)
-        {
-            var interventionType = await _context.InterventionTypes.FindAsync(id);
-            if (interventionType == null)
-            {
-                return NotFound();
-            }
 
-            _context.InterventionTypes.Remove(interventionType);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        
-        private bool InterventionTypeExists(int id)
-        {
-            return _context.InterventionTypes.Any(e => e.Id == id);
-        }
-
-        
     }
 }

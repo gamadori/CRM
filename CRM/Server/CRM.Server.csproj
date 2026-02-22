@@ -118,9 +118,7 @@
     <ItemGroup>
       <SharedSatelliteAssemblies Include="$(OutputPath)..\..\..\Shared\bin\$(Configuration)\$(TargetFramework)\**\*.resources.dll" />
     </ItemGroup>
-    <Copy SourceFiles="@(SharedSatelliteAssemblies)" 
-          DestinationFolder="$(OutputPath)%(RecursiveDir)" 
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(SharedSatelliteAssemblies)" DestinationFolder="$(OutputPath)%(RecursiveDir)" SkipUnchangedFiles="true" />
   </Target>
 
   <ItemGroup>
@@ -138,6 +136,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>RegisterConfirmationModel.resx</DependentUpon>
     </Compile>
+    <Compile Update="Resources\Controllers\TicketInterventionsController.Designer.cs">
+      <DependentUpon>TicketInterventionsController.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -151,6 +154,10 @@
     <EmbeddedResource Update="Resources\Areas\Identity\Pages\Account\RegisterConfirmationModel.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>RegisterConfirmationModel.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Controllers\TicketInterventionsController.resx">
+      <LastGenOutput>TicketInterventionsController.Designer.cs</LastGenOutput>
+      <Generator>PublicResXFileCodeGenerator</Generator>
     </EmbeddedResource>
   </ItemGroup>
 

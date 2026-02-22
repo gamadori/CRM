@@ -7,13 +7,13 @@ using CRM.Server.Models;
 using CRM.Server.Services;
 using CRM.Shared;
 using CRM.Shared.Extensions;
-using CRM.Shared.Resources.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 using Microsoft.Identity.Client; // ✅ AGGIUNTO
 using Newtonsoft.Json;
 using SelectPdf;
@@ -39,10 +39,11 @@ namespace CRM.Server.Controllers
         private readonly IEmailSenderPlus _emailSender;
         private readonly IInterventionPdfGenerator _pdfGenerator;
         private readonly ISignatureOtpService _otpService;
+        private readonly IStringLocalizer<TicketInterventionsController> _localizer;
 
         public TicketInterventionsController(ApplicationDbContext context, IPermitsService permitsService, IArchiveService archiveService,
             IWebHostEnvironment hostEnvironment, ILogEventService logEventService, IEmailSenderPlus emailSender, IInterventionPdfGenerator pdfGenerator,
-            ISignatureOtpService otpService)
+            ISignatureOtpService otpService, IStringLocalizer<TicketInterventionsController> localizer)
         {
             _context = context;
             _permitsService = permitsService;
@@ -53,6 +54,7 @@ namespace CRM.Server.Controllers
             _emailSender = emailSender;
             _pdfGenerator = pdfGenerator;
             _otpService = otpService;
+            _localizer = localizer;
         }
 
         // GET: api/TicketInterventions
@@ -913,10 +915,10 @@ namespace CRM.Server.Controllers
                 var intervention = await _context.TicketsInterventions.FindAsync(id);
                 
                 if (intervention == null)
-                    return NotFound();
+                    return NotFound(new { error = _localizer["InterventionNotFound"].Value });
 
                 if (!await _permitsService.CanGetTicket(intervention.IdTicket))
-                    return Problem("Not Permits");
+                    return Problem(_localizer["NotPermits"].Value);
 
                 // Salva firma direttamente (senza conferma)
                 intervention.CustomerSignature = signatureData.Signature;
@@ -931,9 +933,9 @@ namespace CRM.Server.Controllers
                     nameof(TicketInterventionsController),
                     nameof(SaveSignature),
                     LogEvent.EventsTypes.Info,
-                    $"Firma salvata per intervention #{id} - Firmatario: {signatureData.SignerName}");
+                    $"{_localizer["Signature saved for intervention"]} #{id} - Firmatario: {signatureData.SignerName}");
 
-                return Ok(new { success = true, message = "Firma salvata con successo" });
+                return Ok(new { success = true, message = _localizer["SignatureSavedSuccessfully"].Value });
             }
             catch (Exception ex)
             {

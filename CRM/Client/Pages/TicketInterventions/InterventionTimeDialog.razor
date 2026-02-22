@@ -65,7 +65,7 @@
                 </h6>
                 
                 <div class="mb-3">
-                    <label class="form-label">Chilometri Percorsi</label>
+                    <label class="form-label">@Localize["Distance Traveled"]</label>
                     <RadzenNumeric @bind-Value="Time.TravelKilometers" 
                                    ShowUpDown="false"
                                    Placeholder="Es: 50"
@@ -82,7 +82,6 @@
             
             <RadzenTextArea @bind-Value="Time.Notes" 
                             Rows="3"
-                            Placeholder="Es: Viaggio A/R Milano - Autostrada"
                             Class="w-100" />
         </div>
 
@@ -101,7 +100,7 @@
                           ButtonStyle="ButtonStyle.Light" 
                           Click="@Cancel" 
                           Style="width: 120px;" />
-            <RadzenButton Text="@(IsNew ? "Aggiungi" : "Salva")" 
+            <RadzenButton Text="@(IsNew ? Localize["Add"] : Localize["Save"])" 
                           ButtonStyle="ButtonStyle.Success" 
                           ButtonType="ButtonType.Submit"
                           Style="width: 120px;" />
