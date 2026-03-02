@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace CRM.Client.Services
 {
-    public interface IAttachmentsService : IDataService<Attachment, AttachmentDTO, int, AttachmentsFilter, object>
+    public interface IArticlesService : IDataService<Article, ArticleDTO, int, ArticleFilter, object>
     {
     }
 }

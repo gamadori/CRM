@@ -62,7 +62,14 @@ namespace CRM.Server.Controllers
             {
                 var users = _userManager.Users.Where(x=>!x.IsDeleted).Include(x => x.Company).AsQueryable();
 
-               
+
+                if (!(await _permitsService.BelongsToHeadQuarter()))
+                {
+                    var companies = await _permitsService.GetIdCompanies();
+
+                    users = users.Where(x => x.IdCompany == null || companies.Contains(x.IdCompany.Value));
+                }
+
                 if (await _permitsService.IsClient())
                 {
                     // Il Client puo' vedere solo gli utenti della sua azienda

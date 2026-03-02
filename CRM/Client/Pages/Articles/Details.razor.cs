@@ -2,6 +2,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -24,7 +25,7 @@ namespace CRM.Client.Pages.Articles
         private NavigationManager NavigationManager { get; set; }
 
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
+        IArticlesService Service { get; set; }
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
@@ -51,7 +52,7 @@ namespace CRM.Client.Pages.Articles
         public int? CompanyId { get; set; } = null;
 
 
-        private Article _article = null;
+        private ArticleDTO _article = null;
 
         private PageHeaderModel? _pageHeader = null;
         
@@ -74,7 +75,7 @@ namespace CRM.Client.Pages.Articles
 
         private async Task LoadArticle()
         {
-            _article = await RestClientService.GetItem<Article, int>(Id, ConstHelper.ArticlesPath);
+            _article = await Service.GetItemAsync(Id);
         }
 
         private void Edit()

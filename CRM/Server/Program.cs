@@ -130,6 +130,7 @@ builder.Services.AddScoped<ITicketPdfGenerator, TicketPdfGenerator>();
 builder.Services.AddScoped<IInterventionPdfGenerator, InterventionPdfGenerator>();
 
 builder.Services.AddScoped<ISignatureOtpService, SignatureOtpService>();
+builder.Services.AddScoped<IAttachmentsService, AttachmentsService>();
 
 builder.Services.AddScoped<IReceiptProcessorService, ReceiptProcessorService>();
 
@@ -138,13 +139,23 @@ builder.Services.AddHostedService(provider => provider.GetRequiredService<WTeleg
 
 builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 
+builder.Services.AddScoped<ICompaniesService, CompaniesService>();
+
+builder.Services.AddScoped<IProductsService, ProductsService>();
+
+builder.Services.AddScoped<IProductTypesService, ProductTypesService>();
 
 builder.Services.AddScoped<ITicketFeedbackService, TicketFeedbackService>();
 
 builder.Services.AddScoped<IFoldersService, FoldersService>();
+
+builder.Services.AddScoped<IContactsService, ContactsService>();
+
 builder.Services.AddScoped<IInterventionTypeLangsService, InterventionTypeLangsService>();
 
 builder.Services.AddScoped<IFolderLanguagesService, FolderLanguagesService>();
+
+builder.Services.AddScoped<IArticlesService, ArticlesService>();
 
 builder.Services.AddCors(options =>
 {

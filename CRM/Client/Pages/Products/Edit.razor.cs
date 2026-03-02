@@ -2,6 +2,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -29,8 +30,11 @@ namespace CRM.Client.Pages.Products
 
 
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
-        
+        IProductsService Service { get; set; }
+
+        [Inject]
+        IProductTypesService ServiceProductType { get; set; }   
+
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
@@ -54,7 +58,7 @@ namespace CRM.Client.Pages.Products
 
         private Product _product = null;
 
-        private List<ProductType> _productTypes;
+        private List<ProductTypeDTO> _productTypes;
 
         private string _messageState = "";
 
@@ -70,8 +74,18 @@ namespace CRM.Client.Pages.Products
                 if (Id != null)
                 {
 
-                    
-                    _product = await RestClientService.GetItem<Product, int>(Id.Value, ConstHelper.Products); // await Service.Get(Id.Value);
+
+                    var dto = await Service.GetItemAsync(Id.Value); // await RestClientService.GetItem<Product, int>(Id.Value, ConstHelper.Products); // await Service.Get(Id.Value);
+                    if (dto != null)
+                    {
+                        _product = new Product()
+                        {
+                            Id = dto.Id,
+                            Name = dto.Name,
+                            Description = dto.Description,
+                            IdProductType = dto.IdProductType
+                        };
+                    }
                 }
                 else
                 {
@@ -93,7 +107,7 @@ namespace CRM.Client.Pages.Products
             _messageState = "";
             try
             {
-                var resp = await RestClientService.Post<Product, int>(_product, ConstHelper.Products);
+                var resp = await Service.PostAsync(_product); // await RestClientService.Post<Product>(ConstHelper.Products, _product);
 
                 if (resp.State) // ==  await Service.Post(_product) !=null)
                 {
@@ -122,7 +136,7 @@ namespace CRM.Client.Pages.Products
         private async Task GetProductTypes()
         {
             //_productTypes = await ServiceProductType.Get();
-            _productTypes = await RestClientService.Get<ProductType>(ConstHelper.ProductTypesPath);
+            _productTypes = await ServiceProductType.GetListAsync(new ProductTypeFilter()); 
 
         }
         void Change(string value, string name)

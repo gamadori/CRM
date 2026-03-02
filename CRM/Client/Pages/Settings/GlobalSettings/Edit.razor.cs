@@ -2,6 +2,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -19,7 +20,9 @@ namespace CRM.Client.Pages.Settings.GlobalSettings
     [Authorize]
     public partial class Edit: ComponentBase
     {
-       
+
+        [Inject]
+        ICompaniesService CompaniesService { get; set; }
 
         [Inject]
         IAGRestClientService RestClientServer { get; set; }
@@ -37,7 +40,7 @@ namespace CRM.Client.Pages.Settings.GlobalSettings
       
         private GlobalSetting _settings = null;
 
-        private IList<Company> _companies;
+        private IList<CompanyDTO> _companies;
 
         private int _pageSize = 10;
 
@@ -79,13 +82,9 @@ namespace CRM.Client.Pages.Settings.GlobalSettings
                 request.RagioneSociale = args.Filter;
             }
 
-            var response = await RestClientServer.GetListPag<CompanyFilter, Company>(request, ConstHelper.CompaniesPath); 
+            _companies = await CompaniesService.GetListAsync(request); await RestClientServer.GetListPag<CompanyFilter, Company>(request, ConstHelper.CompaniesPath); 
 
-            if (response != null)
-            {
-                _companyCount = response.MetaData.TotalCount;
-                _companies = response.Items;
-            }
+            
         }
 
        

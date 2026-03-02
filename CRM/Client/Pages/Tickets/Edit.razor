@@ -28,7 +28,7 @@ else
                     <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
-                                <RedGDropDown Change=OnChangeCompany TItem="Company"   TValue="int" ValueProperty="Id" TextProperty="@nameof(Company.RagioneSociale)" @bind-Value="@_ticket.IdCompany" For="@(() => _ticket.IdCompany)"
+                                <RedGDropDown Change=OnChangeCompany TItem="CompanyDTO"   TValue="int" ValueProperty="Id" TextProperty="@nameof(CompanyDTO.RagioneSociale)" @bind-Value="@_ticket.IdCompany" For="@(() => _ticket.IdCompany)"
                                               Data="_companies" AllowFiltering="true">
                                     <End>
                                         <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetCompany DialogType="RedGDialog.DialogType.Companies"></RedGButtonDialog>
@@ -42,13 +42,13 @@ else
                         {
                             <RadzenColumn Size="12" SizeSM="6">
                                 <RadzenStack>
-                                    <RedGDropDownGrid TItem="Contact" @bind-value="@_ticket.IdContact" TValue="int?" AllowFiltering="true" AllowClear="true"
-                                                                    Data="@_contactsCustomer" Count="@_contactsCustomer.Count" TextProperty="@nameof(Contact.NameComplete)"
+                                    <RedGDropDownGrid TItem="ContactDTO" @bind-value="@_ticket.IdContact" TValue="int?" AllowFiltering="true" AllowClear="true"
+                                                                    Data="@_contactsCustomer" Count="@_contactsCustomer.Count" TextProperty="@nameof(ContactDTO.NameComplete)"
                                                             For="@(() => _ticket.IdContact)" ValueProperty ="Id">
                                             <ChildColumns>
                                                
-                                                <RadzenDropDownDataGridColumn Property="@nameof(Contact.Surname)" Title="@Localize[nameof(Contact.Surname)]" Width="auto" />
-                                                <RadzenDropDownDataGridColumn Property="@nameof(Contact.Name)" Title="@Localize[nameof(Contact.Name)]" Width="auto" />
+                                                <RadzenDropDownDataGridColumn Property="@nameof(ContactDTO.Surname)" Title="@Localize[nameof(ContactDTO.Surname)]" Width="auto" />
+                                                <RadzenDropDownDataGridColumn Property="@nameof(ContactDTO.Name)" Title="@Localize[nameof(ContactDTO.Name)]" Width="auto" />
                                             </ChildColumns>
                                     </RedGDropDownGrid>
                                   
@@ -172,7 +172,7 @@ else
                         {
                             <RadzenColumn Size="12" SizeSM="6">
                                 <RadzenStack>
-                                    <RedGDropDown TItem="Product" TValue="int?" ValueProperty="Id" TextProperty="Name"
+                                    <RedGDropDown TItem="ProductDTO" TValue="int?" ValueProperty="Id" TextProperty="@nameof(ProductDTO.Name)"
                                                   @bind-Value="@_ticket.IdProduct" For="@(() => _ticket.IdProduct)"
                                                   Data="@_products" AllowFiltering="true" PageSize="10"
                                                   Change="ProductChange" />
@@ -184,13 +184,13 @@ else
                         {
                             <RadzenColumn Size="12" SizeSM="6">
                                 <RadzenStack>
-                                    <RedGDropDownGrid TItem="Article" @bind-value="@_ticket.IdArticle" TValue="int?" AllowFiltering="true" AllowClear="true"
-                                                      Data="@_articles" Count="@_articles.Count" TextProperty="@nameof(Article.CompleteName)"
+                                    <RedGDropDownGrid TItem="ArticleDTO" @bind-value="@_ticket.IdArticle" TValue="int?" AllowFiltering="true" AllowClear="true"
+                                                      Data="@_articles" Count="@_articles.Count" TextProperty="@nameof(ArticleDTO.CompleteName)"
                                                       For="@(() => _ticket.IdArticle)" ValueProperty="Id">
                                         <ChildColumns>
 
-                                            <RadzenDropDownDataGridColumn Property="Product.Name" Title="@Localize["Product"]" Width="200px" />
-                                            <RadzenDropDownDataGridColumn Property="SerialNumber" Title="@Localize["SerialNumber"]" Width="200px" />
+                                            <RadzenDropDownDataGridColumn Property="@nameof(ArticleDTO.ProductName)" Title="@Localize["Product"]" Width="200px" />
+                                            <RadzenDropDownDataGridColumn Property="@nameof(ArticleDTO.SerialNumber)" Title="@Localize["SerialNumber"]" Width="200px" />
                                         </ChildColumns>
                                     </RedGDropDownGrid>
 

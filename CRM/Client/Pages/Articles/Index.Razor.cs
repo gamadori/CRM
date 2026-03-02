@@ -4,6 +4,7 @@ using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Client.Shared;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -33,7 +34,13 @@ namespace CRM.Client.Pages.Articles
        
 
         [Inject]       
-        IAGRestClientService RestClientService { get; set; }
+        IArticlesService Service { get; set; }
+
+        [Inject]
+        ICompaniesService CompaniesService { get; set; }
+
+        [Inject]
+        IProductsService ProductsService { get; set; }
 
         [Inject] 
         IJSRuntime JSRuntime { get; set; }
@@ -84,12 +91,12 @@ namespace CRM.Client.Pages.Articles
         public EventCallback OnNewArticle { get; set; }
 
        
-        private IQueryable<Article> _articles = null;
+        private IQueryable<ArticleDTO> _articles = null;
 
 
-        private List<CompanyFilter> _companies;
+        private List<CompanyDTO> _companies;
 
-        private List<ProductFilter> _products;
+        private List<ProductDTO> _products;
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
@@ -115,7 +122,7 @@ namespace CRM.Client.Pages.Articles
 
         private const int _productPageSize = 10;
 
-        private RadzenDataGrid<Article> grdArticles;
+        private RadzenDataGrid<ArticleDTO> grdArticles;
 
         private FilterMode _filterMode = FilterMode.Advanced;
 
@@ -136,8 +143,8 @@ namespace CRM.Client.Pages.Articles
             if (PageMode == PageModality.Dialog)
                 _filterMode = FilterMode.SimpleWithMenu;
 
-            await LoadCompany(new LoadDataArgs() { Skip = 0, Top = _companyPageSize });
-            await LoadProduct(new LoadDataArgs() { Skip = 0, Top = _productPageSize });
+            await LoadCompanies();
+            await LoadProduct();
 
             pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
 
@@ -155,14 +162,10 @@ namespace CRM.Client.Pages.Articles
             var template = Enumerable.Empty<Article>().AsQueryable();
             try
             {
-                
                 _header = Localize["Articles"];
 
                 if (IdCompany != null)
                     _filter.IdCompany = IdCompany;
-
-                
-                
 
                 if (args != null)
                 {
@@ -171,20 +174,15 @@ namespace CRM.Client.Pages.Articles
                     _filter.Filter = args?.Filter;
                     _filter.OrderBy = args?.OrderBy;
                 }
-                var pagingResponse = await RestClientService.Get<Article, ArticleFilter>(_filter, ConstHelper.ArticlesPath); 
+                var pagingResponse = await Service.GetPagingAsync(_filter);
 
                 _articles = pagingResponse.Items.AsQueryable();
                 _paging = pagingResponse.MetaData;
-
-                
-               
-                
             }
 
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                
             }
             finally
             {
@@ -194,39 +192,15 @@ namespace CRM.Client.Pages.Articles
      
         }
 
-        public async Task LoadProduct(LoadDataArgs args)
+        public async Task LoadProduct()
         {
-            ProductFilter request = new ProductFilter();
-            request.PageSize = 0;
-            if (args != null)
-            {
-                request.Name = args.Filter;
-                request.Skip = args.Skip;
-                request.Top = args.Top;
-               
-            }
-            var response = await RestClientService.Get<Product, ProductFilter>(request, ConstHelper.Products); // await _serviceProduct.Get(request);
+            _products = await ProductsService.GetListAsync(null);
 
-            _products = response.Items.Select(x => new ProductFilter() { Id = x.Id, Name = x.Name  }).ToList();
-            _productsCount = response.MetaData.TotalCount;
             await InvokeAsync(StateHasChanged);
         }
-        public async Task LoadCompany(LoadDataArgs args)
+        public async Task LoadCompanies()
         {
-            CompanyFilter request = new CompanyFilter();
-
-            request.PageSize = 0;
-            if (args != null) 
-            {
-                request.RagioneSociale = args.Filter;
-                request.Skip = args.Skip;
-                request.Top = args.Top;
-            }
-
-            var response = await RestClientService.Get<Company, CompanyFilter>(request, ConstHelper.CompaniesPath);            
-
-            _companies = response.Items.Select(x => new CompanyFilter() { Id = x.Id, RagioneSociale = x.RagioneSociale }).ToList();
-            _companiesCount = response.MetaData.TotalCount;
+            _companies = await CompaniesService.GetListAsync(null);
 
             await InvokeAsync(StateHasChanged);
         }
@@ -269,7 +243,7 @@ namespace CRM.Client.Pages.Articles
                 NavigationManager.NavigateTo($"/{ConstHelper.ClientArticlesPath}/New");
         }
 
-        protected async Task Delete(Article article)
+        protected async Task Delete(ArticleDTO article)
         {
 
             if (await DialogService.Confirm(string.Format(Localize["Elliminare l'articolo {0}?"], article.Name)) == true)
@@ -279,7 +253,7 @@ namespace CRM.Client.Pages.Articles
                     OnClickDelete(article.Id);
                 else
                 {
-                    await RestClientService.Delete<int>(article.Id, ConstHelper.ArticlesPath);
+                    await Service.DeleteAsync(article.Id);
 
 
                     await LoadData();
@@ -337,11 +311,7 @@ namespace CRM.Client.Pages.Articles
 
         }
 
-        protected void ImportData()
-        {
-            NavigationManager.NavigateTo($"/CSVSettings/CSVData/{CSVTable.Article.ToString()}");
-        }
-
+        
         private async Task OnClickSerialNumber(int? id)
         {
             switch (PageMode)

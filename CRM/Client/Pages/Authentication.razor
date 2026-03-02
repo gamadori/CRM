@@ -5,9 +5,9 @@
 @inject IJSRuntime JSRuntime
 @inject NavigationManager Nav
 
-<RemoteAuthenticatorView  Action="@Action"  OnLogInSucceeded="OnLoginSucceeded" >
-     <LogOutSucceeded>
-        @InvokeAsync(() => Nav.NavigateTo("/"))
+<RemoteAuthenticatorView Action="@Action" OnLogInSucceeded="OnLoginSucceeded" OnLogOutSucceeded="OnLogoutSucceeded">
+    <LogOutSucceeded>
+        <SystemMessage Message="Logout completato..."></SystemMessage>
     </LogOutSucceeded>
     <LoggingIn>
        <SystemMessage Message="Redirect to Login..."></SystemMessage>
@@ -18,6 +18,11 @@
 
 @code{
     [Parameter] public string Action { get; set; }
+
+    private void OnLogoutSucceeded()
+    {
+        Nav.NavigateTo("/", forceLoad: true);
+    }
 
     private async void OnLoginSucceeded() 
     {

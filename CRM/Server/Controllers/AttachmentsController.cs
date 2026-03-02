@@ -1,26 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
+using CRM.Client.Services;
+using CRM.Server.Data;
+using CRM.Server.Helpers;
+using CRM.Server.Services;
+using CRM.Shared;
+using CRM.Shared.DTOs;
+using DocumentFormat.OpenXml.Office2021.Excel.RichDataWebImage;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using CRM.Server.Data;
-using CRM.Shared;
+using MimeKit;
 using Newtonsoft.Json;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Authorization;
-using CRM.Server.Services;
-using System.Threading;
-using System.Text;
-using CRM.Client.Helpers;
-using System.Linq.Dynamic.Core;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using CRM.Server.Helpers;
-using MimeKit;
-using Microsoft.AspNetCore.Hosting.Server.Features;
-using CRM.Client.Services;
+using System.Linq;
+using System.Linq.Dynamic.Core;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using TL;
 
 namespace CRM.Server.Controllers
 {
@@ -38,9 +42,9 @@ namespace CRM.Server.Controllers
         private readonly TelegramCommandsService _telegramService;
         private readonly ITicketsService _ticketsService;
         private readonly IDocxToPdfConverter _docxToPdfConverter;
-
+        private readonly IAttachmentsService _service;
         public AttachmentsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IPermitsService permitsService, IArchiveService archiveService, ILogEventService logEventService, 
-            IEmailSenderPlus emailSenderPlus, TelegramCommandsService telegramService, ITicketsService ticketsService, IDocxToPdfConverter docxToPdfConverter)
+            IEmailSenderPlus emailSenderPlus, TelegramCommandsService telegramService, ITicketsService ticketsService, IDocxToPdfConverter docxToPdfConverter, IAttachmentsService service)
         {
             _context = context;
             _userManager = userManager;
@@ -51,100 +55,130 @@ namespace CRM.Server.Controllers
             _telegramService = telegramService;
             _ticketsService = ticketsService;
             _docxToPdfConverter = docxToPdfConverter;
+            _service = service;
         }
 
-        // GET: api/SpareParts
+
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Attachment>>> GetAttachments([FromQuery] AttachmentsFilter? args = null)
+        public async Task<PagingResponse<AttachmentDTO>?> GetPage([FromQuery] AttachmentsFilter? args = null)
         {
-
-
             try
             {
-                if (_context.Attachments == null)
+                var items = await _service.GetPagingAsync(args) ?? new PagingResponse<AttachmentDTO>();
+
+                foreach (var item in items.Items)
                 {
-                    return new List<Attachment>();
-                }
-                var attachments = _context.Attachments.AsQueryable();
-                int count;
-
-
-
-                if (args != null)
-                {
-                    attachments = attachments.Where(x => x.IdParent == args.IdParant && x.AttchmentType == args.AttchmentType);
-                    
-
-                    if (args.Filter != null)
-                    {
-                        
-
-                        attachments = attachments.Where(args.Filter);
-                    }
-                    count = attachments.Count();
-
-                    if (args.OrderBy != null)
-                        attachments = attachments.OrderBy(args.OrderBy);
-                    
-                    if (args.Skip != null && args.Top != null)
-                    {
-                        attachments = attachments.Skip(args.Skip.Value).Take(args.Top.Value);
-                    }
+                    item.CanDelete = await _permitsService.CanDeleteAttachment(item.IdUser);
+                    item.CanEdit = await _permitsService.CanEditAttachment(item.IdUser);
 
                 }
-                else
-                    count = attachments.Count();
 
-                var paginationMetadata = new PagingHeaderModel
-                {
-                    TotalCount = count,
-                    TotalPage = 1,
-                    PageSize = 0
-                };
-
-                foreach (var attachment in attachments)
-                {
-                    attachment.CanDelete = await _permitsService.CanDeleteAttachment(attachment.IdUser);
-                }
-
-                HttpContext.Response.Headers.Add("Paging-Header", JsonConvert.SerializeObject(paginationMetadata));
-
-
-                return await attachments.ToListAsync();
+                return items;
             }
             catch (Exception ex)
             {
-                await _logEventService.RegisterAsync(nameof(AttachmentsController), nameof(GetAttachments), LogEvent.EventsTypes.Error, ex);
-                return new List<Attachment>();
+                await _logEventService.RegisterAsync(nameof(FoldersController), nameof(GetPage), LogEvent.EventsTypes.Error, ex);
+                return null;
             }
         }
 
+        // GET: api/SpareParts
+        //[HttpGet]
+        //public async Task<ActionResult<IEnumerable<Attachment>>> GetAttachments([FromQuery] AttachmentsFilter? args = null)
+        //{
+
+
+        //    try
+        //    {
+        //        if (_context.Attachments == null)
+        //        {
+        //            return new List<Attachment>();
+        //        }
+        //        var attachments = _context.Attachments.AsQueryable();
+        //        int count;
+
+
+
+        //        if (args != null)
+        //        {
+        //            attachments = attachments.Where(x => x.IdParent == args.IdParant && x.AttchmentType == args.AttchmentType);
+
+        //            if (args.FolderId != null)
+        //            {
+        //                attachments = attachments.Where(x => x.FolderId == args.FolderId);
+        //            }
+
+        //            if (args.Filter != null)
+        //            {
+
+
+        //                attachments = attachments.Where(args.Filter);
+        //            }
+        //            count = attachments.Count();
+
+        //            if (args.OrderBy != null)
+        //                attachments = attachments.OrderBy(args.OrderBy);
+
+        //            if (args.Skip != null && args.Top != null)
+        //            {
+        //                attachments = attachments.Skip(args.Skip.Value).Take(args.Top.Value);
+        //            }
+
+        //        }
+        //        else
+        //            count = attachments.Count();
+
+        //        var paginationMetadata = new PagingHeaderModel
+        //        {
+        //            TotalCount = count,
+        //            TotalPage = 1,
+        //            PageSize = 0
+        //        };
+
+        //        foreach (var attachment in attachments)
+        //        {
+        //            attachment.CanDelete = await _permitsService.CanDeleteAttachment(attachment.IdUser);
+        //        }
+
+        //        HttpContext.Response.Headers.Add("Paging-Header", JsonConvert.SerializeObject(paginationMetadata));
+
+
+        //        return await attachments.ToListAsync();
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        await _logEventService.RegisterAsync(nameof(AttachmentsController), nameof(GetAttachments), LogEvent.EventsTypes.Error, ex);
+        //        return new List<Attachment>();
+        //    }
+        //}
+
         [HttpGet("{id}")]
-        public async Task<ActionResult<Attachment>> Get(int id)
+        public async Task<ActionResult<AttachmentDTO>> Get(int id)
         {
             try
             {
-                List<AttachmentFile> attachmentFiles = new List<AttachmentFile>();
-                var item = await _context.Attachments.Where(x => x.Id == id).FirstOrDefaultAsync();
+                var item = await _service.GetItemAsync(id);
+                //List<AttachmentFile> attachmentFiles = new List<AttachmentFile>();
+                //var item = await _context.Attachments.Where(x => x.Id == id).FirstOrDefaultAsync();
 
 
-                if (item == null)
-                {
-                    return NotFound();
-                }
-                var files = _context.AttachmentFiles.Where(x => x.IdAttachment == id);
+                //if (item == null)
+                //{
+                //    return NotFound();
+                //}
+                //var files = _context.AttachmentFiles.Where(x => x.IdAttachment == id);
 
-                foreach (var f in files)
-                {
-                    attachmentFiles.Add(new AttachmentFile() { ContentType = f.ContentType, Id = f.Id, Name = f.Name, IdAttachment = f.IdAttachment, Size = f.Size });
-                }
-                item.Files = attachmentFiles.ToArray();
-                return item;
+                //foreach (var f in files)
+                //{
+                //    attachmentFiles.Add(new AttachmentFile() { ContentType = f.ContentType, Id = f.Id, Name = f.Name, IdAttachment = f.IdAttachment, Size = f.Size });
+                //}
+                //item.Files = attachmentFiles.ToArray();
+                return item ?? new AttachmentDTO();
             }
             catch(Exception ex)
             {
                 await _logEventService.RegisterAsync(nameof(AttachmentsController), nameof(Get), LogEvent.EventsTypes.Error, ex.Message);
-                return new Attachment();
+                return new AttachmentDTO();
             }
         }
 
@@ -153,119 +187,170 @@ namespace CRM.Server.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, Attachment item)
         {
+            //if (id != item.Id)
+            //{
+            //    return BadRequest();
+            //}
+
+            //_context.Entry(item).State = EntityState.Modified;
+
+            //try
+            //{
+            //    await _context.SaveChangesAsync();
+
+
+            //    foreach (var f in item.Files)
+            //    {
+            //        var ext = Path.GetExtension(f.Name);
+            //        _archiveService.SaveAttachments(f.Id, ext, f.Content);
+            //    }
+
+            //    await _context.SaveChangesAsync();
+            //}
+            //catch (DbUpdateConcurrencyException)
+            //{
+            //    if (!AttachmentExists(id))
+            //    {
+            //        return NotFound();
+            //    }
+            //    else
+            //    {
+            //        throw;
+            //    }
+            //}
+
+            //return  CreatedAtAction("Get", new { id = item.Id }, new Attachment() { Id = item.Id }); 
             if (id != item.Id)
             {
                 return BadRequest();
             }
-       
-            _context.Entry(item).State = EntityState.Modified;
+            var resp = await _service.PostAsync(item);
 
-            try
-            {
-                await _context.SaveChangesAsync();
+            if (resp == null)
+                return Problem("Error saving Attachment");
 
-               
-                foreach (var f in item.Files)
-                {
-                    var ext = Path.GetExtension(f.Name);
-                    _archiveService.SaveAttachments(f.Id, ext, f.Content);
-                }
-
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!AttachmentExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return  CreatedAtAction("Get", new { id = item.Id }, new Attachment() { Id = item.Id }); 
+            return Ok(resp);
         }
 
         // POST: api/Products
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Attachment>> Post(Attachment item)
+        public async Task<ActionResult<APIResponseMessage<AttachmentDTO>>> Post(Attachment item)
         {
             try
             {
-                item.CreatedOn = DateTime.Now.Date;
-                item.IdUser = await _permitsService.IdUser();
-                
-                _context.Attachments.Add(item);
-                await _context.SaveChangesAsync();
+                var resp = await _service.PostAsync(item);
 
-                foreach (var f in item.Files)
-                {
-                    var ext = Path.GetExtension(f.Name);
+                //item.CreatedOn = DateTime.Now.Date;
+                //item.IdUser = await _permitsService.IdUser();
+                //var resp = await _service.PostAsync(item);
 
-                    _archiveService.SaveAttachments(f.Id, ext, f.Content);
+                //_context.Attachments.Add(item);
+                //await _context.SaveChangesAsync();
+
+                //foreach (var f in item.Files)
+                //{
+                //    var ext = Path.GetExtension(f.Name);
+
+                //    _archiveService.SaveAttachments(f.Id, ext, f.Content);
                     
-                }
-                await SendEmail(item);
-                return CreatedAtAction("Get", new { id = item.Id }, new Attachment() { Id = item.Id});
+                //}
+                //await SendEmail(item);
+                //return CreatedAtAction("Get", new { id = item.Id }, new Attachment() { Id = item.Id});
+                return Ok(resp);
             }
             catch(Exception ex)
             {
-                return null;
+
+                
+
+                return new APIResponseMessage<AttachmentDTO>()
+                {
+                    State = false,
+                    Message = ex.Message,
+                    Data = null
+                };
+
             }
+        }
+
+        [HttpGet("CanDelete/{id}")]
+        public async Task<ActionResult<bool>> CanDelete(int id)
+        {
+            return await _service.CanDelete(id);
+        }
+
+        [HttpGet("CanEdit/{id}")]
+        public async Task<ActionResult<bool>> CanEdit(int id)
+        {
+            return await _service.CanEdit(id);
         }
 
         [HttpPost("upload/{idAttachment}")]
         public async Task<IActionResult> UploadFiles(int idAttachment, List<AttachmentFile> files)
         {
-            var attachment = await _context.Attachments.FindAsync(idAttachment);
+            await _service.UploadFiles(idAttachment, files);
 
-            foreach (var f in files)
-            {
-                f.IdAttachment = idAttachment;
-                f.ContentType = Path.GetExtension(f.Name);
-                _context.AttachmentFiles.Add(f);
+            //var attachment = await _context.Attachments.FindAsync(idAttachment);
+
+            //foreach (var f in files)
+            //{
+            //    f.IdAttachment = idAttachment;
+            //    f.ContentType = Path.GetExtension(f.Name);
+            //    _context.AttachmentFiles.Add(f);
                 
-                byte[] bytes = Convert.FromBase64String(f.Content);
-                f.Size = bytes.Length;
+            //    byte[] bytes = Convert.FromBase64String(f.Content);
+            //    f.Size = bytes.Length;
 
-                await _context.SaveChangesAsync();
-                _archiveService.SaveAttachments(f.Id, f.ContentType, f.Content);
-            }
+            //    await _context.SaveChangesAsync();
+            //    _archiveService.SaveAttachments(f.Id, f.ContentType, f.Content);
+            //}
             return NoContent();
         }
         // DELETE: api/Products/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var item = await _context.Attachments.FindAsync(id);
-            if (item == null)
+            var resp = await _service.DeleteAsync(id);
+            if (!resp)
             {
-                return NotFound();
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error On Deleded Attachment");
             }
+            else
+                return NoContent();
+            //var item = await _context.Attachments.FindAsync(id);
+            //if (item == null)
+            //{
+            //    return NotFound();
+            //}
 
-            if (await _permitsService.CanDeleteAttachment(item.IdUser))
-            {
-                _context.Attachments.Remove(item);
-                await _context.SaveChangesAsync();
-            }
-            return NoContent();
+            //if (await _permitsService.CanDeleteAttachment(item.IdUser))
+            //{
+            //    _context.Attachments.Remove(item);
+            //    await _context.SaveChangesAsync();
+            //}
+            //return NoContent();
         }
 
         [HttpDelete("files/{id}")]
         public async Task<IActionResult> DeleteFiles(int id)
         {
-            var item = await _context.AttachmentFiles.FindAsync(id);
-
-            if (item != null)
+            var resp = await _service.DeleteFiles(id);
+            if (!resp)
             {
-                _context.AttachmentFiles.Remove(item);
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error On Deleded Attachment File");
             }
-            await _context.SaveChangesAsync();
+            else
+                return NoContent();
+            //var item = await _context.AttachmentFiles.FindAsync(id);
 
-            return NoContent();
+            //if (item != null)
+            //{
+            //    _context.AttachmentFiles.Remove(item);
+            //}
+            //await _context.SaveChangesAsync();
+
+            //return NoContent();
         }
 
        
@@ -273,6 +358,9 @@ namespace CRM.Server.Controllers
         [HttpGet("download/{idAttachment}")]
         public async Task<IActionResult> Download(int idAttachment, CancellationToken cancel)
         {
+            var resp = await _service.DownloadFiles(idAttachment);
+            return File(resp.Bytes, resp.ContentType);
+
             var attachment = await _context.Attachments.Include(x=>x.Files).Where(x=>x.Id == idAttachment).FirstOrDefaultAsync();
             byte[] bytes;
 

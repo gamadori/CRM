@@ -38,7 +38,7 @@ namespace CRM.Server.Controllers
             {
                 IQueryable<Deal> talks = _context.Deals;
 
-                if (!(await _permits.BelongsToMainCompany() && await _permits.IsStandardUser()))
+                if (!(await _permits.BelongsToHeadQuarter() && await _permits.IsStandardUser()))
                 {
                     return Problem("No Permits");
                 }

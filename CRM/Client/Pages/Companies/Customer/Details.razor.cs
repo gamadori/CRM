@@ -1,6 +1,7 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -34,7 +35,7 @@ namespace CRM.Client.Pages.Companies.Customer
         public int? Id { get; set; }
 
 
-        private Company _company = null;
+        private CompanyDTO _company = null;
 
         private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
 
@@ -50,7 +51,7 @@ namespace CRM.Client.Pages.Companies.Customer
             try
             {
 
-                _company = await CompaniesService.GetCompany(); 
+                _company = await CompaniesService.GetUserCompany(); 
                 
                
             }

@@ -53,11 +53,13 @@ namespace CRM.Server.Services
 
         Task<bool> IsStandardUser(string idUser);
 
+        Task<bool> BelongsToHeadQuarter();
+
+        Task<bool> BelongsToHeadQuarter(ApplicationUser user);
+
+        Task<bool> BelongsToHeadQuarter(string idUser);
+
         Task<bool> BelongsToMainCompany();
-
-        Task<bool> BelongsToMainCompany(ApplicationUser user);
-
-        Task<bool> BelongsToMainCompany(string idUser);
 
         Task<bool> BelongsToReseller();
 
@@ -90,6 +92,8 @@ namespace CRM.Server.Services
         Task<bool> CanDownloadInterventionReport(int idIntervention);
 
         Task<bool> CanDeleteAttachment(string owner);
+
+        Task<bool> CanEditAttachment(string owner);
 
         Task<bool> CanDeleteAttachment(int idAttachment);
 

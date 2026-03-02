@@ -2,6 +2,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -20,10 +21,10 @@ namespace CRM.Client.Pages.Companies
     public partial class Details : ComponentBase
     {
         [Inject]
-        private HttpClient Http { get; set; }
+        ICompaniesService Service { get; set; }
 
         [Inject]
-        private NavigationManager NavigationManager { get; set; }
+        NavigationManager NavigationManager { get; set; }
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
@@ -53,12 +54,13 @@ namespace CRM.Client.Pages.Companies
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         [Parameter]
-        public Company? Company { get; set; }
+        public CompanyDTO? Company { get; set; }
 
-        private Company _company = null;
+        private CompanyDTO? _company = null;
 
         private PageHeaderModel? _pageHeader = null;
 
+        private string? _logo = null;
         protected override async Task OnInitializedAsync()
         {
             string path;
@@ -69,16 +71,17 @@ namespace CRM.Client.Pages.Companies
 
                 if (Id != null)
                 {
-                    path += $"/{Id}";
+                   
 
                     if (Company != null)
                         _company = Company;
                     else
-                        _company = await Http.GetFromJsonAsync<Company>(path);
+                        _company = await Service.GetItemAsync(Id.Value);
                 }
                 else
-                    _company = new Company();
+                    _company = new CompanyDTO();
 
+                await GetLogo();
                
                 _pageHeader = await HeaderService.Create(PageMode);
                
@@ -89,23 +92,9 @@ namespace CRM.Client.Pages.Companies
             }
         }
 
-        protected async Task HandleValidSubmit()
+        private async Task GetLogo()
         {
-            HttpResponseMessage resp;
-
-            try
-            {
-                if (_company != null && _company.Id > 0)
-                    resp = await Http.PutAsJsonAsync<Company>($"{ConstHelper.CompaniesPath}/{_company.Id}", _company);
-                else
-                    resp = await Http.PostAsJsonAsync<Company>(ConstHelper.CompaniesPath, _company);
-
-                NavigationManager.NavigateTo("/Companies/Index");
-            }
-            catch (AccessTokenNotAvailableException exception)
-            {
-                exception.Redirect();
-            }
+            _logo = await Service.GetLogo(Id.Value);
         }
 
         protected void EditCompany()

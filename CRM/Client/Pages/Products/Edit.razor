@@ -31,7 +31,7 @@ else
                     <RadzenRow>
                         <RadzenColumn Size="12">
                             <RadzenStack>
-                                <RedGDropDown TItem="ProductType" TValue="int?" ValueProperty="Id" TextProperty="Name" @bind-Value="@_product.IdProductType" For="@(() => _product.IdProductType)"
+                                <RedGDropDown TItem="ProductTypeDTO" TValue="int?" ValueProperty="Id" TextProperty="Name" @bind-Value="@_product.IdProductType" For="@(() => _product.IdProductType)"
                                     Data="_productTypes" AllowFiltering="true" />
                             </RadzenStack>
                         </RadzenColumn>

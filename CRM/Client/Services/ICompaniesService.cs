@@ -1,17 +1,31 @@
-﻿using CRM.Shared;
+﻿using CRM.Client.Services;
+using CRM.Shared;
+using CRM.Shared.DTOs;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Contact = CRM.Shared.Contact;
 
 namespace CRM.Client.Services
 {
-    public interface ICompaniesService: IAGRestClientService
+    //public interface ICompaniesService: IAGRestClientService
+    //{
+    //    Task<bool> AddCustomer(CustomerModel item);
+
+    //    Task<bool> RemoveCustomer(CustomerModel item);
+
+    //    Task<Company?> GetCompany();
+    //}
+    public interface ICompaniesService : IDataService<Company, CompanyDTO, int, CompanyFilter, object>
     {
         Task<bool> AddCustomer(CustomerModel item);
-
+        
         Task<bool> RemoveCustomer(CustomerModel item);
+        
+        Task<IEnumerable<string>> GetEmailAddress(int idCompany);
 
-        Task<Company?> GetCompany();
+        Task<CompanyDTO?> GetUserCompany();
+
+        Task<string?> GetLogo(int idCompany);
     }
-
 
 }

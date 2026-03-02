@@ -55,12 +55,12 @@ else
 
                         <RedGDetailField Icon="inventory" ContainerClass="mb-4">
                             <LabelContent><DisplayName For="@(() => _article.IdProduct)" /></LabelContent>
-                            <ChildContent><p class="mb-0 text-dark">@_article.Product?.Name</p></ChildContent>
+                            <ChildContent><p class="mb-0 text-dark">@_article.ProductName</p></ChildContent>
                         </RedGDetailField>
 
                         <RedGDetailField Icon="business" ContainerClass="mb-4">
                             <LabelContent><DisplayName For="@(() => _article.IdCompany)" /></LabelContent>
-                            <ChildContent><p class="mb-0 text-dark">@_article.Company?.RagioneSociale</p></ChildContent>
+                            <ChildContent><p class="mb-0 text-dark">@_article.CompanyName</p></ChildContent>
                         </RedGDetailField>
 
                         <RedGDetailField Icon="description">
@@ -72,7 +72,7 @@ else
                     <!-- Footer con azioni -->
                     <div class="card-footer bg-light border-top py-3">
                         <div class="d-flex gap-2">
-                            <RedGButton RGButtonType=RGButtonType.Back Text=@Localize["Lista Articoli"] Click="Annulla" />
+                            <RedGButton RGButtonType=RGButtonType.Back Text=@Localize["ArticlesList"] Click="Annulla" />
                             <RedGButton RGButtonType=RGButtonType.Edit AutoLabel=true Click="Edit" />
                         </div>
                     </div>

@@ -90,8 +90,7 @@ namespace CRM.Client
             builder.Services.AddScoped<ITicketTypesService, TicketTypesService>();
             builder.Services.AddScoped<ITicketTypeLanguageService, TicketTypeLanguageService>();
             builder.Services.AddScoped<IUserService, UsersService>();
-            
-            builder.Services.AddScoped<ICompaniesService, CompaniesService>();
+           
             builder.Services.AddScoped<IContractTypeTicketService, ContractTypeTicketService>();
             builder.Services.AddScoped<ICompanyContractsService, CompanyContractsService>();
             builder.Services.AddScoped<IAGRestClientService, AGRestClientService>();
@@ -108,9 +107,13 @@ namespace CRM.Client
             builder.Services.AddScoped<IFoldersService, ProxyFoldersService>();
             builder.Services.AddScoped<IInterventionTypeLangsService, ProxyInterventionTypeLangsService>();
             builder.Services.AddScoped<IFolderLanguagesService, ProxyFolderLanguagesService>();
-
-            // ? NUOVO: Servizio per gestione feedback ticket
+            builder.Services.AddScoped<IAttachmentsService, ProxyAttachmentsService>();
+            builder.Services.AddScoped<IProductsService, ProxyProductsService>();
+            builder.Services.AddScoped<IProductTypesService, ProxyProductTypesService>();
+            builder.Services.AddScoped<ICompaniesService, ProxyCompaniesService>();
+            builder.Services.AddScoped<IContactsService, ProxyContactsService>();
             builder.Services.AddScoped<ITicketFeedbackService, ProxyTicketFeedbackService>();
+            builder.Services.AddScoped<IArticlesService, ProxyArticlesService>();
 
             builder.Services.AddTransient<IManyToManyService<TicketTypeUser>, ManyToManyService<TicketTypeUser>>(sp =>
             {

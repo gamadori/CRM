@@ -18,6 +18,7 @@ using Microsoft.Extensions.Localization;
 using CRM.Shared.Helper;
 using static CRM.Client.Helpers.PageHelper;
 using CRM.Client.Models;
+using CRM.Shared.DTOs;
 
 namespace CRM.Client.Pages.Contacts
 {
@@ -28,10 +29,11 @@ namespace CRM.Client.Pages.Contacts
         [Inject]
         private NavigationManager NavigationManager { get; set; }
 
-       
+        [Inject]
+        ICompaniesService CompaniesService { get; set; }
 
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
+        IContactsService Services { get; set; }
 
         [Inject] 
         private IJSRuntime JSRuntime { get; set; }
@@ -81,10 +83,10 @@ namespace CRM.Client.Pages.Contacts
 
         
 
-        private List<Contact> _contacts = null;
+        private List<ContactDTO> _contacts = null;
 
 
-        private List<CompanyFilter> _companies;
+        private List<CompanyDTO> _companies;
 
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
@@ -95,7 +97,6 @@ namespace CRM.Client.Pages.Contacts
 
         private Contact _contact;
 
-        private int _companiesCount = 0;
 
         private int _contactsCount = 0;
 
@@ -107,7 +108,7 @@ namespace CRM.Client.Pages.Contacts
 
         private FilterMode _filterMode = FilterMode.Advanced;
 
-        private RadzenDataGrid<Contact> grdContacts;
+        private RadzenDataGrid<ContactDTO> grdContacts;
 
         private PageHeaderModel? _pageHeader = null;
 
@@ -117,7 +118,7 @@ namespace CRM.Client.Pages.Contacts
 
             // navMenuService.CallRequestRefresh();
             _isLoading = true;
-            await LoadCompany(new LoadDataArgs() { Skip = 0, Top = ConstHelper.PageSize });
+            await LoadCompanies(new LoadDataArgs() { Skip = 0, Top = ConstHelper.PageSize });
             
 
             pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
@@ -136,7 +137,7 @@ namespace CRM.Client.Pages.Contacts
 
             _isLoading = true;
 
-            _contacts = Enumerable.Empty<Contact>().ToList();
+            _contacts = Enumerable.Empty<ContactDTO>().ToList();
             try
             {
                 
@@ -158,7 +159,7 @@ namespace CRM.Client.Pages.Contacts
                     _filter.Filter = args?.Filter;
                     _filter.OrderBy = args?.OrderBy;
                 }
-                var pagingResponse = await RestClientService.Get<Contact, ContactFilter>(_filter, ConstHelper.ContactsPath);
+                var pagingResponse = await Services.GetPagingAsync(_filter);
 
                 _contacts = pagingResponse.Items;
                 _paging = pagingResponse.MetaData;
@@ -183,7 +184,7 @@ namespace CRM.Client.Pages.Contacts
         }
 
        
-        public async Task LoadCompany(LoadDataArgs args)
+        public async Task LoadCompanies(LoadDataArgs args)
         {
             CompanyFilter request = new CompanyFilter();
 
@@ -194,10 +195,7 @@ namespace CRM.Client.Pages.Contacts
                 request.Skip = args.Skip;
                 request.Top = args.Top;
             }
-            var response = await RestClientService.Get<Company, CompanyFilter>(request, ConstHelper.CompaniesPath);
-
-            _companies = response.Items.Select(x => new CompanyFilter() { Id = x.Id, RagioneSociale = x.RagioneSociale }).ToList();
-            _companiesCount = response.MetaData.TotalCount;
+            _companies = await CompaniesService.GetListAsync(request);
 
             await InvokeAsync(StateHasChanged);
         }
@@ -235,7 +233,7 @@ namespace CRM.Client.Pages.Contacts
                 NavigationManager.NavigateTo($"/Contacts/New");
         }
 
-        protected async Task Delete(Contact contact)
+        protected async Task Delete(ContactDTO contact)
         {
         
             if (await DialogService.Confirm($"{Localize["Delete the Contact"]} {contact.NameComplete}") == true)
@@ -244,7 +242,7 @@ namespace CRM.Client.Pages.Contacts
                     OnClickDelete(contact.Id);
                 else
                 {
-                    await RestClientService.Delete<int>(contact.Id, ConstHelper.ContactsPath);
+                    await Services.DeleteAsync(contact.Id);
                     await LoadData();
                 }
             }
@@ -261,10 +259,6 @@ namespace CRM.Client.Pages.Contacts
 
         }
 
-        protected void ImportData()
-        {
-            NavigationManager.NavigateTo($"/CSVSettings/CSVData/{CSVTable.Article.ToString()}");
-        }
 
         private async Task OnClickName(int id)
         {

@@ -33,6 +33,13 @@ namespace CRM.Shared
         CAD,
         Other
     }
+
+    public enum AttachmentVisibilities
+    {
+        Private,
+        Public,
+    }
+
     public class Attachment
     {
         [Key]
@@ -54,6 +61,7 @@ namespace CRM.Shared
         [MaxLength(100)]
         public string Description { get; set; }
 
+        [Display(Name = nameof(Attachment.FolderId), ResourceType = typeof(Resources.Models.Attachment))]
         [ForeignKey(nameof(Folder))]
         public int? FolderId { get; set; }
 
@@ -70,7 +78,9 @@ namespace CRM.Shared
 
         [NotMapped]
         public bool CanDelete { get; set; }
-
+    
+        public AttachmentVisibilities Visibility { get; set; }
+        
         [JsonIgnore]
         public virtual ApplicationUser User { get; set; }
 
@@ -100,7 +110,6 @@ namespace CRM.Shared
         public string FileType { get; set; }
 
         public string Link { get; set; }
-
        
         [NotMapped]
         public bool Selected { get; set; }
@@ -125,6 +134,8 @@ namespace CRM.Shared
         public int? IdParant { get; set; }
 
         public AttachmentTypes AttchmentType { get; set; }
+
+        public int? FolderId { get; set; }
 
         public string FileType { get; set; }
 

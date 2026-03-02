@@ -2,6 +2,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -18,9 +19,7 @@ namespace CRM.Client.Pages.Products
     [Authorize]
     public partial class Details: ComponentBase
     {
-        [Inject]
-        private HttpClient Http { get; set; }
-
+       
         [Inject]
         private NavigationManager NavigationManager { get; set; }
 
@@ -28,7 +27,7 @@ namespace CRM.Client.Pages.Products
         //private IBaseRestService<Product, ProductFilter, int> _service { get; set; }
 
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
+        IProductsService ProductsService { get; set; }
 
         [Inject]
         IHeaderService HeaderService { get; set; }
@@ -48,7 +47,7 @@ namespace CRM.Client.Pages.Products
         [Parameter]
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
-        private Product _product = null;
+        private ProductDTO _product = null;
 
         private PageHeaderModel? _pageHeader = null;
         protected override async Task OnInitializedAsync()
@@ -59,7 +58,7 @@ namespace CRM.Client.Pages.Products
                 //await Task.Delay(10000);      // changes are flushed again   
                 path = ConstHelper.GroupsPath;
 
-                _product = await RestClientService.GetItem<Product, int>(Id, ConstHelper.Products);   // _service.Get(Id);
+                _product = await ProductsService.GetItemAsync(Id);   // _service.Get(Id);
                 
                 //_pageHeader = HeaderService.Create("Products", Id, _product?.Name, true, ConstHelper.ClientProductsPath, null, PageMode);
                 _pageHeader = await HeaderService.Create(PageMode);

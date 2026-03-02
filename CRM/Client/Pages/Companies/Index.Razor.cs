@@ -3,6 +3,7 @@ using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Client.Shared;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -36,7 +37,7 @@ namespace CRM.Client.Pages.Companies
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
+        ICompaniesService Service { get; set; }
 
         [Inject]
         IRestService<ApplicationUser> userSigned { get; set; }
@@ -75,7 +76,7 @@ namespace CRM.Client.Pages.Companies
         public EventCallback OnAddNewItem { get; set; }
 
 
-        private IQueryable<Company> _companies = null;
+        private IQueryable<CompanyDTO> _companies = null;
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
@@ -87,7 +88,7 @@ namespace CRM.Client.Pages.Companies
 
         private ApplicationUser? _user;
 
-        private Company _company;
+        private CompanyDTO _company;
 
         private string pagingSummaryFormat;
 
@@ -95,7 +96,7 @@ namespace CRM.Client.Pages.Companies
 
         private bool _isLoading = false;
 
-        private RadzenDataGrid<Company> grdCompanies;
+        private RadzenDataGrid<CompanyDTO> grdCompanies;
 
         private FilterMode _filterMode = FilterMode.Advanced;
 
@@ -115,7 +116,7 @@ namespace CRM.Client.Pages.Companies
             else
                 _header = Localize["Customers"];
 
-            
+
 
             pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
             _user = await userSigned.Get();
@@ -130,6 +131,7 @@ namespace CRM.Client.Pages.Companies
             _pageHeader = await HeaderService.Create(PageMode);
         }
 
+        
         public async Task LoadData(LoadDataArgs args = null)
         {
             _isLoading = true;
@@ -146,7 +148,7 @@ namespace CRM.Client.Pages.Companies
             finally
             {
                 if (_companies == null)
-                    _companies = Enumerable.Empty<Company>().AsQueryable();
+                    _companies = Enumerable.Empty<CompanyDTO>().AsQueryable();
 
                 StateHasChanged();
                 
@@ -187,7 +189,7 @@ namespace CRM.Client.Pages.Companies
                 if (PageMode == PageModality.Dialog)
                     _filter.IdCompanyParent = IdCompanyParent;
 
-                PagingResponse<Company> pagingResponse = await RestClientService.Get<Company, CompanyFilter>(_filter, ConstHelper.CompaniesPath);
+                PagingResponse<CompanyDTO> pagingResponse = await Service.GetPagingAsync(_filter); 
 
                 if (pagingResponse != null)
                 {
@@ -252,7 +254,7 @@ namespace CRM.Client.Pages.Companies
 
      
 
-        protected async Task Delete(Company company)
+        protected async Task Delete(CompanyDTO company)
         {
             if (OnRemoveCompany.HasDelegate)
             {
@@ -261,9 +263,9 @@ namespace CRM.Client.Pages.Companies
             }
             else
             {
-                if (await dialogService.Confirm($"{Localize["Eliminare definitivamente l'azienda"]}: {company.RagioneSociale}") == true)
+                if (await dialogService.Confirm($"{Localize["DeleteCompany"]}: {company.RagioneSociale}") == true)
                 {
-                    await RestClientService.Delete<int>(company.Id, ConstHelper.CompaniesPath);
+                    await Service.DeleteAsync(company.Id);
 
                     await LoadData();
                 }
@@ -317,7 +319,7 @@ namespace CRM.Client.Pages.Companies
                         dialogService.CloseSide(id);
                     break;
                 case PageModality.Visualization:
-
+                
                     if (OnSelectCompany.HasDelegate)
                     {
 
@@ -326,6 +328,11 @@ namespace CRM.Client.Pages.Companies
                     else
                         NavigationManager.NavigateTo($"/Companies/{id}");
                     
+                    break;
+
+                case PageModality.Child:
+                    
+                    NavigationManager.NavigateTo($"/Companies/{id}");
                     break;
             }
             

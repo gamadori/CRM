@@ -18,6 +18,9 @@ namespace CRM.Shared
         [Display(Name = nameof(Folder.Description), ResourceType = typeof(Resources.Models.Folder))]
         public string Description { get; set; }
 
+        public virtual ICollection<FolderLanguage> FolderLanguages { get; set; }
+
+        public virtual ICollection<Attachment> Attachments { get; set; }
 
     }
 
@@ -25,5 +28,7 @@ namespace CRM.Shared
     {
         public string Name { get; set; }
         public string Description { get; set; }
+
+        public AttachmentTypes? AttachmentType { get; set; } = null;
     }
 }

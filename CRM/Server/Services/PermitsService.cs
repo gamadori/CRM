@@ -87,7 +87,7 @@ namespace CRM.Server.Services
 
             if (user != null && user.IdCompany != null && !user.IsDeleted)
             {
-                if (await IsMainCompany(user.IdCompany.Value))
+                if (await IsHeadQuarter(user.IdCompany.Value))
                 {
                     return true;
                 }
@@ -198,38 +198,38 @@ namespace CRM.Server.Services
                 return (await CheckPolicy(idUser, ePolicy.StandardRole));
         }
 
-        public async Task<bool> IsMainCompany(int idCompany)
+        public async Task<bool> IsHeadQuarter(int idCompany)
         {
             return idCompany == await GetHeadQuarter();
         }
 
-        public async Task<bool> BelongsToMainCompany()
+        public async Task<bool> BelongsToHeadQuarter()
         {
             var user = await GetUser();
 
-            return await BelongsToMainCompany(user);
+            return await BelongsToHeadQuarter(user);
         }
 
        
-        public async Task<bool> BelongsToMainCompany(ApplicationUser? user)
+        public async Task<bool> BelongsToHeadQuarter(ApplicationUser? user)
         {
            
             if (user == null)
-                return await BelongsToMainCompany();
+                return await BelongsToHeadQuarter();
             else if (!user.IsDeleted)
                 return user?.IdCompany == await GetHeadQuarter();
             else
                 return false;
         }
 
-        public async Task<bool> BelongsToMainCompany(string? idUser)
+        public async Task<bool> BelongsToHeadQuarter(string? idUser)
         {
             
             var user = await _userManager.FindByIdAsync(idUser);
-            return await BelongsToMainCompany(user);
+            return await BelongsToHeadQuarter(user);
         }
 
-        public async Task<List<string>> GetMainCompanyIdUsers()
+        public async Task<List<string>> GetHeadQuarterIdUsers()
         {
             int? idCompany = await GetHeadQuarter();
 
@@ -240,10 +240,25 @@ namespace CRM.Server.Services
         {
             var user = await GetUser();
             
+            if (user == null || user.IdCompany == null || user.IsDeleted)
+                return false;   
+
             var company = await _context.Companies.FindAsync(user.IdCompany);
 
-            return !user.IsDeleted && company.CompanyType == CompanyTypes.Reseller;
+            return company.CompanyType == CompanyTypes.Reseller;
         }
+        public async Task<bool> BelongsToMainCompany()
+        {
+            var user = await GetUser();
+
+            if (user == null || user.IdCompany == null || user.IsDeleted)
+                return false;
+
+            var company = await _context.Companies.FindAsync(user.IdCompany);
+
+            return company.CompanyType == CompanyTypes.HeadCompany;
+        }
+
 
         public async Task<List<int>> GetIdCompanies()
         {
@@ -377,7 +392,7 @@ namespace CRM.Server.Services
         /// <returns></returns>
         public async Task<bool> CanEditTicket()
         {
-            return await IsStandardUser() && await BelongsToMainCompany();
+            return await IsStandardUser() && await BelongsToHeadQuarter();
 
         }
         /// <summary>
@@ -420,7 +435,7 @@ namespace CRM.Server.Services
 
             
 
-            return await IsStandardUser() && await BelongsToMainCompany();
+            return await IsStandardUser() && await BelongsToHeadQuarter();
         }
         public async Task<List<ApplicationUser>> GetUsersCanAssignTicket(int idTicket)
         {
@@ -537,7 +552,7 @@ namespace CRM.Server.Services
         public async Task<bool> CanAssignTicket(string idUser = null)
         {
             
-            return await IsStandardUser(idUser) && await BelongsToMainCompany(idUser);
+            return await IsStandardUser(idUser) && await BelongsToHeadQuarter(idUser);
 
         }
 
@@ -546,7 +561,7 @@ namespace CRM.Server.Services
         public async Task<List<string>> UsersCanAssignTicket()
         {
             List<string> items = new List<string>();
-            List<string> users = await GetMainCompanyIdUsers();
+            List<string> users = await GetHeadQuarterIdUsers();
 
             foreach(var user in users)
             {
@@ -558,7 +573,7 @@ namespace CRM.Server.Services
         }
         public async Task<bool>CanViewInternalData()
         {
-            return await BelongsToMainCompany();
+            return await BelongsToHeadQuarter();
         }
         #endregion
 
@@ -597,7 +612,7 @@ namespace CRM.Server.Services
 
             if (ticket != null)
             {
-                return (await IsStandardUser() && await BelongsToMainCompany()) || ticket.IdCompany == await GetIdCompany() || ticket.IdUserOpened == idUser || ticket.IdUserAssigned == idUser;
+                return (await IsStandardUser() && await BelongsToHeadQuarter()) || ticket.IdCompany == await GetIdCompany() || ticket.IdUserOpened == idUser || ticket.IdUserAssigned == idUser;
             }
             else
                 return false;
@@ -622,7 +637,7 @@ namespace CRM.Server.Services
             if (ticket != null)
             {
                 
-                return (await IsStandardUser() && await BelongsToMainCompany()) || ticket.IdCompany == await GetIdCompany() || ticket.IdUserAssigned == idUser || await CanReceveTicket(idTicket, idUser);
+                return (await IsStandardUser() && await BelongsToHeadQuarter()) || ticket.IdCompany == await GetIdCompany() || ticket.IdUserAssigned == idUser || await CanReceveTicket(idTicket, idUser);
             }
             else
                 return false;
@@ -667,7 +682,7 @@ namespace CRM.Server.Services
                 idCompany = ticketChat.User.IdCompany;
                 var ticket = ticketChat.Ticket;
                 
-                if (await IsMainCompany((int)idCompany))
+                if (await IsHeadQuarter((int)idCompany))
                 {
                     // Utente della main company
 
@@ -724,14 +739,14 @@ namespace CRM.Server.Services
 
             if (deal != null)
             {
-                return await BelongsToMainCompany() && await IsStandardUser();
+                return await BelongsToHeadQuarter() && await IsStandardUser();
             }
             return false;
         }
 
         public async Task<bool> CanInsertDeal()
         {
-            return await BelongsToMainCompany() && await IsStandardUser();
+            return await BelongsToHeadQuarter() && await IsStandardUser();
         }
 
         public async Task<bool> CanEditDeal(int idDeal)
@@ -740,7 +755,7 @@ namespace CRM.Server.Services
 
             if (deal != null)
             {
-                var resp =  await BelongsToMainCompany() && (await IsStandardUser() || await IdUser() == deal.IdUser);
+                var resp =  await BelongsToHeadQuarter() && (await IsStandardUser() || await IdUser() == deal.IdUser);
                 _context.Entry(deal).State = EntityState.Detached;
                 return resp;
                 
@@ -754,7 +769,7 @@ namespace CRM.Server.Services
 
             if (deal != null)
             {
-                return await BelongsToMainCompany() &&
+                return await BelongsToHeadQuarter() &&
                     ((await IsStandardUser() && await IdUser() == deal.IdUser) || await IsAdmin());
             }
             return false;
@@ -924,7 +939,7 @@ namespace CRM.Server.Services
             }
             else
             {
-                if (! await IsMainCompany(company.Id))
+                if (! await IsHeadQuarter(company.Id))
                 {
                     if (company.CompanyType == CompanyTypes.Customer)
                     {
@@ -954,7 +969,7 @@ namespace CRM.Server.Services
                 return false;
 
 
-            if (await IsMainCompany((int)user.IdCompany))
+            if (await IsHeadQuarter((int)user.IdCompany))
             {
                 return true;
             }
@@ -1028,7 +1043,7 @@ namespace CRM.Server.Services
             if (user == null || user.IdCompany == null)
                 return new PermitResponse() { CanAccess = false };
 
-            if (await IsMainCompany((int)user.IdCompany))
+            if (await IsHeadQuarter((int)user.IdCompany))
             {
                 return new PermitResponse() { CanAccess = true, IdCompany = idCompany };
             }
@@ -1082,7 +1097,7 @@ namespace CRM.Server.Services
 
             if (company != null)
             {
-                if (await IsMainCompany(company.Id))
+                if (await IsHeadQuarter(company.Id))
                     return CompanyTypes.HeadCompany;
                 else
                     return company.CompanyType;
@@ -1336,6 +1351,14 @@ namespace CRM.Server.Services
             return (idUser == owner || result.Succeeded);
         }
 
+        public async Task<bool> CanEditAttachment(string owner)
+        {
+            string idUser = await IdUser();
+            AuthorizationResult result = await CheckPolicy(ePolicy.SuperUserRole);
+
+            return (idUser == owner || result.Succeeded);
+        }
+
         public async Task<bool> CanDeleteAttachment(int idAttachment)
         {
             var attachment = await _context.Attachments.FindAsync(idAttachment);
@@ -1355,20 +1378,20 @@ namespace CRM.Server.Services
 
         public async Task<bool> CanInsertAccessoryType()
         {
-            return await BelongsToMainCompany() && await IsStandardUser();
+            return await BelongsToHeadQuarter() && await IsStandardUser();
         }
 
         public async Task<bool> CanEditAccessoryType()
         {
 
-            var resp = await BelongsToMainCompany() && await IsStandardUser();
+            var resp = await BelongsToHeadQuarter() && await IsStandardUser();
             return resp;
 
         }
 
         public async Task<bool> CanDeleteAccessoryType()
         {
-                return await BelongsToMainCompany() &&
+                return await BelongsToHeadQuarter() &&
                     await IsSuperUser();
         }
 
@@ -1402,20 +1425,20 @@ namespace CRM.Server.Services
 
         public async Task<bool> CanInsertAccessory()
         {
-            return await BelongsToMainCompany() && await IsStandardUser();
+            return await BelongsToHeadQuarter() && await IsStandardUser();
         }
 
         public async Task<bool> CanEditAccessory()
         {
 
-            var resp = await BelongsToMainCompany() && await IsStandardUser();
+            var resp = await BelongsToHeadQuarter() && await IsStandardUser();
             return resp;
 
         }
 
         public async Task<bool> CanDeleteAccessory()
         {
-            return await BelongsToMainCompany() &&
+            return await BelongsToHeadQuarter() &&
                 await IsSuperUser();
         }
 
@@ -1448,20 +1471,20 @@ namespace CRM.Server.Services
 
         public async Task<bool> CanInsertContractType()
         {
-            return await BelongsToMainCompany() && await IsAdmin();
+            return await BelongsToHeadQuarter() && await IsAdmin();
         }
 
         public async Task<bool> CanEditContractType()
         {
 
-            var resp = await BelongsToMainCompany() && await IsAdmin();
+            var resp = await BelongsToHeadQuarter() && await IsAdmin();
             return resp;
 
         }
 
         public async Task<bool> CanDeleteContractType()
         {
-            return await BelongsToMainCompany() &&
+            return await BelongsToHeadQuarter() &&
                 await IsAdmin();
         }
 

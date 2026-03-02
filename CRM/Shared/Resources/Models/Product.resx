@@ -123,6 +123,9 @@
   <data name="Description" xml:space="preserve">
     <value>Description</value>
   </data>
+  <data name="IdCompany" xml:space="preserve">
+    <value>Company</value>
+  </data>
   <data name="IdProductType" xml:space="preserve">
     <value>Product Type</value>
   </data>

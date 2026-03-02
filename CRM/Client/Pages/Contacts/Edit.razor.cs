@@ -2,6 +2,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -27,8 +28,11 @@ namespace CRM.Client.Pages.Contacts
 
 
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
-        
+        IContactsService Service { get; set; }
+
+        [Inject]
+        ICompaniesService CompaniesService { get; set; }
+
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
@@ -59,7 +63,7 @@ namespace CRM.Client.Pages.Contacts
 
         private Contact _contact = null;
 
-        private List<Company> _companies = new List<Company>();
+        private List<CompanyDTO> _companies = new List<CompanyDTO>();
 
         private string _messageState = "";
 
@@ -72,13 +76,15 @@ namespace CRM.Client.Pages.Contacts
         {
             try
             {
-                await LoadCompany();
+                await LoadCompanies();
 
 
                 if (Id != null)
                 {
+
+                    var dto = await Service.GetItemAsync(Id.Value);
+                    _contact = dto?.ToEntity();
                     
-                    _contact = await RestClientService.GetItem<Contact, int>(Id.Value, ConstHelper.ContactsPath);
 
                 }
                 else
@@ -103,13 +109,11 @@ namespace CRM.Client.Pages.Contacts
 
        
 
-        public async Task LoadCompany()
+        public async Task LoadCompanies()
         {
 
-            var items = await RestClientService.Get<Company>(ConstHelper.CompaniesPath);
-            _companiesCount = items.Count;
-
-            _companies = items;
+            _companies = await CompaniesService.GetListAsync(new CompanyFilter());
+            
             await InvokeAsync(StateHasChanged);
 
         }
@@ -121,7 +125,7 @@ namespace CRM.Client.Pages.Contacts
             _messageState = "";
             try
             {
-                var resp = await RestClientService.Post<Contact, int>(_contact, ConstHelper.ContactsPath);
+                var resp = await Service.PostAsync(_contact);
 
                 if (resp != null && resp.State)
                 {
@@ -157,7 +161,7 @@ namespace CRM.Client.Pages.Contacts
         {
             if (id != null)
             {
-                await LoadCompany();
+                await LoadCompanies();
 
                 StateHasChanged();
                 _contact.IdCompany = (int)id;

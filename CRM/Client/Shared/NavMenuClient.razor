@@ -18,8 +18,14 @@
             <NavLink class="nav-link" href="Companies/Customer/Details" Match="NavLinkMatch.Prefix">
                 <i class="material-icons">domain</i><span class="px-2">@Localize["Azienda"]</span>
             </NavLink>
-             <NavLink class="nav-link" href="Articles" Match="NavLinkMatch.Prefix">
-                <i class="material-icons">precision_manufacturing</i><span class="px-2">@Localize["Prodotti"]</span>
+            <NavLink class="nav-link submenu-link-2" href="Products" Match="NavLinkMatch.Prefix">
+                <span class="material-icons nav-icon-small">category</span>
+                <span class="nav-text">@Localize["Catalog"]</span>
+            </NavLink>
+
+            <NavLink class="nav-link submenu-link-2" href="Articles" Match="NavLinkMatch.Prefix">
+                <span class="material-icons nav-icon-small">inventory</span>
+                <span class="nav-text">@Localize["Articles"]</span>
             </NavLink>
             <NavLink class="nav-link" href="Tickets" Match="NavLinkMatch.Prefix">
                 <i class="material-icons">support_agent</i><span class="px-2">@Localize["Tickets"]</span>

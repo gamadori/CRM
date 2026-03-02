@@ -2,6 +2,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -21,7 +22,7 @@ namespace CRM.Client.Pages.ProductsTypes
     {
         
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
+        IProductTypesService Service { get; set; }
 
         [Inject]
         NavigationManager NavigationManager { get; set; }
@@ -42,7 +43,7 @@ namespace CRM.Client.Pages.ProductsTypes
         public Action OnClickCancel { get; set; }
 
 
-        private ProductType _productType = null;
+        private ProductTypeDTO _productType = null;
 
         private PageHeaderModel? _pageHeader = null;
 
@@ -50,7 +51,7 @@ namespace CRM.Client.Pages.ProductsTypes
         {
             try
             {
-                _productType = await RestClientService.GetItem<ProductType, int>(Id, ConstHelper.ProductTypesPath);   // Service.Get(Id);
+                _productType = await Service.GetItemAsync(Id);
                 _pageHeader = await HeaderService.Create();
             }
             catch (Exception ex)

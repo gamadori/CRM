@@ -1,7 +1,7 @@
 ﻿@page "/Companies/{Id:int}/Details"
 
 
-<PageHeader Visible=@(PageMode != PageHelper.PageModality.Dialog) Model="_pageHeader">
+<PageHeader PageMode="@PageMode">
 </PageHeader>
 
 @if (_company == null)
@@ -131,11 +131,11 @@ else
                 </RedGDetailField>
             }
 
-            @if (!string.IsNullOrWhiteSpace(_company.Logo))
+            @if (!string.IsNullOrWhiteSpace(_logo))
             {
                 <RedGDetailField Icon="image">
-                    <LabelContent><DisplayName For="@(() => _company.Logo)" /></LabelContent>
-                    <ChildContent><img src="@_company.Logo" style="max-width: 500px" /></ChildContent>
+                    <LabelContent>@Localize["Logo"]</LabelContent>
+                    <ChildContent><img src="@_logo" style="max-width: 500px" /></ChildContent>
                 </RedGDetailField>
             }
         </div>

@@ -279,7 +279,10 @@ namespace CRM.Server.Services
                 else
                     items = items.OrderByDescending(x => x.Name);
 
-                
+                if (args?.FolderId != null)
+                {
+                    items = items.Where(x => x.FolderId == args.FolderId);
+                }
 
                 if (args?.Filter != null && args.Filter.Any())
                 {

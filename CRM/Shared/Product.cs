@@ -42,10 +42,16 @@ namespace CRM.Shared
         [Display(Name = nameof(Product.ProductType), ResourceType = typeof(Resources.Models.Product))]
         public ProductType ProductType { get; set; }
 
+        [Display(Name = nameof(Product.IdCompany), ResourceType = typeof(Resources.Models.Product))]
+        [ForeignKey(nameof(Company))]
+        public int? IdCompany { get; set; }
+
         [JsonIgnore]
         public ICollection<Article> Articles { get; set; }  
         public ICollection<Product> Parents { get; set; }
         public ICollection<Product> Childs { get; set; }
+        public Company? Company { get; set; }
+
     }
 
     public class ProductFilter: PagingParameterModel

@@ -2,6 +2,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -26,7 +27,6 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         private ITicketService _service { get; set; }
 
-
         
 
         [Inject]
@@ -36,23 +36,19 @@ namespace CRM.Client.Pages.Tickets
        
         private IRestService<ApplicationUser> _userService { get; set; }
 
-        [Inject]
-        private AuthenticationStateProvider  _authenticationStateProvider { get; set; }
-
-        
-       
-
- //       [Inject]
-        //private IBaseRestService<Product,ProductFilter, int> _serviceProducts { get; set; }
-
        
         [Inject]
         private ITicketTypesService _serviceTicketType { get; set; }
 
         
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
+        ICompaniesService CompaniesService { get; set; }
 
+        [Inject]
+        IProductsService ProductsService { get; set; }
+
+        [Inject]
+        IArticlesService ArticlesService { get; set; }
 
         [Inject]
         private IJSRuntime JSRuntime { get; set; }
@@ -74,15 +70,15 @@ namespace CRM.Client.Pages.Tickets
         private Ticket _ticket = new Ticket() ;
         private List<ApplicationUser> _users = new List<ApplicationUser>();
         private ApplicationUser _user = new ApplicationUser();
-        private List<Company> _companies = new List<Company>();
+        private List<CompanyDTO> _companies = new List<CompanyDTO>();
         private int _companyCount;
-        private List<Product> _products = new List<Product>();
-        private List<Article> _articles = new List<Article>();
+        private List<ProductDTO> _products = new List<ProductDTO>();
+        private List<ArticleDTO> _articles = new List<ArticleDTO>();
         private List<TicketType> _ticketTypes = new List<TicketType>();
         private string _ragionaSociale;
         private TicketType _ticketType;
-        private Product _product;
-        private Article _article;
+        private ProductDTO _product;
+        private ArticleDTO _article;
         private ApplicationUser _userAssigned = new ApplicationUser();
         private string _messageCancel = "Annullare inserimento nuovo Ticket?";
         private string _messageError;
@@ -124,7 +120,7 @@ namespace CRM.Client.Pages.Tickets
                 }
                 else if (_user.IdCompany != null)
                 {
-                    await LoadCompany();
+                    await LoadCompanies();
                     _ticket.IdCompany = (int)_user.IdCompany;
                     SetCompany(_ticket.IdCompany);
                     await NextStep();
@@ -150,7 +146,7 @@ namespace CRM.Client.Pages.Tickets
             switch (_stepTicket)
             {
                 case TicketCreateSteps.CompanyTicket:
-                    await LoadCompany(new LoadDataArgs());
+                    await LoadCompanies(new LoadDataArgs());
                     _backDisabled = true;
                     break;
 
@@ -294,7 +290,7 @@ namespace CRM.Client.Pages.Tickets
             }
         }
 
-        public async Task LoadCompany(LoadDataArgs args = null)
+        public async Task LoadCompanies(LoadDataArgs args = null)
         {
             CompanyFilter request = new CompanyFilter();
 
@@ -304,14 +300,10 @@ namespace CRM.Client.Pages.Tickets
             }
 
 
-            var response = await RestClientService.Get<Company, CompanyFilter>(request, ConstHelper.CompaniesPath);
+            _companies = await CompaniesService.GetListAsync(request);
             
 
-            if (response != null)
-            {
-                _companyCount = response.MetaData.TotalCount;
-                _companies = response.Items.ToList();
-            }
+            
         }
 
 
@@ -321,9 +313,7 @@ namespace CRM.Client.Pages.Tickets
 
             //var response = await _serviceProducts.Get(request);
 
-            var response = await RestClientService.Get<Product, ProductFilter>(request, ConstHelper.Products);
-
-            _products = response.Items.ToList();
+            _products = await ProductsService.GetListAsync(request);
 
             StateHasChanged();
 
@@ -340,9 +330,9 @@ namespace CRM.Client.Pages.Tickets
                 request.IdProduct = _product.Id;
             }
 
-            var response = await RestClientService.Get<Article, ArticleFilter>(request, ConstHelper.ArticlesPath); 
+            _articles = await ArticlesService.GetListAsync(request); 
 
-            _articles = response.Items.ToList();
+            
 
             StateHasChanged();
 
@@ -403,7 +393,7 @@ namespace CRM.Client.Pages.Tickets
         protected async Task<bool> GetCompany()
         {
         
-            var company = await RestClientService.GetItem<Company, int>(_ticket.IdCompany, ConstHelper.CompaniesPath);
+            var company = await CompaniesService.GetItemAsync(_ticket.IdCompany);
             _ragionaSociale = company?.RagioneSociale;
 
             return company != null;

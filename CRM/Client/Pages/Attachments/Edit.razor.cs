@@ -15,6 +15,8 @@ using System.Threading.Tasks;
 using Microsoft.JSInterop;
 using Microsoft.Extensions.Localization;
 using CRM.Shared.Extensions;
+using CRM.Shared.DTOs;
+
 
 namespace CRM.Client.Pages.Attachments
 {
@@ -31,6 +33,9 @@ namespace CRM.Client.Pages.Attachments
         private IBaseRestService<Attachment, AttachmentsFilter, int> _service { get; set; }
 
         [Inject]
+        IAttachmentsService Service { get; set; }
+
+        [Inject]
         private IJSRuntime JSRuntime { get; set; }
 
         [Inject]
@@ -38,6 +43,9 @@ namespace CRM.Client.Pages.Attachments
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
+
+        [Inject]
+        IFoldersService FoldersService { get; set; }
 
         [Parameter]
         public int? Id { get; set; }
@@ -62,6 +70,8 @@ namespace CRM.Client.Pages.Attachments
 
         private bool _waitingUpload = false;
 
+        private List<FolderDTO> _folders = new List<FolderDTO>();
+
         protected override async Task OnInitializedAsync()
         {
             try
@@ -70,11 +80,27 @@ namespace CRM.Client.Pages.Attachments
 
                 if (Id != null)
                 {
-                    _attachment = await _service.Get(Id.Value);
+                   
+                    
+                    var data = await Service.GetItemAsync(Id.Value);
+                    
+                    _attachment = new Attachment()
+                    {
+                        Name = data.Name,
+                        Description = data.Description,
+                       
+                        Id = data.Id,
+                        IdParent = data.IdParent,
+                        AttchmentType = data.AttchmentType,
+                        IdUser = data.IdUser,
+                        FolderId = data.FolderId
+                    };
                     _attachment.Files.Clear();
                 }
                 else if (user != null)
                     _attachment = new Attachment() { IdParent = IdParent, AttchmentType = AttachmentType, IdUser = user.Id, Files = new List<AttachmentFile>() };
+
+                await LoadFolders();
             }
             catch (Exception ex)
             {
@@ -82,6 +108,17 @@ namespace CRM.Client.Pages.Attachments
             }
         }
 
+        private async Task LoadFolders()
+        {
+            try
+            {
+                _folders = await FoldersService.GetListAsync(new FolderFilter());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento cartelle: {ex}");
+            }
+        }
         protected void Annulla()
         {
             if (OnClickClose != null)
@@ -90,14 +127,6 @@ namespace CRM.Client.Pages.Attachments
                 NavigationManager.NavigateTo("/Attachments/Index");
         }
 
-        protected void DeleteFile(int idFile)
-        {
-            var f = _attachment.Files.Where(x => x.Id == idFile).FirstOrDefault();
-            if (f != null)
-                _attachment.Files.Remove(f);
-
-            StateHasChanged();
-        }
 
         // ✅ FIX: Usa InputFileChangeEventArgs (nativo Blazor) invece di Radzen
         private async Task OnInputFileChange(InputFileChangeEventArgs e)
@@ -216,7 +245,8 @@ namespace CRM.Client.Pages.Attachments
                     }
                 }
                 
-                var resp = await _service.Post(_attachment);
+                var resp = await Service.PostAsync(_attachment);
+               // var resp = await _service.Post(_attachment);
 
                 if (resp != null)
                 {

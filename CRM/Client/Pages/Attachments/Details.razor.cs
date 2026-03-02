@@ -1,5 +1,7 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -20,16 +22,19 @@ namespace CRM.Client.Pages.Attachments
     public partial class Details : ComponentBase 
     {
         [Inject]
-        private HttpClient Http { get; set; }
+        HttpClient Http { get; set; }
 
         [Inject]
-        private NavigationManager NavigationManager { get; set; }
+        NavigationManager NavigationManager { get; set; }
         
         [Inject]
-        private IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
+        IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
-        private IJSRuntime JSRuntime { get; set; }
+        IJSRuntime JSRuntime { get; set; }
+
+        [Inject]
+        IAttachmentsService Service { get; set; }
 
 
         [Parameter]
@@ -51,7 +56,9 @@ namespace CRM.Client.Pages.Attachments
 
         private Func<Task> OnClickOk = null;
 
-        private Attachment _attachment = null;
+        private AttachmentDTO _attachment = null;
+
+        private List<FolderDTO> _folders = new List<FolderDTO>();
 
         private string _message;
 
@@ -72,19 +79,19 @@ namespace CRM.Client.Pages.Attachments
             try
             {
                 //await Task.Delay(10000);      // changes are flushed again   
-                path = ConstHelper.AttachmentsPath;
+                //path = ConstHelper.AttachmentsPath;
 
                 if (Id != null)
                 {
-                    path += $"/{Id}";
+                  //  path += $"/{Id}";
 
-                    _attachment = await Http.GetFromJsonAsync<Attachment>(path);
+                    _attachment = await Service.GetItemAsync(Id.Value);
 
                     _notFound = (_attachment == null);
                     
                 }
                 else
-                    _attachment = new Attachment();
+                    _attachment = new AttachmentDTO();
 
 
             }
@@ -192,7 +199,7 @@ namespace CRM.Client.Pages.Attachments
 
             await JSRuntime.InvokeAsync<object>("CloseModal", "dlgDelete");
 
-            var response = await Http.PostAsJsonAsync<Attachment>($"{ConstHelper.AttachmentsPath}/files/download", _attachment);
+            var response = await Http.PostAsJsonAsync<AttachmentDTO>($"{ConstHelper.AttachmentsPath}/files/download", _attachment);
 
             if (response.IsSuccessStatusCode)
             {

@@ -30,13 +30,13 @@ else
                     <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
-                                <RedGDropDown TItem="Product" TValue="int?" ValueProperty="Id" TextProperty="@nameof(Product.Name)" @bind-Value="@_article.IdProduct" For="@(() => _article.IdProduct)"
+                                <RedGDropDown TItem="ProductDTO" TValue="int?" ValueProperty="Id" TextProperty="@nameof(ProductDTO.Name)" @bind-Value="@_article.IdProduct" For="@(() => _article.IdProduct)"
                                               Data="_products" AllowFiltering="true" />
                             </RadzenStack>
                         </RadzenColumn>
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
-                                <RedGDropDown TItem="Company" TValue="int?" ValueProperty="Id" TextProperty="@nameof(Company.RagioneSociale)" @bind-Value="@_article.IdCompany" For="@(() => _article.IdCompany)"
+                                <RedGDropDown TItem="CompanyDTO" TValue="int?" ValueProperty="@nameof(CompanyDTO.Id)" TextProperty="@nameof(CompanyDTO.RagioneSociale)" @bind-Value="@_article.IdCompany" For="@(() => _article.IdCompany)"
                                               Data="_companies" AllowFiltering="true">
                                     <End>
                                         <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetCompany DialogType="RedGDialog.DialogType.Companies"></RedGButtonDialog>

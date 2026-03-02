@@ -83,7 +83,7 @@ namespace CRM.Client.Pages.Companies
 
         private List<CompanyDTO> _companies;
 
-        private Company? _userCompany;
+        private CompanyDTO? _userCompany;
 
         private bool _hidden = false;
 
@@ -147,11 +147,11 @@ namespace CRM.Client.Pages.Companies
 
             try
             {
-                var resp = await CompaniesService.Post<Company, int>(_company, ConstHelper.CompaniesPath);
+                var resp = await CompaniesService.PostAsync(_company);
 
                 if (resp != null && resp.Data != null)
                 {
-                    _company = resp.Data;
+                    _company = resp.Data.ToEntity();
                 }
 
                 if (PageMode == PageModality.Dialog)
@@ -180,7 +180,7 @@ namespace CRM.Client.Pages.Companies
 
         private async Task LoadUserCompany()
         {
-            _userCompany = await _companiesService.GetCompany();
+            _userCompany = await _companiesService.GetUserCompany();
         }
         private async Task LoadCompanyTypes()
         {
@@ -204,11 +204,9 @@ namespace CRM.Client.Pages.Companies
             {
                 data.RagioneSociale = args.Filter;
             }
-            var resp = await _companiesService.GetListPag<CompanyFilter, CompanyDTO>(data, ConstHelper.CompaniesPath); 
+            _companies = await _companiesService.GetListAsync(data); 
 
-            _companies = resp?.Items;
 
-            //StateHasChanged();
         }
 
        

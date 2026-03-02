@@ -2,6 +2,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
@@ -66,7 +67,7 @@ namespace CRM.Client.Pages.Companies
 
         private int? _idCustomer;
 
-        private Company _company = null;
+        private CompanyDTO _company = null;
 
         private PageHeaderModel _pageHeader;
 
@@ -76,16 +77,29 @@ namespace CRM.Client.Pages.Companies
 
         protected override async Task OnInitializedAsync()
         {
+           
+
+        }
+
+        
+        protected override async Task OnParametersSetAsync()
+        {
             if (SelectViewValue != null)
             {
                 _selectView = (CompanyViews)SelectViewValue;
                 _partialView = PartialViews.Index;
             }
+            else
+            {
+                _selectView = CompanyViews.Company;
+                _partialView = PartialViews.Details;
+            }
+            
             await LoadCompany();
             InitializeViewOptions();
-            _pageHeader  = await HeaderService.Create();  
-
+            _pageHeader = await HeaderService.Create();
         }
+
         private void InitializeViewOptions()
         {
             _viewOptions = new List<ViewOption<CompanyViews>>
@@ -99,7 +113,7 @@ namespace CRM.Client.Pages.Companies
         }
         private async Task LoadCompany()
         {
-            _company = await companiesService.GetItem<Company, int>(Id, ConstHelper.CompaniesPath);
+            _company = await companiesService.GetItemAsync(Id);
         }
         private void EditCompany()
         {
@@ -395,21 +409,16 @@ namespace CRM.Client.Pages.Companies
         #endregion
 
         #region Customers
-        private async Task DetailsCustomer(int? id)
+        private void DetailsCustomer(int? id)
         {
             if (id != null)
             {
-                Id = id.Value;
                 
-                _selectView = CompanyViews.Company;
-                _partialView = PartialViews.Details;
-                
-                await LoadCompany();
-
-                StateHasChanged();
+                NavigationManager.NavigateTo($"/Companies/{Id}");
             }
         }
 
+        
         private async Task EditCustomer(int id)
         {
                 Id = id;

@@ -160,6 +160,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Articles List.
+        /// </summary>
+        public static string ArticlesList {
+            get {
+                return ResourceManager.GetString("ArticlesList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Assign the ticket.
         /// </summary>
         public static string Assegna_il_ticked_a_un_Utente {
@@ -583,11 +592,29 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Delete Company?.
+        /// </summary>
+        public static string DeleteCompany {
+            get {
+                return ResourceManager.GetString("DeleteCompany", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Delete the intervention?.
         /// </summary>
         public static string DeleteIntervention {
             get {
                 return ResourceManager.GetString("DeleteIntervention", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Delete Product?.
+        /// </summary>
+        public static string DeleteProduct {
+            get {
+                return ResourceManager.GetString("DeleteProduct", resourceCulture);
             }
         }
         
@@ -1169,6 +1196,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Public.
+        /// </summary>
+        public static string Public {
+            get {
+                return ResourceManager.GetString("Public", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Push Notifications.
         /// </summary>
         public static string Push_Notifications {
@@ -1696,6 +1732,15 @@ namespace CRM.Shared.Resources {
         public static string View_your_products {
             get {
                 return ResourceManager.GetString("View your products", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Private.
+        /// </summary>
+        public static string VisibilityPrivate {
+            get {
+                return ResourceManager.GetString("VisibilityPrivate", resourceCulture);
             }
         }
         

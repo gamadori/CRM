@@ -15,6 +15,7 @@ using BlazoringComponents;
 using Radzen;
 using Microsoft.Extensions.Localization;
 using Radzen.Blazor;
+using CRM.Shared.DTOs;
 
 namespace CRM.Client.Pages.Attachments
 {
@@ -35,11 +36,16 @@ namespace CRM.Client.Pages.Attachments
         IJSRuntime jSRuntime { get; set; }
 
         [Inject]
+        IAttachmentsService Service { get; set; }
+
+        [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
         IUserService UserService { get; set; }
 
+        [Inject]
+        IFoldersService FoldersService { get; set; }
 
         [Parameter]
         public int? IdParent { get; set; }
@@ -59,13 +65,13 @@ namespace CRM.Client.Pages.Attachments
         [Parameter]
         public bool ReadOnly { get; set; } = false;
 
-        private RadzenDataGrid<Attachment> _grdAttachment;
+        private RadzenDataGrid<AttachmentDTO> _grdAttachment;
 
-        private PagingResponse<Attachment> _attachments = null;
+        private PagingResponse<AttachmentDTO> _attachments = null;
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
-        private Attachment _attachment;
+        private AttachmentDTO _attachment;
 
         private bool _isLoading = false;
 
@@ -73,68 +79,67 @@ namespace CRM.Client.Pages.Attachments
 
         private bool _saving = false;
 
-        private string _filter = null;
+        private string _filterString = null;
 
         private string _userFilter = null;
 
+        private int? _folderId = null;
+
         private List<ApplicationUser> _users = new List<ApplicationUser>();
+
+        private List<FolderDTO> _folders = new List<FolderDTO>();
+
+        private AttachmentsFilter _filter = new AttachmentsFilter() { PageSize = 10, Skip = 0, Top = 10 };
 
         protected override async Task OnInitializedAsync()
         {
-            //#if DEBUG
-            //            await Task.Delay(10000);
-            //#endif
+            
 
-
-            await LoadData();
+            
             await LoadUser();
-
+            await LoadFolders();
+            await LoadData();
         }
 
         public async Task LoadData(LoadDataArgs args = null)
         {
             
             _isLoading = true;
-            if (HttpClient != null)
+            _filter.IdParant = IdParent;
+            _filter.AttchmentType = AttachmentType;
+            _filter.FolderId = _folderId;
+            if (args != null)
             {
-                AttachmentsFilter paging = new AttachmentsFilter() { PageSize = 10, Skip = 0, Top = 10 }; ;
-
-                paging.IdParant = IdParent;
-                paging.AttchmentType = AttachmentType;
-
-
-                if (args != null)
+                _filter.Skip = args.Skip;
+                _filter.Top = args.Top;
+                _filter.OrderBy = args.OrderBy;
+                if (args.Filters != null && args.Filters.Any())
                 {
-                    paging.Skip = args.Skip;
-                    paging.Top = args.Top;
-                    paging.OrderBy = args.OrderBy;
-
-                    
-
-                    if (args.Filters != null && args.Filters.Any())
-                    {
-                        if (paging.Filter?.Length > 0)
-                            paging.Filter += " And ";
-                        paging.Filter += args.Filter;
-                    }
+                    if (_filter.Filter?.Length > 0)
+                        _filter.Filter += " And ";
+                    _filter.Filter += args.Filter;
                 }
-
-                _attachments = await RestClientHelper.Get<Attachment>(HttpClient, ConstHelper.AttachmentsPath, paging);
-
-                if (_attachments == null)
-                {
-                    _attachments = new PagingResponse<Attachment>();
-                    _attachments.Items = new List<Attachment>();
-                    _attachments.MetaData = new PagingHeaderModel();
-                }
-
-                _paging.TotalCount = _attachments.MetaData.TotalCount;
             }
+            var resp = await Service.GetPagingAsync(_filter);
+            if (resp != null)
+            {
+                _attachments = resp;
+                _paging = _attachments.MetaData;
+            }
+
+            
             _isLoading = false;
 
         }
 
-      
+        private async Task LoadFolders()
+        {
+            if (FoldersService != null)
+            {
+                _folders = await FoldersService.GetListAsync(new FolderFilter() { AttachmentType = AttachmentType });
+                StateHasChanged();
+            }
+        }
 
         protected async Task SearchSubmit()
         {
@@ -181,7 +186,7 @@ namespace CRM.Client.Pages.Attachments
         {
             if (await DialogService.Confirm("Eliminare il documento selezionato?", "Attenzione") == true)
             {
-                var resp = await HttpClient.DeleteAsync($"{ConstHelper.AttachmentsPath}/{id}");
+                var resp = await Service.DeleteAsync(id); 
 
                 await LoadData();
             }
@@ -203,28 +208,47 @@ namespace CRM.Client.Pages.Attachments
             // Please imagine the situation that the API is protected by
             // token-based authorization (non cookie-based authorization).
            // var bytes = await HttpClient.GetByteArrayAsync($"{ConstHelper.AttachmentsPath}/download/{item.Id}");
-            var response = await HttpClient.GetAsync($"{ConstHelper.AttachmentsPath}/download/{id}");
+            //var response = await HttpClient.GetAsync($"{ConstHelper.AttachmentsPath}/download/{id}");
 
-            if (response.IsSuccessStatusCode)
-            {
-                var bytes = await response.Content.ReadAsByteArrayAsync();
+            //if (response.IsSuccessStatusCode)
+            //{
+            //    var bytes = await response.Content.ReadAsByteArrayAsync();
 
 
-                AttachmentResponse header = JsonSerializer.Deserialize<AttachmentResponse>(response.Headers
-                        .GetValues(ConstHelper.FileHeader).First(), new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+            //    AttachmentResponse header = JsonSerializer.Deserialize<AttachmentResponse>(response.Headers
+            //            .GetValues(ConstHelper.FileHeader).First(), new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
                
 
+            //    await jSRuntime.InvokeVoidAsync(
+            //      "downloadFromByteArray",
+            //      new
+            //      {
+            //          ByteArray = bytes,
+            //          FileName = header.Name,
+            //          ContentType = header.ContentType
+            //      });
+            //}
+
+            var resp = await Service.DownloadFiles(id);
+            if (resp.Bytes.Length > 0)
+            {
                 await jSRuntime.InvokeVoidAsync(
                   "downloadFromByteArray",
                   new
                   {
-                      ByteArray = bytes,
-                      FileName = header.Name,
-                      ContentType = header.ContentType
+                      ByteArray = resp.Bytes,
+                      FileName = resp.FileName,
+                      ContentType = resp.ContentType
                   });
             }
         }
 
+        private async Task OnChangeFolder()
+        {
+            await LoadData();
+
+            
+        }
         private async Task<string> GetUser(string id)
         {
             var user = await UserService.GetItem<ApplicationUser, string>(id, ConstHelper.UsersPath);

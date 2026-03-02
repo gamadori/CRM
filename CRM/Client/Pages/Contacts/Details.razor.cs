@@ -2,6 +2,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -25,9 +26,9 @@ namespace CRM.Client.Pages.Contacts
         
 
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
+        IContactsService Service { get; set; }
 
-        
+
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
@@ -53,7 +54,7 @@ namespace CRM.Client.Pages.Contacts
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
 
-        private Contact _contact = null;
+        private ContactDTO _contact = null;
 
         private PageHeaderModel? _pageHeader = null;
 
@@ -63,8 +64,8 @@ namespace CRM.Client.Pages.Contacts
             try
             {
                 
-                _contact = await RestClientService.GetItem<Contact, int>(Id, ConstHelper.ContactsPath);
-               
+                _contact = await Service.GetItemAsync(Id);
+
                 //_pageHeader = HeaderService.Create(ConstHelper.ClientContactsPath,Id, _contact?.NameComplete, false, ConstHelper.ClientContactsPath, null, PageMode);
                 _pageHeader = await HeaderService.Create(PageMode);
             }

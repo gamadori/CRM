@@ -3,6 +3,7 @@ using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Client.Shared.Components;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -29,9 +30,11 @@ namespace CRM.Client.Pages.Articles
         [Inject]
         ICompaniesService CompaniesService { get; set; }
 
-       
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
+        IProductsService ProductsService { get; set; }
+
+        [Inject]
+        IArticlesService Service { get; set; }
 
 
         [Inject]
@@ -63,9 +66,9 @@ namespace CRM.Client.Pages.Articles
 
         private Article _article = null;
 
-        private List<Company> _companies = new List<Company>();
+        private List<CompanyDTO> _companies = new List<CompanyDTO>();
 
-        private List<Product> _products = new List<Product>();
+        private List<ProductDTO> _products = new List<ProductDTO>();
 
         private string _messageState = "";
 
@@ -73,11 +76,7 @@ namespace CRM.Client.Pages.Articles
 
         private bool _lockCompany = false;
 
-        private int _pageSize = 12;
-
-        private int _companiesCount;
-
-        private int _productsCount;
+        
 
         private string _subTitle = "";
 
@@ -88,13 +87,14 @@ namespace CRM.Client.Pages.Articles
         {
             try
             {
-                await LoadCompany();
+                await LoadCompanies();
 
                 await LoadProducts();
 
                 if (Id != null)
                 { 
-                    _article = await RestClientService.GetItem<Article, int>(Id.Value, ConstHelper.ArticlesPath);
+                    var dto = await Service.GetItemAsync(Id.Value);
+                    _article = dto.ToEntity();
                 }
                 else
                 {
@@ -121,13 +121,10 @@ namespace CRM.Client.Pages.Articles
 
        
 
-        public async Task LoadCompany()
+        public async Task LoadCompanies()
         {
-            
-
-            var response = await CompaniesService.Get<Company>(ConstHelper.CompaniesPath);
-            _companiesCount = response.Count();
-
+            var response = await CompaniesService.GetListAsync(null);
+           
             _companies = response;
             await InvokeAsync(StateHasChanged);
 
@@ -136,10 +133,8 @@ namespace CRM.Client.Pages.Articles
         public async Task LoadProducts()
         {
 
-            var response = await RestClientService.Get<Product>(ConstHelper.Products); //await RestClientService.GetListPag<ProductFilter, Product>(new ProductFilter(), ConstHelper.Products);
-            _products = response;
-            _productsCount = response.Count();
-         
+            _products = await ProductsService.GetListAsync(null);
+            await InvokeAsync(StateHasChanged);
         }
 
         protected async Task HandleValidSubmitAsync()
@@ -147,10 +142,10 @@ namespace CRM.Client.Pages.Articles
             _messageState = "";
             try
             {
-                var resp = await RestClientService.Post<Article, int>(_article, ConstHelper.ArticlesPath);
+                var resp = await Service.PostAsync(_article);
                 if (resp != null && resp.State)
                 {
-                    _article = resp.Data;
+                    _article = resp.Data?.ToEntity();
                     
                     if (PageMode == PageModality.Dialog)
                     {
@@ -182,7 +177,7 @@ namespace CRM.Client.Pages.Articles
         {
             if (id != null)
             {
-                await LoadCompany();
+                await LoadCompanies();
               
                 StateHasChanged();
                 _article.IdCompany = (int)id;

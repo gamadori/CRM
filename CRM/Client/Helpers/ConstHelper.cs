@@ -42,7 +42,7 @@ namespace CRM.Client.Helpers
 
         public static string Products = "api/Products";
 
-        public static string ProductTypesPath = "api/ProductsTypes";
+        public static string ProductsTypesPath = "api/ProductsTypes";
 
         public static string ArticlesPath = "api/Articles";
 

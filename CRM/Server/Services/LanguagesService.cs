@@ -11,7 +11,7 @@ using System.Linq.Dynamic.Core;
 
 namespace CRM.Server.Services
 {
-    public class LanguagesService: ILanguagesService
+    public class LanguagesService : ILanguagesService
     {
         private readonly ApplicationDbContext _context;
         private readonly IPermitsService _permitsService;
@@ -22,7 +22,7 @@ namespace CRM.Server.Services
         {
             _context = context;
             _permitsService = permitsService;
-            _httpContextAccessor = httpContextAccessor; 
+            _httpContextAccessor = httpContextAccessor;
             _logEventService = logEventService;
         }
 
@@ -143,7 +143,7 @@ namespace CRM.Server.Services
             }
         }
 
-        
+
         public async Task<APIResponseMessage<Language>> PostAsync(Language item)
         {
             try
@@ -221,7 +221,7 @@ namespace CRM.Server.Services
             {
 
 
-                return user.LanguageCode; 
+                return user.LanguageCode;
             }
             else
                 return null;
@@ -258,7 +258,7 @@ namespace CRM.Server.Services
                 var user = await _permitsService.GetUser();
                 if (user != null)
                 {
-                    var language = await _context.Languages.Where(x=>x.LanguageCode == code).FirstOrDefaultAsync();
+                    var language = await _context.Languages.Where(x => x.LanguageCode == code).FirstOrDefaultAsync();
                     if (language != null)
                     {
                         user.LanguageCode = language.LanguageCode;
@@ -275,6 +275,7 @@ namespace CRM.Server.Services
                 return false;
             }
         }
+       
         private async Task<IQueryable<Language>?> FilterLanguages(LanguageFilter? args = null)
         {
             try
@@ -286,7 +287,7 @@ namespace CRM.Server.Services
                     items = items.OrderBy(args.OrderBy);
                 }
                 else
-                    items = items.OrderBy(x => x.Index).ThenBy(x=>x.Name);
+                    items = items.OrderBy(x => x.Index).ThenBy(x => x.Name);
 
 
                 if (args?.Filter != null && args.Filter.Any())
@@ -302,7 +303,6 @@ namespace CRM.Server.Services
                 return null;
             }
         }
-
 
         
     }

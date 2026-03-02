@@ -12,7 +12,7 @@
     </PageHeader>
 
     <RadzenDataGrid @ref="grdItems" Responsive=true IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_productTypes" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
-                    AllowSorting="true" AllowFiltering="true" AllowPaging="true" PageSize=@_pageSize PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ProductType" PagingSummaryFormat=@_pagingSummaryFormat>
+                    AllowSorting="true" AllowFiltering="true" AllowPaging="true" PageSize=@_pageSize PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ProductTypeDTO " PagingSummaryFormat=@_pagingSummaryFormat>
         <HeaderTemplate>
             <div class="d-flex align-items-center gap-5">
                 <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
@@ -21,11 +21,11 @@
 
         </HeaderTemplate>
         <Columns>
-            <RadzenDataGridColumn TItem="ProductType" Property="@nameof(ProductType.Name)" Title=@TranslateHelper.GetDisplayName(nameof(ProductType.Name), typeof(ProductType)) />
+            <RadzenDataGridColumn TItem="ProductTypeDTO" Property="@nameof(ProductTypeDTO.Name)" Title=@TranslateHelper.GetDisplayName(nameof(ProductType.Name), typeof(ProductType)) />
 
-            <RadzenDataGridColumn TItem="ProductType" Property="@nameof(ProductType.Description)" Title=@TranslateHelper.GetDisplayName(nameof(ProductType.Description), typeof(ProductType)) />
+            <RadzenDataGridColumn TItem="ProductTypeDTO" Property="@nameof(ProductTypeDTO.Description)" Title=@TranslateHelper.GetDisplayName(nameof(ProductType.Description), typeof(ProductType)) />
 
-            <RadzenDataGridColumn Context="item" TItem="ProductType" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+            <RadzenDataGridColumn Context="item" TItem="ProductTypeDTO" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
                 <Template Context="item">
                     <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
                     <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>

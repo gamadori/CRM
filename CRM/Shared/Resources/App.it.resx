@@ -678,4 +678,19 @@
   <data name="NewFolder" xml:space="preserve">
     <value>Nuova Cartella</value>
   </data>
+  <data name="VisibilityPrivate" xml:space="preserve">
+    <value>Privato</value>
+  </data>
+  <data name="Public" xml:space="preserve">
+    <value>Pubblico</value>
+  </data>
+  <data name="DeleteProduct" xml:space="preserve">
+    <value>Eliminare il Prodotto</value>
+  </data>
+  <data name="DeleteCompany" xml:space="preserve">
+    <value>Eliminare l'azienda?</value>
+  </data>
+  <data name="ArticlesList" xml:space="preserve">
+    <value>Elenco Articoli</value>
+  </data>
 </root>

@@ -1,5 +1,6 @@
 ﻿@page "/Attachments/New"
 @page "/Attachments/{Id:int}/Edit"
+
 @using System.IO
 @using Microsoft.AspNetCore.Components.Forms
 
@@ -79,6 +80,21 @@
                             <RadzenColumn Size="12" >
                                 <RadzenStack>
                                     <RedGTextArea @bind-Value="@_attachment.Description" For="@(() => _attachment.Description)" Rows="3" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenStack>
+                                    <RedGDropDown TValue="int?" TextProperty="Translate" ValueProperty="Id" Data="@_folders" TItem="FolderDTO" @bind-Value="@_attachment.FolderId" For="@(() => _attachment.FolderId)" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow>
+                            <RadzenColumn Size="12">
+                                <RadzenStack>
+                                <RedGSelectEnumGeneric  TEnum="AttachmentVisibilities" TValue="AttachmentVisibilities" @bind-Value="@_attachment.Visibility"
+                                                For="@(() => _attachment.Visibility)" AllowClear="false" />
                                 </RadzenStack>
                             </RadzenColumn>
                         </RadzenRow>

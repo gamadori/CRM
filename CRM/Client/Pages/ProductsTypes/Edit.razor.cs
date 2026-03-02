@@ -22,7 +22,7 @@ namespace CRM.Client.Pages.ProductsTypes
     {
         
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
+        IProductTypesService Service { get; set; }
 
 
         [Inject]
@@ -63,8 +63,23 @@ namespace CRM.Client.Pages.ProductsTypes
                 {
                     path += $"/{Id}";
 
-                    _productType = await RestClientService.GetItem<ProductType, int>(Id.Value, ConstHelper.ProductTypesPath);   // await Service.Get(Id.Value);
-                    
+                    var dto = await Service.GetItemAsync((int)Id);
+
+                    if (dto != null)
+                    {
+                        _productType = new ProductType
+                        {
+                            Id = dto.Id,
+                            Name = dto.Name,
+                            Description = dto.Description,
+
+                        };
+                    }
+                    else
+                    {
+                        _productType = new ProductType();
+                    }
+
                 }
                 else
                 {
@@ -85,7 +100,7 @@ namespace CRM.Client.Pages.ProductsTypes
 
             try
             {
-                var resp = await RestClientService.Post<ProductType, int>(_productType, ConstHelper.ProductTypesPath);  // await Service.Post(_productType);
+                var resp = await Service.PostAsync(_productType);
 
                 
 

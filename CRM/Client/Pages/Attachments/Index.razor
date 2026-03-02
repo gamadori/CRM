@@ -1,6 +1,8 @@
 ﻿@page "/Attachments"
 @page "/Attachments/Index"
 @using CRM.Client.Shared.Filters
+@using CRM.Shared.DTOs
+
 @if (_attachments == null)
 {
     <Waiting></Waiting>
@@ -10,7 +12,7 @@ else
   
     <RadzenDataGrid @ref="_grdAttachment" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_attachments?.Items" Responsive="true" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
             AllowSorting="true" AllowFiltering="true" AllowPaging="true"
-                    PageSize="@_pageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Attachment" EmptyText="@Localize["Nessun Allegato"]">
+                    PageSize="@_pageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="AttachmentDTO" EmptyText="@Localize["Nessun Allegato"]">
 
         <HeaderTemplate>
 
@@ -19,24 +21,22 @@ else
                 {
                     <RedGButton RGButtonType="RGButtonType.New" Click="@NewAttachment"></RedGButton>
                 }
-                @* <RedGTextBox @bind-Value="@_filter.Name" Label="@Localize["search..."]" @oninput="@OnChangeNameFilter" Style="width: 300px; margin-left: 10px;">
-                    <End>
-                        <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
-                    </End>
-                </RedGTextBox> *@
+                <RedGDropDown  TValue="int?" TItem="FolderDTO" Data="@_folders" TextProperty="Translate" Change="OnChangeFolder" ValueProperty="Id" @bind-Value="@_folderId" Label="@Localize["Tipo"]" ></RedGDropDown>
+
+                
             </div>
 
         </HeaderTemplate>
         <Columns>
 
 
-            <RadzenDataGridColumn TItem="Attachment" Property="@nameof(Attachment.Name)" Title="@Localize["Nome"]" TextAlign="Radzen.TextAlign.Left" />
+            <RadzenDataGridColumn TItem="AttachmentDTO" Property="@nameof(AttachmentDTO.Name)" Title="@Localize["Nome"]" TextAlign="Radzen.TextAlign.Left" />
 
-            <RadzenDataGridColumn TItem="Attachment" Property="@nameof(Attachment.Description)" Title="@Localize["Descrizione"]" TextAlign="Radzen.TextAlign.Left" />
+            <RadzenDataGridColumn TItem="AttachmentDTO" Property="@nameof(AttachmentDTO.Description)" Title="@Localize["Descrizione"]" TextAlign="Radzen.TextAlign.Left" />
 
-            <RadzenDataGridColumn  TItem="Attachment" Property="@nameof(Attachment.CreatedOn)" Title="@Localize["Data"]"  FormatString="{0:d}" TextAlign="Radzen.TextAlign.Left" />
+            <RadzenDataGridColumn TItem="AttachmentDTO" Property="@nameof(AttachmentDTO.CreatedOn)" Title="@Localize["Data"]" FormatString="{0:d}" TextAlign="Radzen.TextAlign.Left" />
 
-            <RadzenDataGridColumn TItem="Attachment" Property="@nameof(Attachment.IdUser)" Title="@Localize["User"]" FilterProperty="@nameof(Attachment.IdUser)" FilterValue="@_userFilter" FilterOperator="FilterOperator.Equals">
+            <RadzenDataGridColumn TItem="AttachmentDTO" Property="@nameof(AttachmentDTO.IdUser)" Title="@Localize["User"]" FilterProperty="@nameof(Attachment.IdUser)" FilterValue="@_userFilter" FilterOperator="FilterOperator.Equals">
                 <Template Context="item">
                     <UserData IdUser="@item.IdUser"></UserData>
                 </Template> 
@@ -46,9 +46,13 @@ else
                                     ValueProperty="Id"></FilterDropDown>
                 </FilterTemplate>
             </RadzenDataGridColumn>
-
+            <RadzenDataGridColumn TItem="AttachmentDTO" Title="@Localize["Visibility"]"  TextAlign="Radzen.TextAlign.Left">
+                <Template Context="item">
+                    @Localize[$"{item.Visibility.ToString()}"]
+                </Template>
+            </RadzenDataGridColumn>
             <RadzenDataGridColumn Context="item"
-                                  TItem="Attachment"
+                                  TItem="AttachmentDTO"
                                   Filterable="false"
                                   Sortable="false"
                                   TextAlign="Radzen.TextAlign.Center"
@@ -57,8 +61,8 @@ else
                 <Template Context="item">
                     <RedGButton RGButtonType="RGButtonType.Download" Click=@(() => Download(item.Id))></RedGButton>
                     <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
-                    <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
-                    <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item.Id))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Edit" Visible="@item.CanEdit" Click=@(() => Edit(item.Id))></RedGButton>
+                    <RedGButton RGButtonType="RGButtonType.Delete" Visible="@item.CanDelete" Click=@(() => Delete(item.Id))></RedGButton>
 
                 </Template>
             </RadzenDataGridColumn>

@@ -14,6 +14,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Console.WriteLine("RedirectToClient Initialized");
 
         var authenticationState = await StateAuthenticate;
 
@@ -35,7 +36,7 @@
          {
             if (Navigation.Uri != null && Navigation.Uri.Equals(Navigation.BaseUri))
 
-                Navigation.NavigateTo($"DashBoardClient");
+                Navigation.NavigateTo($"/DashBoardClient");
             else
             
                 Navigation.NavigateTo(nameof(NotAuthorized));

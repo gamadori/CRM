@@ -124,7 +124,7 @@ namespace CRM.Server.Services
             {
                 var settings = await _context.GlobalSettings.FirstOrDefaultAsync();
 
-                if (settings != null && await _permitsService.BelongsToMainCompany())
+                if (settings != null && await _permitsService.BelongsToHeadQuarter())
                 {
                     usersToAssign = await _userManager.Users.Where(x => x.IdCompany != null && idCompanies.Contains( x.IdCompany.Value)).Select(x=>x.ToUserModel()).ToListAsync();
                 }

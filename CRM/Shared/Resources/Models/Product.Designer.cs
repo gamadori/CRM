@@ -79,6 +79,15 @@ namespace CRM.Shared.Resources.Models {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Company.
+        /// </summary>
+        public static string IdCompany {
+            get {
+                return ResourceManager.GetString("IdCompany", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Product Type.
         /// </summary>
         public static string IdProductType {

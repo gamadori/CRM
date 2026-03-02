@@ -140,8 +140,9 @@ else
     {
         if (_partialView == PartialViews.Index)
         {
-            <CRM.Client.Pages.Companies.Index IdReseller="@Id" OnSelectCompany="DetailsCustomer" OnEditCompany="EditCustomer" OnRemoveCompany="RemoveCustomer" OnAddCustomer="AddCustomer" IdCompanyParent="@Id"></CRM.Client.Pages.Companies.Index>
+            <CRM.Client.Pages.Companies.Index IdReseller="@Id" PageMode="PageModality.Child" OnSelectCompany="DetailsCustomer" OnEditCompany="EditCustomer" OnRemoveCompany="RemoveCustomer" OnAddCustomer="AddCustomer" IdCompanyParent="@Id"></CRM.Client.Pages.Companies.Index>
         }
+        
        
     }
 

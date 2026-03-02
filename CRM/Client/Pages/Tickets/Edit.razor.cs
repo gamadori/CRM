@@ -3,6 +3,7 @@ using CRM.Client.Helpers;
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -34,7 +35,18 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         IAGRestClientService RestClientService { get; set; }
 
-        
+        [Inject]
+        ICompaniesService CompaniesService { get; set; }
+
+        [Inject]
+        IProductsService ProductsService { get; set; }
+
+        [Inject]
+        IArticlesService ArticlesService { get; set; }
+
+        [Inject]
+        IContactsService ContactsService { get; set; }
+
         [Inject]
         private ITicketTypesService _serviceTicketType { get; set; }
         
@@ -91,13 +103,15 @@ namespace CRM.Client.Pages.Tickets
 
         private Ticket _ticket = null;
 
-        private List<Company> _companies = new List<Company>();
+        private List<CompanyDTO> _companies = new List<CompanyDTO>();
 
         private List<ApplicationUser> _users = new List<ApplicationUser>();
 
-        private List<Product> _products = new List<Product>();
+        private List<ProductDTO> _products = new List<ProductDTO>();
 
-        private List<Article> _articles = new List<Article>();
+        private List<ArticleDTO> _articles = new List<ArticleDTO>();
+
+        private List<ContactDTO> _contactsCustomer = new List<ContactDTO>();
 
         private List<TicketType> _ticketTypes = new List<TicketType>();
 
@@ -108,11 +122,6 @@ namespace CRM.Client.Pages.Tickets
         private bool _lockArticle = false;
 
         private string _header;
-
-        private int _companyCount;
-        private int _articleCount;
-
-        private List<Contact> _contactsCustomer = new List<Contact>();
 
         private PropertyStates _dateTimeProperty;
         private PropertyStates _timeProperty;
@@ -255,9 +264,8 @@ namespace CRM.Client.Pages.Tickets
                 request.RagioneSociale = args.Filter;
             }
 
-            var response = await RestClientService.GetListPag<CompanyFilter, Company>(request, ConstHelper.CompaniesPath);
-            _companyCount = response.MetaData.TotalCount;
-            _companies = response.Items.ToList();
+            _companies = await CompaniesService.GetListAsync(request);
+            
         }
 
         private async Task LoadProject(LoadDataArgs args = null)
@@ -275,12 +283,9 @@ namespace CRM.Client.Pages.Tickets
         public async Task LoadProducts(LoadDataArgs args = null)
         {
             ProductFilter request = new ProductFilter();
-
            
-            request.PageSize = 0;
-            var response = await RestClientService.GetListPag<ProductFilter, Product>(request, ConstHelper.Products);  // await _serviceProducts.GetList(request);
+            _products = await ProductsService.GetListAsync(request);  // await _serviceProducts.GetList(request);
 
-            _products = response.Items.ToList();
             StateHasChanged();
 
         }
@@ -292,11 +297,10 @@ namespace CRM.Client.Pages.Tickets
             request.IdProduct = _ticket.IdProduct;
             request.IdCompany = _ticket.IdCompany;
 
-            var response = await RestClientService.GetListPag<ArticleFilter, Article>(request, ConstHelper.ArticlesPath);
+            var response = await ArticlesService.GetListAsync(request);
 
-            _articles = response?.Items?.ToList();
-            _articleCount = response?.MetaData?.TotalCount ?? 0;
-
+            _articles = response;
+            
             StateHasChanged();
         }
 
@@ -357,9 +361,9 @@ namespace CRM.Client.Pages.Tickets
 
 
             request.IdCompany = _ticket?.IdCompany;
-            var response = await RestClientService.GetListPag<ContactFilter, Contact>(request, ConstHelper.ContactsPath);
+            _contactsCustomer = await ContactsService.GetListAsync(request);
 
-            _contactsCustomer = response.Items.ToList();
+           
 
             StateHasChanged();
         }

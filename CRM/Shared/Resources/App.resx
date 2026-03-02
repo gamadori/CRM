@@ -679,4 +679,19 @@
   <data name="NewFolder" xml:space="preserve">
     <value>New Folder</value>
   </data>
+  <data name="VisibilityPrivate" xml:space="preserve">
+    <value>Private</value>
+  </data>
+  <data name="Public" xml:space="preserve">
+    <value>Public</value>
+  </data>
+  <data name="DeleteProduct" xml:space="preserve">
+    <value>Delete Product?</value>
+  </data>
+  <data name="DeleteCompany" xml:space="preserve">
+    <value>Delete Company?</value>
+  </data>
+  <data name="ArticlesList" xml:space="preserve">
+    <value>Articles List</value>
+  </data>
 </root>

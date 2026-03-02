@@ -32,7 +32,7 @@
                                 AllowPaging="true" 
                                 PageSize="@_productPageSize" 
                                 PagerHorizontalAlign="Radzen.HorizontalAlign.Center" 
-                                TItem="Product"
+                                TItem="ProductDTO"
                                 class="modern-grid">
                     <HeaderTemplate>
                         <div class="d-flex align-items-center gap-5">
@@ -48,8 +48,8 @@
 
                     <Columns>
                         
-                        <RadzenDataGridColumn TItem="Product" 
-                                            Property="@nameof(Product.Name)" 
+                        <RadzenDataGridColumn TItem="ProductDTO" 
+                                            Property="@nameof(ProductDTO.Name)" 
                                             Title="@Localize["Name"]"
                                             Width="250px">
                             <Template Context="item">
@@ -64,31 +64,31 @@
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="Product" 
-                                            Property="@nameof(Product.Description)" 
+                        <RadzenDataGridColumn TItem="ProductDTO" 
+                                            Property="@nameof(ProductDTO.Description)" 
                                             Title="@Localize["Description"]">
                             <Template Context="item">
                                 <span class="text-muted">@item.Description</span>
                             </Template>
                         </RadzenDataGridColumn>
 
-                        <RadzenDataGridColumn TItem="Product" 
-                                            Property="ProductType.Name" 
+                        <RadzenDataGridColumn TItem="ProductDTO" 
+                                            Property="@nameof(ProductDTO.ProductTypeName)" 
                                             Title="@Localize["ProductType"]"
                                             Width="180px">
                             <Template Context="item">
-                                @if (item.ProductType != null)
+                                @if (item.ProductTypeName != null)
                                 {
                                     <span class="badge bg-info bg-opacity-10 text-info px-3 py-2">
                                         <span class="material-icons me-1" style="font-size: 14px; vertical-align: middle;">@MaterialIcons.ProductType</span>
-                                        @item.ProductType.Name
+                                        @item.ProductTypeName
                                     </span>
                                 }
                             </Template>
                         </RadzenDataGridColumn>
 
                         <RadzenDataGridColumn Context="item" 
-                                            TItem="Product"  
+                                            TItem="ProductDTO"  
                                             Filterable="false" 
                                             Sortable="false" 
                                             TextAlign="Radzen.TextAlign.Center"

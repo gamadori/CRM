@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using CRM.Shared.Resources.Models;
 using System.Threading;
 using CRM.Client.Models;
+using CRM.Shared.DTOs;
 
 namespace CRM.Client.Pages.ProductsTypes
 {
@@ -36,7 +37,7 @@ namespace CRM.Client.Pages.ProductsTypes
 
         
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
+        IProductTypesService Service { get; set; }
 
         [Inject]
         DialogService DialogService { get; set; }
@@ -47,14 +48,14 @@ namespace CRM.Client.Pages.ProductsTypes
         [Inject]
         IHeaderService HeaderService { get; set; }
 
-        private IList<ProductType> _productTypes = null;
+        private IList<ProductTypeDTO> _productTypes = null;
 
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
         private ProductTypeFilter _filter = new ProductTypeFilter() { PageSize = 10, Skip = 0, Top = 10 };
 
-        private ProductType _productType;
+        private ProductTypeDTO _productType;
 
         private string _pagingSummaryFormat;
 
@@ -62,7 +63,7 @@ namespace CRM.Client.Pages.ProductsTypes
 
         private bool _isLoading = false;
 
-        private RadzenDataGrid<ProductType> grdItems;
+        private RadzenDataGrid<ProductTypeDTO> grdItems;
 
         private PageHeaderModel? _pageHeader = null;
 
@@ -91,7 +92,7 @@ namespace CRM.Client.Pages.ProductsTypes
             finally
             {
                 if (_productTypes == null)
-                    _productTypes = Enumerable.Empty<ProductType>().ToList();
+                    _productTypes = Enumerable.Empty<ProductTypeDTO>().ToList();
 
 
             }
@@ -106,9 +107,6 @@ namespace CRM.Client.Pages.ProductsTypes
         {
             try
             {
-
-
-
                 if (args != null)
                 {
                     _filter.Skip = args?.Skip;
@@ -119,7 +117,7 @@ namespace CRM.Client.Pages.ProductsTypes
 
                 }
 
-                PagingResponse<ProductType> pagingResponse = await RestClientService.Get<ProductType, ProductTypeFilter>(_filter, ConstHelper.ProductTypesPath); //await _serviceProductType.Get(_filter);
+                PagingResponse<ProductTypeDTO> pagingResponse = await Service.GetPagingAsync(_filter); //await _serviceProductType.Get(_filter);
 
                 if (pagingResponse != null)
                 {
@@ -128,7 +126,6 @@ namespace CRM.Client.Pages.ProductsTypes
                 }
                 else
                     NotificationService.Notify(NotificationSeverity.Error, Localize["Errore"], Localize["Errore durante il download dei dati"]);
-
 
 
             }
@@ -170,11 +167,11 @@ namespace CRM.Client.Pages.ProductsTypes
             NavigationManager.NavigateTo("/Settings/ProductsTypes/New");
         }
 
-        protected async Task Delete(ProductType item)
+        protected async Task Delete(ProductTypeDTO item)
         {
             if (await DialogService.Confirm($"{Localize["Eliminare il Tipo Prodotto:"]} {item.Name}") == true)
             {
-                await RestClientService.Delete<int>(item.Id, ConstHelper.ProductTypesPath);   // _serviceProductType.Delete(item.Id);
+                await Service.DeleteAsync(item.Id);   
 
                 await LoadData();
             }

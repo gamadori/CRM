@@ -31,7 +31,7 @@ namespace CRM.Client.Shared.Components
         private async Task OpenCompanies()
         {
             var id = await DialogService.OpenSideAsync<Pages.Companies.Index>(Localize["Seleziona la Ditta..."], new Dictionary<string, object>() { { "PageMode", PageHelper.PageModality.Dialog}, {"IdCompanyParent", IdCompanyParent },
-                    { "OnNewCompany", OpenNewCompany } },
+                    { "OnAddNewItem", OpenNewCompany } },
                 new SideDialogOptions {  Position = DialogPosition.Top, ShowMask = false, Height = "auto",  Style= "max-height: 90%;" });
 
             if (OnGetCompany.HasDelegate)

@@ -24,16 +24,20 @@ namespace CRM.Server.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IPermitsService _permitsService;
+        private readonly ILanguagesService _languagesService;
+
         public FoldersService(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
             IHttpContextAccessor httpContextAccessor,
-            IPermitsService permitsService)
+            IPermitsService permitsService,
+            ILanguagesService languagesService)
         {
             _context = context;
             _userManager = userManager;
             _httpContextAccessor = httpContextAccessor;
             _permitsService = permitsService;
+            _languagesService = languagesService;
         }
 
         public async Task<FolderDTO?> GetItemAsync(int id)
@@ -45,13 +49,16 @@ namespace CRM.Server.Services
             {
                 Id = item.Id,
                 Name = item.Name,
-                Description = item.Description  
+                Description = item.Description ,
+                
                 
             } : null;
         }
 
         public async Task<FolderDTO?> GetFirstAsync()
         {
+            var acceptLanguage = await _languagesService.GetCodeLanguage();
+
             var item = await _context.Folders
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
@@ -59,7 +66,8 @@ namespace CRM.Server.Services
             {
                 Id = item.Id,
                 Name = item.Name,
-                Description = item.Description
+                Description = item.Description,
+                Translate = item.FolderLanguages.Where(x => x.Language.LanguageCode == acceptLanguage).Select(x => x.Name).FirstOrDefault() ?? item.Name
             } : null;
         }
 
@@ -69,6 +77,7 @@ namespace CRM.Server.Services
         {
             try
             {
+                var acceptLanguage = await _languagesService.GetCodeLanguage();
                 var items = FilterItems(args);
 
                 if (items == null)
@@ -96,8 +105,9 @@ namespace CRM.Server.Services
                     {
                         Id = item.Id,
                         Name = item.Name,
-                        Description = item.Description
-                       
+                        Description = item.Description,
+                        Translate = item.FolderLanguages.Where(x => x.Language.LanguageCode == acceptLanguage).Select(x => x.Name).FirstOrDefault() ?? item.Name
+
                     }).ToListAsync(),
                        
                         
@@ -118,7 +128,7 @@ namespace CRM.Server.Services
         {
             try
             {
-
+                var acceptLanguage = await _languagesService.GetCodeLanguage();
                 var items = FilterItems(args);
 
                 if (items == null)
@@ -146,8 +156,9 @@ namespace CRM.Server.Services
                     {
                         Id = item.Id,
                         Name = item.Name        ,
-                        Description = item.Description
-                       
+                        Description = item.Description,
+                        Translate = item.FolderLanguages.Where(x => x.Language.LanguageCode == acceptLanguage).Select(x => x.Name).FirstOrDefault() ?? item.Name
+
                     }).ToListAsync(),
                     MetaData = paginationMetadata,
                     Total = "",
@@ -165,6 +176,7 @@ namespace CRM.Server.Services
         {
             try
             {
+                var acceptLanguage = await _languagesService.GetCodeLanguage();
                 var items = FilterItems(args);
 
                 if (items == null)
@@ -177,8 +189,10 @@ namespace CRM.Server.Services
                     Id = item.Id,
                     Name = item.Name,
                     Description = item.Description,
-                    
-                   
+                    Translate = item.FolderLanguages.Where(x => x.Language.LanguageCode == acceptLanguage).Select(x => x.Name).FirstOrDefault() ?? item.Name    
+
+
+
                 }).ToListAsync();
             }
             catch (Exception ex)
@@ -269,8 +283,20 @@ namespace CRM.Server.Services
                 else
                     items = items.OrderByDescending(x => x.Name);
 
-                
+                if (args?.Name != null)
+                {
+                    items = items.Where(x => x.Name.Contains(args.Name));
+                }
 
+                if (args?.Description != null)
+                {
+                    items = items.Where(x => x.Description.Contains(args.Description));
+                }
+                
+                if (args?.AttachmentType != null)
+                {
+                    items = items.Where(x => x.Attachments.Any(a => a.AttchmentType == args.AttachmentType));
+                }
                 if (args?.Filter != null && args.Filter.Any())
                 {
                     items = items.Where(args.Filter);

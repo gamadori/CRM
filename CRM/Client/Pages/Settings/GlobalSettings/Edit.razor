@@ -55,8 +55,8 @@ else
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
                                 <RadzenStack>
-                                    <RedGDropDown TValue="int" @bind-Value="@_settings.IdHeadQuarter" For="@(() => _settings.IdHeadQuarter)" TItem="Company" 
-                                        TextProperty="@nameof(Company.RagioneSociale)" ValueProperty="@nameof(Company.Id)" Data="_companies"/>
+                                    <RedGDropDown TValue="int" @bind-Value="@_settings.IdHeadQuarter" For="@(() => _settings.IdHeadQuarter)" TItem="CompanyDTO" 
+                                        TextProperty="@nameof(CompanyDTO.RagioneSociale)" ValueProperty="@nameof(CompanyDTO.Id)" Data="_companies"/>
                                 </RadzenStack>
                             </RadzenStack>
                         </RadzenColumn>

@@ -23,19 +23,24 @@ namespace CRM.Shared.DTOs
 
         public int? FolderId { get; set; }
 
+        public AttachmentVisibilities Visibility { get; set; }
+
         public DateTime? CreatedOn { get; set; }
+
 
         public string IdUser { get; set; }
 
-        [NotMapped]
+       
         public bool CanEdit { get; set; }
 
-        [NotMapped]
+       
         public bool CanDelete { get; set; }
 
         public string? NameUser { get; set; }
 
 
         public string Folder { get; set; }
+
+        public  List<AttachmentFileDTO> Files { get; set; }
     }
 }

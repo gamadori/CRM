@@ -4,6 +4,7 @@ using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Client.Shared;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -25,21 +26,15 @@ namespace CRM.Client.Pages.Products
     [Authorize]
     public partial class Index: ComponentBase
     {
-        [Inject]
-        private HttpClient Http { get; set; }
-
-        [Inject]
+       [Inject]
         private NavigationManager NavigationManager { get; set; }
 
         //[Inject]
         //private IBaseRestService<Product, ProductFilter, int> _service { get; set; }
 
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
-
-        [Inject] 
-        private IJSRuntime JSRuntime { get; set; }
-
+        IProductsService Service { get; set; }
+         
         [Inject]
         private INavMenuService navMenuService { get; set; }
 
@@ -80,7 +75,7 @@ namespace CRM.Client.Pages.Products
         [Parameter]
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
-        private IQueryable<Product> _products = null;
+        private List<ProductDTO> _products = null;
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
@@ -96,7 +91,7 @@ namespace CRM.Client.Pages.Products
 
         private bool _isLoading = false;
 
-        private RadzenDataGrid<Product> grdProducts;
+        private RadzenDataGrid<ProductDTO> grdProducts;
 
         private int _productPageSize = 10;
 
@@ -145,9 +140,9 @@ namespace CRM.Client.Pages.Products
 
                 _filter.PageSize = _productPageSize;
 
-                var pagingResponse = await RestClientService.Get<Product, ProductFilter>(_filter, ConstHelper.Products);    // _service.Get(_filter);
+                var pagingResponse = await Service.GetPagingAsync(_filter);    // _service.Get(_filter);
 
-                _products = pagingResponse.Items.AsQueryable();
+                _products = pagingResponse.Items.ToList();
                 _paging = pagingResponse.MetaData;
 
             }
@@ -159,7 +154,7 @@ namespace CRM.Client.Pages.Products
             finally
             {
                 if (_products == null)
-                    _products = Enumerable.Empty<Product>().AsQueryable();
+                    _products = new List<ProductDTO>();
                 _isLoading = false;
 
                 await InvokeAsync(StateHasChanged);
@@ -198,7 +193,7 @@ namespace CRM.Client.Pages.Products
                 NavigationManager.NavigateTo("/Products/New");
         }
 
-        protected async Task Delete(Product item)
+        protected async Task Delete(ProductDTO item)
         {
 
          
@@ -209,9 +204,9 @@ namespace CRM.Client.Pages.Products
                     OnClickDelete(item.Id);
                 else
                 {
-                    if (await DialogService.Confirm($"{Localize["Eliminare il prodotto"]} {item.Name}" ) == true)
+                    if (await DialogService.Confirm($"{Localize["DeleteProduct"]} {item.Name}" ) == true)
                     {
-                        await RestClientService.Delete<int>(item.Id, ConstHelper.Products); // _service.Delete(item.Id);
+                        await Service.DeleteAsync(item.Id); // _service.Delete(item.Id);
 
 
                         await LoadData();

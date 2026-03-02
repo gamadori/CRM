@@ -4,6 +4,7 @@ using CRM.Client.Pages.Projects;
 using CRM.Client.Services;
 using CRM.Client.Shared;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
@@ -45,8 +46,8 @@ namespace CRM.Client.Pages.Products
         //private IBaseRestService<Product, ProductFilter, int> service { get; set; }
 
         [Inject]
-        IAGRestClientService RestClientService { get; set; }
-        
+        IProductsService ProductsService { get; set; }
+
         [Inject]
         private IJSRuntime JSRuntime { get; set; }
 
@@ -76,7 +77,7 @@ namespace CRM.Client.Pages.Products
 
         private int _idChild;
 
-        private Product _product = null;
+        private ProductDTO _product = null;
 
         private bool _fromDetails = false;
 
@@ -92,7 +93,7 @@ namespace CRM.Client.Pages.Products
         protected override async Task OnInitializedAsync()
         {
             InitializeViewOptions();
-            await LoadProductType();
+            await LoadProduct();
 
             //_pageHeader = HeaderService.Create("Products", Id, _product?.Name, false, ConstHelper.ClientProductsPath, null);
             _pageHeader = await HeaderService.Create(PageMode);
@@ -104,17 +105,16 @@ namespace CRM.Client.Pages.Products
             {
                 new ViewOption<GroupViews> { Text = Localize["Data Product"], Value = GroupViews.ProductType },
                 new ViewOption<GroupViews> { Text = Localize["Attachments"], Value = GroupViews.Attachments },
-                new ViewOption<GroupViews> { Text = Localize["Accessories"], Value = GroupViews.ProductAccessories },
-                new ViewOption<GroupViews> { Text = Localize["Parameters"], Value = GroupViews.Parameters },
-                new ViewOption<GroupViews> { Text = Localize["Sotto Parti"], Value = GroupViews.ProductTypeChilds }
+                //new ViewOption<GroupViews> { Text = Localize["Accessories"], Value = GroupViews.ProductAccessories },
+                //new ViewOption<GroupViews> { Text = Localize["Parameters"], Value = GroupViews.Parameters },
+                //new ViewOption<GroupViews> { Text = Localize["Sotto Parti"], Value = GroupViews.ProductTypeChilds }
             };
         }
 
         
-        private async Task LoadProductType()
+        private async Task LoadProduct()
         {
-            _product = await RestClientService.GetItem<Product, int>(Id, ConstHelper.Products); // service.Get(Id);
-
+            _product = await ProductsService.GetItemAsync(Id); // service.Get(Id);
           
         }
         private void EditCommand()
@@ -139,7 +139,7 @@ namespace CRM.Client.Pages.Products
         {
             _selectView = GroupViews.ProductType;
             _partialView = PartialViews.Details;
-            await LoadProductType();
+            await LoadProduct();
             StateHasChanged();
         }
         private void EditChild(int id)
@@ -212,14 +212,14 @@ namespace CRM.Client.Pages.Products
 
             await _parentChildService.Delete(new ProductParentChildModel() {IdParent  = Id, IdChild = idChild });
             dialogService.Close();
-            await LoadProductType();
+            await LoadProduct();
             StateHasChanged();
         }
 
         protected async Task OnClickClose(dynamic result)
         {
             //dialogService.Close();
-            await LoadProductType();
+            await LoadProduct();
             StateHasChanged();
         }
 

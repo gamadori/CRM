@@ -646,4 +646,19 @@
   <data name="NewFolder" xml:space="preserve">
     <value>Nueva carpeta</value>
   </data>
+  <data name="VisibilityPrivate" xml:space="preserve">
+    <value>Privado</value>
+  </data>
+  <data name="Public" xml:space="preserve">
+    <value>Público</value>
+  </data>
+  <data name="DeleteProduct" xml:space="preserve">
+    <value>¿Eliminar producto?</value>
+  </data>
+  <data name="DeleteCompany" xml:space="preserve">
+    <value>¿Eliminar empresa?</value>
+  </data>
+  <data name="ArticlesList" xml:space="preserve">
+    <value>Lista de artículos</value>
+  </data>
 </root>

@@ -59,7 +59,7 @@
                         <DisplayName For="@(() => _ticket.IdArticle)" />
                     </dt>
                     <dd class="col-sm-9">
-                        <span>@_article.NameComplete</span>
+                        <span>@_article.CompleteName</span>
                     </dd>
                 }
             }
@@ -202,7 +202,7 @@
                                             Data="@_companies" Count="@_companies.Count()" TextProperty="RagioneSociale" ValueProperty="Id" />*@
 
                     <RadzenDropDownDataGrid class="form-control" @bind-value="@_ticket.IdCompany" TValue="int"  AllowFiltering="true" ShowPagingSummary=true 
-                        AllowClear="true" PageSize="@_pageSize" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LoadData="LoadCompany"
+                        AllowClear="true" PageSize="@_pageSize" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LoadData="LoadCompanies"
                         Data="@_companies" Count="@_companyCount" TextProperty="RagioneSociale" ValueProperty="Id"  Change="(arg => OnChangeCompany(arg))"/>
 
                     <DisplayName For="@(() => _ticket.IdCompany)" />

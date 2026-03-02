@@ -661,4 +661,19 @@
   <data name="NewFolder" xml:space="preserve">
     <value>Nouveau dossier</value>
   </data>
+  <data name="VisibilityPrivate" xml:space="preserve">
+    <value>Privé</value>
+  </data>
+  <data name="Public" xml:space="preserve">
+    <value>Public</value>
+  </data>
+  <data name="DeleteProduct" xml:space="preserve">
+    <value>Supprimer le produit?</value>
+  </data>
+  <data name="DeleteCompany" xml:space="preserve">
+    <value>Supprimer l'entreprise ?</value>
+  </data>
+  <data name="ArticlesList" xml:space="preserve">
+    <value>Liste d'articles</value>
+  </data>
 </root>

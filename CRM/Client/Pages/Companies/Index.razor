@@ -20,7 +20,7 @@
 
     <RadzenDataGrid @ref="grdCompanies" IsLoading="@_isLoading" Count="@_paging.TotalCount" Responsive=true Data="@_companies" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode=@_filterMode
                     AllowSorting="true" AllowFiltering="true" AllowPaging="true"
-                    PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Company">
+                    PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="CompanyDTO">
         <HeaderTemplate>
             <div class="d-flex align-items-center gap-5">
                 @if (_user != null && _user.CompanyPermits.Insert())
@@ -44,21 +44,21 @@
         </HeaderTemplate>
 
         <Columns>
-            <RadzenDataGridColumn Context="item" TItem="Company" Title="@Localize["BusinessName"]" Property="@nameof(Company.RagioneSociale)" FilterProperty="RagioneSociale">
+            <RadzenDataGridColumn Context="item" TItem="CompanyDTO" Title="@Localize["BusinessName"]" Property="@nameof(CompanyDTO.RagioneSociale)" FilterProperty="RagioneSociale">
                 <Template>
                        <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OnClickName(item?.Id)">@item?.RagioneSociale</a>
                 </Template>
             </RadzenDataGridColumn>
        
-            <RadzenDataGridColumn TItem="Company" Property="@nameof(Company.PIva)" Title="@Localize["VAT"]" />
-            <RadzenDataGridColumn TItem="Company" Property="@nameof(Company.Telefono)" Title="@Localize["Phone"]" />
-            <RadzenDataGridColumn TItem="Company" Property="@nameof(Company.Citta)" Title="@Localize["City"]" />
-            <RadzenDataGridColumn TItem="Company" Property="@nameof(Company.Stato)" Title="@Localize["Country"]" />
+            <RadzenDataGridColumn TItem="CompanyDTO" Property="@nameof(CompanyDTO.PIva)" Title="@Localize["VAT"]" />
+            <RadzenDataGridColumn TItem="CompanyDTO" Property="@nameof(CompanyDTO.Telefono)" Title="@Localize["Phone"]" />
+            <RadzenDataGridColumn TItem="CompanyDTO" Property="@nameof(CompanyDTO.Citta)" Title="@Localize["City"]" />
+            <RadzenDataGridColumn TItem="CompanyDTO" Property="@nameof(CompanyDTO.Stato)" Title="@Localize["Country"]" />
 
 
             @if (PageMode == PageHelper.PageModality.Visualization)
             {
-                <RadzenDataGridColumn Context="item" TItem="Company"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                <RadzenDataGridColumn Context="item" TItem="CompanyDTO"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
                     <Template Context="item">
                     
                         <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>

@@ -38,6 +38,7 @@
         <RadzenDataGridColumn TItem="LogEvent" Property="@nameof(LogEvent.Module)" Title=@TranslateHelper.GetDisplayName(nameof(LogEvent.Module), typeof(LogEvent)) />
 
         <RadzenDataGridColumn TItem="LogEvent" Property="@nameof(LogEvent.Subroutine)" Title=@TranslateHelper.GetDisplayName(nameof(LogEvent.Subroutine), typeof(LogEvent)) />
+
         <RadzenDataGridColumn TItem="LogEvent" Property="@nameof(LogEvent.Subroutine)" Title=@TranslateHelper.GetDisplayName(nameof(LogEvent.EventType), typeof(LogEvent))>
             <Template Context="data">
                 @Localize[$"EventType.{data.EventType}"]

@@ -601,6 +601,9 @@ namespace CRM.Server.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int?>("FolderId")
+                        .HasColumnType("int");
+
                     b.Property<int>("IdParent")
                         .HasColumnType("int");
 
@@ -613,7 +616,12 @@ namespace CRM.Server.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("Visibility")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("FolderId");
 
                     b.HasIndex("IdUser");
 
@@ -1355,6 +1363,9 @@ namespace CRM.Server.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("IdCompany")
+                        .HasColumnType("int");
+
                     b.Property<int?>("IdProductType")
                         .HasColumnType("int");
 
@@ -1375,6 +1386,8 @@ namespace CRM.Server.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IdCompany");
 
                     b.HasIndex("IdProductType");
 
@@ -2899,11 +2912,17 @@ namespace CRM.Server.Migrations
 
             modelBuilder.Entity("CRM.Shared.Attachment", b =>
                 {
+                    b.HasOne("CRM.Shared.Folder", "Folder")
+                        .WithMany("Attachments")
+                        .HasForeignKey("FolderId");
+
                     b.HasOne("CRM.Shared.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("IdUser")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Folder");
 
                     b.Navigation("User");
                 });
@@ -3027,7 +3046,7 @@ namespace CRM.Server.Migrations
             modelBuilder.Entity("CRM.Shared.FolderLanguage", b =>
                 {
                     b.HasOne("CRM.Shared.Folder", "Folder")
-                        .WithMany()
+                        .WithMany("FolderLanguages")
                         .HasForeignKey("FolderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -3064,9 +3083,15 @@ namespace CRM.Server.Migrations
 
             modelBuilder.Entity("CRM.Shared.Product", b =>
                 {
+                    b.HasOne("CRM.Shared.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("IdCompany");
+
                     b.HasOne("CRM.Shared.ProductType", "ProductType")
                         .WithMany()
                         .HasForeignKey("IdProductType");
+
+                    b.Navigation("Company");
 
                     b.Navigation("ProductType");
                 });
@@ -3547,6 +3572,13 @@ namespace CRM.Server.Migrations
             modelBuilder.Entity("CRM.Shared.ContractType", b =>
                 {
                     b.Navigation("TicketTypes");
+                });
+
+            modelBuilder.Entity("CRM.Shared.Folder", b =>
+                {
+                    b.Navigation("Attachments");
+
+                    b.Navigation("FolderLanguages");
                 });
 
             modelBuilder.Entity("CRM.Shared.InterventionType", b =>

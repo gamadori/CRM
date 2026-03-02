@@ -16,7 +16,7 @@
 
     <RadzenDataGrid @ref="grdContacts" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_contacts" Responsive=true LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="@_filterMode"
                     AllowSorting="true" AllowFiltering="true" AllowPaging="true"
-                    PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="Contact" PagingSummaryFormat="@pagingSummaryFormat">
+                    PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="ContactDTO" PagingSummaryFormat="@pagingSummaryFormat">
         <HeaderTemplate>
             <div class="d-flex align-items-center gap-5">
                 <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
@@ -29,21 +29,21 @@
 
         </HeaderTemplate>
         <Columns>
-            <RadzenDataGridColumn Context="item" TItem="Contact" Property="@nameof(Contact.Surname)" Title=@TranslateHelper.GetDisplayName(nameof(Contact.NameComplete), typeof(Contact)) FilterProperty="Surname">
+            <RadzenDataGridColumn Context="item" Property="@nameof(ContactDTO.NameComplete)" TItem="ContactDTO"  Title=@TranslateHelper.GetDisplayName(nameof(ContactDTO.NameComplete), typeof(ContactDTO)) FilterProperty="Surname">
                 <Template>
-                    <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OnClickName(item.Id)">@item.NameComplete</a>
+                    <a href="#" class="link-primary" @onclick:preventDefault @onclick="async () => await OnClickName(item.Id)">@item.NameComplete</a>
                 </Template>
             </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="Contact" Property="Company.RagioneSociale" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.IdCompany), typeof(Contact)) />
-            <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Mobile)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Mobile), typeof(Contact)) />
-            <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Phone)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Phone), typeof(Contact)) />
-            <RadzenDataGridColumn TItem="Contact" Property="@nameof(Contact.Email)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(Contact.Email), typeof(Contact)) />
+            <RadzenDataGridColumn TItem="ContactDTO" Property="@nameof(ContactDTO.CompanyName)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(ContactDTO.IdCompany), typeof(ContactDTO)) />
+            <RadzenDataGridColumn TItem="ContactDTO" Property="@nameof(ContactDTO.Mobile)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(ContactDTO.Mobile), typeof(ContactDTO)) />
+            <RadzenDataGridColumn TItem="ContactDTO" Property="@nameof(ContactDTO.Phone)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(ContactDTO.Phone), typeof(ContactDTO)) />
+            <RadzenDataGridColumn TItem="ContactDTO" Property="@nameof(ContactDTO.Email)" Filterable="true" Title=@TranslateHelper.GetDisplayName(nameof(ContactDTO.Email), typeof(ContactDTO)) />
 
            
 
             @if (PageMode != PageHelper.PageModality.Dialog)
             {
-                <RadzenDataGridColumn Context="item" TItem="Contact"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                <RadzenDataGridColumn Context="item" TItem="ContactDTO"  Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
                     <Template Context="item">
                         <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
                         <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
