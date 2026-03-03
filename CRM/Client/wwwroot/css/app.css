@@ -1288,3 +1288,38 @@ body.dark-theme .logo {
 .rating-stars .star-empty {
     color: #d1d5db;
 }
+/* Override per evitare overflow dei combobox mese/anno nel RadzenDatePicker */
+.rz-calendar .rz-calendar-header {
+    display: flex !important;
+    gap: 0.4rem !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 0.25rem !important;
+    box-sizing: border-box !important;
+}
+
+    .rz-calendar .rz-dropdown,
+    .rz-calendar .rz-calendar-header select,
+    .rz-calendar .rz-calendar-header .rz-dropdown {
+        width: auto !important;
+        min-width: 64px !important;
+        max-width: 140px !important;
+        box-sizing: border-box !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        flex: 0 0 auto !important;
+    }
+
+        .rz-calendar .rz-dropdown .rz-dropdown-label {
+            display: block !important;
+            max-width: 100% !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+.rz-calendar .rz-dropdown-panel {
+    max-width: 260px !important;
+    box-sizing: border-box !important;
+}

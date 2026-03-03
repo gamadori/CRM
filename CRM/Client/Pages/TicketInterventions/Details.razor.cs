@@ -162,8 +162,8 @@ namespace CRM.Client.Pages.TicketInterventions
                 _isLoadingUsers = true;
                 StateHasChanged();
 
-                var userIds = await _httpClient.GetFromJsonAsync<List<string>>($"api/TicketInterventionUsers/intervention/{Id}/assigned-users");
-                
+                var userIds = await _httpClient.GetFromJsonAsync<List<string>>($"api/TicketInterventionUsers/intervention/{Id}/assigned-users"); 
+
                 if (userIds != null && userIds.Any())
                 {
                     // Carica i dettagli degli utenti

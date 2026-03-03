@@ -12,7 +12,7 @@ namespace CRM.Client.Validators
         public TicketInterventionValidator()
         {
            
-            RuleFor(x => x.EndDateTime).GreaterThan(x => x.StartDateTime).WithMessage("La Data di Fine deve essere maggiore della data iniziale");
+            //RuleFor(x => x.EndDateTime).GreaterThan(x => x.StartDateTime).WithMessage("La Data di Fine deve essere maggiore della data iniziale");
            
 
         }

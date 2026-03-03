@@ -105,9 +105,9 @@ namespace CRM.Client.Pages.TicketInterventions
         private void GoToDetails()
         {
             if (_ticketIntervention != null)
-                NavigationManager.NavigateTo($"Tickets/{_ticketIntervention.IdTicket}/intervention/{Id}");
+                NavigationManager.NavigateTo($"Tickets/{_ticketIntervention.IdTicket}/interventions/{Id}");
             else
-                NavigationManager.NavigateTo($"/TicketsIntervention/{Id}");
+                NavigationManager.NavigateTo($"/TicketsInterventions/{Id}");
         }
 
         private async Task ReportUploadDialog()

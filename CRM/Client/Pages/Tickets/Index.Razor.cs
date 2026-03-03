@@ -324,7 +324,12 @@ namespace CRM.Client.Pages.Tickets
             if (OnClickEdit != null)
                 OnClickEdit(id);
             else
-                NavigationManager.NavigateTo($"/Tickets/{id}/Edit/{TypeSearch}-{IdUser}");
+            {
+                if (TypeSearch != (int)TicketTypeSearch.All && IdUser != null)
+                    NavigationManager.NavigateTo($"/Tickets/{id}/Edit/{TypeSearch}-{IdUser}");
+                else 
+                    NavigationManager.NavigateTo($"/Tickets/{id}/Edit");
+            }
         }
 
         protected async Task Delete(int? id)

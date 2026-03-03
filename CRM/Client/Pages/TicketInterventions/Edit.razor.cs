@@ -30,9 +30,7 @@ namespace CRM.Client.Pages.TicketInterventions
         [Inject]
         private IBaseRestService<TicketIntervention, TicketInterventionFilter, int> _service { get; set; }
 
-        [Inject]
-        private ITicketService _ticketService { get; set; }
-
+       
         [Inject]
         private IBaseRestService<ApplicationUser, UsersFilterModel, string> _userService { get; set; }
 
@@ -50,6 +48,9 @@ namespace CRM.Client.Pages.TicketInterventions
 
         [Inject]
         ITicketService TicketService { get; set; }
+
+        [Inject]
+        IInterventionTypesService InterventionTypesService { get; set; }
 
         [Inject]
         ITicketInterventionUsersService InterventionUsersService { get; set; }
@@ -70,17 +71,29 @@ namespace CRM.Client.Pages.TicketInterventions
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         private TicketIntervention _ticketIntervention = new TicketIntervention();
+
         private List<Article> _products = new List<Article>();
+        
         private List<TicketType> _ticketTypes = new List<TicketType>();
-        private List<InterventionType> _interventionTypes;
+        
+        private List<InterventionTypeDTO> _interventionTypes;
+        
         private List<ApplicationUser> _users = new List<ApplicationUser>();
+        
         private List<ApplicationUser> _ticketAssignedUsers = new List<ApplicationUser>();
+        
         private HashSet<string> _selectedUserIds = new HashSet<string>();
+        
         private Ticket _ticket;
+        
         private string _header;
+        
         private List<TicketInterventionTimeModel> _interventionTimes = new List<TicketInterventionTimeModel>();
+        
         private SignaturePad _signaturePad;
+        
         private bool _signatureLoaded = false;
+        
         private bool _isReceiptSectionExpanded = false;
        
         protected override async Task OnInitializedAsync()
@@ -96,7 +109,7 @@ namespace CRM.Client.Pages.TicketInterventions
                     _ticketIntervention = await _service.Get(Id.Value);
                     await LoadInterventionAssignedUsers();
                     IdTicket = _ticketIntervention.IdTicket;
-                    _ticket = await _ticketService.Get(IdTicket);
+                    _ticket = await TicketService.Get(IdTicket);
                     StateHasChanged();
                 }
                 else
@@ -106,7 +119,7 @@ namespace CRM.Client.Pages.TicketInterventions
                         StartDateTime = DateTime.Now, 
                         EndDateTime = DateTime.Now
                     };
-                    _ticket = await _ticketService.Get(IdTicket);
+                    _ticket = await TicketService.Get(IdTicket);
                     _ticketIntervention.IdTicket = IdTicket;
 
                     if (!string.IsNullOrEmpty(_ticket.IdUserAssigned))
@@ -254,7 +267,7 @@ namespace CRM.Client.Pages.TicketInterventions
                     if (OnClickSave != null)
                         OnClickSave();
                     else
-                        NavigationManager.NavigateTo("/TicketsIntervention/Index");
+                        NavigationManager.NavigateTo("/TicketsInterventions/Index");
                 }
                 else
                 {
@@ -366,7 +379,8 @@ namespace CRM.Client.Pages.TicketInterventions
 
         protected async Task GetTicketTypes()
         {
-            _interventionTypes = await _httpClient.GetFromJsonAsync<List<InterventionType>>(ConstHelper.InterventionTypesPath);
+            _interventionTypes = await InterventionTypesService.GetListAsync(null);
+            
         }
 
         protected void Annulla()

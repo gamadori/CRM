@@ -67,7 +67,9 @@ else
                    <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="4">
                             <RadzenStack>
-                                    <RedGDateTimePicker  @bind-Value="_ticketIntervention.StartDateTime" DateFormat="g" Change="@ValueStartDateTimeChangeHandler" For="@(() => _ticketIntervention.StartDateTime)" />
+                               
+
+                                    <RedGDateTimePicker  @bind-Value="_ticketIntervention.StartDateTime" DateFormat="d"  For="@(() => _ticketIntervention.StartDateTime)" />
                             </RadzenStack>
                         </RadzenColumn>
                     </RadzenRow>
@@ -96,7 +98,7 @@ else
                     <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
-                                <RedGDropDown Multiple=true TItem="InterventionType" TValue="List<int>" ValueProperty="Id" TextProperty="Name"
+                                <RedGDropDown Multiple=true TItem="InterventionTypeDTO" TValue="List<int>" ValueProperty="Id" TextProperty="Name"
                                               @bind-Value="@_ticketIntervention.InterventionsTypesId" For="@(() => _ticketIntervention.InterventionsTypesId)"
                                               Data=@_interventionTypes AllowFiltering="true" />
                             </RadzenStack>
