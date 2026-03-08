@@ -33,7 +33,10 @@ namespace CRM.Client.Pages.Products
         IProductsService Service { get; set; }
 
         [Inject]
-        IProductTypesService ServiceProductType { get; set; }   
+        IProductTypesService ServiceProductType { get; set; }
+
+        [Inject]
+        ICompaniesService ServiceCompanies { get; set; }
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
@@ -60,6 +63,8 @@ namespace CRM.Client.Pages.Products
 
         private List<ProductTypeDTO> _productTypes;
 
+        private List<CompanyDTO> _companies;
+
         private string _messageState = "";
 
         private PageHeaderModel? _pageHeader = null;
@@ -70,22 +75,12 @@ namespace CRM.Client.Pages.Products
             {
 
                 await GetProductTypes();
+                await GetCompanies();
 
                 if (Id != null)
                 {
-
-
-                    var dto = await Service.GetItemAsync(Id.Value); // await RestClientService.GetItem<Product, int>(Id.Value, ConstHelper.Products); // await Service.Get(Id.Value);
-                    if (dto != null)
-                    {
-                        _product = new Product()
-                        {
-                            Id = dto.Id,
-                            Name = dto.Name,
-                            Description = dto.Description,
-                            IdProductType = dto.IdProductType
-                        };
-                    }
+                    var dto = (await Service.GetItemAsync(Id.Value));
+                    _product = dto?.ToEntity();
                 }
                 else
                 {
@@ -93,7 +88,7 @@ namespace CRM.Client.Pages.Products
                     _product = new Product();
                 }
 
-                //_pageHeader = HeaderService.Create("Products", Id, _product?.Name, true, ConstHelper.ClientProductsPath, null, PageMode);
+                
                 _pageHeader = await HeaderService.Create(PageMode);
             }
             catch (Exception ex)
@@ -107,9 +102,9 @@ namespace CRM.Client.Pages.Products
             _messageState = "";
             try
             {
-                var resp = await Service.PostAsync(_product); // await RestClientService.Post<Product>(ConstHelper.Products, _product);
+                var resp = await Service.PostAsync(_product); 
 
-                if (resp.State) // ==  await Service.Post(_product) !=null)
+                if (resp.State) 
                 {
                     if (OnClickSave != null)
                         OnClickSave();
@@ -139,6 +134,13 @@ namespace CRM.Client.Pages.Products
             _productTypes = await ServiceProductType.GetListAsync(new ProductTypeFilter()); 
 
         }
+
+        private async Task GetCompanies()
+        {
+            //_companies = await RestClientService.GetList<CompanyDTO>(ConstHelper.Companies);
+            _companies = await ServiceCompanies.GetListAsync(null);
+        }
+
         void Change(string value, string name)
         {
 

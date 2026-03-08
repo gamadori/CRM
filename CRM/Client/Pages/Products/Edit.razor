@@ -44,6 +44,14 @@ else
                         </RadzenColumn>
                     </RadzenRow>
                     <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RedGDropDown TItem="CompanyDTO" TValue="int?" ValueProperty="Id" TextProperty="RagioneSociale" @bind-Value="@_product.IdCompany" For="@(() => _product.IdCompany)"
+                                              Data="_companies" AllowFiltering="true" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
                         <RadzenColumn Size="8">
                             <RadzenStack>
                                 <RedGNumeric T="decimal" Format="c" @bind-Value="@_product.Price" For="@(() => _product.Price)" />
@@ -53,7 +61,7 @@ else
                 </RadzenStack>
             </RadzenColumn>
         </RadzenRow>
-        <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" />
+        <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" AutoLabel="true" />
         <RedGButton RGButtonType="RGButtonType.Submit" AutoLabel=true  />
     </EditForm>
 

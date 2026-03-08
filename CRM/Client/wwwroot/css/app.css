@@ -1323,3 +1323,12 @@ body.dark-theme .logo {
     max-width: 260px !important;
     box-sizing: border-box !important;
 }
+
+/* Company Tree Node */
+.company-tree-node:hover {
+    background-color: #f8f9fa;
+}
+
+body.dark-theme .company-tree-node:hover {
+    background-color: var(--hover-bg);
+}

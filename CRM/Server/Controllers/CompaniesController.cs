@@ -197,14 +197,25 @@ namespace CRM.Server.Controllers
             var logo = await _companiesService.GetLogo(idCompany);
             if (logo == null)
             {
-                return NotFound();
+                return Ok("");
             }
             else
                 return Ok(logo);
         }
 
-
-
-
+        [HttpGet("tree")]
+        public async Task<ActionResult<List<CompanyTreeNodeDTO>>> GetTree([FromQuery] int? idCompany = null)
+        {
+            try
+            {
+                var tree = await _companiesService.GetTreeAsync(idCompany);
+                return Ok(tree);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(CompaniesController), nameof(GetTree), LogEvent.EventsTypes.Error, ex);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
     }
 }

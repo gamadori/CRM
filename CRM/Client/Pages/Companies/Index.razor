@@ -1,5 +1,4 @@
-﻿
-@page "/Companies"
+﻿@page "/Companies"
 @page "/Companies/Index"
 
 @using BlazoringComponents.DropDownButton
@@ -33,6 +32,12 @@
                     {
                         <BtnCompanies OnGetCompany="OnGetCustomer" IdCompanyParent="@IdCompanyParent" Text=@Localize["Add Customer"]></BtnCompanies>
                     }
+                }
+                @if (IdReseller == null)
+                {
+                    <RadzenButton Icon="account_tree" ButtonStyle="Radzen.ButtonStyle.Light" Size="Radzen.ButtonSize.Small"
+                                  Click="@(() => NavigationManager.NavigateTo("/Companies/Tree"))"
+                                  title="@Localize["Struttura Aziende"]" />
                 }
                 <RedGTextBox @bind-Value="@_search" Label="@Localize["search..."]" @oninput="@(args => FilterChanged(args?.Value?.ToString()))" Style="width: 300px; margin-left: 10px;">
                     <End>

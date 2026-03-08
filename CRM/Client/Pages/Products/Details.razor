@@ -25,6 +25,15 @@ else
                 <LabelContent><DisplayName For="@(() => _product.IdProductType)" /></LabelContent>
                 <ChildContent><p class="mb-0 text-dark">@_product.ProductTypeName</p></ChildContent>
             </RedGDetailField>
+            <RedGDetailField Icon="description" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _product.Description)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_product.Description</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="business" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _product.CompanyName)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_product.CompanyName</p></ChildContent>
+            </RedGDetailField>
 
             <RedGDetailField Icon="euro" ContainerClass="mb-4">
                 <LabelContent><DisplayName For="@(() => _product.Price)" /></LabelContent>

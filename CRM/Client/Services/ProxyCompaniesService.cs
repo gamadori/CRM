@@ -75,10 +75,26 @@ namespace CRM.Client.Services
 
         public async Task<string> GetLogo(int id)
         {
-            var logo = await _http.GetFromJsonAsync<string>($"{ConstHelper.CompaniesPath}/logo/{id}");
+            var logo = await _http.GetStringAsync($"{ConstHelper.CompaniesPath}/logo/{id}");
 
             return logo;
 
+        }
+
+        public async Task<List<CompanyTreeNodeDTO>> GetTreeAsync(int? idCompany = null)
+        {
+            try
+            {
+                var url = idCompany.HasValue
+                    ? $"{ConstHelper.CompaniesPath}/tree?idCompany={idCompany.Value}"
+                    : $"{ConstHelper.CompaniesPath}/tree";
+                var tree = await _http.GetFromJsonAsync<List<CompanyTreeNodeDTO>>(url);
+                return tree ?? new List<CompanyTreeNodeDTO>();
+            }
+            catch
+            {
+                return new List<CompanyTreeNodeDTO>();
+            }
         }
     }
 }

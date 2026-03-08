@@ -57,6 +57,24 @@ namespace CRM.Server.Controllers
                 return null;
             }
         }
+        [HttpGet("{id}")]
+        public async Task<ActionResult<ArticleDTO?>> GetItem(int id)
+        {
+            try
+            {
+                var item = await _articlesService.GetItemAsync(id);
+                if (item == null)
+                {
+                    return NotFound();
+                }
+                return Ok(item);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(ArticlesController), nameof(GetItem), LogEvent.EventsTypes.Error, ex);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
         [HttpGet("list")]
         public async Task<IEnumerable<ArticleDTO>?> GetItems([FromQuery] ArticleFilter? args = null)
         {

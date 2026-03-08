@@ -6,7 +6,7 @@ namespace CRM.Shared.Constants
         public const string ProductType = "schema";
         public const string Catalogo = "category";
         public const string Article = "inventory";
-
+        public const string Company = "business";
         public const string Edit = "edit";
         public const string Delete = "delete";
         public const string Add = "add";

@@ -1,0 +1,56 @@
+@page "/Companies/Tree"
+@page "/Companies/Tree/{IdCompany:int}"
+@using CRM.Shared
+@using CRM.Shared.DTOs
+
+@if (!_isDialog)
+{
+    <PageHeader Model="@_pageHeader"></PageHeader>
+}
+
+@if (_isLoading)
+{
+    <Waiting></Waiting>
+}
+else if (_tree == null || !_tree.Any())
+{
+    <div class="alert alert-info">
+        <i class="material-icons align-middle me-1">info</i>
+        @Localize["Nessuna azienda trovata"]
+    </div>
+}
+else
+{
+    @if (!_isDialog)
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="mb-0">
+                    <i class="material-icons align-middle me-2">account_tree</i>
+                    @Localize["Struttura Aziende"]
+                </h5>
+            </div>
+            <div class="card-body p-3">
+                @foreach (var node in _tree)
+                {
+                    <CompanyTreeNode Node="node" OnNavigate="NavigateToCompany" />
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="p-2">
+            @foreach (var node in _tree)
+            {
+                <CompanyTreeNode Node="node" OnNavigate="NavigateToCompany" />
+            }
+        </div>
+    }
+
+    <div class="mt-3 d-flex gap-3 flex-wrap p-2">
+        <span class="badge bg-primary p-2"><i class="material-icons" style="font-size:14px; vertical-align:middle;">domain</i> @LocalizeCompanyTypes[CompanyTypes.HeadCompany.ToString()]</span>
+        <span class="badge bg-success p-2"><i class="material-icons" style="font-size:14px; vertical-align:middle;">store</i> @LocalizeCompanyTypes[CompanyTypes.Reseller.ToString()]</span>
+        <span class="badge bg-secondary p-2"><i class="material-icons" style="font-size:14px; vertical-align:middle;">business</i> @LocalizeCompanyTypes[CompanyTypes.Customer.ToString()]</span>
+    </div>
+}

@@ -7,14 +7,6 @@ using Contact = CRM.Shared.Contact;
 
 namespace CRM.Client.Services
 {
-    //public interface ICompaniesService: IAGRestClientService
-    //{
-    //    Task<bool> AddCustomer(CustomerModel item);
-
-    //    Task<bool> RemoveCustomer(CustomerModel item);
-
-    //    Task<Company?> GetCompany();
-    //}
     public interface ICompaniesService : IDataService<Company, CompanyDTO, int, CompanyFilter, object>
     {
         Task<bool> AddCustomer(CustomerModel item);
@@ -26,6 +18,7 @@ namespace CRM.Client.Services
         Task<CompanyDTO?> GetUserCompany();
 
         Task<string?> GetLogo(int idCompany);
-    }
 
+        Task<List<CompanyTreeNodeDTO>> GetTreeAsync(int? idCompany = null);
+    }
 }

@@ -1,5 +1,5 @@
 ﻿@page "/Companies/{Id:int}/Details"
-
+@using Radzen
 
 <PageHeader PageMode="@PageMode">
 </PageHeader>
@@ -149,6 +149,12 @@ else
                         <RedGButton RGButtonType="RGButtonType.Edit" Click="EditCompany" AutoLabel=true ></RedGButton>
                     </Authorized>
                 </AuthorizeView>
+                @if (_hasChildren)
+                {
+                    <RadzenButton Icon="account_tree" ButtonStyle="Radzen.ButtonStyle.Info" Size="Radzen.ButtonSize.Small"
+                                  Text="@Localize["Struttura Aziende"]"
+                                  Click="OpenTreeDialog" />
+                }
             </div>
         </div>
     </div>

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
+using Radzen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,6 +39,9 @@ namespace CRM.Client.Pages.Companies
         [Inject]
         IHeaderService HeaderService { get; set; }
 
+        [Inject]
+        DialogService DialogService { get; set; }
+
         [Parameter]
         public int? Id { get; set; }
 
@@ -61,6 +65,9 @@ namespace CRM.Client.Pages.Companies
         private PageHeaderModel? _pageHeader = null;
 
         private string? _logo = null;
+
+        private bool _hasChildren = false;
+
         protected override async Task OnInitializedAsync()
         {
             string path;
@@ -71,8 +78,6 @@ namespace CRM.Client.Pages.Companies
 
                 if (Id != null)
                 {
-                   
-
                     if (Company != null)
                         _company = Company;
                     else
@@ -82,6 +87,7 @@ namespace CRM.Client.Pages.Companies
                     _company = new CompanyDTO();
 
                 await GetLogo();
+                await CheckHasChildren();
                
                 _pageHeader = await HeaderService.Create(PageMode);
                
@@ -95,6 +101,34 @@ namespace CRM.Client.Pages.Companies
         private async Task GetLogo()
         {
             _logo = await Service.GetLogo(Id.Value);
+        }
+
+        private async Task CheckHasChildren()
+        {
+            if (Id != null && _company != null &&
+                (_company.CompanyType == CompanyTypes.HeadCompany || _company.CompanyType == CompanyTypes.Reseller))
+            {
+                var tree = await Service.GetTreeAsync(Id.Value);
+                _hasChildren = tree != null && tree.Any(n => n.Children.Any());
+            }
+        }
+
+        private async Task OpenTreeDialog()
+        {
+            await DialogService.OpenSideAsync<CompanyTree>(
+                $"{Localize["Struttura Aziende"]} - {_company?.RagioneSociale}",
+                new Dictionary<string, object>
+                {
+                    { "IdCompany", Id },
+                    { "IsDialog", true }
+                },
+                new SideDialogOptions
+                {
+                    Position = DialogPosition.Top,
+                    ShowMask = true,
+                    Height = "auto",
+                    Style = "max-height: 90%;"
+                });
         }
 
         protected void EditCompany()
@@ -112,11 +146,8 @@ namespace CRM.Client.Pages.Companies
                 NavigationManager.NavigateTo("/Companies/Index");
         }
 
-       
         protected void SendInvitation()
         {
-
         }
-
     }
 }

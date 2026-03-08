@@ -20,7 +20,7 @@ else
             <Items>
                 <RadzenSelectBarItem Text="@Localize["Data Product"]" Value="ProductViews.Product" />
                 <RadzenSelectBarItem Text="@Localize["Documenti Macchina"]" Value="ProductViews.Attachments" />
-                <RadzenSelectBarItem Text="@($"{Localize["Documenti"]} {_article.Product?.Name}")" Value="ProductViews.ProductAttachments" />
+                <RadzenSelectBarItem Text="@($"{Localize["Documenti"]} {_article.ProductName}")" Value="ProductViews.ProductAttachments" />
                 <RadzenSelectBarItem Text="@Localize["Tickets"]" Value="ProductViews.Ticket" />
                 @* <RadzenSelectBarItem Text="@Localize["Backups"]" Value="ProductViews.Backups" /> *@
             </Items>

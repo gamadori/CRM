@@ -292,7 +292,182 @@ namespace CRM.Server.Services
         public async Task<string?> GetLogo(int idCompany)
         {
             var company = await _context.Companies.FindAsync(idCompany);
-            return company?.Logo;
+            return company?.Logo ?? "";
+        }
+
+        public async Task<List<CompanyTreeNodeDTO>> GetTreeAsync(int? idCompany = null)
+        {
+            try
+            {
+                var user = await _permitsService.GetUser();
+                if (user == null || user.IdCompany == null)
+                    return new List<CompanyTreeNodeDTO>();
+
+                var userCompany = await _context.Companies.FindAsync(user.IdCompany);
+                if (userCompany == null)
+                    return new List<CompanyTreeNodeDTO>();
+
+                var companyType = await _permitsService.CompanyType();
+
+                // Determina la ditta radice da visualizzare
+                int rootCompanyId;
+
+                if (idCompany.HasValue)
+                {
+                    // Verifica che l'utente possa accedere all'albero della ditta richiesta
+                    if (!await CanViewTree(idCompany.Value, user.IdCompany.Value, companyType))
+                        return new List<CompanyTreeNodeDTO>();
+
+                    rootCompanyId = idCompany.Value;
+                }
+                else
+                {
+                    // Nessun parametro: usa la ditta dell'utente
+                    rootCompanyId = user.IdCompany.Value;
+                }
+
+                var rootCompany = await _context.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.Id == rootCompanyId);
+                if (rootCompany == null)
+                    return new List<CompanyTreeNodeDTO>();
+
+                // Carica le aziende in base al tipo della ditta radice
+                List<Company> allCompanies;
+
+                if (rootCompany.CompanyType == CompanyTypes.HeadCompany)
+                {
+                    allCompanies = await _context.Companies.AsNoTracking().OrderBy(x => x.RagioneSociale).ToListAsync();
+                }
+                else if (rootCompany.CompanyType == CompanyTypes.Reseller)
+                {
+                    allCompanies = await _context.Companies.AsNoTracking()
+                        .Where(x => x.Id == rootCompanyId || x.IdReseller == rootCompanyId)
+                        .OrderBy(x => x.RagioneSociale).ToListAsync();
+                }
+                else
+                {
+                    // Customer: mostra solo se stesso
+                    allCompanies = await _context.Companies.AsNoTracking()
+                        .Where(x => x.Id == rootCompanyId)
+                        .OrderBy(x => x.RagioneSociale).ToListAsync();
+                }
+
+                return BuildTree(allCompanies, rootCompany.CompanyType, rootCompanyId);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(CompaniesService), nameof(GetTreeAsync), EventsTypes.Error, ex);
+                return new List<CompanyTreeNodeDTO>();
+            }
+        }
+
+        /// <summary>
+        /// Verifica se l'utente può visualizzare l'albero della ditta richiesta.
+        /// - HeadCompany: può vedere qualsiasi albero
+        /// - Reseller: può vedere il proprio albero o quello di un suo cliente
+        /// - Customer: può vedere solo il proprio albero
+        /// </summary>
+        private async Task<bool> CanViewTree(int requestedCompanyId, int userCompanyId, CompanyTypes? userCompanyType)
+        {
+            // Stessa ditta: sempre consentito
+            if (requestedCompanyId == userCompanyId)
+                return true;
+
+            switch (userCompanyType)
+            {
+                case CompanyTypes.HeadCompany:
+                    return true;
+
+                case CompanyTypes.Reseller:
+                    // Il Reseller può vedere l'albero di un suo cliente
+                    var customer = await _context.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.Id == requestedCompanyId);
+                    return customer != null && customer.IdReseller == userCompanyId;
+
+                case CompanyTypes.Customer:
+                default:
+                    return false;
+            }
+        }
+
+        private List<CompanyTreeNodeDTO> BuildTree(List<Company> companies, CompanyTypes? viewerType, int? viewerCompanyId)
+        {
+            var lookup = companies.ToDictionary(c => c.Id);
+            var roots = new List<CompanyTreeNodeDTO>();
+
+            if (viewerType == CompanyTypes.HeadCompany)
+            {
+                // HeadCompany vede tutto: root = HeadCompany, sotto i Reseller, sotto i Customer
+                var headCompanies = companies.Where(c => c.CompanyType == CompanyTypes.HeadCompany).ToList();
+                var resellers = companies.Where(c => c.CompanyType == CompanyTypes.Reseller).ToList();
+                var customers = companies.Where(c => c.CompanyType == CompanyTypes.Customer).ToList();
+
+                foreach (var hc in headCompanies)
+                {
+                    var node = ToTreeNode(hc);
+
+                    // Aggiungi rivenditori come figli della HeadCompany
+                    foreach (var reseller in resellers)
+                    {
+                        var resellerNode = ToTreeNode(reseller);
+
+                        // Aggiungi clienti del rivenditore
+                        foreach (var customer in customers.Where(c => c.IdReseller == reseller.Id))
+                        {
+                            resellerNode.Children.Add(ToTreeNode(customer));
+                        }
+
+                        node.Children.Add(resellerNode);
+                    }
+
+                    // Clienti senza rivenditore (assegnati direttamente alla HeadCompany o senza reseller)
+                    foreach (var customer in customers.Where(c => c.IdReseller == null || (!resellers.Any(r => r.Id == c.IdReseller))))
+                    {
+                        node.Children.Add(ToTreeNode(customer));
+                    }
+
+                    roots.Add(node);
+                }
+
+                // Se non ci sono HeadCompany, mostra tutto flat
+                if (!headCompanies.Any())
+                {
+                    foreach (var c in companies)
+                        roots.Add(ToTreeNode(c));
+                }
+            }
+            else if (viewerType == CompanyTypes.Reseller)
+            {
+                // Reseller vede se stesso come root con i suoi clienti
+                var reseller = companies.FirstOrDefault(c => c.Id == viewerCompanyId);
+                if (reseller != null)
+                {
+                    var node = ToTreeNode(reseller);
+                    foreach (var customer in companies.Where(c => c.IdReseller == reseller.Id))
+                    {
+                        node.Children.Add(ToTreeNode(customer));
+                    }
+                    roots.Add(node);
+                }
+            }
+            else
+            {
+                // Customer vede solo se stesso
+                foreach (var c in companies)
+                    roots.Add(ToTreeNode(c));
+            }
+
+            return roots;
+        }
+
+        private static CompanyTreeNodeDTO ToTreeNode(Company c)
+        {
+            return new CompanyTreeNodeDTO
+            {
+                Id = c.Id,
+                RagioneSociale = c.RagioneSociale,
+                CompanyType = c.CompanyType,
+                Citta = c.Citta,
+                Email = c.Email
+            };
         }
 
         private async Task<IQueryable<Company>?> FilterItems(CompanyFilter? args = null)

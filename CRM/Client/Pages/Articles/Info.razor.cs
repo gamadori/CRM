@@ -3,6 +3,7 @@ using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Client.Shared;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using System;
@@ -37,11 +38,10 @@ namespace CRM.Client.Pages.Articles
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
-        [Inject]        
-        IAGRestClientService RestClientService { get; set; }
+        
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IArticlesService Service { get; set; }
 
         [Inject]
         NavigationManager NavigationManager { get; set; }
@@ -68,7 +68,7 @@ namespace CRM.Client.Pages.Articles
 
         private int? _idAttachment;
 
-        private Article _article = null;
+        private ArticleDTO _article = null;
 
         private bool _fromDetails = false;
 
@@ -97,9 +97,9 @@ namespace CRM.Client.Pages.Articles
         {
             //_product = await _service.Get(Id);
 
-            var model = await RestClientService.GetItem<Article, int>(Id, ConstHelper.ArticlesPath); 
+            _article = await Service.GetItemAsync(Id);
 
-            _article = model;
+            
 
             //_pageHeader = HeaderService.Create("Articles", Id, _article?.SerialNumber, false, ConstHelper.ClientArticlesPath, null);
             _pageHeader = await HeaderService.Create();

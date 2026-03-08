@@ -44,6 +44,7 @@ namespace CRM.Server.Services
         {
             var item = await _context.Products
                 .Include(x => x.ProductType)
+                .Include(x => x.Company)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
             return item.ToDTO();
@@ -55,6 +56,7 @@ namespace CRM.Server.Services
 
             var item = await _context.Products
                 .Include(x => x.ProductType)
+                .Include(x => x.Company)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
             return item.ToDTO();
@@ -232,7 +234,7 @@ namespace CRM.Server.Services
         {
             try
             {
-                var items = _context.Products.Include(x=>x.ProductType).AsQueryable();
+                var items = _context.Products.Include(x=>x.ProductType).Include(x=>x.Company).AsQueryable();
 
                 if (args?.OrderBy != null && args.OrderBy.Length > 0)
                 {

@@ -1,0 +1,65 @@
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<CRM.Shared.Resources.Enums.CompanyTypes> LocalizeCompanyTypes
+
+<div class="mb-1">
+    <div class="d-flex align-items-center gap-2 p-2 rounded company-tree-node"
+         style="cursor: pointer;"
+         @onclick="() => OnNavigate.InvokeAsync(Node.Id)">
+        @if (Node.Children.Any())
+        {
+            <i class="material-icons text-muted" style="font-size: 18px;" @onclick:stopPropagation @onclick="ToggleExpand">
+                @(_expanded ? "expand_more" : "chevron_right")
+            </i>
+        }
+        else
+        {
+            <span style="width: 18px; display: inline-block;"></span>
+        }
+        <i class="material-icons" style="font-size: 20px;">@GetIcon(Node.CompanyType)</i>
+        <span class="fw-semibold">@Node.RagioneSociale</span>
+        <span class="badge @GetBadgeClass(Node.CompanyType)" style="font-size: 0.7rem;">@LocalizeCompanyTypes[Node.CompanyType.ToString()]</span>
+        @if (!string.IsNullOrEmpty(Node.Citta))
+        {
+            <small class="text-muted ms-1">— @Node.Citta</small>
+        }
+    </div>
+    @if (_expanded && Node.Children.Any())
+    {
+        <div style="margin-left: 28px; border-left: 2px solid #e0e0e0; padding-left: 8px;">
+            @foreach (var child in Node.Children)
+            {
+                <CompanyTreeNode Node="child" OnNavigate="OnNavigate" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public CompanyTreeNodeDTO Node { get; set; }
+    [Parameter] public EventCallback<int> OnNavigate { get; set; }
+
+    private bool _expanded = true;
+
+    private void ToggleExpand()
+    {
+        _expanded = !_expanded;
+    }
+
+    private static string GetIcon(CompanyTypes type) => type switch
+    {
+        CompanyTypes.HeadCompany => "domain",
+        CompanyTypes.Reseller => "store",
+        CompanyTypes.Customer => "business",
+        _ => "business"
+    };
+
+    private static string GetBadgeClass(CompanyTypes type) => type switch
+    {
+        CompanyTypes.HeadCompany => "bg-primary",
+        CompanyTypes.Reseller => "bg-success",
+        CompanyTypes.Customer => "bg-secondary",
+        _ => "bg-secondary"
+    };
+}

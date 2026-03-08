@@ -86,7 +86,11 @@
                                 }
                             </Template>
                         </RadzenDataGridColumn>
-
+                        <RadzenDataGridColumn TItem="ProductDTO"
+                                              Property="@nameof(ProductDTO.CompanyName)"
+                                              Title="@Localize["Company"]">
+                           
+                        </RadzenDataGridColumn>
                         <RadzenDataGridColumn Context="item" 
                                             TItem="ProductDTO"  
                                             Filterable="false" 
