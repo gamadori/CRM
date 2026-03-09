@@ -49,7 +49,7 @@ else
         }
         else if (_partialView == PartialViews.Edit)
         {
-            <CRM.Client.Pages.Settings.Users.Edit Id="@_idUser" PageMode=PageModality.Child CloseForm="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Settings.Users.Edit>
+            <CRM.Client.Pages.Settings.Users.Edit Id="@_idUser" PageMode=PageModality.Child OnCancel="UsersCloseForm" IdCompany="@Id"></CRM.Client.Pages.Settings.Users.Edit>
         }
         else if (_partialView == PartialViews.New)
         {

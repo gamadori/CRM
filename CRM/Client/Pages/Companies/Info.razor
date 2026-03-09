@@ -118,7 +118,7 @@ else
         }
         else if (_partialView == PartialViews.Edit)
         {
-            <CRM.Client.Pages.Contacts.Edit Id="@_idContact" IdCompany="@Id" OnClickSave="ContactCloseForm" OnClickCancel="ContactCloseForm" PageMode="PageModality.Child"></CRM.Client.Pages.Contacts.Edit>
+            <CRM.Client.Pages.Contacts.Edit Id="@_idContact" IdCompany="@Id" OnSaving="ContactCloseForm" OnCancel="ContactCloseForm" PageMode="PageModality.Child"></CRM.Client.Pages.Contacts.Edit>
         }
     }
     else if (_selectView == CompanyViews.Contracts)

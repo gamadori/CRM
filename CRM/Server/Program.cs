@@ -109,7 +109,7 @@ builder.Services.AddScoped<SignInManager<ApplicationUser>, ApplicationSignInMana
 
 builder.Services.AddScoped<ILangSelectorService, LangSelectorService>();
 
-builder.Services.AddScoped<ITicketsService, TicketsService>();
+builder.Services.AddScoped<CRM.Server.Services.ITicketsService, TicketsService>();
 
 builder.Services.AddScoped<TranslateService>();
 

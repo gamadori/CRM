@@ -74,6 +74,14 @@ namespace CRM.Shared
         ForAFee
     }
 
+    public enum RequesterType
+    {
+        [Display(Name = "Contatto")]
+        Contact,
+        [Display(Name = "Utente")]
+        User
+    }
+
     public class Ticket
     {
         public Ticket()

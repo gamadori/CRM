@@ -1,6 +1,7 @@
 ﻿using BlazoringComponents.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using CRM.Shared.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
@@ -17,7 +18,7 @@ namespace CRM.Client.Pages.Tickets
     public partial class Search: ComponentBase
     {
         [Inject]
-        ITicketService Service { get; set; }
+        ITicketsService Service { get; set; }
 
         [Inject]
         DialogService DialogService { get; set; }
@@ -27,7 +28,7 @@ namespace CRM.Client.Pages.Tickets
 
         private TicketFilter _ticketFilter = new TicketFilter();
 
-        private PagingResponse<TicketModel> _tickets = null;
+        private PagingResponse<TicketDTO> _tickets = null;
 
         private SemanticSearchRequest _searchRequest = new SemanticSearchRequest
         {

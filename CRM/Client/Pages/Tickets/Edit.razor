@@ -38,25 +38,48 @@ else
                             </RadzenStack>
                         </RadzenColumn>
 
+                       
+                    </RadzenRow>
+                    <RadzenRow>
                         @if (_ticket?.IdCompany != null && _ticket.IdCompany > 0)
                         {
                             <RadzenColumn Size="12" SizeSM="6">
                                 <RadzenStack>
-                                    <RedGDropDownGrid TItem="ContactDTO" @bind-value="@_ticket.IdContact" TValue="int?" AllowFiltering="true" AllowClear="true"
-                                                                    Data="@_contactsCustomer" Count="@_contactsCustomer.Count" TextProperty="@nameof(ContactDTO.NameComplete)"
-                                                            For="@(() => _ticket.IdContact)" ValueProperty ="Id">
+                                    @if (_requesterType == RequesterType.Contact)
+                                    {
+                                        <RedGDropDownGrid TItem="ContactDTO" @bind-value="@_ticket.IdContact" TValue="int?" AllowFiltering="true" AllowClear="true"
+                                                          Data="@_contactsCustomer" Count="@_contactsCustomer.Count" TextProperty="@nameof(ContactDTO.NameComplete)"
+                                                          For="@(() => _ticket.IdContact)" ValueProperty="Id" Label="@Localize["Richiedente"]">
                                             <ChildColumns>
-                                               
                                                 <RadzenDropDownDataGridColumn Property="@nameof(ContactDTO.Surname)" Title="@Localize[nameof(ContactDTO.Surname)]" Width="auto" />
                                                 <RadzenDropDownDataGridColumn Property="@nameof(ContactDTO.Name)" Title="@Localize[nameof(ContactDTO.Name)]" Width="auto" />
                                             </ChildColumns>
-                                    </RedGDropDownGrid>
-                                  
+                                            <End>
+                                                <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetContact DialogType="RedGDialog.DialogType.Contacts" IdParent=@_ticket?.IdCompany></RedGButtonDialog>
+
+                                                <RadzenButton  Variant="Variant.Text" Icon="swap_horiz" 
+                                                              Click="@(() => OnRequesterTypeChanged(RequesterType.User))"
+                                                              title="@Localize["Passa a Utente"]" />
+                                            </End>
+                                        </RedGDropDownGrid>
+                                    }
+                                    else
+                                    {
+                                        <RedGDropDown TItem="ApplicationUser" TValue="string" ValueProperty="Id" TextProperty="@nameof(ApplicationUser.NameComplete)"
+                                                      @bind-Value="@_ticket.IdUserCustomer" For="@(() => _ticket.IdUserCustomer)"
+                                                      Data="@_usersCustomer" AllowFiltering="true" Label="@Localize["Richiedente"]">
+                                            <End>
+                                                <RedGButtonDialog  DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetUser DialogType="RedGDialog.DialogType.Users" IdParent=@_ticket?.IdCompany></RedGButtonDialog>
+                                                <RadzenButton  Variant="Variant.Text" Icon="swap_horiz" 
+                                                              Click="@(() => OnRequesterTypeChanged(RequesterType.Contact))"
+                                                              title="@Localize["Passa a Contatto"]" />
+                                            </End>
+                                        </RedGDropDown>
+                                    }
                                 </RadzenStack>
                             </RadzenColumn>
                         }
                     </RadzenRow>
-
                     <!-- Ticket Type -->
                     <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="6">

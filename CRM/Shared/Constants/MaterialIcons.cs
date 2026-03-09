@@ -13,6 +13,10 @@ namespace CRM.Shared.Constants
         public const string Search = "search";
         public const string Home = "home";
         public const string Settings = "settings";
-   
+        public const string User = "person";
+        public const string Users = "group";
+        public const string Contacts = "contacts";
+        public const string Save = "save";
+        public const string Cancel = "cancel";          
     }
 }

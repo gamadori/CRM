@@ -18,7 +18,7 @@
 
     <RadzenDataGrid @ref="grdTickets" IsLoading="@_isLoading" Count="@_numRecords" Responsive="@_isResponsable" Data="@_ticketView?.Items" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
                 AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowColumnResize=true 
-                    PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="TicketModel" EmptyText="Nessun Ticket" CellRender="@CellRender" CellClick="@OnCellClick" >
+                    PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="TicketDTO" EmptyText="Nessun Ticket" CellRender="@CellRender" CellClick="@OnCellClick" >
         
         <HeaderTemplate>
             <div class="d-flex align-items-center gap-5">
@@ -43,33 +43,33 @@
             </div>
         </HeaderTemplate>
         <Columns>
-            <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Id)"  FormatString="{0:000000}" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Id), typeof(Ticket))" />
-             <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Date)"  FormatString="{0:d}" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Date), typeof(Ticket))" />
- 
+            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Id)" FormatString="{0:000000}" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Id), typeof(Ticket))" />
+            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Date)" FormatString="{0:d}" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Date), typeof(Ticket))" />
 
-            <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Company)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdCompany), typeof(Ticket))" Type="typeof(string)" 
-                FilterProperty="Company.RagioneSociale" SortProperty="Company.RagioneSociale"   />
 
-           
-            <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Product)"  Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdProduct), typeof(Ticket))" Type="typeof(string)"
+            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Company)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdCompany), typeof(Ticket))" Type="typeof(string)"
+                                  FilterProperty="Company.RagioneSociale" SortProperty="Company.RagioneSociale"   />
+
+
+            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Product)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdProduct), typeof(Ticket))" Type="typeof(string)"
             FilterProperty="Product.Name" />
 
 
-            <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Article)"  Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdArticle), typeof(Ticket))" Type="typeof(string)"
+            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Article)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdArticle), typeof(Ticket))" Type="typeof(string)"
             FilterProperty="Article.SerialNumber" />
 
-            <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.IdUserAssigned)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdUserAssigned), typeof(Ticket))" FilterProperty="@nameof(TicketModel.IdUserAssigned)" FilterValue="@_userFilter" FilterOperator="FilterOperator.Equals">
+            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.IdUserAssigned)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdUserAssigned), typeof(Ticket))" FilterProperty="@nameof(TicketDTO.IdUserAssigned)" FilterValue="@_userFilter" FilterOperator="FilterOperator.Equals">
                 <Template Context="item">
                     <UserData IdUser="@item.IdUserAssigned"></UserData>
                 </Template>
                 <FilterTemplate>
 
-                    <FilterDropDown Items="@_users" TItem="ApplicationUser" TValue="string" @bind-Value=@_userFilter  UniqueID="@grdTickets.UniqueID" Property=@nameof(TicketModel.IdUserAssigned) TextProperty="@nameof(ApplicationUser.NameComplete)"
+                    <FilterDropDown Items="@_users" TItem="ApplicationUser" TValue="string" @bind-Value=@_userFilter  UniqueID="@grdTickets.UniqueID" Property=@nameof(TicketDTO.IdUserAssigned) TextProperty="@nameof(ApplicationUser.NameComplete)"
                     ValueProperty="Id"></FilterDropDown>
                 </FilterTemplate>
             </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn Context="item" TItem="TicketModel" Property="@nameof(TicketModel.State)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdState), typeof(Ticket))" Filterable="true" Sortable="true" TextAlign="Radzen.TextAlign.Center">
+            <RadzenDataGridColumn Context="item" TItem="TicketDTO" Property="@nameof(TicketDTO.State)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdState), typeof(Ticket))" Filterable="true" Sortable="true" TextAlign="Radzen.TextAlign.Center">
                 <Template Context="item">
                     @Localize[item.State ?? eTicketStates.Created.ToString()]
                 </Template>
@@ -77,12 +77,12 @@
             </RadzenDataGridColumn>
             @if (_user != null && _user.IsAdmin)
             {
-                <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Invoiced)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Invoiced), typeof(Ticket))" Type="typeof(bool)" />
+                <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Invoiced)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Invoiced), typeof(Ticket))" Type="typeof(bool)" />
             }
             @* <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
-                <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Invoiced)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Invoiced), typeof(Ticket))" Type="typeof(string)" />
+                <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Invoiced)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Invoiced), typeof(Ticket))" Type="typeof(string)" />
             </AuthorizeView> *@
-            <RadzenDataGridColumn TItem="TicketModel" Context="item" Title="@TranslateHelper.GetDisplayName(nameof(TicketModel.MinuteWorkFormatted), typeof(TicketModel))">
+            <RadzenDataGridColumn TItem="TicketDTO" Context="item" Title="@TranslateHelper.GetDisplayName(nameof(TicketDTO.MinuteWorkFormatted), typeof(TicketDTO))">
                 <Template>
                 <span>@DateTimeHelper.MinuteFormat(item?.MinuteWork)</span>
                 </Template>
@@ -91,9 +91,9 @@
                 </FooterTemplate>
             </RadzenDataGridColumn>
 
-               
-            
-            <RadzenDataGridColumn Context="item" TItem="TicketModel" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.JustifyAll">
+
+
+            <RadzenDataGridColumn Context="item" TItem="TicketDTO" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.JustifyAll">
                 <Template Context="item">
                    
                     

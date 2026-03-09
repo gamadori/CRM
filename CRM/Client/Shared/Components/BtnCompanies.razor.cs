@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Radzen;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -45,7 +46,7 @@ namespace CRM.Client.Shared.Components
             DialogService.CloseSide();
 
             var id = await DialogService.OpenSideAsync<Pages.Companies.Edit>(Localize["Nuova Ditta"], new Dictionary<string, object>() { { "PageMode", PageHelper.PageModality.Dialog },
-                { "OnClickCancel", CompanyOnClickCancel } },
+                { "OnClickCancel", (Action)CompanyOnClickCancel } },
                 new SideDialogOptions { Position = DialogPosition.Top, ShowMask = false, Height = "auto", Style = "max-height: 90%;" });
 
             if (OnGetCompany.HasDelegate)

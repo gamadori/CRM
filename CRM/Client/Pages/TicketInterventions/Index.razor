@@ -45,7 +45,7 @@
             </FilterTemplate>
             
         </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="TicketIntervention" Context="item" Title="@TranslateHelper.GetDisplayName(nameof(TicketModel.MinuteWorkFormatted), typeof(TicketModel))" Filterable=false>
+            <RadzenDataGridColumn TItem="TicketIntervention" Context="item" Title="@TranslateHelper.GetDisplayName(nameof(TicketDTO.MinuteWorkFormatted), typeof(TicketDTO))" Filterable=false>
             <Template>
                 <span>@DateTimeHelper.MinuteFormat(item.Minute)</span>
             </Template>

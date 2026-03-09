@@ -40,11 +40,11 @@ namespace CRM.Server.Controllers
         private readonly ILogEventService _logEventService;
         private readonly IEmailSenderPlus _emailSenderPlus;
         private readonly TelegramCommandsService _telegramService;
-        private readonly ITicketsService _ticketsService;
+        private readonly Services.ITicketsService _ticketsService;
         private readonly IDocxToPdfConverter _docxToPdfConverter;
         private readonly IAttachmentsService _service;
         public AttachmentsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IPermitsService permitsService, IArchiveService archiveService, ILogEventService logEventService, 
-            IEmailSenderPlus emailSenderPlus, TelegramCommandsService telegramService, ITicketsService ticketsService, IDocxToPdfConverter docxToPdfConverter, IAttachmentsService service)
+            IEmailSenderPlus emailSenderPlus, TelegramCommandsService telegramService, Services.ITicketsService ticketsService, IDocxToPdfConverter docxToPdfConverter, IAttachmentsService service)
         {
             _context = context;
             _userManager = userManager;

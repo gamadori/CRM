@@ -13,6 +13,7 @@ using NuGet.Common;
 using System.Globalization;
 using CRM.Server.Services;
 using CRM.Server.Controllers;
+using CRM.Shared.DTOs;
 
 namespace CRM.Server.Pages.Reports
 {
@@ -26,7 +27,7 @@ namespace CRM.Server.Pages.Reports
             
         }
 
-        public TicketModel Ticket { get; set; } = default!; 
+        public TicketDTO Ticket { get; set; } = default!; 
 
         public int IdLanguage { get; set; }
 
@@ -73,11 +74,11 @@ namespace CRM.Server.Pages.Reports
             return s;
         }
 
-        private async Task<TicketModel?> GetTicket(int id)
+        private async Task<TicketDTO?> GetTicket(int id)
         {
             var tickets = _context.Tickets.Where(x => x.Id == id).Include(x => x.UserOpened).AsQueryable();
         
-            var ticketModel = await tickets.Select(x => new TicketModel()
+            var ticketModel = await tickets.Select(x => new TicketDTO()
             {
                 Id = x.Id,
                 Date = x.Date,

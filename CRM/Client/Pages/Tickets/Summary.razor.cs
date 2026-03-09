@@ -9,13 +9,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using static CRM.Client.Helpers.PageHelper;
+using CRM.Shared.DTOs;
 
 namespace CRM.Client.Pages.Tickets
 {
     public partial class Summary: ComponentBase
     {
         [Inject]
-        ITicketService TicketService { get; set; }
+        ITicketsService TicketService { get; set; }
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
@@ -30,7 +31,7 @@ namespace CRM.Client.Pages.Tickets
         [Parameter]
         public int Id { get; set; }
 
-        private TicketModel _ticket = null;
+        private TicketDTO _ticket = null;
 
 
         protected override async Task OnInitializedAsync()

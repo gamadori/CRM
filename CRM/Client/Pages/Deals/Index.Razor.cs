@@ -1,6 +1,7 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -173,14 +174,14 @@ namespace CRM.Client.Pages.Deals
             
         }
 
-        private async Task<PagingResponse<TicketModel>> Decode(HttpResponseMessage resp)
+        private async Task<PagingResponse<TicketDTO>> Decode(HttpResponseMessage resp)
         {
             if (resp.IsSuccessStatusCode)
             {
                 var content = await resp.Content.ReadAsStringAsync();
-                var item = JsonSerializer.Deserialize<ObjectView<TicketModel, string>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var item = JsonSerializer.Deserialize<ObjectView<TicketDTO, string>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                var pagingResponse = new PagingResponse<TicketModel>()
+                var pagingResponse = new PagingResponse<TicketDTO>()
                 {
                     Items = item.Items,
                     MetaData = JsonSerializer.Deserialize<PagingHeaderModel>(resp.Headers
@@ -244,10 +245,10 @@ namespace CRM.Client.Pages.Deals
                 NavigationManager.NavigateTo($"/{ConstHelper.ClientDealPath}/New");
         }
 
-        private void CellRender(DataGridCellRenderEventArgs<TicketModel> args)
+        private void CellRender(DataGridCellRenderEventArgs<TicketDTO> args)
         {
            
-            if (args.Column.Property == nameof(TicketModel.State))
+            if (args.Column.Property == nameof(TicketDTO.State))
             {
                 args.Attributes.Add("style", $"background-color: {args.Data.StateColor};");
 

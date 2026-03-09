@@ -65,7 +65,7 @@ namespace CRM.Client
 
             builder.Services.AddMemoryCache();
 
-            builder.Services.AddTransient<ITicketService, ProxyTicketsService>();
+            builder.Services.AddTransient<ITicketsService, ProxyTicketsService>();
 
             builder.Services.AddTransient<ITicketChatsService, TicketChatsService>();
 

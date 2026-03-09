@@ -173,7 +173,7 @@ namespace CRM.Client.Pages.Articles
                 NavigationManager.NavigateTo($"/{ConstHelper.ClientArticlesPath}/Index");
         }
 
-        private async Task OnGetCompany(int? id)
+        private async Task OnGetCompany(object? id)
         {
             if (id != null)
             {

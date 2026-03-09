@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 
 namespace CRM.Client.Services
 {
-    public interface ITicketService : IRestClientModelService<Ticket, TicketModel, TicketFilter, int>
+    public interface ITicketsService : IRestClientModelService<Ticket, TicketDTO, TicketFilter, int>
     {
         Task<bool> CloseTicket(int id, TicketClose ticket);
 
         Task<bool> ReOpenTicket(int id, Ticket item);
 
-        Task<PagingResponse<TicketModel>> Search(TicketFilter args);
+        Task<PagingResponse<TicketDTO>> Search(TicketFilter args);
 
         Task<SemanticSearchResponse> SemanticSearch(SemanticSearchRequest request);
 

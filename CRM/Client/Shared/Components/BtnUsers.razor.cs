@@ -21,6 +21,8 @@ namespace CRM.Client.Shared.Components
         [Parameter]
         public int? IdProjectParent { get; set; } = null;
 
+        [Parameter]
+        public int? IdCompany { get; set; } = null;
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
@@ -30,7 +32,7 @@ namespace CRM.Client.Shared.Components
         private async Task OpenItems()
         {
             var id = await DialogService.OpenSideAsync<Pages.Settings.Users.Index>(Localize["Seleziona l'Utente..."], new Dictionary<string, object>() { { "PageMode", PageHelper.PageModality.Dialog },
-                    { "OnClickEdit", OpenNewItem }, {"IdProjectParent", IdProjectParent } },
+                    { "OnClickEdit", OpenNewItem }, {"IdProjectParent", IdProjectParent }, {"IdCompany", IdCompany } },
                 new SideDialogOptions { Position = DialogPosition.Top, ShowMask = false, Height = "auto", Style = "max-height: 90%;" });
 
             if (OnGetItem.HasDelegate)

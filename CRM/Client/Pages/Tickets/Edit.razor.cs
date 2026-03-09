@@ -29,7 +29,7 @@ namespace CRM.Client.Pages.Tickets
         private NavigationManager NavigationManager { get; set; }
 
         [Inject]
-        private ITicketService _service { get; set; }
+        private ITicketsService _service { get; set; }
 
         
         [Inject]
@@ -117,6 +117,10 @@ namespace CRM.Client.Pages.Tickets
 
         private List<Project> _projects = new List<Project>();
 
+        private List<ApplicationUser> _usersCustomer = new List<ApplicationUser>();
+
+        private RequesterType _requesterType = RequesterType.Contact;
+
         private bool _lockCompany = false;
 
         private bool _lockArticle = false;
@@ -141,6 +145,8 @@ namespace CRM.Client.Pages.Tickets
         private PageHeaderModel? _pageHeader = null;
 
         private GlobalSetting? _globalSettings = null;
+
+       
 
         // ✅ NUOVO: Multi-user assignment
         private HashSet<string> _selectedUserIds = new HashSet<string>();
@@ -167,6 +173,11 @@ namespace CRM.Client.Pages.Tickets
                     _header = Localize["Ticket Edit"];
                     _ticket = await _service.Get(Id.Value);
                     
+                    // Determina il tipo di richiedente dal ticket caricato
+                    _requesterType = _ticket.IdContact != null ? RequesterType.Contact : 
+                                     !string.IsNullOrEmpty(_ticket.IdUserCustomer) ? RequesterType.User : 
+                                     RequesterType.Contact;
+
                     // ✅ NUOVO: Carica gli utenti già assegnati al ticket
                     await LoadAssignedUsers();
                 }
@@ -195,6 +206,7 @@ namespace CRM.Client.Pages.Tickets
                 await LoadTicketType();
                 await LoadUsers();
                 await LoadContactsCustomer();
+                await LoadUsersCustomer();
 
                 _inputTextAreaAttributes.Add("rows", "20");
 
@@ -364,6 +376,48 @@ namespace CRM.Client.Pages.Tickets
             _contactsCustomer = await ContactsService.GetListAsync(request);
 
            
+
+            StateHasChanged();
+        }
+
+        private async Task LoadUsersCustomer()
+        {
+            try
+            {
+                if (_ticket?.IdCompany == null || _ticket.IdCompany == 0)
+                {
+                    _usersCustomer = new List<ApplicationUser>();
+                    return;
+                }
+
+                UsersFilterModel request = new UsersFilterModel
+                {
+                    IdCompany = _ticket.IdCompany,
+                    PageSize = 0
+                };
+
+                var response = await _serviceUser.Get(request);
+                _usersCustomer = response.Items?.ToList() ?? new List<ApplicationUser>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento utenti cliente: {ex.Message}");
+                _usersCustomer = new List<ApplicationUser>();
+            }
+        }
+
+        private void OnRequesterTypeChanged(RequesterType value)
+        {
+            _requesterType = value;
+
+            if (_requesterType == RequesterType.Contact)
+            {
+                _ticket.IdUserCustomer = null;
+            }
+            else
+            {
+                _ticket.IdContact = null;
+            }
 
             StateHasChanged();
         }
@@ -625,6 +679,7 @@ namespace CRM.Client.Pages.Tickets
             await LoadProducts(new LoadDataArgs());
             await LoadArticles(new LoadDataArgs());
             await LoadContactsCustomer();
+            await LoadUsersCustomer();
         }
 
         private void CompanyOnClickCancel()
@@ -632,13 +687,13 @@ namespace CRM.Client.Pages.Tickets
             dialogService.CloseSide();
         }
 
-        private async Task OnGetCompany(int? id)
+        private async Task OnGetCompany(object? id)
         {
             if (id != null)
             {
                 await LoadCompany();
                 StateHasChanged();
-                _ticket.IdCompany = id.Value;
+                _ticket.IdCompany = (int)id;
                 await CompanyChangedAsync();
                 StateHasChanged();
 
@@ -777,6 +832,30 @@ namespace CRM.Client.Pages.Tickets
             catch (Exception ex)
             {
                 Console.WriteLine($"Errore apertura dialog assegnazione utenti: {ex.Message}");
+            }
+        }
+
+        private async Task OnGetContact(object? id)
+        {
+            if (id != null)
+            {
+                await LoadContactsCustomer();
+                StateHasChanged();
+                _ticket.IdContact = (int)id;
+                StateHasChanged();
+
+            }
+        }
+
+        private async Task OnGetUser(object? id)
+        {
+            if (id != null)
+            {
+                await LoadUsersCustomer();
+                StateHasChanged();
+                _ticket.IdUserCustomer = (string)id;
+                StateHasChanged();
+
             }
         }
     }

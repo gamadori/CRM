@@ -52,11 +52,12 @@ namespace CRM.Client.Pages.Contacts
         [Parameter]
         public int? IdCompany { get; set; }
         
-        [Parameter]
-        public Action OnClickSave { get; set; }
 
         [Parameter]
-        public Action OnClickCancel { get; set; }
+        public EventCallback<int?> OnSaving { get; set; }
+
+        [Parameter]
+        public EventCallback OnCancel { get; set; }
 
         [Parameter]
         public PageModality PageMode { get; set; } = PageModality.Visualization;
@@ -132,12 +133,16 @@ namespace CRM.Client.Pages.Contacts
                     // ✅ Chiudi il dialog ritornando l'Id del contatto (nuovo o aggiornato)
                     int contactId = resp.Data?.Id ?? _contact.Id;
                     
-                    if (OnClickSave != null)
+                    if (OnSaving.HasDelegate)
                     {
-                        OnClickSave();
-                        // ✅ Chiudi il dialog Radzen ritornando l'Id
-                        DialogService.CloseSide(contactId);
+                        await OnSaving.InvokeAsync(contactId);
                     }
+                    //else if (OnClickSave != null)
+                    //{
+                    //    OnClickSave();
+                    //    // ✅ Chiudi il dialog ritornando l'Id
+                    //    DialogService.CloseSide(contactId);
+                    //}
                     else
                         NavigationManager.NavigateTo($"/{ConstHelper.ClientContactsPath}");
                 }
@@ -152,12 +157,12 @@ namespace CRM.Client.Pages.Contacts
 
         protected void Annulla()
         {
-            if (OnClickCancel != null)
-                OnClickCancel();
+            if (OnCancel.HasDelegate)
+                OnCancel.InvokeAsync();
             else
                 NavigationManager.NavigateTo($"/{ConstHelper.ClientContactsPath}/Index");
         }
-        private async Task OnGetCompany(int? id)
+        private async Task OnGetCompany(object? id)
         {
             if (id != null)
             {

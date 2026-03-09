@@ -16,3 +16,27 @@ else if (Type == DialogType.Companies)
     }
     
 }
+else if (Type == DialogType.Users)
+{
+    @if (Mode == DialogMode.Selection)
+    {
+        <CRM.Client.Pages.Settings.Users.Index IdCompany="@(IdParent as int?)" OnSelectItem="OnSelect" OnClickEdit=OnAddNew PageMode="PageModality.Dialog"></CRM.Client.Pages.Settings.Users.Index>
+    }
+    else if (Mode == DialogMode.Addition)
+    {
+        <CRM.Client.Pages.Settings.Users.Edit OnSaving="OnSaving" OnCancel="OnAddingCancel" IdCompany="@(IdParent as int?)" PageMode="PageModality.Dialog"></CRM.Client.Pages.Settings.Users.Edit>
+    }
+
+}
+else if (Type == DialogType.Contacts)
+{
+    @if (Mode == DialogMode.Selection)
+    {
+        <CRM.Client.Pages.Contacts.Index IdCompany="@(IdParent as int?)" OnClickSelect="OnSelect" OnClickNew="OnAddNew" PageMode="PageModality.Dialog"></CRM.Client.Pages.Contacts.Index>
+    }
+    else if (Mode == DialogMode.Addition)
+    {
+        <CRM.Client.Pages.Contacts.Edit OnSaving="OnSaving" OnCancel="OnAddingCancel" IdCompany="@(IdParent as int?)" PageMode="PageModality.Dialog"></CRM.Client.Pages.Contacts.Edit>
+    }
+
+}

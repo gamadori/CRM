@@ -2,6 +2,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -31,7 +32,7 @@ namespace CRM.Client.Pages.Tickets
         HttpClient HttpClient { get; set; }
 
         [Inject]
-        ITicketService _service { get; set; }
+        ITicketsService _service { get; set; }
 
         [Inject]
         IBaseRestService<ApplicationUser, UsersFilterModel, string> _serviceUser { get; set; }
@@ -91,11 +92,11 @@ namespace CRM.Client.Pages.Tickets
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
 
-        private PagingResponse<TicketModel, string> _ticketView = null;
+        private PagingResponse<TicketDTO, string> _ticketView = null;
 
         private bool _isLoading = false;
 
-        private RadzenDataGrid<TicketModel> grdTickets;
+        private RadzenDataGrid<TicketDTO> grdTickets;
 
         private string _header = "Tickets";
 
@@ -119,7 +120,7 @@ namespace CRM.Client.Pages.Tickets
 
         private string _userFilter = null;
 
-        private IList<TicketModel> _selectedTicket = new List<TicketModel>();
+        private IList<TicketDTO> _selectedTicket = new List<TicketDTO>();
 
         private int _numRecords = 0;
 
@@ -215,9 +216,9 @@ namespace CRM.Client.Pages.Tickets
 
                 if (_ticketView == null)
                 {
-                    _ticketView = new PagingResponse<TicketModel, string>();
+                    _ticketView = new PagingResponse<TicketDTO, string>();
 
-                    _ticketView.Items = new List<TicketModel>();
+                    _ticketView.Items = new List<TicketDTO>();
                     _ticketView.MetaData = new PagingHeaderModel();
                     _ticketView.Total = null;
                 }
@@ -227,14 +228,14 @@ namespace CRM.Client.Pages.Tickets
 
         }
 
-        void OnCellClick(DataGridCellMouseEventArgs<TicketModel> args)
+        void OnCellClick(DataGridCellMouseEventArgs<TicketDTO> args)
         {
            
                 Select(args);
             
         }
 
-        private void Select(DataGridCellMouseEventArgs<TicketModel> args)
+        private void Select(DataGridCellMouseEventArgs<TicketDTO> args)
         {
            
             var ticket = _selectedTicket.FirstOrDefault(i => i.Id == args.Data.Id);
@@ -248,7 +249,7 @@ namespace CRM.Client.Pages.Tickets
             }
         }
 
-        void OnCellRender(DataGridCellRenderEventArgs<TicketModel> args)
+        void OnCellRender(DataGridCellRenderEventArgs<TicketDTO> args)
         {
             
         }
@@ -267,14 +268,14 @@ namespace CRM.Client.Pages.Tickets
 
       
 
-        private async Task<PagingResponse<TicketModel>> Decode(HttpResponseMessage resp)
+        private async Task<PagingResponse<TicketDTO>> Decode(HttpResponseMessage resp)
         {
             if (resp.IsSuccessStatusCode)
             {
                 var content = await resp.Content.ReadAsStringAsync();
-                var item = JsonSerializer.Deserialize<ObjectView<TicketModel, string>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var item = JsonSerializer.Deserialize<ObjectView<TicketDTO, string>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                var pagingResponse = new PagingResponse<TicketModel>()
+                var pagingResponse = new PagingResponse<TicketDTO>()
                 {
                     Items = item.Items,
                     MetaData = JsonSerializer.Deserialize<PagingHeaderModel>(resp.Headers
@@ -382,10 +383,10 @@ namespace CRM.Client.Pages.Tickets
             return "Tickets";
         }
 
-        private void CellRender(DataGridCellRenderEventArgs<TicketModel> args)
+        private void CellRender(DataGridCellRenderEventArgs<TicketDTO> args)
         {
            
-            if (args.Column.Property == nameof(TicketModel.State))
+            if (args.Column.Property == nameof(TicketDTO.State))
             {
                 var textColor = GetContrastColor(args.Data.StateColor);
                 args.Attributes.Add("style", $"background-color: {args.Data.StateColor}; color: {textColor};");

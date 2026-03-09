@@ -23,7 +23,7 @@ namespace CRM.Client.Pages.Tickets
     public partial class Details: ComponentBase
     {
         [Inject]
-        private ITicketService _service { get; set; }
+        private ITicketsService _service { get; set; }
 
         [Inject]
         private NavigationManager NavigationManager { get; set; }
@@ -77,7 +77,7 @@ namespace CRM.Client.Pages.Tickets
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
         private bool _isDownloadingPdf = false;
-        private TicketModel _ticket = null;
+        private TicketDTO _ticket = null;
         private List<ApplicationUser> _assignedUsers = new List<ApplicationUser>();
         private bool _isLoadingUsers = false;
         private PageHeaderModel? _pageHeader = null;
@@ -105,7 +105,7 @@ namespace CRM.Client.Pages.Tickets
                     }
                 }
                 else
-                    _ticket = new TicketModel();
+                    _ticket = new TicketDTO();
             }
             catch (Exception ex)
             {

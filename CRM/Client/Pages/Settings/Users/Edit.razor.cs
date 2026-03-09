@@ -57,11 +57,16 @@ namespace CRM.Client.Pages.Settings.Users
         [Parameter]
         public int? IdCompany { get; set; }
 
-        [Parameter]
-        public Action CloseForm { get; set; }
+       
 
         [Parameter]
         public PageModality PageMode { get; set; } = PageModality.Visualization;
+
+        [Parameter]
+        public EventCallback<string?> OnSaving { get; set; }
+
+        [Parameter]
+        public EventCallback OnCancel { get; set; }
 
         private UserModel _user = null;
 
@@ -164,6 +169,9 @@ namespace CRM.Client.Pages.Settings.Users
                        
                         Id = _user?.Id;
                         await PrepareSendInvite();
+
+                        if (OnSaving.HasDelegate)
+                            await OnSaving.InvokeAsync(Id);
                     }
                     else if (resp.StatusCode == System.Net.HttpStatusCode.BadRequest)
                     {
@@ -189,8 +197,8 @@ namespace CRM.Client.Pages.Settings.Users
         protected void Annulla()
         {
 
-            if (CloseForm != null)
-                CloseForm();
+            if (OnCancel.HasDelegate)
+                OnCancel.InvokeAsync();
             else
                 NavigationManager.NavigateTo($"/Settings/Users/Index");
         }
@@ -255,8 +263,8 @@ namespace CRM.Client.Pages.Settings.Users
         {
 
 
-            if (CloseForm != null)
-                CloseForm();
+            if (OnCancel.HasDelegate)
+                await OnCancel.InvokeAsync();
             else
             {
                 await JSRuntime.InvokeVoidAsync("CloseModal", "dlgDelete");

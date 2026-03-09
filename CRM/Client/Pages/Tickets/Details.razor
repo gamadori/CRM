@@ -115,8 +115,20 @@ else
                         </div>
 
                         <div class="info-row">
-                            <span class="info-key"><DisplayName For="@(() => _ticket.ContactName)" /></span>
-                            <span class="info-value">@_ticket.ContactName</span>
+                            <span class="info-key">@Localize["Richiedente"]</span>
+                            <span class="info-value">
+                                @if (!string.IsNullOrEmpty(_ticket.RequesterName))
+                                {
+                                    <span class="material-icons" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">
+                                        @(_ticket.RequesterType == RequesterType.Contact ? "contact_phone" : "person")
+                                    </span>
+                                    @_ticket.RequesterName
+                                }
+                                else
+                                {
+                                    <text>-</text>
+                                }
+                            </span>
                         </div>
 
                         @if (_ticket.TicketType.IdArticolo != (int)PropertyStates.No)

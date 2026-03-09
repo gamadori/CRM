@@ -47,7 +47,7 @@ namespace CRM.Client.Pages.TicketInterventions
         NotificationService NotificationService { get; set; }
 
         [Inject]
-        ITicketService TicketService { get; set; }
+        ITicketsService TicketService { get; set; }
 
         [Inject]
         IInterventionTypesService InterventionTypesService { get; set; }

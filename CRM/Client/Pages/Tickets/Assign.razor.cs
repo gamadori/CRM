@@ -26,7 +26,7 @@ namespace CRM.Client.Pages.Tickets
         private NavigationManager NavigationManager { get; set; }
 
         [Inject]
-        private ITicketService TicketService { get; set; }
+        private ITicketsService TicketService { get; set; }
 
         [Inject]
         private ITicketInterventionUsersService InterventionsUserService { get; set; }

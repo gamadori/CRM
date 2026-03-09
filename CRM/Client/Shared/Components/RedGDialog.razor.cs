@@ -13,7 +13,9 @@ namespace CRM.Client.Shared.Components
         {
             None,
             Companies,
-            Users
+            Users,
+            Contacts,
+           
         }
 
         public enum DialogMode
@@ -25,12 +27,19 @@ namespace CRM.Client.Shared.Components
 
         [Parameter]
         public DialogType Type { get; set; } = DialogType.None;
+
         [Parameter]
         public DialogMode Mode { get; set; } = DialogMode.Selection;
 
 
         [Parameter]
         public EventCallback OnAddNewItem { get; set; }
+
+        [Parameter]
+        public object? IdParent { get; set; }
+
+        
+
 
         private string _icon = "info";
         protected override async Task OnInitializedAsync()
@@ -40,6 +49,11 @@ namespace CRM.Client.Shared.Components
         }
 
         private void OnSelect(int? id)
+        {
+            DialogService.CloseSide(id);
+        }
+
+        private void OnSelect(string? id)
         {
             DialogService.CloseSide(id);
         }
@@ -54,6 +68,12 @@ namespace CRM.Client.Shared.Components
         {
             DialogService.CloseSide(id);
         }
+
+        private void OnSaving(string id)
+        {
+            DialogService.CloseSide(id);
+        }
+
 
         private void OnAddNew()
         {

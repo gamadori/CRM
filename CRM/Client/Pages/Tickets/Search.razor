@@ -141,17 +141,17 @@
                     <RadzenDataGrid IsLoading="@_loading" Count="@_tickets.MetaData.TotalCount" Data="@_tickets.Items" LoadData="@LoadData"
                                 FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
                                 AllowSorting="true" AllowFiltering="true" AllowPaging="true" AllowColumnResize="true"
-                                PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" 
-                                TItem="TicketModel" EmptyText="Nessun Ticket Trovato">
+                                PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center"
+                                    TItem="TicketDTO" EmptyText="Nessun Ticket Trovato">
                         <Columns>
-                            <RadzenDataGridColumn Context="item" TItem="TicketModel" Property="@nameof(TicketModel.Id)" FormatString="{0:000000}" Title="ID">
+                            <RadzenDataGridColumn Context="item" TItem="TicketDTO" Property="@nameof(TicketDTO.Id)" FormatString="{0:000000}" Title="ID">
                                 <Template>
                                     <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OpenTicket(item.Id)">@item.Id.ToString("000000")</a>
                                 </Template>
                             </RadzenDataGridColumn>
-                            <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Date)" FormatString="{0:d}" Title="Data" />
-                            <RadzenDataGridColumn TItem="TicketModel" Property="@nameof(TicketModel.Description)" Title="Descrizione" />
-                            <RadzenDataGridColumn Context="item" TItem="TicketModel" Property="@nameof(TicketModel.Rank)" Title="Rank" TextAlign="Radzen.TextAlign.Center">
+                            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Date)" FormatString="{0:d}" Title="Data" />
+                            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Description)" Title="Descrizione" />
+                            <RadzenDataGridColumn Context="item" TItem="TicketDTO" Property="@nameof(TicketDTO.Rank)" Title="Rank" TextAlign="Radzen.TextAlign.Center">
                                 <Template>
                                     <RadzenRating Value="@(item.Rank * 5 / 200)" Stars="5" ReadOnly="true" />
                                 </Template>

@@ -19,7 +19,7 @@ namespace CRM.Client.Pages.Tickets
 
 
         [Inject]
-        ITicketService _service { get; set; }
+        ITicketsService _service { get; set; }
 
         [Inject]
         IBaseRestService<ApplicationUser, UsersFilterModel, string> _usersService { get; set; }

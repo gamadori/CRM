@@ -23,7 +23,7 @@ namespace CRM.Client.Pages.Tickets
         IBaseRestService<ApplicationUser, UsersFilterModel, string> _serviceUser { get; set; }
 
         [Inject]
-        ITicketService _serviceTicket { get; set; }
+        ITicketsService _serviceTicket { get; set; }
 
         [Inject]
         IJSRuntime JSRuntime { get; set; }

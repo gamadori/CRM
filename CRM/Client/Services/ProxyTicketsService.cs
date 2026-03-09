@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace CRM.Client.Services
 {
     
-    public class ProxyTicketsService: RestClientModelService<Ticket, TicketModel, TicketFilter, int>, ITicketService
+    public class ProxyTicketsService: RestClientModelService<Ticket, TicketDTO, TicketFilter, int>, ITicketsService
     {
         
         public ProxyTicketsService(HttpClient http): base(http, ConstHelper.TicketPath)
@@ -47,7 +47,7 @@ namespace CRM.Client.Services
             }
         }
 
-        public async Task<PagingResponse<TicketModel>> Search(TicketFilter args)
+        public async Task<PagingResponse<TicketDTO>> Search(TicketFilter args)
         {
             try
             {
@@ -58,7 +58,7 @@ namespace CRM.Client.Services
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                return new PagingResponse<TicketModel>();
+                return new PagingResponse<TicketDTO>();
             }
         }
 

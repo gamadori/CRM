@@ -18,7 +18,7 @@ namespace CRM.Client.Pages.Tickets
     public partial class Preview: ComponentBase
     {
         [Inject]
-        private ITicketService _service { get; set; }
+        private ITicketsService _service { get; set; }
 
         [Inject]
         private IBaseRestService<ApplicationUser, UsersFilterModel, string> _serviceUsers { get; set; }

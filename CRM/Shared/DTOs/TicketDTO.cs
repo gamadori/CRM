@@ -8,9 +8,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace CRM.Shared
+namespace CRM.Shared.DTOs
 {
-    public class TicketModel
+    public class TicketDTO
     {
         [Display(Name = nameof(Ticket.Id), ResourceType = typeof(Resources.Models.Ticket))]
         public int Id { get; set; }
@@ -68,16 +68,16 @@ namespace CRM.Shared
         [Display(Name = nameof(Ticket.MinuteWork), ResourceType = typeof(Resources.Models.Ticket))]
         public int MinuteWork { get; set; }
 
-        [Display(Name = nameof(TicketModel.MinuteTravel), ResourceType = typeof(Resources.Models.TicketModel))]
+        [Display(Name = nameof(TicketDTO.MinuteTravel), ResourceType = typeof(Resources.Models.TicketModel))]
         public int MinuteTravel { get; set; }
 
-        [Display(Name = nameof(TicketModel.MinuteWorkFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
+        [Display(Name = nameof(TicketDTO.MinuteWorkFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
         public string MinuteWorkFormatted { get; set; }
 
-        [Display(Name = nameof(TicketModel.MinuteTravelFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
+        [Display(Name = nameof(TicketDTO.MinuteTravelFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
         public string MinuteTravelFormatted { get; set; }
 
-        [Display(Name = nameof(TicketModel.MinuteTotalFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
+        [Display(Name = nameof(TicketDTO.MinuteTotalFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
         public string MinuteTotalFormatted { get; set; }
 
 
@@ -90,6 +90,16 @@ namespace CRM.Shared
 
         [Display(Name = nameof(Ticket.IdUserCustomer), ResourceType = typeof(Resources.Models.Ticket))]
         public string UserCustomer { get; set; }
+
+        /// <summary>
+        /// Nome del richiedente (risolto da Contact o User)
+        /// </summary>
+        public string RequesterName => !string.IsNullOrEmpty(ContactName) ? ContactName : UserCustomer;
+
+        /// <summary>
+        /// Tipo di richiedente: Contact o User
+        /// </summary>
+        public RequesterType RequesterType => !string.IsNullOrEmpty(ContactName) ? RequesterType.Contact : RequesterType.User;
 
         public int IdContact { get; set; }
 
