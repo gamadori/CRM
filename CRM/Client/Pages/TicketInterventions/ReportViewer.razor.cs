@@ -1,6 +1,7 @@
 using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Client.Shared.Components;
+using CRM.Client.Pages.TicketInterventions.Components;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
@@ -112,7 +113,29 @@ namespace CRM.Client.Pages.TicketInterventions
 
         private async Task ReportUploadDialog()
         {
-            await JS.InvokeVoidAsync("ShowModal", "dlgUploadFile");
+            var result = await DialogService.OpenAsync<UploadReportDialog>(
+                "Upload Report Intervento",
+                new Dictionary<string, object>
+                {
+                    { "InterventionId", Id }
+                },
+                new DialogOptions 
+                { 
+                    Width = "600px", 
+                    Height = "auto",
+                    CloseDialogOnOverlayClick = false
+                }
+            );
+
+            if (result is bool success && success)
+            {
+                // Ricarica il report
+                _loaded = false;
+                _loadingMessage = "Ricaricamento report...";
+                StateHasChanged();
+                
+                await LoadReport();
+            }
         }
 
         private async Task<bool> UploadReport(UploadFilesModel file)

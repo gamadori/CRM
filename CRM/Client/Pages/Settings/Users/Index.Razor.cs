@@ -3,6 +3,7 @@ using CRM.Client.Models;
 using CRM.Client.Pages.Groups;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -43,6 +44,9 @@ namespace CRM.Client.Pages.Settings.Users
 
         [Inject]
         IHeaderService HeaderService { get; set; }
+
+        [Inject]
+        ICompaniesService CompaniesService { get; set; }
 
         [Parameter]
         public bool HeaderVisible { get; set; } = false;
@@ -114,6 +118,8 @@ namespace CRM.Client.Pages.Settings.Users
 
         private RadzenDataGrid<ApplicationUser> grdUsers;
 
+        private Company? _company = null;
+
         protected override async Task OnInitializedAsync()
         {
             //#if DEBUG
@@ -171,6 +177,21 @@ namespace CRM.Client.Pages.Settings.Users
 
             if (PageMode == PageModality.Dialog)
                 _filterMode = FilterMode.SimpleWithMenu;
+
+            // Carica i dati dell'azienda se IdCompany è specificato
+            if (IdCompany.HasValue)
+            {
+                try
+                {
+                    var companyDto = await CompaniesService.GetItemAsync(IdCompany.Value);
+                    _company = companyDto?.ToEntity();
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Errore caricamento azienda: {ex.Message}");
+                    _company = null;
+                }
+            }
 
             await LoadData();
 

@@ -19,34 +19,70 @@
                 <button type="button" class="btn-close" @onclick="Cancel"></button>
             </div>
 
-            <!-- Canvas Area -->
+            <!-- Global validation banner -->
+            @if (!string.IsNullOrEmpty(_globalError))
+            {
+                <div class="signature-validation-banner">
+                    <i class="material-icons">warning</i>
+                    <span>@_globalError</span>
+                </div>
+            }
+
+            <!-- Body -->
             <div class="signature-overlay-body">
-                <!-- Input Nome Firmatario con bottone ricerca contatto -->
+                <!-- Input Nome Firmatario -->
                 <div class="mb-3">
                     <label class="form-label" style="font-weight: 600; color: #495057;">
                         <i class="material-icons" style="font-size: 18px; vertical-align: middle;">person</i>
-                        Nome e Cognome del Firmatario
+                        Nome e Cognome del Firmatario <span class="text-danger">*</span>
                     </label>
                     <div class="input-group">
-                        <input type="text" 
-                               class="form-control" 
-                               @bind="SignerName" 
+                        <input type="text"
+                               class="form-control @(_errorName != null ? "is-invalid" : "")"
+                               @bind="SignerName"
+                               @oninput="@(() => _errorName = null)"
                                placeholder="Es: Mario Rossi"
                                maxlength="200"
                                style="font-size: 16px;" />
-                        <button type="button" 
-                                class="btn btn-outline-secondary" 
-                                @onclick="OpenContactsDialog" 
-                                disabled="@(!IdCompany.HasValue)"
-                                title="Seleziona contatto">
-                            <i class="material-icons">person_search</i>
+                        
+                        <!-- Dropdown per scegliere tra Contatti e Utenti -->
+                        <button type="button"
+                                class="btn btn-outline-secondary dropdown-toggle"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                title="Seleziona da rubrica">
+                            <i class="material-icons">search</i>
                         </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <button class="dropdown-item" 
+                                        type="button"
+                                        @onclick="OpenContactsDialog"
+                                        disabled="@(!IdCompany.HasValue)">
+                                    <i class="material-icons me-2" style="font-size: 18px; vertical-align: middle;">contacts</i>
+                                    Cerca tra Contatti
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" 
+                                        type="button"
+                                        @onclick="OpenUsersDialog">
+                                    <i class="material-icons me-2" style="font-size: 18px; vertical-align: middle;">people</i>
+                                    Cerca tra Utenti
+                                </button>
+                            </li>
+                        </ul>
+                        
+                        @if (_errorName != null)
+                        {
+                            <div class="invalid-feedback">@_errorName</div>
+                        }
                     </div>
                     @if (!IdCompany.HasValue)
                     {
                         <small class="form-text text-muted">
                             <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
-                            Ricerca contatto disponibile solo se l'azienda è specificata
+                            Ricerca contatti disponibile solo se l'azienda è specificata
                         </small>
                     }
                 </div>
@@ -55,34 +91,53 @@
                 <div class="mb-3">
                     <label class="form-label" style="font-weight: 600; color: #495057;">
                         <i class="material-icons" style="font-size: 18px; vertical-align: middle;">email</i>
-                        Email per Conferma Firma
+                        Email per Conferma Firma <span class="text-danger">*</span>
                     </label>
-                    <input type="email" 
-                           class="form-control" 
-                           @bind="SignerEmail" 
-                           placeholder="Es: mario.rossi@example.com"
+                    <input type="email"
+                           class="form-control @(_errorEmail != null ? "is-invalid" : "")"
+                           @bind="SignerEmail"
+                           @oninput="@(() => _errorEmail = null)"
+                           placeholder="Es: mario.rossi@@example.com"
                            maxlength="200"
                            style="font-size: 16px;" />
-                    <small class="form-text text-muted">
-                        <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
-                        Riceverai un'email per confermare la firma. La firma sarà valida solo dopo la conferma.
-                    </small>
+                    @if (_errorEmail != null)
+                    {
+                        <div class="invalid-feedback" style="display:block;">@_errorEmail</div>
+                    }
+                    else
+                    {
+                        <small class="form-text text-muted">
+                            <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
+                            Riceverai un'email per confermare la firma. La firma sarà valida solo dopo la conferma.
+                        </small>
+                    }
                 </div>
 
+                <!-- Canvas firma -->
                 <div class="signature-canvas-wrapper">
-                    <canvas id="@CanvasId" 
-                            width="@Width" 
-                            height="@Height" 
-                            style="border: 2px solid #dee2e6; border-radius: 0.5rem; touch-action: none; background-color: white; cursor: crosshair;">
+                    <canvas id="@CanvasId"
+                            width="@Width"
+                            height="@Height"
+                            style="border: 2px solid @(_errorSignature != null ? "#dc3545" : "#dee2e6"); border-radius: 0.5rem; touch-action: none; background-color: white; cursor: crosshair;">
                     </canvas>
                 </div>
-                <div class="text-muted small mt-2 text-center">
-                    <i class="material-icons" style="font-size: 16px; vertical-align: middle;">info</i>
-                    Firma all'interno del riquadro bianco
-                </div>
+                @if (_errorSignature != null)
+                {
+                    <div class="text-danger small mt-1 text-center">
+                        <i class="material-icons" style="font-size: 16px; vertical-align: middle;">error_outline</i>
+                        @_errorSignature
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted small mt-2 text-center">
+                        <i class="material-icons" style="font-size: 16px; vertical-align: middle;">info</i>
+                        Firma all'interno del riquadro bianco
+                    </div>
+                }
             </div>
 
-            <!-- Footer con bottoni -->
+            <!-- Footer -->
             <div class="signature-overlay-footer">
                 <button type="button" class="btn btn-outline-secondary" @onclick="Clear">
                     <i class="material-icons middle">clear</i>
@@ -149,6 +204,29 @@
         font-weight: 600;
     }
 
+    .signature-validation-banner {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: #fff3cd;
+        border-bottom: 1px solid #ffc107;
+        color: #856404;
+        font-weight: 500;
+        font-size: 0.9rem;
+        animation: bannerSlide 0.25s ease;
+    }
+
+    .signature-validation-banner .material-icons {
+        font-size: 20px;
+        color: #e65100;
+    }
+
+    @@keyframes bannerSlide {
+        from { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; }
+        to { max-height: 60px; opacity: 1; }
+    }
+
     .signature-overlay-body {
         padding: 2rem 1.5rem;
         flex: 1;
@@ -194,11 +272,15 @@
     private string SignerName { get; set; } = string.Empty;
     private string SignerEmail { get; set; } = string.Empty;
     private bool _isOpeningNewContact = false;
-    private bool _wasVisible = false; // ? Traccia se era visibile nel render precedente
+    private bool _wasVisible = false;
+
+    private string? _globalError = null;
+    private string? _errorName = null;
+    private string? _errorEmail = null;
+    private string? _errorSignature = null;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // ? Reinizializza se l'overlay è appena diventato visibile (transizione false ? true)
         bool justBecameVisible = Visible && !_wasVisible;
         _wasVisible = Visible;
 
@@ -225,12 +307,19 @@
                 }
             }
         }
-        
-        // ? Se l'overlay è stato nascosto, resetta il flag initialized
+
         if (!Visible && _initialized)
         {
             _initialized = false;
         }
+    }
+
+    private void ClearValidation()
+    {
+        _globalError = null;
+        _errorName = null;
+        _errorEmail = null;
+        _errorSignature = null;
     }
 
     private async Task Clear()
@@ -238,6 +327,7 @@
         if (_initialized)
         {
             await JS.InvokeVoidAsync("signaturePad.clear");
+            _errorSignature = null;
         }
     }
 
@@ -278,7 +368,6 @@
         }
         finally
         {
-            // ? Riapri overlay SOLO se non stiamo aprendo nuovo contatto
             if (!_isOpeningNewContact)
             {
                 Visible = true;
@@ -287,33 +376,18 @@
         }
     }
 
-    /// <summary>
-    /// Apre dialog per creare nuovo contatto
-    /// </summary>
     private async Task OpenNewContactDialog()
     {
         _isOpeningNewContact = true;
-        
+
         try
         {
-            // ? CHIUDI ESPLICITAMENTE il dialog lista contatti
             DialogService.CloseSide();
-            
-            // ? Aspetta che il dialog si chiuda completamente e Radzen rilasci le risorse
             await Task.Delay(500);
-            
-            Action onSave = () =>
-            {
-                // Il callback viene chiamato PRIMA che il dialog ritorni l'Id
-                // Non serve fare nulla qui, l'Id viene ritornato da OpenSideAsync
-            };
 
-            Action onCancel = () =>
-            {
-                DialogService.CloseSide();
-            };
+            Action onSave = () => { };
+            Action onCancel = () => { DialogService.CloseSide(); };
 
-            // Apri dialog creazione contatto
             var newContactId = await DialogService.OpenSideAsync<CRM.Client.Pages.Contacts.Edit>(
                 Localize["Nuovo Contatto"],
                 new Dictionary<string, object>()
@@ -331,7 +405,6 @@
                     Style = "max-height: 90%;"
                 });
 
-            // ? OpenSideAsync ora ritorna l'Id del contatto salvato
             if (newContactId is int id && id > 0)
             {
                 await LoadContactData(id);
@@ -349,9 +422,6 @@
         }
     }
 
-    /// <summary>
-    /// Carica dati contatto e popola i campi firma
-    /// </summary>
     private async Task LoadContactData(int contactId)
     {
         try
@@ -361,6 +431,7 @@
             {
                 SignerName = contact.NameComplete ?? string.Empty;
                 SignerEmail = contact.Email ?? string.Empty;
+                ClearValidation();
             }
         }
         catch (Exception ex)
@@ -369,72 +440,100 @@
         }
     }
 
+    private async Task OpenUsersDialog()
+    {
+        try
+        {
+            Visible = false;
+            StateHasChanged();
+            await Task.Delay(150);
+
+            var userId = await DialogService.OpenSideAsync<CRM.Client.Pages.Settings.Users.Index>(
+                Localize["Seleziona utente..."],
+                new Dictionary<string, object>()
+                {
+                    { "PageMode", CRM.Client.Helpers.PageHelper.PageModality.Dialog },
+                    { "IdCompany", IdCompany }
+                },
+                new SideDialogOptions
+                {
+                    Position = DialogPosition.Top,
+                    ShowMask = true,
+                    Height = "auto",
+                    Style = "max-height: 90%;"
+                });
+
+            if (userId is string id && !string.IsNullOrEmpty(id))
+            {
+                await LoadUserData(id);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Errore apertura dialog utenti: {ex.Message}");
+        }
+        finally
+        {
+            Visible = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadUserData(string userId)
+    {
+        try
+        {
+            var user = await Http.GetFromJsonAsync<CRM.Shared.ApplicationUser>($"{CRM.Client.Helpers.ConstHelper.UsersPath}/{userId}");
+            if (user != null)
+            {
+                SignerName = user.NameComplete ?? string.Empty;
+                SignerEmail = user.Email ?? string.Empty;
+                ClearValidation();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Errore caricamento utente: {ex.Message}");
+        }
+    }
+
     private async Task Save()
     {
         if (!_initialized) return;
 
+        ClearValidation();
+
         try
         {
-            var isEmpty = await JS.InvokeAsync<bool>("signaturePad.isEmpty");
+            bool hasErrors = false;
 
-            if (isEmpty)
-            {
-                // Nascondi overlay temporaneamente per mostrare l'alert sopra
-                var wasVisible = Visible;
-                Visible = false;
-                StateHasChanged();
-                await Task.Delay(50); // Breve delay per permettere il rendering
-                
-                await DialogService.Alert(
-                    "La firma è vuota. Firma nel riquadro bianco prima di confermare.",
-                    "Firma Richiesta",
-                    new AlertOptions { OkButtonText = "OK" }
-                );
-                
-                // Ripristina l'overlay
-                Visible = wasVisible;
-                StateHasChanged();
-                return;
-            }
-
-            // ? VALIDAZIONE: Nome obbligatorio
             if (string.IsNullOrWhiteSpace(SignerName))
             {
-                // Nascondi overlay temporaneamente per mostrare l'alert sopra
-                var wasVisible = Visible;
-                Visible = false;
-                StateHasChanged();
-                await Task.Delay(50);
-                
-                await DialogService.Alert(
-                    "Inserisci il nome e cognome del firmatario.",
-                    "Nome Richiesto",
-                    new AlertOptions { OkButtonText = "OK" }
-                );
-                
-                // Ripristina l'overlay
-                Visible = wasVisible;
-                StateHasChanged();
-                return;
+                _errorName = "Il nome e cognome del firmatario è obbligatorio";
+                hasErrors = true;
             }
 
-            // ? VALIDAZIONE: Email obbligatoria
             if (string.IsNullOrWhiteSpace(SignerEmail))
             {
-                // Nascondi overlay temporaneamente per mostrare l'alert sopra
-                var wasVisible = Visible;
-                Visible = false;
-                StateHasChanged();
-                await Task.Delay(50);
-                
-                await DialogService.Alert(
-                    "Inserisci l'email per la conferma della firma.",
-                    "Email Richiesta",
-                    new AlertOptions { OkButtonText = "OK" }
-                );
-                
-                // Ripristina l'overlay
-                Visible = wasVisible;
+                _errorEmail = "L'email per la conferma della firma è obbligatoria";
+                hasErrors = true;
+            }
+            else if (!SignerEmail.Contains('@') || !SignerEmail.Contains('.'))
+            {
+                _errorEmail = "Inserisci un indirizzo email valido";
+                hasErrors = true;
+            }
+
+            var isEmpty = await JS.InvokeAsync<bool>("signaturePad.isEmpty");
+            if (isEmpty)
+            {
+                _errorSignature = "La firma è vuota. Firma nel riquadro bianco prima di confermare.";
+                hasErrors = true;
+            }
+
+            if (hasErrors)
+            {
+                _globalError = "Compila tutti i campi obbligatori prima di confermare la firma.";
                 StateHasChanged();
                 return;
             }
@@ -443,45 +542,29 @@
 
             if (!string.IsNullOrWhiteSpace(signatureBase64))
             {
-                // ? NUOVO: Se richiede OTP, invia callback OtpRequired
                 if (RequireOtp && OnOtpRequired.HasDelegate)
                 {
                     await OnOtpRequired.InvokeAsync((signatureBase64, SignerName.Trim(), SignerEmail.Trim()));
                 }
-                // Altrimenti usa flusso normale con nome + email
                 else if (OnSignatureWithNameSaved.HasDelegate)
                 {
                     await OnSignatureWithNameSaved.InvokeAsync((signatureBase64, SignerName.Trim()));
                 }
                 else
                 {
-                    // Fallback per compatibilità
                     await OnSignatureSaved.InvokeAsync(signatureBase64);
                 }
 
-                _initialized = false; // Reset per prossima apertura
-                SignerName = string.Empty; // Reset nome
-                SignerEmail = string.Empty; // Reset email
+                _initialized = false;
+                SignerName = string.Empty;
+                SignerEmail = string.Empty;
+                ClearValidation();
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Errore salvataggio firma overlay: {ex.Message}");
-            
-            // Nascondi overlay temporaneamente per mostrare l'alert sopra
-            var wasVisible = Visible;
-            Visible = false;
-            StateHasChanged();
-            await Task.Delay(50);
-            
-            await DialogService.Alert(
-                $"Errore durante il salvataggio della firma: {ex.Message}",
-                "Errore",
-                new AlertOptions { OkButtonText = "OK" }
-            );
-            
-            // Ripristina l'overlay
-            Visible = wasVisible;
+            _globalError = $"Errore durante il salvataggio della firma: {ex.Message}";
             StateHasChanged();
         }
     }
@@ -491,6 +574,7 @@
         _initialized = false;
         SignerName = string.Empty;
         SignerEmail = string.Empty;
+        ClearValidation();
         await OnCancelled.InvokeAsync();
     }
 }

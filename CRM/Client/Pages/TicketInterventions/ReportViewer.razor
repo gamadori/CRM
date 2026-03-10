@@ -100,12 +100,3 @@
                   RequireOtp="true"
                   OnOtpRequired="OnSignatureWithEmailConfirmation"
                   OnCancelled="@(() => _showSignatureOverlay = false)" IdCompany="_ticketIntervention?.Ticket?.IdCompany" />
-
-<!-- Dialog Upload Report -->
-<DialogUpload Id="dlgUploadFile" 
-              LabelBtnNo="Annulla" 
-              LabelBtnYes="Upload" 
-              OnUploaded="OnReportUploaded" 
-              OnClickNo="CloseUploadReport" 
-              OnUpload="UploadReport" 
-              Message="Upload del Verbale di Intervento" />

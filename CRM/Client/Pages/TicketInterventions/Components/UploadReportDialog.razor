@@ -1,0 +1,227 @@
+@using Microsoft.AspNetCore.Components.Forms
+@using CRM.Client.Services
+@using CRM.Shared
+@using System.IO
+@using Radzen
+@inject ITicketInterventionsService InterventionService
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+
+<div style="min-width: 500px;">
+    <div class="mb-4">
+        <h5 class="mb-3">
+            <i class="material-icons" style="vertical-align: middle;">cloud_upload</i>
+            Upload Report Intervento #@InterventionId
+        </h5>
+        <p class="text-muted small">Carica un documento PDF del report di intervento prodotto esternamente.</p>
+    </div>
+
+    <!-- Upload Area -->
+    <div class="mb-3">
+        <div class="upload-zone p-4 border rounded text-center" 
+             style="border: 2px dashed #dee2e6; background: #f8f9fa; cursor: pointer;"
+             @ondragover="@HandleDragOver"
+             @ondragleave="@HandleDragLeave"
+             @ondrop="@HandleDrop">
+            <InputFile OnChange="@OnFileSelected" accept=".pdf" id="reportUpload" style="display: none;" />
+            <label for="reportUpload" style="cursor: pointer; width: 100%; margin: 0;">
+                <i class="material-icons text-primary" style="font-size: 64px;">picture_as_pdf</i>
+                <p class="mb-1"><strong>Clicca per selezionare o trascina qui il PDF</strong></p>
+                <p class="text-muted small mb-0">Solo file PDF, max 20MB</p>
+            </label>
+        </div>
+    </div>
+
+    <!-- Selected File Info -->
+    @if (_selectedFile != null)
+    {
+        <div class="alert alert-success d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <i class="material-icons me-2">check_circle</i>
+                <div>
+                    <strong>@_selectedFile.Name</strong>
+                    <br />
+                    <small>@FormatFileSize(_selectedFile.Size)</small>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" @onclick="ClearFile">
+                <i class="material-icons" style="font-size: 18px;">close</i>
+            </button>
+        </div>
+    }
+
+    <!-- Error Message -->
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger">
+            <i class="material-icons" style="vertical-align: middle;">error</i>
+            @_errorMessage
+        </div>
+    }
+
+    <!-- Action Buttons -->
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <RadzenButton Text="Annulla" 
+                      Click="@(() => DialogService.Close(false))" 
+                      ButtonStyle="ButtonStyle.Light" 
+                      Disabled="@_uploading" />
+        
+        <RadzenButton Text="@(_uploading ? "Caricamento..." : "Carica")" 
+                      Click="@HandleUpload" 
+                      ButtonStyle="ButtonStyle.Primary" 
+                      Disabled="@(_selectedFile == null || _uploading)"
+                      Icon="@(_uploading ? "hourglass_empty" : "cloud_upload")" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int InterventionId { get; set; }
+
+    private FileInfo _selectedFile;
+    private string _errorMessage;
+    private bool _uploading;
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _errorMessage = null;
+        
+        try
+        {
+            var file = e.File;
+
+            // Validazione tipo
+            if (!file.ContentType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                _errorMessage = "Solo file PDF sono consentiti";
+                return;
+            }
+
+            // Validazione dimensione (20MB)
+            const long maxSize = 20 * 1024 * 1024;
+            if (file.Size > maxSize)
+            {
+                _errorMessage = "Il file supera la dimensione massima di 20MB";
+                return;
+            }
+
+            // Leggi bytes
+            using var stream = file.OpenReadStream(maxSize);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+
+            _selectedFile = new FileInfo
+            {
+                Name = file.Name,
+                ContentType = file.ContentType,
+                Size = file.Size,
+                Bytes = ms.ToArray()
+            };
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Errore durante la lettura del file: {ex.Message}";
+            Console.WriteLine(ex);
+        }
+    }
+
+    private async Task HandleUpload()
+    {
+        if (_selectedFile == null) return;
+
+        _uploading = true;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var uploadModel = new UploadFilesModel
+            {
+                IdOwner = InterventionId,
+                Files = new List<AttachmentFileModel>
+                {
+                    new AttachmentFileModel
+                    {
+                        Content = Convert.ToBase64String(_selectedFile.Bytes),
+                        ContentType = _selectedFile.ContentType,
+                        Id = 0
+                    }
+                }
+            };
+
+            bool success = await InterventionService.UploadReport(InterventionId, uploadModel);
+
+            if (success)
+            {
+                NotificationService?.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Upload Completato",
+                    Detail = "Il report è stato caricato con successo",
+                    Duration = 3000
+                });
+
+                DialogService.Close(true);
+            }
+            else
+            {
+                _errorMessage = "Errore durante l'upload. Riprova.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Errore: {ex.Message}";
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            _uploading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearFile()
+    {
+        _selectedFile = null;
+        _errorMessage = null;
+    }
+
+    private void HandleDragOver(DragEventArgs e)
+    {
+        // Placeholder per eventi drag
+    }
+
+    private void HandleDragLeave(DragEventArgs e)
+    {
+        // Placeholder per eventi drag
+    }
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+        // Il drag & drop nativo non è supportato in Blazor WASM
+        // Mantenere solo InputFile
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len /= 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private class FileInfo
+    {
+        public string Name { get; set; }
+        public string ContentType { get; set; }
+        public long Size { get; set; }
+        public byte[] Bytes { get; set; }
+    }
+}

@@ -1,7 +1,10 @@
 @page "/ConfirmSignature"
-@inject HttpClient Http
-@inject NavigationManager NavigationManager
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
 @using CRM.Client.Helpers
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager NavigationManager
 
 <div class="container mt-5">
     <div class="row justify-content-center">
@@ -33,13 +36,6 @@
                             Data conferma: <strong>@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</strong>
                         </div>
 
-                        <div class="mt-4">
-                            <button class="btn btn-primary btn-lg" @onclick="GoToHome">
-                                <i class="material-icons" style="vertical-align: middle;">home</i>
-                                Torna alla Home
-                            </button>
-                        </div>
-
                         <p class="text-muted mt-3 small">Puoi chiudere questa finestra.</p>
                     </div>
                 </div>
@@ -59,12 +55,7 @@
                             Se ritieni che ci sia stato un errore, contatta il nostro ufficio.
                         </div>
 
-                        <div class="mt-4">
-                            <button class="btn btn-secondary btn-lg" @onclick="GoToHome">
-                                <i class="material-icons" style="vertical-align: middle;">home</i>
-                                Torna alla Home
-                            </button>
-                        </div>
+                        <p class="text-muted mt-3 small">Puoi chiudere questa finestra.</p>
                     </div>
                 </div>
             }
@@ -78,12 +69,7 @@
                         <h1 class="text-danger mb-3">Errore</h1>
                         <p class="lead">@_errorMessage</p>
                         
-                        <div class="mt-4">
-                            <button class="btn btn-secondary btn-lg" @onclick="GoToHome">
-                                <i class="material-icons" style="vertical-align: middle;">home</i>
-                                Torna alla Home
-                            </button>
-                        </div>
+                        <p class="text-muted mt-3 small">Puoi chiudere questa finestra.</p>
                     </div>
                 </div>
             }
@@ -102,7 +88,7 @@
 
     [Parameter]
     [SupplyParameterFromQuery(Name = "action")]
-    public string? Action { get; set; } // "confirm" o "reject"
+    public string? Action { get; set; }
 
     private bool _loading = true;
     private bool _success = false;
@@ -121,16 +107,17 @@
 
         try
         {
+            // Usa HttpClient senza autenticazione per le API pubbliche
+            var http = HttpClientFactory.CreateClient("CRM.PublicAPI");
+
             var endpoint = Action == "reject" 
                 ? $"{ConstHelper.TicketsInterventionsPath}/RejectSignature?token={Token}&id={InterventionId}"
                 : $"{ConstHelper.TicketsInterventionsPath}/ConfirmSignature?token={Token}&id={InterventionId}";
 
-            var response = await Http.GetAsync(endpoint);
+            var response = await http.GetAsync(endpoint);
 
             if (response.IsSuccessStatusCode)
             {
-                // Estrai ticket ID dalla risposta (opzionale)
-                // Per ora usiamo InterventionId
                 _ticketId = InterventionId.Value;
 
                 if (Action == "reject")
@@ -161,10 +148,5 @@
         {
             _loading = false;
         }
-    }
-
-    private void GoToHome()
-    {
-        NavigationManager.NavigateTo("/");
     }
 }

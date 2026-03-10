@@ -40,6 +40,9 @@ namespace CRM.Client
                 .AddHttpMessageHandler<BaseAddressAuthorizationMessageHandler>()
                 .AddHttpMessageHandler<LanguageHandler>();
 
+            // HttpClient senza autenticazione per pagine pubbliche (es. ConfirmSignature)
+            builder.Services.AddHttpClient("CRM.PublicAPI", client => client.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress));
+
             // Supply HttpClient instances that include access tokens when making requests to the server project
             // IMPORTANTE: Usa SOLO l'HttpClient configurato con IHttpClientFactory, NON crearne uno nuovo
             builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("CRM.ServerAPI"));
@@ -103,6 +106,8 @@ namespace CRM.Client
             builder.Services.AddScoped<ILogEventService, ProxyLogEventService>();
             builder.Services.AddScoped<ITicketStatesService, ProxyTicketsStates>();
             builder.Services.AddScoped<ITicketInterventionsService, ProxyTicketInterventionsService>();
+            builder.Services.AddScoped<IBaseRestService<TicketIntervention, TicketInterventionFilter, int>>(sp =>
+                sp.GetRequiredService<ITicketInterventionsService>());
             builder.Services.AddScoped<ITicketInterventionUsersService, ProxyTicketInterventionUsersService>();
             builder.Services.AddScoped<IFoldersService, ProxyFoldersService>();
             builder.Services.AddScoped<IInterventionTypeLangsService, ProxyInterventionTypeLangsService>();
@@ -153,13 +158,6 @@ namespace CRM.Client
                   return new RestClientService<InterventionTypeLanguage, InterventionTypeLangFilter, int>(sp.GetRequiredService<HttpClient>(),
                        ConstHelper.InterventionTypeLangsPath);
               });
-
-            builder.Services.AddTransient<IBaseRestService<TicketIntervention, TicketInterventionFilter, int>,
-                RestClientService<TicketIntervention, TicketInterventionFilter, int>>(sp =>
-            {
-                return new RestClientService<TicketIntervention, TicketInterventionFilter, int>(sp.GetRequiredService<HttpClient>(),
-                    ConstHelper.TicketsInterventionsPath);
-            });
 
             builder.Services.AddTransient<IBaseRestService<EmailSent, EmailSentFilterModel, int>, RestClientService<EmailSent, EmailSentFilterModel, int>>(sp =>
             {

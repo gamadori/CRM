@@ -1,6 +1,7 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Client.Shared.Components;
+using CRM.Client.Pages.TicketInterventions.Components;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -109,7 +110,7 @@ namespace CRM.Client.Pages.TicketInterventions
 
                 if (Id != null)
                 {
-                    _ticketIntervention = await Service.GetItemAsync(Id.Value);
+                    _ticketIntervention = await Service.Get(Id.Value);
                     //_ticketIntervention = await _service.Get(Id.Value);
                     
                     // ✅ Carica gli orari di lavoro/viaggio
@@ -342,36 +343,31 @@ namespace CRM.Client.Pages.TicketInterventions
                 }
             }
         }
-        private async void ReportUploadDialog()
+        private async Task ReportUploadDialog()
         {
-            await JSRuntime.InvokeVoidAsync("ShowModal", "dlgUploadFile");
-        }
+            var result = await DialogService.OpenAsync<UploadReportDialog>(
+                "Upload Report Intervento",
+                new Dictionary<string, object>
+                {
+                    { "InterventionId", Id.Value }
+                },
+                new DialogOptions 
+                { 
+                    Width = "600px", 
+                    Height = "auto",
+                    CloseDialogOnOverlayClick = false
+                }
+            );
 
-        private async Task<bool> UploadReport(UploadFilesModel file)
-        {
-            var resp = await _httpClient.PostAsJsonAsync<UploadFilesModel>($"{ConstHelper.TicketsInterventionsPath}/UploadReport/{Id}", file);
-
-            return resp.StatusCode == System.Net.HttpStatusCode.OK;
-        }
-
-        private async Task OnUploaded(bool state)
-        {
-            if (state)
+            if (result is bool success && success)
             {
-                await JSRuntime.InvokeVoidAsync("CloseModal", "dlgUploadFile");
-                StateHasChanged();
+                // Ricarica i dati dell'intervento
+                await LoadData();
                 
-
+                _typeMessage = "alert-success";
+                _message = "Report caricato con successo";
+                StateHasChanged();
             }
-        }
-        private async void CloseUploadReport()
-        {
-            await JSRuntime.InvokeVoidAsync("CloseModal", "dlgUploadFile");
-        }
-
-        private void CloseReportView()
-        {
-
         }
 
         /// <summary>

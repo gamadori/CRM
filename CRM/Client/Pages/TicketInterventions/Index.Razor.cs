@@ -25,18 +25,9 @@ namespace CRM.Client.Pages.TicketInterventions
         [Inject]
         private NavigationManager NavigationManager { get; set; }
 
+        
         [Inject]
-        private IBaseRestService<TicketIntervention, TicketInterventionFilter, int> _service { get; set; }
-
-       
-        [Inject]
-        private IBaseRestService<ApplicationUser, UsersFilterModel, string> _serviceUser { get; set; }
-
-        [Inject]
-        private IJSRuntime JSRuntime { get; set; }
-
-        [Inject]
-        private INavMenuService navMenuService { get; set; }
+        ITicketInterventionsService ServiceInterventions { get; set; }
 
         [Inject]
         IRestService<ApplicationUser> userSigned { get; set; }
@@ -165,7 +156,7 @@ namespace CRM.Client.Pages.TicketInterventions
 
                 }
 
-                PagingResponse<TicketIntervention> pagingResponse = await _service.Get(_filter);
+                PagingResponse<TicketIntervention> pagingResponse = await ServiceInterventions.Get(_filter);
 
                 if (pagingResponse != null)
                 {
@@ -266,7 +257,7 @@ namespace CRM.Client.Pages.TicketInterventions
                     OnClickDelete(id);
                 else
                 {
-                    await _service.Delete(id);
+                    await ServiceInterventions.Delete(id);
 
                     await LoadData();
                     StateHasChanged();

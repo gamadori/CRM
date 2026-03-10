@@ -5,6 +5,7 @@
 
 @using Radzen
 @using Radzen.Blazor
+@using static CRM.Client.Helpers.PageHelper
 
 
 @if (IdProject == null && IdCompany == null)
@@ -12,7 +13,30 @@
     <PageHeader Model="@_pageHeader"></PageHeader>
 }
 
-
+<!-- Header Azienda quando IdCompany è valorizzato -->
+@if (IdCompany.HasValue && _company != null && PageMode == PageModality.Dialog)
+{
+    <div class="card mb-3 border-primary">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="material-icons" style="vertical-align: middle;">business</i>
+                Utenti - @_company.RagioneSociale
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>@Localize["City"]:</strong> @_company.Citta</p>
+                    <p class="mb-1"><strong>@Localize["Email"]:</strong> @_company.Email</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-1"><strong>@Localize["Phone"]:</strong> @_company.Telefono</p>
+                    <p class="mb-1"><strong>@Localize["Type"]:</strong> @_company.CompanyType</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <RadzenDataGrid @ref="grdUsers" IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_users" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced" 
     AllowSorting="true" AllowFiltering="true" AllowPaging="true" 
@@ -35,7 +59,10 @@
                     <a href="#" class="link-primary" @onclick:preventDefault @onclick="async ()=>await OnClickName(item?.Id)"><RedGAvatar IdUser="@item.Id"></RedGAvatar></a>
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="ApplicationUser" Property="Company.RagioneSociale" Title=@TranslateHelper.GetDisplayName(nameof(Company.RagioneSociale), typeof(Company)) />
+        <RadzenDataGridColumn TItem="ApplicationUser" 
+                              Property="Company.RagioneSociale" 
+                              Title=@TranslateHelper.GetDisplayName(nameof(Company.RagioneSociale), typeof(Company))
+                              Filterable="@(!IdCompany.HasValue)" />
         <RadzenDataGridColumn TItem="ApplicationUser" Property="@nameof(ApplicationUser.Email)" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Email), typeof(ApplicationUser)) />
        
         <RadzenDataGridColumn TItem="ApplicationUser" Property="@nameof(ApplicationUser.Surname)" Title=@TranslateHelper.GetDisplayName(nameof(ApplicationUser.Surname), typeof(ApplicationUser)) />
