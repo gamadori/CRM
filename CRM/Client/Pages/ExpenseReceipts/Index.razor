@@ -1,0 +1,222 @@
+@page "/TicketInterventions/{InterventionId:int}/ExpenseReceipts"
+@using CRM.Shared.DTOs
+@using Microsoft.Extensions.Localization
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+<BlazorHeader Header="Note Spese"></BlazorHeader>
+
+@if (_isLoading)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="container-fluid px-3 py-3">
+
+        <!-- Breadcrumb / Navigazione -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/TicketInterventions">Interventi</a></li>
+                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId">Intervento #@InterventionId</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Note Spese</li>
+            </ol>
+        </nav>
+
+        <!-- Riepilogo -->
+        @if (_summary != null)
+        {
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small">Totale Note Spese</div>
+                            <div class="h3 mb-0 text-primary">@_summary.TotalReceiptsCount</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small">Importo Totale</div>
+                            <div class="h3 mb-0 text-success">€ @_summary.TotalExpenses.ToString("N2")</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small">IVA/Tasse</div>
+                            <div class="h3 mb-0 text-info">€ @_summary.TotalTaxes.ToString("N2")</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small">Netto</div>
+                            <div class="h3 mb-0 text-dark">€ @_summary.TotalNet.ToString("N2")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info d-flex align-items-center gap-2 mb-3">
+                <i class="material-icons">info</i>
+                <span>
+                    <strong>@_summary.ConfirmedReceiptsCount</strong> confermata/e &bull; 
+                    <strong>@_summary.PendingReceiptsCount</strong> in attesa
+                </span>
+            </div>
+        }
+
+        <!-- Azioni -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Elenco Note Spese</h5>
+            <div>
+                <a href="/TicketInterventions/@InterventionId/ExpenseReceipts/Create" class="btn btn-primary">
+                    <i class="material-icons align-middle" style="font-size:18px;">add</i>
+                    Aggiungi Nota Spese
+                </a>
+            </div>
+        </div>
+
+        <!-- Lista Note Spese -->
+        @if (_receipts == null || !_receipts.Any())
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="material-icons text-muted" style="font-size: 64px;">receipt_long</i>
+                    <p class="text-muted mt-3">Nessuna nota spese presente per questo intervento.</p>
+                    <a href="/TicketInterventions/@InterventionId/ExpenseReceipts/Create" class="btn btn-primary">
+                        Aggiungi la prima nota spese
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var receipt in _receipts)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border-0 shadow-sm h-100 @(receipt.IsConfirmed ? "border-start border-success border-3" : "")">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        @if (receipt.HasAttachment)
+                                        {
+                                            <i class="material-icons text-danger align-middle">picture_as_pdf</i>
+                                        }
+                                        else
+                                        {
+                                            <i class="material-icons text-secondary align-middle">description</i>
+                                        }
+                                        <strong class="ms-1">#@receipt.Id</strong>
+                                    </div>
+                                    @if (receipt.IsConfirmed)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="material-icons align-middle" style="font-size:14px;">check_circle</i>
+                                            Confermata
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="material-icons align-middle" style="font-size:14px;">pending</i>
+                                            In attesa
+                                        </span>
+                                    }
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(receipt.MerchantName))
+                                {
+                                    <h6 class="card-title">@receipt.MerchantName</h6>
+                                }
+                                
+                                @if (!string.IsNullOrEmpty(receipt.Description))
+                                {
+                                    <p class="card-text text-muted small">@receipt.Description</p>
+                                }
+
+                                <div class="mb-2">
+                                    @if (receipt.TransactionDate.HasValue)
+                                    {
+                                        <div class="small text-muted">
+                                            <i class="material-icons align-middle" style="font-size:16px;">event</i>
+                                            @receipt.TransactionDate.Value.ToString("dd/MM/yyyy")
+                                        </div>
+                                    }
+                                </div>
+
+                                @if (receipt.TotalAmount.HasValue)
+                                {
+                                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                        <div>
+                                            <div class="small text-muted">Totale</div>
+                                            <div class="h5 mb-0 text-success">€ @receipt.TotalAmount.Value.ToString("N2")</div>
+                                        </div>
+                                        @if (receipt.TaxAmount.HasValue)
+                                        {
+                                            <div>
+                                                <div class="small text-muted">IVA</div>
+                                                <div class="small">€ @receipt.TaxAmount.Value.ToString("N2")</div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+
+                                @if (receipt.WasAutoExtracted && receipt.ExtractionConfidence.HasValue)
+                                {
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:14px;">smart_toy</i>
+                                            Estratto automaticamente (@((receipt.ExtractionConfidence.Value * 100).ToString("F0"))%)
+                                        </small>
+                                    </div>
+                                }
+
+                                <div class="mt-3 d-flex gap-2">
+                                    <a href="/TicketInterventions/@InterventionId/ExpenseReceipts/@receipt.Id" 
+                                       class="btn btn-sm btn-outline-primary flex-fill">
+                                        <i class="material-icons align-middle" style="font-size:16px;">visibility</i>
+                                        Dettagli
+                                    </a>
+                                    @if (!receipt.IsConfirmed)
+                                    {
+                                        <button @onclick="() => ConfirmReceipt(receipt.Id)" 
+                                                class="btn btn-sm btn-success"
+                                                disabled="@_isConfirming">
+                                            <i class="material-icons align-middle" style="font-size:16px;">check</i>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Torna all'intervento -->
+        <div class="mt-4">
+            <a href="/TicketInterventions/@InterventionId" class="btn btn-outline-secondary">
+                <i class="material-icons align-middle" style="font-size:18px;">arrow_back</i>
+                Torna all'Intervento
+            </a>
+        </div>
+    </div>
+}
+
+<style>
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+</style>

@@ -134,6 +134,8 @@ builder.Services.AddScoped<IAttachmentsService, AttachmentsService>();
 
 builder.Services.AddScoped<IReceiptProcessorService, ReceiptProcessorService>();
 
+builder.Services.AddScoped<IExpenseReceiptService, ExpenseReceiptService>();
+
 builder.Services.AddSingleton<WTelegramService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<WTelegramService>());
 

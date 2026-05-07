@@ -190,57 +190,6 @@ else
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- ✅ NUOVO: Sezione Note Spese con Estrazione Automatica Receipt -->
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header" id="headingReceipt">
-                                        <button class="accordion-button @(_isReceiptSectionExpanded ? "" : "collapsed")" type="button" 
-                                                @onclick="@(() => _isReceiptSectionExpanded = !_isReceiptSectionExpanded)">
-                                            <i class="material-icons me-2">receipt_long</i>
-                                            Note Spese & Scontrini
-                                            @if (_ticketIntervention.ExtractedTotalAmount.HasValue)
-                                            {
-                                                <span class="badge bg-success ms-2">
-                                                    Estratto: @_ticketIntervention.ExtractedTotalAmount.Value.ToString("C2")
-                                                </span>
-                                            }
-                                        </button>
-                                    </h2>
-                                    <!-- ✅ FIX: Usa CSS invece di Bootstrap collapse per evitare problemi con Blazor file references -->
-                                    <div class="accordion-body-wrapper" style="display: @(_isReceiptSectionExpanded ? "block" : "none")">
-                                        <div class="accordion-body">
-                                            <ReceiptUploader OnExtractionConfirmed="OnReceiptExtractionConfirmed" />
-                                            
-                                            @if (_ticketIntervention.ExtractedTotalAmount.HasValue)
-                                            {
-                                                <div class="alert alert-info mt-3">
-                                                    <strong>
-                                                        <i class="material-icons align-middle">info</i>
-                                                        Dati Estratti Salvati:
-                                                    </strong>
-                                                    <ul class="mb-0 mt-2">
-                                                        @if (_ticketIntervention.ExtractedTotalAmount.HasValue)
-                                                        {
-                                                            <li>Totale: <strong>@_ticketIntervention.ExtractedTotalAmount.Value.ToString("C2")</strong></li>
-                                                        }
-                                                        @if (_ticketIntervention.ExtractedTaxAmount.HasValue)
-                                                        {
-                                                            <li>IVA: @_ticketIntervention.ExtractedTaxAmount.Value.ToString("C2")</li>
-                                                        }
-                                                        @if (_ticketIntervention.ExtractedTransactionDate.HasValue)
-                                                        {
-                                                            <li>Data: @_ticketIntervention.ExtractedTransactionDate.Value.ToString("dd/MM/yyyy")</li>
-                                                        }
-                                                        @if (!string.IsNullOrEmpty(_ticketIntervention.ExtractedMerchantName))
-                                                        {
-                                                            <li>Commerciante: @_ticketIntervention.ExtractedMerchantName</li>
-                                                        }
-                                                    </ul>
-                                                </div>
-                                            }
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                
                             <div class="col-12">

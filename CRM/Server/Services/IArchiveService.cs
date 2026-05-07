@@ -11,7 +11,8 @@ namespace CRM.Server.Services
         Interventions,
         Pdf,
         Photo,
-        Temp
+        Temp,
+        ExpenseReceipts
     }
 
     public interface IArchiveService

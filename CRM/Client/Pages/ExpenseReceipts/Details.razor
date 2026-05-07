@@ -1,0 +1,320 @@
+@page "/TicketInterventions/{InterventionId:int}/ExpenseReceipts/{ReceiptId:int}"
+@using CRM.Shared.DTOs
+@using Microsoft.Extensions.Localization
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+<BlazorHeader Header="Dettaglio Nota Spese"></BlazorHeader>
+
+@if (_isLoading)
+{
+    <Waiting></Waiting>
+}
+else if (_receipt == null)
+{
+    <div class="alert alert-danger">
+        <i class="material-icons align-middle">error</i>
+        Nota spese non trovata.
+    </div>
+}
+else
+{
+    <div class="container-fluid px-3 py-3">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/TicketInterventions">Interventi</a></li>
+                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId">Intervento #@InterventionId</a></li>
+                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId/ExpenseReceipts">Note Spese</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Nota #@ReceiptId</li>
+            </ol>
+        </nav>
+
+        <!-- Header con stato -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="mb-1">
+                    Nota Spese #@_receipt.Id
+                    @if (_receipt.IsConfirmed)
+                    {
+                        <span class="badge bg-success ms-2">
+                            <i class="material-icons align-middle" style="font-size:16px;">check_circle</i>
+                            Confermata
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark ms-2">
+                            <i class="material-icons align-middle" style="font-size:16px;">pending</i>
+                            In attesa di conferma
+                        </span>
+                    }
+                </h4>
+                @if (_receipt.WasAutoExtracted)
+                {
+                    <small class="text-muted">
+                        <i class="material-icons align-middle" style="font-size:14px;">smart_toy</i>
+                        Estratto automaticamente con Azure Form Recognizer
+                    </small>
+                }
+            </div>
+            <div class="d-flex gap-2">
+                @if (!_receipt.IsConfirmed)
+                {
+                    <button @onclick="ConfirmReceipt" class="btn btn-success" disabled="@_isConfirming">
+                        <i class="material-icons align-middle" style="font-size:18px;">check_circle</i>
+                        Conferma Dati
+                    </button>
+                }
+                <a href="/TicketInterventions/@InterventionId/ExpenseReceipts/@ReceiptId/Edit" class="btn btn-primary">
+                    <i class="material-icons align-middle" style="font-size:18px;">edit</i>
+                    Modifica
+                </a>
+                <button @onclick="DeleteReceipt" class="btn btn-danger" disabled="@_isDeleting">
+                    <i class="material-icons align-middle" style="font-size:18px;">delete</i>
+                    Elimina
+                </button>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Colonna PDF / Documento -->
+            @if (_receipt.HasAttachment)
+            {
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="material-icons align-middle text-danger">picture_as_pdf</i>
+                                Documento Allegato
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div style="height: 800px; overflow: auto;">
+                                <iframe src="/api/AttachmentFiles/@_receipt.AttachmentFileId/download" 
+                                        style="width: 100%; height: 100%; border: none;"
+                                        title="Documento Receipt">
+                                </iframe>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light">
+                            <a href="/api/AttachmentFiles/@_receipt.AttachmentFileId/download" 
+                               class="btn btn-sm btn-outline-primary"
+                               target="_blank">
+                                <i class="material-icons align-middle" style="font-size:16px;">download</i>
+                                Scarica PDF
+                            </a>
+                            <span class="ms-2 text-muted small">@_receipt.AttachmentFileName</span>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Colonna Dati Estratti -->
+            <div class="@(_receipt.HasAttachment ? "col-lg-5" : "col-12")">
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="material-icons align-middle">info</i>
+                            Dati Nota Spese
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tbody>
+                                @if (!string.IsNullOrEmpty(_receipt.MerchantName))
+                                {
+                                    <tr>
+                                        <td class="text-muted" style="width: 40%;">
+                                            <i class="material-icons align-middle" style="font-size:18px;">store</i>
+                                            Commerciante
+                                        </td>
+                                        <td><strong>@_receipt.MerchantName</strong></td>
+                                    </tr>
+                                }
+
+                                @if (_receipt.TransactionDate.HasValue)
+                                {
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">event</i>
+                                            Data Transazione
+                                        </td>
+                                        <td><strong>@_receipt.TransactionDate.Value.ToString("dd/MM/yyyy")</strong></td>
+                                    </tr>
+                                }
+
+                                @if (_receipt.TotalAmount.HasValue)
+                                {
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">euro</i>
+                                            Importo Totale
+                                        </td>
+                                        <td><h5 class="mb-0 text-success">€ @_receipt.TotalAmount.Value.ToString("N2")</h5></td>
+                                    </tr>
+                                }
+
+                                @if (_receipt.TaxAmount.HasValue)
+                                {
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">calculate</i>
+                                            IVA/Tasse
+                                        </td>
+                                        <td><strong class="text-info">€ @_receipt.TaxAmount.Value.ToString("N2")</strong></td>
+                                    </tr>
+                                }
+
+                                @if (_receipt.NetAmount.HasValue)
+                                {
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">account_balance_wallet</i>
+                                            Importo Netto
+                                        </td>
+                                        <td><strong>€ @_receipt.NetAmount.Value.ToString("N2")</strong></td>
+                                    </tr>
+                                }
+
+                                @if (!string.IsNullOrEmpty(_receipt.Currency))
+                                {
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">payments</i>
+                                            Valuta
+                                        </td>
+                                        <td><strong>@_receipt.Currency</strong></td>
+                                    </tr>
+                                }
+
+                                @if (!string.IsNullOrEmpty(_receipt.Description))
+                                {
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">description</i>
+                                            Descrizione
+                                        </td>
+                                        <td>@_receipt.Description</td>
+                                    </tr>
+                                }
+
+                                @if (!string.IsNullOrEmpty(_receipt.Notes))
+                                {
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">note</i>
+                                            Note
+                                        </td>
+                                        <td>@_receipt.Notes</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Info Estrazione -->
+                @if (_receipt.WasAutoExtracted)
+                {
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="material-icons align-middle" style="font-size:18px;">smart_toy</i>
+                                Informazioni Estrazione
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            @if (_receipt.ExtractionConfidence.HasValue)
+                            {
+                                <div class="mb-2">
+                                    <small class="text-muted">Affidabilità</small>
+                                    <div class="progress" style="height: 25px;">
+                                        <div class="progress-bar @GetConfidenceClass(_receipt.ExtractionConfidence.Value)" 
+                                             role="progressbar" 
+                                             style="width: @((_receipt.ExtractionConfidence.Value * 100).ToString("F0"))%"
+                                             aria-valuenow="@((_receipt.ExtractionConfidence.Value * 100).ToString("F0"))" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            @((_receipt.ExtractionConfidence.Value * 100).ToString("F0"))%
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (_receipt.ProcessedDate.HasValue)
+                            {
+                                <small class="text-muted">
+                                    <i class="material-icons align-middle" style="font-size:14px;">schedule</i>
+                                    Elaborato il @_receipt.ProcessedDate.Value.ToString("dd/MM/yyyy HH:mm")
+                                </small>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Info Conferma -->
+                @if (_receipt.IsConfirmed && _receipt.ConfirmedDate.HasValue)
+                {
+                    <div class="card border-0 shadow-sm border-start border-success border-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 text-success">
+                                <i class="material-icons align-middle" style="font-size:18px;">verified</i>
+                                Dati Confermati
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <small class="text-muted">
+                                <i class="material-icons align-middle" style="font-size:14px;">schedule</i>
+                                Confermato il @_receipt.ConfirmedDate.Value.ToString("dd/MM/yyyy HH:mm")
+                            </small>
+                            @if (!string.IsNullOrEmpty(_receipt.ConfirmedByUserName))
+                            {
+                                <br />
+                                <small class="text-muted">
+                                    <i class="material-icons align-middle" style="font-size:14px;">person</i>
+                                    da @_receipt.ConfirmedByUserName
+                                </small>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Metadati -->
+                <div class="card border-0 shadow-sm mt-3">
+                    <div class="card-body">
+                        <small class="text-muted">
+                            <div>
+                                <i class="material-icons align-middle" style="font-size:14px;">add_circle</i>
+                                Creato il @_receipt.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                            </div>
+                            @if (_receipt.LastModifiedDate.HasValue)
+                            {
+                                <div class="mt-1">
+                                    <i class="material-icons align-middle" style="font-size:14px;">edit</i>
+                                    Modificato il @_receipt.LastModifiedDate.Value.ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                            }
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Azioni Footer -->
+        <div class="mt-4 d-flex gap-2">
+            <a href="/TicketInterventions/@InterventionId/ExpenseReceipts" class="btn btn-outline-secondary">
+                <i class="material-icons align-middle" style="font-size:18px;">arrow_back</i>
+                Torna alle Note Spese
+            </a>
+        </div>
+    </div>
+}
+
+<style>
+    iframe {
+        background-color: #f8f9fa;
+    }
+</style>

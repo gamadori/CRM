@@ -1,0 +1,504 @@
+@page "/TicketInterventions/{Id:int}/Receipts"
+@using CRM.Shared.DTOs
+@using Microsoft.Extensions.Localization
+@using System.IO
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+<BlazorHeader Header="Note Spese &amp; Scontrini"></BlazorHeader>
+
+@if (_isLoading)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="container-fluid px-0 py-3">
+
+        <!-- Info intervento -->
+        @if (_intervention != null)
+        {
+            <div class="alert alert-info d-flex align-items-center gap-2 mb-3">
+                <i class="material-icons">assignment</i>
+                <span>Intervento <strong>#@Id</strong> del <strong>@_intervention.StartDateTime.ToString("dd/MM/yyyy")</strong></span>
+                <a class="ms-auto btn btn-sm btn-outline-secondary" href="/TicketInterventions/@Id">
+                    <i class="material-icons" style="font-size:16px;vertical-align:middle;">arrow_back</i>
+                    Torna all'intervento
+                </a>
+            </div>
+        }
+
+        <!-- ???????????????????????????????????????????????????????????
+             FASE 1 — UPLOAD (nessun file ancora selezionato)
+             ??????????????????????????????????????????????????????????? -->
+        @if (_previewDataUrl == null && !_isProcessing)
+        {
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="material-icons align-middle me-2">cloud_upload</i>
+                                Carica Scontrino / Fattura
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="upload-zone">
+                                <InputFile @ref="_inputFile" OnChange="OnFileSelected" accept="image/*,.pdf"
+                                           class="d-none" id="receipt-file" />
+                                <label for="receipt-file" class="upload-label">
+                                    <i class="material-icons upload-icon">add_photo_alternate</i>
+                                    <p class="mb-2"><strong>Clicca per selezionare scontrino o fattura</strong></p>
+                                    <p class="text-muted small mb-0">JPG, PNG o PDF &bull; Massimo 10 MB</p>
+                                </label>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(_errorMessage))
+                            {
+                                <div class="alert alert-danger mt-3">
+                                    <i class="material-icons align-middle">error</i> @_errorMessage
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dati già salvati (colonna destra in fase 1) -->
+                <div class="col-lg-6">
+                    @SavedDataCard()
+                </div>
+            </div>
+        }
+
+        <!-- ???????????????????????????????????????????????????????????
+             ELABORAZIONE in corso
+             ??????????????????????????????????????????????????????????? -->
+        @if (_isProcessing)
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
+                    <h5 class="text-muted">Elaborazione in corso...</h5>
+                    <p class="small text-muted">Azure Form Recognizer sta analizzando il documento</p>
+                    @if (!string.IsNullOrEmpty(_previewFileName))
+                    {
+                        <p class="small text-muted"><i class="material-icons align-middle" style="font-size:16px;">insert_drive_file</i> @_previewFileName</p>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- ???????????????????????????????????????????????????????????
+             FASE 2 — REVISIONE: anteprima documento + campi estratti
+             ??????????????????????????????????????????????????????????? -->
+        @if (_previewDataUrl != null && !_isProcessing && _extractionResult != null)
+        {
+            <div class="row g-3">
+
+                <!-- Colonna sinistra: anteprima documento -->
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-secondary text-white d-flex align-items-center justify-content-between">
+                            <h5 class="mb-0">
+                                <i class="material-icons align-middle me-2">preview</i>
+                                Documento caricato
+                            </h5>
+                            <span class="badge bg-white text-secondary small">@_previewFileName</span>
+                        </div>
+                        <div class="card-body p-0 d-flex flex-column" style="min-height:500px;">
+                            @if (IsImagePreview)
+                            {
+                                <div class="d-flex align-items-center justify-content-center flex-grow-1 p-2 bg-light">
+                                    <img src="@_previewDataUrl"
+                                         alt="Anteprima scontrino"
+                                         class="img-fluid rounded shadow-sm"
+                                         style="max-height:600px;object-fit:contain;" />
+                                </div>
+                            }
+                            else if (IsPdfPreview)
+                            {
+                                <iframe src="@_previewDataUrl"
+                                        class="flex-grow-1 w-100 border-0"
+                                        style="min-height:580px;"
+                                        title="Anteprima PDF">
+                                </iframe>
+                            }
+                            else
+                            {
+                                <div class="d-flex align-items-center justify-content-center flex-grow-1 text-muted py-5">
+                                    <div class="text-center">
+                                        <i class="material-icons" style="font-size:64px;opacity:.3;">insert_drive_file</i>
+                                        <p class="mt-2">Anteprima non disponibile per questo tipo di file</p>
+                                        <small>@_previewFileName</small>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Colonna destra: dati estratti da confermare -->
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header @(_extractionResult.Success ? "bg-success" : "bg-danger") text-white">
+                            <h5 class="mb-0">
+                                <i class="material-icons align-middle me-2">@(_extractionResult.Success ? "check_circle" : "error")</i>
+                                @(_extractionResult.Success ? "Dati estratti — verifica e conferma" : "Estrazione fallita")
+                            </h5>
+                        </div>
+                        <div class="card-body">
+
+                            @if (_extractionResult.Success)
+                            {
+                                <!-- Badge info elaborazione -->
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="material-icons align-middle" style="font-size:14px;">category</i>
+                                        @_extractionResult.DocumentType
+                                    </span>
+                                    <span class="badge bg-@GetConfidenceColor(_extractionResult.AverageConfidence) text-white">
+                                        <i class="material-icons align-middle" style="font-size:14px;">psychology</i>
+                                        Confidence @GetConfidencePercent()
+                                    </span>
+                                    <span class="badge bg-light text-dark border">
+                                        <i class="material-icons align-middle" style="font-size:14px;">timer</i>
+                                        @_extractionResult.ProcessingTimeMs ms
+                                    </span>
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(_errorMessage))
+                                {
+                                    <div class="alert alert-danger py-2">
+                                        <i class="material-icons align-middle">error</i> @_errorMessage
+                                    </div>
+                                }
+
+                                <!-- Campi editabili -->
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label fw-semibold small mb-1">
+                                            <i class="material-icons align-middle" style="font-size:16px;">euro</i> Totale
+                                        </label>
+                                        <input type="number" step="0.01" class="form-control form-control-sm"
+                                               @bind="_editAmount" placeholder="0.00" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-semibold small mb-1">
+                                            <i class="material-icons align-middle" style="font-size:16px;">receipt</i> IVA
+                                        </label>
+                                        <input type="number" step="0.01" class="form-control form-control-sm"
+                                               @bind="_editTax" placeholder="0.00" />
+                                    </div>
+                                    @if (_extractionResult.SubtotalAmount.HasValue)
+                                    {
+                                        <div class="col-6">
+                                            <label class="form-label fw-semibold small mb-1">Subtotale</label>
+                                            <input type="number" step="0.01" class="form-control form-control-sm"
+                                                   value="@_extractionResult.SubtotalAmount" disabled />
+                                        </div>
+                                    }
+                                    <div class="col-6">
+                                        <label class="form-label fw-semibold small mb-1">
+                                            <i class="material-icons align-middle" style="font-size:16px;">calendar_today</i> Data
+                                        </label>
+                                        <input type="date" class="form-control form-control-sm"
+                                               @bind="_editDate" />
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold small mb-1">
+                                            <i class="material-icons align-middle" style="font-size:16px;">store</i> Commerciante
+                                        </label>
+                                        <input type="text" class="form-control form-control-sm"
+                                               @bind="_editMerchant" placeholder="Nome commerciante" />
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(_extractionResult.MerchantAddress))
+                                    {
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold small mb-1">
+                                                <i class="material-icons align-middle" style="font-size:16px;">place</i> Indirizzo
+                                            </label>
+                                            <input type="text" class="form-control form-control-sm"
+                                                   value="@_extractionResult.MerchantAddress" disabled />
+                                        </div>
+                                    }
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold small mb-1">
+                                            <i class="material-icons align-middle" style="font-size:16px;">notes</i> Descrizione
+                                        </label>
+                                        <input type="text" class="form-control form-control-sm"
+                                               @bind="_editDescription" placeholder="Descrizione spesa" />
+                                    </div>
+                                </div>
+
+                                <!-- Righe dettaglio (read-only) -->
+                                @if (_extractionResult.LineItems != null && _extractionResult.LineItems.Any())
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold small mb-1">
+                                            <i class="material-icons align-middle" style="font-size:16px;">list</i>
+                                            Dettaglio righe (@_extractionResult.LineItems.Count)
+                                        </label>
+                                        <div class="table-responsive" style="max-height:160px;overflow-y:auto;">
+                                            <table class="table table-sm table-hover mb-0">
+                                                <thead class="table-light sticky-top">
+                                                    <tr>
+                                                        <th>Descrizione</th>
+                                                        <th class="text-center">Qtà</th>
+                                                        <th class="text-end">P.Unit.</th>
+                                                        <th class="text-end">Totale</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var item in _extractionResult.LineItems)
+                                                    {
+                                                        <tr>
+                                                            <td class="small">@item.Description</td>
+                                                            <td class="text-center small">@item.Quantity</td>
+                                                            <td class="text-end small">@item.UnitPrice?.ToString("C2")</td>
+                                                            <td class="text-end small fw-bold">@item.TotalPrice?.ToString("C2")</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                }
+
+                                <!-- Azioni -->
+                                <div class="d-flex gap-2 mt-auto pt-2 border-top">
+                                    <button class="btn btn-success" @onclick="ConfirmAndSave" disabled="@_isSaving">
+                                        <i class="material-icons align-middle">save</i>
+                                        @(_isSaving ? "Salvataggio..." : "Conferma e Salva")
+                                    </button>
+                                    <button class="btn btn-outline-secondary" @onclick="Reset">
+                                        <i class="material-icons align-middle">close</i>
+                                        Annulla
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-danger">
+                                    <i class="material-icons align-middle">error</i>
+                                    <strong>Errore estrazione:</strong> @_extractionResult.ErrorMessage
+                                </div>
+                                <button class="btn btn-outline-primary" @onclick="Reset">
+                                    <i class="material-icons align-middle">refresh</i>
+                                    Riprova con altro file
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        }
+
+        <!-- ???????????????????????????????????????????????????????????
+             FASE 3 — DATI SALVATI (visualizzazione dopo salvataggio)
+             ??????????????????????????????????????????????????????????? -->
+        @if (_previewDataUrl == null && !_isProcessing && _extractionResult == null)
+        {
+            <div class="row g-4 mt-1">
+                <div class="col-12">
+                    @SavedDataCard()
+                </div>
+            </div>
+        }
+
+    </div>
+}
+
+@* Helper locale: card dati salvati riutilizzabile nelle fasi 1 e 3 *@
+@code {
+    private RenderFragment SavedDataCard() =>
+    @<div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-success text-white d-flex align-items-center justify-content-between">
+            <h5 class="mb-0">
+                <i class="material-icons align-middle me-2">receipt_long</i>
+                Spese Registrate
+            </h5>
+            @if (_intervention?.ExtractedTotalAmount.HasValue == true)
+            {
+                <span class="badge bg-white text-success fs-6">
+                    @_intervention.ExtractedTotalAmount.Value.ToString("C2")
+                </span>
+            }
+        </div>
+        <div class="card-body">
+            @if (_intervention == null || !_intervention.ExtractedTotalAmount.HasValue)
+            {
+                <div class="text-center text-muted py-5">
+                    <i class="material-icons" style="font-size:64px;opacity:.3;">receipt</i>
+                    <p class="mt-2">Nessuno scontrino registrato.<br/>
+                        <small>Carica il primo scontrino con il modulo sopra.</small>
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="row g-2 mb-3">
+
+                    @if (_intervention.ExtractedTotalAmount.HasValue)
+                    {
+                        <div class="col-6">
+                            <div class="receipt-field">
+                                <span class="receipt-label">Totale</span>
+                                <span class="receipt-value text-success fw-bold">
+                                    @_intervention.ExtractedTotalAmount.Value.ToString("C2")
+                                    @if (!string.IsNullOrEmpty(_intervention.ExtractedCurrency) && _intervention.ExtractedCurrency != "EUR")
+                                    {
+                                        <small class="text-muted ms-1">@_intervention.ExtractedCurrency</small>
+                                    }
+                                </span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (_intervention.ExtractedTaxAmount.HasValue)
+                    {
+                        <div class="col-6">
+                            <div class="receipt-field">
+                                <span class="receipt-label">IVA</span>
+                                <span class="receipt-value">@_intervention.ExtractedTaxAmount.Value.ToString("C2")</span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (_intervention.ExtractedTransactionDate.HasValue)
+                    {
+                        <div class="col-6">
+                            <div class="receipt-field">
+                                <span class="receipt-label">Data Transazione</span>
+                                <span class="receipt-value">@_intervention.ExtractedTransactionDate.Value.ToString("dd/MM/yyyy")</span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_intervention.ExtractedMerchantName))
+                    {
+                        <div class="col-6">
+                            <div class="receipt-field">
+                                <span class="receipt-label">Commerciante</span>
+                                <span class="receipt-value">@_intervention.ExtractedMerchantName</span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(_intervention.ExtractedDescription))
+                    {
+                        <div class="col-12">
+                            <div class="receipt-field">
+                                <span class="receipt-label">Descrizione</span>
+                                <span class="receipt-value">@_intervention.ExtractedDescription</span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (_intervention.ExtractionConfidence.HasValue)
+                    {
+                        <div class="col-6">
+                            <div class="receipt-field">
+                                <span class="receipt-label">Confidence AI</span>
+                                <span class="receipt-value d-flex align-items-center gap-1">
+                                    <div class="progress flex-grow-1" style="height:6px;">
+                                        <div class="progress-bar bg-@(GetConfidenceColor(_intervention.ExtractionConfidence))"
+                                             style="width:@((_intervention.ExtractionConfidence.Value * 100).ToString("F0"))%">
+                                        </div>
+                                    </div>
+                                    <small>@((_intervention.ExtractionConfidence.Value * 100).ToString("F0"))%</small>
+                                </span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (_intervention.ReceiptProcessedDate.HasValue)
+                    {
+                        <div class="col-6">
+                            <div class="receipt-field">
+                                <span class="receipt-label">Elaborato il</span>
+                                <span class="receipt-value small text-muted">@_intervention.ReceiptProcessedDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                            </div>
+                        </div>
+                    }
+
+                    @if (_intervention.ExtractionConfirmed)
+                    {
+                        <div class="col-12">
+                            <span class="badge bg-success">
+                                <i class="material-icons align-middle" style="font-size:14px;">verified</i>
+                                Confermato
+                            </span>
+                        </div>
+                    }
+
+                </div>
+
+                <div class="d-flex gap-2 pt-2 border-top">
+                    <button class="btn btn-sm btn-outline-primary" @onclick="() => Reset()">
+                        <i class="material-icons" style="font-size:16px;vertical-align:middle;">upload</i>
+                        Carica nuovo scontrino
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="ClearReceiptData" disabled="@_isSaving">
+                        <i class="material-icons" style="font-size:16px;vertical-align:middle;">delete</i>
+                        Elimina dati
+                    </button>
+                </div>
+            }
+        </div>
+    </div>;
+}
+
+<style>
+    .upload-zone {
+        border: 3px dashed #cbd5e1;
+        border-radius: .75rem;
+        padding: 3rem 2rem;
+        text-align: center;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: all .3s;
+    }
+
+    .upload-zone:hover {
+        border-color: #0d6efd;
+        background: #e7f3ff;
+    }
+
+    .upload-label {
+        cursor: pointer;
+        margin: 0;
+        display: block;
+    }
+
+    .upload-icon {
+        font-size: 64px;
+        color: #0d6efd;
+    }
+
+    .receipt-field {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .receipt-label {
+        font-size: .75rem;
+        font-weight: 600;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .receipt-value {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #212529;
+    }
+
+    .material-icons.align-middle {
+        vertical-align: middle;
+        font-size: 20px;
+    }
+</style>

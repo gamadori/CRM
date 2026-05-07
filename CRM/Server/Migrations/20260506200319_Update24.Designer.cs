@@ -4,6 +4,7 @@ using CRM.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CRM.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260506200319_Update24")]
+    partial class Update24
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2991,7 +2994,7 @@ namespace CRM.Server.Migrations
                     b.HasOne("CRM.Shared.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("IdUser")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Folder");
@@ -3004,7 +3007,7 @@ namespace CRM.Server.Migrations
                     b.HasOne("CRM.Shared.Attachment", "Attachment")
                         .WithMany("Files")
                         .HasForeignKey("IdAttachment")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Attachment");
@@ -3425,7 +3428,7 @@ namespace CRM.Server.Migrations
                     b.HasOne("CRM.Shared.Ticket", "Ticket")
                         .WithMany("TicketInterventions")
                         .HasForeignKey("IdTicket")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Ticket");

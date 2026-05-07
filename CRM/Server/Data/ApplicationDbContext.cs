@@ -50,6 +50,12 @@ namespace CRM.Server.Data
                 .HasForeignKey(tua => tua.IdUser)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<TicketIntervention>()
+            .HasOne(ti => ti.Ticket)
+            .WithMany(t => t.TicketInterventions)
+            .HasForeignKey(ti => ti.IdTicket)
+            .OnDelete(DeleteBehavior.Restrict);  // or Cascade, but be explicit
+
             // ✅ Relazione many-to-many per TicketInterventionUser
             modelBuilder.Entity<TicketInterventionUser>()
                 .HasOne(tiu => tiu.TicketIntervention)
@@ -160,6 +166,34 @@ namespace CRM.Server.Data
                 .HasOne(t => t.ToState)
                 .WithMany()
                 .HasForeignKey(t => t.ToStateId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ✅ NUOVO: Configurazione ExpenseReceipt
+            modelBuilder.Entity<ExpenseReceipt>()
+                .HasOne(er => er.TicketIntervention)
+                .WithMany(ti => ti.ExpenseReceipts)
+                .HasForeignKey(er => er.TicketInterventionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ExpenseReceipt>()
+                .HasOne(er => er.AttachmentFile)
+                .WithMany()
+                .HasForeignKey(er => er.AttachmentFileId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // ✅ FIX: Previene percorsi multipli di cascade verso ExpenseReceipt
+            // Configurazione Attachment → AttachmentFile (Restrict invece di Cascade)
+            modelBuilder.Entity<AttachmentFile>()
+                .HasOne(af => af.Attachment)
+                .WithMany(a => a.Files)
+                .HasForeignKey(af => af.IdAttachment)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configurazione ApplicationUser → Attachment (Restrict invece di Cascade)
+            modelBuilder.Entity<Attachment>()
+                .HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.IdUser)
                 .OnDelete(DeleteBehavior.Restrict);
             
             base.OnModelCreating(modelBuilder);
@@ -299,6 +333,10 @@ namespace CRM.Server.Data
         public DbSet<TicketFeedback> TicketFeedbacks => Set<TicketFeedback>();
 
         public DbSet<Folder> Folders => Set<Folder>();
+
+        // ✅ NUOVO: DbSet per le note spese
+        public DbSet<ExpenseReceipt> ExpenseReceipts => Set<ExpenseReceipt>();
+
 
         public DbSet<FolderLanguage> FolderLanguages => Set<FolderLanguage>();  
 

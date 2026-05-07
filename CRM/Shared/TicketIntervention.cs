@@ -246,6 +246,13 @@ namespace CRM.Shared
 
         [Display(Name = "Orari")]
         public virtual ICollection<TicketInterventionTime> TicketInterventionTime { get; set; }
+
+        /// <summary>
+        /// ✅ NUOVO: Collezione delle note spese associate a questo intervento
+        /// </summary>
+        [Display(Name = "Note Spese")]
+        [JsonIgnore]
+        public virtual ICollection<ExpenseReceipt> ExpenseReceipts { get; set; } = new List<ExpenseReceipt>();
     }
 
     public class TicketInterventionFilter: PagingParameterModel

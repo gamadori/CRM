@@ -87,6 +87,10 @@ namespace CRM.Client.Pages.TicketInterventions
         private List<ApplicationUser> _assignedUsers = new List<ApplicationUser>();
         private bool _isLoadingUsers = false;
 
+        // ✅ NUOVO: Riepilogo note spese
+        private CRM.Shared.DTOs.ExpenseReceiptSummaryDTO _expenseReceiptSummary = null;
+        private bool _isLoadingExpenseReceipts = false;
+
         private string _typeMessage;
         private string _message = null;
 
@@ -118,6 +122,9 @@ namespace CRM.Client.Pages.TicketInterventions
 
                     // ✅ NUOVO: Carica gli utenti assegnati
                     await LoadAssignedUsers();
+
+                    // ✅ NUOVO: Carica riepilogo note spese
+                    await LoadExpenseReceiptSummary();
                 }
                 else
                     _ticketIntervention = new TicketIntervention();
@@ -206,6 +213,31 @@ namespace CRM.Client.Pages.TicketInterventions
                 return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
 
             return (parts[0][0].ToString() + parts[^1][0].ToString()).ToUpper();
+        }
+
+        /// <summary>
+        /// ✅ NUOVO: Carica il riepilogo delle note spese
+        /// </summary>
+        private async Task LoadExpenseReceiptSummary()
+        {
+            try
+            {
+                _isLoadingExpenseReceipts = true;
+                StateHasChanged();
+
+                _expenseReceiptSummary = await _httpClient.GetFromJsonAsync<CRM.Shared.DTOs.ExpenseReceiptSummaryDTO>(
+                    $"api/ExpenseReceipts/intervention/{Id}/summary");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento riepilogo note spese: {ex.Message}");
+                _expenseReceiptSummary = null;
+            }
+            finally
+            {
+                _isLoadingExpenseReceipts = false;
+                StateHasChanged();
+            }
         }
 
         private void Edit()

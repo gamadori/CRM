@@ -93,8 +93,6 @@ namespace CRM.Client.Pages.TicketInterventions
         private SignaturePad _signaturePad;
         
         private bool _signatureLoaded = false;
-        
-        private bool _isReceiptSectionExpanded = false;
        
         protected override async Task OnInitializedAsync()
         {
@@ -427,30 +425,6 @@ namespace CRM.Client.Pages.TicketInterventions
         private void OnSignatureCleared()
         {
             _ticketIntervention.CustomerSignature = null;
-            StateHasChanged();
-        }
-
-        private void OnReceiptExtractionConfirmed(CRM.Shared.DTOs.ReceiptExtractionResult result)
-        {
-            if (result == null || !result.Success)
-                return;
-
-            _ticketIntervention.ExtractedTotalAmount = result.TotalAmount;
-            _ticketIntervention.ExtractedTaxAmount = result.TaxAmount;
-            _ticketIntervention.ExtractedTransactionDate = result.TransactionDate;
-            _ticketIntervention.ExtractedMerchantName = result.MerchantName;
-            _ticketIntervention.ExtractedDescription = result.Description;
-            _ticketIntervention.ExtractedCurrency = result.Currency ?? "EUR";
-            _ticketIntervention.ExtractionConfidence = result.AverageConfidence;
-            _ticketIntervention.ReceiptProcessedDate = DateTime.Now;
-            _ticketIntervention.ExtractionConfirmed = true;
-            _ticketIntervention.ExtractedFieldsJson = System.Text.Json.JsonSerializer.Serialize(result);
-
-            if (string.IsNullOrWhiteSpace(_ticketIntervention.Note) && !string.IsNullOrEmpty(result.Description))
-            {
-                _ticketIntervention.Note = $"Spesa: {result.Description}";
-            }
-
             StateHasChanged();
         }
 

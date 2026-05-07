@@ -528,7 +528,7 @@ namespace CRM.Client.Pages.Tickets
                 var response = await _service.Post(_ticket);
                 
                 // ✅ FIX: Controllo null sul risultato del POST
-                if (response?.Data == null)
+                if (response?.State != true)
                 {
                     NotificationService.Notify(new NotificationMessage
                     {
@@ -539,8 +539,8 @@ namespace CRM.Client.Pages.Tickets
                     });
                     return;
                 }
-                
-                _ticket = response.Data;
+                else if (response?.Data != null)
+                    _ticket = response.Data;
 
                 // ✅ NUOVO: Salva le assegnazioni multiple tramite API
                 if (_ticket?.Id > 0)
