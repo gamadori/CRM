@@ -19,7 +19,7 @@ using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
 using Microsoft.AspNetCore.WebUtilities;
 
-namespace CRM.Client.Pages.DxfViewer
+namespace CRM.Client.Pages.DocViewer
 {
     public partial class Viewer : ComponentBase, IAsyncDisposable
     {
@@ -41,6 +41,12 @@ namespace CRM.Client.Pages.DxfViewer
         [Parameter]
         public int Id { get; set; }
 
+        [Parameter]
+        public bool DownloadEnabled { get; set; } = true;
+
+        [Parameter]
+        public bool CloseEnabled { get; set; } = true;
+
         private bool _loaded;
         private string _loadingMessage = "Caricamento documento...";
 
@@ -48,6 +54,8 @@ namespace CRM.Client.Pages.DxfViewer
         private ElementReference canvasRef;
         private ElementReference fileHostRef;
         private bool _initialized;
+        private string _currentContentType;
+        private string _currentFileName;
 
         protected override async Task OnInitializedAsync()
         {
@@ -85,6 +93,9 @@ namespace CRM.Client.Pages.DxfViewer
                 var contentType = response.Content.Headers.ContentType?.MediaType
                                   ?? "application/octet-stream";
 
+                _currentContentType = contentType;
+                _currentFileName = $"file_{Id}";
+
                 // Formati Office/OpenDocument che richiedono conversione server-side PDF
                 var needsConversion = new[]
                 {
@@ -115,8 +126,12 @@ namespace CRM.Client.Pages.DxfViewer
                     _loadingMessage = "Rendering PDF...";
                     StateHasChanged();
 
+                    // Update for PDF export
+                    _currentContentType = "application/pdf";
+                    _currentFileName = $"file_{Id}.pdf";
+
                     // Mostra il PDF inline
-                    await JS.InvokeVoidAsync("displayFileInElement", fileHostRef, "application/pdf", pdfBytes, $"file_{Id}.pdf");
+                    await JS.InvokeVoidAsync("displayFileInElement", fileHostRef, "application/pdf", pdfBytes, _currentFileName);
                     await JS.InvokeVoidAsync("eval", "document.getElementById('dxfCanvas').style.display='none'; document.getElementById('fileHost').style.display='block';");
                 }
                 else
@@ -128,8 +143,10 @@ namespace CRM.Client.Pages.DxfViewer
                         _loadingMessage = "Rendering PDF...";
                         StateHasChanged();
 
+                        _currentFileName = $"file_{Id}.pdf";
+
                         // PDF: mostra nel fileHost, nascondi canvas
-                        await JS.InvokeVoidAsync("displayFileInElement", fileHostRef, contentType, bytes, $"file_{Id}.pdf");
+                        await JS.InvokeVoidAsync("displayFileInElement", fileHostRef, contentType, bytes, _currentFileName);
                         await JS.InvokeVoidAsync("eval", "document.getElementById('dxfCanvas').style.display='none'; document.getElementById('fileHost').style.display='block';");
                     }
                     else if (contentType.Contains("dxf", StringComparison.OrdinalIgnoreCase) ||
@@ -137,6 +154,8 @@ namespace CRM.Client.Pages.DxfViewer
                     {
                         _loadingMessage = "Rendering DXF...";
                         StateHasChanged();
+
+                        _currentFileName = $"file_{Id}.dxf";
 
                         // DXF: mostra canvas, nascondi fileHost
                         await JS.InvokeVoidAsync("eval", "document.getElementById('dxfCanvas').style.display='block'; document.getElementById('fileHost').style.display='none';");
@@ -148,8 +167,10 @@ namespace CRM.Client.Pages.DxfViewer
                         _loadingMessage = "Rendering file...";
                         StateHasChanged();
 
+                        _currentFileName = $"file_{Id}";
+
                         // Altri tipi: prova a mostrare nel fileHost (immagini, ecc.)
-                        await JS.InvokeVoidAsync("displayFileInElement", fileHostRef, contentType, bytes, $"file_{Id}");
+                        await JS.InvokeVoidAsync("displayFileInElement", fileHostRef, contentType, bytes, _currentFileName);
                         await JS.InvokeVoidAsync("eval", "document.getElementById('dxfCanvas').style.display='none'; document.getElementById('fileHost').style.display='block';");
                     }
                 }
@@ -171,11 +192,44 @@ namespace CRM.Client.Pages.DxfViewer
         }
         private async Task Export()
         {
-            await JS.InvokeVoidAsync(
-                "exportDxfImageHighRes",
-                "dxfCanvas",
-                "componente.png"
-            );
+            try
+            {
+                // Se è un DXF, esporta come immagine dal canvas
+                if (_currentContentType?.Contains("dxf", StringComparison.OrdinalIgnoreCase) == true ||
+                    _currentContentType?.Contains("autocad", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    await JS.InvokeVoidAsync(
+                        "exportDxfImageHighRes",
+                        "dxfCanvas",
+                        "componente.png"
+                    );
+                }
+                else
+                {
+                    // Per PDF, Office e altri file, scarica il file originale
+                    var url = $"api/attachments/files/{Id}";
+                    using var response = await Http.GetAsync(url);
+                    response.EnsureSuccessStatusCode();
+
+                    var bytes = await response.Content.ReadAsByteArrayAsync();
+                    var contentDisposition = response.Content.Headers.ContentDisposition;
+                    var fileName = contentDisposition?.FileName?.Trim('\"') ?? _currentFileName;
+
+                    await JS.InvokeVoidAsync(
+                        "downloadFromByteArray",
+                        new
+                        {
+                            ByteArray = bytes,
+                            FileName = fileName,
+                            ContentType = _currentContentType
+                        });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Errore durante l'export: {ex.Message}");
+                await ShowAlert("Errore durante il download del file.", "Errore");
+            }
         }
         
 

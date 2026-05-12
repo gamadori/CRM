@@ -5,7 +5,6 @@
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize
 
-<BlazorHeader Header="Note Spese"></BlazorHeader>
 
 @if (_isLoading)
 {
@@ -13,16 +12,10 @@
 }
 else
 {
-    <div class="container-fluid px-3 py-3">
+    <PageHeader>
+    </PageHeader>
 
-        <!-- Breadcrumb / Navigazione -->
-        <nav aria-label="breadcrumb" class="mb-3">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/TicketInterventions">Interventi</a></li>
-                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId">Intervento #@InterventionId</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Note Spese</li>
-            </ol>
-        </nav>
+    <div class="container-fluid px-3 py-3">
 
         <!-- Riepilogo -->
         @if (_summary != null)

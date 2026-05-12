@@ -45,11 +45,13 @@ else
                 </div>
             </div>
         }
-        else if (_extractionResult != null && _previewDataUrl != null)
+        else if (_extractionResult != null)
         {
             <!-- Fase 2: Revisione Dati Estratti -->
             <div class="row g-4">
                 <!-- Colonna PDF -->
+                @if (_previewDataUrl != null)
+                {
                 <div class="col-lg-7">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-light">
@@ -75,9 +77,10 @@ else
                         </div>
                     </div>
                 </div>
+                }
 
                 <!-- Colonna Form -->
-                <div class="col-lg-5">
+                <div class="@(_previewDataUrl != null ? "col-lg-5" : "col-12")">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-light">
                             <h5 class="mb-0">
@@ -231,7 +234,7 @@ else
                                 <p class="mb-2">oppure</p>
                                 <button @onclick="ShowManualForm" class="btn btn-outline-secondary">
                                     <i class="material-icons align-middle" style="font-size:18px;">edit_note</i>
-                                    Inserisci Manualmente (senza PDF)
+                                    Inserisci Manualmente (senza Documento)
                                 </button>
                             </div>
                         </div>

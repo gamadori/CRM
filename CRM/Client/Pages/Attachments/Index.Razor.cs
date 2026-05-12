@@ -156,7 +156,7 @@ namespace CRM.Client.Pages.Attachments
             else
             {
                 if (AttachmentType == AttachmentTypes.DXF)
-                    NavigationManager.NavigateTo($"/DxfViewer/{id}");
+                    NavigationManager.NavigateTo($"/DocViewer/{id}");
                 else
                     NavigationManager.NavigateTo($"/Attachments/{id}/Details");
             }

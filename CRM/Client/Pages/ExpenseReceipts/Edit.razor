@@ -1,0 +1,165 @@
+@page "/TicketInterventions/{InterventionId:int}/ExpenseReceipts/{ReceiptId:int}/Edit"
+@using CRM.Shared.DTOs
+@using Microsoft.Extensions.Localization
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+<BlazorHeader Header="Modifica Nota Spese"></BlazorHeader>
+
+@if (_isLoading)
+{
+    <Waiting></Waiting>
+}
+else if (_notFound)
+{
+    <div class="alert alert-danger">
+        <i class="material-icons align-middle">error</i>
+        Nota spese non trovata.
+    </div>
+}
+else
+{
+    <div class="container-fluid px-3 py-3">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/TicketInterventions">Interventi</a></li>
+                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId">Intervento #@InterventionId</a></li>
+                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId/ExpenseReceipts">Note Spese</a></li>
+                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId/ExpenseReceipts/@ReceiptId">Nota #@ReceiptId</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Modifica</li>
+            </ol>
+        </nav>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="material-icons align-middle">error</i>
+                @_errorMessage
+                <button type="button" class="btn-close" @onclick="() => _errorMessage = null"></button>
+            </div>
+        }
+
+        <div class="row g-4">
+            <!-- Colonna documento allegato (se presente) -->
+            @if (_model.AttachmentFileId.HasValue)
+            {
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">
+                                <i class="material-icons align-middle text-danger">picture_as_pdf</i>
+                                Documento Allegato
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div style="height: 700px; overflow: auto;">
+                                <CRM.Client.Pages.DocViewer.Viewer Id="@_model.AttachmentFileId.Value" CloseEnabled="false" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Colonna Form -->
+            <div class="@(_model.AttachmentFileId.HasValue ? "col-lg-5" : "col-12")">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="material-icons align-middle">edit</i>
+                            Modifica Dati Nota Spese
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="@_model" OnValidSubmit="SaveReceipt">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="material-icons align-middle" style="font-size:18px;">store</i>
+                                    Commerciante
+                                </label>
+                                <InputText @bind-Value="_model.MerchantName" class="form-control" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="material-icons align-middle" style="font-size:18px;">event</i>
+                                    Data Transazione
+                                </label>
+                                <InputDate @bind-Value="_model.TransactionDate" class="form-control" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="material-icons align-middle" style="font-size:18px;">euro</i>
+                                    Importo Totale
+                                </label>
+                                <InputNumber @bind-Value="_model.TotalAmount" class="form-control" step="0.01" />
+                                <ValidationMessage For="@(() => _model.TotalAmount)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="material-icons align-middle" style="font-size:18px;">calculate</i>
+                                    IVA/Tasse
+                                </label>
+                                <InputNumber @bind-Value="_model.TaxAmount" class="form-control" step="0.01" />
+                                <ValidationMessage For="@(() => _model.TaxAmount)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="material-icons align-middle" style="font-size:18px;">payments</i>
+                                    Valuta
+                                </label>
+                                <InputText @bind-Value="_model.Currency" class="form-control" placeholder="EUR" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="material-icons align-middle" style="font-size:18px;">description</i>
+                                    Descrizione
+                                </label>
+                                <InputTextArea @bind-Value="_model.Description" class="form-control" rows="3" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="material-icons align-middle" style="font-size:18px;">note</i>
+                                    Note
+                                </label>
+                                <InputTextArea @bind-Value="_model.Notes" class="form-control" rows="2" />
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <InputCheckbox @bind-Value="_model.IsConfirmed" class="form-check-input" id="confirmCheck" />
+                                <label class="form-check-label" for="confirmCheck">
+                                    Dati confermati
+                                </label>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success flex-fill" disabled="@_isSaving">
+                                    @if (_isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    <i class="material-icons align-middle" style="font-size:18px;">save</i>
+                                    Salva Modifiche
+                                </button>
+                                <a href="/TicketInterventions/@InterventionId/ExpenseReceipts/@ReceiptId" class="btn btn-outline-secondary">
+                                    <i class="material-icons align-middle" style="font-size:18px;">close</i>
+                                    Annulla
+                                </a>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

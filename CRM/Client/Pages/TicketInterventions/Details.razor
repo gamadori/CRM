@@ -10,6 +10,7 @@
 }
 else
 {
+
     <PageHeader PageMode="@PageMode">
     </PageHeader>
 
@@ -485,7 +486,7 @@ else
                             <BlazorButton OnClick="Edit" Template="TemplateButton.Edit" Label="true" />
                         }
 
-                        @if (_ticketIntervention.Permits.Edit())
+                       @*  @if (_ticketIntervention.Permits.Edit())
                         {
                             <a class="btn btn-outline-warning btn-sm ms-1"
                                href="/TicketInterventions/@_ticketIntervention.Id/Receipts">
@@ -496,7 +497,7 @@ else
                                     <span class="badge bg-success ms-1">@_ticketIntervention.ExtractedTotalAmount.Value.ToString("C2")</span>
                                 }
                             </a>
-                        }
+                        } *@
 
                         @if (_ticketIntervention.HasAttachments)
                         {

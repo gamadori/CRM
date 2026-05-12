@@ -176,7 +176,7 @@
     protected async Task OnClickView()
     {
         
-        var id = await DialogService.OpenSideAsync<CRM.Client.Pages.DxfViewer.Viewer>(Localize["Preview Documento"], new Dictionary<string, object>() { { "Id", IdFile } },
+        var id = await DialogService.OpenSideAsync<CRM.Client.Pages.DocViewer.Viewer>(Localize["Preview Documento"], new Dictionary<string, object>() { { "Id", IdFile } },
                 new SideDialogOptions { Position = DialogPosition.Top, ShowMask = false, Height = "100vh" });
 
     }

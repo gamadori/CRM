@@ -29,7 +29,7 @@ namespace CRM.Server.Controllers
         {
             _context = context;
             _archiveService = archiveService;
-            _archiveService.TypeArchive = ArchiveTypes.ExpenseReceipts;
+            _archiveService.TypeArchive = ArchiveTypes.Attachments;
             _permitsService = permitsService;
         }
 

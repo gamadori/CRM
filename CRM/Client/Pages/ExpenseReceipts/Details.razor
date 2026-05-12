@@ -13,6 +13,9 @@
 }
 else if (_receipt == null)
 {
+    <PageHeader>
+    </PageHeader>
+
     <div class="alert alert-danger">
         <i class="material-icons align-middle">error</i>
         Nota spese non trovata.
@@ -93,10 +96,14 @@ else
                         </div>
                         <div class="card-body p-0">
                             <div style="height: 800px; overflow: auto;">
-                                <iframe src="/api/AttachmentFiles/@_receipt.AttachmentFileId/download" 
+                                @* <iframe src="/api/AttachmentFiles/@_receipt.AttachmentFileId/download" 
                                         style="width: 100%; height: 100%; border: none;"
                                         title="Documento Receipt">
-                                </iframe>
+                                </iframe> *@
+                                @if (_receipt!.AttachmentFileId != null)
+                                {
+                                    <CRM.Client.Pages.DocViewer.Viewer Id="@_receipt.AttachmentFileId.Value" CloseEnabled="false"></CRM.Client.Pages.DocViewer.Viewer>
+                                }
                             </div>
                         </div>
                         <div class="card-footer bg-light">

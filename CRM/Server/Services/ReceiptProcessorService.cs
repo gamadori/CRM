@@ -32,7 +32,7 @@ namespace CRM.Server.Services
         {
             _context = context;
             _archiveService = archiveService;
-            _archiveService.TypeArchive = ArchiveTypes.ExpenseReceipts; // Imposta il tipo di archivio per le ricevute
+            _archiveService.TypeArchive = ArchiveTypes.Attachments; // Imposta il tipo di archivio per le ricevute
             _logger = logger;
 
             _endpoint = configuration["AzureFormRecognizer:Endpoint"];

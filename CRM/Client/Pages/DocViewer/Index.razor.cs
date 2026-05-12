@@ -9,7 +9,7 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
 
-namespace CRM.Client.Pages.DxfViewer
+namespace CRM.Client.Pages.DocViewer
 {
    
     public partial class Index: ComponentBase

@@ -34,9 +34,12 @@ namespace RedG.Client.Components
         [Parameter]
         public bool AutoLabel { get; set; } = false;
 
+       
+        
         protected override void OnInitialized()
         {
             base.OnInitialized();
+            
             switch (RGButtonType)
             {
                 case RGButtonType.New:
