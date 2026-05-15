@@ -81,7 +81,8 @@ namespace CRM.Client.Helpers
         public static string ContractTypeTicketTypesPath = "api/ContractTypeTicketTypes";
 
         public static string DealsPath = "api/Deals";
-       
+        
+        public static string ExpenseReceiptsPath = "api/ExpenseReceipts";
 
         public static string RolesPath = "api/Roles";
 

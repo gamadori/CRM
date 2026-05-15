@@ -72,11 +72,11 @@ namespace CRM.Client.Pages.ExpenseReceipts
                 _isSaving = true;
                 _errorMessage = null;
 
-                var response = await Http.PutAsJsonAsync($"api/ExpenseReceipts/{ReceiptId}", _model);
+                var response = await Http.PutAsJsonAsync($"api/ExpenseReceipts/{ReceiptId}/Details", _model);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    NavigationManager.NavigateTo($"/TicketInterventions/{InterventionId}/ExpenseReceipts/{ReceiptId}");
+                    NavigationManager.NavigateTo($"/TicketInterventions/{InterventionId}/ExpenseReceipts/{ReceiptId}/Details");
                 }
                 else
                 {

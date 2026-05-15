@@ -199,7 +199,9 @@ namespace CRM.Client.Services
                         (await _restClient.GetItem<TicketTypeLanguage, int>((int)domainId, ConstHelper.TicketTypesLanguagesPath))?.Name,
 
                     "productacctypes" or "productacctype" =>
-                        (await _restClient.GetItem<ProductAccessoryType, int>((int)domainId, ConstHelper.ProductAccTypesPath))?.Name,   
+                        (await _restClient.GetItem<ProductAccessoryType, int>((int)domainId, ConstHelper.ProductAccTypesPath))?.Name,
+                    //"expensereceipts" or "expensereceipt" =>
+                    //    (await _restClient.GetItem<ExpenseReceipt, int>((int)domainId, ConstHelper.ExpenseReceiptsPath))?.Name,
                     _ => null
                 };
             }
@@ -301,6 +303,7 @@ namespace CRM.Client.Services
                 "tickets" => "confirmation_number",
                 "products" => "inventory_2",
                 "deals" => "handshake",
+                "expensereceipts" => "receipt_long",
                 _ => "dashboard"
             };
         }
@@ -406,7 +409,7 @@ namespace CRM.Client.Services
                         (await _restClient.GetItem<TicketType, int>(int.Parse(segment), ConstHelper.TicketTypesPath))?.Desc ?? segment,
                     "ProductAccTypes" or "productacctype" when isNumeric =>
                         (await _restClient.GetItem<ProductAccessoryType, int>(int.Parse(segment), ConstHelper.ProductAccTypesPath))?.Name ?? segment,
-
+                    
                     _ => segment
                 };
             }

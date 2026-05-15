@@ -150,7 +150,7 @@ namespace CRM.Client.Pages.ExpenseReceipts
                 if (response.IsSuccessStatusCode)
                 {
                     var created = await response.Content.ReadFromJsonAsync<ExpenseReceiptDTO>();
-                    NavigationManager.NavigateTo($"/TicketInterventions/{InterventionId}/ExpenseReceipts/{created.Id}");
+                    NavigationManager.NavigateTo($"/TicketInterventions/{InterventionId}/ExpenseReceipts/{created.Id}/Details");
                 }
                 else
                 {

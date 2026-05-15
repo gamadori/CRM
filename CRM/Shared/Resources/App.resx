@@ -694,4 +694,7 @@
   <data name="ArticlesList" xml:space="preserve">
     <value>Articles List</value>
   </data>
+  <data name="ExpenseReceipts" xml:space="preserve">
+    <value>Expense report</value>
+  </data>
 </root>

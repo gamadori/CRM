@@ -754,6 +754,15 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Expense report.
+        /// </summary>
+        public static string ExpenseReceipts {
+            get {
+                return ResourceManager.GetString("ExpenseReceipts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Expired.
         /// </summary>
         public static string Expired {
