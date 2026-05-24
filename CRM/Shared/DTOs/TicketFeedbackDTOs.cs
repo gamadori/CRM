@@ -18,6 +18,8 @@ namespace CRM.Shared.DTOs
 
         [MaxLength(1000)]
         public string? Comment { get; set; }
+
+        
     }
 
     /// <summary>
@@ -49,4 +51,6 @@ namespace CRM.Shared.DTOs
         public DateTime CreatedAt { get; set; }
         public string UserName { get; set; }
     }
+
+    
 }

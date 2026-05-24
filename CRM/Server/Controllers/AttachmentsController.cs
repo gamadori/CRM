@@ -82,6 +82,25 @@ namespace CRM.Server.Controllers
             }
         }
 
+        [HttpGet("list")]
+        public async Task<IEnumerable<AttachmentDTO>?> GetItems([FromQuery] AttachmentsFilter? args = null)
+        {
+            try
+            {
+                var items = await _service.GetListAsync(args);
+                if (items == null)
+                {
+                    return Enumerable.Empty<AttachmentDTO>();
+                }
+                return items;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(AttachmentsController), nameof(GetItems), LogEvent.EventsTypes.Error, ex);
+                return Enumerable.Empty<AttachmentDTO>();
+            }
+        }
+
         // GET: api/SpareParts
         //[HttpGet]
         //public async Task<ActionResult<IEnumerable<Attachment>>> GetAttachments([FromQuery] AttachmentsFilter? args = null)

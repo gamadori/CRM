@@ -47,8 +47,16 @@ namespace CRM.Client.Pages.DocViewer
         [Parameter]
         public bool CloseEnabled { get; set; } = true;
 
+        [Parameter]
+        public bool Embedded { get; set; } = false;
+
         private bool _loaded;
         private string _loadingMessage = "Caricamento documento...";
+        private readonly string _canvasId = $"dxfCanvas_{Guid.NewGuid():N}";
+        private readonly string _fileHostId = $"fileHost_{Guid.NewGuid():N}";
+        private string RootStyle => Embedded
+            ? "position:relative; width:100%; height:100%; min-height:260px; margin:0; padding:0; box-sizing:border-box;"
+            : "position:absolute; inset:0; margin:0; padding:0; box-sizing:border-box;";
 
         private ElementReference containerRef;
         private ElementReference canvasRef;
@@ -132,7 +140,7 @@ namespace CRM.Client.Pages.DocViewer
 
                     // Mostra il PDF inline
                     await JS.InvokeVoidAsync("displayFileInElement", fileHostRef, "application/pdf", pdfBytes, _currentFileName);
-                    await JS.InvokeVoidAsync("eval", "document.getElementById('dxfCanvas').style.display='none'; document.getElementById('fileHost').style.display='block';");
+                    await SetViewerMode(false);
                 }
                 else
                 {
@@ -147,7 +155,7 @@ namespace CRM.Client.Pages.DocViewer
 
                         // PDF: mostra nel fileHost, nascondi canvas
                         await JS.InvokeVoidAsync("displayFileInElement", fileHostRef, contentType, bytes, _currentFileName);
-                        await JS.InvokeVoidAsync("eval", "document.getElementById('dxfCanvas').style.display='none'; document.getElementById('fileHost').style.display='block';");
+                        await SetViewerMode(false);
                     }
                     else if (contentType.Contains("dxf", StringComparison.OrdinalIgnoreCase) ||
                              contentType.Contains("autocad", StringComparison.OrdinalIgnoreCase))
@@ -158,8 +166,8 @@ namespace CRM.Client.Pages.DocViewer
                         _currentFileName = $"file_{Id}.dxf";
 
                         // DXF: mostra canvas, nascondi fileHost
-                        await JS.InvokeVoidAsync("eval", "document.getElementById('dxfCanvas').style.display='block'; document.getElementById('fileHost').style.display='none';");
-                        await JS.InvokeVoidAsync("loadDxfFromBytes", "dxfCanvas", bytes);
+                        await SetViewerMode(true);
+                        await JS.InvokeVoidAsync("loadDxfFromBytes", _canvasId, bytes);
                         await JS.InvokeVoidAsync("dialogSizing.setCanvasToContainer", containerRef, canvasRef);
                     }
                     else
@@ -171,7 +179,7 @@ namespace CRM.Client.Pages.DocViewer
 
                         // Altri tipi: prova a mostrare nel fileHost (immagini, ecc.)
                         await JS.InvokeVoidAsync("displayFileInElement", fileHostRef, contentType, bytes, _currentFileName);
-                        await JS.InvokeVoidAsync("eval", "document.getElementById('dxfCanvas').style.display='none'; document.getElementById('fileHost').style.display='block';");
+                        await SetViewerMode(false);
                     }
                 }
 
@@ -200,7 +208,7 @@ namespace CRM.Client.Pages.DocViewer
                 {
                     await JS.InvokeVoidAsync(
                         "exportDxfImageHighRes",
-                        "dxfCanvas",
+                        _canvasId,
                         "componente.png"
                     );
                 }
@@ -263,6 +271,15 @@ namespace CRM.Client.Pages.DocViewer
             var options = new DialogOptions() { Width = "400px", Height = "200px", Resizable = false, Draggable = false };
             return DialogService.OpenAsync<Alert>(title, parameters, options);
         }
+
+        private async Task SetViewerMode(bool showDxfCanvas)
+        {
+            var script = showDxfCanvas
+                ? $"document.getElementById('{_canvasId}').style.display='block'; document.getElementById('{_fileHostId}').style.display='none';"
+                : $"document.getElementById('{_canvasId}').style.display='none'; document.getElementById('{_fileHostId}').style.display='block';";
+            await JS.InvokeVoidAsync("eval", script);
+        }
+
         // aggiungi scollegamento observer nel DisposeAsync
         public async ValueTask DisposeAsync()
         {
@@ -271,6 +288,7 @@ namespace CRM.Client.Pages.DocViewer
                 try
                 {
                     await JS.InvokeVoidAsync("dialogSizing.disconnectObserver", containerRef);
+                    await JS.InvokeVoidAsync("cleanupDxfViewer", _canvasId);
                     await JS.InvokeVoidAsync("cleanupFileHost", fileHostRef);
                 }
                 catch (Exception ex)

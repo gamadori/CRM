@@ -1,0 +1,524 @@
+@page "/Catalog/Details/{Id:int}"
+@using CRM.Client.Pages.Catalog.Components
+@using CRM.Client.Services
+
+<div class="catalog-detail-page">
+    @if (_loading)
+    {
+        <Waiting></Waiting>
+    }
+    else if (_detail == null)
+    {
+        <div class="catalog-empty">
+            <span class="material-icons">category</span>
+            <strong>Prodotto non disponibile</strong>
+            <p>Il prodotto non è presente nel catalogo o non è più visibile.</p>
+            <button type="button" @onclick="BackToCatalog">Torna al catalogo</button>
+        </div>
+    }
+    else
+    {
+        <section class="catalog-detail">
+            <button class="catalog-back" type="button" @onclick="BackToCatalog">
+                <span class="material-icons">arrow_back</span>
+                <span>Torna al catalogo</span>
+            </button>
+
+            <div class="catalog-detail-hero">
+                <div class="catalog-detail-cover">
+                    <CatalogCover CoverAssetId="@_detail.Product.CoverAssetId"
+                                  CoverAttachmentFileId="@_detail.Product.CoverAttachmentFileId"
+                                  CoverMediaType="@_detail.Product.CoverMediaType"
+                                  AltText="@_detail.Product.Name" />
+                </div>
+
+                <div class="catalog-detail-info">
+                    <div class="catalog-detail-type">@_detail.Product.ProductTypeName</div>
+                    <h1>@_detail.Product.Name</h1>
+
+                    @if (!string.IsNullOrWhiteSpace(_detail.Product.Description))
+                    {
+                        <p>@_detail.Product.Description</p>
+                    }
+
+                    <div class="catalog-facts">
+                        @if (!string.IsNullOrWhiteSpace(_detail.Product.Code))
+                        {
+                            <div>
+                                <span>Codice</span>
+                                <strong>@_detail.Product.Code</strong>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_detail.Product.CompanyName))
+                        {
+                            <div>
+                                <span>Azienda</span>
+                                <strong>@_detail.Product.CompanyName</strong>
+                            </div>
+                        }
+                        @if (_detail.Product.Price > 0)
+                        {
+                            <div>
+                                <span>Prezzo</span>
+                                <strong>@_detail.Product.Price.ToString("C")</strong>
+                            </div>
+                        }
+                        <div>
+                            <span>Immagini</span>
+                            <strong>@_detail.Product.ImagesCount</strong>
+                        </div>
+                        <div>
+                            <span>DXF</span>
+                            <strong>@_detail.Product.DxfCount</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <CatalogImageGallery Images="@_detail.Images" />
+            <CatalogDxfList Dxfs="@_detail.Dxfs" />
+            <CatalogAttachmentList Attachments="@_detail.Attachments" />
+        </section>
+    }
+</div>
+
+<style>
+    .catalog-detail-page {
+        padding: 1.25rem;
+        color: #182235;
+        background: #f7f9fc;
+        min-height: calc(100vh - 1rem);
+    }
+
+    .catalog-detail {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .catalog-back,
+    .catalog-empty button {
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #1f3b5c;
+        padding: 0.5rem 0.75rem;
+        font-weight: 700;
+    }
+
+    .catalog-detail-hero,
+    .catalog-panel {
+        border: 1px solid #dfe7f1;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 12px 30px rgba(31, 42, 68, 0.07);
+    }
+
+    .catalog-detail-hero {
+        display: grid;
+        grid-template-columns: minmax(280px, 42%) minmax(0, 1fr);
+        gap: 1.25rem;
+        padding: 1rem;
+    }
+
+    .catalog-detail-cover {
+        aspect-ratio: 4 / 3;
+        max-height: 520px;
+        overflow: hidden;
+        border-radius: 8px;
+        background: #eef3f8;
+    }
+
+    .catalog-detail-cover img,
+    .catalog-image-tile img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+    }
+
+    .catalog-cover-viewer {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+    }
+
+    .catalog-cover-viewer > div,
+    .catalog-cover-viewer .card,
+    .catalog-cover-viewer .card-body {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none !important;
+        background: #eef3f8;
+    }
+
+    .catalog-cover-placeholder {
+        width: 100%;
+        height: 100%;
+        min-height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        background: #eef3f8;
+    }
+
+    .catalog-cover-placeholder .material-icons {
+        font-size: 48px;
+    }
+
+    .catalog-detail-info {
+        display: grid;
+        align-content: start;
+        gap: 0.8rem;
+        min-width: 0;
+    }
+
+    .catalog-detail-type {
+        width: fit-content;
+        max-width: 100%;
+        border-radius: 8px;
+        background: #eaf5f1;
+        color: #1d6a59;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.74rem;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+    }
+
+    .catalog-detail-info h1 {
+        margin: 0;
+        font-size: 1.85rem;
+        font-weight: 850;
+        line-height: 1.15;
+    }
+
+    .catalog-detail-info p {
+        margin: 0;
+        color: #526174;
+        line-height: 1.55;
+    }
+
+    .catalog-facts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.7rem;
+        margin-top: 0.25rem;
+    }
+
+    .catalog-facts div {
+        border: 1px solid #e1e8f0;
+        border-radius: 8px;
+        background: #f8fafc;
+        padding: 0.65rem;
+        min-width: 0;
+    }
+
+    .catalog-facts span {
+        display: block;
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .catalog-facts strong {
+        display: block;
+        margin-top: 0.2rem;
+        overflow-wrap: anywhere;
+    }
+
+    .catalog-panel {
+        padding: 1rem;
+    }
+
+    .catalog-panel-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .catalog-panel-title > div {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .catalog-panel-title h3 {
+        margin: 0;
+        font-size: 1.12rem;
+        font-weight: 800;
+    }
+
+    .catalog-panel-title small,
+    .catalog-image-tile figcaption span,
+    .catalog-dxf-heading span,
+    .catalog-muted,
+    .catalog-attachment-list small {
+        color: #64748b;
+    }
+
+    .catalog-image-gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 260px));
+        gap: 0.85rem;
+        align-items: start;
+    }
+
+    .catalog-image-tile {
+        margin: 0;
+        border: 1px solid #e1e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .catalog-image-tile.featured {
+        grid-column: span 2;
+    }
+
+    .catalog-image-button {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        padding: 0;
+        background: #eef3f8;
+        cursor: zoom-in;
+    }
+
+    .catalog-image-tile img {
+        aspect-ratio: 4 / 3;
+        max-height: 260px;
+        background: #eef3f8;
+    }
+
+    .catalog-image-tile figcaption {
+        display: grid;
+        gap: 0.2rem;
+        padding: 0.65rem;
+    }
+
+    .catalog-dxf-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 0.85rem;
+    }
+
+    .catalog-dxf-card {
+        border: 1px solid #e1e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+        min-width: 0;
+    }
+
+    .catalog-dxf-heading {
+        display: grid;
+        gap: 0.65rem;
+        padding: 0.7rem;
+        border-top: 1px solid #e1e8f0;
+    }
+
+    .catalog-dxf-heading > div {
+        display: grid;
+        gap: 0.2rem;
+        min-width: 0;
+    }
+
+    .catalog-dxf-heading strong,
+    .catalog-dxf-heading span {
+        overflow-wrap: anywhere;
+    }
+
+    .catalog-dxf-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.65rem;
+    }
+
+    .catalog-dxf-actions button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border: 1px solid #bfd2e7;
+        border-radius: 8px;
+        background: #fff;
+        color: #0f4a8a;
+        padding: 0.4rem 0.6rem;
+        font-weight: 700;
+    }
+
+    .catalog-dxf-actions .material-icons {
+        font-size: 18px;
+    }
+
+    .catalog-dxf-viewport {
+        aspect-ratio: 4 / 3;
+        height: auto;
+        min-height: 170px;
+        max-height: 230px;
+        overflow: hidden;
+        background: #f8fafc;
+    }
+
+    .catalog-dxf-viewport > div,
+    .catalog-dxf-viewport .card,
+    .catalog-dxf-viewport .card-body {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none !important;
+        background: #f8fafc;
+    }
+
+    .catalog-attachment-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 0.65rem;
+    }
+
+    .catalog-attachment-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        border: 1px solid #dbe4ef;
+        border-radius: 8px;
+        background: #fff;
+        padding: 0.75rem;
+        min-width: 0;
+    }
+
+    .catalog-attachment-info {
+        display: grid;
+        gap: 0.2rem;
+        min-width: 0;
+    }
+
+    .catalog-attachment-info strong,
+    .catalog-attachment-info small {
+        overflow-wrap: anywhere;
+    }
+
+    .catalog-attachment-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-shrink: 0;
+    }
+
+    .catalog-attachment-actions button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #1e3a5f;
+        padding: 0;
+    }
+
+    .catalog-attachment-actions .material-icons {
+        font-size: 18px;
+    }
+
+    .catalog-attachment-actions button:disabled {
+        opacity: 0.45;
+    }
+
+    .catalog-lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(15, 23, 42, 0.72);
+    }
+
+    .catalog-lightbox-panel {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        width: min(1100px, 96vw);
+        height: min(820px, 92vh);
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+    }
+
+    .catalog-lightbox-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem 0.9rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .catalog-lightbox-header button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #fff;
+        color: #1f2937;
+    }
+
+    .catalog-lightbox-panel img {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        object-fit: contain;
+        background: #f8fafc;
+    }
+
+    .catalog-empty {
+        min-height: 300px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        text-align: center;
+        gap: 0.5rem;
+    }
+
+    .catalog-empty .material-icons {
+        font-size: 46px;
+    }
+
+    @@media (max-width: 980px) {
+        .catalog-detail-hero {
+            grid-template-columns: 1fr;
+        }
+
+        .catalog-image-tile.featured {
+            grid-column: span 1;
+        }
+
+        .catalog-dxf-actions {
+            justify-content: space-between;
+        }
+
+        .catalog-dxf-viewport {
+            min-height: 180px;
+            max-height: 260px;
+        }
+    }
+</style>

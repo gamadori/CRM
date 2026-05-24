@@ -1,4 +1,4 @@
-﻿using CRM.Client.Services;
+using CRM.Client.Services;
 using CRM.Server;
 using CRM.Server.Controllers;
 using CRM.Server.Data;
@@ -131,6 +131,8 @@ builder.Services.AddScoped<IInterventionPdfGenerator, InterventionPdfGenerator>(
 
 builder.Services.AddScoped<ISignatureOtpService, SignatureOtpService>();
 builder.Services.AddScoped<IAttachmentsService, AttachmentsService>();
+builder.Services.AddScoped<CRM.Server.Services.IProductCatalogAssetsService, ProductCatalogAssetsService>();
+builder.Services.AddScoped<CRM.Server.Services.IProductCatalogService, ProductCatalogService>();
 
 builder.Services.AddScoped<IReceiptProcessorService, ReceiptProcessorService>();
 
@@ -191,7 +193,7 @@ builder.Services.Configure<RequestLocalizationOptions>(options => {
     options.SetDefaultCulture(supportedCultures[0])
         .AddSupportedCultures(supportedCultures)
         .AddSupportedUICultures(supportedCultures);
-    // Priorità: Accept-Language header prima del cookie
+    // Priorit�: Accept-Language header prima del cookie
     options.RequestCultureProviders = new List<IRequestCultureProvider>
     {
         new AcceptLanguageHeaderRequestCultureProvider(),

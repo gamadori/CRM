@@ -1,0 +1,120 @@
+@using CRM.Client.Pages.DocViewer
+@using CRM.Client.Services
+@using CRM.Shared.DTOs
+@inject IAttachmentsService AttachmentsService
+@inject IJSRuntime JSRuntime
+@inject Radzen.DialogService DialogService
+
+<section class="catalog-panel">
+    <div class="catalog-panel-title">
+        <div>
+            <span class="material-icons">attach_file</span>
+            <h3>Allegati prodotto</h3>
+        </div>
+        <small>@Attachments.Count elementi</small>
+    </div>
+
+    @if (Attachments.Any())
+    {
+        <div class="catalog-attachment-list">
+            @foreach (var attachment in Attachments)
+            {
+                var previewFile = attachment.Files.FirstOrDefault();
+
+                <article class="catalog-attachment-item">
+                    <div class="catalog-attachment-info">
+                        <strong>@attachment.Name</strong>
+                        <small>@AttachmentSubtitle(attachment)</small>
+                    </div>
+                    <div class="catalog-attachment-actions">
+                        <button type="button" title="Visualizza" aria-label="Visualizza" disabled="@(previewFile == null)" @onclick="@(() => OpenAttachment(attachment))">
+                            <span class="material-icons">visibility</span>
+                        </button>
+                        <button type="button" title="Download" aria-label="Download" @onclick="@(() => DownloadAttachment(attachment.Id))">
+                            <span class="material-icons">download</span>
+                        </button>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="catalog-muted">Nessun allegato scaricabile per questo prodotto.</div>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public List<ProductCatalogAttachmentDTO> Attachments { get; set; } = new();
+
+    private async Task OpenAttachment(ProductCatalogAttachmentDTO attachment)
+    {
+        var file = attachment.Files.FirstOrDefault();
+        if (file == null)
+        {
+            return;
+        }
+
+        await DialogService.OpenSideAsync<Viewer>(
+            attachment.Name,
+            new Dictionary<string, object>
+            {
+                { "Id", file.Id },
+                { "DownloadEnabled", true },
+                { "CloseEnabled", true }
+            },
+            new Radzen.SideDialogOptions
+            {
+                Position = Radzen.DialogPosition.Top,
+                ShowMask = false,
+                Height = "100vh"
+            });
+    }
+
+    private async Task DownloadAttachment(int idAttachment)
+    {
+        var file = await AttachmentsService.DownloadFiles(idAttachment);
+        if (file.Bytes.Length == 0)
+        {
+            return;
+        }
+
+        await JSRuntime.InvokeVoidAsync(
+            "downloadFromByteArray",
+            new
+            {
+                ByteArray = file.Bytes,
+                FileName = file.FileName,
+                ContentType = file.ContentType
+            });
+    }
+
+    private static string AttachmentSubtitle(ProductCatalogAttachmentDTO attachment)
+    {
+        var fileCount = attachment.Files.Count == 1 ? "1 file" : $"{attachment.Files.Count} file";
+        var size = FormatSize(attachment.TotalSize);
+
+        if (!string.IsNullOrWhiteSpace(attachment.Description))
+        {
+            return string.IsNullOrWhiteSpace(size)
+                ? $"{attachment.Description} - {fileCount}"
+                : $"{attachment.Description} - {fileCount}, {size}";
+        }
+
+        return string.IsNullOrWhiteSpace(size) ? fileCount : $"{fileCount}, {size}";
+    }
+
+    private static string FormatSize(double size)
+    {
+        if (size <= 0)
+        {
+            return string.Empty;
+        }
+
+        const double kb = 1024;
+        const double mb = kb * 1024;
+
+        return size >= mb ? $"{size / mb:0.#} MB" : $"{size / kb:0.#} KB";
+    }
+}

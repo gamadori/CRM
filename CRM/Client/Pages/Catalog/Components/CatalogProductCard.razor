@@ -1,0 +1,49 @@
+@using CRM.Shared.DTOs
+
+<article class="catalog-product-card">
+    <button type="button" class="catalog-card-action" @onclick="@(() => OnOpen.InvokeAsync(Product.Id))">
+        <div class="catalog-card-cover">
+            <CatalogCover CoverAssetId="@Product.CoverAssetId"
+                          CoverAttachmentFileId="@Product.CoverAttachmentFileId"
+                          CoverMediaType="@Product.CoverMediaType"
+                          AltText="@Product.Name" />
+        </div>
+
+        <div class="catalog-card-body">
+            <div class="catalog-card-type">@Product.ProductTypeName</div>
+            <h3>@Product.Name</h3>
+            @if (!string.IsNullOrWhiteSpace(Product.Code))
+            {
+                <span class="catalog-code">@Product.Code</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Product.Description))
+            {
+                <p>@Product.Description</p>
+            }
+        </div>
+
+        <div class="catalog-card-footer">
+            <span>
+                <span class="material-icons">photo_library</span>
+                @Product.ImagesCount
+            </span>
+            <span>
+                <span class="material-icons">architecture</span>
+                @Product.DxfCount
+            </span>
+            <span>
+                <span class="material-icons">attach_file</span>
+                @Product.AttachmentsCount
+            </span>
+            <strong>Dettaglio</strong>
+        </div>
+    </button>
+</article>
+
+@code {
+    [Parameter]
+    public ProductCatalogListItemDTO Product { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<int> OnOpen { get; set; }
+}

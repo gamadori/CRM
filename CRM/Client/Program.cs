@@ -113,6 +113,8 @@ namespace CRM.Client
             builder.Services.AddScoped<IInterventionTypeLangsService, ProxyInterventionTypeLangsService>();
             builder.Services.AddScoped<IFolderLanguagesService, ProxyFolderLanguagesService>();
             builder.Services.AddScoped<IAttachmentsService, ProxyAttachmentsService>();
+            builder.Services.AddScoped<IProductCatalogAssetsService, ProxyProductCatalogAssetsService>();
+            builder.Services.AddScoped<IProductCatalogService, ProxyProductCatalogService>();
             builder.Services.AddScoped<IProductsService, ProxyProductsService>();
             builder.Services.AddScoped<IProductTypesService, ProxyProductTypesService>();
             builder.Services.AddScoped<ICompaniesService, ProxyCompaniesService>();

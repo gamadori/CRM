@@ -1,0 +1,425 @@
+@page "/Catalog"
+@page "/Catalog/Index"
+@using CRM.Client.Pages.Catalog.Components
+
+<div class="catalog-page">
+    <section class="catalog-toolbar">
+        <div>
+            <div class="catalog-kicker">Catalogo prodotti</div>
+            <h1>Catalogo</h1>
+        </div>
+        <div class="catalog-search">
+            <span class="material-icons">search</span>
+            <input @bind="_searchText" @bind:event="oninput" @onkeydown="SearchKeyDown" placeholder="Cerca prodotto, codice o descrizione" />
+            <button type="button" @onclick="ApplySearch">Cerca</button>
+        </div>
+    </section>
+
+    @if (_loading)
+    {
+        <Waiting></Waiting>
+    }
+    else if (_page == null || !_page.Products.Any())
+    {
+        <div class="catalog-empty">
+            <span class="material-icons">category</span>
+            <strong>Nessun prodotto a catalogo</strong>
+            <p>Carica immagini o DXF nella tab Catalogo dei prodotti per visualizzarli qui.</p>
+        </div>
+    }
+    else
+    {
+        <div class="catalog-layout">
+            <aside class="catalog-sidebar">
+                <button class="@TypeButtonClass(null)" @onclick="@(() => SelectType(null))">
+                    <span>Tutti</span>
+                    <small>@_page.ProductTypes.Sum(x => x.Count)</small>
+                </button>
+                @foreach (var type in _page.ProductTypes)
+                {
+                    <button class="@TypeButtonClass(type.IdProductType)" @onclick="@(() => SelectType(type.IdProductType))">
+                        <span>@type.Name</span>
+                        <small>@type.Count</small>
+                    </button>
+                }
+            </aside>
+
+            <main class="catalog-content">
+                <div class="catalog-result-bar">
+                    <span>@_page.TotalCount prodotti</span>
+                    <span>Pagina @_page.PageNumber di @Math.Max(_page.TotalPages, 1)</span>
+                </div>
+
+                @foreach (var group in CurrentPageGroups)
+                {
+                    <section class="catalog-type-section">
+                        <div class="catalog-type-header">
+                            <div>
+                                <span class="material-icons">category</span>
+                                <h2>@group.Label</h2>
+                            </div>
+                            <small>@group.Products.Count prodotti in questa pagina</small>
+                        </div>
+
+                        <div class="catalog-products">
+                            @foreach (var product in group.Products)
+                            {
+                                <CatalogProductCard Product="@product" OnOpen="OpenProduct" />
+                            }
+                        </div>
+                    </section>
+                }
+
+                <div class="catalog-pager">
+                    <button type="button" disabled="@(!CanGoPrevious)" @onclick="PreviousPage">
+                        <span class="material-icons">chevron_left</span>
+                        <span>Precedente</span>
+                    </button>
+                    <strong>@_page.PageNumber / @Math.Max(_page.TotalPages, 1)</strong>
+                    <button type="button" disabled="@(!CanGoNext)" @onclick="NextPage">
+                        <span>Successiva</span>
+                        <span class="material-icons">chevron_right</span>
+                    </button>
+                </div>
+            </main>
+        </div>
+    }
+</div>
+
+<style>
+    .catalog-page {
+        padding: 1.25rem;
+        color: #182235;
+        background: #f7f9fc;
+        min-height: calc(100vh - 1rem);
+    }
+
+    .catalog-toolbar {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.5rem 0 1.25rem;
+        border-bottom: 1px solid #dde4ee;
+        margin-bottom: 1rem;
+    }
+
+    .catalog-kicker {
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0;
+        color: #607089;
+        font-weight: 700;
+    }
+
+    .catalog-toolbar h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 800;
+    }
+
+    .catalog-search {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid #d1dae7;
+        border-radius: 8px;
+        background: #fff;
+        padding: 0.55rem 0.65rem;
+        min-width: min(520px, 100%);
+        box-shadow: 0 8px 24px rgba(31, 42, 68, 0.06);
+    }
+
+    .catalog-search input {
+        border: 0;
+        outline: 0;
+        width: 100%;
+        min-width: 0;
+        background: transparent;
+    }
+
+    .catalog-search button,
+    .catalog-pager button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border: 1px solid #bfd2e7;
+        border-radius: 8px;
+        background: #fff;
+        color: #0f4a8a;
+        padding: 0.45rem 0.7rem;
+        font-weight: 700;
+    }
+
+    .catalog-layout {
+        display: grid;
+        grid-template-columns: 250px minmax(0, 1fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .catalog-sidebar {
+        position: sticky;
+        top: 1rem;
+        display: grid;
+        gap: 0.35rem;
+        padding: 0.5rem;
+        border: 1px solid #e0e6ef;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 12px 30px rgba(31, 42, 68, 0.07);
+    }
+
+    .catalog-sidebar button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        border: 1px solid transparent;
+        background: transparent;
+        color: #334155;
+        text-align: left;
+        border-radius: 8px;
+        padding: 0.7rem 0.8rem;
+    }
+
+    .catalog-sidebar button.active {
+        background: #eef6ff;
+        border-color: #c7defa;
+        color: #0f4a8a;
+        font-weight: 700;
+    }
+
+    .catalog-sidebar small,
+    .catalog-type-header small,
+    .catalog-result-bar {
+        color: #64748b;
+    }
+
+    .catalog-content {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .catalog-result-bar,
+    .catalog-type-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .catalog-type-header {
+        margin-bottom: 0.75rem;
+    }
+
+    .catalog-type-header > div {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .catalog-type-header h2 {
+        margin: 0;
+        font-size: 1.12rem;
+        font-weight: 800;
+    }
+
+    .catalog-products {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .catalog-product-card {
+        min-width: 0;
+    }
+
+    .catalog-card-action {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        width: 100%;
+        height: 100%;
+        min-height: 360px;
+        text-align: left;
+        border: 1px solid #dfe7f1;
+        border-radius: 8px;
+        padding: 0;
+        overflow: hidden;
+        color: inherit;
+        background: #fff;
+        box-shadow: 0 12px 28px rgba(31, 42, 68, 0.08);
+        transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+
+    .catalog-card-action:hover {
+        transform: translateY(-2px);
+        border-color: #9fc5ee;
+        box-shadow: 0 18px 38px rgba(31, 42, 68, 0.12);
+    }
+
+    .catalog-card-cover {
+        aspect-ratio: 4 / 3;
+        max-height: 260px;
+        background: #eef3f8;
+        overflow: hidden;
+    }
+
+    .catalog-card-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+    }
+
+    .catalog-cover-viewer {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+    }
+
+    .catalog-card-cover .catalog-cover-viewer {
+        pointer-events: none;
+    }
+
+    .catalog-cover-viewer > div,
+    .catalog-cover-viewer .card,
+    .catalog-cover-viewer .card-body {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none !important;
+        background: #eef3f8;
+    }
+
+    .catalog-cover-placeholder {
+        width: 100%;
+        height: 100%;
+        min-height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        background: #eef3f8;
+    }
+
+    .catalog-cover-placeholder .material-icons {
+        font-size: 48px;
+    }
+
+    .catalog-card-body {
+        display: grid;
+        align-content: start;
+        gap: 0.45rem;
+        padding: 0.85rem 0.95rem;
+        min-width: 0;
+    }
+
+    .catalog-card-type {
+        width: fit-content;
+        max-width: 100%;
+        border-radius: 8px;
+        background: #eaf5f1;
+        color: #1d6a59;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.74rem;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+    }
+
+    .catalog-card-body h3 {
+        margin: 0;
+        font-size: 1.08rem;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    .catalog-code {
+        color: #526174;
+        font-weight: 700;
+    }
+
+    .catalog-card-body p {
+        margin: 0;
+        color: #64748b;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .catalog-card-footer {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        border-top: 1px solid #e6edf5;
+        padding: 0.7rem 0.95rem;
+        color: #526174;
+    }
+
+    .catalog-card-footer > span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .catalog-card-footer .material-icons {
+        font-size: 18px;
+    }
+
+    .catalog-card-footer strong {
+        margin-left: auto;
+        color: #0f4a8a;
+    }
+
+    .catalog-pager {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        padding: 0.75rem 0 1.25rem;
+    }
+
+    .catalog-pager button:disabled {
+        opacity: 0.45;
+    }
+
+    .catalog-empty {
+        min-height: 300px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        text-align: center;
+        gap: 0.5rem;
+    }
+
+    .catalog-empty .material-icons {
+        font-size: 46px;
+    }
+
+    @@media (max-width: 980px) {
+        .catalog-toolbar {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        .catalog-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .catalog-sidebar {
+            position: static;
+            display: flex;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .catalog-sidebar button {
+            min-width: 180px;
+        }
+    }
+</style>

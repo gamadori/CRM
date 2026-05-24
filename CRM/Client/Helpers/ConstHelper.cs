@@ -58,6 +58,10 @@ namespace CRM.Client.Helpers
 
         public static string ProductParameters = "api/ProductParameters";
 
+        public static string ProductCatalogAssetsPath = "api/ProductCatalogAssets";
+
+        public static string ProductCatalogPath = "api/ProductCatalog";
+
         public static string TicketStatesPath = "api/TicketStates";
 
         public static string TicketPath = "api/Tickets";

@@ -92,18 +92,18 @@ namespace CRM.Server.Controllers
             return Ok(resp);
         }
 
-        // POST: api/Companies
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<APIResponseMessage<TicketFeedback>>> Post(TicketFeedback item)
-        {
-            var resp = await _feedbackService.PostAsync(item);
+        //// POST: api/Companies
+        //// To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        //[HttpPost]
+        //public async Task<ActionResult<APIResponseMessage<TicketFeedback>>> Post(TicketFeedbackRequest item)
+        //{
+        //    var resp = await _feedbackService.PostAsync(item);
 
-            if (resp == null)
-                return StatusCode(StatusCodes.Status500InternalServerError, "Post return null");
+        //    if (resp == null)
+        //        return StatusCode(StatusCodes.Status500InternalServerError, "Post return null");
 
-            return Ok(resp);
-        }
+        //    return Ok(resp);
+        //}
 
         /// <summary>
         /// Ottiene i ticket chiusi in attesa di feedback per l'utente corrente

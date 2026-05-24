@@ -53,7 +53,9 @@ else
                 {
                     <div class="feedback-ticket-card">
                         <div class="feedback-ticket-info">
-                            <span class="ticket-id">#@ticket.TicketId</span>
+                            <span class="ticket-id">
+                                <a href="/Tickets/@ticket.TicketId/Info">#@ticket.TicketId</a>
+                            </span>
                             <span class="ticket-description">@TruncateText(ticket.Description, 60)</span>
                             <span class="ticket-date">
                                 <span class="material-icons">event</span>

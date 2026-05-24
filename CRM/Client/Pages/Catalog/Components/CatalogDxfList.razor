@@ -1,0 +1,92 @@
+@using CRM.Client.Pages.DocViewer
+@using CRM.Shared.DTOs
+@inject Radzen.DialogService DialogService
+
+@if (Dxfs.Any())
+{
+    <section class="catalog-panel">
+        <div class="catalog-panel-title">
+            <div>
+                <span class="material-icons">architecture</span>
+                <h3>DXF</h3>
+            </div>
+            <small>@Dxfs.Count elementi</small>
+        </div>
+
+        <div class="catalog-dxf-list">
+            @foreach (var dxf in Dxfs)
+            {
+                <article class="catalog-dxf-card" @key="dxf.Id">
+                    <div class="catalog-dxf-viewport">
+                        <Viewer @key="dxf.IdAttachmentFile" Id="@dxf.IdAttachmentFile" Embedded="true" CloseEnabled="false" DownloadEnabled="false" />
+                    </div>
+                    <div class="catalog-dxf-heading">
+                        <div>
+                            <strong>@AssetTitle(dxf)</strong>
+                            @if (!string.IsNullOrWhiteSpace(dxf.Description))
+                            {
+                                <span>@dxf.Description</span>
+                            }
+                        </div>
+                        <div class="catalog-dxf-actions">
+                            @if (!string.IsNullOrWhiteSpace(FormatSize(dxf.Size)))
+                            {
+                                <small>@FormatSize(dxf.Size)</small>
+                            }
+                            <button type="button" @onclick="@(() => OpenLarge(dxf))">
+                                <span class="material-icons">open_in_full</span>
+                                <span>Apri grande</span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter]
+    public List<ProductCatalogAssetDTO> Dxfs { get; set; } = new();
+
+    private async Task OpenLarge(ProductCatalogAssetDTO asset)
+    {
+        await DialogService.OpenSideAsync<Viewer>(
+            AssetTitle(asset),
+            new Dictionary<string, object>
+            {
+                { "Id", asset.IdAttachmentFile },
+                { "DownloadEnabled", true },
+                { "CloseEnabled", true }
+            },
+            new Radzen.SideDialogOptions
+            {
+                Position = Radzen.DialogPosition.Top,
+                ShowMask = false,
+                Height = "100vh"
+            });
+    }
+
+    private static string AssetTitle(ProductCatalogAssetDTO asset)
+    {
+        if (!string.IsNullOrWhiteSpace(asset.Title))
+        {
+            return asset.Title;
+        }
+
+        return string.IsNullOrWhiteSpace(asset.FileName) ? "DXF" : asset.FileName;
+    }
+
+    private static string FormatSize(double size)
+    {
+        if (size <= 0)
+        {
+            return string.Empty;
+        }
+
+        const double kb = 1024;
+        const double mb = kb * 1024;
+
+        return size >= mb ? $"{size / mb:0.#} MB" : $"{size / kb:0.#} KB";
+    }
+}

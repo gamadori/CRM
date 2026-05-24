@@ -21,7 +21,8 @@ namespace CRM.Shared
         Article,
         DXF,
         Service,
-        ExpenseReceipts
+        ExpenseReceipts,
+        ProductCatalog
     }
 
    

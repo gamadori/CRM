@@ -1,0 +1,207 @@
+@using CRM.Shared.DTOs
+@using CRM.Client.Services
+@using Microsoft.AspNetCore.Components.Forms
+@inject IProductCatalogAssetsService CatalogAssetsService
+@inject DialogService DialogService
+
+<div class="product-catalog-assets">
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger">@_errorMessage</div>
+    }
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                <div>
+                    <h6 class="mb-1">Media catalogo</h6>
+                    <div class="text-muted small">Immagini e DXF collegati al prodotto per il catalogo.</div>
+                </div>
+                <RedGButton RGButtonType="RGButtonType.Submit" Text="Carica" Click="UploadSelectedFiles" Disabled="@(_waitingUpload || !_filesWithNames.Any())" />
+            </div>
+
+            <div class="catalog-upload-zone">
+                <InputFile OnChange="@OnInputFileChange" multiple accept="image/*,.dxf" />
+                <span class="material-icons">cloud_upload</span>
+                <strong>Seleziona immagini o DXF</strong>
+                <small>JPG, PNG, WEBP, DXF - max 20MB per file</small>
+            </div>
+
+            @if (_filesWithNames.Any())
+            {
+                <div class="selected-files mt-3">
+                    @foreach (var file in _filesWithNames)
+                    {
+                        <div class="selected-file">
+                            <input class="form-control form-control-sm" @bind="file.NewName" />
+                            <span class="text-muted small">@file.Extension (@FormatFileSize(file.FileBytes.Length))</span>
+                            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="@(() => RemoveFile(file))">
+                                <span class="material-icons">delete</span>
+                            </button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (_loading)
+    {
+        <Waiting></Waiting>
+    }
+    else if (_assets.Count == 0)
+    {
+        <div class="text-muted fst-italic py-4">Nessun media catalogo inserito.</div>
+    }
+    else
+    {
+        <div class="catalog-grid">
+            @foreach (var asset in _assets)
+            {
+                <div class="catalog-card">
+                    <div class="catalog-preview">
+                        @if (asset.MediaType == ProductCatalogMediaTypes.Image && _imageSources.TryGetValue(asset.Id, out var imageSource))
+                        {
+                            <img src="@imageSource" alt="@asset.Title" />
+                        }
+                        else
+                        {
+                            <div class="dxf-preview">
+                                <span class="material-icons">architecture</span>
+                                <strong>DXF</strong>
+                            </div>
+                        }
+                        @if (asset.IsCover)
+                        {
+                            <span class="cover-badge">Copertina</span>
+                        }
+                    </div>
+                    <div class="catalog-card-body">
+                        <input class="form-control form-control-sm fw-semibold" @bind="asset.Title" />
+                        <textarea class="form-control form-control-sm mt-2" rows="2" @bind="asset.Description"></textarea>
+                        <div class="catalog-actions">
+                            <label class="form-check-label small">
+                                <input class="form-check-input me-1" type="checkbox" @bind="asset.IncludeInCatalog" />
+                                Catalogo
+                            </label>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="@(() => SaveAsset(asset))">
+                                <span class="material-icons">save</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" disabled="@asset.IsCover" @onclick="@(() => SetCover(asset.Id))">
+                                <span class="material-icons">wallpaper</span>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="@(() => DeleteAsset(asset.Id))">
+                                <span class="material-icons">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .product-catalog-assets .catalog-upload-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 8px;
+        min-height: 150px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        color: #475569;
+        background: #f8fafc;
+        position: relative;
+    }
+
+    .product-catalog-assets .catalog-upload-zone input[type=file] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .product-catalog-assets .catalog-upload-zone .material-icons {
+        font-size: 42px;
+        color: #2563eb;
+    }
+
+    .product-catalog-assets .selected-file {
+        display: grid;
+        grid-template-columns: minmax(180px, 1fr) auto auto;
+        gap: 0.5rem;
+        align-items: center;
+        padding: 0.45rem 0;
+    }
+
+    .product-catalog-assets .catalog-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+    }
+
+    .product-catalog-assets .catalog-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .product-catalog-assets .catalog-preview {
+        aspect-ratio: 4 / 3;
+        background: #f1f5f9;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .product-catalog-assets .catalog-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .product-catalog-assets .dxf-preview {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
+        color: #334155;
+    }
+
+    .product-catalog-assets .dxf-preview .material-icons {
+        font-size: 44px;
+    }
+
+    .product-catalog-assets .cover-badge {
+        position: absolute;
+        top: 0.5rem;
+        left: 0.5rem;
+        background: #0f766e;
+        color: #fff;
+        border-radius: 4px;
+        padding: 0.2rem 0.45rem;
+        font-size: 0.75rem;
+    }
+
+    .product-catalog-assets .catalog-card-body {
+        padding: 0.75rem;
+    }
+
+    .product-catalog-assets .catalog-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.4rem;
+        margin-top: 0.75rem;
+    }
+
+    .product-catalog-assets .catalog-actions .material-icons,
+    .product-catalog-assets .selected-file .material-icons {
+        font-size: 17px;
+        vertical-align: middle;
+    }
+</style>

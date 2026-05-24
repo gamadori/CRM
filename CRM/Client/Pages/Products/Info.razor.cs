@@ -27,7 +27,8 @@ namespace CRM.Client.Pages.Products
             ProductDxf,
             ProductTypeChilds,
             Attachments,
-            Parameters
+            Parameters,
+            Catalog
         }
 
         public enum PartialViews
@@ -104,6 +105,7 @@ namespace CRM.Client.Pages.Products
             _viewOptions = new List<ViewOption<GroupViews>>
             {
                 new ViewOption<GroupViews> { Text = Localize["Data Product"], Value = GroupViews.ProductType },
+                new ViewOption<GroupViews> { Text = "Catalogo", Value = GroupViews.Catalog },
                 new ViewOption<GroupViews> { Text = Localize["Attachments"], Value = GroupViews.Attachments },
                 //new ViewOption<GroupViews> { Text = Localize["Accessories"], Value = GroupViews.ProductAccessories },
                 //new ViewOption<GroupViews> { Text = Localize["Parameters"], Value = GroupViews.Parameters },

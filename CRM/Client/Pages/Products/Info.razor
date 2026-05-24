@@ -20,6 +20,7 @@ else
         <RadzenSelectBar @bind-Value="_selectView" TValue="GroupViews" Change="@((args) => Change(args, "SelectBar with single selection"))" >
             <Items>
                 <RadzenSelectBarItem Text=@Localize["Data Product"] Value="GroupViews.ProductType" />
+                <RadzenSelectBarItem Text="Catalogo" Value="GroupViews.Catalog" />
                 <RadzenSelectBarItem Text=@Localize["Attachments"] Value="GroupViews.Attachments" />
                 @* <RadzenSelectBarItem Text=@Localize["Accessories"] Value="GroupViews.ProductAccessories" />
                 <RadzenSelectBarItem Text=@Localize["Parameters"] Value="GroupViews.Parameters" />
@@ -94,6 +95,10 @@ else
             <CRM.Client.Pages.Attachments.Upload Id="@_idAttachment.Value" OnClickClose="CloseAttachment"></CRM.Client.Pages.Attachments.Upload>
         }
        
+    }
+    else if (_selectView == GroupViews.Catalog)
+    {
+        <CRM.Client.Pages.Products.CatalogAssets IdProduct="@Id"></CRM.Client.Pages.Products.CatalogAssets>
     }
     else if (_selectView == GroupViews.ProductAccessories)
     {

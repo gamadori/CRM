@@ -195,6 +195,18 @@ namespace CRM.Server.Data
                 .WithMany()
                 .HasForeignKey(a => a.IdUser)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ProductCatalogAsset>()
+                .HasOne(a => a.Product)
+                .WithMany()
+                .HasForeignKey(a => a.IdProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ProductCatalogAsset>()
+                .HasOne(a => a.AttachmentFile)
+                .WithMany()
+                .HasForeignKey(a => a.IdAttachmentFile)
+                .OnDelete(DeleteBehavior.Restrict);
             
             base.OnModelCreating(modelBuilder);
 
@@ -239,6 +251,8 @@ namespace CRM.Server.Data
         public DbSet<CRM.Shared.Logo> Logos => Set<Logo>();
         public DbSet<CRM.Shared.Group> Groups => Set<Group>();
         public DbSet<CRM.Shared.Product> Products => Set<Product>();
+
+        public DbSet<ProductCatalogAsset> ProductCatalogAssets => Set<ProductCatalogAsset>();
 
         public DbSet<CRM.Shared.ProductParameter> ProductParameters => Set<ProductParameter>();
         public DbSet<CRM.Shared.Article> Articles => Set<Article>();

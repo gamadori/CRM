@@ -60,9 +60,14 @@
                         @if (_expandMenuProdotti)
                         {
                             <div class="nav-submenu-2">
-                                <NavLink class="nav-link submenu-link-2" href="Products" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                <NavLink class="nav-link submenu-link-2" href="Catalog" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                                     <span class="material-icons nav-icon-small">category</span>
                                     <span class="nav-text">@Localize["Catalog"]</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="Products" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">inventory_2</span>
+                                    <span class="nav-text">@Localize["Products"]</span>
                                 </NavLink>
 
                                 <NavLink class="nav-link submenu-link-2" href="Articles" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">

@@ -1,7 +1,7 @@
 ﻿@page "/DocViewer/Viewer/{Id:int}"
 
 <!-- wrapper che occupa tutto lo spazio del dialog -->
-<div style="position:absolute; inset:0; margin:0; padding:0; box-sizing:border-box;">
+<div style="@RootStyle">
    
     <div class="card shadow-sm" style="display:flex; flex-direction:column; height:100%; margin:0; box-sizing:border-box;">
         <div @ref="containerRef" class="card-body" style="flex:1 1 auto; padding:0; overflow:auto; position:relative;">
@@ -19,10 +19,10 @@
                 </div>
             }
 
-            <canvas id="dxfCanvas" @ref="canvasRef" style="width:100%; height:100%; display:block;"></canvas>
-            <div id="fileHost" @ref="fileHostRef" style="width:100%; height:100%; display:none;"></div>
+            <canvas id="@_canvasId" @ref="canvasRef" style="width:100%; height:100%; display:block;"></canvas>
+            <div id="@_fileHostId" @ref="fileHostRef" style="width:100%; height:100%; display:none;"></div>
         </div>
-        <div class="card-footer" style="flex:0 0 auto;">
+        <div class="card-footer" style="flex:0 0 auto;" hidden="@(!CloseEnabled && !DownloadEnabled)">
             <RedGButton RGButtonType="RGButtonType.Close" Text="Chiudi" Click="Close" Visible="@CloseEnabled"></RedGButton>
             <RedGButton RGButtonType="RGButtonType.Download" Text="Download" Visible="@DownloadEnabled" Click="Export" />
         </div>

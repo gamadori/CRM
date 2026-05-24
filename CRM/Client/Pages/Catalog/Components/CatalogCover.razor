@@ -1,0 +1,35 @@
+@using CRM.Client.Pages.DocViewer
+@using CRM.Client.Services
+@using CRM.Shared
+@inject IProductCatalogService ProductCatalogService
+
+@if (CoverAssetId == null)
+{
+    <div class="catalog-cover-placeholder">
+        <span class="material-icons">inventory_2</span>
+    </div>
+}
+else if (CoverMediaType == ProductCatalogMediaTypes.Dxf && CoverAttachmentFileId != null)
+{
+    <div class="catalog-cover-viewer">
+        <Viewer @key="CoverAttachmentFileId.Value" Id="@CoverAttachmentFileId.Value" Embedded="true" CloseEnabled="false" DownloadEnabled="false" />
+    </div>
+}
+else
+{
+    <img src="@ProductCatalogService.GetAssetFileUrl(CoverAssetId.Value)" alt="@AltText" loading="lazy" />
+}
+
+@code {
+    [Parameter]
+    public int? CoverAssetId { get; set; }
+
+    [Parameter]
+    public int? CoverAttachmentFileId { get; set; }
+
+    [Parameter]
+    public ProductCatalogMediaTypes? CoverMediaType { get; set; }
+
+    [Parameter]
+    public string AltText { get; set; } = string.Empty;
+}
