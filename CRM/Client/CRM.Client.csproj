@@ -41,6 +41,8 @@
 	  <PackageReference Include="System.Net.Http.Json" Version="9.0.4" />
 	  
     <PackageReference Include="Faso.Blazor.SpinKit" Version="1.0.1" />
+	  
+    <PackageReference Include="System.Private.Uri" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>

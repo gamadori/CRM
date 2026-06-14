@@ -4,6 +4,7 @@ using CRM.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CRM.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260531155925_ProductMachineConfigurationAndDeviceTemplates")]
+    partial class ProductMachineConfigurationAndDeviceTemplates
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -342,6 +345,30 @@ namespace CRM.Server.Migrations
                     b.ToTable("ArticleAccessory");
                 });
 
+            modelBuilder.Entity("CRM.Shared.ArticleBackup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdArticle")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("TimeStamp")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdArticle");
+
+                    b.ToTable("ArticleBackups");
+                });
+
             modelBuilder.Entity("CRM.Shared.ArticleDomain", b =>
                 {
                     b.Property<int>("Id")
@@ -486,6 +513,97 @@ namespace CRM.Server.Migrations
                     b.HasIndex("DomainId");
 
                     b.ToTable("ArticleEventTypes");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleMachineParameterSnapshot", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExternalReference")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdArticle")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdConfiguration")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MachineSerial")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdConfiguration");
+
+                    b.HasIndex("IdArticle", "IsCurrent")
+                        .IsUnique()
+                        .HasFilter("[IsCurrent] = 1");
+
+                    b.ToTable("ArticleMachineParameterSnapshots");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleMachineParameterSnapshotItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AxisCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DeviceCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Group")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdSnapshot")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReadCommand")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Unit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WriteCommand")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdSnapshot");
+
+                    b.ToTable("ArticleMachineParameterSnapshotItems");
                 });
 
             modelBuilder.Entity("CRM.Shared.ArticleState", b =>
@@ -636,6 +754,35 @@ namespace CRM.Server.Migrations
                     b.HasIndex("IdAttachment");
 
                     b.ToTable("AttachmentFiles");
+                });
+
+            modelBuilder.Entity("CRM.Shared.BackUpParameter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("IdBackUp")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdParameter")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdBackUp");
+
+                    b.HasIndex("IdParameter");
+
+                    b.ToTable("BackUpParameters");
                 });
 
             modelBuilder.Entity("CRM.Shared.CSVMapping", b =>
@@ -1368,7 +1515,7 @@ namespace CRM.Server.Migrations
                     b.ToTable("Loghi");
                 });
 
-            modelBuilder.Entity("CRM.Shared.MachineBackup", b =>
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplate", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1376,72 +1523,237 @@ namespace CRM.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CommunicationAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CommunicationPortType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CommunicationSettings")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ExternalReference")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("IdArticle")
-                        .HasColumnType("int");
+                    b.Property<string>("ProtocolCode")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("IdProduct")
-                        .HasColumnType("int");
+                    b.Property<string>("ProtocolName")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("OwnerType")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
-                    b.Property<string>("Sha256")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<long>("Size")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("Source")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Version")
+                    b.Property<int>("VersionNumber")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IdArticle");
-
-                    b.HasIndex("IdProduct");
-
-                    b.HasIndex("OwnerType", "IdArticle", "Version")
+                    b.HasIndex("Code")
                         .IsUnique()
-                        .HasFilter("[IdArticle] IS NOT NULL");
+                        .HasFilter("[Code] IS NOT NULL");
 
-                    b.HasIndex("OwnerType", "IdProduct", "Version")
-                        .IsUnique()
-                        .HasFilter("[IdProduct] IS NOT NULL");
+                    b.ToTable("MachineDeviceTemplates");
+                });
 
-                    b.ToTable("MachineBackups", t =>
-                        {
-                            t.HasCheckConstraint("CK_MachineBackups_Owner", "([OwnerType] = 1 AND [IdProduct] IS NOT NULL AND [IdArticle] IS NULL) OR ([OwnerType] = 2 AND [IdArticle] IS NOT NULL AND [IdProduct] IS NULL)");
-                        });
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateAxis", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdTemplate")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdTemplate");
+
+                    b.ToTable("MachineDeviceTemplateAxes");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateAxisParameter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Group")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdAxis")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Max")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Min")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReadCommand")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Unit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ValueDefault")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WriteCommand")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdAxis");
+
+                    b.ToTable("MachineDeviceTemplateAxisParameters");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateBoard", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdTemplate")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdTemplate");
+
+                    b.ToTable("MachineDeviceTemplateBoards");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateIoPoint", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdBoard")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdBoard");
+
+                    b.ToTable("MachineDeviceTemplateIoPoints");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateParameter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Group")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdTemplate")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Max")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Min")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReadCommand")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Unit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ValueDefault")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WriteCommand")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdTemplate");
+
+                    b.ToTable("MachineDeviceTemplateParameters");
                 });
 
             modelBuilder.Entity("CRM.Shared.MachineParameterApiKey", b =>
@@ -1637,6 +1949,326 @@ namespace CRM.Server.Migrations
                     b.HasIndex("IdProduct");
 
                     b.ToTable("ProductCatalogAssets");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineAxis", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdDevice")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdDevice");
+
+                    b.ToTable("ProductMachineAxes");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineAxisParameter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Group")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdAxis")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Max")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Min")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReadCommand")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Unit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ValueDefault")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WriteCommand")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdAxis");
+
+                    b.ToTable("ProductMachineAxisParameters");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineBoard", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdDevice")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdDevice");
+
+                    b.ToTable("ProductMachineBoards");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineConfiguration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdProduct")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdProduct", "IsActive")
+                        .IsUnique()
+                        .HasFilter("[IsActive] = 1");
+
+                    b.ToTable("ProductMachineConfigurations");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineDevice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CommunicationAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CommunicationPortType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CommunicationSettings")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdConfiguration")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProtocolCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProtocolName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("SourceDeviceTemplateId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SourceDeviceTemplateVersion")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdConfiguration");
+
+                    b.HasIndex("SourceDeviceTemplateId");
+
+                    b.ToTable("ProductMachineDevices");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineIoPoint", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdBoard")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdBoard");
+
+                    b.ToTable("ProductMachineIoPoints");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineParameter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Group")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdDevice")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Max")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Min")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReadCommand")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Unit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ValueDefault")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WriteCommand")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdDevice");
+
+                    b.ToTable("ProductMachineParameters");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductParameter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Command")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Group")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdProduct")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Max")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Min")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ValueDefault")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdProduct");
+
+                    b.ToTable("ProductParameters");
                 });
 
             modelBuilder.Entity("CRM.Shared.ProductType", b =>
@@ -2917,6 +3549,17 @@ namespace CRM.Server.Migrations
                     b.Navigation("Article");
                 });
 
+            modelBuilder.Entity("CRM.Shared.ArticleBackup", b =>
+                {
+                    b.HasOne("CRM.Shared.Article", "Article")
+                        .WithMany()
+                        .HasForeignKey("IdArticle")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Article");
+                });
+
             modelBuilder.Entity("CRM.Shared.ArticleDomainState", b =>
                 {
                     b.HasOne("CRM.Shared.Article", "Article")
@@ -3003,6 +3646,35 @@ namespace CRM.Server.Migrations
                     b.Navigation("Domain");
                 });
 
+            modelBuilder.Entity("CRM.Shared.ArticleMachineParameterSnapshot", b =>
+                {
+                    b.HasOne("CRM.Shared.Article", "Article")
+                        .WithMany()
+                        .HasForeignKey("IdArticle")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ProductMachineConfiguration", "Configuration")
+                        .WithMany()
+                        .HasForeignKey("IdConfiguration")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Article");
+
+                    b.Navigation("Configuration");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ArticleMachineParameterSnapshotItem", b =>
+                {
+                    b.HasOne("CRM.Shared.ArticleMachineParameterSnapshot", "Snapshot")
+                        .WithMany("Items")
+                        .HasForeignKey("IdSnapshot")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Snapshot");
+                });
+
             modelBuilder.Entity("CRM.Shared.ArticleState", b =>
                 {
                     b.HasOne("CRM.Shared.ArticleDomain", "Domain")
@@ -3075,6 +3747,23 @@ namespace CRM.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("Attachment");
+                });
+
+            modelBuilder.Entity("CRM.Shared.BackUpParameter", b =>
+                {
+                    b.HasOne("CRM.Shared.ArticleBackup", "BackUp")
+                        .WithMany()
+                        .HasForeignKey("IdBackUp")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ProductParameter", "Parameter")
+                        .WithMany()
+                        .HasForeignKey("IdParameter");
+
+                    b.Navigation("BackUp");
+
+                    b.Navigation("Parameter");
                 });
 
             modelBuilder.Entity("CRM.Shared.CompanyContract", b =>
@@ -3221,21 +3910,59 @@ namespace CRM.Server.Migrations
                     b.Navigation("Language");
                 });
 
-            modelBuilder.Entity("CRM.Shared.MachineBackup", b =>
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateAxis", b =>
                 {
-                    b.HasOne("CRM.Shared.Article", "Article")
-                        .WithMany()
-                        .HasForeignKey("IdArticle")
-                        .OnDelete(DeleteBehavior.Restrict);
+                    b.HasOne("CRM.Shared.MachineDeviceTemplate", "Template")
+                        .WithMany("Axes")
+                        .HasForeignKey("IdTemplate")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.HasOne("CRM.Shared.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("IdProduct")
-                        .OnDelete(DeleteBehavior.Restrict);
+                    b.Navigation("Template");
+                });
 
-                    b.Navigation("Article");
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateAxisParameter", b =>
+                {
+                    b.HasOne("CRM.Shared.MachineDeviceTemplateAxis", "Axis")
+                        .WithMany("Parameters")
+                        .HasForeignKey("IdAxis")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("Product");
+                    b.Navigation("Axis");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateBoard", b =>
+                {
+                    b.HasOne("CRM.Shared.MachineDeviceTemplate", "Template")
+                        .WithMany("Boards")
+                        .HasForeignKey("IdTemplate")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Template");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateIoPoint", b =>
+                {
+                    b.HasOne("CRM.Shared.MachineDeviceTemplateBoard", "Board")
+                        .WithMany("IoPoints")
+                        .HasForeignKey("IdBoard")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateParameter", b =>
+                {
+                    b.HasOne("CRM.Shared.MachineDeviceTemplate", "Template")
+                        .WithMany("Parameters")
+                        .HasForeignKey("IdTemplate")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Template");
                 });
 
             modelBuilder.Entity("CRM.Shared.Product", b =>
@@ -3306,6 +4033,99 @@ namespace CRM.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("AttachmentFile");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineAxis", b =>
+                {
+                    b.HasOne("CRM.Shared.ProductMachineDevice", "Device")
+                        .WithMany("Axes")
+                        .HasForeignKey("IdDevice")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineAxisParameter", b =>
+                {
+                    b.HasOne("CRM.Shared.ProductMachineAxis", "Axis")
+                        .WithMany("Parameters")
+                        .HasForeignKey("IdAxis")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Axis");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineBoard", b =>
+                {
+                    b.HasOne("CRM.Shared.ProductMachineDevice", "Device")
+                        .WithMany("Boards")
+                        .HasForeignKey("IdDevice")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineConfiguration", b =>
+                {
+                    b.HasOne("CRM.Shared.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("IdProduct")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineDevice", b =>
+                {
+                    b.HasOne("CRM.Shared.ProductMachineConfiguration", "Configuration")
+                        .WithMany("Devices")
+                        .HasForeignKey("IdConfiguration")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.MachineDeviceTemplate", null)
+                        .WithMany()
+                        .HasForeignKey("SourceDeviceTemplateId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Configuration");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineIoPoint", b =>
+                {
+                    b.HasOne("CRM.Shared.ProductMachineBoard", "Board")
+                        .WithMany("IoPoints")
+                        .HasForeignKey("IdBoard")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineParameter", b =>
+                {
+                    b.HasOne("CRM.Shared.ProductMachineDevice", "Device")
+                        .WithMany("Parameters")
+                        .HasForeignKey("IdDevice")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductParameter", b =>
+                {
+                    b.HasOne("CRM.Shared.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("IdProduct")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Product");
                 });
@@ -3724,6 +4544,11 @@ namespace CRM.Server.Migrations
                     b.Navigation("StatesCurrent");
                 });
 
+            modelBuilder.Entity("CRM.Shared.ArticleMachineParameterSnapshot", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("CRM.Shared.Attachment", b =>
                 {
                     b.Navigation("Files");
@@ -3751,9 +4576,52 @@ namespace CRM.Server.Migrations
                     b.Navigation("InterventionTypeLanguages");
                 });
 
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplate", b =>
+                {
+                    b.Navigation("Axes");
+
+                    b.Navigation("Boards");
+
+                    b.Navigation("Parameters");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateAxis", b =>
+                {
+                    b.Navigation("Parameters");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineDeviceTemplateBoard", b =>
+                {
+                    b.Navigation("IoPoints");
+                });
+
             modelBuilder.Entity("CRM.Shared.Product", b =>
                 {
                     b.Navigation("Articles");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineAxis", b =>
+                {
+                    b.Navigation("Parameters");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineBoard", b =>
+                {
+                    b.Navigation("IoPoints");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineConfiguration", b =>
+                {
+                    b.Navigation("Devices");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProductMachineDevice", b =>
+                {
+                    b.Navigation("Axes");
+
+                    b.Navigation("Boards");
+
+                    b.Navigation("Parameters");
                 });
 
             modelBuilder.Entity("CRM.Shared.Project", b =>

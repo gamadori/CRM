@@ -1,0 +1,119 @@
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Microsoft.AspNetCore.Components.Authorization
+@using Radzen
+@using Radzen.Blazor
+@inject IMachineBackupsService BackupsService
+@inject DialogService DialogService
+@inject NavigationManager NavigationManager
+
+<section class="backup-workspace">
+    <header class="backup-header">
+        <div>
+            <h3>@Title</h3>
+            <p>@Subtitle</p>
+        </div>
+        <div class="backup-toolbar">
+            <AuthorizeView Policy="AdminRole">
+                <Authorized><RadzenButton Icon="add" Text="Nuovo backup" Click="OpenCreate" /></Authorized>
+            </AuthorizeView>
+            <RadzenButton Icon="refresh" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                          title="Aggiorna" Click="LoadAsync" Disabled="@_loading" />
+        </div>
+    </header>
+
+    <RadzenDataGrid Data="_items" TItem="MachineBackupDTO" AllowPaging="false" AllowSorting="true"
+                    IsLoading="_loading" EmptyText="Nessun backup disponibile" class="backup-grid">
+        <Columns>
+            <RadzenDataGridColumn TItem="MachineBackupDTO" Property="Version" Title="Versione" Width="100px">
+                <Template Context="item"><span class="version-badge">v@item.Version</span></Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="MachineBackupDTO" Property="FileName" Title="File">
+                <Template Context="item">
+                    <div class="file-cell">
+                        <span class="material-symbols-outlined">draft</span>
+                        <div><strong>@item.FileName</strong><small>@FormatSize(item.Size) | @item.ContentType</small></div>
+                    </div>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="MachineBackupDTO" Property="CreatedAt" Title="Data" Width="175px">
+                <Template Context="item">@item.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="MachineBackupDTO" Property="Source" Title="Origine" Width="120px">
+                <Template Context="item">@(item.Source == MachineBackupSource.MachineApi ? "API macchina" : "Manuale")</Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="MachineBackupDTO" Property="Description" Title="Descrizione" />
+            <RadzenDataGridColumn TItem="MachineBackupDTO" Filterable="false" Sortable="false" Width="110px" TextAlign="TextAlign.Right">
+                <Template Context="item">
+                    @if (!string.IsNullOrWhiteSpace(item.Sha256))
+                    {
+                        <a class="backup-action" href="api/MachineBackups/@item.Id/file" title="Scarica">
+                            <span class="material-symbols-outlined">download</span>
+                        </a>
+                    }
+                    <AuthorizeView Policy="AdminRole">
+                        <Authorized>
+                            <button class="backup-action danger" title="Elimina" @onclick="() => DeleteAsync(item)">
+                                <span class="material-symbols-outlined">delete</span>
+                            </button>
+                        </Authorized>
+                    </AuthorizeView>
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public MachineBackupOwnerType OwnerType { get; set; }
+    [Parameter, EditorRequired] public int OwnerId { get; set; }
+
+    private List<MachineBackupDTO> _items = new();
+    private bool _loading;
+
+    private string Title => OwnerType == MachineBackupOwnerType.Product ? "Backup predefiniti" : "Backup macchina";
+    private string Subtitle => OwnerType == MachineBackupOwnerType.Product
+        ? "File di configurazione di riferimento per questo prodotto."
+        : "Storico completo dei file acquisiti dalla macchina.";
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _items = (await BackupsService.GetListAsync(OwnerType, OwnerId)).Items;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OpenCreate() => NavigationManager.NavigateTo($"/MachineBackups/{OwnerType}/{OwnerId}/New");
+
+    private async Task DeleteAsync(MachineBackupDTO item)
+    {
+        var confirmed = await DialogService.Confirm(
+            $"Eliminare definitivamente il backup v{item.Version} ({item.FileName})?",
+            "Elimina backup",
+            new ConfirmOptions { OkButtonText = "Elimina", CancelButtonText = "Annulla" });
+        if (confirmed != true) return;
+
+        if (await BackupsService.DeleteAsync(item.Id))
+        {
+            await LoadAsync();
+        }
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB"];
+        var value = (double)bytes;
+        var index = 0;
+        while (value >= 1024 && index < units.Length - 1) { value /= 1024; index++; }
+        return $"{value:0.#} {units[index]}";
+    }
+}

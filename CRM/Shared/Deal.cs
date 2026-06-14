@@ -85,5 +85,11 @@ namespace CRM.Shared
     public class DealFilter: PagingParameterModel
     {
         public string? IdUser { get; set; }
+
+        public string? Search { get; set; }
+
+        public DealStates? State { get; set; }
+
+        public DealPhases? Phase { get; set; }
     }
 }

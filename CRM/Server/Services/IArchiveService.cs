@@ -12,7 +12,8 @@ namespace CRM.Server.Services
         Pdf,
         Photo,
         Temp,
-        ExpenseReceipts
+        ExpenseReceipts,
+        MachineBackups
     }
 
     public interface IArchiveService
@@ -39,5 +40,11 @@ namespace CRM.Server.Services
         byte[] GetAttachment(int id, string fileName);
 
         byte[] GetAttachmentByExt(int id, string ext);
+
+        Task<(long Size, string Sha256)> SaveStreamAsync(int id, string fileName, Stream content, CancellationToken cancellationToken = default);
+
+        Stream OpenRead(int id, string fileName);
+
+        bool Delete(int id, string fileName);
     }
 }

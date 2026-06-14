@@ -207,6 +207,21 @@ namespace CRM.Server.Data
                 .WithMany()
                 .HasForeignKey(a => a.IdAttachmentFile)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<MachineParameterApiKey>()
+                .HasIndex(x => x.KeyHash)
+                .IsUnique();
+
+            modelBuilder.Entity<MachineBackup>(entity =>
+            {
+                entity.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.IdProduct).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.Article).WithMany().HasForeignKey(x => x.IdArticle).OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(x => new { x.OwnerType, x.IdProduct, x.Version }).IsUnique();
+                entity.HasIndex(x => new { x.OwnerType, x.IdArticle, x.Version }).IsUnique();
+                entity.ToTable(t => t.HasCheckConstraint(
+                    "CK_MachineBackups_Owner",
+                    "([OwnerType] = 1 AND [IdProduct] IS NOT NULL AND [IdArticle] IS NULL) OR ([OwnerType] = 2 AND [IdArticle] IS NOT NULL AND [IdProduct] IS NULL)"));
+            });
             
             base.OnModelCreating(modelBuilder);
 
@@ -254,7 +269,8 @@ namespace CRM.Server.Data
 
         public DbSet<ProductCatalogAsset> ProductCatalogAssets => Set<ProductCatalogAsset>();
 
-        public DbSet<CRM.Shared.ProductParameter> ProductParameters => Set<ProductParameter>();
+        public DbSet<MachineBackup> MachineBackups => Set<MachineBackup>();
+        public DbSet<MachineParameterApiKey> MachineParameterApiKeys => Set<MachineParameterApiKey>();
         public DbSet<CRM.Shared.Article> Articles => Set<Article>();
         public DbSet<CRM.Shared.TicketState> TicketStates => Set<TicketState>();
         public DbSet<CRM.Shared.Ticket> Tickets => Set<Ticket>();
@@ -320,10 +336,6 @@ namespace CRM.Server.Data
         public DbSet<UserAvatar> UserAvatars => Set<UserAvatar>();
 
         public DbSet<ProjectUser> ProjectUsers => Set<ProjectUser>();
-
-        public DbSet<ArticleBackup> ArticleBackups => Set<ArticleBackup>();
-
-        public DbSet<BackUpParameter> BackUpParameters => Set<BackUpParameter>();
 
         public DbSet<TicketInterventionTime> TicketInterventionTimes => Set<TicketInterventionTime>();
 

@@ -181,6 +181,7 @@ namespace CRM.Client.Pages.Products
             else
                 NavigationManager.NavigateTo($"/Products/{id}/Edit");
         }
+
         protected void Cancel()
         {
             NavigationManager.NavigateTo("/Products");

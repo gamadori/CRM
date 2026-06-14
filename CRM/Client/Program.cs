@@ -81,7 +81,7 @@ namespace CRM.Client
             builder.Services.AddTransient<IManyToManyService<UserGroupModel>, GroupUsersService>();
             builder.Services.AddTransient<Radzen.DialogService>();
             builder.Services.AddTransient<INavMenuService, NavMenuService>();
-            builder.Services.AddTransient<IDealService, DealService>();
+            builder.Services.AddTransient<IDealService, ProxyDealService>();
             builder.Services.AddTransient<IManyToManyService<ProductParentChildModel>, ProductParentChildService>();
             builder.Services.AddScoped<IEnumService, EnumService>();
             builder.Services.AddScoped<IAccessoryTypesService, AccessoryTypesService>();
@@ -115,6 +115,8 @@ namespace CRM.Client
             builder.Services.AddScoped<IAttachmentsService, ProxyAttachmentsService>();
             builder.Services.AddScoped<IProductCatalogAssetsService, ProxyProductCatalogAssetsService>();
             builder.Services.AddScoped<IProductCatalogService, ProxyProductCatalogService>();
+            builder.Services.AddScoped<IMachineBackupsService, ProxyMachineBackupsService>();
+            builder.Services.AddScoped<IMachineParameterApiKeysService, ProxyMachineParameterApiKeysService>();
             builder.Services.AddScoped<IProductsService, ProxyProductsService>();
             builder.Services.AddScoped<IProductTypesService, ProxyProductTypesService>();
             builder.Services.AddScoped<ICompaniesService, ProxyCompaniesService>();
@@ -194,7 +196,7 @@ namespace CRM.Client
             // Build dell'app una sola volta
             var app = builder.Build();
 
-            // Imposta la cultura usando l'app gi‡ costruita
+            // Imposta la cultura usando l'app gi√† costruita
             CultureInfo cultureInfo;
             var jsInterop = app.Services.GetRequiredService<IJSRuntime>();
             var appLanguage = await jsInterop.InvokeAsync<string>("appCulture.get");

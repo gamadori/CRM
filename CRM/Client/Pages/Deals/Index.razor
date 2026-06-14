@@ -1,114 +1,462 @@
-﻿@page "/Deals"
+@page "/Deals"
 @page "/Deals/Index"
-
 @using Radzen
 @using Radzen.Blazor
+@using CRM.Shared.DTOs
 @using CRM.Shared.Helper
-@using CRM.Client.Shared.Filters
 
-
-
-<BlazorHeader Header="@_header"></BlazorHeader>
-
-
-
-
-@if (_deals != null)
-{
-    @if (IdProject == null && IdCompany == null)
-    {
-        <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
-    }
-    <BlazorFilter OnChangeFilter="OnChangeFilter" @bind-FilterState=@_filterState>
-        <Filter>
-            <div class="container m-3">
-                <div class="form-floating">
-
-                    <RadzenDropDownDataGrid class="form-control" @bind-value="@_idUser" TValue="string" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" Change="OnChangeIdUser"
-                                        Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id">
-                        <Columns>
-                            <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
-                            <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
-
-                        </Columns>
-                    </RadzenDropDownDataGrid>
-
-                    <label>@Localize["Owner:"]</label>
-
-                </div>
-            </div>
-        </Filter>
-    </BlazorFilter>
-    <div class=row>
-        <div class="col">
-            <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewTicket"></BlazorButton>
-        
+<div class="deals-page">
+    <section class="deals-toolbar">
+        <div>
+            <span class="deals-kicker">CRM</span>
+            <h1>Opportunita</h1>
+            <p>Pipeline commerciale, importi e stato delle trattative.</p>
         </div>
-    </div>
+        <button type="button" class="deals-primary" @onclick="NewDeal">
+            <span class="material-icons">add</span>
+            <span>Nuova opportunita</span>
+        </button>
+    </section>
 
-    <RadzenDataGrid  @ref="grdDeals" Responsive=true IsLoading="@_isLoading" Count="@_deals.Items.Count" Data="@_deals.Items" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced" 
-        AllowSorting="true" AllowFiltering="true" AllowPaging="true" 
-        PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="DealModel" EmptyText=@Localize["Nessun Deals"]>
-        <Columns>
+    <section class="deals-metrics">
+        <article>
+            <span>Pipeline filtrata</span>
+            <strong>@_deals.Total.ToString("C")</strong>
+            <small>@TotalCount opportunita</small>
+        </article>
+        <article>
+            <span>Aperte in pagina</span>
+            <strong>@OpenAmount.ToString("C")</strong>
+            <small>@_deals.Items.Count risultati visibili</small>
+        </article>
+        <article>
+            <span>Vinte in pagina</span>
+            <strong>@WonAmount.ToString("C")</strong>
+            <small>Su @PageAmount.ToString("C") visualizzati</small>
+        </article>
+        <article>
+            <span>Target in pagina</span>
+            <strong>@TargetAmount.ToString("C")</strong>
+            <small>Obiettivo aggregato</small>
+        </article>
+    </section>
 
+    <section class="deals-filters">
+        <div class="deals-search">
+            <span class="material-icons">search</span>
+            <input @bind="_search" @bind:event="oninput" placeholder="Cerca per nome, azienda, contatto o note" />
+        </div>
 
-            <RadzenDataGridColumn TItem="DealModel" Property="@nameof(DealModel.Name)" Title="@TranslateHelper.GetDisplayName(nameof(Deal.Name), typeof(Deal))" Width="10%" />
+        <RadzenDropDown class="deals-filter-control"
+                        @bind-Value="_idUser"
+                        TValue="string"
+                        Data="@_users"
+                        TextProperty="NameComplete"
+                        ValueProperty="Id"
+                        AllowClear="true"
+                        AllowFiltering="true"
+                        Placeholder="Owner" />
 
-            <RadzenDataGridColumn TItem="DealModel" Property="@nameof(DealModel.Date)" FormatString="{0:d}" Title="@TranslateHelper.GetDisplayName(nameof(Deal.Date), typeof(Deal))" Width="10%"/>
+        <RadzenDropDown class="deals-filter-control"
+                        @bind-Value="_state"
+                        TValue="DealStates?"
+                        Data="@_states"
+                        TextProperty="Text"
+                        ValueProperty="Value"
+                        AllowClear="true"
+                        Placeholder="Stato" />
 
+        <RadzenDropDown class="deals-filter-control"
+                        @bind-Value="_phase"
+                        TValue="DealPhases?"
+                        Data="@_phases"
+                        TextProperty="Text"
+                        ValueProperty="Value"
+                        AllowClear="true"
+                        Placeholder="Fase" />
 
-            <RadzenDataGridColumn TItem="DealModel" Property="@nameof(DealModel.Company)" Title="@TranslateHelper.GetDisplayName(nameof(Deal.IdCompany), typeof(Deal))" Type="typeof(string)"
-                                FilterProperty="Company.RagioneSociale" SortProperty="Company.RagioneSociale"  Width="20%"  />
+        <button type="button" class="deals-filter-button" @onclick="ApplyFilters">
+            <span class="material-icons">tune</span>
+        </button>
+        <button type="button" class="deals-filter-button" @onclick="ClearFilters">
+            <span class="material-icons">filter_alt_off</span>
+        </button>
+    </section>
 
-            <RadzenDataGridColumn TItem="DealModel" Property="@nameof(DealModel.Contact)" Title="@TranslateHelper.GetDisplayName(nameof(Deal.Contact), typeof(Deal))" Type="typeof(string)"
-                                FilterProperty="Product.Name" Width="10%" />
+    @if (_isLoading)
+    {
+        <Waiting></Waiting>
+    }
+    else if (!_deals.Items.Any())
+    {
+        <section class="deals-empty">
+            <span class="material-icons">work_outline</span>
+            <strong>Nessuna opportunita trovata</strong>
+            <p>Modifica i filtri o crea una nuova opportunita commerciale.</p>
+        </section>
+    }
+    else
+    {
+        <section class="deals-table-wrap">
+            <table class="deals-table">
+                <thead>
+                    <tr>
+                        <th>Opportunita</th>
+                        <th>Azienda</th>
+                        <th>Stato</th>
+                        <th>Fase</th>
+                        <th>Valore</th>
+                        <th>Owner</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var deal in _deals.Items)
+                    {
+                        <tr>
+                            <td>
+                                <button type="button" class="deals-link" @onclick="@(() => Details(deal.Id))">@deal.Name</button>
+                                <small>@deal.Date.ToString("dd/MM/yyyy")</small>
+                            </td>
+                            <td>
+                                <strong>@deal.CompanyName</strong>
+                                @if (!string.IsNullOrWhiteSpace(deal.ContactName))
+                                {
+                                    <small>@deal.ContactName</small>
+                                }
+                            </td>
+                            <td>
+                                <span class="deal-state @StateClass(deal.State)">@StateText(deal.State)</span>
+                            </td>
+                            <td>
+                                <div class="deal-phase">
+                                    <span>@PhaseText(deal.Phase)</span>
+                                    <div><i style="width:@PhaseProgress(deal.Phase)%"></i></div>
+                                </div>
+                            </td>
+                            <td class="deals-money">
+                                <strong>@deal.Amount.ToString("C")</strong>
+                                <small>Target @deal.Target.ToString("C")</small>
+                            </td>
+                            <td>@deal.UserName</td>
+                            <td>
+                                <div class="deals-actions">
+                                    <button type="button" title="Dettagli" @onclick="@(() => Details(deal.Id))">
+                                        <span class="material-icons">visibility</span>
+                                    </button>
+                                    <button type="button" title="Modifica" disabled="@(!deal.Permits.Edit())" @onclick="@(() => Edit(deal.Id))">
+                                        <span class="material-icons">edit</span>
+                                    </button>
+                                    <button type="button" title="Elimina" disabled="@(!deal.Permits.Delete())" @onclick="@(() => Delete(deal.Id))">
+                                        <span class="material-icons">delete</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
 
-            
-            <RadzenDataGridColumn Context="item" TItem="DealModel" Property="@nameof(DealModel.State)" Title="@TranslateHelper.GetDisplayName(nameof(Deal.State), typeof(Deal))" Filterable="true" Sortable="true" TextAlign="Radzen.TextAlign.Center" Width="10%">
-                <Template Context="item">
-                    <span style="mix-blend-mode: difference; color: white">
-                            @EnumService.Get(typeof(DealStates), item.State)
-                        </span>
-                </Template>
-                
-            </RadzenDataGridColumn>
-            <RadzenDataGridColumn Context="item" TItem="DealModel" Property="@nameof(DealModel.Phase)" Title="@TranslateHelper.GetDisplayName(nameof(Deal.Phase), typeof(Deal))" Filterable="true" Sortable="true" TextAlign="Radzen.TextAlign.Center" 
-                Width="10%">
-                <Template Context="item">
-                    <span style="mix-blend-mode: difference; color: white">
+        <section class="deals-pager">
+            <button type="button" disabled="@(!CanGoPrevious)" @onclick="PreviousPage">
+                <span class="material-icons">chevron_left</span>
+                <span>Precedente</span>
+            </button>
+            <strong>Pagina @_pageNumber di @TotalPages</strong>
+            <button type="button" disabled="@(!CanGoNext)" @onclick="NextPage">
+                <span>Successiva</span>
+                <span class="material-icons">chevron_right</span>
+            </button>
+        </section>
+    }
+</div>
 
-                        @EnumService.Get(typeof(DealPhases), item.Phase)
-                    </span>
-                </Template>
+<style>
+    .deals-page {
+        min-height: calc(100vh - 1rem);
+        padding: 1.25rem;
+        color: #182235;
+        background: #f7f9fc;
+    }
 
-            </RadzenDataGridColumn>
+    .deals-toolbar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
 
-            <RadzenDataGridColumn TItem="DealModel" Context="item" FormatString="{0:###,##0.00}" Property="@nameof(DealModel.Amount)" Title="@TranslateHelper.GetDisplayName(nameof(Deal.Amount), typeof(Deal))" Width="10%">
-            
-                <FooterTemplate>
-                        @Localize["Total Amount"]: <b> @_deals.Total.ToString("###,##0.00")</b>
-                </FooterTemplate>
-            </RadzenDataGridColumn>
+    .deals-kicker {
+        text-transform: uppercase;
+        font-size: 0.74rem;
+        font-weight: 800;
+        color: #64748b;
+    }
 
-            <RadzenDataGridColumn Context="item" TItem="DealModel" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
-                <Template Context="item">
-                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" title="Dettagli"  Size="Radzen.ButtonSize.Medium" Click="@(args => Details(item.Id))">
-                        </RadzenButton>
-                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Primary" Icon="edit" Size="Radzen.ButtonSize.Medium" title="Edit" Disabled=@(!item.Permits.Edit()) Click="@(args => Edit(item.Id))">
-                        </RadzenButton>
-                        <RadzenButton ButtonStyle="Radzen.ButtonStyle.Danger" Icon="delete" Size="Radzen.ButtonSize.Medium" title="Elimina" Disabled=@(!item.Permits.Delete()) Click="@(args => Delete(item.Id))">
-                        </RadzenButton>
-                </Template>
-           
-            </RadzenDataGridColumn>
-       
-        </Columns>
-    </RadzenDataGrid>
-}
-else
-{
-    <Waiting></Waiting>
-}
+    .deals-toolbar h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 850;
+    }
 
-    
-    
+    .deals-toolbar p {
+        margin: 0.25rem 0 0;
+        color: #64748b;
+    }
+
+    .deals-primary,
+    .deals-filter-button,
+    .deals-pager button,
+    .deals-actions button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        border: 1px solid #bfd2e7;
+        border-radius: 8px;
+        background: #fff;
+        color: #0f4a8a;
+        font-weight: 800;
+    }
+
+    .deals-primary {
+        background: #0f4a8a;
+        color: #fff;
+        padding: 0.62rem 0.85rem;
+    }
+
+    .deals-metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .deals-metrics article,
+    .deals-filters,
+    .deals-table-wrap {
+        border: 1px solid #dfe7f1;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 12px 28px rgba(31, 42, 68, 0.07);
+    }
+
+    .deals-metrics article {
+        display: grid;
+        gap: 0.2rem;
+        padding: 0.9rem;
+        min-width: 0;
+    }
+
+    .deals-metrics span,
+    .deals-metrics small,
+    .deals-table small,
+    .deal-phase span {
+        color: #64748b;
+    }
+
+    .deals-metrics strong {
+        font-size: 1.35rem;
+        overflow-wrap: anywhere;
+    }
+
+    .deals-filters {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) 210px 160px 190px 42px 42px;
+        gap: 0.6rem;
+        align-items: center;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .deals-search {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid #d7e0ec;
+        border-radius: 8px;
+        padding: 0.42rem 0.55rem;
+        min-width: 0;
+    }
+
+    .deals-search input {
+        width: 100%;
+        min-width: 0;
+        border: 0;
+        outline: 0;
+    }
+
+    .deals-filter-control {
+        width: 100%;
+    }
+
+    .deals-filter-button {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+    }
+
+    .deals-table-wrap {
+        overflow-x: auto;
+    }
+
+    .deals-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 980px;
+    }
+
+    .deals-table th,
+    .deals-table td {
+        padding: 0.78rem 0.85rem;
+        border-bottom: 1px solid #e6edf5;
+        vertical-align: middle;
+    }
+
+    .deals-table th {
+        color: #64748b;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0;
+        background: #fbfdff;
+    }
+
+    .deals-table td small {
+        display: block;
+        margin-top: 0.15rem;
+    }
+
+    .deals-link {
+        width: fit-content;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: #0f4a8a;
+        font-weight: 850;
+        text-align: left;
+    }
+
+    .deal-state {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 0.25rem 0.55rem;
+        font-weight: 850;
+        font-size: 0.78rem;
+    }
+
+    .deal-state.is-open {
+        background: #eaf5f1;
+        color: #13705b;
+    }
+
+    .deal-state.is-paused {
+        background: #fff7e6;
+        color: #996515;
+    }
+
+    .deal-state.is-won {
+        background: #e7f7ea;
+        color: #176d2c;
+    }
+
+    .deal-state.is-lost {
+        background: #fdecec;
+        color: #9f1d1d;
+    }
+
+    .deal-state.is-muted {
+        background: #eef2f7;
+        color: #526174;
+    }
+
+    .deal-phase {
+        display: grid;
+        gap: 0.35rem;
+        min-width: 170px;
+    }
+
+    .deal-phase div {
+        height: 7px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: #e6edf5;
+    }
+
+    .deal-phase i {
+        display: block;
+        height: 100%;
+        background: #0f4a8a;
+    }
+
+    .deals-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.35rem;
+    }
+
+    .deals-actions button {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+    }
+
+    .deals-actions button:disabled,
+    .deals-pager button:disabled {
+        opacity: 0.45;
+    }
+
+    .deals-pager {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        padding: 1rem 0;
+    }
+
+    .deals-pager button {
+        padding: 0.45rem 0.7rem;
+    }
+
+    .deals-empty {
+        min-height: 300px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        color: #64748b;
+        text-align: center;
+    }
+
+    .deals-empty .material-icons {
+        font-size: 48px;
+    }
+
+    @@media (max-width: 1120px) {
+        .deals-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .deals-filters {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @@media (max-width: 720px) {
+        .deals-toolbar {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .deals-metrics,
+        .deals-filters {
+            grid-template-columns: 1fr;
+        }
+
+        .deals-filter-button {
+            width: 100%;
+        }
+    }
+</style>

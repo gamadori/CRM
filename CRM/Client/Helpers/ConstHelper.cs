@@ -46,7 +46,6 @@ namespace CRM.Client.Helpers
 
         public static string ArticlesPath = "api/Articles";
 
-        public static string ArticleBackupsPath = "api/ArticleBackups";
 
         public static string InterventionTime = "api/TicketInterventionTimes";
 
@@ -56,7 +55,6 @@ namespace CRM.Client.Helpers
 
         public static string ProductAccTypeLangsPath = "api/ProductAccessoryTypeLangs";
 
-        public static string ProductParameters = "api/ProductParameters";
 
         public static string ProductCatalogAssetsPath = "api/ProductCatalogAssets";
 
@@ -150,7 +148,6 @@ namespace CRM.Client.Helpers
 
         public static string ClientArticlesPath = "Articles";
 
-        public static string ClientArticleBackupsPath = "ArticleBackups";
 
         public static string ClientCompaniesPath = "Companies";
 
@@ -180,7 +177,6 @@ namespace CRM.Client.Helpers
 
         public static string ClientProductsPath = "Products";
 
-        public static string ClientProductParametersPath = "ProductParameters";
 
         public static string ClientEmailTemplatesPath = "Settings/EmailTemplates";
 

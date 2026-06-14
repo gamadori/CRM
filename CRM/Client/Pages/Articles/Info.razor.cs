@@ -21,7 +21,6 @@ namespace CRM.Client.Pages.Articles
             Ticket,
             Attachments,
             ProductAttachments,
-
             Backups
         }
 
@@ -79,6 +78,11 @@ namespace CRM.Client.Pages.Articles
         protected override async Task OnInitializedAsync()
         {
             InitializeViewOptions();
+            if (NavigationManager.ToAbsoluteUri(NavigationManager.Uri).Query.Contains("view=backups", StringComparison.OrdinalIgnoreCase))
+            {
+                selectView = ProductViews.Backups;
+                _partialView = PartialViews.Index;
+            }
             await LoadProduct();
         }
 
@@ -88,6 +92,7 @@ namespace CRM.Client.Pages.Articles
             {
                 new ViewOption<ProductViews> { Text = Localize["Data Product"], Value = ProductViews.Product },
                 new ViewOption<ProductViews> { Text = Localize["Documenti Macchina"], Value = ProductViews.Attachments },
+                new ViewOption<ProductViews> { Text = "Backup macchina", Value = ProductViews.Backups },
                 new ViewOption<ProductViews> { Text = Localize["Documenti"], Value = ProductViews.ProductAttachments },
                 new ViewOption<ProductViews> { Text = Localize["Tickets"], Value = ProductViews.Ticket },
             };

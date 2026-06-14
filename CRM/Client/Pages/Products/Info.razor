@@ -21,9 +21,9 @@ else
             <Items>
                 <RadzenSelectBarItem Text=@Localize["Data Product"] Value="GroupViews.ProductType" />
                 <RadzenSelectBarItem Text="Catalogo" Value="GroupViews.Catalog" />
+                <RadzenSelectBarItem Text="Backup predefiniti" Value="GroupViews.Backups" />
                 <RadzenSelectBarItem Text=@Localize["Attachments"] Value="GroupViews.Attachments" />
                 @* <RadzenSelectBarItem Text=@Localize["Accessories"] Value="GroupViews.ProductAccessories" />
-                <RadzenSelectBarItem Text=@Localize["Parameters"] Value="GroupViews.Parameters" />
                 <RadzenSelectBarItem Text=@Localize["Sotto Parti"] Value="GroupViews.ProductTypeChilds" /> *@
             </Items>
         </RadzenSelectBar>
@@ -146,21 +146,8 @@ else
 
 
     }
-    else if (_selectView == GroupViews.Parameters)
+    else if (_selectView == GroupViews.Backups)
     {
-        if (_partialView == PartialViews.Index)
-        {
-            <CRM.Client.Pages.ProductParameters.Index IdProduct="@Id" CmdDetails="false" CmdEdit="false" OnClickEdit="@((s)=> OnClickNew(s))"
-                                             OnClickDelete="@(async (s)=> await OnClickDelete(s))"
-                                             MessagePrepareDelete="@_messagePrepareDelete"></CRM.Client.Pages.ProductParameters.Index>
-        }
-        else if (_partialView == PartialViews.Details)
-        {
-            <CRM.Client.Pages.Products.Details Id="@_idChild" CloseForm="UsersCloseForm" OnClickEdit="EditCommand"></CRM.Client.Pages.Products.Details>
-        }
-        else if (_partialView == PartialViews.Edit)
-        {
-            <CRM.Client.Pages.ProductParameters.Edit Id="@_idChild" CloseForm="UsersCloseForm" IdProduct="@Id"></CRM.Client.Pages.ProductParameters.Edit>
-        }
+        <CRM.Client.Pages.MachineBackups.Index OwnerType="MachineBackupOwnerType.Product" OwnerId="@Id" />
     }
 }

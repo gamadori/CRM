@@ -1,118 +1,304 @@
-﻿@page "/Deals/New"
+@page "/Deals/New"
 @page "/Deals/{Id:int}/Edit"
 @using Radzen
 @using Radzen.Blazor
+@using CRM.Shared.DTOs
 
-<BlazorHeader Visible=@(PageMode != PageHelper.PageModality.Dialog)>@_header</BlazorHeader>
+<div class="deal-edit-page">
+    @if (_loading || _deal == null)
+    {
+        <Waiting></Waiting>
+    }
+    else
+    {
+        <section class="deal-edit-toolbar">
+            <div>
+                <span class="deal-kicker">CRM</span>
+                <h1>@Header</h1>
+                <p>Gestisci valore, fase, cliente e prossima chiusura della trattativa.</p>
+            </div>
+            <button type="button" class="deal-secondary" @onclick="Cancel">
+                <span class="material-icons">close</span>
+                <span>Annulla</span>
+            </button>
+        </section>
 
-@if (_deal == null)
-{
-    <Waiting></Waiting>
-}
-else
-{
-    
-    <div class="container m-3">
+        @if (!string.IsNullOrWhiteSpace(_messageState))
+        {
+            <div class="deal-alert">@_messageState</div>
+        }
+
         <EditForm Model="@_deal" OnValidSubmit="HandleValidSubmit">
             <DataAnnotationsValidator />
-            <ValidationSummary />
-           
-            <div class="row mb-3">
-                <div class="col-md-6">            
-                    <DisplayName For="@(()=>_deal.Name)" />
-                    <input class="form-control" @bind-value="@_deal.Name" />
-                    <ValidationMessage For="@(() => _deal.Name)" />
-                </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <DisplayName For="@(()=>_deal.IdCompany)" />
 
-                    <div class="input-group mb-3">
-                        <RadzenDropDownDataGrid @ref=_ddCompany class="form-control" @bind-value="@_deal.IdCompany" TValue="int?" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                                    AllowClear="true" PageSize="@_pageSize"
-                                            Data="@_companies" Count="@_companies.Count()" Change="OnChangeCompany" TextProperty="RagioneSociale" ValueProperty="Id"
-                                            Disabled="@_lockCompany">
-                            <Columns>
-                                <RadzenDropDownDataGridColumn Property="RagioneSociale" Title=@TranslateHelper.GetDisplayName(nameof(Company.RagioneSociale), typeof(Company)) />
-                            </Columns>
-                        </RadzenDropDownDataGrid>
-                        <BtnCompanies OnGetCompany="OnGetCompany"></BtnCompanies>
+            <section class="deal-edit-layout">
+                <article class="deal-form-panel">
+                    <div class="deal-panel-title">
+                        <span class="material-icons">work</span>
+                        <h2>Dati opportunita</h2>
                     </div>
-                    <ValidationMessage For="@(() => _deal.IdCompany)" />
-                </div>
-               
-                <div class="col-md-6">
-                    <DisplayName For="@(()=>_deal.IdContact)" />
 
-                    <div class="input-group mb-3">
-                        <RadzenDropDownDataGrid @ref=_ddContact class="form-control" @bind-value="@_deal.IdContact" TValue="int?" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                            AllowClear="true" PageSize="@_pageSize"
-                                            Data="@_contacts" Count="@_contacts.Count()" TextProperty="NameComplete"  ValueProperty="Id">
-                            <Columns>
-                                <RadzenDropDownDataGridColumn Property="NameComplete" Title=@TranslateHelper.GetDisplayName(nameof(Contact.NameComplete), typeof(Contact)) />
-                            </Columns>
-                        </RadzenDropDownDataGrid>
-                        <BtnContacts OnGetContacts="OnGetContact" IdCompany=@_deal?.IdCompany></BtnContacts>
+                    <div class="deal-form-grid">
+                        <label class="deal-field wide">
+                            <span><DisplayName For="@(() => _deal.Name)" /></span>
+                            <InputText class="deal-input" @bind-Value="_deal.Name" />
+                            <ValidationMessage For="@(() => _deal.Name)" />
+                        </label>
+
+                        <label class="deal-field">
+                            <span><DisplayName For="@(() => _deal.Date)" /></span>
+                            <InputDate class="deal-input" @bind-Value="_deal.Date" />
+                        </label>
+
+                        <label class="deal-field">
+                            <span><DisplayName For="@(() => _deal.DateClosed)" /></span>
+                            <InputDate class="deal-input" @bind-Value="_deal.DateClosed" />
+                        </label>
+
+                        <label class="deal-field">
+                            <span><DisplayName For="@(() => _deal.Amount)" /></span>
+                            <InputNumber class="deal-input" @bind-Value="_deal.Amount" />
+                        </label>
+
+                        <label class="deal-field">
+                            <span><DisplayName For="@(() => _deal.Target)" /></span>
+                            <InputNumber class="deal-input" @bind-Value="_deal.Target" />
+                        </label>
+
+                        <label class="deal-field">
+                            <span><DisplayName For="@(() => _deal.State)" /></span>
+                            <InputSelect class="deal-input" @bind-Value="_deal.State">
+                                @foreach (var state in _dealStates)
+                                {
+                                    <option value="@state.Value">@StateText(state.Value)</option>
+                                }
+                            </InputSelect>
+                        </label>
+
+                        <label class="deal-field">
+                            <span><DisplayName For="@(() => _deal.Phase)" /></span>
+                            <InputSelect class="deal-input" @bind-Value="_deal.Phase">
+                                @foreach (var phase in _dealPhases)
+                                {
+                                    <option value="@phase.Value">@PhaseText(phase.Value)</option>
+                                }
+                            </InputSelect>
+                        </label>
+                    </div>
+                </article>
+
+                <article class="deal-form-panel">
+                    <div class="deal-panel-title">
+                        <span class="material-icons">business</span>
+                        <h2>Cliente e contatto</h2>
+                    </div>
+
+                    <div class="deal-form-grid">
+                        <label class="deal-field wide">
+                            <span><DisplayName For="@(() => _deal.IdCompany)" /></span>
+
+                            <RedGDropDown TItem="CompanyDTO" TValue="int?" ValueProperty="@nameof(CompanyDTO.Id)" TextProperty="@nameof(CompanyDTO.RagioneSociale)" @bind-Value="@_deal.IdCompany"
+                                              Data="_companies" AllowFiltering="true" Change="OnChangeCompany" For="@(() => _deal.IdCompany)">
+                                <End>
+                                    <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetCompany DialogType="RedGDialog.DialogType.Companies"></RedGButtonDialog>
+                                </End>
+                            </RedGDropDown>
                            
+                            <ValidationMessage For="@(() => _deal.IdCompany)" />
+                        </label>
+
+                        <label class="deal-field wide">
+                            <span><DisplayName For="@(() => _deal.IdContact)" /></span>
+
+                            <RedGDropDown TItem="ContactDTO" TValue="int?" ValueProperty="@nameof(ContactDTO.Id)" TextProperty="@nameof(ContactDTO.NameComplete)" @bind-Value="@_deal.IdContact"
+                                              Data="_contacts" AllowFiltering="true" Change="OnChangeContact" For="@(() => _deal.IdContact)">
+                                <End>
+                                    <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetContact DialogType="RedGDialog.DialogType.Contacts"></RedGButtonDialog>
+                                </End>
+                            </RedGDropDown>
+                        </label>
+
+                        <label class="deal-field wide">
+                            <span><DisplayName For="@(() => _deal.Note)" /></span>
+                            <InputTextArea class="deal-input deal-notes-input" @bind-Value="_deal.Note" />
+                        </label>
                     </div>
-                    <ValidationMessage For="@(() => _deal.IdContact)" />
-                </div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <DisplayName For="@(()=>_deal.Amount)" />
-                    <input class="form-control" @bind-value="@_deal.Amount" />
-                    <ValidationMessage For="@(() => _deal.Amount)" />
-                </div>
-                <div class="col-md-6">
-                    <DisplayName For="@(()=>_deal.Target)" />
-                    <input class="form-control" @bind-value="@_deal.Target" />
-                    <ValidationMessage For="@(() => _deal.Target)" />
-                </div>
-            </div>
+                </article>
+            </section>
 
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <DisplayName For="@(()=>_deal.State)" />
-
-                    <RadzenDropDown class="form-control" @bind-value="@_deal.State" TValue="DealStates" AllowFiltering="true" AllowSorting=false AllowClear="true" PageSize="@_pageSize"
-                                        Data="@_dealStates" Count="@_dealStates.Count()"  TextProperty="Text" ValueProperty="Value" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive">
-                        
-                    </RadzenDropDown>
-
-                    <ValidationMessage For="@(() => _deal.State)" />
-                </div>
-
-                <div class="col-md-6">
-                    <DisplayName For="@(()=>_deal.Phase)" />
-
-                    <div class="input-group mb-3">
-                        <RadzenDropDown class="form-control" @bind-value="@_deal.Phase" TValue="DealPhases" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                            AllowClear="true" PageSize="@_pageSize"
-                                            Data="@_dealPhases" Count="@_dealPhases.Count()" TextProperty="Text" ValueProperty="Value">
-
-                           
-                        </RadzenDropDown>
-
-                    </div>
-                    <ValidationMessage For="@(() => _deal.Phase)" />
-                </div>
-            </div>
-
-            <div class="row mb-3">    
-                <div class="col-md-12">
-                    <DisplayName For="@(()=>_deal.Note)" />
-                    <InputTextArea rows="8" class="form-control" @bind-Value="@_deal.Note" />
-                    <ValidationMessage For="@(() => _deal.Note)" />
-                </div>
-            </div>
-
-            
-
-            <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Salva" Icon="save"></BlazorButton>
-            <BlazorButton Style="BtnStyle.Secondary" OnClick="Annulla" Text="Annulla" Icon="cancel"></BlazorButton>
-
+            <section class="deal-edit-footer">
+                <button type="button" class="deal-secondary" @onclick="Cancel" disabled="@_saving">
+                    <span class="material-icons">arrow_back</span>
+                    <span>Annulla</span>
+                </button>
+                <button type="submit" class="deal-primary" disabled="@_saving">
+                    <span class="material-icons">save</span>
+                    <span>@(_saving ? "Salvataggio..." : "Salva opportunita")</span>
+                </button>
+            </section>
         </EditForm>
-    </div>
-}
+    }
+</div>
+
+<style>
+    .deal-edit-page {
+        min-height: calc(100vh - 1rem);
+        padding: 1.25rem;
+        color: #182235;
+        background: #f7f9fc;
+    }
+
+    .deal-edit-toolbar,
+    .deal-edit-footer {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .deal-edit-footer {
+        align-items: center;
+        justify-content: flex-end;
+        margin: 1rem 0 0;
+    }
+
+    .deal-kicker {
+        text-transform: uppercase;
+        font-size: 0.74rem;
+        font-weight: 800;
+        color: #64748b;
+    }
+
+    .deal-edit-toolbar h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 850;
+    }
+
+    .deal-edit-toolbar p {
+        margin: 0.25rem 0 0;
+        color: #64748b;
+    }
+
+    .deal-primary,
+    .deal-secondary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        border: 1px solid #bfd2e7;
+        border-radius: 8px;
+        padding: 0.55rem 0.8rem;
+        background: #fff;
+        color: #0f4a8a;
+        font-weight: 800;
+    }
+
+    .deal-primary {
+        background: #0f4a8a;
+        color: #fff;
+    }
+
+    .deal-primary:disabled,
+    .deal-secondary:disabled {
+        opacity: 0.55;
+    }
+
+    .deal-alert {
+        border: 1px solid #f5b5b5;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        background: #fff1f1;
+        color: #9f1d1d;
+        font-weight: 700;
+    }
+
+    .deal-edit-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
+        gap: 1rem;
+    }
+
+    .deal-form-panel {
+        border: 1px solid #dfe7f1;
+        border-radius: 8px;
+        background: #fff;
+        padding: 1rem;
+        box-shadow: 0 12px 28px rgba(31, 42, 68, 0.07);
+        min-width: 0;
+    }
+
+    .deal-panel-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.9rem;
+    }
+
+    .deal-panel-title h2 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 850;
+    }
+
+    .deal-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.8rem;
+    }
+
+    .deal-field {
+        display: grid;
+        gap: 0.35rem;
+        min-width: 0;
+    }
+
+    .deal-field.wide {
+        grid-column: 1 / -1;
+    }
+
+    .deal-field > span {
+        color: #526174;
+        font-size: 0.82rem;
+        font-weight: 800;
+    }
+
+    .deal-input,
+    .deal-radzen-input {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid #d7e0ec;
+        border-radius: 8px;
+        background: #fff;
+        padding: 0.48rem 0.6rem;
+    }
+
+    .deal-radzen-input {
+        padding: 0;
+    }
+
+    .deal-notes-input {
+        min-height: 190px;
+        resize: vertical;
+    }
+
+    .validation-message {
+        color: #b91c1c;
+        font-size: 0.78rem;
+    }
+
+    @@media (max-width: 980px) {
+        .deal-edit-layout,
+        .deal-form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .deal-edit-toolbar,
+        .deal-edit-footer {
+            align-items: stretch;
+            flex-direction: column;
+        }
+    }
+</style>

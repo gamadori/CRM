@@ -56,7 +56,7 @@ namespace CRM.Shared.DTOs
 
     public static class DealHelper
     {
-        public static DealDTO? ToDTO(this Deal deal)
+        public static DealDTO ToDTO(this Deal deal)
         {
             if (deal == null) return null;
 

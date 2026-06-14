@@ -146,6 +146,8 @@ builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<ICompaniesService, CompaniesService>();
 
 builder.Services.AddScoped<IProductsService, ProductsService>();
+builder.Services.AddScoped<IMachineParameterApiKeyService, MachineParameterApiKeyService>();
+builder.Services.AddScoped<CRM.Server.Services.IMachineBackupsService, MachineBackupsService>();
 
 builder.Services.AddScoped<IProductTypesService, ProductTypesService>();
 
@@ -154,6 +156,8 @@ builder.Services.AddScoped<ITicketFeedbackService, TicketFeedbackService>();
 builder.Services.AddScoped<IFoldersService, FoldersService>();
 
 builder.Services.AddScoped<IContactsService, ContactsService>();
+
+builder.Services.AddScoped<IDealsService, DealsService>();
 
 builder.Services.AddScoped<IInterventionTypeLangsService, InterventionTypeLangsService>();
 
@@ -193,7 +197,7 @@ builder.Services.Configure<RequestLocalizationOptions>(options => {
     options.SetDefaultCulture(supportedCultures[0])
         .AddSupportedCultures(supportedCultures)
         .AddSupportedUICultures(supportedCultures);
-    // Priorit‡: Accept-Language header prima del cookie
+    // Priorit√†: Accept-Language header prima del cookie
     options.RequestCultureProviders = new List<IRequestCultureProvider>
     {
         new AcceptLanguageHeaderRequestCultureProvider(),

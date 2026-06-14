@@ -1,5 +1,6 @@
 ﻿using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using System;
@@ -71,7 +72,7 @@ namespace CRM.Client.Pages.Deals
         private int? _idAttachment;
 
 
-        private Deal _deal = null;
+        private DealDTO _deal = null;
 
         private bool _fromDetails = false;
 
@@ -93,7 +94,7 @@ namespace CRM.Client.Pages.Deals
 
         private async Task LoadData()
         {
-            _deal = await _service.Get(Id);
+            _deal = await _service.GetItemAsync(Id);
         }
         private void EditDeal()
         {

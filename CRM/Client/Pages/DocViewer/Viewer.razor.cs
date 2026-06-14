@@ -1,5 +1,4 @@
 ﻿using CRM.Client.Helpers;
-using CRM.Client.Pages.ProductParameters;
 using CRM.Client.Shared.Components;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;

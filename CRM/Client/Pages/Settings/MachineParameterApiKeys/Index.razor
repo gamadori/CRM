@@ -1,0 +1,435 @@
+@page "/Settings/MachineParameterApiKeys"
+@page "/Settings/MachineParameterApiKeys/Index"
+@using CRM.Client.Services
+@using CRM.Client.Models
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Microsoft.AspNetCore.Authorization
+@using Radzen
+@attribute [Authorize(Policy = "AdminRole")]
+@inject IMachineParameterApiKeysService ApiKeysService
+@inject DialogService DialogService
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+<div class="machine-api-keys">
+    <section class="machine-api-keys-head">
+        <div>
+            <span>Machine API</span>
+            <h1>Chiavi backup macchina</h1>
+            <p>Gestisci le chiavi usate da macchine e sistemi esterni per leggere o caricare i backup.</p>
+        </div>
+        <button type="button" class="primary" @onclick="NewKey">
+            <span class="material-icons">add</span>
+            <span>Chiave</span>
+        </button>
+    </section>
+
+    @if (_createdKey != null)
+    {
+        <section class="created-key">
+            <div>
+                <span>Chiave creata</span>
+                <strong>@_createdKey.ApiKey?.Name</strong>
+                <p>Questa chiave completa sara visibile solo ora. Dopo il refresh resteranno visibili solo prefisso e metadati.</p>
+            </div>
+            <code>@_createdKey.PlainTextKey</code>
+        </section>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <div class="api-key-alert">@_message</div>
+    }
+
+    @if (_draft != null)
+    {
+        <section class="api-key-editor">
+            <div class="editor-grid">
+                <label>
+                    <span>Nome</span>
+                    <input @bind="_draft.Name" placeholder="Linea collaudo, macchina SN..., operatore..." />
+                </label>
+                <label>
+                    <span>Permesso</span>
+                    <select @bind="_draft.Permission">
+                        <option value="@MachineParameterApiKeyPermission.ReadOnly">Solo lettura</option>
+                        <option value="@MachineParameterApiKeyPermission.ReadWrite">Lettura e scrittura</option>
+                    </select>
+                </label>
+                <label>
+                    <span>Scadenza</span>
+                    <input type="date" @bind="_expiresOn" />
+                </label>
+                <label class="wide">
+                    <span>Note</span>
+                    <input @bind="_draft.Notes" placeholder="Uso previsto, impianto, responsabile..." />
+                </label>
+            </div>
+            <div class="editor-actions">
+                <button type="button" class="secondary" @onclick="CancelNewKey">
+                    <span class="material-icons">close</span>
+                </button>
+                <button type="button" class="primary" disabled="@_isSaving" @onclick="CreateKey">
+                    <span class="material-icons">save</span>
+                </button>
+            </div>
+        </section>
+    }
+
+    @if (_isLoading)
+    {
+        <Waiting></Waiting>
+    }
+    else
+    {
+        <section class="api-key-table-wrap">
+            <table class="api-key-table">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Prefisso</th>
+                        <th>Permesso</th>
+                        <th>Stato</th>
+                        <th>Creata</th>
+                        <th>Scadenza</th>
+                        <th>Ultimo uso</th>
+                        <th>Note</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var key in _keys)
+                    {
+                        <tr class="@(!key.IsActive ? "revoked" : string.Empty)">
+                            <td><strong>@key.Name</strong></td>
+                            <td><code>@key.KeyPrefix</code></td>
+                            <td>@PermissionText(key.Permission)</td>
+                            <td>
+                                <span class="status @((key.IsActive ? "active" : "inactive"))">
+                                    @(key.IsActive ? "Attiva" : "Revocata")
+                                </span>
+                            </td>
+                            <td>@key.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@DateText(key.ExpiresAt)</td>
+                            <td>@DateText(key.LastUsedAt)</td>
+                            <td>@(string.IsNullOrWhiteSpace(key.Notes) ? "-" : key.Notes)</td>
+                            <td>
+                                @if (key.IsActive)
+                                {
+                                    <button type="button" class="icon danger" title="Revoca" @onclick="@(() => Revoke(key))">
+                                        <span class="material-icons">block</span>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+</div>
+
+@code {
+    [Inject]
+    IHeaderService HeaderService { get; set; } = default!;
+
+    private PageHeaderModel? _pageHeader;
+    private List<MachineParameterApiKeyDTO> _keys = new();
+    private MachineParameterApiKeyCreateRequest? _draft;
+    private MachineParameterApiKeyCreateResponse? _createdKey;
+    private DateTime? _expiresOn;
+    private string? _message;
+    private bool _isLoading;
+    private bool _isSaving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        try
+        {
+            _keys = await ApiKeysService.GetListAsync();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void NewKey()
+    {
+        _createdKey = null;
+        _message = null;
+        _expiresOn = null;
+        _draft = new MachineParameterApiKeyCreateRequest
+        {
+            Permission = MachineParameterApiKeyPermission.ReadOnly
+        };
+    }
+
+    private void CancelNewKey()
+    {
+        _draft = null;
+        _message = null;
+        _expiresOn = null;
+    }
+
+    private async Task CreateKey()
+    {
+        if (_draft == null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_draft.Name))
+        {
+            _message = "Inserire un nome per la chiave.";
+            return;
+        }
+
+        _isSaving = true;
+        _draft.ExpiresAt = _expiresOn?.Date;
+        _createdKey = await ApiKeysService.CreateAsync(_draft);
+        _isSaving = false;
+
+        if (_createdKey == null)
+        {
+            _message = "Errore durante la creazione della chiave.";
+            return;
+        }
+
+        _draft = null;
+        _expiresOn = null;
+        await LoadData();
+    }
+
+    private async Task Revoke(MachineParameterApiKeyDTO key)
+    {
+        if (await DialogService.Confirm($"Revocare la chiave {key.Name}?") != true)
+        {
+            return;
+        }
+
+        if (await ApiKeysService.RevokeAsync(key.Id))
+        {
+            await LoadData();
+            return;
+        }
+
+        _message = "Chiave non revocata.";
+    }
+
+    private static string PermissionText(MachineParameterApiKeyPermission permission)
+    {
+        return permission == MachineParameterApiKeyPermission.ReadWrite ? "Lettura/scrittura" : "Solo lettura";
+    }
+
+    private static string DateText(DateTime? value)
+    {
+        return value == null ? "-" : value.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+    }
+}
+
+<style>
+    .machine-api-keys {
+        min-height: calc(100vh - 1rem);
+        padding: 1rem;
+        color: #182235;
+        background: #f7f9fc;
+    }
+
+    .machine-api-keys-head,
+    .created-key,
+    .api-key-editor,
+    .api-key-table-wrap,
+    .api-key-alert {
+        border: 1px solid #dfe7f1;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 12px 28px rgba(31, 42, 68, .07);
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .machine-api-keys-head,
+    .created-key,
+    .editor-actions {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .machine-api-keys span,
+    .created-key span,
+    .editor-grid span {
+        color: #64748b;
+        font-size: .76rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .machine-api-keys h1 {
+        margin: 0;
+        font-weight: 850;
+    }
+
+    .machine-api-keys p {
+        margin: .25rem 0 0;
+        color: #64748b;
+    }
+
+    .primary,
+    .secondary,
+    .icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .4rem;
+        min-height: 38px;
+        border: 1px solid #bfd2e7;
+        border-radius: 8px;
+        background: #fff;
+        color: #0f4a8a;
+        font-weight: 800;
+        padding: .5rem .75rem;
+    }
+
+    .primary {
+        background: #0f4a8a;
+        color: #fff;
+    }
+
+    .primary:disabled {
+        opacity: .55;
+    }
+
+    .icon {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+    }
+
+    .danger {
+        color: #b42318;
+        border-color: #f0c7c3;
+    }
+
+    .created-key {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+
+    .created-key code {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+        border-radius: 8px;
+        padding: .7rem;
+        background: #052e16;
+        color: #dcfce7;
+    }
+
+    .api-key-alert {
+        color: #8a4b0f;
+        background: #fff8ec;
+        border-color: #f2d7ad;
+    }
+
+    .editor-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .75rem;
+    }
+
+    .editor-grid label {
+        display: grid;
+        gap: .3rem;
+    }
+
+    .editor-grid .wide {
+        grid-column: 1 / -1;
+    }
+
+    .editor-grid input,
+    .editor-grid select {
+        width: 100%;
+        border: 1px solid #d7e0ec;
+        border-radius: 8px;
+        padding: .52rem .6rem;
+        color: #182235;
+        background: #fff;
+    }
+
+    .editor-actions {
+        justify-content: flex-end;
+        margin-top: .8rem;
+    }
+
+    .api-key-table-wrap {
+        overflow-x: auto;
+    }
+
+    .api-key-table {
+        width: 100%;
+        min-width: 1040px;
+        border-collapse: collapse;
+    }
+
+    .api-key-table th,
+    .api-key-table td {
+        padding: .7rem .75rem;
+        border-bottom: 1px solid #e6edf5;
+        vertical-align: middle;
+    }
+
+    .api-key-table th {
+        color: #64748b;
+        font-size: .76rem;
+        text-transform: uppercase;
+        background: #fbfdff;
+    }
+
+    .api-key-table code {
+        border-radius: 8px;
+        padding: .2rem .45rem;
+        background: #eef5ff;
+        color: #0f4a8a;
+    }
+
+    .api-key-table tr.revoked {
+        color: #94a3b8;
+    }
+
+    .status {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: .16rem .45rem;
+        font-size: .72rem;
+    }
+
+    .status.active {
+        color: #0f6b3b;
+        background: #e8f7ef;
+    }
+
+    .status.inactive {
+        color: #6b7280;
+        background: #f1f5f9;
+    }
+
+    @@media (max-width: 900px) {
+        .machine-api-keys-head,
+        .created-key,
+        .editor-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

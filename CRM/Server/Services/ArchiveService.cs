@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
 
 namespace CRM.Server.Services
 {
@@ -110,6 +111,52 @@ namespace CRM.Server.Services
             string path = GetPath(id, ext);
             content = File.ReadAllBytes(path);
             return content;
+        }
+
+        public async Task<(long Size, string Sha256)> SaveStreamAsync(
+            int id,
+            string fileName,
+            Stream content,
+            CancellationToken cancellationToken = default)
+        {
+            var path = GetPath(id, Path.GetExtension(fileName));
+            await using var destination = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
+            using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            var buffer = new byte[81920];
+            long size = 0;
+
+            int read;
+            while ((read = await content.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
+            {
+                await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                hash.AppendData(buffer, 0, read);
+                size += read;
+            }
+
+            return (size, Convert.ToHexString(hash.GetHashAndReset()));
+        }
+
+        public Stream OpenRead(int id, string fileName)
+        {
+            return new FileStream(
+                GetPath(id, Path.GetExtension(fileName)),
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                81920,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+        }
+
+        public bool Delete(int id, string fileName)
+        {
+            var path = GetPath(id, Path.GetExtension(fileName));
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            File.Delete(path);
+            return true;
         }
 
         public string GetPath()

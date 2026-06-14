@@ -27,7 +27,7 @@ namespace CRM.Client.Pages.Products
             ProductDxf,
             ProductTypeChilds,
             Attachments,
-            Parameters,
+            Backups,
             Catalog
         }
 
@@ -51,6 +51,9 @@ namespace CRM.Client.Pages.Products
 
         [Inject]
         private IJSRuntime JSRuntime { get; set; }
+
+        [Inject]
+        private NavigationManager NavigationManager { get; set; }
 
         [Inject]
         private DialogService dialogService { get; set; }
@@ -94,6 +97,11 @@ namespace CRM.Client.Pages.Products
         protected override async Task OnInitializedAsync()
         {
             InitializeViewOptions();
+            if (NavigationManager.ToAbsoluteUri(NavigationManager.Uri).Query.Contains("view=backups", StringComparison.OrdinalIgnoreCase))
+            {
+                _selectView = GroupViews.Backups;
+                _partialView = PartialViews.Index;
+            }
             await LoadProduct();
 
             //_pageHeader = HeaderService.Create("Products", Id, _product?.Name, false, ConstHelper.ClientProductsPath, null);
@@ -106,9 +114,9 @@ namespace CRM.Client.Pages.Products
             {
                 new ViewOption<GroupViews> { Text = Localize["Data Product"], Value = GroupViews.ProductType },
                 new ViewOption<GroupViews> { Text = "Catalogo", Value = GroupViews.Catalog },
+                new ViewOption<GroupViews> { Text = "Backup", Value = GroupViews.Backups },
                 new ViewOption<GroupViews> { Text = Localize["Attachments"], Value = GroupViews.Attachments },
                 //new ViewOption<GroupViews> { Text = Localize["Accessories"], Value = GroupViews.ProductAccessories },
-                //new ViewOption<GroupViews> { Text = Localize["Parameters"], Value = GroupViews.Parameters },
                 //new ViewOption<GroupViews> { Text = Localize["Sotto Parti"], Value = GroupViews.ProductTypeChilds }
             };
         }

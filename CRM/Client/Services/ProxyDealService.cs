@@ -1,5 +1,6 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using System;
 using System.Collections.Generic;
@@ -12,10 +13,10 @@ using System.Threading.Tasks;
 namespace CRM.Client.Services
 {
     
-    public class DealService: RestClientModelService<Deal, DealModel, DealFilter, int>, IDealService
+    public class ProxyDealService: ProxyRestClientService<Deal, DealDTO, int, DealFilter, decimal>, IDealService
     {
         
-        public DealService(HttpClient http): base(http, ConstHelper.DealsPath)
+        public ProxyDealService(HttpClient http): base(http, ConstHelper.DealsPath)
         {
           
         }

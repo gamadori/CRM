@@ -1,0 +1,153 @@
+@page "/MachineBackups/{OwnerTypeName}/{OwnerId:int}/New"
+@using CRM.Client.Services
+@using CRM.Shared
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using Radzen
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AdminRole")]
+@inject IMachineBackupsService BackupsService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<main class="backup-create-page">
+    <header class="create-header">
+        <button class="icon-command" title="Torna ai backup" @onclick="Cancel">
+            <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+        <div>
+            <span class="context-label">@ContextLabel</span>
+            <h1>Nuovo backup</h1>
+            <p>Carica un file completo senza modificarne il contenuto.</p>
+        </div>
+    </header>
+
+    <section class="create-content">
+        <div class="file-section">
+            <h2>File di backup</h2>
+            <div id="machine-backup-drop-zone" class="drop-zone">
+                <InputFile id="machine-backup-input" OnChange="SelectFile" class="file-input" />
+                <span class="material-symbols-outlined drop-icon">cloud_upload</span>
+                <strong>Trascina qui il file</strong>
+                <span>oppure</span>
+                <label for="machine-backup-input" class="browse-command">Sfoglia file</label>
+                <small>Qualsiasi formato, dimensione massima 512 MB</small>
+            </div>
+
+            @if (_selectedFile != null)
+            {
+                <div class="selected-file">
+                    <span class="material-symbols-outlined">description</span>
+                    <div><strong>@_selectedFile.Name</strong><small>@FormatSize(_selectedFile.Size) | @FileType</small></div>
+                    <button class="icon-command" title="Rimuovi file" @onclick="ClearFile">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            }
+        </div>
+
+        <div class="metadata-section">
+            <h2>Informazioni</h2>
+            <label>
+                <span>Descrizione</span>
+                <RadzenTextArea @bind-Value="_description" Rows="4" Placeholder="Ad esempio: configurazione dopo collaudo" Style="width:100%" />
+            </label>
+            <label>
+                <span>Riferimento esterno</span>
+                <RadzenTextBox @bind-Value="_externalReference" Placeholder="Codice commessa, versione firmware..." Style="width:100%" />
+                <small>Facoltativo, utile per collegare il backup a un sistema esterno.</small>
+            </label>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="form-error"><span class="material-symbols-outlined">error</span>@_error</div>
+    }
+
+    <footer class="create-actions">
+        <RadzenButton Text="Annulla" ButtonStyle="ButtonStyle.Light" Click="Cancel" Disabled="_uploading" />
+        <RadzenButton Icon="cloud_upload" Text="Carica backup" Click="UploadAsync"
+                      Disabled="@(_selectedFile == null || _uploading || _error != null)" IsBusy="_uploading" />
+    </footer>
+</main>
+
+@code {
+    [Parameter] public string OwnerTypeName { get; set; } = string.Empty;
+    [Parameter] public int OwnerId { get; set; }
+
+    private IBrowserFile? _selectedFile;
+    private string? _description;
+    private string? _externalReference;
+    private string? _error;
+    private bool _uploading;
+    private IJSObjectReference? _module;
+
+    private MachineBackupOwnerType? OwnerType =>
+        Enum.TryParse<MachineBackupOwnerType>(OwnerTypeName, true, out var ownerType)
+        && Enum.IsDefined(typeof(MachineBackupOwnerType), ownerType)
+            ? ownerType
+            : null;
+
+    private string ContextLabel => OwnerType == MachineBackupOwnerType.Product
+        ? "Backup predefinito prodotto"
+        : "Backup macchina articolo";
+    private string FileType => string.IsNullOrWhiteSpace(_selectedFile?.ContentType) ? "Formato non dichiarato" : _selectedFile.ContentType;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/machineBackupDropZone.js");
+        await _module.InvokeVoidAsync("initialize", "machine-backup-drop-zone", "machine-backup-input");
+    }
+
+    private void SelectFile(InputFileChangeEventArgs args)
+    {
+        _selectedFile = args.File;
+        _error = _selectedFile.Size > 512L * 1024 * 1024 ? "Il file supera il limite di 512 MB." : null;
+    }
+
+    private async Task ClearFile()
+    {
+        _selectedFile = null;
+        _error = null;
+        if (_module != null)
+        {
+            await _module.InvokeVoidAsync("clear", "machine-backup-input");
+        }
+    }
+
+    private async Task UploadAsync()
+    {
+        if (_selectedFile == null || _error != null || OwnerType is not { } ownerType) return;
+        _uploading = true;
+        try
+        {
+            await BackupsService.UploadAsync(ownerType, OwnerId, _selectedFile, _description, _externalReference);
+            NavigationManager.NavigateTo(ReturnUrl);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Caricamento non riuscito: {ex.Message}";
+        }
+        finally { _uploading = false; }
+    }
+
+    private void Cancel() => NavigationManager.NavigateTo(ReturnUrl);
+    private string ReturnUrl => OwnerType == MachineBackupOwnerType.Product
+        ? $"/Products/{OwnerId}?view=backups"
+        : OwnerType == MachineBackupOwnerType.Article
+            ? $"/Articles/{OwnerId}?view=backups"
+            : "/";
+
+    private static string FormatSize(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB"];
+        var value = (double)bytes;
+        var index = 0;
+        while (value >= 1024 && index < units.Length - 1) { value /= 1024; index++; }
+        return $"{value:0.#} {units[index]}";
+    }
+
+    public async ValueTask DisposeAsync() { if (_module != null) await _module.DisposeAsync(); }
+}

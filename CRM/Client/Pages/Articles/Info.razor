@@ -20,9 +20,9 @@ else
             <Items>
                 <RadzenSelectBarItem Text="@Localize["Data Product"]" Value="ProductViews.Product" />
                 <RadzenSelectBarItem Text="@Localize["Documenti Macchina"]" Value="ProductViews.Attachments" />
+                <RadzenSelectBarItem Text="Backup macchina" Value="ProductViews.Backups" />
                 <RadzenSelectBarItem Text="@($"{Localize["Documenti"]} {_article.ProductName}")" Value="ProductViews.ProductAttachments" />
                 <RadzenSelectBarItem Text="@Localize["Tickets"]" Value="ProductViews.Ticket" />
-                @* <RadzenSelectBarItem Text="@Localize["Backups"]" Value="ProductViews.Backups" /> *@
             </Items>
         </RadzenSelectBar>
     </div>
@@ -82,6 +82,10 @@ else
         }
         
     }
+    else if (selectView == ProductViews.Backups)
+    {
+        <CRM.Client.Pages.MachineBackups.Index OwnerType="MachineBackupOwnerType.Article" OwnerId="@Id" />
+    }
     else if (selectView == ProductViews.Ticket)
     {
         if (_partialView == PartialViews.Index)
@@ -100,9 +104,4 @@ else
             <CRM.Client.Pages.Tickets.Edit Id="@_idTicket" IdCompany="@_article?.IdCompany" IdArticle=@Id PageMode="PageModality.Child" OnClickSave="TicketCloseForm" OnClickCancel="TicketCloseForm"></CRM.Client.Pages.Tickets.Edit>
         }
     }
-    @* else if (selectView == ProductViews.Backups)
-    {
-        <CRM.Client.Pages.ArticleBackups.Index IdArticle="@Id"></CRM.Client.Pages.ArticleBackups.Index>
-    } *@
-
 }

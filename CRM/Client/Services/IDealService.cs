@@ -1,4 +1,5 @@
 ﻿using CRM.Shared;
+using CRM.Shared.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CRM.Client.Services
 {
-    public interface IDealService : IRestClientModelService<Deal, DealModel, DealFilter, int>
+    public interface IDealService : IDataService<Deal, DealDTO, int, DealFilter, decimal>
     {
     
     }
