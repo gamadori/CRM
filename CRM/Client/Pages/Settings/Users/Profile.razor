@@ -9,123 +9,285 @@
     <Waiting></Waiting>
 }
 else
-{   
-    <PageHeader ></PageHeader>
+{
+    <div class="user-profile-page">
+        <PageHeader></PageHeader>
 
-    <EditForm Model="@_user" OnValidSubmit="HandleValidSubmit" class="mb-3">
-     <div class="row rounded-3 bg-light">
-        <div class="col-md-8">
+        <EditForm Model="@_user" OnValidSubmit="HandleValidSubmit" class="user-profile-form">
+            <DataAnnotationsValidator />
 
-            <div class="row g-3">
-                
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th scope="col"></th>
-                            <th scope="col"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><DisplayName For="@(()=>_user.Name)" /></td>
-                            <td>@_user.Name</td>
-                        </tr>
-                        <tr>
-                            <td><DisplayName For="@(()=>_user.Surname)" /></td>
-                            <td>@_user.Surname</td>
-                        </tr>
-                         <tr>
-                            <td><DisplayName For="@(()=>_user.Email)" /></td>
-                            <td>@_user.Email</td>
-                        </tr>
-                         <tr>
-                            <td><DisplayName For="@(()=>_user.PhoneNumber)" /></td>
-                            <td>@_user.PhoneNumber</td>
-                        </tr>
-                         <tr>
-                            <td><DisplayName For="@(()=>_user.Company)" /></td>
-                            <td>@_user.Company</td>
-                        </tr>
-                        
-                        <tr>
-                            <td><DisplayName For="@(()=>_user.LanguageCode)" /></td>
-                            <td>
-                                <LanguageSelectorDb Languages="@_languages"  @bind-Value="@_user.LanguageCode" /> @_user.LanguageCode
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><DisplayName For="@(()=>_user.Photo)" /></td>
-                            <td>
-                                <div class="avatar-upload-container">
-                                   
-                                    <RadzenFileInput Accept="image/*" 
-                                                    ImageStyle="max-width:400px" 
-                                                    @bind-Value="@_user.Photo" 
-                                                    @onchange="PhotoChange" 
-                                                    TValue="string" 
-                                                    ChooseText="@Localize["Seleziona"]" 
-                                                    class="avatar-file-input" />
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="user-profile-layout">
+                <section class="user-profile-card" aria-labelledby="profile-data-title">
+                    <div class="user-profile-card-header">
+                        <span class="material-icons" aria-hidden="true">person</span>
+                        <div>
+                            <h2 id="profile-data-title">@Localize["Profile"]</h2>
+                            <p>@Localize["Personal data"]</p>
+                        </div>
+                    </div>
+
+                    <div class="user-profile-fields">
+                        <div class="user-profile-field">
+                            <span class="user-profile-label"><DisplayName For="@(() => _user.Name)" /></span>
+                            <strong>@_user.Name</strong>
+                        </div>
+                        <div class="user-profile-field">
+                            <span class="user-profile-label"><DisplayName For="@(() => _user.Surname)" /></span>
+                            <strong>@_user.Surname</strong>
+                        </div>
+                        <div class="user-profile-field">
+                            <span class="user-profile-label"><DisplayName For="@(() => _user.Email)" /></span>
+                            <strong>@_user.Email</strong>
+                        </div>
+                        <div class="user-profile-field">
+                            <span class="user-profile-label"><DisplayName For="@(() => _user.PhoneNumber)" /></span>
+                            <strong>@_user.PhoneNumber</strong>
+                        </div>
+                        <div class="user-profile-field user-profile-field-wide">
+                            <span class="user-profile-label"><DisplayName For="@(() => _user.Company)" /></span>
+                            <strong>@_user.Company</strong>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="user-profile-card user-profile-preferences" aria-labelledby="profile-preferences-title">
+                    <div class="user-profile-card-header">
+                        <span class="material-icons" aria-hidden="true">tune</span>
+                        <div>
+                            <h2 id="profile-preferences-title">@Localize["Preferences"]</h2>
+                            <p>@Localize["Language and avatar"]</p>
+                        </div>
+                    </div>
+
+                    <div class="user-profile-control">
+                        <span class="user-profile-label"><DisplayName For="@(() => _user.LanguageCode)" /></span>
+                        <div class="user-profile-language">
+                            <LanguageSelectorDb Languages="@_languages" @bind-Value="@_user.LanguageCode" />
+                            <span class="user-profile-language-code">@_user.LanguageCode</span>
+                        </div>
+                    </div>
+
+                    <div class="user-profile-control user-profile-avatar-control">
+                        <span class="user-profile-label"><DisplayName For="@(() => _user.Photo)" /></span>
+                        <div class="avatar-upload-container">
+                            <RadzenFileInput Accept="image/*"
+                                             ImageStyle="width:144px;height:144px;object-fit:cover;border-radius:12px"
+                                             @bind-Value="@_user.Photo"
+                                             @onchange="PhotoChange"
+                                             TValue="string"
+                                             ChooseText="@Localize["Seleziona"]"
+                                             class="avatar-file-input" />
+                        </div>
+                    </div>
+                </section>
             </div>
-        </div>
+
+            <div class="user-profile-actions">
+                <BlazorButton Style="BtnStyle.Primary" Template="TemplateButton.Submit" Label="true" Text="@Localize["Save Changes"]"></BlazorButton>
+            </div>
+        </EditForm>
     </div>
-    <BlazorButton Style="BtnStyle.Primary"  Template="TemplateButton.Submit" Label="true" Text="@Localize["Save Changes"]"></BlazorButton>
-    </EditForm>
 }
 
 <style>
-    .avatar-upload-container {
-        display: flex;
-        flex-direction: column;
+    .user-profile-page {
+        --profile-surface: #ffffff;
+        --profile-surface-muted: #f7f9fc;
+        --profile-border: #dfe5ec;
+        --profile-text: #18212b;
+        --profile-muted: #64748b;
+        --profile-accent: #1976d2;
+    }
+
+    .user-profile-form {
+        max-width: 1180px;
+        margin-top: 1rem;
+    }
+
+    .user-profile-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
         gap: 1rem;
-        align-items: flex-start;
     }
 
-    .avatar-preview-wrapper {
-        position: relative;
-        display: inline-block;
+    .user-profile-card {
+        min-width: 0;
+        padding: 1.25rem;
+        color: var(--profile-text);
+        background: var(--profile-surface);
+        border: 1px solid var(--profile-border);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     }
 
-    .avatar-preview-wrapper:hover .avatar-upload-overlay {
-        opacity: 1;
-    }
-
-    .avatar-upload-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.6);
-        border-radius: 50%;
+    .user-profile-card-header {
         display: flex;
         align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        cursor: pointer;
+        gap: 0.75rem;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--profile-border);
     }
 
-    .avatar-upload-overlay .material-icons {
-        color: white;
-        font-size: 2rem;
+    .user-profile-card-header > .material-icons {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        flex: 0 0 42px;
+        color: var(--profile-accent);
+        background: rgba(25, 118, 210, 0.1);
+        border-radius: 8px;
+    }
+
+    .user-profile-card-header h2 {
+        margin: 0;
+        color: var(--profile-text);
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .user-profile-card-header p {
+        margin: 0.15rem 0 0;
+        color: var(--profile-muted);
+        font-size: 0.82rem;
+    }
+
+    .user-profile-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .user-profile-field,
+    .user-profile-control {
+        min-width: 0;
+        padding: 0.85rem 1rem;
+        background: var(--profile-surface-muted);
+        border: 1px solid var(--profile-border);
+        border-radius: 6px;
+    }
+
+    .user-profile-field-wide {
+        grid-column: 1 / -1;
+    }
+
+    .user-profile-label {
+        display: block;
+        margin-bottom: 0.3rem;
+        color: var(--profile-muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1.25;
+    }
+
+    .user-profile-field strong {
+        display: block;
+        overflow-wrap: anywhere;
+        color: var(--profile-text);
+        font-size: 0.92rem;
+        font-weight: 600;
+    }
+
+    .user-profile-preferences {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .user-profile-preferences .user-profile-card-header {
+        margin-bottom: 0.25rem;
+    }
+
+    .user-profile-language {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .user-profile-language-code {
+        padding: 0.25rem 0.5rem;
+        color: var(--profile-muted);
+        background: var(--profile-surface);
+        border: 1px solid var(--profile-border);
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .avatar-upload-container {
+        display: flex;
+        align-items: flex-start;
+        width: 100%;
     }
 
     .avatar-file-input {
         width: 100%;
-        max-width: 400px;
+        max-width: 280px;
     }
 
-    @@media (max-width: 768px) {
-        .avatar-upload-container {
-            align-items: center;
+    .user-profile-actions {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: 1rem;
+    }
+
+    body.dark-theme .user-profile-page {
+        --profile-surface: #1d2329;
+        --profile-surface-muted: #20272e;
+        --profile-border: #3b4650;
+        --profile-text: #f0f4f8;
+        --profile-muted: #b2c0cc;
+        --profile-accent: #69b4ff;
+    }
+
+    body.dark-theme .user-profile-card {
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+    }
+
+    body.dark-theme .user-profile-card-header > .material-icons {
+        background: rgba(105, 180, 255, 0.13);
+    }
+
+    body.dark-theme .user-profile-page .rz-fileupload,
+    body.dark-theme .user-profile-page .rz-fileupload-buttonbar,
+    body.dark-theme .user-profile-page .rz-fileupload-content {
+        color: var(--profile-text) !important;
+        background: #191e23 !important;
+        border-color: var(--profile-border) !important;
+    }
+
+    body.dark-theme .user-profile-page .rz-fileupload-choose {
+        color: #edf5ff !important;
+        background: #2b353e !important;
+        border-color: #4b5965 !important;
+    }
+
+    @@media (max-width: 900px) {
+        .user-profile-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 600px) {
+        .user-profile-fields {
+            grid-template-columns: 1fr;
         }
 
-        .avatar-file-input {
+        .user-profile-field-wide {
+            grid-column: auto;
+        }
+
+        .user-profile-card {
+            padding: 1rem;
+        }
+
+        .user-profile-actions {
+            justify-content: stretch;
+        }
+
+        .user-profile-actions > * {
             width: 100%;
         }
     }

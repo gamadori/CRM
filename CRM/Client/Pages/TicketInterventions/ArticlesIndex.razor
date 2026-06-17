@@ -9,7 +9,7 @@
 
 @if (InterventionArticles != null)
 {
-    <RadzenDataGrid @ref="_articlesGrid" AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true" EditMode="DataGridEditMode.Single" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+    <RadzenDataGrid class="ticket-interventions-grid" @ref="_articlesGrid" AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true" EditMode="DataGridEditMode.Single" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                 Data="@InterventionArticles" TItem="TicketInterventionArticleModel" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" IsLoading=@_isLoading>
         <Columns>
             

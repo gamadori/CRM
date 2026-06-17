@@ -12,8 +12,11 @@
 else
 {
     <div class="ticket-details-page">
-        <PageHeader Model="@_pageHeader">
-        </PageHeader>
+        @if (PageMode != CRM.Client.Helpers.PageHelper.PageModality.Child)
+        {
+            <PageHeader Model="@_pageHeader">
+            </PageHeader>
+        }
 
         <div class="modern-preview-container">
             <!-- Header Card -->

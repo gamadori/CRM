@@ -1,5 +1,4 @@
-﻿using AutoMapper.Configuration.Conventions;
-using CNM.Authorize;
+﻿using CNM.Authorize;
 using CRM.Client.Pages.Settings.Users;
 using CRM.Client.Services;
 using CRM.Server.Data;

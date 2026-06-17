@@ -1,0 +1,82 @@
+@implements IAsyncDisposable
+@using CRM.Client.Services
+@inject IProductCatalogAssetsService CatalogAssetsService
+@inject IJSRuntime JSRuntime
+
+@if (_loading)
+{
+    <div class="catalog-image-loading" aria-label="Caricamento immagine">
+        <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Small" />
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(_objectUrl))
+{
+    <img src="@_objectUrl" alt="@AltText" loading="@Loading" />
+}
+else
+{
+    <div class="catalog-cover-placeholder">
+        <span class="material-icons">broken_image</span>
+    </div>
+}
+
+@code {
+    private int? _loadedAssetId;
+    private string? _objectUrl;
+    private bool _loading;
+
+    [Parameter, EditorRequired]
+    public int AssetId { get; set; }
+
+    [Parameter]
+    public string AltText { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Loading { get; set; } = "lazy";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedAssetId == AssetId)
+        {
+            return;
+        }
+
+        await ReleaseObjectUrlAsync();
+        _loadedAssetId = AssetId;
+        _loading = true;
+
+        var file = await CatalogAssetsService.GetFileAsync(AssetId);
+        if (file is { Content.Length: > 0 })
+        {
+            _objectUrl = await JSRuntime.InvokeAsync<string>(
+                "catalogFiles.createObjectUrl",
+                file.ContentType,
+                file.Content);
+        }
+
+        _loading = false;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await ReleaseObjectUrlAsync();
+    }
+
+    private async ValueTask ReleaseObjectUrlAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_objectUrl))
+        {
+            return;
+        }
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("catalogFiles.revokeObjectUrl", _objectUrl);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+
+        _objectUrl = null;
+    }
+}

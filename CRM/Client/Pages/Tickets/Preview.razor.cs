@@ -197,5 +197,37 @@ namespace CRM.Client.Pages.Tickets
             return "?";
         }
 
+        private static string GetContrastTextColor(string backgroundColor)
+        {
+            if (string.IsNullOrWhiteSpace(backgroundColor))
+                return "#ffffff";
+
+            var hex = backgroundColor.Trim().TrimStart('#');
+            if (hex.Length == 3)
+                hex = $"{hex[0]}{hex[0]}{hex[1]}{hex[1]}{hex[2]}{hex[2]}";
+
+            if (hex.Length != 6)
+                return "#ffffff";
+
+            try
+            {
+                var red = Convert.ToInt32(hex.Substring(0, 2), 16);
+                var green = Convert.ToInt32(hex.Substring(2, 2), 16);
+                var blue = Convert.ToInt32(hex.Substring(4, 2), 16);
+                var luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+
+                return luminance > 0.55 ? "#17212b" : "#ffffff";
+            }
+            catch
+            {
+                return "#ffffff";
+            }
+        }
+
+        private static string GetContrastBackgroundColor(string backgroundColor)
+        {
+            return string.IsNullOrWhiteSpace(backgroundColor) ? "#5b6570" : backgroundColor;
+        }
+
     }
 }

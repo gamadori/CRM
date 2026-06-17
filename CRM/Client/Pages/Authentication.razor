@@ -1,8 +1,8 @@
 ﻿@page "/authentication/{action}"
-@using CRM.Client.Services
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
-@inject HttpClient HttpClient;
-@inject IJSRuntime JSRuntime
 @inject NavigationManager Nav
 
 <RemoteAuthenticatorView Action="@Action" OnLogInSucceeded="OnLoginSucceeded" OnLogOutSucceeded="OnLogoutSucceeded">
@@ -17,31 +17,16 @@
 
 
 @code{
-    [Parameter] public string Action { get; set; }
+    [Parameter] public string? Action { get; set; }
 
     private void OnLogoutSucceeded()
     {
         Nav.NavigateTo("/", forceLoad: true);
     }
 
-    private async void OnLoginSucceeded() 
+    private Task OnLoginSucceeded()
     {
-
-        var user = await HttpClient.GetFromJsonAsync<ApplicationUser>(ConstHelper.UserSignedPath);
-
-        if (user != null)
-        {
-            var js = (IJSInProcessRuntime)JSRuntime;
-            var appLanguage = await js.InvokeAsync<string>("appCulture.get");
-
-            if (appLanguage != user.LanguageCode)
-            {
-                js.InvokeVoid("appCulture.set", user.LanguageCode);
-
-                Nav.NavigateTo(Nav.Uri, forceLoad: true);
-            }
-        }
-        Console.WriteLine("Evento Login Succeded");
-   
+        // Profilo e preferenze vengono caricati solo dopo che OIDC ha salvato il token.
+        return Task.CompletedTask;
     }
 }

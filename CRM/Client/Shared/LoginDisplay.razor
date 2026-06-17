@@ -14,21 +14,26 @@
 
 <AuthorizeView>
     <Authorized>
-        <LanguageSelectorDb AutoSetting=@true />
-     
-        <button class="ms-2 nav-link btn btn-outline-light dropdown-toggle d-flex align-items-center justify-content-center"
-                type="button"
-                id="dropdownUser"
-                data-bs-toggle="dropdown"
-                aria-expanded="false">
-            
-            <UserAvatar></UserAvatar>
-            
-        </button>
-        <ul class="dropdown-menu" aria-labelledby="dropdownUser">
-            <li><button class="dropdown-item" @onclick=OnClick>@Localize["Il tuo profilo"]</button></li>
-            <li><button class="dropdown-item" @onclick="BeginSignOut">Log out</button></li>
-        </ul>
+        <div class="login-actions">
+            <div class="topbar-language">
+                <LanguageSelectorDb AutoSetting=@true />
+            </div>
+
+            <div class="topbar-profile dropdown">
+                <button class="nav-link btn dropdown-toggle d-flex align-items-center justify-content-center"
+                        type="button"
+                        id="dropdownUser"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        aria-label="Menu utente">
+                    <UserAvatar></UserAvatar>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownUser">
+                    <li><button class="dropdown-item" @onclick=OnClick>@Localize["Il tuo profilo"]</button></li>
+                    <li><button class="dropdown-item" @onclick="BeginSignOut">Log out</button></li>
+                </ul>
+            </div>
+        </div>
 
          
         
@@ -47,10 +52,14 @@
 
     protected override async Task OnParametersSetAsync()
     {
-
         try
         {
-          
+            var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authenticationState.User.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
             _user = await HttpClient.GetFromJsonAsync<UserModel>($"{ConstHelper.UserSignedPath}/Profile");
         }
         catch

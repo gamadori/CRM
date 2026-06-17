@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using CRM.Server.Data;
 using CRM.Shared;
 using Microsoft.Extensions.Localization;
-using Duende.IdentityServer.Models;
 using NuGet.Common;
 using System.Globalization;
 using CRM.Server.Services;

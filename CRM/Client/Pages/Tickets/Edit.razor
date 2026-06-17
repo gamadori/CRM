@@ -13,13 +13,15 @@
 }
 else
 {
-    <PageHeader Model="@_pageHeader">
-    </PageHeader>
+    @if (PageMode == CRM.Client.Helpers.PageHelper.PageModality.Visualization)
+    {
+        <PageHeader Model="@_pageHeader">
+        </PageHeader>
+    }
 
-
-    <EditForm Model="@_ticket" OnValidSubmit="HandleValidSubmit">
+    <EditForm class="ticket-edit-page" Model="@_ticket" OnValidSubmit="HandleValidSubmit">
         <RadzenRow Gap="1rem" class="mb-3">
-            <RadzenColumn Size="12" SizeSM="6">
+            <RadzenColumn Size="12">
                 <RadzenStack>
                     <BlazoringComponents.Validators.FluentValidationValidator ValidatorType="typeof(Validators.TicketEditValidator)" />
                     <ValidationSummary />
@@ -141,7 +143,7 @@ else
                         <RadzenRow>
                             <RadzenColumn Size="12">
                                 <RadzenStack>
-                                    <RadzenLabel style="margin-bottom: 0.5rem; font-weight: 500;">
+                                    <RadzenLabel class="ticket-edit-section-label">
                                         <DisplayName For="@(() => _ticket.IdUserAssigned)" />
                                     </RadzenLabel>
 
@@ -248,24 +250,20 @@ else
                     <RadzenRow>
                         <RadzenColumn Size="12">
                             <RadzenStack>
-                                <RadzenFormField>
-                                    <ChildContent>
-                                        <RadzenLabel Component="swInvoice">
-                                            <DisplayName For="@(() => _ticket.Invoiced)" />
-                                        </RadzenLabel>
-                                    </ChildContent>
-                                    <Helper>
-                                        <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
-                                            <Authorized Context="AuthorizeRole">
-                                                <RadzenSwitch @bind-Value=@_ticket.Invoiced Name="swInvoice" />
-                                                <ValidationMessage For="@(() => _ticket.Invoiced)" />
-                                            </Authorized>
-                                            <NotAuthorized Context="AuthorizeRole">
-                                                <RadzenLabel>@_ticket.Invoiced</RadzenLabel>
-                                            </NotAuthorized>
-                                        </AuthorizeView>
-                                    </Helper>
-                                </RadzenFormField>
+                                <div class="ticket-invoiced-field">
+                                    <RadzenLabel Component="swInvoice" class="ticket-edit-section-label">
+                                        <DisplayName For="@(() => _ticket.Invoiced)" />
+                                    </RadzenLabel>
+                                    <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                                        <Authorized Context="AuthorizeRole">
+                                            <RadzenSwitch @bind-Value=@_ticket.Invoiced Name="swInvoice" />
+                                            <ValidationMessage For="@(() => _ticket.Invoiced)" />
+                                        </Authorized>
+                                        <NotAuthorized Context="AuthorizeRole">
+                                            <RadzenLabel>@_ticket.Invoiced</RadzenLabel>
+                                        </NotAuthorized>
+                                    </AuthorizeView>
+                                </div>
                             </RadzenStack>
                         </RadzenColumn>
                     </RadzenRow>
@@ -354,6 +352,78 @@ else
         border: 1px dashed #e5e7eb;
         text-align: center;
         font-size: 0.9rem;
+    }
+
+    .ticket-edit-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        color: var(--text-primary, #1f2937);
+    }
+
+    .ticket-edit-section-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--text-secondary, #52606d);
+        font-weight: 650;
+    }
+
+    .ticket-invoiced-field {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        min-height: 3.5rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border-color, #d9e1e8);
+        border-radius: 0.45rem;
+        background: var(--card-bg, #ffffff);
+    }
+
+    .ticket-invoiced-field .ticket-edit-section-label {
+        margin: 0;
+    }
+
+    body.dark-theme .ticket-edit-page .ticket-edit-section-label,
+    body.dark-theme .ticket-edit-page .ticket-edit-section-label .label-floating,
+    body.dark-theme .ticket-edit-page .label-floating {
+        color: #c7d3dd !important;
+    }
+
+    body.dark-theme .ticket-edit-page .selected-users-display,
+    body.dark-theme .ticket-edit-page .no-users-compact {
+        color: #edf2f7 !important;
+        background: #20272d !important;
+        border-color: #46515b !important;
+    }
+
+    body.dark-theme .ticket-edit-page .user-badge-compact {
+        color: #edf2f7 !important;
+        background: #293139 !important;
+        border-color: #52616f !important;
+    }
+
+    body.dark-theme .ticket-edit-page .user-badge-compact.main-user {
+        background: #173554 !important;
+        border-color: #5aa7ff !important;
+    }
+
+    body.dark-theme .ticket-edit-page .user-name-compact {
+        color: #f7f9fb !important;
+    }
+
+    body.dark-theme .ticket-edit-page .main-star {
+        color: #9dcbff !important;
+    }
+
+    body.dark-theme .ticket-edit-page .more-users {
+        color: #d6e0e9 !important;
+        background: #303942 !important;
+    }
+
+    body.dark-theme .ticket-edit-page .ticket-invoiced-field {
+        color: #edf2f7;
+        background: #1d2329;
+        border-color: #46515b;
     }
 
     /* ✅ Responsive */

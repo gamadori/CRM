@@ -18,7 +18,6 @@ using static CRM.Client.Program;
 
 namespace CRM.Client.Shared
 {
-    [Authorize]
     public partial class MainLayout: LayoutComponentBase, INotificationHandler<MsgNotify>, IDisposable
     {
         [Inject]
@@ -60,10 +59,15 @@ namespace CRM.Client.Shared
         {
             DynamicNotificationHandlers.Register(this);
 
-            await LoadData();
             var authState = await AuthProvider.GetAuthenticationStateAsync();
-
             var user = authState.User;
+
+            if (!user.Identity?.IsAuthenticated ?? true)
+            {
+                return;
+            }
+
+            await LoadData();
 
             timer = new System.Threading.Timer(async (object? stateInfo) =>
             {
@@ -85,7 +89,6 @@ namespace CRM.Client.Shared
             }, new System.Threading.AutoResetEvent(false), 5000, 5000); // fire every 2000 milliseconds
 
             await base.OnInitializedAsync();
-            
         }
 
         private async Task LoadData()

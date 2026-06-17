@@ -1,7 +1,7 @@
 ﻿
 @if (Articles != null && Articles.Any())
 {
-    <RadzenDataGrid @ref="_articlesGrid" AllowFiltering="true"  AllowSorting="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"  EmptyText="@Localize["Nessun Dispositivo"]"
+    <RadzenDataGrid class="ticket-interventions-grid" @ref="_articlesGrid" AllowFiltering="true"  AllowSorting="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"  EmptyText="@Localize["Nessun Dispositivo"]"
                     Data="@Articles" TItem="TicketInterventionArticleModel">
         <Columns>
             <RadzenDataGridColumn TItem="TicketInterventionArticleModel" Property="@nameof(TicketInterventionArticleModel.Product)" Title="@Localize["Tipo Prodotto"]" />

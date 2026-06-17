@@ -78,5 +78,32 @@ namespace CRM.Client.Services
                 return Array.Empty<byte>();
             }
         }
+
+        public async Task<ProductCatalogFileResult?> GetFileAsync(int id)
+        {
+            try
+            {
+                using var response = await _http.GetAsync($"{_pathService}/{id}/file");
+                if (!response.IsSuccessStatusCode)
+                {
+                    return null;
+                }
+
+                return new ProductCatalogFileResult
+                {
+                    Content = await response.Content.ReadAsByteArrayAsync(),
+                    ContentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream"
+                };
+            }
+            catch (AccessTokenNotAvailableException exception)
+            {
+                exception.Redirect();
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }

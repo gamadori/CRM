@@ -17,7 +17,7 @@ else if (CoverMediaType == ProductCatalogMediaTypes.Dxf && CoverAttachmentFileId
 }
 else
 {
-    <img src="@ProductCatalogService.GetAssetFileUrl(CoverAssetId.Value)" alt="@AltText" loading="lazy" />
+    <CatalogAuthenticatedImage AssetId="CoverAssetId.Value" AltText="@AltText" />
 }
 
 @code {

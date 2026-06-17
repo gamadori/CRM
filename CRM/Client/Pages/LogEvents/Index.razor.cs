@@ -119,25 +119,17 @@ namespace CRM.Client.Pages.LogEvents
         /// </summary>
         private void OnRowRender(RowRenderEventArgs<LogEvent> args)
         {
-            string backgroundColor = args.Data.EventType switch
+            var eventClass = args.Data.EventType switch
             {
-                EventsTypes.Info => "#e3f2fd",        // Azzurro chiaro
-                EventsTypes.Warning => "#fff3e0",     // Arancione chiaro
-                EventsTypes.Error => "#ffebee",       // Rosso chiaro
-                EventsTypes.Permits => "#f3e5f5",     // Viola chiaro
-                _ => "transparent"
+                EventsTypes.Info => "log-event-info",
+                EventsTypes.Warning => "log-event-warning",
+                EventsTypes.Error => "log-event-error",
+                EventsTypes.Permits => "log-event-permits",
+                _ => string.Empty
             };
 
-            string textColor = args.Data.EventType switch
-            {
-                EventsTypes.Info => "#1565c0",        // Blu scuro
-                EventsTypes.Warning => "#e65100",     // Arancione scuro
-                EventsTypes.Error => "#c62828",       // Rosso scuro
-                EventsTypes.Permits => "#6a1b9a",     // Viola scuro
-                _ => "inherit"
-            };
-
-            args.Attributes.Add("style", $"background-color: {backgroundColor}; color: {textColor}; font-weight: 500;");
+            if (!string.IsNullOrEmpty(eventClass))
+                args.Attributes["class"] = eventClass;
         }
     }
 }

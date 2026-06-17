@@ -2,10 +2,7 @@
 @using Microsoft.AspNetCore.SignalR.Client
 
 @inherits LayoutComponentBase
-<HeadContent>
-    <RadzenTheme Theme="material" />
-    
-</HeadContent>
+<RadzenTheme Theme="material" />
 <div class="page">
     <AuthorizeView>
         <div class="sidebar">
@@ -24,7 +21,7 @@
   
 
     <div class="d-flex  flex-column main overflow-auto min-vh-100 vh-100">
-        <div class="top-row auth px-4 mb-2" style="background-color:@_bgColor">
+        <div class="top-row auth px-4 mb-2">
             @if (_logo != null)
             {
                 <img class="logo" src="@_logo" />
@@ -35,9 +32,12 @@
             }
             @if (_iconConnected != null)
             {
-                <div class="p-2"><RadzenIcon Icon="@_iconConnected" /></div>
+                <div class="connection-status"><RadzenIcon Icon="@_iconConnected" /></div>
             }
-            <LoginDisplay></LoginDisplay>
+            <div class="topbar-actions">
+                <ThemeToggle />
+                <LoginDisplay></LoginDisplay>
+            </div>
         </div>
         <div class="d-flex flex-column flex-fill overflow-scroll px-4">
             @Body

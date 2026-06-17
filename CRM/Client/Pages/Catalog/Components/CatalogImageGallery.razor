@@ -18,7 +18,7 @@
             {
                 <figure class="catalog-image-tile @(image.IsCover ? "featured" : "")">
                     <button type="button" class="catalog-image-button" @onclick="@(() => OpenPreview(image))">
-                        <img src="@ProductCatalogService.GetAssetFileUrl(image.Id)" alt="@AssetTitle(image)" loading="lazy" />
+                        <CatalogAuthenticatedImage AssetId="image.Id" AltText="@AssetTitle(image)" />
                     </button>
                     <figcaption>
                         <strong>@AssetTitle(image)</strong>
@@ -43,7 +43,7 @@
                     <span class="material-icons">close</span>
                 </button>
             </div>
-            <img src="@ProductCatalogService.GetAssetFileUrl(_previewImage.Id)" alt="@AssetTitle(_previewImage)" />
+            <CatalogAuthenticatedImage AssetId="_previewImage.Id" AltText="@AssetTitle(_previewImage)" Loading="eager" />
         </div>
     </div>
 }

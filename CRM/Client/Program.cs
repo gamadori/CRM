@@ -6,6 +6,7 @@ using CRM.Shared.Resources;
 using MediatR;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -14,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
+using Radzen;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -32,6 +34,12 @@ namespace CRM.Client
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("#app");
+            builder.RootComponents.Add<HeadOutlet>("head::after");
+
+            builder.Logging.SetMinimumLevel(LogLevel.Debug);
+            builder.Logging.AddFilter(
+                "Microsoft.AspNetCore.Components.WebAssembly.Authentication",
+                LogLevel.Debug);
 
             // Registra il LanguageHandler PRIMA di AddHttpClient
             builder.Services.AddScoped<LanguageHandler>();
@@ -47,8 +55,19 @@ namespace CRM.Client
             // IMPORTANTE: Usa SOLO l'HttpClient configurato con IHttpClientFactory, NON crearne uno nuovo
             builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("CRM.ServerAPI"));
 
-            builder.Services.AddApiAuthorization()
-                .AddAccountClaimsPrincipalFactory<RolesClaimsPrincipalFactory>();
+            builder.Services.AddOidcAuthentication(options =>
+            {
+                options.ProviderOptions.Authority = builder.HostEnvironment.BaseAddress;
+                options.ProviderOptions.ClientId = "CRM.Client";
+                options.ProviderOptions.ResponseType = "code";
+                options.ProviderOptions.DefaultScopes.Add("email");
+                options.ProviderOptions.DefaultScopes.Add("roles");
+                options.ProviderOptions.DefaultScopes.Add("CRM.ServerAPI");
+                options.ProviderOptions.DefaultScopes.Add("offline_access");
+                options.UserOptions.NameClaim = "name";
+                options.UserOptions.RoleClaim = "role";
+            })
+            .AddAccountClaimsPrincipalFactory<RolesClaimsPrincipalFactory>();
 
             builder.Services.AddAuthorizationCore(config =>
             {
@@ -79,7 +98,6 @@ namespace CRM.Client
             builder.Services.AddTransient<IInterventionTypesService, ProxyInterventionTypesService>();
 
             builder.Services.AddTransient<IManyToManyService<UserGroupModel>, GroupUsersService>();
-            builder.Services.AddTransient<Radzen.DialogService>();
             builder.Services.AddTransient<INavMenuService, NavMenuService>();
             builder.Services.AddTransient<IDealService, ProxyDealService>();
             builder.Services.AddTransient<IManyToManyService<ProductParentChildModel>, ProductParentChildService>();
@@ -182,10 +200,7 @@ namespace CRM.Client
             });
 
             
-            builder.Services.AddScoped<Radzen.DialogService>();
-            builder.Services.AddScoped<Radzen.NotificationService>();
-            builder.Services.AddScoped<Radzen.TooltipService>();
-            builder.Services.AddScoped<Radzen.ContextMenuService>();
+            builder.Services.AddRadzenComponents();
             builder.Services.AddScoped<Validators.TicketValidator>();
             builder.Services.AddScoped<Validators.TicketInterventionValidator>();
             builder.Services.AddScoped<Validators.TicketEditValidator>();

@@ -193,3 +193,17 @@ window.cleanupFileHost = (element) => {
         }
     } catch (e) { console.error(e); }
 };
+
+window.catalogFiles = {
+    createObjectUrl: (contentType, byteArray) => {
+        const bytes = new Uint8Array(byteArray);
+        return URL.createObjectURL(new Blob([bytes], {
+            type: contentType || 'application/octet-stream'
+        }));
+    },
+    revokeObjectUrl: (url) => {
+        if (url && url.startsWith('blob:')) {
+            URL.revokeObjectURL(url);
+        }
+    }
+};

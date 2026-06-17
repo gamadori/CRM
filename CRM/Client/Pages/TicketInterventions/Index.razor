@@ -11,7 +11,7 @@
 </PageHeader>
 @if (_ticketInterventions != null)
 {
-    <RadzenDataGrid @ref="grdInterventions"  IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_ticketInterventions" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
+    <RadzenDataGrid class="ticket-interventions-grid" @ref="grdInterventions"  IsLoading="@_isLoading" Count="@_paging.TotalCount" Data="@_ticketInterventions" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced"
                     AllowSorting="true" AllowFiltering="true" AllowPaging="true" Responsive="true"
     PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="TicketIntervention">
 

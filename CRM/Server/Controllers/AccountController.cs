@@ -2,7 +2,6 @@
 using CRM.Client.Shared.Components;
 using CRM.Server.Data;
 using CRM.Shared;
-using Duende.IdentityServer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;

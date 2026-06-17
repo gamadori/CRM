@@ -1,10 +1,10 @@
 @page "/TicketInterventions/ReportViewer/{Id:int}"
 @layout EmptyLayout
 
-<div class="card shadow-sm" style="display:flex; flex-direction:column; height:100vh; margin:0; box-sizing:border-box;">
+<div class="card shadow-sm ticket-interventions-page intervention-report-viewer" style="display:flex; flex-direction:column; height:100vh; margin:0; box-sizing:border-box;">
     
     <!-- Toolbar -->
-    <div class="card-header d-flex flex-wrap gap-2 align-items-center" style="flex:0 0 auto; background-color: #f8f9fa;">
+    <div class="card-header d-flex flex-wrap gap-2 align-items-center report-viewer-toolbar" style="flex:0 0 auto;">
         <button type="button" class="btn btn-sm btn-light" @onclick="GoToDetails">
             <i class="material-icons middle text-secondary">article</i>
             <span class="ps-2 text-secondary">Dati Intervento</span>

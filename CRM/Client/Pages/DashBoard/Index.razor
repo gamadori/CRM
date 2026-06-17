@@ -29,7 +29,7 @@ else
         @if (!_model.IsClient && _users != null)
         {
             <div class="row mb-4">
-                <RadzenCard class="dashboard-toolbar">
+                <RadzenCard class="dashboard-toolbar dashboard-surface">
                     <div class="card-body">
                         <div class="row align-items-end">
                             <div class="col-md-4 col-lg-3">
@@ -60,7 +60,7 @@ else
         <!-- KPI Cards -->
         <div class="row g-3 mb-4">
             <div class="col-6 col-md-4 col-xl-2">
-                <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #fffbe6 0%, #fff 100%);" @onclick="TicketNotAssigned">
+                <RadzenCard class="dashboard-card h-100 kpi-card kpi-warning" @onclick="TicketNotAssigned">
                     <div class="text-center">
                         <span class="material-icons text-warning mb-2" style="font-size: 28px;">assignment_late</span>
                         <p class="text-muted text-uppercase small fw-semibold mb-1">Non Assegnati</p>
@@ -69,7 +69,7 @@ else
                 </RadzenCard>
             </div>
             <div class="col-6 col-md-4 col-xl-2">
-                <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #e6fff7 0%, #fff 100%);" @onclick="TicketWorking">
+                <RadzenCard class="dashboard-card h-100 kpi-card kpi-success" @onclick="TicketWorking">
                     <div class="text-center">
                         <span class="material-icons text-success mb-2" style="font-size: 28px;">engineering</span>
                         <p class="text-muted text-uppercase small fw-semibold mb-1">In Lavorazione</p>
@@ -78,7 +78,7 @@ else
                 </RadzenCard>
             </div>
             <div class="col-6 col-md-4 col-xl-2">
-                <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #ffe6e6 0%, #fff 100%);" @onclick="TicketExpired">
+                <RadzenCard class="dashboard-card h-100 kpi-card kpi-danger" @onclick="TicketExpired">
                     <div class="text-center">
                         <span class="material-icons text-danger mb-2" style="font-size: 28px;">schedule</span>
                         <p class="text-muted text-uppercase small fw-semibold mb-1">Scaduti</p>
@@ -87,7 +87,7 @@ else
                 </RadzenCard>
             </div>
             <div class="col-6 col-md-4 col-xl-2">
-                <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #e6f0ff 0%, #fff 100%);" @onclick="TicketsNewMessage">
+                <RadzenCard class="dashboard-card h-100 kpi-card kpi-info" @onclick="TicketsNewMessage">
                     <div class="text-center">
                         <span class="material-icons text-info mb-2" style="font-size: 28px;">chat</span>
                         <p class="text-muted text-uppercase small fw-semibold mb-1">Nuovi Messaggi</p>
@@ -98,7 +98,7 @@ else
             @if (_model.InterventionsPendingSignature > 0)
             {
                 <div class="col-6 col-md-4 col-xl-2">
-                    <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #fff3e6 0%, #fff 100%);" @onclick="InterventionsPendingSignature">
+                    <RadzenCard class="dashboard-card h-100 kpi-card kpi-signature" @onclick="InterventionsPendingSignature">
                         <div class="text-center">
                             <span class="material-icons mb-2" style="font-size: 28px; color: #f59e0b;">draw</span>
                             <p class="text-muted text-uppercase small fw-semibold mb-1">Firme Pending</p>
@@ -110,7 +110,7 @@ else
             @if (_model.UsersNeedConfirm > 0)
             {
                 <div class="col-6 col-md-4 col-xl-2">
-                    <RadzenCard class="dashboard-card h-100 shadow-sm border-0 kpi-card" style="cursor:pointer; background: linear-gradient(135deg, #e6f7ff 0%, #fff 100%);" @onclick="UsersNeedConfirm">
+                    <RadzenCard class="dashboard-card h-100 kpi-card kpi-info" @onclick="UsersNeedConfirm">
                         <div class="text-center">
                             <span class="material-icons text-info mb-2" style="font-size: 28px;">person_add</span>
                             <p class="text-muted text-uppercase small fw-semibold mb-1">Utenti da Confermare</p>
@@ -126,7 +126,7 @@ else
         {
             <div class="row mb-4">
                 <div class="col-12">
-                    <RadzenCard class="shadow-sm border-0">
+                    <RadzenCard class="dashboard-surface dashboard-section">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
                                 <span class="material-icons" style="color: #f59e0b;">analytics</span>
@@ -189,7 +189,7 @@ else
         {
             <div class="row mb-4">
                 <div class="col-12">
-                    <RadzenCard class="shadow-sm border-0">
+                    <RadzenCard class="dashboard-surface dashboard-section">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
                                 <span class="material-icons text-primary">rate_review</span>
@@ -259,7 +259,7 @@ else
         <!-- Quick Stats -->
         <div class="row g-3">
             <div class="col-md-6 col-lg-3">
-                <RadzenCard class="h-100 shadow-sm border-0 stat-card">
+                <RadzenCard class="h-100 stat-card dashboard-surface">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stat-icon bg-primary bg-opacity-10 text-primary">
                             <span class="material-icons">assignment_turned_in</span>
@@ -272,7 +272,7 @@ else
                 </RadzenCard>
             </div>
             <div class="col-md-6 col-lg-3">
-                <RadzenCard class="h-100 shadow-sm border-0 stat-card">
+                <RadzenCard class="h-100 stat-card dashboard-surface">
                     <div class="d-flex align-items-center gap-3">
                         <div class="stat-icon bg-success bg-opacity-10 text-success">
                             <span class="material-icons">assignment_ind</span>
@@ -287,7 +287,7 @@ else
             @if (_model.UnreadFeedbacksCount > 0)
             {
                 <div class="col-md-6 col-lg-3">
-                    <RadzenCard class="h-100 shadow-sm border-0 stat-card" style="cursor:pointer;" @onclick="ViewAllFeedbacks">
+                    <RadzenCard class="h-100 stat-card dashboard-surface clickable" @onclick="ViewAllFeedbacks">
                         <div class="d-flex align-items-center gap-3">
                             <div class="stat-icon bg-warning bg-opacity-10 text-warning">
                                 <span class="material-icons">star_rate</span>

@@ -71,7 +71,9 @@
 
             <RadzenDataGridColumn Context="item" TItem="TicketDTO" Property="@nameof(TicketDTO.State)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdState), typeof(Ticket))" Filterable="true" Sortable="true" TextAlign="Radzen.TextAlign.Center">
                 <Template Context="item">
-                    @Localize[item.State ?? eTicketStates.Created.ToString()]
+                    <span class="ticket-state-text" style="@GetStateTextStyle(item?.StateColor)">
+                        @Localize[item?.State ?? eTicketStates.Created.ToString()]
+                    </span>
                 </Template>
 
             </RadzenDataGridColumn>

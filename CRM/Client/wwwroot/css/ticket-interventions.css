@@ -1,0 +1,393 @@
+/* Shared visual language for TicketInterventions pages and dialogs. */
+.ticket-interventions-page,
+.ticket-interventions-dialog,
+.intervention-times-container,
+.intervention-time-dialog,
+.language-selection-dialog {
+    color: var(--text-primary, #1f2933);
+}
+
+.ticket-interventions-page .card,
+.ticket-interventions-dialog,
+.ticket-interventions-dialog .card,
+.intervention-times-container,
+.intervention-time-dialog {
+    border-color: var(--border-color, #d9e1e8);
+    background: var(--card-bg, #ffffff);
+}
+
+.ticket-interventions-page .card-body,
+.ticket-interventions-page .card-footer,
+.ticket-interventions-dialog .card-body {
+    color: var(--text-primary, #1f2933);
+    background: transparent;
+}
+
+.ticket-interventions-page .text-muted,
+.ticket-interventions-dialog .text-muted,
+.intervention-times-container .text-muted,
+.intervention-time-dialog .text-muted {
+    color: var(--text-secondary, #667786) !important;
+}
+
+.ticket-interventions-page .bg-light,
+.ticket-interventions-dialog .bg-light {
+    background: var(--bg-tertiary, #f4f7f9) !important;
+}
+
+.ticket-interventions-page .form-label,
+.ticket-interventions-dialog .form-label,
+.intervention-time-dialog .form-label,
+.ticket-intervention-edit .rz-fieldset-legend-text {
+    color: var(--text-primary, #1f2933);
+    font-weight: 650;
+}
+
+.ticket-interventions-grid {
+    border: 1px solid var(--border-color, #d9e1e8);
+    border-radius: 0.4rem;
+    overflow: hidden;
+}
+
+.ticket-interventions-grid .rz-grid-table,
+.ticket-interventions-grid .rz-datatable-data,
+.ticket-interventions-grid .rz-datatable-thead,
+.ticket-interventions-grid .rz-datatable-tbody {
+    color: var(--text-primary, #1f2933);
+    background: var(--card-bg, #ffffff);
+}
+
+.ticket-interventions-grid .rz-datatable-thead th {
+    color: var(--text-secondary, #52606d);
+    background: var(--bg-tertiary, #f4f7f9);
+    border-color: var(--border-color, #d9e1e8);
+}
+
+.ticket-interventions-grid .rz-datatable-data td {
+    color: var(--text-primary, #1f2933);
+    border-color: var(--border-color, #d9e1e8);
+}
+
+.ticket-interventions-accordion .accordion-item,
+.ticket-interventions-accordion .accordion-button,
+.ticket-interventions-accordion .accordion-body {
+    color: var(--text-primary, #1f2933);
+    background: var(--card-bg, #ffffff);
+    border-color: var(--border-color, #d9e1e8);
+}
+
+.ticket-interventions-accordion .accordion-button {
+    min-height: 3rem;
+    font-weight: 650;
+}
+
+.ticket-interventions-accordion .accordion-button:not(.collapsed) {
+    color: var(--rz-primary, #0d6efd);
+    background: var(--hover-bg, #edf5ff);
+}
+
+.upload-report-page .upload-dropzone,
+.upload-report-dialog .upload-zone,
+.rz-dialog .upload-zone {
+    color: var(--text-primary, #1f2933);
+    background: var(--bg-tertiary, #f4f7f9) !important;
+    border-color: var(--border-color, #b8c5d0) !important;
+}
+
+.upload-report-page .upload-dropzone:hover,
+.upload-report-dialog .upload-zone:hover,
+.rz-dialog .upload-zone:hover {
+    background: var(--hover-bg, #eaf3ff) !important;
+    border-color: var(--rz-primary, #0d6efd) !important;
+}
+
+.intervention-report-viewer,
+.intervention-report-viewer .card-body {
+    background: var(--card-bg, #ffffff);
+}
+
+.intervention-report-viewer .report-viewer-toolbar {
+    color: var(--text-primary, #1f2933);
+    background: var(--bg-tertiary, #f4f7f9);
+    border-color: var(--border-color, #d9e1e8);
+}
+
+.language-selection-dialog .language-card {
+    color: var(--text-primary, #1f2933);
+    background: var(--card-bg, #ffffff);
+    border-color: var(--border-color, #d9e1e8);
+}
+
+.language-selection-dialog .language-name,
+.language-selection-dialog .dialog-header h5 {
+    color: var(--text-primary, #1f2933);
+}
+
+.language-selection-dialog .language-code {
+    color: var(--text-secondary, #667786);
+}
+
+.language-selection-dialog .language-card:hover,
+.language-selection-dialog .language-card.selected {
+    background: var(--hover-bg, #edf5ff);
+    border-color: var(--rz-primary, #0d6efd);
+}
+
+body.dark-theme .ticket-interventions-page,
+body.dark-theme .ticket-interventions-dialog,
+body.dark-theme .intervention-times-container,
+body.dark-theme .intervention-time-dialog,
+body.dark-theme .language-selection-dialog {
+    color: var(--crm-dark-text, #edf2f7);
+}
+
+body.dark-theme .ticket-intervention-edit-heading .text-secondary {
+    color: #c7d3dd !important;
+}
+
+body.dark-theme .ticket-interventions-page .card,
+body.dark-theme .ticket-interventions-dialog,
+body.dark-theme .ticket-interventions-dialog .card,
+body.dark-theme .intervention-times-container,
+body.dark-theme .intervention-time-dialog,
+body.dark-theme .summary-card,
+body.dark-theme .summary-card-small,
+body.dark-theme .time-entry,
+body.dark-theme .time-item {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: var(--crm-dark-surface, #1d2329) !important;
+    border-color: var(--crm-dark-border, #39434d) !important;
+}
+
+body.dark-theme .ticket-interventions-page .card-body,
+body.dark-theme .ticket-interventions-page .card-footer,
+body.dark-theme .ticket-interventions-dialog .card-body {
+    color: var(--crm-dark-text, #edf2f7) !important;
+}
+
+body.dark-theme .ticket-interventions-page .text-muted,
+body.dark-theme .ticket-interventions-dialog .text-muted,
+body.dark-theme .intervention-times-container .text-muted,
+body.dark-theme .intervention-time-dialog .text-muted,
+body.dark-theme .summary-label,
+body.dark-theme .summary-label-small {
+    color: var(--crm-dark-text-muted, #a8b4c0) !important;
+}
+
+body.dark-theme .ticket-interventions-page .bg-light,
+body.dark-theme .ticket-interventions-dialog .bg-light,
+body.dark-theme .upload-report-page .upload-dropzone,
+body.dark-theme .upload-report-dialog .upload-zone,
+body.dark-theme .rz-dialog .upload-zone {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: var(--crm-dark-surface-raised, #252d35) !important;
+    border-color: var(--crm-dark-border, #46515c) !important;
+}
+
+body.dark-theme .ticket-interventions-page .form-label,
+body.dark-theme .ticket-interventions-dialog .form-label,
+body.dark-theme .intervention-time-dialog .form-label,
+body.dark-theme .ticket-intervention-edit .rz-fieldset-legend-text,
+body.dark-theme .ticket-intervention-edit .label-floating,
+body.dark-theme .ticket-intervention-edit .rz-form-field-label,
+body.dark-theme .ticket-intervention-edit .rz-form-field-label-left,
+body.dark-theme .ticket-intervention-edit .rz-form-field-label-right,
+body.dark-theme .language-selection-dialog .language-name,
+body.dark-theme .language-selection-dialog .dialog-header h5 {
+    color: #c7d3dd !important;
+}
+
+body.dark-theme .ticket-interventions-grid,
+body.dark-theme .ticket-interventions-grid .rz-grid-table,
+body.dark-theme .ticket-interventions-grid .rz-datatable-data,
+body.dark-theme .ticket-interventions-grid .rz-datatable-thead,
+body.dark-theme .ticket-interventions-grid .rz-datatable-tbody {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: var(--crm-dark-surface, #1d2329) !important;
+    border-color: var(--crm-dark-border, #39434d) !important;
+}
+
+body.dark-theme .ticket-interventions-grid .rz-datatable-thead th {
+    color: #c9d4df !important;
+    background: var(--crm-dark-surface-raised, #252d35) !important;
+    border-color: var(--crm-dark-border, #39434d) !important;
+}
+
+body.dark-theme .ticket-interventions-grid .rz-datatable-data td {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: transparent;
+    border-color: var(--crm-dark-border, #39434d) !important;
+}
+
+body.dark-theme .ticket-interventions-accordion .accordion-item,
+body.dark-theme .ticket-interventions-accordion .accordion-button,
+body.dark-theme .ticket-interventions-accordion .accordion-body {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: var(--crm-dark-surface, #1d2329) !important;
+    border-color: var(--crm-dark-border, #39434d) !important;
+}
+
+body.dark-theme .ticket-interventions-accordion .accordion-button *,
+body.dark-theme .ticket-interventions-accordion .accordion-button .label-floating {
+    color: #dce5ed !important;
+}
+
+body.dark-theme .ticket-interventions-accordion .accordion-button:not(.collapsed) {
+    color: #8fc5ff !important;
+    background: var(--crm-dark-surface-raised, #252d35) !important;
+}
+
+body.dark-theme .ticket-interventions-accordion .accordion-button:not(.collapsed) *,
+body.dark-theme .ticket-interventions-accordion .accordion-button:not(.collapsed) .label-floating {
+    color: #8fc5ff !important;
+}
+
+body.dark-theme .ticket-intervention-edit .rz-fieldset {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: transparent !important;
+    border-color: var(--crm-dark-border, #46515c) !important;
+}
+
+body.dark-theme .ticket-intervention-edit .rz-textarea,
+body.dark-theme .ticket-intervention-edit textarea.form-control {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: var(--crm-dark-surface-muted, #20262c) !important;
+    border-color: var(--crm-dark-border, #46515c) !important;
+}
+
+body.dark-theme .ticket-intervention-details .intervention-summary-table th,
+body.dark-theme .ticket-intervention-details .intervention-summary-table th *,
+body.dark-theme .ticket-intervention-details .intervention-details-accordion .accordion-button,
+body.dark-theme .ticket-intervention-details .intervention-details-accordion .accordion-button * {
+    color: #d6e0e9 !important;
+}
+
+body.dark-theme .ticket-intervention-details .intervention-summary-table td,
+body.dark-theme .ticket-intervention-details .intervention-summary-table td * {
+    color: #f7f9fb;
+}
+
+body.dark-theme .ticket-intervention-details .intervention-details-accordion .accordion-button:not(.collapsed),
+body.dark-theme .ticket-intervention-details .intervention-details-accordion .accordion-button:not(.collapsed) * {
+    color: #8fc5ff !important;
+}
+
+body.dark-theme .ticket-intervention-details .intervention-summary-table tbody tr:hover > * {
+    color: inherit !important;
+    background: var(--crm-dark-surface-hover, #303942) !important;
+}
+
+body.dark-theme .ticket-interventions-accordion .accordion-button::after {
+    filter: invert(82%) sepia(23%) saturate(994%) hue-rotate(178deg) brightness(103%);
+}
+
+body.dark-theme .intervention-report-viewer,
+body.dark-theme .intervention-report-viewer .card-body {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: #11161b !important;
+}
+
+body.dark-theme .intervention-report-viewer .report-viewer-toolbar {
+    color: var(--crm-dark-text, #edf2f7);
+    background: var(--crm-dark-surface-raised, #252d35) !important;
+    border-color: var(--crm-dark-border, #39434d) !important;
+}
+
+body.dark-theme .intervention-report-viewer .btn-light {
+    color: var(--crm-dark-text, #edf2f7);
+    background: #303942;
+    border-color: #46515c;
+}
+
+body.dark-theme .intervention-report-viewer .btn-light .text-secondary {
+    color: #d4dde6 !important;
+}
+
+body.dark-theme .language-selection-dialog .language-card {
+    color: var(--crm-dark-text, #edf2f7);
+    background: var(--crm-dark-surface, #1d2329);
+    border-color: var(--crm-dark-border, #39434d);
+}
+
+body.dark-theme .language-selection-dialog .language-card:hover,
+body.dark-theme .language-selection-dialog .language-card.selected {
+    background: var(--crm-dark-surface-raised, #252d35);
+    border-color: var(--crm-dark-primary, #5aa7ff);
+}
+
+body.dark-theme .language-selection-dialog .language-code {
+    color: var(--crm-dark-text-muted, #a8b4c0);
+}
+
+/* Legacy receipt page: scoped through its own component classes. */
+body.dark-theme .receipt-field {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: var(--crm-dark-surface-raised, #252d35) !important;
+    border-color: var(--crm-dark-border, #46515c) !important;
+}
+
+body.dark-theme .receipt-label {
+    color: var(--crm-dark-text-muted, #a8b4c0) !important;
+}
+
+body.dark-theme .receipt-value {
+    color: var(--crm-dark-text, #edf2f7) !important;
+}
+
+body.dark-theme .upload-zone {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: var(--crm-dark-surface-raised, #252d35) !important;
+    border-color: #5b6a78 !important;
+}
+
+body.dark-theme .table-light {
+    --bs-table-color: #c9d4df;
+    --bs-table-bg: var(--crm-dark-surface-raised, #252d35);
+    --bs-table-border-color: var(--crm-dark-border, #39434d);
+}
+
+/* Time editor/viewer components contain older fixed light colors. */
+body.dark-theme .intervention-times-container .times-summary,
+body.dark-theme .intervention-times-container .times-list,
+body.dark-theme .intervention-times-container .time-header,
+body.dark-theme .intervention-times-container .time-details,
+body.dark-theme .intervention-time-dialog .form-section,
+body.dark-theme .intervention-time-dialog .time-type-option,
+body.dark-theme .intervention-time-dialog .duration-display,
+body.dark-theme .intervention-time-dialog .calculated-duration {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: var(--crm-dark-surface, #1d2329) !important;
+    border-color: var(--crm-dark-border, #39434d) !important;
+}
+
+body.dark-theme .intervention-times-container .summary-value,
+body.dark-theme .intervention-times-container .summary-value-small,
+body.dark-theme .intervention-times-container .time-value,
+body.dark-theme .intervention-time-dialog .section-title,
+body.dark-theme .intervention-time-dialog .type-name {
+    color: var(--crm-dark-text, #edf2f7) !important;
+}
+
+body.dark-theme .intervention-time-dialog .time-type-option:hover {
+    background: var(--crm-dark-surface-hover, #303942) !important;
+    border-color: var(--crm-dark-primary, #5aa7ff) !important;
+}
+
+body.dark-theme .intervention-time-dialog .time-type-option.active {
+    color: #ffffff !important;
+    background: #1769c2 !important;
+    border-color: #5aa7ff !important;
+}
+
+@media (max-width: 768px) {
+    .ticket-interventions-dialog,
+    .language-selection-dialog {
+        min-width: 0 !important;
+        width: 100%;
+    }
+
+    .ticket-interventions-page {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+}

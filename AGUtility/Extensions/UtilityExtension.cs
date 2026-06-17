@@ -44,7 +44,13 @@ namespace AGUtility.Extensions
                         return default(T);
                 }
 
-                return (T)propertyInfo.GetValue(sourceInstance, null);
+                var propertyValue = propertyInfo.GetValue(sourceInstance, null);
+                if (propertyValue == null)
+                {
+                    return default(T);
+                }
+
+                return (T)propertyValue;
             }
             catch (Exception ex)
             {

@@ -1,11 +1,9 @@
 ﻿using CRM.Server.Controllers;
 using CRM.Shared;
-using Duende.IdentityServer.EntityFramework.Options;
-using Microsoft.AspNetCore.ApiAuthorization.IdentityServer;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Microsoft.Extensions.Options;
 using Mono.TextTemplating;
 using Org.BouncyCastle.Math.EC.Rfc7748;
 using System;
@@ -17,11 +15,9 @@ using System.Threading.Tasks;
 
 namespace CRM.Server.Data
 {
-    public class ApplicationDbContext : ApiAuthorizationDbContext<ApplicationUser>
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
-        public ApplicationDbContext(
-            DbContextOptions options,
-            IOptions<OperationalStoreOptions> operationalStoreOptions) : base(options, operationalStoreOptions)
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
            
         }
@@ -224,6 +220,7 @@ namespace CRM.Server.Data
             });
             
             base.OnModelCreating(modelBuilder);
+            modelBuilder.UseOpenIddict();
 
             // C#
             modelBuilder.Entity<ArticleDomainState>()

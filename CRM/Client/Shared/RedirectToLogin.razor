@@ -1,7 +1,4 @@
 ﻿@inject NavigationManager Navigation
-@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
-@using Microsoft.Extensions.Options
-@inject IOptionsSnapshot<RemoteAuthenticationOptions<ApiAuthorizationProviderOptions>> Options
 @code {
 
      [Parameter]
@@ -11,9 +8,6 @@
     {
         Console.WriteLine("Initial");
         Console.WriteLine(Navigation.Uri);
-        //Navigation.NavigateTo($"authentication/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}");
-        //Navigation.NavigateToLogin(Options.Get(Microsoft.Extensions.Options.Options.DefaultName).AuthenticationPaths.LogInPath);
-       
         var url = $"authentication/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}";
         Navigation.NavigateTo(url, true);
     }

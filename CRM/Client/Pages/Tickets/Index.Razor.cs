@@ -385,60 +385,71 @@ namespace CRM.Client.Pages.Tickets
 
         private void CellRender(DataGridCellRenderEventArgs<TicketDTO> args)
         {
-           
-            if (args.Column.Property == nameof(TicketDTO.State))
+            if (args.Column?.Property == nameof(TicketDTO.State) && args.Data != null)
             {
                 var textColor = GetContrastColor(args.Data.StateColor);
-                args.Attributes.Add("style", $"background-color: {args.Data.StateColor}; color: {textColor};");
+                var backgroundColor = string.IsNullOrWhiteSpace(args.Data.StateColor)
+                    ? "transparent"
+                    : args.Data.StateColor;
 
-                
+                args.Attributes.Add(
+                    "style",
+                    $"background-color: {backgroundColor} !important; color: {textColor} !important;");
             }
-            else if (_selectedTicket.Any(i => i.Id == args.Data.Id))
+            else if (args.Data != null && _selectedTicket?.Any(i => i.Id == args.Data.Id) == true)
             {
                 args.Attributes.Add("style", $"background-color: var(--rz-secondary-lighter);");
             }
+        }
 
+        private static string GetStateTextStyle(string? backgroundColor)
+        {
+            return $"color: {GetContrastColor(backgroundColor)} !important; font-weight: 700;";
         }
 
         /// <summary>
-        /// Calcola il colore del testo (bianco o nero) in base alla luminosità del colore di sfondo
+        /// Restituisce il colore del testo con il contrasto WCAG migliore rispetto allo sfondo.
         /// </summary>
-        private string GetContrastColor(string backgroundColor)
+        private static string GetContrastColor(string? backgroundColor)
         {
-            if (string.IsNullOrWhiteSpace(backgroundColor))
-                return "#000000";
+            if (!TryParseHexColor(backgroundColor, out var red, out var green, out var blue))
+                return "#111827";
 
-            // Rimuovi il # se presente
-            var hex = backgroundColor.TrimStart('#');
+            var luminance = 0.2126 * ToLinearRgb(red)
+                          + 0.7152 * ToLinearRgb(green)
+                          + 0.0722 * ToLinearRgb(blue);
 
-            // Gestisci formati shorthand (#RGB -> #RRGGBB)
+            var contrastWithDarkText = (luminance + 0.05) / 0.05;
+            var contrastWithWhiteText = 1.05 / (luminance + 0.05);
+
+            return contrastWithDarkText >= contrastWithWhiteText ? "#111827" : "#ffffff";
+        }
+
+        private static bool TryParseHexColor(string? color, out byte red, out byte green, out byte blue)
+        {
+            red = green = blue = 0;
+
+            if (string.IsNullOrWhiteSpace(color))
+                return false;
+
+            var hex = color.Trim().TrimStart('#');
             if (hex.Length == 3)
-            {
-                hex = $"{hex[0]}{hex[0]}{hex[1]}{hex[1]}{hex[2]}{hex[2]}";
-            }
+                hex = string.Concat(hex.Select(character => $"{character}{character}"));
 
-            // Assicurati che sia un hex valido
             if (hex.Length != 6)
-                return "#000000";
+                return false;
 
-            try
-            {
-                // Converti hex in RGB
-                var r = Convert.ToInt32(hex.Substring(0, 2), 16);
-                var g = Convert.ToInt32(hex.Substring(2, 2), 16);
-                var b = Convert.ToInt32(hex.Substring(4, 2), 16);
+            return byte.TryParse(hex[..2], System.Globalization.NumberStyles.HexNumber, null, out red)
+                && byte.TryParse(hex.Substring(2, 2), System.Globalization.NumberStyles.HexNumber, null, out green)
+                && byte.TryParse(hex.Substring(4, 2), System.Globalization.NumberStyles.HexNumber, null, out blue);
+        }
 
-                // Calcola la luminosità relativa usando la formula WCAG
-                // https://www.w3.org/TR/WCAG20/#relativeluminancedef
-                var luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-                // Se la luminosità è > 0.5, usa testo nero, altrimenti bianco
-                return luminance > 0.5 ? "#000000" : "#ffffff";
-            }
-            catch
-            {
-                return "#000000";
-            }
+        private static double ToLinearRgb(byte channel)
+        {
+            var value = channel / 255d;
+            return value <= 0.04045
+                ? value / 12.92
+                : Math.Pow((value + 0.055) / 1.055, 2.4);
         }
 
         protected async void OnChangeFilter()

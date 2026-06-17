@@ -32,8 +32,8 @@ namespace CRM.Client
                     {
                         identity.RemoveClaim(existingClaim);
                     }
-                    var rolesElem = account.AdditionalProperties[identity.RoleClaimType];
-                    if (rolesElem is JsonElement roles)
+                    if (account.AdditionalProperties.TryGetValue(identity.RoleClaimType, out var rolesElement)
+                        && rolesElement is JsonElement roles)
                     {
                         if (roles.ValueKind == JsonValueKind.Array)
                         {

@@ -1,12 +1,14 @@
 // ? Service Worker per Push Notifications CRM
-// Versione: 2.1 - Fix audio/video 206 status code
+// Versione: 2.28 - User profile layout and theme
 
-const CACHE_NAME = 'crm-cache-v2.1';
+const CACHE_NAME = 'crm-cache-v2.28';
 
 const urlsToCache = [
     '/',
     '/index.html',
     '/css/app.css',
+    '/css/ticket-interventions.css',
+    '/css/ticket-preview.css',
     '/favicon.ico'
 ];
 
@@ -53,9 +55,16 @@ self.addEventListener('fetch', event => {
     // Solo per GET requests
     if (event.request.method !== 'GET') return;
     
-    // Skip _framework, API calls e file multimediali (sempre network)
-    const shouldSkip = event.request.url.includes('_framework') || 
-                      event.request.url.includes('/api/') ||
+    const requestUrl = new URL(event.request.url);
+
+    // I flussi di autenticazione e le API non devono mai passare dalla cache.
+    const shouldSkip = requestUrl.pathname.includes('/_framework/') ||
+                      requestUrl.pathname.startsWith('/api/') ||
+                      requestUrl.pathname.startsWith('/localApi/') ||
+                      requestUrl.pathname.startsWith('/authentication/') ||
+                      requestUrl.pathname.startsWith('/connect/') ||
+                      requestUrl.pathname.startsWith('/Identity/') ||
+                      requestUrl.pathname.startsWith('/.well-known/') ||
                       event.request.destination === 'audio' ||
                       event.request.destination === 'video';
     
@@ -78,9 +87,9 @@ self.addEventListener('fetch', event => {
                 
                 return response;
             })
-            .catch(() => {
+            .catch(async () => {
                 // Fallback a cache se offline
-                return caches.match(event.request);
+                return await caches.match(event.request) ?? Response.error();
             })
     );
 });
@@ -177,11 +186,11 @@ self.addEventListener('notificationclick', event => {
         return;
     }
 
-    // Apri URL (focus se già aperto, altrimenti nuova tab)
+    // Apri URL: usa una finestra esistente oppure una nuova scheda
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then(clientList => {
-                // Cerca client già aperto con stesso URL
+                // Cerca un client gia aperto con lo stesso URL
                 for (const client of clientList) {
                     if (client.url === urlToOpen && 'focus' in client) {
                         return client.focus();
@@ -231,4 +240,4 @@ self.addEventListener('message', event => {
     }
 });
 
-console.log('[Service Worker] Loaded successfully - Version 2.1 - Audio/Video fix');
+console.log('[Service Worker] Loaded successfully - Version 2.28 - User profile layout and theme');

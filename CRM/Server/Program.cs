@@ -1,13 +1,11 @@
 using CRM.Client.Services;
 using CRM.Server;
+using CRM.Server.Authentication;
 using CRM.Server.Controllers;
 using CRM.Server.Data;
 using CRM.Server.Helpers;
 using CRM.Server.Services;
 using CRM.Shared;
-using Duende.IdentityServer;
-using Duende.IdentityServer.Models;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -16,8 +14,6 @@ using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
-using System.Security.Cryptography.X509Certificates;
-using static System.Formats.Asn1.AsnWriter;
 
 
 
@@ -29,7 +25,10 @@ QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+{
+    options.UseSqlServer(connectionString);
+    options.UseOpenIddict();
+});
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // Aggiungi IHttpContextAccessor per accedere all'HttpContext nei servizi
@@ -44,36 +43,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => options.S
 
 
 
-var identityServerBuilder = builder.Services.AddIdentityServer()
-    .AddApiAuthorization<ApplicationUser, ApplicationDbContext>(options =>
-    {
-        options.IdentityResources["openid"].UserClaims.Add("role");
-        options.ApiResources.Single().UserClaims.Add("role");
-    });
-    
-var certSubject = builder.Configuration["IdentityServer:Key:Name"];
-if (!string.IsNullOrWhiteSpace(certSubject))
-{
-    using var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
-    store.Open(OpenFlags.ReadOnly);
-    var cert = store.Certificates
-        .Find(X509FindType.FindBySubjectDistinguishedName, certSubject, validOnly: false)
-        .OfType<X509Certificate2>()
-        .FirstOrDefault(c => c.HasPrivateKey);
-    if (cert != null)
-    {
-        identityServerBuilder.AddSigningCredential(cert);
-    }
-}
-
-
-builder.Services.AddAuthentication()
-    .AddIdentityServerJwt();
-System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler
-    .DefaultInboundClaimTypeMap.Remove("role");
-
-
-builder.Services.AddLocalApiAuthentication();
+builder.Services.AddCrmAuthentication(builder.Configuration, builder.Environment);
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
@@ -274,7 +244,6 @@ app.UseRequestLocalization();
 
 app.UseRouting();
 
-app.UseIdentityServer();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -298,6 +267,7 @@ var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
 using (var scope = scopeFactory.CreateScope())
 {
     RolesHelper.CreateUserRoles(scope.ServiceProvider).Wait();
+    CRM.Server.Authentication.OpenIddictSeeder.SeedAsync(scope.ServiceProvider).GetAwaiter().GetResult();
 }
 
 

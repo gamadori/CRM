@@ -1,9 +1,9 @@
 /* Dashboard (Index) scoped styles */
 
 .dashboard-page {
-    --dash-surface: rgba(255, 255, 255, 0.85);
-    --dash-border: rgba(0, 0, 0, 0.06);
-    --dash-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    --dash-surface: #ffffff;
+    --dash-border: #e5e7eb;
+    --dash-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
 }
 
 .dashboard-hero {
@@ -31,6 +31,18 @@
     box-shadow: 0 8px 26px rgba(0, 0, 0, 0.06);
 }
 
+.dashboard-surface {
+    color: var(--rz-text-color);
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: 8px;
+    box-shadow: var(--dash-shadow);
+}
+
+.dashboard-section {
+    padding: 1.25rem;
+}
+
 .dashboard-toolbar .btn {
     border-radius: 12px;
 }
@@ -40,7 +52,51 @@
 }
 
 .dashboard-card {
-    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-border);
+    border-radius: 8px;
+    box-shadow: var(--dash-shadow);
+}
+
+.dashboard-card::before {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 4px;
+    content: "";
+    background: var(--kpi-accent);
+}
+
+.kpi-warning {
+    --kpi-accent: #f59e0b;
+    --kpi-tint: #fffbeb;
+    background: linear-gradient(135deg, var(--kpi-tint), #ffffff 78%);
+}
+
+.kpi-success {
+    --kpi-accent: #10b981;
+    --kpi-tint: #ecfdf5;
+    background: linear-gradient(135deg, var(--kpi-tint), #ffffff 78%);
+}
+
+.kpi-danger {
+    --kpi-accent: #ef4444;
+    --kpi-tint: #fef2f2;
+    background: linear-gradient(135deg, var(--kpi-tint), #ffffff 78%);
+}
+
+.kpi-info {
+    --kpi-accent: #0ea5e9;
+    --kpi-tint: #f0f9ff;
+    background: linear-gradient(135deg, var(--kpi-tint), #ffffff 78%);
+}
+
+.kpi-signature {
+    --kpi-accent: #f97316;
+    --kpi-tint: #fff7ed;
+    background: linear-gradient(135deg, var(--kpi-tint), #ffffff 78%);
 }
 
 .dashboard-card .card-body {
@@ -54,6 +110,14 @@
 
 .dashboard-card p {
     letter-spacing: 0.04em;
+}
+
+.stat-card {
+    min-height: 84px;
+}
+
+.clickable {
+    cursor: pointer;
 }
 
 @media (min-width: 992px) {

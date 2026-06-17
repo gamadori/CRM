@@ -4,7 +4,9 @@
 @using Radzen
 @using Radzen.Blazor
 
-<BlazorHeader Header="@_header"></BlazorHeader>
+<div class="ticket-intervention-edit-heading">
+    <BlazorHeader Header="@_header"></BlazorHeader>
+</div>
 
 @if (_ticketIntervention == null && _ticket != null)
 {
@@ -13,7 +15,7 @@
 else
 {
 
-    <EditForm Model="@_ticketIntervention" OnValidSubmit="HandleValidSubmit">
+    <EditForm class="ticket-interventions-page ticket-intervention-edit" Model="@_ticketIntervention" OnValidSubmit="HandleValidSubmit">
          <RadzenRow Gap="1rem" class="mb-3">
             <RadzenColumn Size="12" SizeSM="8">
                 <RadzenStack>
@@ -108,7 +110,7 @@ else
                 <div class="row">
                     <div class="col">
             
-                            <div class="accordion" id="accordionExample">
+                            <div class="accordion ticket-interventions-accordion" id="accordionExample">
 
                                 <div class="accordion-item">
                                     <h2 class="accordion-header" id="heading1">

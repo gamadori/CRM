@@ -12,7 +12,6 @@ using Newtonsoft.Json;
 using CRM.Server.Services;
 using Microsoft.AspNetCore.Authorization;
 using CRM.Client.Services;
-using AutoMapper.Internal;
 
 namespace CRM.Server.Controllers
 {

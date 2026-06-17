@@ -490,3 +490,77 @@
         width: 100%;
     }
 }
+
+/* Scheduler dialog preview */
+body.dark-theme .ticket-preview-dialog {
+    color: var(--crm-dark-text, #eef2f6);
+}
+
+body.dark-theme .ticket-preview-dialog .preview-header-card,
+body.dark-theme .ticket-preview-dialog .description-card,
+body.dark-theme .ticket-preview-dialog .info-card {
+    color: var(--crm-dark-text, #eef2f6);
+    background: var(--crm-dark-surface, #1d2227);
+    border-color: var(--crm-dark-border, #343c44);
+}
+
+body.dark-theme .ticket-preview-dialog .card-header-modern,
+body.dark-theme .ticket-preview-dialog .info-card-header {
+    background: var(--crm-dark-surface-raised, #242a30);
+    border-color: var(--crm-dark-border, #343c44);
+}
+
+body.dark-theme .ticket-preview-dialog .ticket-number,
+body.dark-theme .ticket-preview-dialog .ticket-number h3,
+body.dark-theme .ticket-preview-dialog .card-header-modern h5,
+body.dark-theme .ticket-preview-dialog .info-label,
+body.dark-theme .ticket-preview-dialog .card-header-modern .material-icons,
+body.dark-theme .ticket-preview-dialog .info-card-header .material-icons {
+    color: var(--crm-dark-text, #eef2f6);
+}
+
+body.dark-theme .ticket-preview-dialog .description-text,
+body.dark-theme .ticket-preview-dialog .info-value,
+body.dark-theme .ticket-preview-dialog .user-name,
+body.dark-theme .ticket-preview-dialog .user-badge-inline {
+    color: var(--crm-dark-text, #eef2f6);
+}
+
+body.dark-theme .ticket-preview-dialog .info-key,
+body.dark-theme .ticket-preview-dialog .info-key .label-floating,
+body.dark-theme .ticket-preview-dialog .assigned-label,
+body.dark-theme .ticket-preview-dialog .assigned-label .label-floating,
+body.dark-theme .ticket-preview-dialog .no-users {
+    color: #c7d3dd;
+}
+
+body.dark-theme .ticket-preview-dialog .info-row,
+body.dark-theme .ticket-preview-dialog .assigned-users-section {
+    border-color: var(--crm-dark-border, #343c44);
+}
+
+body.dark-theme .ticket-preview-dialog .assigned-user-item {
+    color: var(--crm-dark-text, #eef2f6);
+    background: var(--crm-dark-surface-raised, #242a30);
+    border: 1px solid var(--crm-dark-border, #343c44);
+}
+
+body.dark-theme .ticket-preview-dialog .assigned-user-item.main-user {
+    background: #173554;
+    border-color: #5aa7ff;
+    border-left-width: 3px;
+}
+
+body.dark-theme .ticket-preview-dialog .main-badge {
+    color: #b9dcff;
+    background: #244b73;
+}
+
+body.dark-theme .ticket-preview-dialog .time-badge {
+    color: #c9e4ff !important;
+    background: #29445f;
+}
+
+body.dark-theme .ticket-preview-dialog .company-name {
+    color: #80bdff;
+}

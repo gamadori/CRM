@@ -5,7 +5,17 @@
     /* the threshold at which colors are considered "light." Range: integers from 0 to 100,
 recommended 50 - 70 */
     --threshold: 60;
-    
+    --crm-page-bg: #f6f8fb;
+    --crm-surface: #ffffff;
+    --crm-surface-raised: #ffffff;
+    --crm-surface-muted: #f8fafc;
+    --crm-surface-hover: #f1f5f9;
+    --crm-border: #dfe7f1;
+    --crm-border-strong: #cbd5e1;
+    --crm-text: #1f2937;
+    --crm-text-muted: #64748b;
+    --crm-link: #0f4a8a;
+    --crm-shadow: 0 12px 28px rgba(31, 42, 68, 0.07);
 }
 
 
@@ -13,7 +23,7 @@ recommended 50 - 70 */
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     
-    background-color: white;
+    background-color: var(--crm-page-bg);
     font-size: 14px;
    
 }
@@ -654,6 +664,9 @@ input[readonly] {
    🌓 DARK THEME STYLES
    ================================ */
 
+/* Legacy dark overrides retained temporarily for reference. Radzen now owns
+   component colors through its official material-dark theme. */
+@media not all {
 /* Dark Theme Variables */
 body.dark-theme {
     --bg-primary: #1a1a1a;
@@ -1146,6 +1159,1280 @@ body.dark-theme table {
 body.dark-theme .logo {
     filter: brightness(1.2);
 }
+}
+
+/* CRM shell integration for the official Radzen dark theme. */
+body {
+    background: var(--rz-base-background-color);
+    color: var(--rz-text-color);
+    transition: background-color 160ms ease, color 160ms ease;
+}
+
+body.dark-theme {
+    --crm-dark-canvas: #15181c;
+    --crm-dark-surface: #1d2227;
+    --crm-dark-surface-raised: #242a30;
+    --crm-dark-surface-hover: #2b3239;
+    --crm-dark-border: #343c44;
+    --crm-dark-text: #eef2f6;
+    --crm-dark-muted: #9da8b3;
+    --crm-dark-primary: #5aa7ff;
+    --crm-dark-primary-hover: #7bb9ff;
+
+    --crm-page-bg: var(--crm-dark-canvas);
+    --crm-surface: var(--crm-dark-surface);
+    --crm-surface-raised: var(--crm-dark-surface-raised);
+    --crm-surface-muted: #20262c;
+    --crm-surface-hover: var(--crm-dark-surface-hover);
+    --crm-border: var(--crm-dark-border);
+    --crm-border-strong: #46515c;
+    --crm-text: var(--crm-dark-text);
+    --crm-text-muted: var(--crm-dark-muted);
+    --crm-link: var(--crm-dark-primary);
+    --crm-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+
+    --rz-primary: var(--crm-dark-primary);
+    --rz-primary-light: #8bc2ff;
+    --rz-primary-lighter: #253b52;
+    --rz-primary-dark: #398de7;
+    --rz-secondary: #38bdae;
+    --rz-base-background-color: var(--crm-dark-canvas);
+    --rz-text-color: var(--crm-dark-text);
+    --rz-text-secondary-color: var(--crm-dark-muted);
+    --rz-border-color: var(--crm-dark-border);
+}
+
+body.dark-theme .main,
+body.dark-theme .content {
+    background: var(--crm-dark-canvas);
+    color: var(--rz-text-color);
+}
+
+body.dark-theme .sidebar,
+body.dark-theme .top-row.auth {
+    background: var(--crm-dark-surface);
+    border-color: var(--crm-dark-border);
+}
+
+body.dark-theme .modern-topbar,
+body.dark-theme .modern-nav,
+body.dark-theme .client-nav {
+    background: var(--crm-dark-surface) !important;
+    border-color: var(--crm-dark-border);
+}
+
+body.dark-theme .card {
+    --bs-card-bg: var(--rz-base-background-color);
+    --bs-card-color: var(--rz-text-color);
+    --bs-card-border-color: var(--rz-border-color);
+}
+
+body.dark-theme .text-dark {
+    color: var(--rz-text-color) !important;
+}
+
+body.dark-theme .text-muted {
+    color: var(--rz-text-secondary-color) !important;
+}
+
+body.dark-theme .modern-nav {
+    background: var(--crm-dark-surface);
+    border-color: var(--rz-border-color);
+}
+
+body.dark-theme .logo {
+    filter: brightness(1.12);
+}
+
+/* Dashboard dark palette: layered surfaces instead of flat black. */
+body.dark-theme .dashboard-page {
+    --dash-surface: var(--crm-dark-surface);
+    --dash-border: var(--crm-dark-border);
+    --dash-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+body.dark-theme .dashboard-hero {
+    background:
+        radial-gradient(700px 260px at 8% 0%, rgba(90, 167, 255, 0.16), transparent 65%),
+        var(--crm-dark-surface);
+    border-color: var(--crm-dark-border);
+    box-shadow: var(--dash-shadow);
+}
+
+body.dark-theme .dashboard-surface,
+body.dark-theme .dashboard-toolbar,
+body.dark-theme .stat-card {
+    color: var(--crm-dark-text);
+    background: var(--crm-dark-surface);
+    border-color: var(--crm-dark-border);
+    box-shadow: var(--dash-shadow);
+}
+
+body.dark-theme .dashboard-card {
+    color: var(--crm-dark-text);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--kpi-accent) 12%, var(--crm-dark-surface-raised)), var(--crm-dark-surface) 82%);
+    border-color: color-mix(in srgb, var(--kpi-accent) 28%, var(--crm-dark-border));
+    box-shadow: var(--dash-shadow);
+}
+
+body.dark-theme .dashboard-card:hover,
+body.dark-theme .stat-card:hover {
+    background-color: var(--crm-dark-surface-raised);
+    border-color: color-mix(in srgb, var(--crm-dark-primary) 35%, var(--crm-dark-border));
+}
+
+body.dark-theme .overall-rating {
+    color: var(--crm-dark-text);
+    background: #29271e;
+    border-color: #665525;
+}
+
+body.dark-theme .company-rating-card {
+    color: var(--crm-dark-text);
+    background: var(--crm-dark-surface-raised);
+    border-color: var(--crm-dark-border);
+}
+
+body.dark-theme .company-rating-card:hover {
+    background: var(--crm-dark-surface-hover);
+    border-color: #46515c;
+}
+
+body.dark-theme .company-name,
+body.dark-theme .rating-value,
+body.dark-theme .feedback-company,
+body.dark-theme .feedback-comment {
+    color: var(--crm-dark-text);
+}
+
+body.dark-theme .company-feedbacks {
+    color: var(--crm-dark-muted);
+    background: #30373e;
+}
+
+body.dark-theme .rating-bar-container {
+    background: #343b43;
+}
+
+body.dark-theme .feedback-item,
+body.dark-theme .feedback-item.unread {
+    color: var(--crm-dark-text);
+    background: var(--crm-dark-surface-raised);
+    border-left-color: var(--crm-dark-primary);
+}
+
+body.dark-theme .feedback-item:hover {
+    background: var(--crm-dark-surface-hover);
+}
+
+body.dark-theme .feedback-ticket,
+body.dark-theme .feedback-footer,
+body.dark-theme .feedback-comment.no-comment {
+    color: var(--crm-dark-muted);
+}
+
+body.dark-theme .modern-grid .rz-datatable-data tr:hover {
+    background: var(--crm-dark-surface-hover) !important;
+}
+
+/* Scheduler compatibility layer.
+   BlazoringComponents predates theme variables and still contains fixed light colors. */
+body.dark-theme .modern-scheduler-wrapper,
+body.dark-theme .modern-scheduler-container,
+body.dark-theme .modern-scheduler-container.day-view {
+    color: var(--crm-dark-text);
+    background: var(--crm-dark-canvas) !important;
+}
+
+body.dark-theme .scheduler-toolbar,
+body.dark-theme .day-timeline-container {
+    color: var(--crm-dark-text);
+    background: var(--crm-dark-surface) !important;
+    border: 1px solid var(--crm-dark-border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-theme .date-navigation {
+    background: var(--crm-dark-surface-raised) !important;
+    border: 1px solid var(--crm-dark-border);
+    box-shadow: none !important;
+}
+
+body.dark-theme .date-input,
+body.dark-theme .scheduler-toolbar .form-control,
+body.dark-theme .scheduler-toolbar .form-select {
+    color: var(--crm-dark-text) !important;
+    background: #181c20 !important;
+    border-color: var(--crm-dark-border) !important;
+    color-scheme: dark;
+}
+
+body.dark-theme .date-input:hover:not(:disabled),
+body.dark-theme .date-input:focus {
+    border-color: var(--crm-dark-primary) !important;
+    box-shadow: 0 0 0 3px rgba(90, 167, 255, 0.14) !important;
+}
+
+body.dark-theme .date-icon {
+    color: var(--crm-dark-primary) !important;
+}
+
+body.dark-theme .period-display,
+body.dark-theme .scheduler-header,
+body.dark-theme .day-column-header,
+body.dark-theme .day-detail-header,
+body.dark-theme .users-panel-header {
+    background: #26384a !important;
+    border-color: #38536c !important;
+    box-shadow: none !important;
+}
+
+body.dark-theme .period-text,
+body.dark-theme .day-header,
+body.dark-theme .day-column-header,
+body.dark-theme .day-detail-header {
+    color: #f4f8fc !important;
+    text-shadow: none !important;
+}
+
+body.dark-theme .day-header.holiday-header {
+    background: rgba(225, 91, 101, 0.2) !important;
+}
+
+body.dark-theme .scheduler-grid,
+body.dark-theme .scheduler-week,
+body.dark-theme .week-grid,
+body.dark-theme .day-detail-container {
+    background: var(--crm-dark-border) !important;
+}
+
+body.dark-theme .week-grid,
+body.dark-theme .day-detail-container {
+    border: 1px solid var(--crm-dark-border);
+}
+
+body.dark-theme .day-cell,
+body.dark-theme .day-column,
+body.dark-theme .day-detail-column {
+    color: var(--crm-dark-text);
+    background: var(--crm-dark-surface) !important;
+    border-color: var(--crm-dark-border) !important;
+}
+
+body.dark-theme .day-cell:hover,
+body.dark-theme .day-column:hover,
+body.dark-theme .day-detail-column:hover {
+    background: var(--crm-dark-surface-raised) !important;
+    border-color: var(--crm-dark-primary) !important;
+    box-shadow: inset 0 0 0 1px var(--crm-dark-primary) !important;
+}
+
+body.dark-theme .day-cell.holiday,
+body.dark-theme .day-column.holiday,
+body.dark-theme .day-detail-column.holiday {
+    background: #2b2023 !important;
+    border-color: #64343b !important;
+}
+
+body.dark-theme .day-cell.holiday:hover,
+body.dark-theme .day-column.holiday:hover {
+    background: #352429 !important;
+    border-color: #d45f6a !important;
+}
+
+body.dark-theme .day-cell.today,
+body.dark-theme .day-column.today,
+body.dark-theme .day-detail-column.today {
+    background: #1d3042 !important;
+    border-color: var(--crm-dark-primary) !important;
+    box-shadow: inset 0 0 0 1px rgba(90, 167, 255, 0.55) !important;
+}
+
+body.dark-theme .day-cell.other-month {
+    color: #6f7983;
+    background: #171b1f !important;
+    opacity: 1 !important;
+}
+
+body.dark-theme .day-cell-content,
+body.dark-theme .day-column-content,
+body.dark-theme .day-detail-content {
+    color: var(--crm-dark-text);
+    background: transparent;
+}
+
+body.dark-theme .empty-day,
+body.dark-theme .empty-day-detail,
+body.dark-theme .empty-slot {
+    color: var(--crm-dark-muted) !important;
+    background: transparent !important;
+}
+
+body.dark-theme .empty-day .rz-card,
+body.dark-theme .empty-day-detail .rz-card {
+    color: var(--crm-dark-muted);
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+body.dark-theme .more-tickets,
+body.dark-theme .no-time-section {
+    border-color: var(--crm-dark-border) !important;
+}
+
+body.dark-theme .timeline-slot:hover {
+    background: var(--crm-dark-surface-raised) !important;
+}
+
+body.dark-theme .timeline-slot.has-tickets {
+    background: linear-gradient(90deg, rgba(90, 167, 255, 0.12), transparent 35%) !important;
+}
+
+body.dark-theme .time-label {
+    border-color: var(--crm-dark-primary) !important;
+}
+
+body.dark-theme .time-text,
+body.dark-theme .section-header {
+    color: var(--crm-dark-primary) !important;
+}
+
+body.dark-theme .time-range {
+    color: var(--crm-dark-muted) !important;
+}
+
+body.dark-theme .modern-ticket-card,
+body.dark-theme .ticket-card,
+body.dark-theme .ticket-card.timed,
+body.dark-theme .ticket-card.no-time,
+body.dark-theme .users-panel {
+    color: var(--crm-dark-text);
+    background: var(--crm-dark-surface-raised) !important;
+    border-color: var(--crm-dark-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-theme .modern-ticket-card:hover,
+body.dark-theme .ticket-card:hover {
+    background: var(--crm-dark-surface-hover) !important;
+}
+
+body.dark-theme .ticket-company,
+body.dark-theme .ticket-description,
+body.dark-theme .user-name {
+    color: var(--crm-dark-text) !important;
+}
+
+body.dark-theme .ticket-id,
+body.dark-theme .company-feedbacks {
+    color: var(--crm-dark-muted) !important;
+    background: #30373e !important;
+}
+
+body.dark-theme .ticket-time,
+body.dark-theme .main-badge {
+    color: var(--crm-dark-primary) !important;
+    background: rgba(90, 167, 255, 0.12) !important;
+}
+
+body.dark-theme .user-item:hover,
+body.dark-theme .user-item.main-user {
+    background: var(--crm-dark-surface-hover) !important;
+}
+
+body.dark-theme .users-panel-header {
+    border-bottom-color: var(--crm-dark-border) !important;
+}
+
+body.dark-theme .users-list::-webkit-scrollbar-track,
+body.dark-theme .day-detail-content::-webkit-scrollbar-track {
+    background: var(--crm-dark-surface) !important;
+}
+
+body.dark-theme .users-list::-webkit-scrollbar-thumb,
+body.dark-theme .day-cell-content::-webkit-scrollbar-thumb,
+body.dark-theme .day-column-content::-webkit-scrollbar-thumb,
+body.dark-theme .day-detail-content::-webkit-scrollbar-thumb {
+    background: #4a5560 !important;
+}
+
+body.dark-theme .offcanvas {
+    color: var(--crm-dark-text);
+    background: var(--crm-dark-surface);
+}
+
+body.dark-theme .offcanvas-header,
+body.dark-theme .offcanvas-footer {
+    border-color: var(--crm-dark-border);
+}
+
+/* Ticket timeline uses its own layout instead of the shared scheduler shell. */
+body.dark-theme .timeline-scheduler-container {
+    color: var(--crm-dark-text);
+    background: var(--crm-dark-canvas) !important;
+}
+
+body.dark-theme .timeline-toolbar,
+body.dark-theme .timeline-filter,
+body.dark-theme .timeline-content {
+    color: var(--crm-dark-text);
+    background: var(--crm-dark-surface) !important;
+    border: 1px solid var(--crm-dark-border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.dark-theme .current-date-label,
+body.dark-theme .timeline-content h1,
+body.dark-theme .timeline-content h2,
+body.dark-theme .timeline-content h3,
+body.dark-theme .timeline-content h4,
+body.dark-theme .timeline-content h5,
+body.dark-theme .timeline-content h6 {
+    color: var(--crm-dark-text) !important;
+}
+
+body.dark-theme .timeline-content .no-time-section {
+    border-color: var(--crm-dark-border) !important;
+}
+
+body.dark-theme .timeline-content .ticket-card.timed,
+body.dark-theme .timeline-content .ticket-card.no-time {
+    background: var(--crm-dark-surface-raised) !important;
+}
+
+body.dark-theme .timeline-content .ticket-id {
+    color: var(--crm-dark-muted) !important;
+    background: #30373e !important;
+}
+
+body.dark-theme .timeline-content .empty-slot {
+    color: var(--crm-dark-muted) !important;
+    background: transparent !important;
+    border-color: #46515c !important;
+}
+
+body.dark-theme .timeline-content .empty-slot:hover {
+    color: var(--crm-dark-primary) !important;
+    background: rgba(90, 167, 255, 0.1) !important;
+    border-color: var(--crm-dark-primary) !important;
+}
+
+body.dark-theme .timeline-content .user-badge {
+    border-color: var(--crm-dark-surface-raised) !important;
+}
+
+/* Compatibility for older pages that still use Bootstrap and fixed light surfaces. */
+body.dark-theme .modern-grid .rz-datatable-header th {
+    color: var(--crm-dark-text) !important;
+    background: var(--crm-dark-surface-raised) !important;
+    border-color: var(--crm-dark-border) !important;
+}
+
+body.dark-theme .modern-grid .rz-datatable-data td {
+    color: var(--crm-dark-text);
+    border-color: var(--crm-dark-border);
+}
+
+body.dark-theme .modal-content,
+body.dark-theme .dropdown-menu,
+body.dark-theme .list-group-item,
+body.dark-theme .accordion-item,
+body.dark-theme .accordion-button {
+    color: var(--crm-dark-text);
+    background-color: var(--crm-dark-surface) !important;
+    border-color: var(--crm-dark-border) !important;
+}
+
+body.dark-theme .accordion-button:not(.collapsed) {
+    color: var(--crm-dark-primary);
+    background-color: var(--crm-dark-surface-raised) !important;
+}
+
+body.dark-theme .table {
+    --bs-table-color: var(--crm-dark-text);
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--crm-dark-border);
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.025);
+    --bs-table-hover-bg: var(--crm-dark-surface-hover);
+}
+
+body.dark-theme .form-control,
+body.dark-theme .form-select,
+body.dark-theme .input-group-text {
+    color: var(--crm-dark-text);
+    background-color: #181c20;
+    border-color: var(--crm-dark-border);
+}
+
+body.dark-theme .form-control:focus,
+body.dark-theme .form-select:focus {
+    color: var(--crm-dark-text);
+    background-color: #181c20;
+    border-color: var(--crm-dark-primary);
+    box-shadow: 0 0 0 0.2rem rgba(90, 167, 255, 0.14);
+}
+
+body.dark-theme .form-control::placeholder {
+    color: #78838e;
+}
+
+body.dark-theme #uploadWithDragAndDrop .rz-fileupload-buttonbar .rz-fileupload-choose {
+    color: var(--crm-dark-text);
+    background: var(--crm-dark-surface-raised);
+    border-color: #4a5560;
+}
+
+body.dark-theme #uploadWithDragAndDrop .rz-fileupload-buttonbar .rz-fileupload-choose:hover {
+    color: var(--crm-dark-primary);
+    background: rgba(90, 167, 255, 0.1);
+    border-color: var(--crm-dark-primary);
+}
+
+body.dark-theme .upload-text {
+    color: var(--crm-dark-text);
+}
+
+body.dark-theme .upload-hint {
+    color: var(--crm-dark-muted);
+}
+
+/* Shared legacy surfaces. These selectors cover app-owned components that
+   predate the Radzen theme and still carry a local light palette. */
+body.dark-theme .card-header,
+body.dark-theme .card-footer,
+body.dark-theme .page-header,
+body.dark-theme .search-section,
+body.dark-theme .selected-users-section,
+body.dark-theme .available-users-section,
+body.dark-theme .form-section,
+body.dark-theme .ticket-info,
+body.dark-theme .created-key {
+    color: var(--crm-text);
+    background: var(--crm-surface-muted) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .info-card,
+body.dark-theme .description-card,
+body.dark-theme .preview-header-card,
+body.dark-theme .dashboard-client-container .dashboard-hero,
+body.dark-theme .dashboard-client-container .dashboard-card,
+body.dark-theme .feedback-tickets-list,
+body.dark-theme .user-card,
+body.dark-theme .time-type-option,
+body.dark-theme .signature-overlay-container,
+body.dark-theme .signature-overlay-footer,
+body.dark-theme .api-key-editor,
+body.dark-theme .api-key-table-wrap,
+body.dark-theme .catalog-card,
+body.dark-theme .catalog-card-body {
+    color: var(--crm-text);
+    background: var(--crm-surface) !important;
+    border-color: var(--crm-border) !important;
+    box-shadow: var(--crm-shadow);
+}
+
+body.dark-theme .header-icon,
+body.dark-theme .hero-icon,
+body.dark-theme .value.version,
+body.dark-theme .selected-users-container,
+body.dark-theme .users-list,
+body.dark-theme .feedback-more-info,
+body.dark-theme .catalog-upload-zone,
+body.dark-theme .catalog-preview {
+    color: var(--crm-text-muted) !important;
+    background: var(--crm-surface-muted) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .about-header h1,
+body.dark-theme .info-card h1,
+body.dark-theme .info-card h2,
+body.dark-theme .info-card h3,
+body.dark-theme .info-card .value,
+body.dark-theme .hero-text h2,
+body.dark-theme .dashboard-client-container .card-title,
+body.dark-theme .dashboard-client-container .ticket-description,
+body.dark-theme .user-name-full,
+body.dark-theme .ticket-desc,
+body.dark-theme .comment-label,
+body.dark-theme .rating-label,
+body.dark-theme .section-title,
+body.dark-theme .type-name,
+body.dark-theme .info-value,
+body.dark-theme .description-text,
+body.dark-theme .card-header-modern h5,
+body.dark-theme .info-label,
+body.dark-theme .assigned-label,
+body.dark-theme .user-name {
+    color: var(--crm-text) !important;
+}
+
+body.dark-theme .about-container .label,
+body.dark-theme .dashboard-client-container .card-description,
+body.dark-theme .dashboard-client-container .ticket-date,
+body.dark-theme .dashboard-client-container .ticket-id,
+body.dark-theme .ticket-closed-date,
+body.dark-theme .char-count,
+body.dark-theme .user-email {
+    color: var(--crm-text-muted) !important;
+}
+
+body.dark-theme .feedback-alert-banner {
+    color: #f2d37e;
+    background: #2d281b !important;
+    border-color: #665525 !important;
+}
+
+body.dark-theme .btn-skip,
+body.dark-theme .btn-cancel,
+body.dark-theme .assign-footer {
+    color: var(--crm-text-muted) !important;
+    background: var(--crm-surface) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .btn-skip:hover,
+body.dark-theme .btn-cancel:hover,
+body.dark-theme .user-card:hover {
+    color: var(--crm-text) !important;
+    background: var(--crm-surface-hover) !important;
+    border-color: var(--crm-border-strong) !important;
+}
+
+body.dark-theme .duration-display,
+body.dark-theme .billable-toggle,
+body.dark-theme .dialog-actions {
+    color: var(--crm-text);
+    background: var(--crm-surface-muted) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .signature-overlay-header,
+body.dark-theme .signature-overlay-body {
+    color: var(--crm-text);
+    background: var(--crm-surface) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .signature-canvas-wrapper {
+    background: #ffffff !important;
+    border-color: var(--crm-border-strong) !important;
+}
+
+body.dark-theme .signature-validation-banner {
+    color: #f2d37e;
+    background: #2d281b !important;
+    border-color: #665525 !important;
+}
+
+/* Catalog */
+body.dark-theme .catalog-search,
+body.dark-theme .catalog-search button,
+body.dark-theme .catalog-pager button,
+body.dark-theme .catalog-sidebar,
+body.dark-theme .catalog-card-action,
+body.dark-theme .catalog-detail-back,
+body.dark-theme .catalog-detail-panel,
+body.dark-theme .catalog-image-tile,
+body.dark-theme .catalog-dxf-card,
+body.dark-theme .catalog-dxf-actions button,
+body.dark-theme .catalog-attachment-item,
+body.dark-theme .catalog-attachment-actions button,
+body.dark-theme .catalog-lightbox-panel,
+body.dark-theme .catalog-lightbox-header button {
+    color: var(--crm-text) !important;
+    background: var(--crm-surface) !important;
+    border-color: var(--crm-border) !important;
+    box-shadow: var(--crm-shadow);
+}
+
+body.dark-theme .catalog-sidebar button {
+    color: var(--crm-text-muted);
+}
+
+body.dark-theme .catalog-sidebar button:hover,
+body.dark-theme .catalog-sidebar button.active {
+    color: var(--crm-link);
+    background: rgba(90, 167, 255, 0.12) !important;
+    border-color: rgba(90, 167, 255, 0.35) !important;
+}
+
+body.dark-theme .catalog-card-cover,
+body.dark-theme .catalog-image-button,
+body.dark-theme .catalog-image-tile img,
+body.dark-theme .catalog-dxf-viewport,
+body.dark-theme .catalog-dxf-viewport > div,
+body.dark-theme .catalog-dxf-viewport .card,
+body.dark-theme .catalog-dxf-viewport .card-body,
+body.dark-theme .catalog-lightbox-panel img {
+    background: var(--crm-surface-muted) !important;
+}
+
+.catalog-image-loading {
+    width: 100%;
+    height: 100%;
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--crm-link);
+    background: var(--crm-surface-muted);
+}
+
+.catalog-lightbox-panel .catalog-image-loading {
+    min-height: 0;
+}
+
+body.dark-theme .catalog-kicker,
+body.dark-theme .catalog-sidebar small,
+body.dark-theme .catalog-type-header small,
+body.dark-theme .catalog-result-bar,
+body.dark-theme .catalog-empty {
+    color: var(--crm-text-muted) !important;
+}
+
+/* Deals */
+body.dark-theme .deals-page,
+body.dark-theme .deal-detail-page,
+body.dark-theme .deal-edit-page {
+    color: var(--crm-text) !important;
+    background: var(--crm-page-bg) !important;
+}
+
+body.dark-theme .deals-toolbar h1,
+body.dark-theme .deal-edit-toolbar h1,
+body.dark-theme .deal-hero h1,
+body.dark-theme .deal-panel-title h2,
+body.dark-theme .deals-metrics strong,
+body.dark-theme .deal-value-box strong,
+body.dark-theme .deal-facts strong,
+body.dark-theme .deal-field strong,
+body.dark-theme .deal-notes p:not(.deal-muted) {
+    color: var(--crm-text) !important;
+}
+
+body.dark-theme .deals-primary,
+body.dark-theme .deals-filter-button,
+body.dark-theme .deals-pager button,
+body.dark-theme .deals-actions button,
+body.dark-theme .deal-primary,
+body.dark-theme .deal-secondary,
+body.dark-theme .deal-empty button {
+    color: var(--crm-link);
+    background: var(--crm-surface) !important;
+    border-color: var(--crm-border-strong) !important;
+}
+
+body.dark-theme .deals-primary,
+body.dark-theme .deal-primary {
+    color: #ffffff;
+    background: #2878c7 !important;
+}
+
+body.dark-theme .deals-metrics article,
+body.dark-theme .deals-filters,
+body.dark-theme .deals-table-wrap,
+body.dark-theme .deal-hero,
+body.dark-theme .deal-panel,
+body.dark-theme .deal-form-panel {
+    color: var(--crm-text);
+    background: var(--crm-surface) !important;
+    border-color: var(--crm-border) !important;
+    box-shadow: var(--crm-shadow);
+}
+
+body.dark-theme .deals-search,
+body.dark-theme .deal-value-box,
+body.dark-theme .deal-facts div,
+body.dark-theme .deal-field,
+body.dark-theme .deal-input {
+    color: var(--crm-text);
+    background: var(--crm-surface-muted) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .deals-search input,
+body.dark-theme .deal-input,
+body.dark-theme .deal-field input,
+body.dark-theme .deal-field textarea,
+body.dark-theme .deal-field select {
+    color: var(--crm-text);
+    background: transparent !important;
+}
+
+body.dark-theme .deal-edit-page input[type="date"] {
+    color-scheme: dark;
+}
+
+body.dark-theme .deal-edit-page .rz-dropdown,
+body.dark-theme .deal-edit-page .rz-dropdown-label,
+body.dark-theme .deals-page .rz-dropdown,
+body.dark-theme .deals-page .rz-dropdown-label {
+    color: var(--crm-text) !important;
+    background: var(--crm-surface-muted) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .deals-table th {
+    color: var(--crm-text-muted);
+    background: var(--crm-surface-muted) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .deals-table td {
+    color: var(--crm-text);
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .deals-kicker,
+body.dark-theme .deals-toolbar p,
+body.dark-theme .deal-kicker,
+body.dark-theme .deal-edit-toolbar p,
+body.dark-theme .deal-hero-meta,
+body.dark-theme .deal-value-box span,
+body.dark-theme .deal-value-box small,
+body.dark-theme .deal-field > span,
+body.dark-theme .deal-edit-page .deal-field > span .label-floating,
+body.dark-theme .deal-edit-page .deal-field .rz-form-field-label,
+body.dark-theme .deal-edit-page .deal-field .rz-form-field-label-left,
+body.dark-theme .deal-edit-page .deal-field .rz-form-field-label-right,
+body.dark-theme .deal-facts span,
+body.dark-theme .deal-muted,
+body.dark-theme .deals-metrics span,
+body.dark-theme .deals-metrics small,
+body.dark-theme .deals-table small,
+body.dark-theme .deal-phase span {
+    color: var(--crm-text-muted) !important;
+}
+
+body.dark-theme .deal-edit-page .deal-input::placeholder,
+body.dark-theme .deal-edit-page .rz-dropdown-label.rz-placeholder {
+    color: #8f9aa6 !important;
+    opacity: 1;
+}
+
+body.dark-theme .deal-phase div {
+    background: #3a434c !important;
+}
+
+body.dark-theme .deal-progress > div {
+    background: #3a434c !important;
+}
+
+body.dark-theme .deal-alert {
+    color: #ffc4cb !important;
+    background: #351d22 !important;
+    border-color: #65313b !important;
+}
+
+/* API keys and product catalog assets */
+body.dark-theme .machine-api-keys-head,
+body.dark-theme .api-key-table th {
+    color: var(--crm-text-muted);
+    background: var(--crm-surface-muted) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .api-key-table td,
+body.dark-theme .editor-grid input,
+body.dark-theme .editor-grid select,
+body.dark-theme .editor-grid textarea {
+    color: var(--crm-text) !important;
+    background: var(--crm-surface) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .api-key-alert {
+    color: #f0c878;
+    background: #2d281b !important;
+    border-color: #665525 !important;
+}
+
+body.dark-theme .product-catalog-assets .catalog-card,
+body.dark-theme .product-catalog-assets .catalog-card-body {
+    background: var(--crm-surface) !important;
+}
+
+/* Ticket editing and intervention dialogs */
+body.dark-theme .compact-users-section,
+body.dark-theme .selected-users-compact,
+body.dark-theme .empty-users-compact,
+body.dark-theme .times-summary,
+body.dark-theme .time-summary,
+body.dark-theme .time-item,
+body.dark-theme .language-card,
+body.dark-theme .feedback-details-comment {
+    color: var(--crm-text);
+    background: var(--crm-surface-muted) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .selected-user-compact,
+body.dark-theme .time-summary,
+body.dark-theme .time-item,
+body.dark-theme .language-card {
+    background: var(--crm-surface) !important;
+}
+
+body.dark-theme .language-card:hover,
+body.dark-theme .language-card.selected,
+body.dark-theme .selected-user-compact:hover {
+    background: var(--crm-surface-hover) !important;
+    border-color: var(--crm-dark-primary) !important;
+}
+
+body.dark-theme .user-name-compact,
+body.dark-theme .time-item-title,
+body.dark-theme .language-name,
+body.dark-theme .dialog-title,
+body.dark-theme .total-time,
+body.dark-theme .feedback-details-label,
+body.dark-theme .feedback-details-text {
+    color: var(--crm-text) !important;
+}
+
+body.dark-theme .time-item-details,
+body.dark-theme .language-description {
+    color: var(--crm-text-muted) !important;
+}
+
+/* Settings and reusable modal/upload components */
+body.dark-theme .settings-section,
+body.dark-theme .setting-card,
+body.dark-theme .otp-modal-container,
+body.dark-theme .otp-modal-footer,
+body.dark-theme .receipt-uploader-container,
+body.dark-theme .extraction-result,
+body.dark-theme .redg-image-select,
+body.dark-theme .imagedropdown-menu {
+    color: var(--crm-text);
+    background: var(--crm-surface) !important;
+    border-color: var(--crm-border) !important;
+    box-shadow: var(--crm-shadow);
+}
+
+body.dark-theme .settings-section-title,
+body.dark-theme .setting-card-title,
+body.dark-theme .result-card .value,
+body.dark-theme .extraction-result h1,
+body.dark-theme .extraction-result h2,
+body.dark-theme .extraction-result h3 {
+    color: var(--crm-text) !important;
+    border-color: var(--crm-border) !important;
+}
+
+/* Settings dashboard. SettingCard uses generic card-* class names internally,
+   so scope every rule below to avoid affecting unrelated cards. */
+body.dark-theme .settings-container {
+    color: var(--crm-text);
+}
+
+body.dark-theme .settings-container .settings-section {
+    color: var(--crm-text);
+    background: #1d2329 !important;
+    border: 1px solid #343d46 !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18) !important;
+}
+
+body.dark-theme .settings-container .section-title {
+    color: #f0f4f8 !important;
+    border-bottom-color: #46515c !important;
+}
+
+body.dark-theme .settings-container .setting-card {
+    color: var(--crm-text) !important;
+    background: #20262c !important;
+    border-color: #3c4650 !important;
+    box-shadow: none !important;
+}
+
+body.dark-theme .settings-container .setting-card:hover,
+body.dark-theme .settings-container .setting-card:focus-visible {
+    color: #ffffff !important;
+    background: #28313a !important;
+    border-color: var(--card-color) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.26) !important;
+    outline: none;
+}
+
+body.dark-theme .settings-container .setting-card .card-title {
+    color: #eef3f7 !important;
+    font-weight: 700 !important;
+}
+
+body.dark-theme .settings-container .setting-card .card-description {
+    color: #aeb9c4 !important;
+}
+
+body.dark-theme .settings-container .setting-card:hover .card-title,
+body.dark-theme .settings-container .setting-card:focus-visible .card-title {
+    color: #ffffff !important;
+}
+
+body.dark-theme .settings-container .setting-card:hover .card-description,
+body.dark-theme .settings-container .setting-card:focus-visible .card-description {
+    color: #d5dde5 !important;
+}
+
+body.dark-theme .settings-container .setting-card .card-icon-wrapper {
+    background: #2a323a !important;
+    border: 1px solid #46515c;
+}
+
+body.dark-theme .settings-container .setting-card:hover .card-icon-wrapper,
+body.dark-theme .settings-container .setting-card:focus-visible .card-icon-wrapper {
+    background: var(--card-color) !important;
+    border-color: transparent;
+}
+
+body.dark-theme .settings-container .setting-card .card-arrow {
+    opacity: 0.75;
+}
+
+body.dark-theme .otp-digit:disabled,
+body.dark-theme .otp-modal-footer,
+body.dark-theme .receipt-uploader-container,
+body.dark-theme .result-card {
+    background: var(--crm-surface-muted) !important;
+}
+
+body.dark-theme .receipt-drop-zone,
+body.dark-theme .upload-zone,
+body.dark-theme .redg-image-select,
+body.dark-theme .imagedropdown-menu {
+    background: var(--crm-surface) !important;
+    border-color: var(--crm-border-strong) !important;
+}
+
+body.dark-theme .receipt-drop-zone:hover,
+body.dark-theme .upload-zone:hover,
+body.dark-theme .imagedropdown-item:hover {
+    background: var(--crm-surface-hover) !important;
+    border-color: var(--crm-dark-primary) !important;
+}
+
+body.dark-theme .file-name,
+body.dark-theme .receipt-detail-value,
+body.dark-theme .receipt-value {
+    color: var(--crm-text) !important;
+}
+
+body.dark-theme .receipt-detail-field,
+body.dark-theme .view-toggle-container,
+body.dark-theme .ticket-chat-test-container {
+    color: var(--crm-text);
+    background: var(--crm-surface-muted) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .similarity-result:hover {
+    background: var(--crm-surface-hover) !important;
+}
+
+body.dark-theme iframe {
+    background-color: var(--crm-surface-muted) !important;
+}
+
+body.dark-theme .bg-light,
+body.dark-theme .btn-light {
+    color: var(--crm-text) !important;
+    background-color: var(--crm-surface-muted) !important;
+    border-color: var(--crm-border) !important;
+}
+
+body.dark-theme .border,
+body.dark-theme .border-top,
+body.dark-theme .border-bottom,
+body.dark-theme .border-start,
+body.dark-theme .border-end {
+    border-color: var(--crm-border) !important;
+}
+
+/* Shared Details pages: override the legacy palette embedded in
+   RedGDetailField without changing its layout contract. */
+body.dark-theme .rg-detail-field {
+    --rg-color-label: #b4bec8 !important;
+    --rg-color-value: #f4f7fa !important;
+    --rg-color-icon: #a8b3be !important;
+    --rg-color-border: #3d4751 !important;
+    --rg-color-hover: #242b32 !important;
+}
+
+body.dark-theme .rg-detail-field .rg-field-container {
+    min-height: 72px;
+    padding: 0.8rem 0.9rem;
+    border-color: var(--rg-color-border) !important;
+    border-radius: 6px;
+}
+
+body.dark-theme .rg-detail-field .rg-field-container:hover {
+    color: var(--rg-color-value) !important;
+    background-color: var(--rg-color-hover) !important;
+    border-bottom-color: #72b5ff !important;
+}
+
+body.dark-theme .rg-detail-field .rg-field-label {
+    color: #c8d0d8 !important;
+    font-size: 0.86rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+}
+
+body.dark-theme .rg-detail-field .rg-label-text,
+body.dark-theme .rg-detail-field .rg-label-text .label-floating,
+body.dark-theme .rg-detail-field .rg-field-label > .label-floating {
+    color: #c8d0d8 !important;
+    font-size: 0.86rem !important;
+    font-weight: 700 !important;
+    line-height: 1.3;
+}
+
+body.dark-theme .rg-detail-field .rg-field-icon {
+    color: #91b4d5 !important;
+    font-size: 17px !important;
+}
+
+body.dark-theme .rg-detail-field .rg-field-value,
+body.dark-theme .rg-detail-field .rg-field-value p,
+body.dark-theme .rg-detail-field .rg-field-value span:not(.badge),
+body.dark-theme .rg-detail-field .text-dark {
+    color: var(--rg-color-value) !important;
+}
+
+body.dark-theme .rg-detail-field .rg-field-value {
+    padding-left: 1.45rem;
+    font-weight: 500;
+}
+
+body.dark-theme .rg-detail-field .rg-empty-value {
+    color: var(--rg-color-label) !important;
+}
+
+body.dark-theme .rg-detail-field .rg-field-container:hover .rg-field-label,
+body.dark-theme .rg-detail-field .rg-field-container:hover .rg-field-icon,
+body.dark-theme .rg-detail-field .rg-field-container:hover .rg-label-text,
+body.dark-theme .rg-detail-field .rg-field-container:hover .label-floating {
+    color: #72b5ff !important;
+}
+
+/* Top bar controls */
+.login-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.topbar-language {
+    min-width: 150px;
+}
+
+.topbar-language .imagedropdown-container {
+    width: 100%;
+    max-width: 180px;
+}
+
+.topbar-language .imagedropdown-header {
+    min-height: 40px;
+    padding: 0.45rem 0.7rem;
+    color: var(--crm-text);
+    background: var(--crm-surface);
+    border-color: var(--crm-border);
+    border-radius: 6px;
+}
+
+.topbar-language .imagedropdown-selected-item {
+    min-width: 0;
+}
+
+.topbar-language .imagedropdown-selected-item span {
+    overflow: hidden;
+    color: inherit;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topbar-language .imagedropdown-arrow {
+    color: var(--crm-text-muted);
+}
+
+.topbar-profile .dropdown-toggle {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    color: var(--crm-text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 50%;
+}
+
+.topbar-profile .dropdown-toggle:hover,
+.topbar-profile .dropdown-toggle:focus-visible {
+    background: var(--crm-surface-hover);
+    border-color: var(--crm-border);
+    box-shadow: none;
+}
+
+.topbar-profile .dropdown-toggle::after {
+    display: none;
+}
+
+body.dark-theme .topbar-language .imagedropdown-header {
+    color: #eef2f6 !important;
+    background: #20262c !important;
+    border-color: #46515c !important;
+}
+
+body.dark-theme .topbar-language .imagedropdown-header:hover,
+body.dark-theme .topbar-language .imagedropdown-header.active {
+    color: #ffffff !important;
+    background: #29323a !important;
+    border-color: #72b5ff !important;
+}
+
+body.dark-theme .topbar-language .imagedropdown-selected-item span,
+body.dark-theme .topbar-language .imagedropdown-arrow {
+    color: inherit !important;
+}
+
+body.dark-theme .topbar-language .imagedropdown-menu {
+    color: #eef2f6 !important;
+    background: #20262c !important;
+    border-color: #46515c !important;
+}
+
+body.dark-theme .topbar-language .imagedropdown-item {
+    color: #dce3e9 !important;
+    background: transparent !important;
+}
+
+body.dark-theme .topbar-language .imagedropdown-item:hover,
+body.dark-theme .topbar-language .imagedropdown-item.selected {
+    color: #ffffff !important;
+    background: #2b3540 !important;
+}
+
+@media (max-width: 640px) {
+    .login-actions {
+        gap: 0.45rem;
+    }
+
+    .topbar-language {
+        min-width: 54px;
+    }
+
+    .topbar-language .imagedropdown-container {
+        max-width: 132px;
+    }
+}
+
+@media (max-width: 768px) {
+    body.dark-theme .rg-detail-field .rg-field-label {
+        font-size: 0.82rem !important;
+    }
+}
 
 
 /* Product Icon */
@@ -1331,4 +2618,95 @@ body.dark-theme .logo {
 
 body.dark-theme .company-tree-node:hover {
     background-color: var(--hover-bg);
+}
+
+/* Ticket details: one coherent dark surface, including isolated component CSS. */
+body.dark-theme .ticket-details-page,
+body.dark-theme .ticket-details-page .modern-preview-container {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: #11161b !important;
+}
+
+body.dark-theme .ticket-details-page .preview-header-card,
+body.dark-theme .ticket-details-page .description-card,
+body.dark-theme .ticket-details-page .info-card,
+body.dark-theme .ticket-details-page .card.border-0.shadow-sm.mt-4 {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: var(--crm-dark-surface, #1d2329) !important;
+    border-color: var(--crm-dark-border, #39434d) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+}
+
+body.dark-theme .ticket-details-page .card-header-modern,
+body.dark-theme .ticket-details-page .info-card-header {
+    color: #dce5ed !important;
+    background: var(--crm-dark-surface-raised, #252d35) !important;
+    border-color: var(--crm-dark-border, #39434d) !important;
+}
+
+body.dark-theme .ticket-details-page .ticket-number,
+body.dark-theme .ticket-details-page .ticket-number h3,
+body.dark-theme .ticket-details-page .card-header-modern h5,
+body.dark-theme .ticket-details-page .info-label,
+body.dark-theme .ticket-details-page .info-card-header .material-icons,
+body.dark-theme .ticket-details-page .card-header-modern .material-icons {
+    color: #dce5ed !important;
+}
+
+body.dark-theme .ticket-details-page .description-text,
+body.dark-theme .ticket-details-page .info-value,
+body.dark-theme .ticket-details-page .user-name {
+    color: #f7f9fb !important;
+}
+
+body.dark-theme .ticket-details-page .info-key,
+body.dark-theme .ticket-details-page .assigned-label,
+body.dark-theme .ticket-details-page .no-users {
+    color: #aebdca !important;
+}
+
+body.dark-theme .ticket-details-page .info-key .label-floating,
+body.dark-theme .ticket-details-page .assigned-label .label-floating {
+    color: #c7d3dd !important;
+    font-size: inherit;
+    font-weight: 600;
+    line-height: inherit;
+}
+
+body.dark-theme .ticket-details-page .info-row,
+body.dark-theme .ticket-details-page .assigned-users-section {
+    border-color: var(--crm-dark-border, #39434d) !important;
+}
+
+body.dark-theme .ticket-details-page .assigned-user-item {
+    color: var(--crm-dark-text, #edf2f7) !important;
+    background: var(--crm-dark-surface-raised, #252d35) !important;
+    border-color: var(--crm-dark-border, #46515c) !important;
+}
+
+body.dark-theme .ticket-details-page .assigned-user-item:hover {
+    background: var(--crm-dark-surface-hover, #303942) !important;
+}
+
+body.dark-theme .ticket-details-page .assigned-user-item.main-user {
+    background: #173554 !important;
+    border-color: #347fc4 !important;
+}
+
+body.dark-theme .ticket-details-page .main-badge {
+    color: #b9dcff !important;
+    background: rgba(90, 167, 255, 0.16) !important;
+}
+
+body.dark-theme .ticket-details-page .time-badge {
+    color: #dbeeff !important;
+    background: #293b4c !important;
+}
+
+body.dark-theme .ticket-details-page .time-badge .material-icons {
+    color: #8fc5ff !important;
+}
+
+body.dark-theme .ticket-details-page .card.border-0.shadow-sm.mt-4 .card-body {
+    background: transparent !important;
 }

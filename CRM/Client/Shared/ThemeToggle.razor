@@ -1,0 +1,45 @@
+@using Radzen
+@using Radzen.Blazor
+@inject ThemeService ThemeService
+@inject IJSRuntime JsRuntime
+
+<div class="theme-toggle-shell">
+    <RadzenButton Icon="@(_isDark ? "light_mode" : "dark_mode")"
+                  ButtonStyle="ButtonStyle.Primary"
+                  Variant="Variant.Outlined"
+                  Size="ButtonSize.Medium"
+                  class="theme-toggle"
+                  title="@(_isDark ? "Attiva tema chiaro" : "Attiva tema scuro")"
+                  aria-label="@(_isDark ? "Attiva tema chiaro" : "Attiva tema scuro")"
+                  Click="@ToggleThemeAsync" />
+</div>
+
+@code {
+    private const string LightTheme = "material";
+    private const string DarkTheme = "material-dark";
+    private bool _isDark;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _isDark = await JsRuntime.InvokeAsync<bool>("crmTheme.get");
+        await ApplyThemeAsync(persist: false);
+        StateHasChanged();
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        _isDark = !_isDark;
+        await ApplyThemeAsync(persist: true);
+    }
+
+    private async Task ApplyThemeAsync(bool persist)
+    {
+        ThemeService.SetTheme(_isDark ? DarkTheme : LightTheme);
+        await JsRuntime.InvokeVoidAsync(persist ? "crmTheme.set" : "crmTheme.apply", _isDark);
+    }
+}

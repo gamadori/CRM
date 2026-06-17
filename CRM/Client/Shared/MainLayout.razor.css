@@ -9,12 +9,8 @@
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, #222e3c 0%, #222e3c 100%);
-    /* background-image: url("../imgs/forex.jpg");
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center;*/
-    /*background-color: #0e122e;*/
+    background: #1d2227;
+    border-right: 1px solid #343c44;
 }
 
 
@@ -25,13 +21,27 @@
 }
 
 .top-row {
-    background-color: #f7f7f7;/* aplus */
-    /*background-color: #141c24; /*chronos*/
-    border-bottom: 1px solid #d6d5d5;
+    background: var(--rz-base-background-color, #ffffff);
+    border-bottom: 1px solid var(--rz-border-color, #dfe3e8);
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
     align-items: center;
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-left: 0.85rem;
+}
+
+.connection-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem;
+    color: var(--rz-text-secondary-color, #667085);
 }
 
     .top-row ::deep a, .top-row ::deep .btn-link {
@@ -59,6 +69,11 @@
     }
     .top-row.auth {
         justify-content: space-between;
+    }
+
+    .topbar-actions {
+        gap: 0.55rem;
+        margin-left: auto;
     }
 
     .top-row ::deep a, .top-row ::deep .btn-link {

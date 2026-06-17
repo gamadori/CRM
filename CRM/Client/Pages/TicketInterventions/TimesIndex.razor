@@ -9,7 +9,7 @@
 
 @if (_interventionTime != null)
 {
-    <RadzenDataGrid @ref="_timesGrid" AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true" EditMode="DataGridEditMode.Single" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+    <RadzenDataGrid class="ticket-interventions-grid" @ref="_timesGrid" AllowFiltering="true" AllowPaging="true" PageSize="5" AllowSorting="true" EditMode="DataGridEditMode.Single" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                     Data="@InterventionTimes" TItem="TicketInterventionTimeModel" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" IsLoading=@_isLoading>
         <Columns>
             

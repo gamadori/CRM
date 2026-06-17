@@ -14,9 +14,9 @@
 
     @if (Feedback != null && !string.IsNullOrWhiteSpace(Feedback.Comment))
     {
-        <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-            <div style="font-weight: 500; color: #495057; margin-bottom: 8px;">Commento:</div>
-            <div style="font-style: italic; color: #212529; line-height: 1.5;">
+        <div class="feedback-details-comment" style="background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+            <div class="feedback-details-label" style="font-weight: 500; color: #495057; margin-bottom: 8px;">Commento:</div>
+            <div class="feedback-details-text" style="font-style: italic; color: #212529; line-height: 1.5;">
                 "@Feedback.Comment"
             </div>
         </div>

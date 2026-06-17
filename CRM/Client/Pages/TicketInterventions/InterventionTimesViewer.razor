@@ -2,15 +2,16 @@
 @using Radzen
 @using Radzen.Blazor
 
-@if (Times == null || !Times.Any())
-{
-    <div class="alert alert-info d-flex align-items-center gap-2">
-        <i class="material-icons">info</i>
-        <span>Nessun orario registrato per questo intervento.</span>
-    </div>
-}
-else
-{
+<div class="intervention-times-viewer">
+    @if (Times == null || !Times.Any())
+    {
+        <div class="alert alert-info d-flex align-items-center gap-2">
+            <i class="material-icons">info</i>
+            <span>Nessun orario registrato per questo intervento.</span>
+        </div>
+    }
+    else
+    {
     <!-- Info utenti se più di uno -->
     @if (ShowMultiplier)
     {
@@ -132,7 +133,8 @@ else
             </div>
         }
     </div>
-}
+    }
+</div>
 
 <style>
     .times-summary {
@@ -262,6 +264,75 @@ else
         border-top: 1px solid #f0f0f0;
         color: #6c757d;
         font-size: 0.85rem;
+    }
+
+    body.dark-theme .intervention-times-viewer .summary-card-small {
+        background: #222a31 !important;
+        border-top: 1px solid #36414b;
+        border-right: 1px solid #36414b;
+        border-bottom: 1px solid #36414b;
+        box-shadow: none;
+    }
+
+    body.dark-theme .intervention-times-viewer .summary-label-small {
+        color: #bdc9d4 !important;
+        font-weight: 600;
+    }
+
+    body.dark-theme .intervention-times-viewer .summary-value-small {
+        color: #ffffff !important;
+        font-size: 1.05rem;
+        font-weight: 750;
+    }
+
+    body.dark-theme .intervention-times-viewer .summary-calc-small {
+        color: #9fadb9 !important;
+    }
+
+    body.dark-theme .intervention-times-viewer .time-item {
+        color: #eef3f7 !important;
+        background: #20272d !important;
+        border-top-color: #3b4650 !important;
+        border-right-color: #3b4650 !important;
+        border-bottom-color: #3b4650 !important;
+        box-shadow: none;
+    }
+
+    body.dark-theme .intervention-times-viewer .time-header {
+        color: #f7f9fb !important;
+        background: transparent !important;
+        border-bottom-color: #46515b !important;
+    }
+
+    body.dark-theme .intervention-times-viewer .time-type,
+    body.dark-theme .intervention-times-viewer .time-type strong {
+        color: #f7f9fb !important;
+    }
+
+    body.dark-theme .intervention-times-viewer .time-duration,
+    body.dark-theme .intervention-times-viewer .time-duration strong {
+        color: #69adff !important;
+    }
+
+    body.dark-theme .intervention-times-viewer .time-details,
+    body.dark-theme .intervention-times-viewer .time-period,
+    body.dark-theme .intervention-times-viewer .time-km {
+        color: #c5d0da !important;
+        background: transparent !important;
+    }
+
+    body.dark-theme .intervention-times-viewer .time-period .material-icons,
+    body.dark-theme .intervention-times-viewer .time-km .material-icons {
+        color: #8fa1b1 !important;
+    }
+
+    body.dark-theme .intervention-times-viewer .time-notes {
+        color: #b6c2cc !important;
+        border-top-color: #46515b !important;
+    }
+
+    body.dark-theme .intervention-times-viewer .text-muted {
+        color: #aebbc7 !important;
     }
 
     @@media (max-width: 768px) {

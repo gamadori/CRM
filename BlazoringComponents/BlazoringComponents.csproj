@@ -17,11 +17,13 @@
   <ItemGroup>
     <PackageReference Include="Faso.Blazor.SpinKit" Version="1.0.1" />
     <PackageReference Include="FluentValidation" Version="11.11.0" />
+    <PackageReference Include="MailKit" Version="4.17.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.4" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.4" />
     <PackageReference Include="Microsoft.Extensions.Localization" Version="9.0.4" />
     <PackageReference Include="QLNet" Version="1.13.1" />
     <PackageReference Include="Radzen.Blazor" Version="5.7.4" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.2" />
     <PackageReference Include="System.Private.Uri" Version="4.3.0" />
 
   </ItemGroup>

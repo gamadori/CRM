@@ -8,7 +8,7 @@
 <PageHeader Model="@_pageHeader">
 </PageHeader>
 
-<RadzenDataGrid @ref="_grdLogs" IsLoading="@_isLoading" Count="@_totalCount" Responsive=true Data="@_items" LoadData="@LoadDataAsync" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+<RadzenDataGrid class="log-events-grid" @ref="_grdLogs" IsLoading="@_isLoading" Count="@_totalCount" Responsive=true Data="@_items" LoadData="@LoadDataAsync" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                 AllowSorting="true" AllowFiltering="true" AllowPaging="true"
                 PageSize="@ConstHelper.PageSize" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="LogEvent" AllowAlternatingRows=false
                 RowRender="@OnRowRender">
@@ -55,5 +55,67 @@
 
     </Columns>
 </RadzenDataGrid>
+
+<style>
+    .log-events-grid tr.log-event-info > td {
+        color: #15528a !important;
+        background: #e3f2fd !important;
+    }
+
+    .log-events-grid tr.log-event-warning > td {
+        color: #8f3d00 !important;
+        background: #fff3e0 !important;
+    }
+
+    .log-events-grid tr.log-event-error > td {
+        color: #a61f2b !important;
+        background: #ffebee !important;
+    }
+
+    .log-events-grid tr.log-event-permits > td {
+        color: #662580 !important;
+        background: #f3e5f5 !important;
+    }
+
+    body.dark-theme .log-events-grid tr.log-event-info > td {
+        color: #c7e3ff !important;
+        background: #172a3b !important;
+        border-color: #304b62 !important;
+    }
+
+    body.dark-theme .log-events-grid tr.log-event-warning > td {
+        color: #ffe0a3 !important;
+        background: #322815 !important;
+        border-color: #5e4b24 !important;
+    }
+
+    body.dark-theme .log-events-grid tr.log-event-error > td {
+        color: #ffc4cb !important;
+        background: #351d22 !important;
+        border-color: #65313b !important;
+    }
+
+    body.dark-theme .log-events-grid tr.log-event-permits > td {
+        color: #e9c9fb !important;
+        background: #2e2135 !important;
+        border-color: #594064 !important;
+    }
+
+    body.dark-theme .log-events-grid tr.log-event-info:hover > td {
+        background: #1d354a !important;
+    }
+
+    body.dark-theme .log-events-grid tr.log-event-warning:hover > td {
+        background: #3d311a !important;
+    }
+
+    body.dark-theme .log-events-grid tr.log-event-error:hover > td {
+        background: #42242a !important;
+    }
+
+    body.dark-theme .log-events-grid tr.log-event-permits:hover > td {
+        background: #392940 !important;
+    }
+</style>
 
 

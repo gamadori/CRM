@@ -1,0 +1,18 @@
+.theme-toggle-shell {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 2.5rem;
+}
+
+.theme-toggle-shell ::deep .theme-toggle {
+    width: 2.5rem;
+    height: 2.5rem;
+    min-width: 2.5rem;
+    padding: 0;
+    border-radius: 50%;
+    box-shadow: none;
+}
+
+.theme-toggle-shell ::deep .theme-toggle .rzi {
+    font-size: 1.25rem;
+}
