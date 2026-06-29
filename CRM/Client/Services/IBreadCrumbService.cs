@@ -26,6 +26,8 @@ namespace CRM.Client.Services
 
         List<BreadcrumbItem> TicketNumber(int idTicket, string? idUserAssigned = null, TicketTypeSearch typeSearch = TicketTypeSearch.All, Func<object, Task> action = null, object param = null);
 
+        Task<List<BreadcrumbModel>> Articles(bool link = true);
+
         Task<List<BreadcrumbModel>> Deal(bool link);
 
         Task<List<BreadcrumbModel>> DealUser(string idUser, bool link);

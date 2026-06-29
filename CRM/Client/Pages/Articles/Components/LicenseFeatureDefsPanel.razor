@@ -1,0 +1,251 @@
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+@inject HttpClient Http
+
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <span class="material-icons text-primary">@Icon</span>
+            <h6 class="mb-0">@Title</h6>
+            <span class="badge bg-secondary rounded-pill">@_defs.Count</span>
+        </div>
+        <RadzenButton Icon="add" Text="Aggiungi" Size="ButtonSize.Small"
+                      ButtonStyle="ButtonStyle.Primary" Click="AddRow" />
+    </div>
+
+    @if (_defs.Any() || _adding)
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:140px">Chiave</th>
+                        <th>Etichetta</th>
+                        <th>Descrizione</th>
+                        <th style="width:110px">Tipo valore</th>
+                        <th style="width:110px">Default</th>
+                        <th style="width:90px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var def in _defs)
+                    {
+                        @if (_editingId == def.Id)
+                        {
+                            <tr class="table-warning">
+                                <td><RadzenTextBox @bind-Value="_editRow.Key" class="w-100" Placeholder="es. MaxVelocita" /></td>
+                                <td><RadzenTextBox @bind-Value="_editRow.Label" class="w-100" Placeholder="Velocità massima" /></td>
+                                <td><RadzenTextBox @bind-Value="_editRow.Description" class="w-100" /></td>
+                                <td>
+                                    <RadzenDropDown @bind-Value="_editRow.ValueType"
+                                                    Data="@_valueTypes" TextProperty="Label" ValueProperty="Value"
+                                                    class="w-100" />
+                                </td>
+                                <td><RadzenTextBox @bind-Value="_editRow.DefaultValue" class="w-100" /></td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" Click="@(() => SaveEdit(def.Id))" />
+                                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="CancelEdit" />
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            <tr>
+                                <td><code class="small">@def.Key</code></td>
+                                <td class="fw-semibold">@def.Label</td>
+                                <td class="text-muted small">@def.Description</td>
+                                <td>
+                                    <span class="badge @ValueTypeBadge(def.ValueType)">@def.ValueType</span>
+                                </td>
+                                <td class="text-muted small">@def.DefaultValue</td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@(() => EditRow(def))" />
+                                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => DeleteRow(def.Id))" />
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+
+                    @if (_adding)
+                    {
+                        <tr class="table-success">
+                            <td><RadzenTextBox @bind-Value="_editRow.Key" class="w-100" Placeholder="es. MaxVelocita" /></td>
+                            <td><RadzenTextBox @bind-Value="_editRow.Label" class="w-100" Placeholder="Velocità massima" /></td>
+                            <td><RadzenTextBox @bind-Value="_editRow.Description" class="w-100" /></td>
+                            <td>
+                                <RadzenDropDown @bind-Value="_editRow.ValueType"
+                                                Data="@_valueTypes" TextProperty="Label" ValueProperty="Value"
+                                                class="w-100" />
+                            </td>
+                            <td><RadzenTextBox @bind-Value="_editRow.DefaultValue" class="w-100" /></td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" Click="SaveNew" />
+                                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="CancelEdit" />
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="card-body text-center text-muted py-3">
+            <span class="material-icons">tune</span>
+            <p class="mb-0 small">Nessuna funzionalità definita. Clicca <strong>Aggiungi</strong> per iniziare.</p>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="px-3 pb-2">
+            <div class="alert alert-danger py-1 small mb-0">@_error</div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int? IdProductType { get; set; }
+    [Parameter] public int? IdProduct { get; set; }
+    [Parameter] public string Title { get; set; } = "Funzionalità licenza";
+    [Parameter] public string Icon { get; set; } = "tune";
+
+    private List<ArticleLicenseFeatureDefDTO> _defs = new();
+    private ArticleLicenseFeatureDefDTO _editRow = new();
+    private int? _editingId;
+    private bool _adding;
+    private string? _error;
+
+    private record ValueTypeOption(string Label, LicenseFeatureValueType Value);
+    private static readonly List<ValueTypeOption> _valueTypes = new()
+    {
+        new("Sì/No", LicenseFeatureValueType.Bool),
+        new("Numero intero", LicenseFeatureValueType.Int),
+        new("Testo", LicenseFeatureValueType.String)
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        var qs = new List<string>();
+        if (IdProductType.HasValue && IdProduct == null)
+            qs.Add($"idProductType={IdProductType}");
+        if (IdProduct.HasValue)
+            qs.Add($"idProduct={IdProduct}");
+
+        if (!qs.Any()) return;
+
+        _defs = await Http.GetFromJsonAsync<List<ArticleLicenseFeatureDefDTO>>(
+            $"api/Licenses/feature-defs?{string.Join("&", qs)}") ?? new();
+    }
+
+    private void AddRow()
+    {
+        _editingId = null;
+        _adding = true;
+        _error = null;
+        _editRow = new ArticleLicenseFeatureDefDTO
+        {
+            IdProductType = IdProduct == null ? IdProductType : null,
+            IdProduct = IdProduct,
+            ValueType = LicenseFeatureValueType.Bool,
+            DefaultValue = "false",
+            IsActive = true
+        };
+    }
+
+    private void EditRow(ArticleLicenseFeatureDefDTO def)
+    {
+        _adding = false;
+        _editingId = def.Id;
+        _error = null;
+        _editRow = new ArticleLicenseFeatureDefDTO
+        {
+            Id = def.Id,
+            Key = def.Key,
+            Label = def.Label,
+            Description = def.Description,
+            ValueType = def.ValueType,
+            DefaultValue = def.DefaultValue,
+            IdProductType = def.IdProductType,
+            IdProduct = def.IdProduct,
+            IsActive = def.IsActive
+        };
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _adding = false;
+        _error = null;
+    }
+
+    private async Task SaveNew()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_editRow.Key) || string.IsNullOrWhiteSpace(_editRow.Label))
+        {
+            _error = "Chiave ed Etichetta sono obbligatorie.";
+            return;
+        }
+        var resp = await Http.PostAsJsonAsync("api/Licenses/feature-defs", _editRow);
+        if (resp.IsSuccessStatusCode)
+        {
+            _adding = false;
+            await Load();
+        }
+        else
+        {
+            _error = await resp.Content.ReadAsStringAsync();
+        }
+    }
+
+    private async Task SaveEdit(int id)
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_editRow.Key) || string.IsNullOrWhiteSpace(_editRow.Label))
+        {
+            _error = "Chiave ed Etichetta sono obbligatorie.";
+            return;
+        }
+        var resp = await Http.PutAsJsonAsync($"api/Licenses/feature-defs/{id}", _editRow);
+        if (resp.IsSuccessStatusCode)
+        {
+            _editingId = null;
+            await Load();
+        }
+        else
+        {
+            _error = await resp.Content.ReadAsStringAsync();
+        }
+    }
+
+    private async Task DeleteRow(int id)
+    {
+        _error = null;
+        var resp = await Http.DeleteAsync($"api/Licenses/feature-defs/{id}");
+        if (resp.IsSuccessStatusCode)
+            await Load();
+        else
+            _error = await resp.Content.ReadAsStringAsync();
+    }
+
+    private static string ValueTypeBadge(LicenseFeatureValueType t) => t switch
+    {
+        LicenseFeatureValueType.Bool => "bg-success bg-opacity-10 text-success",
+        LicenseFeatureValueType.Int => "bg-warning bg-opacity-10 text-warning",
+        _ => "bg-secondary bg-opacity-10 text-secondary"
+    };
+}

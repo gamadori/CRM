@@ -271,7 +271,12 @@ namespace CRM.Server.Services
                 }
                 if (args?.Filter != null && args.Filter.Any())
                 {
-                    items = items.Where(args.Filter);
+                    // I nomi delle colonne del grid sono quelli del DTO; qui si filtra sull'entità Product,
+                    // quindi vanno tradotti nei path di navigazione corrispondenti.
+                    var filter = args.Filter
+                        .Replace("ProductTypeName", "ProductType.Name")
+                        .Replace("CompanyName", "Company.RagioneSociale");
+                    items = items.Where(filter);
                 }
 
                 return items;

@@ -23,9 +23,14 @@ namespace CRM.Shared
 
         public string Message { get; set; }
 
+        [ForeignKey("AttachmentFile")]
+        public int? IdAttachmentFile { get; set; }
+
         public virtual Ticket Ticket { get; set; }
 
         public virtual ApplicationUser User { get; set; }
+
+        public virtual AttachmentFile? AttachmentFile { get; set; }
 
         public ICollection<TicketChatRead> TicketChatReads { get; set; }
     }
@@ -72,5 +77,17 @@ namespace CRM.Shared
         public string Color { get; set; }
 
         public bool Last { get; set; } = false;
+
+        public int? AttachmentFileId { get; set; }
+        public string? AttachmentFileName { get; set; }
+        public string? AttachmentContentType { get; set; }
+    }
+
+    public class ChatFileUploadResult
+    {
+        public int Id { get; set; }
+        public int AttachmentId { get; set; }
+        public string Name { get; set; } = "";
+        public string ContentType { get; set; } = "";
     }
 }

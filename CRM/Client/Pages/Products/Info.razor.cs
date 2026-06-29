@@ -28,7 +28,8 @@ namespace CRM.Client.Pages.Products
             ProductTypeChilds,
             Attachments,
             Backups,
-            Catalog
+            Catalog,
+            LicenseFeatures
         }
 
         public enum PartialViews
@@ -116,8 +117,7 @@ namespace CRM.Client.Pages.Products
                 new ViewOption<GroupViews> { Text = "Catalogo", Value = GroupViews.Catalog },
                 new ViewOption<GroupViews> { Text = "Backup", Value = GroupViews.Backups },
                 new ViewOption<GroupViews> { Text = Localize["Attachments"], Value = GroupViews.Attachments },
-                //new ViewOption<GroupViews> { Text = Localize["Accessories"], Value = GroupViews.ProductAccessories },
-                //new ViewOption<GroupViews> { Text = Localize["Sotto Parti"], Value = GroupViews.ProductTypeChilds }
+                new ViewOption<GroupViews> { Text = "Funzionalità Licenza", Value = GroupViews.LicenseFeatures },
             };
         }
 

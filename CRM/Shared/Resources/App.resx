@@ -124,7 +124,7 @@
     <value>Attachments</value>
   </data>
   <data name="Articles" xml:space="preserve">
-    <value>Articles</value>
+    <value>Machines</value>
   </data>
   <data name="Assign" xml:space="preserve">
     <value>Assign</value>
@@ -374,7 +374,7 @@
     <value>Save</value>
   </data>
   <data name="Select the article" xml:space="preserve">
-    <value>Select the article</value>
+    <value>Select the machine</value>
   </data>
   <data name="Select the Client" xml:space="preserve">
     <value>Select the Client</value>
@@ -401,7 +401,7 @@
     <value>Add Files</value>
   </data>
   <data name="Article" xml:space="preserve">
-    <value>Article</value>
+    <value>Machine</value>
   </data>
   <data name="ButtonConfirm" xml:space="preserve">
     <value>Confirm</value>
@@ -692,7 +692,28 @@
     <value>Delete Company?</value>
   </data>
   <data name="ArticlesList" xml:space="preserve">
-    <value>Articles List</value>
+    <value>Machines List</value>
+  </data>
+  <data name="Articles imported" xml:space="preserve">
+    <value>Machines imported</value>
+  </data>
+  <data name="Import Matricole from Excel" xml:space="preserve">
+    <value>Import Machines from Excel</value>
+  </data>
+  <data name="Delete existing articles before import" xml:space="preserve">
+    <value>Delete existing machines before import</value>
+  </data>
+  <data name="Import completed" xml:space="preserve">
+    <value>Import completed</value>
+  </data>
+  <data name="Import failed" xml:space="preserve">
+    <value>Import failed</value>
+  </data>
+  <data name="Import Excel" xml:space="preserve">
+    <value>Import Excel</value>
+  </data>
+  <data name="Elliminare l'articolo {0}?" xml:space="preserve">
+    <value>Delete machine {0}?</value>
   </data>
   <data name="ExpenseReceipts" xml:space="preserve">
     <value>Expense report</value>

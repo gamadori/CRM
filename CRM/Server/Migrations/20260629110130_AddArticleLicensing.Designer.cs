@@ -4,6 +4,7 @@ using CRM.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CRM.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260629110130_AddArticleLicensing")]
+    partial class AddArticleLicensing
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -579,9 +582,6 @@ namespace CRM.Server.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int?>("IdProduct")
-                        .HasColumnType("int");
-
                     b.Property<int?>("IdProductType")
                         .HasColumnType("int");
 
@@ -603,13 +603,11 @@ namespace CRM.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IdProduct");
-
                     b.HasIndex("IdProductType");
 
-                    b.HasIndex("Key", "IdProductType", "IdProduct")
+                    b.HasIndex("Key", "IdProductType")
                         .IsUnique()
-                        .HasFilter("[IdProductType] IS NOT NULL AND [IdProduct] IS NOT NULL");
+                        .HasFilter("[IdProductType] IS NOT NULL");
 
                     b.ToTable("ArticleLicenseFeatureDefs");
                 });
@@ -2150,9 +2148,6 @@ namespace CRM.Server.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("IdAttachmentFile")
-                        .HasColumnType("int");
-
                     b.Property<int>("IdTicket")
                         .HasColumnType("int");
 
@@ -2163,8 +2158,6 @@ namespace CRM.Server.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("IdAttachmentFile");
 
                     b.HasIndex("IdTicket");
 
@@ -3237,17 +3230,10 @@ namespace CRM.Server.Migrations
 
             modelBuilder.Entity("CRM.Shared.ArticleLicenseFeatureDef", b =>
                 {
-                    b.HasOne("CRM.Shared.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("IdProduct")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("CRM.Shared.ProductType", "ProductType")
                         .WithMany()
                         .HasForeignKey("IdProductType")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Product");
 
                     b.Navigation("ProductType");
                 });
@@ -3693,11 +3679,6 @@ namespace CRM.Server.Migrations
 
             modelBuilder.Entity("CRM.Shared.TicketChat", b =>
                 {
-                    b.HasOne("CRM.Shared.AttachmentFile", "AttachmentFile")
-                        .WithMany()
-                        .HasForeignKey("IdAttachmentFile")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("CRM.Shared.Ticket", "Ticket")
                         .WithMany("TicketsChats")
                         .HasForeignKey("IdTicket")
@@ -3707,8 +3688,6 @@ namespace CRM.Server.Migrations
                     b.HasOne("CRM.Shared.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("IdUser");
-
-                    b.Navigation("AttachmentFile");
 
                     b.Navigation("Ticket");
 

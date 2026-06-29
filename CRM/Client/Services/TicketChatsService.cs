@@ -1,12 +1,8 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Shared;
-using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.AspNetCore.Components.Forms;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace CRM.Client.Services
@@ -43,6 +39,24 @@ namespace CRM.Client.Services
             catch
             {
                 return false;
+            }
+        }
+
+        public async Task<ChatFileUploadResult?> UploadFile(int idTicket, IBrowserFile file)
+        {
+            try
+            {
+                using var content = new MultipartFormDataContent();
+                var stream = file.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024);
+                content.Add(new StreamContent(stream), "file", file.Name);
+                var resp = await _http.PostAsync($"{_pathService}/{idTicket}/upload", content);
+                if (resp.IsSuccessStatusCode)
+                    return await resp.Content.ReadFromJsonAsync<ChatFileUploadResult>();
+                return null;
+            }
+            catch
+            {
+                return null;
             }
         }
 

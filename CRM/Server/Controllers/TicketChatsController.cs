@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
@@ -35,11 +36,13 @@ namespace CRM.Server.Controllers
         private readonly ILanguagesService _languageService;
         private readonly TelegramCommandsService _telegramService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IArchiveService _archiveService;
 
         IHubContext<SignalRHub> _hubContext;
 
-        public TicketChatsController(ApplicationDbContext context, IPermitsService permitsService, ILogEventService logEventService, IHubContext<SignalRHub> hubContext, 
-            IEmailSenderPlus emailSenderPlus, ILanguagesService languagesService, TelegramCommandsService telegramService, UserManager<ApplicationUser> userManager)
+        public TicketChatsController(ApplicationDbContext context, IPermitsService permitsService, ILogEventService logEventService, IHubContext<SignalRHub> hubContext,
+            IEmailSenderPlus emailSenderPlus, ILanguagesService languagesService, TelegramCommandsService telegramService, UserManager<ApplicationUser> userManager,
+            IArchiveService archiveService)
         {
             _context = context;
             _permitsService = permitsService;
@@ -49,6 +52,8 @@ namespace CRM.Server.Controllers
             _languageService = languagesService;
             _telegramService = telegramService;
             _userManager = userManager;
+            _archiveService = archiveService;
+            _archiveService.TypeArchive = ArchiveTypes.Attachments;
         }
 
 
@@ -104,8 +109,14 @@ namespace CRM.Server.Controllers
                 // var list = await companies.ToListAsync();
                 var user = await _permitsService.GetUser();
 
-                var listChats = await ticketChats.Select(x=>new TicketChatViewModel() { Id = x.Id, Date = x.Date, Message = x.Message,  IdUser = x.IdUser,
-                    TypeMessage = TicketHelper.GetTypeMessage(x, user.IdCompany), Color = x.User.Color, UserName = x.User.UserName}).ToListAsync();
+                var listChats = await ticketChats.Select(x => new TicketChatViewModel
+                {
+                    Id = x.Id, Date = x.Date, Message = x.Message, IdUser = x.IdUser,
+                    TypeMessage = TicketHelper.GetTypeMessage(x, user.IdCompany), Color = x.User.Color, UserName = x.User.UserName,
+                    AttachmentFileId = x.IdAttachmentFile,
+                    AttachmentFileName = x.AttachmentFile != null ? x.AttachmentFile.Name : null,
+                    AttachmentContentType = x.AttachmentFile != null ? x.AttachmentFile.ContentType : null,
+                }).ToListAsync();
 
                 if (args != null  && args.IdTicket != null)
                 {
@@ -260,6 +271,11 @@ namespace CRM.Server.Controllers
             }
             else if (!await _permitsService.CanEditTicketChat(id))
             {
+                await _logEventService.RegisterAsync(nameof(TicketChatsController), nameof(PutTicketChat), LogEvent.EventsTypes.Error, GlobalMessages.PermitsErrors);
+                return Forbid();
+            }
+            else
+            {
                 _context.Entry(ticketChat).State = EntityState.Modified;
 
                 try
@@ -278,12 +294,75 @@ namespace CRM.Server.Controllers
                     }
                 }
             }
-            else
-            {
-                await _logEventService.RegisterAsync(nameof(TicketChatsController), nameof(PutTicketChat), LogEvent.EventsTypes.Error, GlobalMessages.PermitsErrors);
-            }
 
             return NoContent();
+        }
+
+        [HttpPost("{idTicket}/upload")]
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        public async Task<ActionResult<ChatFileUploadResult>> UploadChatFile(int idTicket, IFormFile file)
+        {
+            if (!await _permitsService.CanInsertTicketChat(idTicket))
+                return Forbid();
+
+            if (file == null || file.Length == 0)
+                return BadRequest("Nessun file fornito.");
+
+            if (file.Length > 20 * 1024 * 1024)
+                return BadRequest("File troppo grande (massimo 20 MB).");
+
+            try
+            {
+                var idUser = await _permitsService.IdUser();
+
+                // Crea un Attachment individuale per questo file (la Description verrà
+                // aggiornata con il testo del messaggio quando il messaggio viene inviato)
+                var attachment = new Attachment
+                {
+                    IdParent = idTicket,
+                    AttchmentType = AttachmentTypes.Ticket,
+                    Name = Path.GetFileName(file.FileName),
+                    Description = "",
+                    CreatedOn = DateTime.UtcNow,
+                    IdUser = idUser,
+                    Visibility = AttachmentVisibilities.Private
+                };
+                _context.Attachments.Add(attachment);
+                await _context.SaveChangesAsync();
+
+                byte[] fileBytes;
+                using (var ms = new MemoryStream())
+                {
+                    await file.CopyToAsync(ms);
+                    fileBytes = ms.ToArray();
+                }
+
+                var attachmentFile = new AttachmentFile
+                {
+                    Name = Path.GetFileName(file.FileName),
+                    Size = file.Length,
+                    ContentType = file.ContentType,
+                    IdAttachment = attachment.Id
+                };
+                _context.AttachmentFiles.Add(attachmentFile);
+                await _context.SaveChangesAsync();
+
+                var ext = Path.GetExtension(attachmentFile.Name);
+                _archiveService.SaveAttachments(attachmentFile.Id, ext, fileBytes);
+
+                return Ok(new ChatFileUploadResult
+                {
+                    Id = attachmentFile.Id,
+                    AttachmentId = attachment.Id,
+                    Name = attachmentFile.Name,
+                    ContentType = attachmentFile.ContentType
+                });
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketChatsController), nameof(UploadChatFile), LogEvent.EventsTypes.Error, ex);
+                return StatusCode(500, "Errore durante l'upload del file.");
+            }
         }
 
         // POST: api/Companies
@@ -299,11 +378,25 @@ namespace CRM.Server.Controllers
                     ticketChat.IdUser = await _permitsService.IdUser();
 
                     _context.TicketChats.Add(ticketChat);
-
                     await _context.SaveChangesAsync();
 
-                    //await _hubContext.Clients.All.SendAsync("ReceiveMessage", ticketChat.IdTicket, ticketChat.Id);
-                    
+                    // Aggiorna la descrizione dell'allegato con il testo del messaggio
+                    if (ticketChat.IdAttachmentFile.HasValue && !string.IsNullOrWhiteSpace(ticketChat.Message))
+                    {
+                        var attachmentFile = await _context.AttachmentFiles
+                            .FindAsync(ticketChat.IdAttachmentFile.Value);
+                        if (attachmentFile != null)
+                        {
+                            var attachment = await _context.Attachments.FindAsync(attachmentFile.IdAttachment);
+                            if (attachment != null)
+                            {
+                                attachment.Description = ticketChat.Message.Length > 100
+                                    ? ticketChat.Message[..97] + "..."
+                                    : ticketChat.Message;
+                                await _context.SaveChangesAsync();
+                            }
+                        }
+                    }
 
                     await SendAlertNewMessage(ticketChat);
 

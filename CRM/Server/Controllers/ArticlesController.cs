@@ -7,6 +7,8 @@ using CRM.Server.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using CRM.Shared.Helper;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -33,13 +35,16 @@ namespace CRM.Server.Controllers
         private readonly IPermitsService _permitsService;
         private readonly ILogEventService _logEventService;
         private readonly ILanguagesService _languagesService;
-        public ArticlesController(IArticlesService articlesService, UserManager<ApplicationUser> userManager, IPermitsService permitsService, ILogEventService logEventService, ILanguagesService languagesService)
+        private readonly ApplicationDbContext _context;
+
+        public ArticlesController(IArticlesService articlesService, UserManager<ApplicationUser> userManager, IPermitsService permitsService, ILogEventService logEventService, ILanguagesService languagesService, ApplicationDbContext context)
         {
             _articlesService = articlesService;
             _userManager = userManager;
             _permitsService = permitsService;
             _logEventService = logEventService;
             _languagesService = languagesService;
+            _context = context;
         }
 
 
@@ -136,7 +141,126 @@ namespace CRM.Server.Controllers
                 return NoContent();
         }
 
-        
+        [HttpPost("import-excel")]
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        [Obsolete("Sostituito da ProductsController.ImportExcel")]
+        public async Task<ActionResult<ArticleImportResult>> ImportExcel([FromForm] IFormFile file, [FromForm] bool deleteExisting = false)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("File mancante.");
+
+            var result = new ArticleImportResult();
+            try
+            {
+                if (deleteExisting)
+                {
+                    _context.Articles.RemoveRange(_context.Articles);
+                    await _context.SaveChangesAsync();
+                }
+
+                using var stream = file.OpenReadStream();
+                using var doc = SpreadsheetDocument.Open(stream, false);
+
+                var workbookPart = doc.WorkbookPart!;
+                var sheets = workbookPart.Workbook.Sheets!.Elements<Sheet>();
+                var sharedStrings = workbookPart.SharedStringTablePart?.SharedStringTable;
+
+                // Estrae solo le lettere dalla CellReference (es. "AB12" -> "AB")
+                static string ColLetter(string? cellRef) =>
+                    cellRef == null ? string.Empty : new string(cellRef.TakeWhile(char.IsLetter).ToArray());
+
+                string GetCellValue(Cell? cell)
+                {
+                    if (cell?.CellValue == null) return string.Empty;
+                    var val = cell.CellValue.InnerText;
+                    if (cell.DataType?.Value == CellValues.SharedString && sharedStrings != null)
+                        return sharedStrings.ElementAt(int.Parse(val)).InnerText;
+                    return val;
+                }
+
+                string GetColValue(Row row, string col)
+                {
+                    var cell = row.Elements<Cell>().FirstOrDefault(c => ColLetter(c.CellReference?.Value) == col);
+                    return GetCellValue(cell);
+                }
+
+                foreach (var sheet in sheets)
+                {
+                    var sheetName = (sheet.Name?.Value ?? string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(sheetName)) continue;
+
+                    var productType = await _context.ProductTypes.FirstOrDefaultAsync(pt => pt.Name == sheetName);
+                    if (productType == null)
+                    {
+                        productType = new ProductType { Name = sheetName };
+                        _context.ProductTypes.Add(productType);
+                        await _context.SaveChangesAsync();
+                        result.ProductTypesCreated++;
+                    }
+
+                    var wsPart = (WorksheetPart)workbookPart.GetPartById(sheet.Id!.Value!);
+                    // Skip riga 1 (intestazione)
+                    var rows = wsPart.Worksheet.Descendants<Row>().Where(r => r.RowIndex?.Value > 1);
+
+                    foreach (var row in rows)
+                    {
+                        // Colonna A = Codice articolo (SerialNumber)
+                        var serialNumber = GetColValue(row, "A");
+                        // Colonna B = Descrizione (Product.Name)
+                        var productName = GetColValue(row, "B");
+                        // Colonna V = Creato il (SaleDate, valore OADate numerico)
+                        var saleDateRaw = GetColValue(row, "V");
+
+                        if (string.IsNullOrWhiteSpace(serialNumber))
+                            continue;
+
+                        if (string.IsNullOrWhiteSpace(productName))
+                        {
+                            result.ArticlesSkipped++;
+                            result.Errors.Add($"Riga {row.RowIndex}: SerialNumber='{serialNumber}' senza nome prodotto.");
+                            continue;
+                        }
+
+                        var product = await _context.Products.FirstOrDefaultAsync(p => p.Name == productName && p.IdProductType == productType.Id);
+                        if (product == null)
+                        {
+                            product = new Product { Name = productName, IdProductType = productType.Id };
+                            _context.Products.Add(product);
+                            await _context.SaveChangesAsync();
+                            result.ProductsCreated++;
+                        }
+
+                        DateTime? saleDate = null;
+                        if (!string.IsNullOrWhiteSpace(saleDateRaw) &&
+                            double.TryParse(saleDateRaw, System.Globalization.NumberStyles.Any,
+                                System.Globalization.CultureInfo.InvariantCulture, out double oaDate))
+                        {
+                            saleDate = DateTime.FromOADate(oaDate);
+                        }
+
+                        _context.Articles.Add(new Article
+                        {
+                            SerialNumber = serialNumber,
+                            IdProduct = product.Id,
+                            SaleDate = saleDate,
+                        });
+                        result.ArticlesCreated++;
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+
+                result.Success = true;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(ArticlesController), nameof(ImportExcel), LogEvent.EventsTypes.Error, ex);
+                result.Success = false;
+                result.Errors.Add($"Errore durante l'importazione: {ex.Message}");
+            }
+
+            return Ok(result);
+        }
 
         //// Aggiungi questi metodi al controller Articles esistente
 

@@ -1,0 +1,355 @@
+@page "/Articles/{ArticleId:int}/License"
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Client.Services
+@using Microsoft.Extensions.Localization
+@using Radzen
+@using Radzen.Blazor
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+<BlazorHeader Header="Licenza Matricola"></BlazorHeader>
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+
+@if (_loading)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="container-fluid px-4 py-3">
+
+        <!-- Status bar -->
+        <div class="alert @StatusClass d-flex align-items-center gap-2 mb-4">
+            <span class="material-icons">@StatusIcon</span>
+            <strong>@StatusLabel</strong>
+            @if (_license != null && _license.ExpirationDate.HasValue)
+            {
+                <span class="ms-2 small">· Scade: @_license.ExpirationDate.Value.ToString("d")</span>
+            }
+            @if (_license?.MachineRegistered == true)
+            {
+                <span class="ms-auto badge bg-success">
+                    <span class="material-icons" style="font-size:14px;vertical-align:middle;">memory</span>
+                    Macchina registrata
+                </span>
+            }
+            else
+            {
+                <span class="ms-auto badge bg-secondary">
+                    <span class="material-icons" style="font-size:14px;vertical-align:middle;">memory</span>
+                    In attesa di registrazione macchina
+                </span>
+            }
+        </div>
+
+        <div class="row g-4">
+
+            <!-- Pannello principale -->
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header d-flex align-items-center gap-2">
+                        <span class="material-icons text-primary">verified_user</span>
+                        <h5 class="mb-0">Configurazione Licenza</h5>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="@_form" OnValidSubmit="SaveAsync">
+                            <DataAnnotationsValidator />
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Data inizio</label>
+                                <RadzenDatePicker @bind-Value="_form.StartDate" DateFormat="dd/MM/yyyy"
+                                                  class="w-100" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    Data scadenza
+                                    <span class="text-muted fw-normal">(lasciare vuoto = nessuna scadenza)</span>
+                                </label>
+                                <RadzenDatePicker @bind-Value="_form.ExpirationDate" DateFormat="dd/MM/yyyy"
+                                                  AllowClear="true" class="w-100" />
+                            </div>
+                            <div class="mb-3 form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="licActive" @bind="_form.IsActive" />
+                                <label class="form-check-label fw-semibold" for="licActive">Licenza attiva</label>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Note</label>
+                                <RadzenTextArea @bind-Value="_form.Notes" Rows="3" class="w-100" />
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <RadzenButton ButtonType="ButtonType.Submit" Text="Salva" Icon="save"
+                                              ButtonStyle="ButtonStyle.Primary" IsBusy="_saving" />
+                                <RadzenButton Text="Annulla" ButtonStyle="ButtonStyle.Light"
+                                              Click="@(() => Nav.NavigateTo($"/Articles/{ArticleId}/Details"))" />
+                                @if (_license != null && _license.MachineRegistered)
+                                {
+                                    <RadzenButton Text="Scarica .lic" Icon="download" ButtonStyle="ButtonStyle.Secondary"
+                                                  Click="DownloadAsync" class="ms-auto" />
+                                }
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+
+                @if (_license?.MachineRegistered == true)
+                {
+                    <div class="card border-0 shadow-sm mt-3">
+                        <div class="card-body py-2 px-3">
+                            <small class="text-muted">
+                                <span class="material-icons" style="font-size:14px;vertical-align:middle;">vpn_key</span>
+                                MachineKey: <code class="ms-1">@_license.MachineKey</code>
+                            </small>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Feature toggles -->
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header d-flex align-items-center gap-2">
+                        <span class="material-icons text-primary">tune</span>
+                        <h5 class="mb-0">Funzionalità</h5>
+                        @if (!_featureDefs.Any())
+                        {
+                            <span class="badge bg-warning ms-auto">Nessuna feature definita per questo tipo prodotto</span>
+                        }
+                    </div>
+                    <div class="card-body p-0">
+                        @if (_featureDefs.Any())
+                        {
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Funzionalità</th>
+                                        <th class="text-center" style="width:80px">Attiva</th>
+                                        <th style="width:160px">Valore</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var def in _featureDefs)
+                                    {
+                                        var feat = GetOrCreateFeature(def);
+                                        <tr>
+                                            <td>
+                                                <div class="fw-semibold">@def.Label</div>
+                                                @if (!string.IsNullOrWhiteSpace(def.Description))
+                                                {
+                                                    <div class="text-muted small">@def.Description</div>
+                                                }
+                                                @if (def.IdProduct != null)
+                                                {
+                                                    <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size:10px">Modello: @def.ProductName</span>
+                                                }
+                                                else if (def.IdProductType != null)
+                                                {
+                                                    <span class="badge bg-info bg-opacity-10 text-info" style="font-size:10px">Famiglia: @def.ProductTypeName</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="form-check form-switch d-flex justify-content-center">
+                                                    <input class="form-check-input" type="checkbox"
+                                                           @bind="feat.IsEnabled" />
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (def.ValueType == LicenseFeatureValueType.Bool)
+                                                {
+                                                    <span class="text-muted small">—</span>
+                                                }
+                                                else if (def.ValueType == LicenseFeatureValueType.Int)
+                                                {
+                                                    <RadzenNumeric TValue="int" Min="0"
+                                                                   Value="@(int.TryParse(feat.Value, out var iv) ? iv : 0)"
+                                                                   ValueChanged="@(v => feat.Value = v.ToString())"
+                                                                   class="w-100" />
+                                                }
+                                                else
+                                                {
+                                                    <RadzenTextBox Value="@feat.Value"
+                                                                   ValueChanged="@(v => feat.Value = v)"
+                                                                   class="w-100" />
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <div class="p-4 text-center text-muted">
+                                <span class="material-icons display-6">tune</span>
+                                <p class="mt-2">Definisci le funzionalità per questo tipo di prodotto nella sezione <strong>Amministrazione → Feature Licenze</strong>.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_message))
+        {
+            <div class="alert @_messageClass mt-3">@_message</div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public int ArticleId { get; set; }
+    [Inject] IBreadCrumbService Bread { get; set; }
+
+    private List<BreadcrumbModel> _bread = new();
+    private ArticleLicenseDTO? _license;
+    private List<ArticleLicenseFeatureDefDTO> _featureDefs = new();
+    private LicenseSaveForm _form = new();
+    private List<ArticleLicenseFeatureDTO> _editFeatures = new();
+    private bool _loading = true;
+    private bool _saving;
+    private string? _message;
+    private string _messageClass = "alert-success";
+
+    private string StatusClass => _license == null ? "alert-secondary"
+        : !_license.IsActive ? "alert-danger"
+        : _license.IsExpired ? "alert-warning"
+        : "alert-success";
+
+    private string StatusIcon => _license == null ? "lock"
+        : !_license.IsActive ? "lock"
+        : _license.IsExpired ? "warning"
+        : "verified";
+
+    private string StatusLabel => _license == null ? "Nessuna licenza configurata"
+        : !_license.IsActive ? "Licenza disattivata"
+        : _license.IsExpired ? "Licenza scaduta"
+        : "Licenza attiva";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _bread = await Bread.Articles(true);
+        _bread.Add(new BreadcrumbModel { Title = "Licenza", Url = null });
+
+        // Carica licenza esistente
+        var resp = await Http.GetAsync($"api/Licenses/article/{ArticleId}");
+        if (resp.IsSuccessStatusCode)
+        {
+            _license = await resp.Content.ReadFromJsonAsync<ArticleLicenseDTO>();
+            _form = new LicenseSaveForm
+            {
+                StartDate = _license!.StartDate,
+                ExpirationDate = _license.ExpirationDate,
+                IsActive = _license.IsActive,
+                Notes = _license.Notes
+            };
+            _editFeatures = _license.Features.ToList();
+        }
+        else
+        {
+            _form = new LicenseSaveForm { StartDate = DateTime.Today, IsActive = true };
+        }
+
+        // Carica feature defs per ProductType + Product della matricola
+        var article = await Http.GetFromJsonAsync<CRM.Shared.DTOs.ArticleDTO>($"api/Articles/{ArticleId}");
+        if (article?.IdProduct != null)
+        {
+            var product = await Http.GetFromJsonAsync<CRM.Shared.DTOs.ProductDTO>($"api/Products/{article.IdProduct}");
+
+            var query = new List<string>();
+            if (product?.IdProductType != null) query.Add($"idProductType={product.IdProductType}");
+            query.Add($"idProduct={article.IdProduct}");
+
+            _featureDefs = await Http.GetFromJsonAsync<List<ArticleLicenseFeatureDefDTO>>(
+                $"api/Licenses/feature-defs?{string.Join("&", query)}") ?? new();
+        }
+
+        _loading = false;
+    }
+
+    private ArticleLicenseFeatureDTO GetOrCreateFeature(ArticleLicenseFeatureDefDTO def)
+    {
+        var f = _editFeatures.FirstOrDefault(x => x.IdFeatureDef == def.Id);
+        if (f == null)
+        {
+            f = new ArticleLicenseFeatureDTO
+            {
+                IdFeatureDef = def.Id,
+                FeatureKey = def.Key,
+                FeatureLabel = def.Label,
+                ValueType = def.ValueType,
+                Value = def.DefaultValue,
+                IsEnabled = false
+            };
+            _editFeatures.Add(f);
+        }
+        return f;
+    }
+
+    private async Task SaveAsync()
+    {
+        _saving = true;
+        _message = null;
+        try
+        {
+            var req = new ArticleLicenseSaveRequest
+            {
+                IdArticle = ArticleId,
+                StartDate = _form.StartDate,
+                ExpirationDate = _form.ExpirationDate,
+                IsActive = _form.IsActive,
+                Notes = _form.Notes,
+                Features = _editFeatures
+            };
+            var resp = await Http.PostAsJsonAsync("api/Licenses", req);
+            if (resp.IsSuccessStatusCode)
+            {
+                _license = await resp.Content.ReadFromJsonAsync<ArticleLicenseDTO>();
+                _message = "Licenza salvata correttamente.";
+                _messageClass = "alert-success";
+            }
+            else
+            {
+                _message = $"Errore: {await resp.Content.ReadAsStringAsync()}";
+                _messageClass = "alert-danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _messageClass = "alert-danger";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task DownloadAsync()
+    {
+        var resp = await Http.GetAsync($"api/Licenses/article/{ArticleId}/download");
+        if (resp.IsSuccessStatusCode)
+        {
+            var bytes = await resp.Content.ReadAsByteArrayAsync();
+            var filename = $"license_{ArticleId}.lic";
+            // Trigger browser download via JS interop non disponibile direttamente —
+            // naviga all'URL diretto che il browser scaricherà
+            Nav.NavigateTo($"api/Licenses/article/{ArticleId}/download", forceLoad: true);
+        }
+        else
+        {
+            _message = await resp.Content.ReadAsStringAsync();
+            _messageClass = "alert-danger";
+        }
+    }
+
+    private class LicenseSaveForm
+    {
+        public DateTime StartDate { get; set; } = DateTime.Today;
+        public DateTime? ExpirationDate { get; set; }
+        public bool IsActive { get; set; } = true;
+        public string? Notes { get; set; }
+    }
+}

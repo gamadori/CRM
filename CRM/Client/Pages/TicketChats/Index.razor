@@ -1,4 +1,4 @@
-﻿@_msg    
+@_msg
     <div class="container flex-fill overflow-scroll bg-chat" id="divChat">
 
         @foreach (var chat in ChatList)
@@ -6,18 +6,36 @@
             <ChatMessage TicketChat="chat" Loaded="MsgLoaded"></ChatMessage>
         }
     </div>
-    <footer id="bottom" class=" text-center mt-auto p-3 container bg-chat">
-       
-            <EditForm Model="@_ticketChat" OnValidSubmit="HandleValidSubmit">
-                <div class="row">
-                    <div class="col">
-                        <RadzenTextArea @bind-Value="@_ticketChat.Message" Placeholder="Scrivi messaggio..." Class="w-100" />
-                    </div>
-                    <div class="col-auto">
-                        <RadzenButton Icon="send"  ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium"></RadzenButton>
-                    
-                    </div>
+    <footer id="bottom" class="text-center mt-auto p-3 container bg-chat">
+
+        @if (_pendingFile != null)
+        {
+            <div class="d-flex align-items-center gap-2 mb-2 px-1">
+                <span class="badge bg-secondary d-flex align-items-center gap-1" style="font-size:0.85rem;">
+                    <span class="material-icons" style="font-size:16px;">attach_file</span>
+                    @_pendingFile.Name
+                    <button type="button" class="btn-close btn-close-white ms-1" style="font-size:0.6rem;" @onclick="ClearPendingFile"></button>
+                </span>
+                @if (_uploading)
+                {
+                    <span class="spinner-border spinner-border-sm text-secondary" role="status"></span>
+                }
+            </div>
+        }
+
+        <EditForm Model="@_ticketChat" OnValidSubmit="HandleValidSubmit">
+            <div class="row g-2 align-items-center">
+                <div class="col">
+                    <RadzenTextArea @bind-Value="@_ticketChat.Message" Placeholder="Scrivi messaggio..." Class="w-100" />
                 </div>
-         
-            </EditForm>
+                <div class="col-auto d-flex gap-1">
+                    <InputFile id="chatFileInput" OnChange="OnFileSelected" style="display:none;" />
+                    <label for="chatFileInput" class="btn btn-outline-secondary" title="Allega file" style="cursor:pointer;line-height:1;padding:8px;">
+                        <span class="material-icons" style="font-size:20px;vertical-align:middle;">attach_file</span>
+                    </label>
+                    <RadzenButton Icon="send" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary"
+                                  Size="ButtonSize.Medium" Disabled="@(_uploading)" />
+                </div>
+            </div>
+        </EditForm>
     </footer>

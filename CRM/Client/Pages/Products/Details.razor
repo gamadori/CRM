@@ -21,6 +21,20 @@ else
                 <ChildContent><p class="mb-0 text-dark">@_product.Name</p></ChildContent>
             </RedGDetailField>
 
+            <RedGDetailField Icon="qr_code" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _product.Code)" /></LabelContent>
+                <ChildContent>
+                    @if (!string.IsNullOrWhiteSpace(_product.Code))
+                    {
+                        <p class="mb-0 text-dark">@_product.Code</p>
+                    }
+                    else
+                    {
+                        <p class="mb-0 text-muted fst-italic">—</p>
+                    }
+                </ChildContent>
+            </RedGDetailField>
+
             <RedGDetailField Icon="category" ContainerClass="mb-4">
                 <LabelContent><DisplayName For="@(() => _product.IdProductType)" /></LabelContent>
                 <ChildContent><p class="mb-0 text-dark">@_product.ProductTypeName</p></ChildContent>

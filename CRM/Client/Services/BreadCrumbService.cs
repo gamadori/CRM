@@ -57,6 +57,13 @@ namespace CRM.Client.Services
             return bread;
         }
 
+        public async Task<List<BreadcrumbModel>> Articles(bool link = true)
+        {
+            var bread = await Home();
+            bread.Add(new BreadcrumbModel() { Title = _localizer["Articles"], Url = link ? ConstHelper.ClientArticlesPath : null });
+            return bread;
+        }
+
         public async Task<List<BreadcrumbModel>> AzureSettings(bool link = true)
         {
             List<BreadcrumbModel> bread = await Settings();

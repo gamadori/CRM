@@ -124,7 +124,7 @@
     <value>Anexos</value>
   </data>
   <data name="Articles" xml:space="preserve">
-    <value>Artículos</value>
+    <value>Máquinas</value>
   </data>
   <data name="Assign" xml:space="preserve">
     <value>Asignar</value>
@@ -340,7 +340,7 @@
     <value>Guardar</value>
   </data>
   <data name="Select the article" xml:space="preserve">
-    <value>Seleccione el artículo</value>
+    <value>Seleccione la máquina</value>
   </data>
   <data name="Select the Client" xml:space="preserve">
     <value>Seleccione el cliente</value>
@@ -367,8 +367,8 @@
   <data name="AddFiles" type="System.Resources.ResXNullRef, System.Windows.Forms">
     <value />
   </data>
-  <data name="Article" type="System.Resources.ResXNullRef, System.Windows.Forms">
-    <value />
+  <data name="Article" xml:space="preserve">
+    <value>Máquina</value>
   </data>
   <data name="ButtonConfirm" type="System.Resources.ResXNullRef, System.Windows.Forms">
     <value />
@@ -659,7 +659,28 @@
     <value>¿Eliminar empresa?</value>
   </data>
   <data name="ArticlesList" xml:space="preserve">
-    <value>Lista de artículos</value>
+    <value>Lista de máquinas</value>
+  </data>
+  <data name="Articles imported" xml:space="preserve">
+    <value>Máquinas importadas</value>
+  </data>
+  <data name="Import Matricole from Excel" xml:space="preserve">
+    <value>Importar máquinas desde Excel</value>
+  </data>
+  <data name="Delete existing articles before import" xml:space="preserve">
+    <value>Eliminar las máquinas existentes antes de la importación</value>
+  </data>
+  <data name="Import completed" xml:space="preserve">
+    <value>Importación completada</value>
+  </data>
+  <data name="Import failed" xml:space="preserve">
+    <value>Importación fallida</value>
+  </data>
+  <data name="Import Excel" xml:space="preserve">
+    <value>Importar Excel</value>
+  </data>
+  <data name="Elliminare l'articolo {0}?" xml:space="preserve">
+    <value>¿Eliminar la máquina {0}?</value>
   </data>
   <data name="ExpenseReceipts" xml:space="preserve">
     <value>Informe de gastos</value>

@@ -135,6 +135,8 @@ builder.Services.AddScoped<IFolderLanguagesService, FolderLanguagesService>();
 
 builder.Services.AddScoped<IArticlesService, ArticlesService>();
 
+builder.Services.AddSingleton<IRsaLicenseService, RsaLicenseService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: "RedGPolicy",

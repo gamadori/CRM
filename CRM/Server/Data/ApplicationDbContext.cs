@@ -65,6 +65,12 @@ namespace CRM.Server.Data
                 .HasForeignKey(tiu => tiu.IdUser)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<TicketChat>()
+                .HasOne(tc => tc.AttachmentFile)
+                .WithMany()
+                .HasForeignKey(tc => tc.IdAttachmentFile)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // ✅ NUOVO: Configurazione TicketFeedback
             modelBuilder.Entity<TicketFeedback>()
                 .HasOne(tf => tf.Ticket)
@@ -240,6 +246,52 @@ namespace CRM.Server.Data
                 entity.Property(e => e.IsActive)
                       .HasDefaultValue(1);
             });
+
+            modelBuilder.Entity<ArticleLicense>()
+                .HasOne(l => l.Article)
+                .WithMany()
+                .HasForeignKey(l => l.IdArticle)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ArticleLicense>()
+                .HasIndex(l => l.IdArticle)
+                .IsUnique();
+
+            modelBuilder.Entity<ArticleLicense>()
+                .HasIndex(l => l.MachineKey);
+
+            modelBuilder.Entity<ArticleLicenseFeature>()
+                .HasOne(f => f.License)
+                .WithMany(l => l.Features)
+                .HasForeignKey(f => f.IdLicense)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ArticleLicenseFeature>()
+                .HasOne(f => f.FeatureDef)
+                .WithMany()
+                .HasForeignKey(f => f.IdFeatureDef)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ArticleLicenseFeature>()
+                .HasIndex(f => new { f.IdLicense, f.IdFeatureDef })
+                .IsUnique();
+
+            modelBuilder.Entity<ArticleLicenseFeatureDef>()
+                .HasOne(d => d.ProductType)
+                .WithMany()
+                .HasForeignKey(d => d.IdProductType)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ArticleLicenseFeatureDef>()
+                .HasOne(d => d.Product)
+                .WithMany()
+                .HasForeignKey(d => d.IdProduct)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Chiave univoca: stessa feature Key non può essere definita due volte per la stessa coppia (ProductType, Product)
+            modelBuilder.Entity<ArticleLicenseFeatureDef>()
+                .HasIndex(d => new { d.Key, d.IdProductType, d.IdProduct })
+                .IsUnique();
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -357,13 +409,12 @@ namespace CRM.Server.Data
 
         public DbSet<Folder> Folders => Set<Folder>();
 
-        // ✅ NUOVO: DbSet per le note spese
         public DbSet<ExpenseReceipt> ExpenseReceipts => Set<ExpenseReceipt>();
 
+        public DbSet<FolderLanguage> FolderLanguages => Set<FolderLanguage>();
 
-        public DbSet<FolderLanguage> FolderLanguages => Set<FolderLanguage>();  
-
-
-
+        public DbSet<ArticleLicenseFeatureDef> ArticleLicenseFeatureDefs => Set<ArticleLicenseFeatureDef>();
+        public DbSet<ArticleLicense> ArticleLicenses => Set<ArticleLicense>();
+        public DbSet<ArticleLicenseFeature> ArticleLicenseFeatures => Set<ArticleLicenseFeature>();
     }
 }

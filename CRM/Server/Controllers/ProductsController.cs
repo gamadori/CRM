@@ -6,6 +6,8 @@ using CRM.Server.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using CRM.Shared.Helper;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -258,9 +260,171 @@ namespace CRM.Server.Controllers
         }
 
        
-        //private bool ProductExists(int id)
-        //{
-        //    return _context.Products.Any(e => e.Id == id);
-        //}
+        // ── Import Excel ────────────────────────────────────────────────────
+
+        [HttpPost("import-excel")]
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        [AuthorizeRole(ePolicy.AdminRole)]
+        public async Task<ActionResult<ProductImportResult>> ImportExcel(
+            [FromForm] IFormFile file,
+            [FromForm] bool deleteAll = false)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("File mancante.");
+
+            var result = new ProductImportResult();
+
+            try
+            {
+                if (deleteAll)
+                    await PurgeAllProductData();
+
+                using var stream = file.OpenReadStream();
+                using var doc = SpreadsheetDocument.Open(stream, false);
+
+                var workbookPart = doc.WorkbookPart!;
+                var sheets = workbookPart.Workbook.Sheets!.Elements<Sheet>();
+                var sharedStrings = workbookPart.SharedStringTablePart?.SharedStringTable;
+
+                static string ColLetter(string? cellRef) =>
+                    cellRef == null ? string.Empty : new string(cellRef.TakeWhile(char.IsLetter).ToArray());
+
+                string GetCellValue(Cell? cell)
+                {
+                    if (cell?.CellValue == null) return string.Empty;
+                    var val = cell.CellValue.InnerText;
+                    if (cell.DataType?.Value == CellValues.SharedString && sharedStrings != null)
+                        return sharedStrings.ElementAt(int.Parse(val)).InnerText;
+                    return val;
+                }
+
+                string GetColValue(Row row, string col)
+                {
+                    var cell = row.Elements<Cell>().FirstOrDefault(c => ColLetter(c.CellReference?.Value) == col);
+                    return GetCellValue(cell).Trim();
+                }
+
+                foreach (var sheet in sheets)
+                {
+                    var sheetName = (sheet.Name?.Value ?? string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(sheetName)) continue;
+
+                    var productType = await _context.ProductTypes.FirstOrDefaultAsync(pt => pt.Name == sheetName);
+                    if (productType == null)
+                    {
+                        productType = new ProductType { Name = sheetName };
+                        _context.ProductTypes.Add(productType);
+                        await _context.SaveChangesAsync();
+                        result.ProductTypesCreated++;
+                    }
+
+                    var wsPart = (WorksheetPart)workbookPart.GetPartById(sheet.Id!.Value!);
+                    // riga 1 = intestazione, partiamo da riga 2
+                    var rows = wsPart.Worksheet.Descendants<Row>().Where(r => r.RowIndex?.Value > 1);
+
+                    foreach (var row in rows)
+                    {
+                        var code = GetColValue(row, "A");        // Codice articolo → Product.Code
+                        var name = GetColValue(row, "B");        // Descrizione → Product.Name
+                        var description = GetColValue(row, "C"); // Descrizione supplementare → Product.Description
+
+                        if (string.IsNullOrWhiteSpace(code) && string.IsNullOrWhiteSpace(name))
+                            continue;
+
+                        if (string.IsNullOrWhiteSpace(name))
+                        {
+                            result.RowsSkipped++;
+                            result.Errors.Add($"Foglio '{sheetName}' riga {row.RowIndex}: codice '{code}' senza Descrizione, saltato.");
+                            continue;
+                        }
+
+                        // Cerca per codice se presente, altrimenti per nome (stesso ProductType)
+                        Product? product = null;
+                        if (!string.IsNullOrWhiteSpace(code))
+                            product = await _context.Products.FirstOrDefaultAsync(p =>
+                                p.Code == code && p.IdProductType == productType.Id);
+
+                        if (product == null)
+                            product = await _context.Products.FirstOrDefaultAsync(p =>
+                                p.Name == name && p.IdProductType == productType.Id);
+
+                        if (product == null)
+                        {
+                            _context.Products.Add(new Product
+                            {
+                                Code = code,
+                                Name = name,
+                                Description = description,
+                                IdProductType = productType.Id
+                            });
+                            result.ProductsCreated++;
+                        }
+                        else
+                        {
+                            // Aggiorna i dati se il prodotto esiste già
+                            product.Code = code;
+                            product.Name = name;
+                            product.Description = description;
+                            result.ProductsUpdated++;
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+
+                result.Success = true;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(ProductsController), nameof(ImportExcel), LogEvent.EventsTypes.Error, ex);
+                result.Success = false;
+                result.Errors.Add($"Errore durante l'importazione: {ex.Message}");
+            }
+
+            return Ok(result);
+        }
+
+        private async Task PurgeAllProductData()
+        {
+            // 1. Annulla i riferimenti nullable verso Articles e Products
+            await _context.Tickets.ExecuteUpdateAsync(s => s
+                .SetProperty(t => t.IdArticle, (int?)null)
+                .SetProperty(t => t.IdProduct, (int?)null));
+
+            await _context.TicketInterventionArticles.ExecuteUpdateAsync(s => s
+                .SetProperty(t => t.IdArticle, (int?)null)
+                .SetProperty(t => t.IdProduct, (int?)null));
+
+            await _context.MachineBackups.ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.IdArticle, (int?)null)
+                .SetProperty(m => m.IdProduct, (int?)null));
+
+            await _context.Projects.ExecuteUpdateAsync(s => s
+                .SetProperty(p => p.IdProduct, (int?)null));
+
+            // 2. Elimina dipendenti non-nullable di Articles
+            await _context.ArticleLicenseFeatures.ExecuteDeleteAsync();
+            await _context.ArticleLicenses.ExecuteDeleteAsync();
+            await _context.ArticleAccessory.ExecuteDeleteAsync();
+            await _context.ArticleEvents.ExecuteDeleteAsync();
+            await _context.ArticleDomainStates.ExecuteDeleteAsync();
+
+            // 3. Elimina Articles
+            await _context.Articles.ExecuteDeleteAsync();
+
+            // 4. Elimina dipendenti non-nullable di Products
+            await _context.ProductCatalogAssets.ExecuteDeleteAsync();
+
+            // Feature defs legate a ProductType/Product specifici
+            await _context.ArticleLicenseFeatureDefs
+                .Where(d => d.IdProduct != null || d.IdProductType != null)
+                .ExecuteDeleteAsync();
+
+            // 5. Elimina Products
+            await _context.Products.ExecuteDeleteAsync();
+
+            // 6. Elimina ProductTypes
+            await _context.ProductTypes.ExecuteDeleteAsync();
+        }
     }
 }

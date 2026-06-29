@@ -1,0 +1,172 @@
+@page "/Articles/Import"
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Client.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.Extensions.Localization
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+<BlazorHeader Header="@Localize["Articles"]"></BlazorHeader>
+
+<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+
+<content class="p-4">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <span class="material-icons text-primary">upload_file</span>
+                    <h5 class="mb-0">@Localize["Import Matricole from Excel"]</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">@Localize["Excel File"]</label>
+                        <InputFile OnChange="OnFileSelected" accept=".xlsx,.xls" class="form-control" id="excelFile" />
+                        @if (_selectedFile != null)
+                        {
+                            <small class="text-muted mt-1 d-block">
+                                <span class="material-icons" style="font-size:14px;vertical-align:middle;">description</span>
+                                @_selectedFile.Name (@FormatSize(_selectedFile.Size))
+                            </small>
+                        }
+                    </div>
+
+                    <div class="mb-4 form-check">
+                        <input type="checkbox" class="form-check-input" id="deleteExisting" @bind="_deleteExisting" />
+                        <label class="form-check-label text-danger fw-semibold" for="deleteExisting">
+                            <span class="material-icons" style="font-size:16px;vertical-align:middle;">warning</span>
+                            @Localize["Delete existing articles before import"]
+                        </label>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <RadzenButton Text="@Localize["Import"]"
+                                      Icon="upload"
+                                      ButtonStyle="ButtonStyle.Primary"
+                                      Click="ImportAsync"
+                                      Disabled="@(_selectedFile == null || _importing)"
+                                      IsBusy="_importing" />
+                        <RadzenButton Text="@Localize["Cancel"]"
+                                      ButtonStyle="ButtonStyle.Light"
+                                      Click="Cancel"
+                                      Disabled="_importing" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (_result != null)
+        {
+            <div class="col-md-6">
+                <div class="card shadow-sm @(_result.Success ? "border-success" : "border-danger")">
+                    <div class="card-header d-flex align-items-center gap-2 @(_result.Success ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10")">
+                        <span class="material-icons @(_result.Success ? "text-success" : "text-danger")">
+                            @(_result.Success ? "check_circle" : "error")
+                        </span>
+                        <h5 class="mb-0">@(_result.Success ? Localize["Import completed"] : Localize["Import failed"])</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush mb-3">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>@Localize["Product Types created"]</span>
+                                <span class="badge bg-primary rounded-pill">@_result.ProductTypesCreated</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>@Localize["Products created"]</span>
+                                <span class="badge bg-info rounded-pill">@_result.ProductsCreated</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>@Localize["Articles imported"]</span>
+                                <span class="badge bg-success rounded-pill">@_result.ArticlesCreated</span>
+                            </li>
+                            @if (_result.ArticlesSkipped > 0)
+                            {
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>@Localize["Rows skipped"]</span>
+                                    <span class="badge bg-warning rounded-pill">@_result.ArticlesSkipped</span>
+                                </li>
+                            }
+                        </ul>
+
+                        @if (_result.Errors.Any())
+                        {
+                            <div class="mt-2">
+                                <p class="fw-semibold text-danger mb-1">@Localize["Errors"]:</p>
+                                <ul class="small text-danger" style="max-height:200px;overflow-y:auto;">
+                                    @foreach (var err in _result.Errors)
+                                    {
+                                        <li>@err</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</content>
+
+@code {
+    [Inject] IBreadCrumbService Bread { get; set; }
+
+    private List<BreadcrumbModel> _bread = new();
+    private IBrowserFile? _selectedFile;
+    private bool _deleteExisting;
+    private bool _importing;
+    private ArticleImportResult? _result;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _bread = await Bread.Articles(false);
+        await base.OnInitializedAsync();
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs args)
+    {
+        _selectedFile = args.File;
+        _result = null;
+    }
+
+    private async Task ImportAsync()
+    {
+        if (_selectedFile == null) return;
+        _importing = true;
+        _result = null;
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            var stream = _selectedFile.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024);
+            content.Add(new StreamContent(stream), "file", _selectedFile.Name);
+            content.Add(new StringContent(_deleteExisting.ToString().ToLower()), "deleteExisting");
+
+            var response = await Http.PostAsync("api/Articles/import-excel", content);
+            if (response.IsSuccessStatusCode)
+                _result = await response.Content.ReadFromJsonAsync<ArticleImportResult>();
+            else
+                _result = new ArticleImportResult { Success = false, Errors = { $"Errore HTTP {(int)response.StatusCode}" } };
+        }
+        catch (Exception ex)
+        {
+            _result = new ArticleImportResult { Success = false, Errors = { ex.Message } };
+        }
+        finally
+        {
+            _importing = false;
+        }
+    }
+
+    private void Cancel() => NavigationManager.NavigateTo("/Articles");
+
+    private static string FormatSize(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB"];
+        var value = (double)bytes;
+        var index = 0;
+        while (value >= 1024 && index < units.Length - 1) { value /= 1024; index++; }
+        return $"{value:0.#} {units[index]}";
+    }
+}

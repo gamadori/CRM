@@ -4,12 +4,12 @@ using CRM.Shared;
 using MediatR;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using static CRM.Client.Program;
@@ -58,6 +58,10 @@ namespace CRM.Client.Pages.TicketChats
         
         private System.Threading.Timer _timer;
 
+        private IBrowserFile? _pendingFile;
+        private int? _pendingAttachmentFileId;
+        private bool _uploading;
+
         private async Task GetMessages()
         {
             
@@ -90,11 +94,10 @@ namespace CRM.Client.Pages.TicketChats
         }
         public async Task Handle(MsgNotify notification, System.Threading.CancellationToken cancellationToken)
         {
-            var id = notification.Id;
-            var sender = notification.Sender;
-            await GetMessages();
-            StateHasChanged();
-
+            await InvokeAsync(async () =>
+            {
+                await GetMessages();
+            });
         }
 
 
@@ -121,35 +124,61 @@ namespace CRM.Client.Pages.TicketChats
 
             if (resp == true)
             {
-                await GetMessages();
+                await InvokeAsync(async () =>
+                {
+                    await GetMessages();
+                });
             }
+        }
+
+        private async Task OnFileSelected(InputFileChangeEventArgs e)
+        {
+            _pendingFile = e.File;
+            _pendingAttachmentFileId = null;
+            _uploading = true;
+            StateHasChanged();
+
+            var result = await Service.UploadFile(IdTicket, _pendingFile);
+            _uploading = false;
+
+            if (result != null)
+                _pendingAttachmentFileId = result.Id;
+            else
+                _pendingFile = null;
+
+            StateHasChanged();
+        }
+
+        private void ClearPendingFile()
+        {
+            _pendingFile = null;
+            _pendingAttachmentFileId = null;
         }
 
         protected async Task HandleValidSubmit()
         {
+            if (_uploading) return;
 
+            var hasMessage = !string.IsNullOrWhiteSpace(_ticketChat?.Message);
+            var hasFile = _pendingAttachmentFileId.HasValue;
+
+            if (!hasMessage && !hasFile) return;
 
             try
             {
-                if (_ticketChat != null && _ticketChat.Message != null && _ticketChat.Message.Length > 0)
-                {
-                    _ticketChat.Date = DateTime.Now;
-                    _ticketChat.IdTicket = IdTicket;
+                _ticketChat.Date = DateTime.Now;
+                _ticketChat.IdTicket = IdTicket;
+                _ticketChat.IdAttachmentFile = _pendingAttachmentFileId;
 
-                    var resp = await Service.Post(_ticketChat);
+                await Service.Post(_ticketChat);
 
-                    _ticketChat.Message = "";
+                _ticketChat.Message = "";
+                _pendingFile = null;
+                _pendingAttachmentFileId = null;
 
-                    await GetMessages();
-
-                    
-
-                    await InvokeAsync(StateHasChanged);
-
-                    await ScrollToBottom();
-                  
-                }
-                
+                await GetMessages();
+                await InvokeAsync(StateHasChanged);
+                await ScrollToBottom();
             }
             catch (Exception ex)
             {

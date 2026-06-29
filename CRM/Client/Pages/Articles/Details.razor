@@ -74,6 +74,8 @@ else
                         <div class="d-flex gap-2">
                             <RedGButton RGButtonType=RGButtonType.Back Text=@Localize["ArticlesList"] Click="Annulla" />
                             <RedGButton RGButtonType=RGButtonType.Edit AutoLabel=true Click="Edit" />
+                            <RadzenButton Icon="verified_user" Text="Licenza" ButtonStyle="ButtonStyle.Secondary"
+                                          Click="@(() => NavigationManager.NavigateTo($"/Articles/{Id}/License"))" />
                         </div>
                     </div>
                 </div>
@@ -115,7 +117,7 @@ else
                     <div class="card shadow-sm">
                         <div class="card-header bg-info text-white">
                             <h5 class="mb-0">
-                                <i class="bi bi-journal-text"></i> Storia Completa Articolo
+                                <i class="bi bi-journal-text"></i> Storia Completa Matricola
                             </h5>
                         </div>
                         <div class="card-body">

@@ -3,6 +3,7 @@
 @using Radzen
 @using Radzen.Blazor
 @using static CRM.Client.Helpers.PageHelper
+@using CRM.Client.Pages.Articles.Components
 
 
 
@@ -23,6 +24,7 @@ else
                 <RadzenSelectBarItem Text="Catalogo" Value="GroupViews.Catalog" />
                 <RadzenSelectBarItem Text="Backup predefiniti" Value="GroupViews.Backups" />
                 <RadzenSelectBarItem Text=@Localize["Attachments"] Value="GroupViews.Attachments" />
+                <RadzenSelectBarItem Text="Funzionalità Licenza" Value="GroupViews.LicenseFeatures" Icon="verified_user" />
                 @* <RadzenSelectBarItem Text=@Localize["Accessories"] Value="GroupViews.ProductAccessories" />
                 <RadzenSelectBarItem Text=@Localize["Sotto Parti"] Value="GroupViews.ProductTypeChilds" /> *@
             </Items>
@@ -149,5 +151,21 @@ else
     else if (_selectView == GroupViews.Backups)
     {
         <CRM.Client.Pages.MachineBackups.Index OwnerType="MachineBackupOwnerType.Product" OwnerId="@Id" />
+    }
+    else if (_selectView == GroupViews.LicenseFeatures)
+    {
+        <div class="mt-2">
+            @if (_product?.IdProductType != null)
+            {
+                <LicenseFeatureDefsPanel
+                    IdProductType="@_product.IdProductType"
+                    Title="@($"Funzionalità famiglia: {_product.ProductTypeName}")"
+                    Icon="account_tree" />
+            }
+            <LicenseFeatureDefsPanel
+                IdProduct="@Id"
+                Title="@($"Funzionalità specifiche modello: {_product?.Name}")"
+                Icon="tune" />
+        </div>
     }
 }
