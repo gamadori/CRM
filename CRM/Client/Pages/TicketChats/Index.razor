@@ -3,7 +3,7 @@
 
         @foreach (var chat in ChatList)
         {
-            <ChatMessage TicketChat="chat" Loaded="MsgLoaded"></ChatMessage>
+            <ChatMessage TicketChat="chat" Loaded="MsgLoaded" OnDeleted="GetMessages"></ChatMessage>
         }
     </div>
     <footer id="bottom" class="text-center mt-auto p-3 container bg-chat">

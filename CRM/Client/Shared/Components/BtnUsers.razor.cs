@@ -38,7 +38,7 @@ namespace CRM.Client.Shared.Components
             if (OnGetItem.HasDelegate)
                 await OnGetItem.InvokeAsync(id);
 
-        }
+        } 
 
 
         private EventCallback<string?> OpenNewItem => new(null, (System.Action)(async () =>

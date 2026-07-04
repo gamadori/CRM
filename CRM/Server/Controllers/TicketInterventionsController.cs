@@ -15,12 +15,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client; // ✅ AGGIUNTO
+using CRM.Server.Services.Sms;
 using Newtonsoft.Json;
 using SelectPdf;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
@@ -41,10 +44,13 @@ namespace CRM.Server.Controllers
         private readonly IInterventionPdfGenerator _pdfGenerator;
         private readonly ISignatureOtpService _otpService;
         private readonly IStringLocalizer<TicketInterventionsController> _localizer;
+        private readonly ISmsSender _smsSender;
+        private readonly SmsOptions _smsOptions;
 
         public TicketInterventionsController(ApplicationDbContext context, IPermitsService permitsService, IArchiveService archiveService,
             IWebHostEnvironment hostEnvironment, ILogEventService logEventService, IEmailSenderPlus emailSender, IInterventionPdfGenerator pdfGenerator,
-            ISignatureOtpService otpService, IStringLocalizer<TicketInterventionsController> localizer)
+            ISignatureOtpService otpService, IStringLocalizer<TicketInterventionsController> localizer,
+            ISmsSender smsSender, IOptions<SmsOptions> smsOptions)
         {
             _context = context;
             _permitsService = permitsService;
@@ -56,6 +62,8 @@ namespace CRM.Server.Controllers
             _pdfGenerator = pdfGenerator;
             _otpService = otpService;
             _localizer = localizer;
+            _smsSender = smsSender;
+            _smsOptions = smsOptions.Value;
         }
 
         // GET: api/TicketInterventions
@@ -548,12 +556,20 @@ namespace CRM.Server.Controllers
                 if (!await _permitsService.CanGetTicket(intervention.IdTicket))
                     return Problem("Not Permits");
 
-                // Rate limiting: max 1 OTP ogni 60 secondi
-                if (intervention.SignatureOtpExpiry.HasValue && 
-                    intervention.SignatureOtpExpiry.Value > DateTime.Now.AddSeconds(-60))
+                const int OtpTtlMinutes = 5;
+                const int OtpResendCooldownSeconds = 60;
+
+                // Rate limiting: max 1 OTP ogni 60 secondi, basato sull'istante di
+                // GENERAZIONE (= scadenza - TTL), non sulla scadenza stessa (che
+                // altrimenti bloccava le richieste per ~6 minuti).
+                if (intervention.SignatureOtpExpiry.HasValue)
                 {
-                    return StatusCode(429, new { error = "Troppo presto. Riprova tra " + 
-                        (int)(intervention.SignatureOtpExpiry.Value.AddSeconds(-60) - DateTime.Now).TotalSeconds + " secondi" });
+                    var generatedAt = intervention.SignatureOtpExpiry.Value.AddMinutes(-OtpTtlMinutes);
+                    if (generatedAt > DateTime.Now.AddSeconds(-OtpResendCooldownSeconds))
+                    {
+                        var wait = (int)(generatedAt.AddSeconds(OtpResendCooldownSeconds) - DateTime.Now).TotalSeconds;
+                        return StatusCode(429, new { error = $"Troppo presto. Riprova tra {Math.Max(1, wait)} secondi" });
+                    }
                 }
 
                 // Genera OTP e challenge
@@ -564,17 +580,37 @@ namespace CRM.Server.Controllers
                 // Salva stato temporaneo
                 intervention.SignatureOtpHash = otpHash;
                 intervention.SignatureOtpChallengeId = challengeId;
-                intervention.SignatureOtpExpiry = DateTime.Now.AddMinutes(5); // TTL 5 min
+                intervention.SignatureOtpExpiry = DateTime.Now.AddMinutes(OtpTtlMinutes);
                 intervention.SignatureOtpAttempts = 0;
                 intervention.PendingSignature = signatureData.Signature;
                 intervention.PendingSignatureName = signatureData.SignerName;
+                // Firma acquisita ma non ancora confermata: in attesa dell'OTP.
+                intervention.SignatureStatus = CRM.Shared.SignatureStatus.Pending;
 
                 _context.Entry(intervention).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
 
-                // ✅ INVIO OTP via EMAIL (in produzione usare SMS provider)
-                var companyEmail = intervention.Ticket?.Company?.Email;
-                if (!string.IsNullOrWhiteSpace(companyEmail))
+                // Destinatario dell'OTP: preferisci un SMS al cellulare del firmatario,
+                // poi la sua email; solo come ultimo fallback l'email dell'azienda.
+                var signerPhone = NormalizePhone(signatureData.SignerPhone);
+                if (string.IsNullOrWhiteSpace(signerPhone) && !string.IsNullOrWhiteSpace(signatureData.SignerEmail))
+                    signerPhone = NormalizePhone(await ResolvePhoneByEmail(signatureData.SignerEmail));
+
+                var signerEmail = !string.IsNullOrWhiteSpace(signatureData.SignerEmail)
+                    ? signatureData.SignerEmail
+                    : intervention.Ticket?.Company?.Email;
+
+                string channel;
+                string sentTo;
+
+                if (!string.IsNullOrWhiteSpace(signerPhone) && _smsSender.IsConfigured &&
+                    await _smsSender.SendAsync(signerPhone,
+                        $"Codice OTP per la firma dell'intervento #{id}: {otp} (valido 5 minuti). Non condividerlo con nessuno."))
+                {
+                    channel = "sms";
+                    sentTo = MaskPhone(signerPhone);
+                }
+                else if (!string.IsNullOrWhiteSpace(signerEmail))
                 {
                     var subject = $"Codice OTP per firma intervento #{id}";
                     var message = $@"
@@ -586,21 +622,31 @@ namespace CRM.Server.Controllers
                         Firmatario: {signatureData.SignerName}</p>
                     ";
 
-                    await _emailSender.SendEmailAsync(companyEmail, subject, message);
+                    await _emailSender.SendEmailAsync(signerEmail, subject, message);
+                    channel = "email";
+                    sentTo = MaskEmail(signerEmail);
+                }
+                else
+                {
+                    // Nessun recapito utilizzabile: annulla lo stato OTP appena creato
+                    ClearOtpState(intervention);
+                    await _context.SaveChangesAsync();
+                    return StatusCode(422, new { error = "Nessun recapito disponibile per l'invio dell'OTP" });
                 }
 
                 await _logEventService.RegisterAsync(
                     nameof(TicketInterventionsController),
                     nameof(RequestSignatureOtp),
                     LogEvent.EventsTypes.Info,
-                    $"OTP generato per intervention #{id} - Email: {companyEmail} - Challenge: {challengeId.Substring(0, 8)}...");
+                    $"OTP generato per intervention #{id} - Canale: {channel} - Dest: {sentTo} - Challenge: {challengeId.Substring(0, 8)}...");
 
                 return Ok(new OtpRequestResponse
                 {
                     Success = true,
                     ChallengeId = challengeId,
                     ExpiresAt = intervention.SignatureOtpExpiry.Value,
-                    SentTo = MaskEmail(companyEmail)
+                    SentTo = sentTo,
+                    Channel = channel
                 });
             }
             catch (Exception ex)
@@ -673,6 +719,11 @@ namespace CRM.Server.Controllers
                 intervention.CustomerSignature = intervention.PendingSignature;
                 intervention.SignatureName = intervention.PendingSignatureName;
                 intervention.SignatureDate = DateTime.Now;
+                // Firma confermata: aggiorna lo stato (altrimenti resta "Pending" e
+                // Details/PDF mostrano "in attesa di conferma email").
+                intervention.SignatureStatus = CRM.Shared.SignatureStatus.Verified;
+                // Rimuove eventuale stato residuo del vecchio flusso email-link.
+                intervention.SignatureConfirmationToken = null;
 
                 // Pulisci stato OTP
                 ClearOtpState(intervention);
@@ -760,20 +811,235 @@ namespace CRM.Server.Controllers
             intervention.PendingSignatureName = null;
         }
 
+        /// <summary>
+        /// (Tecnico) Genera un link di firma remota e lo invia al cliente via SMS/email.
+        /// </summary>
+        [HttpPost("RequestRemoteSignature/{id}")]
+        public async Task<ActionResult<RemoteSignatureRequestResponse>> RequestRemoteSignature(int id)
+        {
+            try
+            {
+                var intervention = await _context.TicketsInterventions
+                    .Include(x => x.Ticket)
+                        .ThenInclude(t => t.Company)
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (intervention == null)
+                    return NotFound();
+
+                if (!await _permitsService.CanGetTicket(intervention.IdTicket))
+                    return Problem("Not Permits");
+
+                // Token monouso per la pagina pubblica di firma
+                var token = Guid.NewGuid().ToString("N");
+                intervention.SignatureConfirmationToken = token;
+                intervention.SignatureStatus = CRM.Shared.SignatureStatus.Pending;
+                await _context.SaveChangesAsync();
+
+                var link = $"{Request.Scheme}://{Request.Host}/RemoteSignature?token={token}&id={id}";
+
+                // Destinatario: recapiti dell'azienda del ticket
+                var company = intervention.Ticket?.Company;
+                var phone = NormalizePhone(company?.Mobile ?? company?.Telefono);
+                var email = company?.Email;
+
+                string channel;
+                string sentTo;
+
+                if (!string.IsNullOrWhiteSpace(phone) && _smsSender.IsConfigured &&
+                    await _smsSender.SendAsync(phone,
+                        $"Firma il verbale dell'intervento #{intervention.Ticket?.Id}: {link}"))
+                {
+                    channel = "sms";
+                    sentTo = MaskPhone(phone);
+                }
+                else if (!string.IsNullOrWhiteSpace(email))
+                {
+                    var subject = $"Firma verbale intervento #{intervention.Ticket?.Id}";
+                    var message = $@"
+                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                            <h2 style='color: #0066cc;'>Firma del verbale di intervento</h2>
+                            <p>Gentile cliente,</p>
+                            <p>per firmare il verbale dell'intervento <strong>#{intervention.Ticket?.Id}</strong>, clicchi sul pulsante qui sotto:</p>
+                            <div style='text-align: center; margin: 30px 0;'>
+                                <a href='{link}'
+                                   style='background: #0066cc; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>
+                                    ✍️ FIRMA IL DOCUMENTO
+                                </a>
+                            </div>
+                            <p style='color: #6c757d; font-size: 12px;'>Se il pulsante non funziona, copi e incolli questo indirizzo: {link}</p>
+                        </div>";
+
+                    await _emailSender.SendEmailAsync(email, subject, message);
+                    channel = "email";
+                    sentTo = MaskEmail(email);
+                }
+                else
+                {
+                    return StatusCode(422, new { error = "Nessun recapito disponibile per l'invio del link" });
+                }
+
+                await _logEventService.RegisterAsync(
+                    nameof(TicketInterventionsController),
+                    nameof(RequestRemoteSignature),
+                    LogEvent.EventsTypes.Info,
+                    $"Link firma remota inviato per intervention #{id} - Canale: {channel} - Dest: {sentTo}");
+
+                return Ok(new RemoteSignatureRequestResponse { Success = true, Channel = channel, SentTo = sentTo });
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketInterventionsController),
+                    nameof(RequestRemoteSignature),
+                    LogEvent.EventsTypes.Error,
+                    $"Errore invio link firma remota: {ex.Message}");
+                return StatusCode(500, new { error = "Errore invio link di firma" });
+            }
+        }
+
+        /// <summary>
+        /// (Pubblico) Valida il token e restituisce le info per la pagina di firma.
+        /// </summary>
+        [HttpGet("RemoteSignatureInfo")]
+        [AllowAnonymous]
+        public async Task<ActionResult<RemoteSignatureInfoResponse>> RemoteSignatureInfo([FromQuery] string token, [FromQuery] int id)
+        {
+            var intervention = await _context.TicketsInterventions
+                .Include(x => x.Ticket)
+                    .ThenInclude(t => t.Company)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (intervention == null || string.IsNullOrWhiteSpace(token) ||
+                intervention.SignatureConfirmationToken != token)
+            {
+                return Ok(new RemoteSignatureInfoResponse { Valid = false });
+            }
+
+            return Ok(new RemoteSignatureInfoResponse
+            {
+                Valid = true,
+                TicketId = intervention.Ticket?.Id ?? 0,
+                Company = intervention.Ticket?.Company?.RagioneSociale ?? string.Empty,
+                AlreadySigned = intervention.SignatureStatus == CRM.Shared.SignatureStatus.Verified
+            });
+        }
+
+        /// <summary>
+        /// (Pubblico) Il cliente invia la firma tracciata dalla pagina remota.
+        /// </summary>
+        [HttpPost("SubmitRemoteSignature")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SubmitRemoteSignature([FromBody] RemoteSignatureSubmit data)
+        {
+            if (data == null || string.IsNullOrWhiteSpace(data.Token))
+                return BadRequest(new { error = "Richiesta non valida" });
+
+            var intervention = await _context.TicketsInterventions.FindAsync(data.InterventionId);
+            if (intervention == null)
+                return NotFound();
+
+            if (intervention.SignatureConfirmationToken != data.Token)
+                return StatusCode(401, new { error = "Link non valido o già utilizzato" });
+
+            if (string.IsNullOrWhiteSpace(data.Signature) || string.IsNullOrWhiteSpace(data.SignerName))
+                return BadRequest(new { error = "Firma e nome del firmatario sono obbligatori" });
+
+            intervention.CustomerSignature = data.Signature;
+            intervention.SignatureName = data.SignerName;
+            intervention.SignatureDate = DateTime.Now;
+            intervention.SignatureStatus = CRM.Shared.SignatureStatus.Verified;
+            intervention.SignatureConfirmationToken = null; // monouso
+            await _context.SaveChangesAsync();
+
+            try
+            {
+                await CreatePdf(data.InterventionId);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketInterventionsController),
+                    nameof(SubmitRemoteSignature),
+                    LogEvent.EventsTypes.Error,
+                    $"Firma remota salvata ma errore rigenerazione PDF #{data.InterventionId}: {ex.Message}");
+            }
+
+            await _logEventService.RegisterAsync(
+                nameof(TicketInterventionsController),
+                nameof(SubmitRemoteSignature),
+                LogEvent.EventsTypes.Info,
+                $"Firma remota acquisita per intervention #{data.InterventionId} - Firmatario: {data.SignerName}");
+
+            return Ok(new { success = true });
+        }
+
         private string MaskEmail(string? email)
         {
             if (string.IsNullOrWhiteSpace(email)) return "***";
-            
+
             var parts = email.Split('@');
             if (parts.Length != 2) return "***";
-            
+
             var localPart = parts[0];
             var domain = parts[1];
-            
+
             if (localPart.Length <= 3)
                 return $"***@{domain}";
-            
+
             return $"{localPart[0]}***{localPart[^1]}@{domain}";
+        }
+
+        /// <summary>Maschera un numero mostrando solo le ultime 3 cifre (es. "•••567").</summary>
+        private static string MaskPhone(string? phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return "***";
+            var digits = new string(phone.Where(char.IsDigit).ToArray());
+            if (digits.Length < 3) return "***";
+            return "•••" + digits[^3..];
+        }
+
+        /// <summary>
+        /// Normalizza un numero al formato E.164 (+prefisso). I numeri senza prefisso
+        /// ricevono <see cref="SmsOptions.DefaultCountryPrefix"/>.
+        /// </summary>
+        private string NormalizePhone(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+
+            raw = raw.Trim();
+            bool hasPlus = raw.StartsWith("+");
+            var digits = new string(raw.Where(char.IsDigit).ToArray());
+            if (digits.Length == 0) return string.Empty;
+
+            if (hasPlus) return "+" + digits;
+            if (digits.StartsWith("00")) return "+" + digits[2..];
+
+            var prefix = string.IsNullOrWhiteSpace(_smsOptions.DefaultCountryPrefix) ? "+39" : _smsOptions.DefaultCountryPrefix;
+            return prefix + digits;
+        }
+
+        /// <summary>
+        /// Cerca il cellulare del firmatario tra utenti e contatti che hanno la stessa email.
+        /// </summary>
+        private async Task<string?> ResolvePhoneByEmail(string? email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return null;
+
+            var userPhone = await _context.Users
+                .Where(u => u.Email == email)
+                .Select(u => u.PhoneNumber)
+                .FirstOrDefaultAsync();
+            if (!string.IsNullOrWhiteSpace(userPhone)) return userPhone;
+
+            var contact = await _context.Contacts
+                .Where(c => c.Email == email)
+                .Select(c => new { c.Mobile, c.Phone })
+                .FirstOrDefaultAsync();
+            if (contact != null)
+                return !string.IsNullOrWhiteSpace(contact.Mobile) ? contact.Mobile : contact.Phone;
+
+            return null;
         }
 
         /// <summary>
@@ -826,9 +1092,12 @@ namespace CRM.Server.Controllers
                     }
                 }
 
+                // Lingua del destinatario per la pagina di conferma (link email)
+                var culture = await ResolveRecipientCulture(signatureData.SignerEmail);
+
                 // Invia email di conferma con allegato
-                var confirmationUrl = $"{Request.Scheme}://{Request.Host}/ConfirmSignature?token={confirmationToken}&id={id}&action=confirm";
-                var rejectUrl = $"{Request.Scheme}://{Request.Host}/ConfirmSignature?token={confirmationToken}&id={id}&action=reject";
+                var confirmationUrl = $"{Request.Scheme}://{Request.Host}/ConfirmSignature?token={confirmationToken}&id={id}&action=confirm&culture={culture}";
+                var rejectUrl = $"{Request.Scheme}://{Request.Host}/ConfirmSignature?token={confirmationToken}&id={id}&action=reject&culture={culture}";
                 
                 var subject = $"Conferma Firma Intervento #{intervention.Ticket.Id}";
                 var message = $@"
@@ -903,6 +1172,32 @@ namespace CRM.Server.Controllers
                     $"Errore salvataggio firma: {ex.Message}");
                 return StatusCode(500, new { error = "Errore salvataggio firma" });
             }
+        }
+
+        /// <summary>
+        /// Determina la lingua del destinatario per la pagina di conferma firma.
+        /// Priorità: utente con la stessa email → cultura della richiesta corrente
+        /// (lingua del tecnico) → italiano. Normalizzata alle culture supportate.
+        /// </summary>
+        private async Task<string> ResolveRecipientCulture(string? email)
+        {
+            var supported = new[] { "en", "it", "fr", "de", "es" };
+            string? lang = null;
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                lang = await _context.Users
+                    .Where(u => u.Email == email)
+                    .Select(u => u.LanguageCode)
+                    .FirstOrDefaultAsync();
+            }
+
+            // Fallback: cultura della richiesta corrente (impostata da RequestLocalization)
+            if (string.IsNullOrWhiteSpace(lang))
+                lang = CultureInfo.CurrentUICulture.Name;
+
+            var two = lang.Split('-', '_')[0].ToLowerInvariant();
+            return supported.Contains(two) ? two : "it";
         }
 
         /// <summary>

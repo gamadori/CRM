@@ -3,11 +3,14 @@ using CRM.Shared;
 using CRM.Shared.DTOs;
 using CRM.Shared.Models;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -80,6 +83,114 @@ namespace CRM.Client.Services
             {
                 Console.WriteLine($"Errore semantic search: {ex.Message}");
                 return new SemanticSearchResponse();
+            }
+        }
+
+        public async Task<AssistantChatResponse> AssistantChat(AssistantChatRequest request)
+        {
+            try
+            {
+                var response = await _http.PostAsJsonAsync($"{_pathService}/assistant-chat", request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<AssistantChatResponse>()
+                        ?? new AssistantChatResponse { Success = false, Message = "Risposta vuota dal server" };
+                }
+
+                return new AssistantChatResponse
+                {
+                    Success = false,
+                    Message = $"Errore dal server ({(int)response.StatusCode})"
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore assistant chat: {ex.Message}");
+                return new AssistantChatResponse { Success = false, Message = ex.Message };
+            }
+        }
+
+        public async Task AssistantChatStream(
+            AssistantChatRequest request,
+            Action<List<TicketSimilarityResult>> onTickets,
+            Action<string> onChunk,
+            Action<string> onError)
+        {
+            try
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Post, $"{_pathService}/assistant-chat-stream")
+                {
+                    Content = JsonContent.Create(request)
+                };
+                // Abilita lo streaming della risposta nel browser (Blazor WASM)
+                req.SetBrowserResponseStreamingEnabled(true);
+
+                using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    var err = await resp.Content.ReadAsStringAsync();
+                    onError(string.IsNullOrWhiteSpace(err) ? $"Errore dal server ({(int)resp.StatusCode})" : err);
+                    return;
+                }
+
+                // Ticket di riferimento dall'header (Base64/UTF-8 JSON)
+                if (resp.Headers.TryGetValues("X-Referenced-Tickets", out var vals))
+                {
+                    var b64 = vals.FirstOrDefault();
+                    if (!string.IsNullOrEmpty(b64))
+                    {
+                        try
+                        {
+                            var json = Encoding.UTF8.GetString(Convert.FromBase64String(b64));
+                            var tickets = JsonSerializer.Deserialize<List<TicketSimilarityResult>>(
+                                json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                            if (tickets != null)
+                                onTickets(tickets);
+                        }
+                        catch { /* header malformato: ignora */ }
+                    }
+                }
+
+                using var stream = await resp.Content.ReadAsStreamAsync();
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                var buffer = new char[256];
+                int read;
+                while ((read = await reader.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    onChunk(new string(buffer, 0, read));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore assistant chat stream: {ex.Message}");
+                onError(ex.Message);
+            }
+        }
+
+        public async Task<AssistantChatResponse> DataAssistantAsk(AssistantChatRequest request)
+        {
+            try
+            {
+                var response = await _http.PostAsJsonAsync("api/CrmAssistant/ask", request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<AssistantChatResponse>()
+                        ?? new AssistantChatResponse { Success = false, Message = "Risposta vuota dal server" };
+                }
+
+                return new AssistantChatResponse
+                {
+                    Success = false,
+                    Message = $"Errore dal server ({(int)response.StatusCode})"
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore data assistant: {ex.Message}");
+                return new AssistantChatResponse { Success = false, Message = ex.Message };
             }
         }
 

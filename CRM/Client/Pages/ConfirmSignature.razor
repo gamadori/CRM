@@ -1,10 +1,14 @@
 @page "/ConfirmSignature"
 @layout EmptyLayout
 @attribute [AllowAnonymous]
+@using System.Globalization
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
 @using CRM.Client.Helpers
 @inject IHttpClientFactory HttpClientFactory
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 <div class="container mt-5">
     <div class="row justify-content-center">
@@ -14,10 +18,10 @@
                 <div class="card shadow-lg">
                     <div class="card-body text-center py-5">
                         <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
-                            <span class="visually-hidden">Verifica in corso...</span>
+                            <span class="visually-hidden">@Localize["Verifica in corso..."]</span>
                         </div>
-                        <h4>Verifica firma in corso...</h4>
-                        <p class="text-muted">Attendere prego</p>
+                        <h4>@Localize["Verifica firma in corso..."]</h4>
+                        <p class="text-muted">@Localize["Attendere prego"]</p>
                     </div>
                 </div>
             }
@@ -28,15 +32,15 @@
                         <div class="mb-4">
                             <i class="material-icons text-success" style="font-size: 80px;">check_circle</i>
                         </div>
-                        <h1 class="text-success mb-3">Firma Confermata!</h1>
-                        <p class="lead">La tua firma per l'intervento <strong>#{_ticketId}</strong> � stata confermata con successo.</p>
-                        
+                        <h1 class="text-success mb-3">@Localize["Firma Confermata!"]</h1>
+                        <p class="lead">@Localize["La tua firma per l'intervento #{0} è stata confermata con successo.", _ticketId]</p>
+
                         <div class="alert alert-info mt-4">
                             <i class="material-icons" style="vertical-align: middle;">schedule</i>
-                            Data conferma: <strong>@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</strong>
+                            @Localize["Data conferma:"] <strong>@DateTime.Now.ToString("g", CultureInfo.CurrentCulture)</strong>
                         </div>
 
-                        <p class="text-muted mt-3 small">Puoi chiudere questa finestra.</p>
+                        <p class="text-muted mt-3 small">@Localize["Puoi chiudere questa finestra."]</p>
                     </div>
                 </div>
             }
@@ -47,15 +51,15 @@
                         <div class="mb-4">
                             <i class="material-icons text-danger" style="font-size: 80px;">cancel</i>
                         </div>
-                        <h1 class="text-danger mb-3">Firma Rifiutata</h1>
-                        <p class="lead">Hai rifiutato la firma per l'intervento <strong>#{_ticketId}</strong>.</p>
-                        
+                        <h1 class="text-danger mb-3">@Localize["Firma Rifiutata"]</h1>
+                        <p class="lead">@Localize["Hai rifiutato la firma per l'intervento #{0}.", _ticketId]</p>
+
                         <div class="alert alert-warning mt-4">
                             <i class="material-icons" style="vertical-align: middle;">info</i>
-                            Se ritieni che ci sia stato un errore, contatta il nostro ufficio.
+                            @Localize["Se ritieni che ci sia stato un errore, contatta il nostro ufficio."]
                         </div>
 
-                        <p class="text-muted mt-3 small">Puoi chiudere questa finestra.</p>
+                        <p class="text-muted mt-3 small">@Localize["Puoi chiudere questa finestra."]</p>
                     </div>
                 </div>
             }
@@ -66,10 +70,10 @@
                         <div class="mb-4">
                             <i class="material-icons text-danger" style="font-size: 80px;">error</i>
                         </div>
-                        <h1 class="text-danger mb-3">Errore</h1>
+                        <h1 class="text-danger mb-3">@Localize["Errore"]</h1>
                         <p class="lead">@_errorMessage</p>
-                        
-                        <p class="text-muted mt-3 small">Puoi chiudere questa finestra.</p>
+
+                        <p class="text-muted mt-3 small">@Localize["Puoi chiudere questa finestra."]</p>
                     </div>
                 </div>
             }
@@ -90,6 +94,10 @@
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "culture")]
+    public string? Culture { get; set; }
+
     private bool _loading = true;
     private bool _success = false;
     private bool _rejected = false;
@@ -98,10 +106,16 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Applica la lingua del destinatario indicata nel link. Blazor WASM carica
+        // le risorse satellite della cultura all'avvio, quindi se la cultura richiesta
+        // è diversa da quella attiva la impostiamo e ricarichiamo una sola volta.
+        if (await ApplyRequestedCultureAsync())
+            return;
+
         if (string.IsNullOrWhiteSpace(Token) || !InterventionId.HasValue)
         {
             _loading = false;
-            _errorMessage = "Link non valido. Token o ID intervento mancante.";
+            _errorMessage = Localize["Link non valido. Token o ID intervento mancante."];
             return;
         }
 
@@ -110,7 +124,7 @@
             // Usa HttpClient senza autenticazione per le API pubbliche
             var http = HttpClientFactory.CreateClient("CRM.PublicAPI");
 
-            var endpoint = Action == "reject" 
+            var endpoint = Action == "reject"
                 ? $"{ConstHelper.TicketsInterventionsPath}/RejectSignature?token={Token}&id={InterventionId}"
                 : $"{ConstHelper.TicketsInterventionsPath}/ConfirmSignature?token={Token}&id={InterventionId}";
 
@@ -134,19 +148,51 @@
                 var errorContent = await response.Content.ReadAsStringAsync();
                 _errorMessage = response.StatusCode switch
                 {
-                    System.Net.HttpStatusCode.BadRequest => "Token non valido o gi� utilizzato.",
-                    System.Net.HttpStatusCode.NotFound => "Intervento non trovato.",
-                    _ => $"Errore durante la verifica: {errorContent}"
+                    System.Net.HttpStatusCode.BadRequest => Localize["Token non valido o già utilizzato."],
+                    System.Net.HttpStatusCode.NotFound => Localize["Intervento non trovato."],
+                    _ => Localize["Errore durante la verifica: {0}", errorContent]
                 };
             }
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Errore di connessione: {ex.Message}";
+            _errorMessage = Localize["Errore di connessione: {0}", ex.Message];
         }
         finally
         {
             _loading = false;
+        }
+    }
+
+    /// <summary>
+    /// Imposta la cultura richiesta nel link (?culture=xx) se diversa da quella
+    /// attiva, ricaricando la pagina una sola volta così Blazor scarica le risorse
+    /// satellite corrette. Restituisce true se sta per ricaricare.
+    /// </summary>
+    private async Task<bool> ApplyRequestedCultureAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Culture))
+            return false;
+
+        var requested = Culture.Trim();
+        var current = CultureInfo.CurrentUICulture;
+
+        // Già nella lingua giusta (confronto sia sul nome completo che a due lettere)
+        if (string.Equals(requested, current.Name, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(requested, current.TwoLetterISOLanguageName, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        try
+        {
+            new CultureInfo(requested); // valida il codice cultura
+            await JS.InvokeVoidAsync("appCulture.set", requested);
+            NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+            return true;
+        }
+        catch
+        {
+            // Codice cultura non valido: prosegui nella lingua corrente
+            return false;
         }
     }
 }

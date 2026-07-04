@@ -603,6 +603,250 @@ namespace CRM.Server.Controllers
             }
         }
 
+        /// <summary>
+        /// Assistente conversazionale: risponde a una domanda dell'utente basandosi
+        /// sui ticket chiusi più simili (RAG) e generando la risposta con Claude.
+        /// </summary>
+        [HttpPost("assistant-chat")]
+        public async Task<ActionResult<CRM.Shared.Models.AssistantChatResponse>> AssistantChat(
+            [FromBody] CRM.Shared.Models.AssistantChatRequest request,
+            [FromServices] OpenAIEmbeddingService embeddingService,
+            [FromServices] AnthropicChatService chatService)
+        {
+            try
+            {
+                if (request?.Messages == null || request.Messages.Count == 0)
+                    return BadRequest("La conversazione è vuota");
+
+                var lastUser = request.Messages
+                    .LastOrDefault(m => string.Equals(m.Role, "user", StringComparison.OrdinalIgnoreCase));
+
+                if (lastUser == null || string.IsNullOrWhiteSpace(lastUser.Content))
+                    return BadRequest("Nessun messaggio utente valido");
+
+                // Recupera i ticket chiusi più simili all'ultima domanda (rispetta i permessi)
+                var referenced = await RetrieveSimilarClosedTicketsAsync(
+                    lastUser.Content, embeddingService, request.TopTickets, request.MinSimilarityThreshold);
+
+                // Costruisci il contesto testuale e genera la risposta con Claude
+                var context = BuildTicketContext(referenced);
+                var reply = await chatService.AnswerAsync(request.Messages, context);
+
+                return new CRM.Shared.Models.AssistantChatResponse
+                {
+                    Reply = reply,
+                    ReferencedTickets = referenced,
+                    Success = true
+                };
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(AssistantChat), LogEvent.EventsTypes.Error, ex);
+                return Ok(new CRM.Shared.Models.AssistantChatResponse
+                {
+                    Reply = string.Empty,
+                    Success = false,
+                    Message = $"Errore durante l'elaborazione: {ex.Message}"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Versione streaming dell'assistente: invia i frammenti di risposta man mano
+        /// che Claude li genera. I ticket di riferimento (forma ridotta) sono restituiti
+        /// nell'header 'X-Referenced-Tickets' (JSON codificato in Base64/UTF-8).
+        /// </summary>
+        [HttpPost("assistant-chat-stream")]
+        public async Task AssistantChatStream(
+            [FromBody] CRM.Shared.Models.AssistantChatRequest request,
+            [FromServices] OpenAIEmbeddingService embeddingService,
+            [FromServices] AnthropicChatService chatService,
+            CancellationToken cancellationToken)
+        {
+            Response.ContentType = "text/plain; charset=utf-8";
+
+            try
+            {
+                if (request?.Messages == null || request.Messages.Count == 0)
+                {
+                    Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await Response.WriteAsync("La conversazione è vuota", cancellationToken);
+                    return;
+                }
+
+                var lastUser = request.Messages
+                    .LastOrDefault(m => string.Equals(m.Role, "user", StringComparison.OrdinalIgnoreCase));
+
+                if (lastUser == null || string.IsNullOrWhiteSpace(lastUser.Content))
+                {
+                    Response.StatusCode = StatusCodes.Status400BadRequest;
+                    await Response.WriteAsync("Nessun messaggio utente valido", cancellationToken);
+                    return;
+                }
+
+                var referenced = await RetrieveSimilarClosedTicketsAsync(
+                    lastUser.Content, embeddingService, request.TopTickets, request.MinSimilarityThreshold);
+
+                // Ticket di riferimento in forma ridotta nell'header (Base64 per gestire accenti)
+                var slim = referenced.Select(t => new
+                {
+                    t.TicketId,
+                    t.TicketNumber,
+                    t.CustomerName,
+                    t.SimilarityPercentage,
+                    t.CanAccess
+                }).ToList();
+
+                var slimJson = System.Text.Json.JsonSerializer.Serialize(slim);
+                Response.Headers["X-Referenced-Tickets"] =
+                    Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(slimJson));
+
+                var context = BuildTicketContext(referenced);
+
+                await foreach (var chunk in chatService
+                    .AnswerStreamAsync(request.Messages, context, cancellationToken))
+                {
+                    await Response.WriteAsync(chunk, cancellationToken);
+                    await Response.Body.FlushAsync(cancellationToken);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Client disconnesso: nessuna azione necessaria
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(AssistantChatStream), LogEvent.EventsTypes.Error, ex);
+                // Se non è ancora stato scritto nulla, prova a segnalare l'errore in coda allo stream
+                try
+                {
+                    await Response.WriteAsync($"\n\n⚠️ Errore durante l'elaborazione: {ex.Message}", cancellationToken);
+                }
+                catch { }
+            }
+        }
+
+        /// <summary>
+        /// Recupera i ticket chiusi più simili a una query cercando su TUTTI i ticket (senza filtro
+        /// azienda: la soluzione può trovarsi ovunque). Per ogni risultato imposta CanAccess in base
+        /// ai permessi dell'utente; i ticket non accessibili vengono restituiti come "casi simili"
+        /// anonimi (nessun nome cliente, nessun link).
+        /// </summary>
+        private async Task<List<CRM.Shared.Models.TicketSimilarityResult>> RetrieveSimilarClosedTicketsAsync(
+            string query, OpenAIEmbeddingService embeddingService, int topN, double minSimilarity)
+        {
+            var results = new List<CRM.Shared.Models.TicketSimilarityResult>();
+            if (string.IsNullOrWhiteSpace(query))
+                return results;
+
+            var queryEmbedding = await embeddingService.GenerateEmbeddingAsync(query);
+            var magnitude = Math.Sqrt(queryEmbedding.Sum(x => (double)x * x));
+            if (magnitude < 0.1)
+                return results;
+
+            // Cerca su TUTTI i ticket chiusi (la soluzione può trovarsi in qualsiasi azienda)
+            var closedTickets = await _context.Tickets
+                .Include(x => x.Company)
+                .Where(x => x.Closed == true
+                    && !string.IsNullOrEmpty(x.Description)
+                    && !string.IsNullOrEmpty(x.DescriptionEmbedding))
+                .Select(x => new
+                {
+                    x.Id,
+                    x.IdCompany,
+                    x.Description,
+                    x.CloseDescription,
+                    x.DateClosed,
+                    EmbeddingJson = x.DescriptionEmbedding,
+                    CompanyName = x.Company.RagioneSociale,
+                    Priority = x.Priority != null ? x.Priority.ToString() : "Normal"
+                })
+                .ToListAsync();
+
+            // Insieme delle aziende accessibili all'utente (null = accesso a tutte)
+            var canAccessAll = await _permits.CanAccessOtherCompany();
+            HashSet<int>? allowedCompanies = canAccessAll
+                ? null
+                : (await _permits.GetIdCompanies()).ToHashSet();
+
+            foreach (var ticket in closedTickets)
+            {
+                try
+                {
+                    var ticketEmbedding = System.Text.Json.JsonSerializer
+                        .Deserialize<float[]>(ticket.EmbeddingJson);
+
+                    if (ticketEmbedding == null || ticketEmbedding.Length == 0)
+                        continue;
+
+                    var similarity = embeddingService.CalculateCosineSimilarity(queryEmbedding, ticketEmbedding);
+                    var percentage = embeddingService.CosineSimilarityToPercentage(similarity);
+
+                    if (percentage >= minSimilarity)
+                    {
+                        var canAccess = allowedCompanies == null || allowedCompanies.Contains(ticket.IdCompany);
+
+                        results.Add(new CRM.Shared.Models.TicketSimilarityResult
+                        {
+                            TicketId = ticket.Id,
+                            TicketNumber = $"#{ticket.Id}",
+                            Title = ticket.Description != null
+                                ? (ticket.Description.Length > 100
+                                    ? ticket.Description.Substring(0, 100) + "..."
+                                    : ticket.Description)
+                                : string.Empty,
+                            Description = ticket.Description,
+                            // Nome cliente solo se il ticket è accessibile (privacy verso altre aziende)
+                            CustomerName = canAccess ? ticket.CompanyName : null,
+                            SimilarityPercentage = Math.Round(percentage, 2),
+                            CosineSimilarity = Math.Round(similarity, 4),
+                            ClosedDate = ticket.DateClosed,
+                            Solution = ticket.CloseDescription,
+                            Priority = ticket.Priority,
+                            CanAccess = canAccess
+                        });
+                    }
+                }
+                catch
+                {
+                    // Ignora ticket con embedding non deserializzabile
+                    continue;
+                }
+            }
+
+            return results
+                .OrderByDescending(x => x.SimilarityPercentage)
+                .Take(Math.Max(1, topN))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Formatta l'elenco dei ticket simili in un blocco di testo da passare al modello.
+        /// </summary>
+        private static string BuildTicketContext(List<CRM.Shared.Models.TicketSimilarityResult> tickets)
+        {
+            if (tickets == null || tickets.Count == 0)
+                return string.Empty;
+
+            var sb = new System.Text.StringBuilder();
+            foreach (var t in tickets)
+            {
+                // Cita il numero/cliente solo per i ticket accessibili; gli altri restano casi anonimi
+                if (t.CanAccess)
+                    sb.AppendLine($"--- Ticket {t.TicketNumber} (cliente: {t.CustomerName}, similarità {t.SimilarityPercentage:F0}%) ---");
+                else
+                    sb.AppendLine($"--- Caso simile (similarità {t.SimilarityPercentage:F0}%) ---");
+
+                sb.AppendLine($"Problema: {TrimText(t.Description, 600)}");
+                sb.AppendLine($"Soluzione applicata: {(string.IsNullOrWhiteSpace(t.Solution) ? "(non registrata)" : TrimText(t.Solution, 600))}");
+                sb.AppendLine();
+            }
+            return sb.ToString();
+        }
+
+        private static string TrimText(string s, int max)
+            => string.IsNullOrEmpty(s) ? string.Empty : (s.Length > max ? s.Substring(0, max) + "..." : s);
+
         [HttpPost("hybrid-search")]
         public async Task<ActionResult<CRM.Shared.Models.SemanticSearchResponse>> HybridSearch(
             [FromBody] CRM.Shared.Models.SemanticSearchRequest request,

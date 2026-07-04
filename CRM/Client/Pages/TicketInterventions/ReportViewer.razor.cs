@@ -37,8 +37,17 @@ namespace CRM.Client.Pages.TicketInterventions
         [Inject]
         private NavigationManager NavigationManager { get; set; } = default!;
 
+        [Inject]
+        private IAGRestClientService RestClientServer { get; set; } = default!;
+
         [Parameter]
         public int Id { get; set; }
+
+        // ModalitÃ  di raccolta firma per questo intervento.
+        private enum SignatureMode { None, OnSite, Remote }
+        private SignatureMode _signatureMode = SignatureMode.None;
+        private bool _remoteSignatureEnabled;
+        private bool _isSendingRemote;
 
         private bool _loaded;
         private string _loadingMessage = "Caricamento report...";
@@ -50,6 +59,14 @@ namespace CRM.Client.Pages.TicketInterventions
         private string _signatureEmail = string.Empty;
         private string _signerName = string.Empty;
         private TicketIntervention? _ticketIntervention = null;
+
+        // --- Stato flusso OTP (codice via SMS/email) ---
+        private bool _showOtpModal;
+        private string _otpChallengeId = string.Empty;
+        private DateTime _otpExpiresAt;
+        private string _otpSentTo = string.Empty;
+        private OtpModal? _otpModal;
+        private CRM.Shared.Models.SignaturePendingData? _pendingOtp;
 
         private ElementReference containerRef;
         private ElementReference pdfHostRef;
@@ -187,9 +204,9 @@ namespace CRM.Client.Pages.TicketInterventions
             }
 
             // Mostra conferma
-            var message = Localize["Ricreare il report? Il report esistente sarà sovrascritto."];
+            var message = Localize["Ricreare il report? Il report esistente sarï¿½ sovrascritto."];
             
-            if (await DialogService.Confirm(message, Localize["Conferma"], new ConfirmOptions { OkButtonText = "Sì", CancelButtonText = "No" }) == true)
+            if (await DialogService.Confirm(message, Localize["Conferma"], new ConfirmOptions { OkButtonText = "Sï¿½", CancelButtonText = "No" }) == true)
             {
                 await ReportCreate(selectedLanguageCode.ToString());
             }
@@ -328,6 +345,8 @@ namespace CRM.Client.Pages.TicketInterventions
                     _signatureStatus = intervention.SignatureStatus.ToString();
                     _signatureEmail = intervention.SignatureEmail ?? string.Empty;
                     _signerName = intervention.SignatureName ?? string.Empty;
+
+                    await ComputeSignatureModeAsync(intervention.SupportType);
                 }
             }
             catch (Exception ex)
@@ -340,7 +359,35 @@ namespace CRM.Client.Pages.TicketInterventions
         }
 
         /// <summary>
-        /// Apre dialog per rinviare email di conferma (con possibilità di modificare l'email)
+        /// Decide come raccogliere la firma: in loco se il cliente Ã¨ presente
+        /// (OnSite/Office); da remoto solo se l'apposita impostazione Ã¨ attiva;
+        /// altrimenti nessuna firma richiesta.
+        /// </summary>
+        private async Task ComputeSignatureModeAsync(int supportType)
+        {
+            var support = (TypesSupport)supportType;
+
+            if (support == TypesSupport.OnSite || support == TypesSupport.Office)
+            {
+                _signatureMode = SignatureMode.OnSite;
+                return;
+            }
+
+            try
+            {
+                var settings = await RestClientServer.GetFirst<GlobalSetting>(ConstHelper.GlobalSettingsPath);
+                _remoteSignatureEnabled = settings?.RemoteSignatureEnabled ?? false;
+            }
+            catch
+            {
+                _remoteSignatureEnabled = false;
+            }
+
+            _signatureMode = _remoteSignatureEnabled ? SignatureMode.Remote : SignatureMode.None;
+        }
+
+        /// <summary>
+        /// Apre dialog per rinviare email di conferma (con possibilitï¿½ di modificare l'email)
         /// </summary>
         private async Task OpenResendConfirmationDialog()
         {
@@ -625,9 +672,9 @@ namespace CRM.Client.Pages.TicketInterventions
 
 ?? Email di conferma inviata a: {data.signerEmail}
 
-?? La firma sarà valida SOLO dopo la conferma tramite email.
+?? La firma sarï¿½ valida SOLO dopo la conferma tramite email.
 
-Il cliente riceverà un'email con un link per confermare la firma.",
+Il cliente riceverï¿½ un'email con un link per confermare la firma.",
                             "Firma Salvata - Conferma Richiesta",
                             new AlertOptions { OkButtonText = "OK" }
                         );
@@ -660,6 +707,230 @@ Il cliente riceverà un'email con un link per confermare la firma.",
             {
                 StateHasChanged();
             }
+        }
+
+        /// <summary>
+        /// La firma Ã¨ pronta: richiede l'invio di un codice OTP al firmatario
+        /// (SMS se ha indicato il cellulare, altrimenti email) e apre la modale.
+        /// </summary>
+        private async Task OnOtpSignatureRequested((string signature, string signerName, string signerEmail, string signerPhone) data)
+        {
+            _showSignatureOverlay = false;
+            _loadingMessage = "Invio del codice di verifica...";
+            _loaded = false;
+            StateHasChanged();
+
+            try
+            {
+                _pendingOtp = new CRM.Shared.Models.SignaturePendingData
+                {
+                    Signature = data.signature,
+                    SignerName = data.signerName,
+                    SignerEmail = data.signerEmail,
+                    SignerPhone = data.signerPhone
+                };
+
+                var (otpResp, error) = await RequestOtpAsync();
+                _loaded = true;
+
+                if (otpResp != null && otpResp.Success)
+                {
+                    _otpChallengeId = otpResp.ChallengeId;
+                    _otpExpiresAt = otpResp.ExpiresAt;
+                    _otpSentTo = otpResp.SentTo;
+                    _showOtpModal = true;
+                }
+                else
+                {
+                    await DialogService.Alert(
+                        error ?? "Impossibile inviare il codice di verifica. Riprova.",
+                        "Errore", new AlertOptions { OkButtonText = "OK" });
+                }
+            }
+            catch (Exception ex)
+            {
+                _loaded = true;
+                await DialogService.Alert(
+                    $"Errore durante l'invio del codice: {ex.Message}",
+                    "Errore", new AlertOptions { OkButtonText = "OK" });
+            }
+            finally
+            {
+                StateHasChanged();
+            }
+        }
+
+        /// <summary>Codice inserito nella modale: lo verifica e finalizza la firma.</summary>
+        private async Task OnOtpEntered(string otp)
+        {
+            try
+            {
+                var payload = new CRM.Shared.Models.OtpVerifyRequest
+                {
+                    ChallengeId = _otpChallengeId,
+                    Otp = otp
+                };
+
+                var resp = await Http.PostAsJsonAsync(
+                    $"{ConstHelper.TicketsInterventionsPath}/VerifySignatureOtp/{Id}", payload);
+
+                if (resp.IsSuccessStatusCode)
+                {
+                    _showOtpModal = false;
+                    _hasSignature = true;
+                    _signatureStatus = "Verified";
+                    _loadingMessage = "Rigenerazione PDF con firma...";
+                    _loaded = false;
+                    StateHasChanged();
+
+                    var regenerated = await Http.GetFromJsonAsync<bool>(
+                        $"{ConstHelper.TicketsInterventionsPath}/Report/{Id}");
+
+                    if (regenerated)
+                    {
+                        await LoadReport();
+                        await DialogService.Alert(
+                            "Firma verificata e salvata con successo.",
+                            "Firma Confermata", new AlertOptions { OkButtonText = "OK" });
+                    }
+                    else
+                    {
+                        _loadingMessage = "Errore rigenerazione PDF";
+                        _loaded = true;
+                    }
+
+                    StateHasChanged();
+                    return;
+                }
+
+                // Codice errato/scaduto: mostra il messaggio nella modale
+                var (message, remaining) = await ParseOtpErrorAsync(resp);
+                _otpModal?.SetError(message, remaining);
+            }
+            catch (Exception ex)
+            {
+                _otpModal?.SetError($"Errore di verifica: {ex.Message}");
+            }
+        }
+
+        /// <summary>Richiede un nuovo codice riusando gli stessi dati di firma.</summary>
+        private async Task OnOtpResend()
+        {
+            try
+            {
+                var (otpResp, error) = await RequestOtpAsync();
+                if (otpResp != null && otpResp.Success)
+                {
+                    _otpChallengeId = otpResp.ChallengeId;
+                    _otpExpiresAt = otpResp.ExpiresAt;
+                    _otpSentTo = otpResp.SentTo;
+                    StateHasChanged();
+                }
+                else
+                {
+                    _otpModal?.SetError(error ?? "Impossibile reinviare il codice.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Errore reinvio OTP: {ex.Message}");
+            }
+        }
+
+        private void OnOtpCancelled()
+        {
+            _showOtpModal = false;
+            StateHasChanged();
+        }
+
+        /// <summary>
+        /// Interventi da remoto: invia al cliente un link per firmare dal proprio
+        /// dispositivo (pagina pubblica /RemoteSignature).
+        /// </summary>
+        private async Task RequestRemoteSignature()
+        {
+            _isSendingRemote = true;
+            StateHasChanged();
+
+            try
+            {
+                var resp = await Http.PostAsync(
+                    $"{ConstHelper.TicketsInterventionsPath}/RequestRemoteSignature/{Id}", null);
+
+                if (resp.IsSuccessStatusCode)
+                {
+                    var result = await resp.Content.ReadFromJsonAsync<CRM.Shared.Models.RemoteSignatureRequestResponse>();
+                    await CheckSignature();
+
+                    var via = result?.Channel == "sms" ? "SMS" : "email";
+                    await DialogService.Alert(
+                        $"Link di firma inviato al cliente via {via} a {result?.SentTo}. Il documento risulterÃ  firmato quando il cliente completa la firma dal link.",
+                        "Richiesta inviata", new AlertOptions { OkButtonText = "OK" });
+                }
+                else
+                {
+                    var (message, _) = await ParseOtpErrorAsync(resp);
+                    await DialogService.Alert(message, "Errore", new AlertOptions { OkButtonText = "OK" });
+                }
+            }
+            catch (Exception ex)
+            {
+                await DialogService.Alert($"Errore invio link: {ex.Message}", "Errore", new AlertOptions { OkButtonText = "OK" });
+            }
+            finally
+            {
+                _isSendingRemote = false;
+                StateHasChanged();
+            }
+        }
+
+        private async Task<(CRM.Shared.Models.OtpRequestResponse? data, string? error)> RequestOtpAsync()
+        {
+            if (_pendingOtp == null)
+                return (null, "Dati della firma mancanti.");
+
+            var resp = await Http.PostAsJsonAsync(
+                $"{ConstHelper.TicketsInterventionsPath}/RequestSignatureOtp/{Id}", _pendingOtp);
+
+            if (resp.IsSuccessStatusCode)
+                return (await resp.Content.ReadFromJsonAsync<CRM.Shared.Models.OtpRequestResponse>(), null);
+
+            // Estrae il messaggio d'errore del server (es. "Riprova tra 45 secondi").
+            var error = $"Errore {(int)resp.StatusCode}";
+            try
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("error", out var e) && e.ValueKind == JsonValueKind.String)
+                    error = e.GetString() ?? error;
+            }
+            catch { /* corpo non JSON */ }
+
+            return (null, error);
+        }
+
+        private static async Task<(string message, int remaining)> ParseOtpErrorAsync(HttpResponseMessage resp)
+        {
+            var message = (int)resp.StatusCode switch
+            {
+                401 => "Codice non valido o scaduto",
+                423 => "Troppi tentativi. Richiedi un nuovo codice",
+                _ => "Verifica non riuscita"
+            };
+            int remaining = 3;
+
+            try
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("error", out var err) && err.ValueKind == JsonValueKind.String)
+                    message = err.GetString() ?? message;
+                if (doc.RootElement.TryGetProperty("attemptsRemaining", out var rem) && rem.TryGetInt32(out var r))
+                    remaining = r;
+            }
+            catch { /* corpo non JSON: usa il messaggio di default */ }
+
+            return (message, remaining);
         }
 
         public async ValueTask DisposeAsync()

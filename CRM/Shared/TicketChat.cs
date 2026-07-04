@@ -26,6 +26,12 @@ namespace CRM.Shared
         [ForeignKey("AttachmentFile")]
         public int? IdAttachmentFile { get; set; }
 
+        /// <summary>
+        /// Messaggio eliminato dall'utente che lo ha inviato (stile WhatsApp):
+        /// la riga resta ma testo/allegato vengono rimossi.
+        /// </summary>
+        public bool Deleted { get; set; }
+
         public virtual Ticket Ticket { get; set; }
 
         public virtual ApplicationUser User { get; set; }
@@ -79,8 +85,15 @@ namespace CRM.Shared
         public bool Last { get; set; } = false;
 
         public int? AttachmentFileId { get; set; }
+        public int? AttachmentId { get; set; }
         public string? AttachmentFileName { get; set; }
         public string? AttachmentContentType { get; set; }
+
+        /// <summary>Messaggio eliminato: mostra solo il segnaposto con data/ora.</summary>
+        public bool Deleted { get; set; }
+
+        /// <summary>L'utente corrente è il mittente e può eliminare il messaggio.</summary>
+        public bool CanDelete { get; set; }
     }
 
     public class ChatFileUploadResult

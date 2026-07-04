@@ -1,0 +1,138 @@
+@page "/Tickets/Assistant"
+
+<div class="container-fluid px-4 py-3 d-flex flex-column" style="height: calc(100vh - 90px);">
+    <!-- Header -->
+    <div class="row mb-3 flex-shrink-0">
+        <div class="col-12">
+            <h2 class="fw-bold text-dark mb-1">
+                <span class="material-icons me-2" style="vertical-align: middle;">smart_toy</span>
+                Assistente Ticket
+            </h2>
+            <p class="text-muted mb-0">Fai una domanda: l'assistente cerca nei ticket chiusi e ti propone una soluzione.</p>
+        </div>
+    </div>
+
+    <!-- Area messaggi -->
+    <div class="card border-0 shadow-sm flex-grow-1 d-flex flex-column" style="min-height: 0;">
+        <div class="card-body overflow-auto flex-grow-1" id="assistant-messages">
+            @if (_turns.Count == 0)
+            {
+                <div class="text-center text-muted py-5">
+                    <span class="material-icons" style="font-size: 48px; opacity: .4;">forum</span>
+                    <p class="mt-2 mb-0">Scrivi il tuo problema per iniziare.</p>
+                    <p class="small">Es: "Il gestionale non stampa le fatture dopo l'aggiornamento"</p>
+                </div>
+            }
+
+            @foreach (var turn in _turns)
+            {
+                <div class="d-flex mb-3 @(turn.Role == "user" ? "justify-content-end" : "justify-content-start")">
+                    <div class="@(turn.Role == "user" ? "chat-bubble-user" : "chat-bubble-assistant")">
+                        @if (turn.Role == "assistant")
+                        {
+                            <div class="small fw-semibold text-primary mb-1">
+                                <span class="material-icons" style="font-size: 14px; vertical-align: middle;">smart_toy</span>
+                                Assistente
+                            </div>
+                        }
+                        @if (turn.Role == "assistant" && string.IsNullOrEmpty(turn.Content))
+                        {
+                            <Waiting></Waiting>
+                        }
+                        else
+                        {
+                            <div class="chat-content">@turn.Content</div>
+                        }
+
+                        @if (turn.Tickets != null && turn.Tickets.Any())
+                        {
+                            <div class="mt-2 pt-2 border-top">
+                                <div class="small text-muted mb-1">Ticket di riferimento:</div>
+                                @foreach (var t in turn.Tickets)
+                                {
+                                    @if (t.CanAccess)
+                                    {
+                                        <div class="ticket-ref d-flex align-items-center justify-content-between"
+                                             @onclick="@(async () => await OpenTicket(t.TicketId))">
+                                            <span>
+                                                <span class="badge bg-secondary me-1">@t.TicketNumber</span>
+                                                <span class="small">@t.CustomerName</span>
+                                            </span>
+                                            <span class="badge bg-primary">@t.SimilarityPercentage.ToString("F0")%</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="ticket-ref-locked d-flex align-items-center justify-content-between">
+                                            <span class="text-muted small">
+                                                <span class="material-icons" style="font-size: 14px; vertical-align: middle;">lock</span>
+                                                Caso simile (accesso riservato)
+                                            </span>
+                                            <span class="badge bg-secondary">@t.SimilarityPercentage.ToString("F0")%</span>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Input -->
+        <div class="card-footer bg-white border-top">
+            <div class="input-group">
+                <RadzenTextArea @bind-Value="@_input"
+                                @onkeydown="@OnKeyDown"
+                                Placeholder="Descrivi il problema o fai una domanda..."
+                                Rows="2"
+                                Disabled="@_loading"
+                                class="form-control"
+                                Style="resize: none;" />
+                <RadzenButton Click="@SendAsync"
+                              Icon="send"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Disabled="@(_loading || string.IsNullOrWhiteSpace(_input))" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .chat-bubble-user {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 16px 16px 4px 16px;
+        max-width: 75%;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .chat-bubble-assistant {
+        background-color: #f1f5f9;
+        color: #1e293b;
+        padding: 10px 14px;
+        border-radius: 16px 16px 16px 4px;
+        max-width: 75%;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .ticket-ref {
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 8px;
+        transition: background-color 0.15s ease;
+    }
+
+    .ticket-ref:hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+
+    .ticket-ref-locked {
+        padding: 4px 8px;
+        border-radius: 8px;
+        opacity: 0.75;
+    }
+</style>

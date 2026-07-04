@@ -3,7 +3,7 @@ using System;
 namespace CRM.Shared.Models
 {
     /// <summary>
-    /// Risultato della ricerca semantica con similarità AI
+    /// Risultato della ricerca semantica con similaritï¿½ AI
     /// </summary>
     public class TicketSimilarityResult
     {
@@ -33,12 +33,12 @@ namespace CRM.Shared.Models
         public string CustomerName { get; set; }
 
         /// <summary>
-        /// Percentuale di similarità (0-100)
+        /// Percentuale di similaritï¿½ (0-100)
         /// </summary>
         public double SimilarityPercentage { get; set; }
 
         /// <summary>
-        /// Score di similarità coseno (-1 a 1)
+        /// Score di similaritï¿½ coseno (-1 a 1)
         /// </summary>
         public double CosineSimilarity { get; set; }
 
@@ -58,8 +58,13 @@ namespace CRM.Shared.Models
         public string Category { get; set; }
 
         /// <summary>
-        /// Priorità del ticket
+        /// Prioritï¿½ del ticket
         /// </summary>
         public string Priority { get; set; }
+
+        /// <summary>
+        /// True se l'utente corrente puÃ² accedere a questo ticket (mostra il link solo in tal caso).
+        /// </summary>
+        public bool CanAccess { get; set; } = true;
     }
 }

@@ -102,12 +102,37 @@
                         <span class="nav-text">@Localize["Deals"]</span>
                     </NavLink>
 
-                    <!-- AI Search -->
-                    <NavLink class="nav-link submenu-link highlight-ai" href="Tickets/Search" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">psychology</span>
-                        <span class="nav-text">@Localize["Search"] AI</span>
-                        <span class="badge bg-primary ms-auto">AI</span>
-                    </NavLink>
+                    <!-- AI Assistant (with sub-submenu) -->
+                    <div class="nav-item">
+                        <div class="nav-link submenu-link highlight-ai" @onclick="()=>_expandAI = !_expandAI">
+                            <span class="material-icons nav-icon">auto_awesome</span>
+                            <span class="nav-text">AI Assistant</span>
+                            <span class="material-icons expand-icon-small">@(_expandAI ? "expand_less" : "expand_more")</span>
+                        </div>
+
+                        @if (_expandAI)
+                        {
+                            <div class="nav-submenu-2">
+                                <!-- AI Search -->
+                                <NavLink class="nav-link submenu-link-2 highlight-ai" href="Tickets/Search" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">psychology</span>
+                                    <span class="nav-text">@Localize["Search"] AI</span>
+                                </NavLink>
+
+                                <!-- AI Assistant (chat) -->
+                                <NavLink class="nav-link submenu-link-2 highlight-ai" href="Tickets/Assistant" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">smart_toy</span>
+                                    <span class="nav-text">@Localize["Assistant"]</span>
+                                </NavLink>
+
+                                <!-- AI Data Assistant (query dati CRM) -->
+                                <NavLink class="nav-link submenu-link-2 highlight-ai" href="Tickets/DataAssistant" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">storage</span>
+                                    <span class="nav-text">@Localize["DataAssistant"]</span>
+                                </NavLink>
+                            </div>
+                        }
+                    </div>
 
                     <!-- Feedback Clienti (NUOVO) -->
                     <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
@@ -160,6 +185,8 @@
     private bool _hasPageName = true;
 
     private bool _expandMenuProdotti = false;
+
+    private bool _expandAI = false;
 
     private int _unreadFeedbacksCount = 0;
 

@@ -1,5 +1,5 @@
-﻿<div class="row m-3">
-    
+<div class="row m-3">
+
 
     @if (TicketChat.TypeMessage == TypeMessage.Receved)
     {
@@ -8,18 +8,25 @@
                 <RedGAvatar IdUser="@TicketChat.IdUser"></RedGAvatar>
                 <h6 class="alert-heading my-auto ms-2" style="color: black;">@TicketChat.UserName</h6>
             </div>
-            @if (!string.IsNullOrWhiteSpace(TicketChat.Message))
+            @if (TicketChat.Deleted)
             {
-                <p class="msg-chat"><pre>@TicketChat.Message</pre></p>
+                @DeletedContent
             }
-            @if (TicketChat.AttachmentFileId.HasValue)
+            else
             {
-                <div class="mt-1">
-                    <a href="/api/AttachmentFiles/@TicketChat.AttachmentFileId/download" target="_blank" class="d-inline-flex align-items-center gap-1 text-decoration-none">
-                        <span class="material-icons" style="font-size:18px;">attach_file</span>
-                        <span>@TicketChat.AttachmentFileName</span>
-                    </a>
-                </div>
+                @if (!string.IsNullOrWhiteSpace(TicketChat.Message))
+                {
+                    <p class="msg-chat"><pre>@TicketChat.Message</pre></p>
+                }
+                @if (TicketChat.AttachmentFileId.HasValue)
+                {
+                    <div class="mt-1">
+                        <button type="button" class="btn btn-link p-0 d-inline-flex align-items-center gap-1 text-decoration-none" @onclick="DownloadFile" disabled="@_downloading">
+                            <span class="material-icons" style="font-size:18px;">@(_downloading ? "hourglass_empty" : "attach_file")</span>
+                            <span>@TicketChat.AttachmentFileName</span>
+                        </button>
+                    </div>
+                }
             }
             <hr>
             <p class="mb-0"><small>@TicketChat.Date.ToString("g")</small></p>
@@ -28,19 +35,35 @@
     else if (TicketChat.TypeMessage == TypeMessage.Sended)
     {
         <div class="alert alert-success ms-auto col-auto" style="max-width:75%;" role="alert">
-            <h6 class="alert-heading" style="color: black;">@TicketChat.UserName</h6>
-            @if (!string.IsNullOrWhiteSpace(TicketChat.Message))
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="alert-heading mb-0" style="color: black;">@TicketChat.UserName</h6>
+                @if (TicketChat.CanDelete)
+                {
+                    <button type="button" class="btn btn-link p-0 ms-2 text-danger" title="@Localize["Elimina messaggio"]"
+                            @onclick="DeleteMessage" disabled="@_deleting">
+                        <span class="material-icons" style="font-size:18px;">@(_deleting ? "hourglass_empty" : "delete")</span>
+                    </button>
+                }
+            </div>
+            @if (TicketChat.Deleted)
             {
-                <p class="msg-chat"><pre>@TicketChat.Message</pre></p>
+                @DeletedContent
             }
-            @if (TicketChat.AttachmentFileId.HasValue)
+            else
             {
-                <div class="mt-1">
-                    <a href="/api/AttachmentFiles/@TicketChat.AttachmentFileId/download" target="_blank" class="d-inline-flex align-items-center gap-1 text-decoration-none text-success">
-                        <span class="material-icons" style="font-size:18px;">attach_file</span>
-                        <span>@TicketChat.AttachmentFileName</span>
-                    </a>
-                </div>
+                @if (!string.IsNullOrWhiteSpace(TicketChat.Message))
+                {
+                    <p class="msg-chat"><pre>@TicketChat.Message</pre></p>
+                }
+                @if (TicketChat.AttachmentFileId.HasValue)
+                {
+                    <div class="mt-1">
+                        <button type="button" class="btn btn-link p-0 d-inline-flex align-items-center gap-1 text-decoration-none text-success" @onclick="DownloadFile" disabled="@_downloading">
+                            <span class="material-icons" style="font-size:18px;">@(_downloading ? "hourglass_empty" : "attach_file")</span>
+                            <span>@TicketChat.AttachmentFileName</span>
+                        </button>
+                    </div>
+                }
             }
             <hr>
             <p class="mb-0"><small>@TicketChat.Date.ToString("g")</small></p>
@@ -57,16 +80,26 @@
             @if (TicketChat.AttachmentFileId.HasValue)
             {
                 <div class="mt-1">
-                    <a href="/api/AttachmentFiles/@TicketChat.AttachmentFileId/download" target="_blank" class="d-inline-flex align-items-center gap-1 text-decoration-none text-warning">
-                        <span class="material-icons" style="font-size:18px;">attach_file</span>
+                    <button type="button" class="btn btn-link p-0 d-inline-flex align-items-center gap-1 text-decoration-none text-warning" @onclick="DownloadFile" disabled="@_downloading">
+                        <span class="material-icons" style="font-size:18px;">@(_downloading ? "hourglass_empty" : "attach_file")</span>
                         <span>@TicketChat.AttachmentFileName</span>
-                    </a>
+                    </button>
                 </div>
             }
             <hr>
             <p class="mb-0"><small>@TicketChat.Date.ToString("g")</small></p>
         </div>
     }
-   
-    
+
+
 </div>
+
+@code {
+    private RenderFragment DeletedContent => __builder =>
+    {
+        <p class="msg-chat msg-deleted fst-italic text-muted mb-0 d-inline-flex align-items-center gap-1">
+            <span class="material-icons" style="font-size:16px;">do_not_disturb</span>
+            <span>@Localize["Questo messaggio è stato eliminato"]</span>
+        </p>
+    };
+}

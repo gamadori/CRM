@@ -10,11 +10,21 @@
             <span class="ps-2 text-secondary">Dati Intervento</span>
         </button>
 
-        <!-- ? NUOVO: Bottone Firma -->
-        <button type="button" class="btn btn-sm btn-primary" @onclick="OpenSignatureOverlay" disabled="@_isSigning">
-            <i class="material-icons middle">draw</i>
-            <span class="ps-2">@(_hasSignature ? "Rifirma Documento" : "Firma Documento")</span>
-        </button>
+        <!-- Firma in loco: solo quando il cliente è presente (OnSite/Office) -->
+        @if (_signatureMode == SignatureMode.OnSite)
+        {
+            <button type="button" class="btn btn-sm btn-primary" @onclick="OpenSignatureOverlay" disabled="@_isSigning">
+                <i class="material-icons middle">draw</i>
+                <span class="ps-2">@(_hasSignature ? "Rifirma Documento" : "Firma Documento")</span>
+            </button>
+        }
+        else if (_signatureMode == SignatureMode.Remote)
+        {
+            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="RequestRemoteSignature" disabled="@_isSendingRemote">
+                <i class="material-icons middle">@(_isSendingRemote ? "hourglass_empty" : "send")</i>
+                <span class="ps-2">@(_hasSignature ? "Reinvia link di firma" : "Richiedi firma al cliente")</span>
+            </button>
+        }
 
         <!-- ? NUOVO: Bottone Rinvio Email (visibile solo se firma PENDING) -->
         @if (_signatureStatus == "Pending" && !string.IsNullOrEmpty(_signatureEmail))
@@ -92,11 +102,21 @@
     </div>
 </div>
 
-<!-- ? NUOVO: Overlay Firma SENZA OTP (Conferma Email) -->
+<!-- Overlay Firma con conferma tramite codice OTP (SMS o email) -->
 <SignatureOverlay Visible="@_showSignatureOverlay"
                   Title="Firma del Cliente"
                   Width="700"
                   Height="300"
                   RequireOtp="true"
-                  OnOtpRequired="OnSignatureWithEmailConfirmation"
+                  OnOtpRequired="OnOtpSignatureRequested"
                   OnCancelled="@(() => _showSignatureOverlay = false)" IdCompany="_ticketIntervention?.Ticket?.IdCompany" />
+
+<!-- Modale inserimento codice OTP -->
+<OtpModal @ref="_otpModal"
+          Visible="@_showOtpModal"
+          ChallengeId="@_otpChallengeId"
+          ExpiresAt="@_otpExpiresAt"
+          SentTo="@_otpSentTo"
+          OnOtpVerified="OnOtpEntered"
+          OnResendRequested="OnOtpResend"
+          OnCancelled="OnOtpCancelled" />

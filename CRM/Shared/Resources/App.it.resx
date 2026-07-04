@@ -627,6 +627,12 @@
   <data name="Search" xml:space="preserve">
     <value>Ricerca</value>
   </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>Assistente</value>
+  </data>
+  <data name="DataAssistant" xml:space="preserve">
+    <value>Assistente Dati</value>
+  </data>
   <data name="Interventions" xml:space="preserve">
     <value>Servizi</value>
   </data>
@@ -716,5 +722,53 @@
   </data>
   <data name="ExpenseReceipts" xml:space="preserve">
     <value>Nota Spese</value>
+  </data>
+  <data name="Verifica in corso..." xml:space="preserve">
+    <value>Verifica in corso...</value>
+  </data>
+  <data name="Verifica firma in corso..." xml:space="preserve">
+    <value>Verifica firma in corso...</value>
+  </data>
+  <data name="Attendere prego" xml:space="preserve">
+    <value>Attendere prego</value>
+  </data>
+  <data name="Firma Confermata!" xml:space="preserve">
+    <value>Firma Confermata!</value>
+  </data>
+  <data name="La tua firma per l'intervento #{0} è stata confermata con successo." xml:space="preserve">
+    <value>La tua firma per l'intervento #{0} è stata confermata con successo.</value>
+  </data>
+  <data name="Data conferma:" xml:space="preserve">
+    <value>Data conferma:</value>
+  </data>
+  <data name="Puoi chiudere questa finestra." xml:space="preserve">
+    <value>Puoi chiudere questa finestra.</value>
+  </data>
+  <data name="Firma Rifiutata" xml:space="preserve">
+    <value>Firma Rifiutata</value>
+  </data>
+  <data name="Hai rifiutato la firma per l'intervento #{0}." xml:space="preserve">
+    <value>Hai rifiutato la firma per l'intervento #{0}.</value>
+  </data>
+  <data name="Se ritieni che ci sia stato un errore, contatta il nostro ufficio." xml:space="preserve">
+    <value>Se ritieni che ci sia stato un errore, contatta il nostro ufficio.</value>
+  </data>
+  <data name="Errore" xml:space="preserve">
+    <value>Errore</value>
+  </data>
+  <data name="Link non valido. Token o ID intervento mancante." xml:space="preserve">
+    <value>Link non valido. Token o ID intervento mancante.</value>
+  </data>
+  <data name="Token non valido o già utilizzato." xml:space="preserve">
+    <value>Token non valido o già utilizzato.</value>
+  </data>
+  <data name="Intervento non trovato." xml:space="preserve">
+    <value>Intervento non trovato.</value>
+  </data>
+  <data name="Errore durante la verifica: {0}" xml:space="preserve">
+    <value>Errore durante la verifica: {0}</value>
+  </data>
+  <data name="Errore di connessione: {0}" xml:space="preserve">
+    <value>Errore di connessione: {0}</value>
   </data>
 </root>

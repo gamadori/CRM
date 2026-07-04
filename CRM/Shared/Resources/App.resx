@@ -628,6 +628,12 @@
   <data name="Search" xml:space="preserve">
     <value>Search</value>
   </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>Assistant</value>
+  </data>
+  <data name="DataAssistant" xml:space="preserve">
+    <value>Data Assistant</value>
+  </data>
   <data name="Interventions" xml:space="preserve">
     <value>Services</value>
   </data>
@@ -717,5 +723,53 @@
   </data>
   <data name="ExpenseReceipts" xml:space="preserve">
     <value>Expense report</value>
+  </data>
+  <data name="Verifica in corso..." xml:space="preserve">
+    <value>Verification in progress...</value>
+  </data>
+  <data name="Verifica firma in corso..." xml:space="preserve">
+    <value>Signature verification in progress...</value>
+  </data>
+  <data name="Attendere prego" xml:space="preserve">
+    <value>Please wait</value>
+  </data>
+  <data name="Firma Confermata!" xml:space="preserve">
+    <value>Signature Confirmed!</value>
+  </data>
+  <data name="La tua firma per l'intervento #{0} è stata confermata con successo." xml:space="preserve">
+    <value>Your signature for intervention #{0} has been successfully confirmed.</value>
+  </data>
+  <data name="Data conferma:" xml:space="preserve">
+    <value>Confirmation date:</value>
+  </data>
+  <data name="Puoi chiudere questa finestra." xml:space="preserve">
+    <value>You can close this window.</value>
+  </data>
+  <data name="Firma Rifiutata" xml:space="preserve">
+    <value>Signature Rejected</value>
+  </data>
+  <data name="Hai rifiutato la firma per l'intervento #{0}." xml:space="preserve">
+    <value>You have rejected the signature for intervention #{0}.</value>
+  </data>
+  <data name="Se ritieni che ci sia stato un errore, contatta il nostro ufficio." xml:space="preserve">
+    <value>If you believe this is an error, please contact our office.</value>
+  </data>
+  <data name="Errore" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Link non valido. Token o ID intervento mancante." xml:space="preserve">
+    <value>Invalid link. Missing token or intervention ID.</value>
+  </data>
+  <data name="Token non valido o già utilizzato." xml:space="preserve">
+    <value>Invalid or already used token.</value>
+  </data>
+  <data name="Intervento non trovato." xml:space="preserve">
+    <value>Intervention not found.</value>
+  </data>
+  <data name="Errore durante la verifica: {0}" xml:space="preserve">
+    <value>Verification error: {0}</value>
+  </data>
+  <data name="Errore di connessione: {0}" xml:space="preserve">
+    <value>Connection error: {0}</value>
   </data>
 </root>

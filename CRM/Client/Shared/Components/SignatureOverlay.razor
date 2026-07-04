@@ -7,9 +7,12 @@
 
 @if (Visible)
 {
-    <!-- Overlay fullscreen semi-trasparente -->
-    <div class="signature-overlay-backdrop" @onclick="Cancel">
-        <div class="signature-overlay-container" @onclick:stopPropagation>
+    <!-- Overlay fullscreen semi-trasparente. La rubrica (contatti/utenti) viene
+         mostrata in un pannello DENTRO questo stesso overlay: posizione e stile
+         li controlliamo noi, e il canvas della firma resta montato (nascosto via
+         CSS) cosÃ¬ la firma giÃ  tracciata NON viene mai persa. -->
+    <div class="signature-overlay-backdrop" @onclick="BackdropClick">
+        <div class="signature-overlay-container @(_picker != PickerMode.None ? "signature-overlay-hidden" : "")" @onclick:stopPropagation>
             <!-- Header -->
             <div class="signature-overlay-header">
                 <h5 class="mb-0">
@@ -45,34 +48,24 @@
                                maxlength="200"
                                style="font-size: 16px;" />
                         
-                        <!-- Dropdown per scegliere tra Contatti e Utenti -->
+                        <!-- Ricerca in rubrica: pulsanti diretti (niente dropdown Bootstrap,
+                             che verrebbe tagliato dall'overflow del body dell'overlay) -->
                         <button type="button"
-                                class="btn btn-outline-secondary dropdown-toggle"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false"
-                                title="Seleziona da rubrica">
-                            <i class="material-icons">search</i>
+                                class="btn btn-outline-secondary"
+                                @onclick="OpenContactsDialog"
+                                disabled="@(!IdCompany.HasValue)"
+                                title="@(IdCompany.HasValue ? "Cerca tra Contatti" : "Ricerca contatti disponibile solo se l'azienda Ã¨ specificata")">
+                            <i class="material-icons">contacts</i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <button class="dropdown-item" 
-                                        type="button"
-                                        @onclick="OpenContactsDialog"
-                                        disabled="@(!IdCompany.HasValue)">
-                                    <i class="material-icons me-2" style="font-size: 18px; vertical-align: middle;">contacts</i>
-                                    Cerca tra Contatti
-                                </button>
-                            </li>
-                            <li>
-                                <button class="dropdown-item" 
-                                        type="button"
-                                        @onclick="OpenUsersDialog">
-                                    <i class="material-icons me-2" style="font-size: 18px; vertical-align: middle;">people</i>
-                                    Cerca tra Utenti
-                                </button>
-                            </li>
-                        </ul>
-                        
+                       
+                       
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                @onclick="OpenUsersDialog"
+                                title="Cerca tra Utenti">
+                            <i class="material-icons">people</i>
+                        </button>
+
                         @if (_errorName != null)
                         {
                             <div class="invalid-feedback">@_errorName</div>
@@ -82,7 +75,7 @@
                     {
                         <small class="form-text text-muted">
                             <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
-                            Ricerca contatti disponibile solo se l'azienda è specificata
+                            Ricerca contatti disponibile solo se l'azienda ï¿½ specificata
                         </small>
                     }
                 </div>
@@ -108,9 +101,27 @@
                     {
                         <small class="form-text text-muted">
                             <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
-                            Riceverai un'email per confermare la firma. La firma sarà valida solo dopo la conferma.
+                            Riceverai un'email per confermare la firma. La firma sarï¿½ valida solo dopo la conferma.
                         </small>
                     }
+                </div>
+
+                <!-- Input Cellulare Firmatario (preferito per OTP via SMS) -->
+                <div class="mb-3">
+                    <label class="form-label" style="font-weight: 600; color: #495057;">
+                        <i class="material-icons" style="font-size: 18px; vertical-align: middle;">smartphone</i>
+                        Cellulare (per il codice via SMS)
+                    </label>
+                    <input type="tel"
+                           class="form-control"
+                           @bind="SignerPhone"
+                           placeholder="Es: +39 333 1234567"
+                           maxlength="30"
+                           style="font-size: 16px;" />
+                    <small class="form-text text-muted">
+                        <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
+                        Se indicato, il codice arriva via SMS; altrimenti via email.
+                    </small>
                 </div>
 
                 <!-- Canvas firma -->
@@ -155,6 +166,41 @@
                 </div>
             </div>
         </div>
+
+        @if (_picker != PickerMode.None)
+        {
+            <div class="signature-overlay-container signature-picker-container" @onclick:stopPropagation>
+                <div class="signature-overlay-header">
+                    <h5 class="mb-0">
+                        <i class="material-icons middle">@(_picker == PickerMode.Users ? "people" : "contacts")</i>
+                        @(_picker == PickerMode.Users ? "Seleziona Utente" : _picker == PickerMode.NewContact ? "Nuovo Contatto" : "Seleziona Contatto")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="ClosePicker"></button>
+                </div>
+                <div class="signature-overlay-body signature-picker-body">
+                    @if (_picker == PickerMode.Contacts)
+                    {
+                        <CRM.Client.Pages.Contacts.Index IdCompany="IdCompany"
+                                                         PageMode="CRM.Client.Helpers.PageHelper.PageModality.Dialog"
+                                                         OnClickSelect="OnContactSelected"
+                                                         OnClickNew="OpenNewContact" />
+                    }
+                    else if (_picker == PickerMode.Users)
+                    {
+                        <CRM.Client.Pages.Settings.Users.Index IdCompany="IdCompany"
+                                                               PageMode="CRM.Client.Helpers.PageHelper.PageModality.Dialog"
+                                                               OnSelectItem="OnUserSelected" />
+                    }
+                    else if (_picker == PickerMode.NewContact)
+                    {
+                        <CRM.Client.Pages.Contacts.Edit IdCompany="IdCompany"
+                                                        PageMode="CRM.Client.Helpers.PageHelper.PageModality.Dialog"
+                                                        OnSaving="OnNewContactSaved"
+                                                        OnCancel="BackToContacts" />
+                    }
+                </div>
+            </div>
+        }
     </div>
 }
 
@@ -168,6 +214,22 @@
         align-items: center;
         justify-content: center;
         animation: fadeIn 0.2s ease;
+    }
+
+    /* Nasconde il pannello firma mantenendo il canvas (e la firma) montato nel DOM */
+    .signature-overlay-hidden {
+        display: none !important;
+    }
+
+    /* Pannello rubrica (contatti/utenti) dentro l'overlay: piÃ¹ largo per la griglia */
+    .signature-picker-container {
+        width: min(1100px, 94vw);
+        height: 85vh;
+        max-height: 90vh;
+    }
+
+    .signature-picker-body {
+        padding: 1rem 1.25rem;
     }
 
     @@keyframes fadeIn {
@@ -263,7 +325,7 @@
     [Parameter] public bool RequireOtp { get; set; } = false;
     [Parameter] public EventCallback<string> OnSignatureSaved { get; set; }
     [Parameter] public EventCallback<(string signature, string signerName)> OnSignatureWithNameSaved { get; set; }
-    [Parameter] public EventCallback<(string signature, string signerName, string signerEmail)> OnOtpRequired { get; set; }
+    [Parameter] public EventCallback<(string signature, string signerName, string signerEmail, string signerPhone)> OnOtpRequired { get; set; }
     [Parameter] public EventCallback OnCancelled { get; set; }
     [Parameter] public int? IdCompany { get; set; }
 
@@ -271,8 +333,15 @@
     private bool _initialized = false;
     private string SignerName { get; set; } = string.Empty;
     private string SignerEmail { get; set; } = string.Empty;
-    private bool _isOpeningNewContact = false;
+    private string SignerPhone { get; set; } = string.Empty;
     private bool _wasVisible = false;
+
+    private enum PickerMode { None, Contacts, Users, NewContact }
+
+    // Rubrica mostrata DENTRO l'overlay (nessun side-dialog Radzen esterno):
+    // posizione/stile controllati da noi e canvas della firma sempre montato
+    // (nascosto via CSS) cosÃ¬ la firma non si perde mai.
+    private PickerMode _picker = PickerMode.None;
 
     private string? _globalError = null;
     private string? _errorName = null;
@@ -281,6 +350,9 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // Il canvas resta montato per tutto il tempo in cui Visible Ã¨ true (anche
+        // mentre la rubrica Ã¨ aperta, dove l'overlay Ã¨ solo nascosto via CSS):
+        // inizializziamo il signature pad UNA sola volta, cosÃ¬ la firma non si perde.
         bool justBecameVisible = Visible && !_wasVisible;
         _wasVisible = Visible;
 
@@ -331,95 +403,73 @@
         }
     }
 
-    private async Task OpenContactsDialog()
+    // === Rubrica embedded ============================================
+
+    private void OpenContactsDialog()
     {
         if (!IdCompany.HasValue) return;
-
-        try
-        {
-            Visible = false;
-            StateHasChanged();
-            await Task.Delay(150);
-
-            var contactId = await DialogService.OpenSideAsync<CRM.Client.Pages.Contacts.Index>(
-                Localize["Seleziona il contatto..."],
-                new Dictionary<string, object>()
-                {
-                    { "IdCompany", IdCompany },
-                    { "PageMode", CRM.Client.Helpers.PageHelper.PageModality.Dialog },
-                    { "OnClickNew", EventCallback.Factory.Create(this, OpenNewContactDialog) }
-                },
-                new SideDialogOptions
-                {
-                    Position = DialogPosition.Top,
-                    ShowMask = true,
-                    Height = "auto",
-                    Style = "max-height: 90%;"
-                });
-
-            if (contactId is int id && id > 0)
-            {
-                await LoadContactData(id);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Errore apertura dialog contatti: {ex.Message}");
-        }
-        finally
-        {
-            if (!_isOpeningNewContact)
-            {
-                Visible = true;
-                StateHasChanged();
-            }
-        }
+        _picker = PickerMode.Contacts;
+        StateHasChanged();
     }
 
-    private async Task OpenNewContactDialog()
+    private void OpenUsersDialog()
     {
-        _isOpeningNewContact = true;
+        _picker = PickerMode.Users;
+        StateHasChanged();
+    }
 
-        try
+    // Richiamato da Contacts.Index quando l'utente crea un nuovo contatto.
+    private void OpenNewContact()
+    {
+        _picker = PickerMode.NewContact;
+        StateHasChanged();
+    }
+
+    private void BackToContacts()
+    {
+        _picker = PickerMode.Contacts;
+        StateHasChanged();
+    }
+
+    private void ClosePicker()
+    {
+        _picker = PickerMode.None;
+        StateHasChanged();
+    }
+
+    // Click sullo sfondo: chiude la rubrica se aperta, altrimenti annulla la firma.
+    private async Task BackdropClick()
+    {
+        if (_picker != PickerMode.None)
         {
-            DialogService.CloseSide();
-            await Task.Delay(500);
-
-            Action onSave = () => { };
-            Action onCancel = () => { DialogService.CloseSide(); };
-
-            var newContactId = await DialogService.OpenSideAsync<CRM.Client.Pages.Contacts.Edit>(
-                Localize["Nuovo Contatto"],
-                new Dictionary<string, object>()
-                {
-                    { "IdCompany", IdCompany },
-                    { "PageMode", CRM.Client.Helpers.PageHelper.PageModality.Dialog },
-                    { "OnClickSave", onSave },
-                    { "OnClickCancel", onCancel }
-                },
-                new SideDialogOptions
-                {
-                    Position = DialogPosition.Top,
-                    ShowMask = true,
-                    Height = "auto",
-                    Style = "max-height: 90%;"
-                });
-
-            if (newContactId is int id && id > 0)
-            {
-                await LoadContactData(id);
-            }
+            ClosePicker();
+            return;
         }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Errore creazione nuovo contatto: {ex.Message}");
-        }
-        finally
-        {
-            _isOpeningNewContact = false;
-            Visible = true;
-            StateHasChanged();
-        }
+        await Cancel();
+    }
+
+    private async Task OnContactSelected(int? id)
+    {
+        _picker = PickerMode.None;
+        if (id is int cid && cid > 0)
+            await LoadContactData(cid);
+        StateHasChanged();
+    }
+
+    private async Task OnUserSelected(string? id)
+    {
+        _picker = PickerMode.None;
+        if (!string.IsNullOrEmpty(id))
+            await LoadUserData(id);
+        StateHasChanged();
+    }
+
+    private async Task OnNewContactSaved(int? id)
+    {
+        _picker = PickerMode.None;
+        if (id is int cid && cid > 0)
+            await LoadContactData(cid);
+        StateHasChanged();
     }
 
     private async Task LoadContactData(int contactId)
@@ -431,51 +481,13 @@
             {
                 SignerName = contact.NameComplete ?? string.Empty;
                 SignerEmail = contact.Email ?? string.Empty;
+                SignerPhone = !string.IsNullOrWhiteSpace(contact.Mobile) ? contact.Mobile : (contact.Phone ?? string.Empty);
                 ClearValidation();
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Errore caricamento contatto: {ex.Message}");
-        }
-    }
-
-    private async Task OpenUsersDialog()
-    {
-        try
-        {
-            Visible = false;
-            StateHasChanged();
-            await Task.Delay(150);
-
-            var userId = await DialogService.OpenSideAsync<CRM.Client.Pages.Settings.Users.Index>(
-                Localize["Seleziona utente..."],
-                new Dictionary<string, object>()
-                {
-                    { "PageMode", CRM.Client.Helpers.PageHelper.PageModality.Dialog },
-                    { "IdCompany", IdCompany }
-                },
-                new SideDialogOptions
-                {
-                    Position = DialogPosition.Top,
-                    ShowMask = true,
-                    Height = "auto",
-                    Style = "max-height: 90%;"
-                });
-
-            if (userId is string id && !string.IsNullOrEmpty(id))
-            {
-                await LoadUserData(id);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"Errore apertura dialog utenti: {ex.Message}");
-        }
-        finally
-        {
-            Visible = true;
-            StateHasChanged();
         }
     }
 
@@ -488,6 +500,7 @@
             {
                 SignerName = user.NameComplete ?? string.Empty;
                 SignerEmail = user.Email ?? string.Empty;
+                SignerPhone = user.PhoneNumber ?? string.Empty;
                 ClearValidation();
             }
         }
@@ -509,16 +522,19 @@
 
             if (string.IsNullOrWhiteSpace(SignerName))
             {
-                _errorName = "Il nome e cognome del firmatario è obbligatorio";
+                _errorName = "Il nome e cognome del firmatario ï¿½ obbligatorio";
                 hasErrors = true;
             }
 
-            if (string.IsNullOrWhiteSpace(SignerEmail))
+            var hasEmail = !string.IsNullOrWhiteSpace(SignerEmail);
+            var hasPhone = !string.IsNullOrWhiteSpace(SignerPhone);
+
+            if (!hasEmail && !hasPhone)
             {
-                _errorEmail = "L'email per la conferma della firma è obbligatoria";
+                _errorEmail = "Inserisci email o cellulare per ricevere il codice di conferma";
                 hasErrors = true;
             }
-            else if (!SignerEmail.Contains('@') || !SignerEmail.Contains('.'))
+            else if (hasEmail && (!SignerEmail.Contains('@') || !SignerEmail.Contains('.')))
             {
                 _errorEmail = "Inserisci un indirizzo email valido";
                 hasErrors = true;
@@ -527,7 +543,7 @@
             var isEmpty = await JS.InvokeAsync<bool>("signaturePad.isEmpty");
             if (isEmpty)
             {
-                _errorSignature = "La firma è vuota. Firma nel riquadro bianco prima di confermare.";
+                _errorSignature = "La firma ï¿½ vuota. Firma nel riquadro bianco prima di confermare.";
                 hasErrors = true;
             }
 
@@ -544,7 +560,7 @@
             {
                 if (RequireOtp && OnOtpRequired.HasDelegate)
                 {
-                    await OnOtpRequired.InvokeAsync((signatureBase64, SignerName.Trim(), SignerEmail.Trim()));
+                    await OnOtpRequired.InvokeAsync((signatureBase64, SignerName.Trim(), SignerEmail.Trim(), SignerPhone.Trim()));
                 }
                 else if (OnSignatureWithNameSaved.HasDelegate)
                 {
@@ -558,6 +574,7 @@
                 _initialized = false;
                 SignerName = string.Empty;
                 SignerEmail = string.Empty;
+                SignerPhone = string.Empty;
                 ClearValidation();
             }
         }
@@ -572,8 +589,10 @@
     private async Task Cancel()
     {
         _initialized = false;
+        _picker = PickerMode.None;
         SignerName = string.Empty;
         SignerEmail = string.Empty;
+        SignerPhone = string.Empty;
         ClearValidation();
         await OnCancelled.InvokeAsync();
     }

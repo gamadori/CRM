@@ -29,6 +29,9 @@ namespace CRM.Shared
         [Display(Name = "Telegram")]
         public bool Telegram { get; set; }
 
+        [Display(Name = "Richiedi firma da remoto (interventi Telefono/Web/Remoto)")]
+        public bool RemoteSignatureEnabled { get; set; }
+
         [Display(Name = "Logo per i Reports")]
         public int? LogoReport { get; set; }
 

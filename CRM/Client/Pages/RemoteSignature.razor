@@ -1,0 +1,241 @@
+@page "/RemoteSignature"
+@layout EmptyLayout
+@attribute [AllowAnonymous]
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Authorization
+@using CRM.Client.Helpers
+@using CRM.Shared.Models
+@inject IHttpClientFactory HttpClientFactory
+@inject IJSRuntime JS
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            @if (_loading)
+            {
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                            <span class="visually-hidden">Caricamento...</span>
+                        </div>
+                        <h5>Verifica del link in corso...</h5>
+                    </div>
+                </div>
+            }
+            else if (!_valid)
+            {
+                <div class="card shadow-lg border-danger">
+                    <div class="card-body text-center py-5">
+                        <i class="material-icons text-danger" style="font-size: 72px;">link_off</i>
+                        <h3 class="text-danger mt-3">Link non valido</h3>
+                        <p class="lead">Questo link di firma non è più valido o è già stato utilizzato.</p>
+                        <p class="text-muted small">Contatta il nostro ufficio se ritieni ci sia un errore.</p>
+                    </div>
+                </div>
+            }
+            else if (_done || _alreadySigned)
+            {
+                <div class="card shadow-lg border-success">
+                    <div class="card-body text-center py-5">
+                        <i class="material-icons text-success" style="font-size: 80px;">check_circle</i>
+                        <h2 class="text-success mt-3">Firma acquisita!</h2>
+                        <p class="lead">Grazie. La firma del verbale dell'intervento <strong>#@_ticketId</strong> è stata registrata con successo.</p>
+                        <p class="text-muted mt-3 small">Puoi chiudere questa finestra.</p>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card shadow-lg">
+                    <div class="card-body p-4">
+                        <h4 class="mb-1"><i class="material-icons" style="vertical-align: middle;">draw</i> Firma del verbale</h4>
+                        <p class="text-muted mb-4">
+                            Intervento <strong>#@_ticketId</strong>@(string.IsNullOrEmpty(_company) ? "" : $" — {_company}")
+                        </p>
+
+                        @if (!string.IsNullOrEmpty(_error))
+                        {
+                            <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+                                <i class="material-icons">warning</i>
+                                <span>@_error</span>
+                            </div>
+                        }
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nome e Cognome del firmatario <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" @bind="_signerName" @bind:event="oninput"
+                                   placeholder="Es: Mario Rossi" maxlength="200" style="font-size: 16px;" />
+                        </div>
+
+                        <label class="form-label fw-semibold">Firma nel riquadro <span class="text-danger">*</span></label>
+                        <div class="d-flex justify-content-center">
+                            <canvas id="@CanvasId"
+                                    width="700" height="300"
+                                    style="max-width: 100%; border: 2px solid #dee2e6; border-radius: 0.5rem; touch-action: none; background-color: #fff; cursor: crosshair;">
+                            </canvas>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 mt-3 justify-content-between">
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Clear" disabled="@_submitting">
+                                <i class="material-icons" style="vertical-align: middle;">clear</i> Cancella
+                            </button>
+                            <button type="button" class="btn btn-primary ms-auto" @onclick="Submit" disabled="@_submitting">
+                                @if (_submitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    <span>Invio...</span>
+                                }
+                                else
+                                {
+                                    <i class="material-icons" style="vertical-align: middle;">check</i>
+                                    <span class="ms-1">Conferma Firma</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "token")]
+    public string? Token { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "id")]
+    public int? InterventionId { get; set; }
+
+    private readonly string CanvasId = $"remoteSig_{Guid.NewGuid():N}";
+    private bool _loading = true;
+    private bool _valid;
+    private bool _alreadySigned;
+    private bool _submitting;
+    private bool _done;
+    private bool _initialized;
+    private int _ticketId;
+    private string _company = string.Empty;
+    private string _signerName = string.Empty;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Token) || !InterventionId.HasValue)
+        {
+            _loading = false;
+            _valid = false;
+            return;
+        }
+
+        try
+        {
+            var http = HttpClientFactory.CreateClient("CRM.PublicAPI");
+            var info = await http.GetFromJsonAsync<RemoteSignatureInfoResponse>(
+                $"{ConstHelper.TicketsInterventionsPath}/RemoteSignatureInfo?token={Token}&id={InterventionId}");
+
+            if (info != null && info.Valid)
+            {
+                _valid = true;
+                _ticketId = info.TicketId;
+                _company = info.Company;
+                _alreadySigned = info.AlreadySigned;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Errore verifica link firma: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_valid && !_alreadySigned && !_done && !_initialized)
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                try
+                {
+                    await JS.InvokeVoidAsync("signaturePad.initialize", CanvasId);
+                    _initialized = true;
+                    break;
+                }
+                catch
+                {
+                    if (i < 9) await Task.Delay(100);
+                }
+            }
+        }
+    }
+
+    private async Task Clear()
+    {
+        if (_initialized)
+        {
+            await JS.InvokeVoidAsync("signaturePad.clear");
+            _error = null;
+        }
+    }
+
+    private async Task Submit()
+    {
+        _error = null;
+
+        if (string.IsNullOrWhiteSpace(_signerName))
+        {
+            _error = "Inserisci nome e cognome del firmatario.";
+            return;
+        }
+
+        var isEmpty = await JS.InvokeAsync<bool>("signaturePad.isEmpty");
+        if (isEmpty)
+        {
+            _error = "Firma nel riquadro bianco prima di confermare.";
+            return;
+        }
+
+        _submitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var signature = await JS.InvokeAsync<string>("signaturePad.getSignature");
+            var http = HttpClientFactory.CreateClient("CRM.PublicAPI");
+
+            var payload = new RemoteSignatureSubmit
+            {
+                Token = Token!,
+                InterventionId = InterventionId!.Value,
+                Signature = signature,
+                SignerName = _signerName.Trim()
+            };
+
+            var resp = await http.PostAsJsonAsync(
+                $"{ConstHelper.TicketsInterventionsPath}/SubmitRemoteSignature", payload);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                _done = true;
+                _initialized = false;
+            }
+            else
+            {
+                _error = "Impossibile registrare la firma. Il link potrebbe essere scaduto.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Errore durante l'invio: {ex.Message}";
+        }
+        finally
+        {
+            _submitting = false;
+            StateHasChanged();
+        }
+    }
+}

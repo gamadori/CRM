@@ -30,7 +30,11 @@
             <NavLink class="nav-link" href="Tickets" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                 <span class="material-icons">support_agent</span><span class="nav-text">@Localize["Tickets"]</span>
             </NavLink>
-        
+             <!-- AI Assistant (chat) -->
+            <NavLink class="nav-link highlight-ai" href="Tickets/Assistant" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                <span class="material-icons nav-icon-small">smart_toy</span>
+                <span class="nav-text">@Localize["Assistant"]</span>
+            </NavLink>
             <NavLink class="nav-link" href="About" Match=@NavLinkMatch.All @onclick="CloseNavMenu">
                 <span class="material-icons">info</span><span class="nav-text">@Localize["About"]</span>
             </NavLink>

@@ -13,13 +13,14 @@
 }
 else
 {
+    <div class="ticket-edit-page">
     @if (PageMode == CRM.Client.Helpers.PageHelper.PageModality.Visualization)
     {
         <PageHeader Model="@_pageHeader">
         </PageHeader>
     }
 
-    <EditForm class="ticket-edit-page" Model="@_ticket" OnValidSubmit="HandleValidSubmit">
+    <EditForm class="ticket-edit-container" Model="@_ticket" OnValidSubmit="HandleValidSubmit">
         <RadzenRow Gap="1rem" class="mb-3">
             <RadzenColumn Size="12">
                 <RadzenStack>
@@ -278,6 +279,7 @@ else
         </RadzenStack>
 
     </EditForm>
+    </div>
 }
 <style>
     /* ✅ Compact Selected Users Display */
@@ -355,9 +357,16 @@ else
     }
 
     .ticket-edit-page {
-        max-width: 1200px;
-        margin: 0 auto;
+        background: #fafbfc;
+        min-height: 100vh;
+        padding-bottom: 2rem;
         color: var(--text-primary, #1f2937);
+    }
+
+    .ticket-edit-container {
+        max-width: 1200px;
+        margin: 0;
+        padding: 1.5rem;
     }
 
     .ticket-edit-section-label {
@@ -381,6 +390,10 @@ else
 
     .ticket-invoiced-field .ticket-edit-section-label {
         margin: 0;
+    }
+
+    body.dark-theme .ticket-edit-page {
+        background: #141a1f;
     }
 
     body.dark-theme .ticket-edit-page .ticket-edit-section-label,

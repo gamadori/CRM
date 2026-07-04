@@ -89,6 +89,12 @@ builder.Services.AddSingleton<OpenAIEmbeddingService>();
 
 builder.Services.AddSingleton<OpenAIChatService>();
 
+builder.Services.AddSingleton<AnthropicChatService>();
+
+builder.Services.AddScoped<IInterventionsService, InterventionsService>();
+
+builder.Services.AddScoped<CrmDataAssistantService>();
+
 builder.Services.AddScoped<ILogosService, LogosService>();
 
 builder.Services.AddScoped<ITicketStatesService, TicketStatesService>();
@@ -99,7 +105,19 @@ builder.Services.AddScoped<ITicketPdfGenerator, TicketPdfGenerator>();
 
 builder.Services.AddScoped<IInterventionPdfGenerator, InterventionPdfGenerator>();
 
-builder.Services.AddScoped<ISignatureOtpService, SignatureOtpService>();
+// Singleton: la chiave HMAC deve restare stabile tra la generazione e la verifica
+// dell'OTP (con Scoped, senza Security:OtpSecret, ogni richiesta rigenerava una
+// chiave casuale e la verifica falliva sempre).
+builder.Services.AddSingleton<ISignatureOtpService, SignatureOtpService>();
+
+// --- Invio OTP via SMS (provider-neutrale) ---
+builder.Services.Configure<CRM.Server.Services.Sms.SmsOptions>(
+    builder.Configuration.GetSection(CRM.Server.Services.Sms.SmsOptions.SectionName));
+
+if (string.Equals(builder.Configuration["Sms:Provider"], "Twilio", System.StringComparison.OrdinalIgnoreCase))
+    builder.Services.AddHttpClient<CRM.Server.Services.Sms.ISmsSender, CRM.Server.Services.Sms.TwilioSmsSender>();
+else
+    builder.Services.AddSingleton<CRM.Server.Services.Sms.ISmsSender, CRM.Server.Services.Sms.NullSmsSender>();
 builder.Services.AddScoped<IAttachmentsService, AttachmentsService>();
 builder.Services.AddScoped<CRM.Server.Services.IProductCatalogAssetsService, ProductCatalogAssetsService>();
 builder.Services.AddScoped<CRM.Server.Services.IProductCatalogService, ProductCatalogService>();

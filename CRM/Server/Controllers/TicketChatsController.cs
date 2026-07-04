@@ -111,11 +111,14 @@ namespace CRM.Server.Controllers
 
                 var listChats = await ticketChats.Select(x => new TicketChatViewModel
                 {
-                    Id = x.Id, Date = x.Date, Message = x.Message, IdUser = x.IdUser,
+                    Id = x.Id, Date = x.Date, Message = x.Deleted ? null : x.Message, IdUser = x.IdUser,
                     TypeMessage = TicketHelper.GetTypeMessage(x, user.IdCompany), Color = x.User.Color, UserName = x.User.UserName,
-                    AttachmentFileId = x.IdAttachmentFile,
-                    AttachmentFileName = x.AttachmentFile != null ? x.AttachmentFile.Name : null,
-                    AttachmentContentType = x.AttachmentFile != null ? x.AttachmentFile.ContentType : null,
+                    Deleted = x.Deleted,
+                    CanDelete = !x.Deleted && x.IdUser == user.Id,
+                    AttachmentFileId = x.Deleted ? null : x.IdAttachmentFile,
+                    AttachmentId = !x.Deleted && x.AttachmentFile != null ? (int?)x.AttachmentFile.IdAttachment : null,
+                    AttachmentFileName = !x.Deleted && x.AttachmentFile != null ? x.AttachmentFile.Name : null,
+                    AttachmentContentType = !x.Deleted && x.AttachmentFile != null ? x.AttachmentFile.ContentType : null,
                 }).ToListAsync();
 
                 if (args != null  && args.IdTicket != null)
@@ -427,12 +430,50 @@ namespace CRM.Server.Controllers
 
             if (await _permitsService.CanDeleteObject(ticketChat.IdUser))
             {
-                _context.TicketChats.Remove(ticketChat);
+                // Eliminazione stile WhatsApp: la riga resta ma testo e allegato
+                // vengono rimossi e il messaggio viene marcato come eliminato.
+                await DeleteChatAttachment(ticketChat);
+
+                ticketChat.Message = null;
+                ticketChat.Deleted = true;
                 await _context.SaveChangesAsync();
             }
             else
-                await _logEventService.RegisterAsync(nameof(TicketChatsController), nameof(DeleteTicketChar), LogEvent.EventsTypes.Error, GlobalMessages.PermitsErrors); 
+                await _logEventService.RegisterAsync(nameof(TicketChatsController), nameof(DeleteTicketChar), LogEvent.EventsTypes.Error, GlobalMessages.PermitsErrors);
             return NoContent();
+        }
+
+        /// <summary>
+        /// Rimuove l'eventuale allegato collegato al messaggio: file fisico,
+        /// AttachmentFile e Attachment. Sgancia il riferimento sul TicketChat.
+        /// </summary>
+        private async Task DeleteChatAttachment(TicketChat ticketChat)
+        {
+            if (!ticketChat.IdAttachmentFile.HasValue)
+                return;
+
+            var attachmentFile = await _context.AttachmentFiles.FindAsync(ticketChat.IdAttachmentFile.Value);
+
+            // Sgancia il riferimento prima di rimuovere le entità collegate.
+            ticketChat.IdAttachmentFile = null;
+
+            if (attachmentFile != null)
+            {
+                try
+                {
+                    _archiveService.Delete(attachmentFile.Id, attachmentFile.Name);
+                }
+                catch (Exception ex)
+                {
+                    await _logEventService.RegisterAsync(nameof(TicketChatsController), nameof(DeleteChatAttachment), LogEvent.EventsTypes.Error, ex);
+                }
+
+                var attachment = await _context.Attachments.FindAsync(attachmentFile.IdAttachment);
+
+                _context.AttachmentFiles.Remove(attachmentFile);
+                if (attachment != null)
+                    _context.Attachments.Remove(attachment);
+            }
         }
 
         // PUT: api/Companies/5

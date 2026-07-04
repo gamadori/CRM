@@ -20,15 +20,15 @@ namespace CRM.Shared
     public enum TypesSupport
     {
         [Display(Name ="Telefono")]
-        Phone,
+        Phone = 0,
         [Display(Name = "Web")]
-        Web,
+        Web = 1,
         [Display(Name = "Sul Posto")]
-        OnSite,
+        OnSite = 2,
         [Display(Name = "Ufficio")]
-        Office,
+        Office = 3,
         [Display(Name = "Da Remoto")]
-        Remote
+        Remote = 4
     }
 
    public enum TicketTypeSearch

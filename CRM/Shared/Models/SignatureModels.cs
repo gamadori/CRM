@@ -18,6 +18,12 @@ namespace CRM.Shared.Models
     {
         public string Signature { get; set; } = string.Empty;
         public string SignerName { get; set; } = string.Empty;
+
+        /// <summary>Email del firmatario: usata per l'invio dell'OTP e per risalire al recapito.</summary>
+        public string SignerEmail { get; set; } = string.Empty;
+
+        /// <summary>Cellulare del firmatario (preferito per l'OTP via SMS).</summary>
+        public string SignerPhone { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -29,6 +35,9 @@ namespace CRM.Shared.Models
         public string ChallengeId { get; set; } = string.Empty;
         public DateTime ExpiresAt { get; set; }
         public string SentTo { get; set; } = string.Empty;
+
+        /// <summary>Canale usato per l'invio dell'OTP: "sms" oppure "email".</summary>
+        public string Channel { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -76,5 +85,33 @@ namespace CRM.Shared.Models
     public class ResendEmailRequest
     {
         public string Email { get; set; } = string.Empty;
+    }
+
+    // ===== Firma remota (link inviato al cliente) =====
+
+    /// <summary>Esito dell'invio del link di firma remota.</summary>
+    public class RemoteSignatureRequestResponse
+    {
+        public bool Success { get; set; }
+        public string SentTo { get; set; } = string.Empty;
+        public string Channel { get; set; } = string.Empty; // "sms" | "email"
+    }
+
+    /// <summary>Info restituite alla pagina pubblica di firma per validare il token.</summary>
+    public class RemoteSignatureInfoResponse
+    {
+        public bool Valid { get; set; }
+        public int TicketId { get; set; }
+        public string Company { get; set; } = string.Empty;
+        public bool AlreadySigned { get; set; }
+    }
+
+    /// <summary>Firma inviata dal cliente dalla pagina pubblica.</summary>
+    public class RemoteSignatureSubmit
+    {
+        public string Token { get; set; } = string.Empty;
+        public int InterventionId { get; set; }
+        public string Signature { get; set; } = string.Empty;
+        public string SignerName { get; set; } = string.Empty;
     }
 }
