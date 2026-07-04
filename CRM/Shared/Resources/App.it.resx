@@ -633,6 +633,9 @@
   <data name="DataAssistant" xml:space="preserve">
     <value>Assistente Dati</value>
   </data>
+  <data name="KnowledgeBase" xml:space="preserve">
+    <value>Base di Conoscenza</value>
+  </data>
   <data name="Interventions" xml:space="preserve">
     <value>Servizi</value>
   </data>

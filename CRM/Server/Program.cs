@@ -93,6 +93,8 @@ builder.Services.AddSingleton<AnthropicChatService>();
 
 builder.Services.AddScoped<IInterventionsService, InterventionsService>();
 
+builder.Services.AddScoped<IKnowledgeService, KnowledgeService>();
+
 builder.Services.AddScoped<CrmDataAssistantService>();
 
 builder.Services.AddScoped<ILogosService, LogosService>();

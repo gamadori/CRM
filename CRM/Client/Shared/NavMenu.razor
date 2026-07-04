@@ -130,6 +130,14 @@
                                     <span class="material-icons nav-icon-small">storage</span>
                                     <span class="nav-text">@Localize["DataAssistant"]</span>
                                 </NavLink>
+
+                                <!-- Base di Conoscenza (solo admin) -->
+                                <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                                    <NavLink class="nav-link submenu-link-2 highlight-ai" href="Knowledge" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                        <span class="material-icons nav-icon-small">menu_book</span>
+                                        <span class="nav-text">@Localize["KnowledgeBase"]</span>
+                                    </NavLink>
+                                </AuthorizeView>
                             </div>
                         }
                     </div>

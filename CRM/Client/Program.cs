@@ -141,6 +141,7 @@ namespace CRM.Client
             builder.Services.AddScoped<IContactsService, ProxyContactsService>();
             builder.Services.AddScoped<ITicketFeedbackService, ProxyTicketFeedbackService>();
             builder.Services.AddScoped<IArticlesService, ProxyArticlesService>();
+            builder.Services.AddScoped<IKnowledgeApiService, ProxyKnowledgeService>();
 
             builder.Services.AddTransient<IManyToManyService<TicketTypeUser>, ManyToManyService<TicketTypeUser>>(sp =>
             {

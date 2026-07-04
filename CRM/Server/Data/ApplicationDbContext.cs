@@ -316,6 +316,8 @@ namespace CRM.Server.Data
         public DbSet<CRM.Shared.Group> Groups => Set<Group>();
         public DbSet<CRM.Shared.Product> Products => Set<Product>();
 
+        public DbSet<CRM.Shared.ProductKnowledge> ProductKnowledge => Set<ProductKnowledge>();
+
         public DbSet<ProductCatalogAsset> ProductCatalogAssets => Set<ProductCatalogAsset>();
 
         public DbSet<MachineBackup> MachineBackups => Set<MachineBackup>();

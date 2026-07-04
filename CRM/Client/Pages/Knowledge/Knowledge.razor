@@ -1,0 +1,155 @@
+@page "/Knowledge"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using Microsoft.AspNetCore.Components.Forms
+
+<div class="container-fluid px-4 py-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">
+                <span class="material-icons me-2" style="vertical-align: middle;">menu_book</span>
+                Base di Conoscenza
+            </h2>
+            <p class="text-muted mb-0">Manuali, procedure e guasti tipici associati ai modelli di macchina. Usata dall'assistente ticket.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <RadzenButton Click="@NewItem" Icon="add" Text="Nuova voce" ButtonStyle="ButtonStyle.Primary" Disabled="@_editing" />
+            <RadzenButton Click="@GenerateEmbeddings" Icon="bolt" Text="Genera embedding" ButtonStyle="ButtonStyle.Light" Disabled="@_editing" />
+        </div>
+    </div>
+
+    @if (_editing)
+    {
+        <!-- Form voce -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold">Titolo *</label>
+                        <RadzenTextBox @bind-Value="@_current.Title" class="w-100" Placeholder="Es: Sostituzione filtro aria" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Categoria</label>
+                        <RadzenTextBox @bind-Value="@_current.Category" class="w-100" Placeholder="Es: Manutenzione" />
+                    </div>
+
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold">Modello</label>
+                        <RadzenDropDown @bind-Value="@_current.IdProduct"
+                                        Data="@_products"
+                                        TextProperty="Name"
+                                        ValueProperty="Id"
+                                        AllowClear="true"
+                                        AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Placeholder="(Conoscenza generale — tutti i modelli)"
+                                        class="w-100" TValue="int?" />
+                        <small class="text-muted">Lascia vuoto per una voce valida per tutti i modelli.</small>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Contenuto *</label>
+                        <RadzenTextArea @bind-Value="@_current.Content" Rows="10" class="w-100" Style="resize: vertical;"
+                                        Placeholder="Descrivi la procedura, la soluzione o le informazioni tecniche..." />
+                    </div>
+
+                    <div class="col-12 d-flex gap-2">
+                        <RadzenButton Click="@SaveItem" Icon="save" Text="Salva" ButtonStyle="ButtonStyle.Primary" />
+                        <RadzenButton Click="@CancelEdit" Icon="close" Text="Annulla" ButtonStyle="ButtonStyle.Light" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Import documento -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="fw-semibold mb-2">
+                    <span class="material-icons me-1" style="font-size: 18px; vertical-align: middle;">upload_file</span>
+                    Importa documento
+                </h6>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small">File (PDF, DOCX, TXT, MD)</label>
+                        <InputFile OnChange="@OnFileSelected" class="form-control" accept=".pdf,.docx,.txt,.md" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Modello (opzionale)</label>
+                        <RadzenDropDown @bind-Value="@_importProductId"
+                                        Data="@_products"
+                                        TextProperty="Name"
+                                        ValueProperty="Id"
+                                        AllowClear="true"
+                                        AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Placeholder="(Generale)"
+                                        class="w-100" TValue="int?" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Categoria</label>
+                        <RadzenTextBox @bind-Value="@_importCategory" class="w-100" Placeholder="Documento" />
+                    </div>
+                    <div class="col-md-2">
+                        <RadzenButton Click="@ImportDocumentAsync" Icon="upload" Text="Importa"
+                                      ButtonStyle="ButtonStyle.Secondary" Disabled="@_importing" class="w-100" />
+                    </div>
+                </div>
+                @if (_importing)
+                {
+                    <div class="mt-2 small text-muted d-flex align-items-center gap-2">
+                        <Waiting></Waiting> Estrazione ed elaborazione in corso...
+                    </div>
+                }
+                else
+                {
+                    <div class="mt-2 small text-muted">Il documento viene spezzato in blocchi e indicizzato per la ricerca dell'assistente.</div>
+                }
+            </div>
+        </div>
+
+        <!-- Ricerca -->
+        <div class="input-group mb-3" style="max-width: 480px;">
+            <RadzenTextBox @bind-Value="@_search" Placeholder="Cerca in titolo/contenuto..." class="form-control"
+                           @onkeyup="@(async (e) => { if (e.Key == "Enter") await LoadItems(); })" />
+            <RadzenButton Click="@LoadItems" Icon="search" ButtonStyle="ButtonStyle.Light" />
+        </div>
+
+        <!-- Elenco -->
+        <RadzenDataGrid Data="@_items" TItem="ProductKnowledgeDTO" IsLoading="@_loading"
+                        AllowSorting="true" AllowPaging="true" PageSize="15"
+                        EmptyText="Nessuna voce di conoscenza.">
+            <Columns>
+                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Property="Title" Title="Titolo" />
+                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Title="Modello">
+                    <Template Context="k">
+                        @(string.IsNullOrWhiteSpace(k.ProductName) ? "Generale" : k.ProductName)
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Property="Category" Title="Categoria" Width="150px" />
+                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Property="SourceDocument" Title="Documento" Width="180px" />
+                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Title="Embedding" Width="120px" TextAlign="Radzen.TextAlign.Center">
+                    <Template Context="k">
+                        @if (k.HasEmbedding)
+                        {
+                            <span class="badge bg-success">Sì</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">No</span>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Title="Azioni" Width="130px" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                    <Template Context="k">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                      Click="@(async () => await EditItem(k.Id))" class="me-1" />
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                      Click="@(async () => await DeleteItem(k))" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    }
+</div>

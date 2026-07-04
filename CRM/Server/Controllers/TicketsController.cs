@@ -611,7 +611,8 @@ namespace CRM.Server.Controllers
         public async Task<ActionResult<CRM.Shared.Models.AssistantChatResponse>> AssistantChat(
             [FromBody] CRM.Shared.Models.AssistantChatRequest request,
             [FromServices] OpenAIEmbeddingService embeddingService,
-            [FromServices] AnthropicChatService chatService)
+            [FromServices] AnthropicChatService chatService,
+            [FromServices] IKnowledgeService knowledgeService)
         {
             try
             {
@@ -624,18 +625,21 @@ namespace CRM.Server.Controllers
                 if (lastUser == null || string.IsNullOrWhiteSpace(lastUser.Content))
                     return BadRequest("Nessun messaggio utente valido");
 
-                // Recupera i ticket chiusi più simili all'ultima domanda (rispetta i permessi)
-                var referenced = await RetrieveSimilarClosedTicketsAsync(
+                // Recupera i ticket chiusi più simili e la base di conoscenza pertinente
+                var retrieval = await RetrieveSimilarClosedTicketsAsync(
                     lastUser.Content, embeddingService, request.TopTickets, request.MinSimilarityThreshold);
 
-                // Costruisci il contesto testuale e genera la risposta con Claude
-                var context = BuildTicketContext(referenced);
+                var knowledge = await knowledgeService.SearchSimilarAsync(
+                    retrieval.QueryEmbedding, retrieval.ProductIds, top: 4, minSimilarity: 55.0);
+
+                // Costruisci il contesto (ticket + KB) e genera la risposta con Claude
+                var context = BuildTicketContext(retrieval.Tickets) + BuildKnowledgeContext(knowledge);
                 var reply = await chatService.AnswerAsync(request.Messages, context);
 
                 return new CRM.Shared.Models.AssistantChatResponse
                 {
                     Reply = reply,
-                    ReferencedTickets = referenced,
+                    ReferencedTickets = retrieval.Tickets,
                     Success = true
                 };
             }
@@ -661,6 +665,7 @@ namespace CRM.Server.Controllers
             [FromBody] CRM.Shared.Models.AssistantChatRequest request,
             [FromServices] OpenAIEmbeddingService embeddingService,
             [FromServices] AnthropicChatService chatService,
+            [FromServices] IKnowledgeService knowledgeService,
             CancellationToken cancellationToken)
         {
             Response.ContentType = "text/plain; charset=utf-8";
@@ -684,8 +689,12 @@ namespace CRM.Server.Controllers
                     return;
                 }
 
-                var referenced = await RetrieveSimilarClosedTicketsAsync(
+                var retrieval = await RetrieveSimilarClosedTicketsAsync(
                     lastUser.Content, embeddingService, request.TopTickets, request.MinSimilarityThreshold);
+                var referenced = retrieval.Tickets;
+
+                var knowledge = await knowledgeService.SearchSimilarAsync(
+                    retrieval.QueryEmbedding, retrieval.ProductIds, top: 4, minSimilarity: 55.0);
 
                 // Ticket di riferimento in forma ridotta nell'header (Base64 per gestire accenti)
                 var slim = referenced.Select(t => new
@@ -701,7 +710,7 @@ namespace CRM.Server.Controllers
                 Response.Headers["X-Referenced-Tickets"] =
                     Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(slimJson));
 
-                var context = BuildTicketContext(referenced);
+                var context = BuildTicketContext(referenced) + BuildKnowledgeContext(knowledge);
 
                 await foreach (var chunk in chatService
                     .AnswerStreamAsync(request.Messages, context, cancellationToken))
@@ -732,17 +741,18 @@ namespace CRM.Server.Controllers
         /// ai permessi dell'utente; i ticket non accessibili vengono restituiti come "casi simili"
         /// anonimi (nessun nome cliente, nessun link).
         /// </summary>
-        private async Task<List<CRM.Shared.Models.TicketSimilarityResult>> RetrieveSimilarClosedTicketsAsync(
+        private async Task<AssistantRetrieval> RetrieveSimilarClosedTicketsAsync(
             string query, OpenAIEmbeddingService embeddingService, int topN, double minSimilarity)
         {
-            var results = new List<CRM.Shared.Models.TicketSimilarityResult>();
+            var scored = new List<(CRM.Shared.Models.TicketSimilarityResult Result, int? IdProduct)>();
+
             if (string.IsNullOrWhiteSpace(query))
-                return results;
+                return new AssistantRetrieval(new(), Array.Empty<float>(), new());
 
             var queryEmbedding = await embeddingService.GenerateEmbeddingAsync(query);
             var magnitude = Math.Sqrt(queryEmbedding.Sum(x => (double)x * x));
             if (magnitude < 0.1)
-                return results;
+                return new AssistantRetrieval(new(), queryEmbedding, new());
 
             // Cerca su TUTTI i ticket chiusi (la soluzione può trovarsi in qualsiasi azienda)
             var closedTickets = await _context.Tickets
@@ -754,6 +764,7 @@ namespace CRM.Server.Controllers
                 {
                     x.Id,
                     x.IdCompany,
+                    x.IdProduct,
                     x.Description,
                     x.CloseDescription,
                     x.DateClosed,
@@ -786,7 +797,7 @@ namespace CRM.Server.Controllers
                     {
                         var canAccess = allowedCompanies == null || allowedCompanies.Contains(ticket.IdCompany);
 
-                        results.Add(new CRM.Shared.Models.TicketSimilarityResult
+                        scored.Add((new CRM.Shared.Models.TicketSimilarityResult
                         {
                             TicketId = ticket.Id,
                             TicketNumber = $"#{ticket.Id}",
@@ -804,7 +815,7 @@ namespace CRM.Server.Controllers
                             Solution = ticket.CloseDescription,
                             Priority = ticket.Priority,
                             CanAccess = canAccess
-                        });
+                        }, ticket.IdProduct));
                     }
                 }
                 catch
@@ -814,11 +825,25 @@ namespace CRM.Server.Controllers
                 }
             }
 
-            return results
-                .OrderByDescending(x => x.SimilarityPercentage)
+            var top = scored
+                .OrderByDescending(s => s.Result.SimilarityPercentage)
                 .Take(Math.Max(1, topN))
                 .ToList();
+
+            var productIds = top
+                .Where(s => s.IdProduct.HasValue)
+                .Select(s => s.IdProduct!.Value)
+                .Distinct()
+                .ToList();
+
+            return new AssistantRetrieval(top.Select(s => s.Result).ToList(), queryEmbedding, productIds);
         }
+
+        /// <summary>Risultato del recupero per l'assistente: ticket simili, embedding della query e modelli coinvolti.</summary>
+        private sealed record AssistantRetrieval(
+            List<CRM.Shared.Models.TicketSimilarityResult> Tickets,
+            float[] QueryEmbedding,
+            List<int> ProductIds);
 
         /// <summary>
         /// Formatta l'elenco dei ticket simili in un blocco di testo da passare al modello.
@@ -839,6 +864,28 @@ namespace CRM.Server.Controllers
 
                 sb.AppendLine($"Problema: {TrimText(t.Description, 600)}");
                 sb.AppendLine($"Soluzione applicata: {(string.IsNullOrWhiteSpace(t.Solution) ? "(non registrata)" : TrimText(t.Solution, 600))}");
+                sb.AppendLine();
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Formatta le voci di conoscenza pertinenti in un blocco di testo per il modello.
+        /// </summary>
+        private static string BuildKnowledgeContext(List<CRM.Shared.Models.KnowledgeMatch> matches)
+        {
+            if (matches == null || matches.Count == 0)
+                return string.Empty;
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine();
+            sb.AppendLine("=== BASE DI CONOSCENZA ===");
+            foreach (var k in matches)
+            {
+                var modello = string.IsNullOrWhiteSpace(k.ProductName) ? "generale" : k.ProductName;
+                var categoria = string.IsNullOrWhiteSpace(k.Category) ? string.Empty : $", categoria: {k.Category}";
+                sb.AppendLine($"--- KB: {k.Title} (modello: {modello}{categoria}) ---");
+                sb.AppendLine(TrimText(k.Content, 900));
                 sb.AppendLine();
             }
             return sb.ToString();
