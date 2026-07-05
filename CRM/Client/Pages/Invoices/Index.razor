@@ -1,0 +1,129 @@
+@page "/Invoices"
+@page "/Invoices/Index"
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IInvoiceService InvoiceService
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+@inject DialogService DialogService
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 d-flex flex-wrap gap-2 align-items-center">
+        <div class="input-group" style="max-width: 320px;">
+            <span class="input-group-text"><span class="material-icons">search</span></span>
+            <input class="form-control" placeholder="Cerca numero, azienda"
+                   @bind="_filter.Search" @bind:event="oninput" @onkeyup="OnSearchKey" />
+        </div>
+        <RadzenDropDown TValue="InvoiceStates?" @bind-Value="_stateFilter" Data="_stateOptions"
+                        TextProperty="Text" ValueProperty="Value" AllowClear="true"
+                        Placeholder="Stato" Style="width: 190px;" Change="@(async _ => await Reload())" />
+        <div class="ms-auto text-muted">Totale filtrato: <strong>@_total.ToString("C")</strong></div>
+    </div>
+</div>
+
+<RadzenDataGrid @ref="_grid" IsLoading="@_isLoading" Count="@_count" Data="@_items" LoadData="@LoadData"
+                AllowPaging="true" PageSize="15" PagerHorizontalAlign="HorizontalAlign.Center"
+                TItem="InvoiceDTO" AllowSorting="true" EmptyText="Nessuna fattura">
+    <Columns>
+        <RadzenDataGridColumn TItem="InvoiceDTO" Property="Number" Title="Numero" Width="150px" />
+        <RadzenDataGridColumn TItem="InvoiceDTO" Property="Date" Title="Data" Width="110px" FormatString="{0:dd/MM/yyyy}" />
+        <RadzenDataGridColumn TItem="InvoiceDTO" Property="CompanyName" Title="Azienda" />
+        <RadzenDataGridColumn TItem="InvoiceDTO" Property="OrderNumber" Title="Ordine" Width="140px" />
+        <RadzenDataGridColumn TItem="InvoiceDTO" Property="State" Title="Stato" Width="130px" Sortable="false">
+            <Template Context="i"><span class="badge @StateClass(i.State)">@StateText(i.State)</span></Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="InvoiceDTO" Property="Total" Title="Totale" Width="130px" TextAlign="TextAlign.Right" FormatString="{0:C}" />
+        <RadzenDataGridColumn TItem="InvoiceDTO" Context="i" Title="" Width="110px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
+            <Template Context="i">
+                <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
+                              Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientInvoicesPath}/{i.Id}/Details"))" />
+                @if (i.Permits.Delete())
+                {
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => Delete(i))" />
+                }
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    private PageHeaderModel? _pageHeader;
+    private RadzenDataGrid<InvoiceDTO>? _grid;
+    private IEnumerable<InvoiceDTO>? _items;
+    private InvoiceFilter _filter = new() { PageSize = 15, Skip = 0, Top = 15 };
+    private InvoiceStates? _stateFilter;
+    private int _count;
+    private decimal _total;
+    private bool _isLoading;
+
+    private record StateOption(string Text, InvoiceStates? Value);
+    private readonly List<StateOption> _stateOptions = new()
+    {
+        new("Bozza", InvoiceStates.Draft),
+        new("Emessa", InvoiceStates.Issued),
+        new("Trasmessa", InvoiceStates.Sent),
+        new("Consegnata", InvoiceStates.Delivered),
+        new("Scartata", InvoiceStates.Rejected),
+    };
+
+    protected override async Task OnInitializedAsync() => _pageHeader = await HeaderService.Create();
+
+    private async Task LoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        try
+        {
+            _filter.Skip = args.Skip;
+            _filter.Top = args.Top;
+            _filter.OrderBy = args.OrderBy;
+            _filter.State = _stateFilter;
+            var resp = await InvoiceService.GetSummaryAsync(_filter);
+            _items = resp?.Items ?? new List<InvoiceDTO>();
+            _count = resp?.MetaData?.TotalCount ?? 0;
+            _total = resp?.Total ?? 0;
+        }
+        finally { _isLoading = false; }
+    }
+
+    private async Task Reload() { if (_grid != null) await _grid.Reload(); }
+
+    private async Task OnSearchKey(KeyboardEventArgs e) { if (e.Key == "Enter") await Reload(); }
+
+    private async Task Delete(InvoiceDTO i)
+    {
+        if (await DialogService.Confirm($"Eliminare la fattura {i.Number}?", "Conferma") == true)
+        {
+            await InvoiceService.DeleteAsync(i.Id);
+            await Reload();
+        }
+    }
+
+    public static string StateText(InvoiceStates s) => s switch
+    {
+        InvoiceStates.Draft => "Bozza",
+        InvoiceStates.Issued => "Emessa",
+        InvoiceStates.Sent => "Trasmessa",
+        InvoiceStates.Delivered => "Consegnata",
+        InvoiceStates.Rejected => "Scartata",
+        _ => s.ToString()
+    };
+
+    public static string StateClass(InvoiceStates s) => s switch
+    {
+        InvoiceStates.Draft => "bg-secondary",
+        InvoiceStates.Issued => "bg-primary",
+        InvoiceStates.Sent => "bg-info text-dark",
+        InvoiceStates.Delivered => "bg-success",
+        InvoiceStates.Rejected => "bg-danger",
+        _ => "bg-light text-dark"
+    };
+}

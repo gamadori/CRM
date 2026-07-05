@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
@@ -39,7 +40,7 @@ namespace CRM.Client.Pages.ContractTypes
         IContractTypesService Service { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
 
         [Inject]
         private NavigationManager NavigationManager { get; set; }
@@ -73,7 +74,7 @@ namespace CRM.Client.Pages.ContractTypes
 
         private bool _fromDetails = false;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private PageHeaderModel _pageHeader = null;
 
         private int _idContractType;
 
@@ -87,9 +88,8 @@ namespace CRM.Client.Pages.ContractTypes
         {
             
             await LoadContractType();
-            _bread = await BreadCrumbService.ContractTypes(false, _item?.Name);
+            _pageHeader = await HeaderService.Create();
 
-          
 
             if (_selectView == ContractViews.TicketsTypes)
                 _partialView = PartialViews.Index;

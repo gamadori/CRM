@@ -6,17 +6,14 @@
 @using CRM.Shared.Helper
 
 <div class="deals-page">
-    <section class="deals-toolbar">
-        <div>
-            <span class="deals-kicker">CRM</span>
-            <h1>Opportunita</h1>
-            <p>Pipeline commerciale, importi e stato delle trattative.</p>
-        </div>
-        <button type="button" class="deals-primary" @onclick="NewDeal">
-            <span class="material-icons">add</span>
-            <span>Nuova opportunita</span>
-        </button>
-    </section>
+    <PageHeader Model="_pageHeader">
+        <Actions>
+            <button type="button" class="deals-primary" @onclick="NewDeal">
+                <span class="material-icons">add</span>
+                <span>Nuova opportunita</span>
+            </button>
+        </Actions>
+    </PageHeader>
 
     <section class="deals-metrics">
         <article>

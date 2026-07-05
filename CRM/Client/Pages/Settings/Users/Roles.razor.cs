@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +27,9 @@ namespace CRM.Client.Pages.Settings.Users
         [Inject]
         private NavigationManager NavigationManager { get; set; }
 
+        [Inject]
+        private IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public string Id { get; set; }
 
@@ -37,16 +41,13 @@ namespace CRM.Client.Pages.Settings.Users
 
         private List<UserRole> _roles = new List<UserRole>();
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private PageHeaderModel _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {
             await LoadData();
 
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Settings"], Url = "Settings" });
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Utenti"], Url = "Settings/Users" });
-            _bread.Add(new BreadcrumbModel() { Title = _user.UserName, Url = $"Settings/Users/{Id}/Details" });
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Ruoli"], Url = null });
+            _pageHeader = await HeaderService.Create();
         }
         protected async Task LoadData()
         {

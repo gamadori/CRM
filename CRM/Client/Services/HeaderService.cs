@@ -200,6 +200,12 @@ namespace CRM.Client.Services
 
                     "productacctypes" or "productacctype" =>
                         (await _restClient.GetItem<ProductAccessoryType, int>((int)domainId, ConstHelper.ProductAccTypesPath))?.Name,
+
+                    "contracttypes" or "contracttype" =>
+                        (await _restClient.GetItem<ContractType, int>((int)domainId, ConstHelper.ContractTypesPath))?.Name,
+
+                    "projects" or "project" =>
+                        (await _restClient.GetItem<TaskProject, int>((int)domainId, ConstHelper.ProjectsPath))?.Name,
                     //"expensereceipts" or "expensereceipt" =>
                     //    (await _restClient.GetItem<ExpenseReceipt, int>((int)domainId, ConstHelper.ExpenseReceiptsPath))?.Name,
                     _ => null
@@ -303,7 +309,24 @@ namespace CRM.Client.Services
                 "tickets" => "confirmation_number",
                 "products" => "inventory_2",
                 "deals" => "handshake",
+                "quotes" or "quote" => "request_quote",
+                "orders" or "order" => "shopping_cart",
+                "pricelist" => "sell",
+                "invoices" or "invoice" => "receipt_long",
+                "agenda" => "event",
                 "expensereceipts" => "receipt_long",
+                "projects" or "project" => "apps",
+                "contracttypes" or "contracttype" => "description",
+                "companycontracts" or "contracts" => "assignment",
+                "accessorytypes" or "accessorytype" => "category",
+                "accessories" or "accessory" => "extension",
+                "productacctypes" or "productacctype" => "category",
+                "folders" or "folder" => "folder",
+                "languages" or "language" => "language",
+                "logevents" or "logevent" => "event_note",
+                "groups" or "group" => "groups",
+                "tickettypes" or "tickettype" => "class",
+                "azuresettings" => "cloud",
                 _ => "dashboard"
             };
         }
@@ -409,7 +432,13 @@ namespace CRM.Client.Services
                         (await _restClient.GetItem<TicketType, int>(int.Parse(segment), ConstHelper.TicketTypesPath))?.Desc ?? segment,
                     "ProductAccTypes" or "productacctype" when isNumeric =>
                         (await _restClient.GetItem<ProductAccessoryType, int>(int.Parse(segment), ConstHelper.ProductAccTypesPath))?.Name ?? segment,
-                    
+
+                    "contracttypes" or "contracttype" when isNumeric =>
+                        (await _restClient.GetItem<ContractType, int>(int.Parse(segment), ConstHelper.ContractTypesPath))?.Name ?? segment,
+
+                    "projects" or "project" when isNumeric =>
+                        (await _restClient.GetItem<TaskProject, int>(int.Parse(segment), ConstHelper.ProjectsPath))?.Name ?? segment,
+
                     _ => segment
                 };
             }

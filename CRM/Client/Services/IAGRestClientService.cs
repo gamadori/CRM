@@ -9,11 +9,6 @@ namespace CRM.Client.Services
     {
         Task<T?> GetItem<T, K>(K id, string pathService) where T : class;
 
-        Task<BreadCrumb<T>> GetWithBreadCrumb<T, K>(K id, string root, string pathService);
-
-       
-
-
         Task<T?> GetFirst<T>(string pathService) where T : class;
 
         Task<PagingResponse<T>> Get<T, F>(F data, string pathService) where F : PagingParameterModel;

@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -42,7 +43,7 @@ namespace CRM.Client.Pages.Tickets.Customer
 
         private string _header = "Tickets";
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>()  { new BreadcrumbModel(){ Title = "Home", Url = "DashBoardClient" }};
+        private PageHeaderModel _pageHeader = null;
 
         protected async override Task OnInitializedAsync()
         {
@@ -53,7 +54,16 @@ namespace CRM.Client.Pages.Tickets.Customer
             //navMenuService.CallRequestRefresh();
             _header = Header();
 
-            _bread.Add(new BreadcrumbModel() { Title = _header, Url = null });
+            _pageHeader = new PageHeaderModel
+            {
+                Title = _header,
+                Icon = "confirmation_number",
+                BreadcrumbItems = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Home", "DashBoardClient"),
+                    new BreadcrumbItem(_header, null)
+                }
+            };
             await LoadData();
         }
 

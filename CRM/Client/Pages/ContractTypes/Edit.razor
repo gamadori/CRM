@@ -3,9 +3,7 @@
 
 
 
-<BlazorHeader Header=@_title></BlazorHeader>
-
-<BlazorBreadCrumb Visible=@(_bread != null) Model=@_bread></BlazorBreadCrumb>
+<PageHeader Model="_pageHeader" Visible=@(OnClickSave == null)></PageHeader>
 
 @if (_item == null)
 {

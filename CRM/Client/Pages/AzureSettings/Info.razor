@@ -1,13 +1,12 @@
 ﻿@page "/Settings/AzureSettings"
+@using CRM.Client.Models;
 @using CRM.Client.Services;
 @using Microsoft.AspNetCore.Authorization;
 @using Microsoft.Extensions.Localization;
 
 @attribute [Authorize(Policy = "AdminRole")]
 
-<BlazorHeader Header="Azure Settings"></BlazorHeader>
-
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+<PageHeader Model="@_pageHeader"></PageHeader>
 <div class="container">
     <div class="row d-flex justify-content-around">
 
@@ -22,14 +21,14 @@
     [Inject]
     IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
     [Inject]
-    IBreadCrumbService Bread { get; set; }
+    IHeaderService HeaderService { get; set; }
 
 
-    private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+    private PageHeaderModel _pageHeader = null;
 
     protected async override Task OnInitializedAsync()
     {
-        _bread = await Bread.ProductSettings(false);
+        _pageHeader = await HeaderService.Create();
 
         await base.OnInitializedAsync();
     }

@@ -1,6 +1,7 @@
 @page "/Articles/{ArticleId:int}/License"
 @using CRM.Shared
 @using CRM.Shared.DTOs
+@using CRM.Client.Models
 @using CRM.Client.Services
 @using Microsoft.Extensions.Localization
 @using Radzen
@@ -10,8 +11,7 @@
 @inject NavigationManager Nav
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize
 
-<BlazorHeader Header="Licenza Matricola"></BlazorHeader>
-<BlazorBreadCrumb Model="@_bread"></BlazorBreadCrumb>
+<PageHeader Model="@_pageHeader"></PageHeader>
 
 @if (_loading)
 {
@@ -201,9 +201,9 @@ else
 
 @code {
     [Parameter] public int ArticleId { get; set; }
-    [Inject] IBreadCrumbService Bread { get; set; }
+    [Inject] IHeaderService HeaderService { get; set; }
 
-    private List<BreadcrumbModel> _bread = new();
+    private PageHeaderModel _pageHeader = null;
     private ArticleLicenseDTO? _license;
     private List<ArticleLicenseFeatureDefDTO> _featureDefs = new();
     private LicenseSaveForm _form = new();
@@ -230,8 +230,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _bread = await Bread.Articles(true);
-        _bread.Add(new BreadcrumbModel { Title = "Licenza", Url = null });
+        _pageHeader = await HeaderService.Create();
 
         // Carica licenza esistente
         var resp = await Http.GetAsync($"api/Licenses/article/{ArticleId}");

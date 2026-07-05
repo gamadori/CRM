@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -41,7 +42,7 @@ namespace CRM.Client.Pages.AccessoryTypes
         DialogService DialogService { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
 
 
         [Parameter]
@@ -75,7 +76,7 @@ namespace CRM.Client.Pages.AccessoryTypes
 
         private bool _filterState = false;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>() ;
+        private PageHeaderModel _pageHeader = null;
 
         private ApplicationUser? _user;
 
@@ -83,7 +84,8 @@ namespace CRM.Client.Pages.AccessoryTypes
 
         protected async override Task OnInitializedAsync()
         {
-            _bread = await BreadCrumbService.AccessoryTypes(false);
+            if (PageMode != PageModality.Dialog)
+                _pageHeader = await HeaderService.Create();
 
             _header = Localize["Details"];
 

@@ -1,0 +1,134 @@
+@page "/Orders"
+@page "/Orders/Index"
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IOrderService OrderService
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+@inject DialogService DialogService
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 d-flex flex-wrap gap-2 align-items-center">
+        <div class="input-group" style="max-width: 320px;">
+            <span class="input-group-text"><span class="material-icons">search</span></span>
+            <input class="form-control" placeholder="Cerca numero, azienda, note"
+                   @bind="_filter.Search" @bind:event="oninput" @onkeyup="OnSearchKey" />
+        </div>
+        <RadzenDropDown TValue="OrderStates?" @bind-Value="_stateFilter" Data="_stateOptions"
+                        TextProperty="Text" ValueProperty="Value" AllowClear="true"
+                        Placeholder="Stato" Style="width: 190px;" Change="@(async _ => await Reload())" />
+        <div class="ms-auto text-muted">Totale filtrato: <strong>@_total.ToString("C")</strong></div>
+    </div>
+</div>
+
+<RadzenDataGrid @ref="_grid" IsLoading="@_isLoading" Count="@_count" Data="@_items" LoadData="@LoadData"
+                AllowPaging="true" PageSize="15" PagerHorizontalAlign="HorizontalAlign.Center"
+                TItem="OrderDTO" AllowSorting="true" EmptyText="Nessun ordine">
+    <Columns>
+        <RadzenDataGridColumn TItem="OrderDTO" Property="Number" Title="Numero" Width="140px" />
+        <RadzenDataGridColumn TItem="OrderDTO" Property="Date" Title="Data" Width="110px" FormatString="{0:dd/MM/yyyy}" />
+        <RadzenDataGridColumn TItem="OrderDTO" Property="CompanyName" Title="Azienda" />
+        <RadzenDataGridColumn TItem="OrderDTO" Property="QuoteNumber" Title="Preventivo" Width="140px" />
+        <RadzenDataGridColumn TItem="OrderDTO" Property="State" Title="Stato" Width="140px" Sortable="false">
+            <Template Context="o"><span class="badge @StateClass(o.State)">@StateText(o.State)</span></Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="OrderDTO" Property="Total" Title="Totale" Width="130px" TextAlign="TextAlign.Right" FormatString="{0:C}" />
+        <RadzenDataGridColumn TItem="OrderDTO" Context="o" Title="" Width="150px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
+            <Template Context="o">
+                <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
+                              Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{o.Id}/Details"))" />
+                @if (o.Permits.Edit())
+                {
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{o.Id}/Edit"))" />
+                }
+                @if (o.Permits.Delete())
+                {
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => Delete(o))" />
+                }
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    private PageHeaderModel? _pageHeader;
+    private RadzenDataGrid<OrderDTO>? _grid;
+    private IEnumerable<OrderDTO>? _items;
+    private OrderFilter _filter = new() { PageSize = 15, Skip = 0, Top = 15 };
+    private OrderStates? _stateFilter;
+    private int _count;
+    private decimal _total;
+    private bool _isLoading;
+
+    private record StateOption(string Text, OrderStates? Value);
+    private readonly List<StateOption> _stateOptions = new()
+    {
+        new("Confermato", OrderStates.Confirmed),
+        new("In produzione", OrderStates.InProduction),
+        new("Consegnato", OrderStates.Delivered),
+        new("Fatturato", OrderStates.Invoiced),
+        new("Annullato", OrderStates.Cancelled),
+    };
+
+    protected override async Task OnInitializedAsync() => _pageHeader = await HeaderService.Create();
+
+    private async Task LoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        try
+        {
+            _filter.Skip = args.Skip;
+            _filter.Top = args.Top;
+            _filter.OrderBy = args.OrderBy;
+            _filter.State = _stateFilter;
+            var resp = await OrderService.GetSummaryAsync(_filter);
+            _items = resp?.Items ?? new List<OrderDTO>();
+            _count = resp?.MetaData?.TotalCount ?? 0;
+            _total = resp?.Total ?? 0;
+        }
+        finally { _isLoading = false; }
+    }
+
+    private async Task Reload() { if (_grid != null) await _grid.Reload(); }
+
+    private async Task OnSearchKey(KeyboardEventArgs e) { if (e.Key == "Enter") await Reload(); }
+
+    private async Task Delete(OrderDTO o)
+    {
+        if (await DialogService.Confirm($"Eliminare l'ordine {o.Number}?", "Conferma") == true)
+        {
+            await OrderService.DeleteAsync(o.Id);
+            await Reload();
+        }
+    }
+
+    public static string StateText(OrderStates s) => s switch
+    {
+        OrderStates.Confirmed => "Confermato",
+        OrderStates.InProduction => "In produzione",
+        OrderStates.Delivered => "Consegnato",
+        OrderStates.Invoiced => "Fatturato",
+        OrderStates.Cancelled => "Annullato",
+        _ => s.ToString()
+    };
+
+    public static string StateClass(OrderStates s) => s switch
+    {
+        OrderStates.Confirmed => "bg-primary",
+        OrderStates.InProduction => "bg-info text-dark",
+        OrderStates.Delivered => "bg-success",
+        OrderStates.Invoiced => "bg-secondary",
+        OrderStates.Cancelled => "bg-danger",
+        _ => "bg-light text-dark"
+    };
+}

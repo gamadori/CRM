@@ -407,7 +407,7 @@
     <value />
   </data>
   <data name="NewItem" xml:space="preserve">
-    <value>Nouvel</value>
+    <value>Nouvel {0}</value>
   </data>
   <data name="EditItem" xml:space="preserve">
     <value>Modifier</value>
@@ -756,5 +756,56 @@
   </data>
   <data name="Errore di connessione: {0}" xml:space="preserve">
     <value>Erreur de connexion : {0}</value>
+  </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>Gestion des Utilisateurs</value>
+  </data>
+  <data name="ProductsAndTickets" xml:space="preserve">
+    <value>Produits et Tickets</value>
+  </data>
+  <data name="Communications" xml:space="preserve">
+    <value>Communications</value>
+  </data>
+  <data name="SystemConfiguration" xml:space="preserve">
+    <value>Configuration du Système</value>
+  </data>
+  <data name="ArtificialIntelligence" xml:space="preserve">
+    <value>Intelligence Artificielle</value>
+  </data>
+  <data name="NoDescriptionAvailable" xml:space="preserve">
+    <value>Description non disponible</value>
+  </data>
+  <data name="ContractTypes" xml:space="preserve">
+    <value>Types de contrat</value>
+  </data>
+  <data name="Accessories" xml:space="preserve">
+    <value>Accessoires</value>
+  </data>
+  <data name="AccessoryTypes" xml:space="preserve">
+    <value>Types d'accessoire</value>
+  </data>
+  <data name="ProductAccTypes" xml:space="preserve">
+    <value>Types d'accessoire produit</value>
+  </data>
+  <data name="ProductAccTypeLangs" xml:space="preserve">
+    <value>Traductions d'accessoire</value>
+  </data>
+  <data name="AzureSettings" xml:space="preserve">
+    <value>Paramètres Azure</value>
+  </data>
+  <data name="Quotes" xml:space="preserve">
+    <value>Devis</value>
+  </data>
+  <data name="Orders" xml:space="preserve">
+    <value>Commandes</value>
+  </data>
+  <data name="PriceList" xml:space="preserve">
+    <value>Tarifs</value>
+  </data>
+  <data name="Invoices" xml:space="preserve">
+    <value>Factures</value>
+  </data>
+  <data name="Activities" xml:space="preserve">
+    <value>Activités</value>
   </data>
 </root>

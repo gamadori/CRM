@@ -1,0 +1,251 @@
+@page "/Orders/{Id:int}/Edit"
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IOrderService OrderService
+@inject ICompaniesService CompaniesService
+@inject IContactsService ContactsService
+@inject IProductsService ProductsService
+@inject IPriceListService PriceListService
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+@inject NotificationService Notification
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+@if (_order == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <EditForm Model="_order" OnValidSubmit="Save">
+        <DataAnnotationsValidator />
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Azienda</label>
+                        <RadzenDropDown TValue="int?" @bind-Value="_order.IdCompany" Data="_companies"
+                                        TextProperty="RagioneSociale" ValueProperty="Id" AllowFiltering="true"
+                                        AllowClear="true" Placeholder="Seleziona azienda" Style="width:100%"
+                                        Change="@(async _ => await OnChangeCompany())" />
+                        <ValidationMessage For="@(() => _order.IdCompany)" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Contatto</label>
+                        <RadzenDropDown TValue="int?" @bind-Value="_order.IdContact" Data="_contacts"
+                                        TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true"
+                                        AllowClear="true" Placeholder="Referente" Style="width:100%" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Stato</label>
+                        <RadzenDropDown TValue="OrderStates" @bind-Value="_order.State" Data="_states"
+                                        TextProperty="Text" ValueProperty="Value" Style="width:100%" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Data</label>
+                        <RadzenDatePicker TValue="DateTime" @bind-Value="_order.Date" DateFormat="dd/MM/yyyy" Style="width:100%" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Consegna prevista</label>
+                        <RadzenDatePicker TValue="DateTime?" @bind-Value="_order.DeliveryDate" DateFormat="dd/MM/yyyy" Style="width:100%" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Numero</label>
+                        <input class="form-control" @bind="_order.Number" readonly />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white d-flex align-items-center">
+                <h6 class="mb-0">Righe</h6>
+                <RadzenButton class="ms-auto" Icon="add" Text="Aggiungi riga" ButtonStyle="ButtonStyle.Secondary"
+                              Size="ButtonSize.Small" Click="AddRow" />
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="min-width:180px">Prodotto</th>
+                            <th style="min-width:200px">Descrizione</th>
+                            <th class="text-end" style="width:90px">Q.tà</th>
+                            <th class="text-end" style="width:120px">Prezzo</th>
+                            <th class="text-end" style="width:90px">Sc.%</th>
+                            <th class="text-end" style="width:90px">IVA%</th>
+                            <th class="text-end" style="width:120px">Netto</th>
+                            <th class="text-end" style="width:120px">Totale</th>
+                            <th style="width:40px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _order.Rows)
+                        {
+                            <tr>
+                                <td>
+                                    <RadzenDropDown TValue="int?" Value="row.IdProduct" Data="_products"
+                                                    TextProperty="Name" ValueProperty="Id" AllowFiltering="true"
+                                                    AllowClear="true" Placeholder="—" Style="width:100%"
+                                                    Change="@(args => OnSelectProduct(row, args as int?))" />
+                                </td>
+                                <td><input class="form-control form-control-sm" @bind="row.Description" @bind:event="oninput" /></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm text-end" @bind="row.Quantity" @bind:event="oninput" @onblur="Recalc" /></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm text-end" @bind="row.UnitPrice" @bind:event="oninput" @onblur="Recalc" /></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm text-end" @bind="row.DiscountPct" @bind:event="oninput" @onblur="Recalc" /></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm text-end" @bind="row.VatRate" @bind:event="oninput" @onblur="Recalc" /></td>
+                                <td class="text-end">@row.LineNet.ToString("C")</td>
+                                <td class="text-end">@row.LineTotal.ToString("C")</td>
+                                <td class="text-center">
+                                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@(() => RemoveRow(row))" />
+                                </td>
+                            </tr>
+                        }
+                        @if (!_order.Rows.Any())
+                        {
+                            <tr><td colspan="9" class="text-center text-muted py-3">Nessuna riga.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-7">
+                <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                    <label class="form-label">Note</label>
+                    <textarea class="form-control" rows="2" @bind="_order.Note"></textarea>
+                </div></div>
+            </div>
+            <div class="col-md-5">
+                <div class="card border-0 shadow-sm"><div class="card-body">
+                    <div class="d-flex justify-content-between"><span>Imponibile</span><strong>@_order.Subtotal.ToString("C")</strong></div>
+                    <div class="d-flex justify-content-between text-muted"><span>Sconto</span><span>@_order.TotalDiscount.ToString("C")</span></div>
+                    <div class="d-flex justify-content-between"><span>IVA</span><strong>@_order.TotalVat.ToString("C")</strong></div>
+                    <hr />
+                    <div class="d-flex justify-content-between fs-5"><span>Totale</span><strong>@_order.Total.ToString("C")</strong></div>
+                </div></div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+            <RadzenButton ButtonType="ButtonType.Submit" Icon="save" Text="@(_saving ? "Salvataggio..." : "Salva")"
+                          ButtonStyle="ButtonStyle.Primary" Disabled="@_saving" />
+            <RadzenButton Icon="close" Text="Annulla" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PageHeaderModel? _pageHeader;
+    private OrderDTO? _order;
+    private List<CompanyDTO> _companies = new();
+    private List<ContactDTO> _contacts = new();
+    private List<ProductDTO> _products = new();
+    private Dictionary<int, PriceListItemDTO> _priceList = new();
+    private bool _saving;
+
+    private record StateOption(string Text, OrderStates Value);
+    private readonly List<StateOption> _states = new()
+    {
+        new("Confermato", OrderStates.Confirmed),
+        new("In produzione", OrderStates.InProduction),
+        new("Consegnato", OrderStates.Delivered),
+        new("Fatturato", OrderStates.Invoiced),
+        new("Annullato", OrderStates.Cancelled),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        _companies = await CompaniesService.GetListAsync(new CompanyFilter()) ?? new();
+        _products = await ProductsService.GetListAsync(new ProductFilter()) ?? new();
+        _order = await OrderService.GetItemAsync(Id) ?? new OrderDTO { Date = DateTime.Today, State = OrderStates.Confirmed };
+        await LoadContacts();
+        await LoadPriceList();
+        _order.Recalculate();
+    }
+
+    private async Task LoadPriceList()
+    {
+        _priceList = _order?.IdCompany == null
+            ? new()
+            : (await PriceListService.GetByCompanyAsync(_order.IdCompany.Value)).ToDictionary(p => p.IdProduct);
+    }
+
+    private async Task OnChangeCompany()
+    {
+        if (_order != null) _order.IdContact = null;
+        await LoadContacts();
+        await LoadPriceList();
+    }
+
+    private async Task LoadContacts()
+    {
+        if (_order?.IdCompany == null) { _contacts = new(); return; }
+        _contacts = await ContactsService.GetListAsync(new ContactFilter { IdCompany = _order.IdCompany }) ?? new();
+        if (_order.IdContact != null && !_contacts.Any(c => c.Id == _order.IdContact))
+            _order.IdContact = null;
+    }
+
+    private void AddRow()
+    {
+        _order!.Rows.Add(new OrderRowDTO { Quantity = 1, VatRate = 22, SortOrder = _order.Rows.Count });
+        Recalc();
+    }
+
+    private void RemoveRow(OrderRowDTO row) { _order!.Rows.Remove(row); Recalc(); }
+
+    private void OnSelectProduct(OrderRowDTO row, int? idProduct)
+    {
+        row.IdProduct = idProduct;
+        var p = _products.FirstOrDefault(x => x.Id == idProduct);
+        if (p != null)
+        {
+            if (string.IsNullOrWhiteSpace(row.Description))
+                row.Description = string.IsNullOrWhiteSpace(p.Code) ? p.Name : $"{p.Code} - {p.Name}";
+
+            // Prezzo dedicato da listino cliente, altrimenti prezzo di catalogo
+            if (idProduct != null && _priceList.TryGetValue(idProduct.Value, out var pl))
+            {
+                row.UnitPrice = pl.UnitPrice;
+                row.DiscountPct = pl.DiscountPct;
+            }
+            else if (row.UnitPrice == 0)
+            {
+                row.UnitPrice = p.Price;
+            }
+        }
+        Recalc();
+    }
+
+    private void Recalc() => _order?.Recalculate();
+
+    private async Task Save()
+    {
+        if (_order == null) return;
+        _saving = true;
+        try
+        {
+            _order.Recalculate();
+            var resp = await OrderService.PostAsync(_order.ToEntity());
+            if (resp.State)
+                Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{resp.Data?.Id ?? _order.Id}/Details");
+            else
+                Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
+        }
+        finally { _saving = false; }
+    }
+
+    private void Cancel() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{Id}/Details");
+}

@@ -109,6 +109,7 @@ namespace CRM.Client.Pages.Companies
                 new ViewOption<CompanyViews> { Text = Localize["Contacts"], Value = CompanyViews.Contacts },
                 new ViewOption<CompanyViews> { Text = Localize["Articles"], Value = CompanyViews.Articles },
                 new ViewOption<CompanyViews> { Text = Localize["Tickets"], Value = CompanyViews.Ticket },
+                new ViewOption<CompanyViews> { Text = Localize["Activities"], Value = CompanyViews.Activities },
             };
         }
         private async Task LoadCompany()

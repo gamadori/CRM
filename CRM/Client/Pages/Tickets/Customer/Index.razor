@@ -10,9 +10,7 @@
 
 @if (_tickets != null)
 {
-    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
-
-    <BlazorHeader Header="@_header"></BlazorHeader>
+    <PageHeader Model="@_pageHeader"></PageHeader>
 
     <RadzenDataGrid @ref="grdTickets" IsLoading="@_isLoading" Count="@_tickets.MetaData.TotalCount" Data="@_tickets.Items" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode="FilterMode.Advanced" 
         AllowSorting="true" AllowFiltering="true" AllowPaging="true"

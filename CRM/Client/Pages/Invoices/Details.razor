@@ -1,0 +1,185 @@
+@page "/Invoices/{Id:int}/Details"
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
+@attribute [Authorize]
+@inject IInvoiceService InvoiceService
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+@inject DialogService DialogService
+@inject NotificationService Notification
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+@if (_invoice == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <RadzenButton Icon="arrow_back" Text="Lista" ButtonStyle="ButtonStyle.Light"
+                      Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientInvoicesPath}"))" />
+        <RadzenButton Icon="code" Text="XML FatturaPA" ButtonStyle="ButtonStyle.Secondary"
+                      IsBusy="@_downloading" Disabled="@_downloading" Click="DownloadXml" />
+        @if (_invoice.State == InvoiceStates.Issued)
+        {
+            <RadzenButton Icon="send" Text="Trasmetti a SdI" ButtonStyle="ButtonStyle.Primary"
+                          IsBusy="@_sending" Disabled="@_sending" Click="Send" />
+        }
+        @if (_invoice.IdOrder != null)
+        {
+            <RadzenButton Icon="shopping_cart" Text="Ordine" ButtonStyle="ButtonStyle.Light"
+                          Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{_invoice.IdOrder}/Details"))" />
+        }
+    </div>
+
+    <div class="alert alert-warning py-2 small">
+        <span class="material-icons align-middle" style="font-size:18px">info</span>
+        Parte indipendente dal provider: l'XML viene generato in locale ma la trasmissione a SdI richiede un provider configurato.
+        Va validato contro l'XSD ufficiale prima dell'uso in produzione.
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3"><small class="text-muted d-block">Numero</small><strong>@_invoice.Number</strong></div>
+                <div class="col-md-3"><small class="text-muted d-block">Data</small>@_invoice.Date.ToString("dd/MM/yyyy")</div>
+                <div class="col-md-3"><small class="text-muted d-block">Tipo documento</small>@_invoice.TipoDocumento</div>
+                <div class="col-md-3"><small class="text-muted d-block">Stato</small><span class="badge @StateClass(_invoice.State)">@StateText(_invoice.State)</span></div>
+                <div class="col-md-3"><small class="text-muted d-block">Azienda</small>@_invoice.CompanyName</div>
+                <div class="col-md-3"><small class="text-muted d-block">Cod. destinatario</small>@_invoice.CodiceDestinatario</div>
+                <div class="col-md-3"><small class="text-muted d-block">Ordine</small>@(string.IsNullOrEmpty(_invoice.OrderNumber) ? "—" : _invoice.OrderNumber)</div>
+                <div class="col-md-3"><small class="text-muted d-block">Rif. SdI</small>@(string.IsNullOrEmpty(_invoice.SdiReference) ? "—" : _invoice.SdiReference)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Descrizione</th><th class="text-end">Q.tà</th><th class="text-end">Prezzo</th>
+                        <th class="text-end">Sc.%</th><th class="text-end">IVA%</th><th class="text-end">Netto</th><th class="text-end">Totale</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in _invoice.Rows)
+                    {
+                        <tr>
+                            <td>@r.Description</td>
+                            <td class="text-end">@r.Quantity</td>
+                            <td class="text-end">@r.UnitPrice.ToString("C")</td>
+                            <td class="text-end">@r.DiscountPct</td>
+                            <td class="text-end">@r.VatRate</td>
+                            <td class="text-end">@r.LineNet.ToString("C")</td>
+                            <td class="text-end">@r.LineTotal.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-7"></div>
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm"><div class="card-body">
+                <div class="d-flex justify-content-between"><span>Imponibile</span><strong>@_invoice.Subtotal.ToString("C")</strong></div>
+                <div class="d-flex justify-content-between"><span>IVA</span><strong>@_invoice.TotalVat.ToString("C")</strong></div>
+                <hr />
+                <div class="d-flex justify-content-between fs-5"><span>Totale</span><strong>@_invoice.Total.ToString("C")</strong></div>
+            </div></div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PageHeaderModel? _pageHeader;
+    private InvoiceDTO? _invoice;
+    private bool _downloading;
+    private bool _sending;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        _invoice = await InvoiceService.GetItemAsync(Id);
+    }
+
+    private async Task DownloadXml()
+    {
+        _downloading = true;
+        try
+        {
+            var response = await Http.GetAsync($"{ConstHelper.InvoicesPath}/{Id}/xml");
+            if (response.IsSuccessStatusCode)
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                var fileName = $"{_invoice?.Number ?? $"Fattura-{Id}"}.xml";
+                await JS.InvokeVoidAsync("downloadFileFromBytes", fileName, "application/xml", bytes);
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", "Generazione XML fallita (verifica azienda emittente in Impostazioni)");
+            }
+        }
+        catch (Exception ex)
+        {
+            Notification.Notify(NotificationSeverity.Error, "Errore", ex.Message);
+        }
+        finally { _downloading = false; }
+    }
+
+    private async Task Send()
+    {
+        if (await DialogService.Confirm("Trasmettere la fattura a SdI tramite il provider configurato?", "Conferma") != true)
+            return;
+
+        _sending = true;
+        try
+        {
+            var resp = await InvoiceService.SendAsync(Id);
+            if (resp.State)
+            {
+                _invoice = resp.Data;
+                Notification.Notify(NotificationSeverity.Success, "Fatto", "Fattura trasmessa");
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Warning, "Non trasmessa", resp.Message ?? "Provider non configurato");
+            }
+        }
+        finally { _sending = false; }
+    }
+
+    private static string StateText(InvoiceStates s) => s switch
+    {
+        InvoiceStates.Draft => "Bozza",
+        InvoiceStates.Issued => "Emessa",
+        InvoiceStates.Sent => "Trasmessa",
+        InvoiceStates.Delivered => "Consegnata",
+        InvoiceStates.Rejected => "Scartata",
+        _ => s.ToString()
+    };
+
+    private static string StateClass(InvoiceStates s) => s switch
+    {
+        InvoiceStates.Draft => "bg-secondary",
+        InvoiceStates.Issued => "bg-primary",
+        InvoiceStates.Sent => "bg-info text-dark",
+        InvoiceStates.Delivered => "bg-success",
+        InvoiceStates.Rejected => "bg-danger",
+        _ => "bg-light text-dark"
+    };
+}

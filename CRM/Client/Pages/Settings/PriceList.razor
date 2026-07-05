@@ -1,0 +1,179 @@
+@page "/Settings/PriceList"
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Policy = "AdminRole")]
+@inject IPriceListService PriceListService
+@inject ICompaniesService CompaniesService
+@inject IProductsService ProductsService
+@inject IHeaderService HeaderService
+@inject DialogService DialogService
+@inject NotificationService Notification
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <label class="form-label">Cliente</label>
+        <RadzenDropDown TValue="int?" @bind-Value="_idCompany" Data="_companies"
+                        TextProperty="RagioneSociale" ValueProperty="Id" AllowFiltering="true"
+                        AllowClear="true" Placeholder="Seleziona un cliente" Style="width:100%; max-width:480px;"
+                        Change="@(async _ => await LoadItems())" />
+        <div class="form-text">Il listino definisce prezzo e sconto dedicati per cliente; in preventivo/ordine sostituiscono il prezzo di catalogo.</div>
+    </div>
+</div>
+
+@if (_idCompany != null)
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="min-width:240px">Prodotto</th>
+                        <th class="text-end" style="width:150px">Prezzo catalogo</th>
+                        <th class="text-end" style="width:150px">Prezzo listino</th>
+                        <th class="text-end" style="width:120px">Sconto %</th>
+                        <th style="width:60px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in _items)
+                    {
+                        <tr>
+                            <td>@item.ProductName @(string.IsNullOrWhiteSpace(item.ProductCode) ? "" : $"({item.ProductCode})")</td>
+                            <td class="text-end text-muted">@item.CatalogPrice.ToString("C")</td>
+                            <td class="text-end">
+                                <input type="number" step="0.01" class="form-control form-control-sm text-end"
+                                       @bind="item.UnitPrice" @onblur="@(() => Save(item))" />
+                            </td>
+                            <td class="text-end">
+                                <input type="number" step="0.01" class="form-control form-control-sm text-end"
+                                       @bind="item.DiscountPct" @onblur="@(() => Save(item))" />
+                            </td>
+                            <td class="text-center">
+                                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                              Click="@(() => Delete(item))" />
+                            </td>
+                        </tr>
+                    }
+                    @if (!_items.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-3">Nessuna voce di listino per questo cliente.</td></tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="table-light">
+                        <td>
+                            <RadzenDropDown TValue="int?" @bind-Value="_newIdProduct" Data="_availableProducts"
+                                            TextProperty="Name" ValueProperty="Id" AllowFiltering="true"
+                                            AllowClear="true" Placeholder="Aggiungi prodotto" Style="width:100%"
+                                            Change="@(args => OnPickNewProduct(args as int?))" />
+                        </td>
+                        <td class="text-end text-muted">@_newCatalogPrice.ToString("C")</td>
+                        <td class="text-end">
+                            <input type="number" step="0.01" class="form-control form-control-sm text-end" @bind="_newUnitPrice" />
+                        </td>
+                        <td class="text-end">
+                            <input type="number" step="0.01" class="form-control form-control-sm text-end" @bind="_newDiscountPct" />
+                        </td>
+                        <td class="text-center">
+                            <RadzenButton Icon="add" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                          Disabled="@(_newIdProduct == null)" Click="AddNew" />
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    private PageHeaderModel? _pageHeader;
+    private int? _idCompany;
+    private List<CompanyDTO> _companies = new();
+    private List<ProductDTO> _products = new();
+    private List<PriceListItemDTO> _items = new();
+
+    private int? _newIdProduct;
+    private decimal _newUnitPrice;
+    private decimal _newDiscountPct;
+    private decimal _newCatalogPrice;
+
+    private IEnumerable<ProductDTO> _availableProducts =>
+        _products.Where(p => !_items.Any(i => i.IdProduct == p.Id));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        _companies = await CompaniesService.GetListAsync(new CompanyFilter()) ?? new();
+        _products = await ProductsService.GetListAsync(new ProductFilter()) ?? new();
+    }
+
+    private async Task LoadItems()
+    {
+        ResetNew();
+        _items = _idCompany == null ? new() : await PriceListService.GetByCompanyAsync(_idCompany.Value);
+    }
+
+    private void OnPickNewProduct(int? idProduct)
+    {
+        _newIdProduct = idProduct;
+        var p = _products.FirstOrDefault(x => x.Id == idProduct);
+        _newCatalogPrice = p?.Price ?? 0;
+        _newUnitPrice = p?.Price ?? 0;
+    }
+
+    private async Task AddNew()
+    {
+        if (_idCompany == null || _newIdProduct == null) return;
+
+        var resp = await PriceListService.UpsertAsync(new PriceListItem
+        {
+            IdCompany = _idCompany.Value,
+            IdProduct = _newIdProduct.Value,
+            UnitPrice = _newUnitPrice,
+            DiscountPct = _newDiscountPct
+        });
+
+        if (resp.State)
+        {
+            await LoadItems();
+        }
+        else
+        {
+            Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
+        }
+    }
+
+    private async Task Save(PriceListItemDTO item)
+    {
+        if (_idCompany == null) return;
+
+        var resp = await PriceListService.UpsertAsync(item.ToEntity());
+        if (!resp.State)
+            Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
+    }
+
+    private async Task Delete(PriceListItemDTO item)
+    {
+        if (await DialogService.Confirm($"Rimuovere {item.ProductName} dal listino?", "Conferma") != true)
+            return;
+
+        if (await PriceListService.DeleteAsync(item.Id))
+            await LoadItems();
+    }
+
+    private void ResetNew()
+    {
+        _newIdProduct = null;
+        _newUnitPrice = 0;
+        _newDiscountPct = 0;
+        _newCatalogPrice = 0;
+    }
+}

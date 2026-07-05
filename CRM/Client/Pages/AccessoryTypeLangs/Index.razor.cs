@@ -42,9 +42,6 @@ namespace CRM.Client.Pages.AccessoryTypeLangs
         [Inject]
         SFDialogService DialogService { get; set; }
 
-        [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
-
         [Parameter]
         public int IdAccessoryType { get; set; }
 
@@ -73,8 +70,6 @@ namespace CRM.Client.Pages.AccessoryTypeLangs
 
         private bool _isLoading = false;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
-
         private List<Language> _languages;
 
         private AccessoryType _accessoryType;
@@ -85,8 +80,6 @@ namespace CRM.Client.Pages.AccessoryTypeLangs
             await GetLanguages();
             await GetAccessoryType();
 
-            _bread = await BreadCrumbService.AccessoryTypes(_accessoryType?.Name, false);
-            
             await base.OnInitializedAsync();
         }
 

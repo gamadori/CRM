@@ -2,9 +2,7 @@
 @using CRM.Shared.Helper
 
 
-<BlazorHeader Header=@_title></BlazorHeader>
-
-<BlazorBreadCrumb Model=@_bread Visible=@(_bread != null)></BlazorBreadCrumb>
+<PageHeader Model="_pageHeader" Visible=@(OnClickEdit == null)></PageHeader>
 
 @if (_item == null)
 {

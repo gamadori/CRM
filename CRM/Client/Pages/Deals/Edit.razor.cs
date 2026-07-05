@@ -1,4 +1,5 @@
 using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
@@ -39,6 +40,9 @@ namespace CRM.Client.Pages.Deals
         [Inject]
         private IEnumService EnumService { get; set; } = default!;
 
+        [Inject]
+        private IHeaderService HeaderService { get; set; } = default!;
+
         [Parameter]
         public int? Id { get; set; }
 
@@ -66,10 +70,14 @@ namespace CRM.Client.Pages.Deals
         private bool _saving;
         private bool _lockCompany;
         private string? _messageState;
+        private PageHeaderModel? _pageHeader;
         private string Header => Id == null ? "Nuova opportunita" : "Modifica opportunita";
 
         protected override async Task OnInitializedAsync()
         {
+            if (OnClickSave == null)
+                _pageHeader = await HeaderService.Create();
+
             _dealStates = EnumService.EnumGetList(typeof(DealStates));
             _dealPhases = EnumService.EnumGetList(typeof(DealPhases));
             await LoadCompanies();
@@ -169,7 +177,7 @@ namespace CRM.Client.Pages.Deals
                     }
                     else
                     {
-                        NavigationManager.NavigateTo($"/{ConstHelper.ClientDealPath}/{response.Data?.Id ?? _deal.Id}/Details");
+                        NavigationManager.NavigateTo($"/{ConstHelper.ClientDealPath}/{response.Data?.Id ?? _deal.Id}");
                     }
                 }
                 else
@@ -191,7 +199,7 @@ namespace CRM.Client.Pages.Deals
             }
             else if (Id != null)
             {
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientDealPath}/{Id}/Details");
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientDealPath}/{Id}");
             }
             else
             {

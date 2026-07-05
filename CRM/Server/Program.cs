@@ -149,6 +149,24 @@ builder.Services.AddScoped<IContactsService, ContactsService>();
 
 builder.Services.AddScoped<IDealsService, DealsService>();
 
+builder.Services.AddScoped<IQuotesService, QuotesService>();
+
+builder.Services.AddScoped<IQuotePdfGenerator, QuotePdfGenerator>();
+
+builder.Services.AddScoped<IOrdersService, OrdersService>();
+
+builder.Services.AddScoped<IOrderPdfGenerator, OrderPdfGenerator>();
+
+builder.Services.AddScoped<CRM.Server.Services.IPriceListService, CRM.Server.Services.PriceListService>();
+
+builder.Services.AddScoped<IInvoicesService, InvoicesService>();
+
+builder.Services.AddScoped<IActivitiesService, ActivitiesService>();
+
+// Provider di fatturazione elettronica: di default nessuno (genera XML ma non trasmette).
+// Sostituire con un adapter specifico del provider adottato (Aruba, InfoCert, TeamSystem, ...).
+builder.Services.AddScoped<IEInvoiceProvider, NullEInvoiceProvider>();
+
 builder.Services.AddScoped<IInterventionTypeLangsService, InterventionTypeLangsService>();
 
 builder.Services.AddScoped<IFolderLanguagesService, FolderLanguagesService>();

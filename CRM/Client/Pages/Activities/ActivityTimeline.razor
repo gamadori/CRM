@@ -1,0 +1,173 @@
+@using CRM.Client.Helpers
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@inject IActivityService ActivityService
+@inject IBaseRestService<ApplicationUser, UsersFilterModel, string> UserService
+@inject DialogService DialogService
+@inject NotificationService Notification
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label mb-1 small">Tipo</label>
+                <RadzenDropDown TValue="ActivityKind" @bind-Value="_new.Kind" Data="_kinds"
+                                TextProperty="Text" ValueProperty="Value" Style="width:100%" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label mb-1 small">Oggetto</label>
+                <input class="form-control form-control-sm" @bind="_new.Subject" placeholder="Es. Chiamata di follow-up" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label mb-1 small">Assegna a</label>
+                <RadzenDropDown TValue="string" @bind-Value="_new.IdAssignee" Data="_users"
+                                TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                                Placeholder="Me stesso" Style="width:100%" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label mb-1 small">Scadenza (opz.)</label>
+                <RadzenDatePicker TValue="DateTime?" @bind-Value="_new.DueDate" ShowTime="true" DateFormat="dd/MM/yyyy HH:mm" Style="width:100%" />
+            </div>
+            <div class="col-md-9">
+                <input class="form-control form-control-sm" @bind="_new.Description" placeholder="Note (facoltative)" />
+            </div>
+            <div class="col-md-3">
+                <RadzenButton class="w-100" Icon="add" Text="Aggiungi" ButtonStyle="ButtonStyle.Primary"
+                              Size="ButtonSize.Small" Disabled="@(_saving || string.IsNullOrWhiteSpace(_new.Subject))" Click="Add" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (_items == null)
+{
+    <Waiting></Waiting>
+}
+else if (!_items.Any())
+{
+    <div class="text-muted text-center py-4">Nessuna attività registrata.</div>
+}
+else
+{
+    <div class="activity-timeline">
+        @foreach (var a in _items)
+        {
+            <div class="d-flex gap-3 mb-3">
+                <div class="text-center" style="width:40px">
+                    <span class="material-icons" style="@($"color:{Helpers.ActivityUi.Color(a.Kind)}")">@Helpers.ActivityUi.Icon(a.Kind)</span>
+                </div>
+                <div class="flex-grow-1 border-bottom pb-2">
+                    <div class="d-flex align-items-center">
+                        <strong class="@(a.State == ActivityState.Done ? "text-decoration-line-through text-muted" : "")">@a.Subject</strong>
+                        <span class="badge ms-2 @Helpers.ActivityUi.BadgeClass(a.Kind)">@Helpers.ActivityUi.KindText(a.Kind)</span>
+                        @if (a.DueDate != null && a.State == ActivityState.Planned)
+                        {
+                            <span class="badge ms-2 @(a.DueDate < DateTime.Now ? "bg-danger" : "bg-warning text-dark")">
+                                <span class="material-icons align-middle" style="font-size:14px">event</span> @a.DueDate.Value.ToString("dd/MM/yyyy HH:mm")
+                            </span>
+                        }
+                        @if (a.State == ActivityState.Done)
+                        {
+                            <span class="badge bg-success ms-2">Fatta</span>
+                        }
+                        <div class="ms-auto">
+                            @if (a.State == ActivityState.Planned && a.Permits.Edit())
+                            {
+                                <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.ExtraSmall"
+                                              Click="@(() => Complete(a))" title="Completa" />
+                            }
+                            @if (a.Permits.Delete())
+                            {
+                                <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall"
+                                              Click="@(() => Delete(a))" title="Elimina" />
+                            }
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(a.Description))
+                    {
+                        <div class="text-body small mt-1">@a.Description</div>
+                    }
+                    <div class="text-muted" style="font-size:0.75rem">
+                        @a.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                        @if (!string.IsNullOrWhiteSpace(a.UserName)) { <span> · @a.UserName</span> }
+                        @if (!string.IsNullOrWhiteSpace(a.AssigneeName) && a.AssigneeName != a.UserName)
+                        {
+                            <span class="text-primary"> · <span class="material-icons align-middle" style="font-size:14px">assignment_ind</span> @a.AssigneeName</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public ActivityEntityType EntityType { get; set; }
+    [Parameter] public int EntityId { get; set; }
+
+    private List<ActivityDTO>? _items;
+    private List<ApplicationUser> _users = new();
+    private Activity _new = new() { Kind = ActivityKind.Note };
+    private bool _saving;
+
+    private record KindOption(string Text, ActivityKind Value);
+    private readonly List<KindOption> _kinds = new()
+    {
+        new("Nota", ActivityKind.Note),
+        new("Chiamata", ActivityKind.Call),
+        new("Email", ActivityKind.Email),
+        new("Meeting", ActivityKind.Meeting),
+        new("Task", ActivityKind.Task),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await UserService.GetList(new UsersFilterModel());
+        _users = response?.Items?.ToList() ?? new List<ApplicationUser>();
+    }
+
+    protected override async Task OnParametersSetAsync() => await Load();
+
+    private async Task Load() => _items = await ActivityService.GetByEntityAsync(EntityType, EntityId);
+
+    private async Task Add()
+    {
+        if (string.IsNullOrWhiteSpace(_new.Subject)) return;
+        _saving = true;
+        try
+        {
+            _new.EntityType = EntityType;
+            _new.EntityId = EntityId;
+            _new.State = ActivityState.Planned;
+            var resp = await ActivityService.PostAsync(_new);
+            if (resp.State)
+            {
+                _new = new Activity { Kind = ActivityKind.Note };
+                await Load();
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
+            }
+        }
+        finally { _saving = false; }
+    }
+
+    private async Task Complete(ActivityDTO a)
+    {
+        var resp = await ActivityService.CompleteAsync(a.Id);
+        if (resp.State) await Load();
+        else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+    }
+
+    private async Task Delete(ActivityDTO a)
+    {
+        if (await DialogService.Confirm($"Eliminare l'attività \"{a.Subject}\"?", "Conferma") != true) return;
+        if (await ActivityService.DeleteAsync(a.Id)) await Load();
+    }
+
+}

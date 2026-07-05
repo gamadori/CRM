@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
@@ -51,6 +52,9 @@ namespace CRM.Client.Pages.Projects
         IProjectsService ProjectsService { get; set; }
 
         [Inject]
+        IHeaderService HeaderService { get; set; }
+
+        [Inject]
         DialogService DialogService { get; set; }
 
         [Parameter]
@@ -81,16 +85,15 @@ namespace CRM.Client.Pages.Projects
 
         private bool _fromDetails = false;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private PageHeaderModel _pageHeader = null;
 
         bool singleValue = false;
 
         protected override async Task OnInitializedAsync()
         {
-            
+
             await LoadProject();
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Progetti"], Url = "/Projects" });
-            _bread.Add(new BreadcrumbModel() { Title = $"{Localize["Progetto: "]} {_project?.Name}", Url = null });
+            _pageHeader = await HeaderService.Create();
 
             if (_selectView == ProjectViews.Tickets)
                 _partialView = PartialViews.Index;

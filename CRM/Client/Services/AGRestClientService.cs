@@ -91,48 +91,6 @@ namespace CRM.Client.Services
             }
         }
 
-        public async Task<BreadCrumb<T>> GetWithBreadCrumb<T, K>(K id, string root, string pathService)
-        {
-            try
-            {
-                BreadCrumb<T> model = new BreadCrumb<T>();
-
-                if (id == null)
-                    return null;
-
-                string path = pathService + $"/{id}";
-
-                if (root != null)
-                {
-                    path += $"?$root={root}";
-                }
-                var response = await _http.GetAsync(path);
-
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var content = await response.Content.ReadAsStringAsync();
-                    model = new BreadCrumb<T>()
-                    {
-                        Item = JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true }),
-                        Bread = JsonSerializer.Deserialize<List<BreadcrumbModel>>(response.Headers
-                            .GetValues(ValuesHelper.BreadcrumbHeader).First(), new JsonSerializerOptions() { PropertyNameCaseInsensitive = true })
-                    };
-                }
-                return model;
-            }
-            catch (AccessTokenNotAvailableException exception)
-            {
-                exception.Redirect();
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-                return null;
-            }
-        }
-
         public async Task<T?> GetFirst<T>(string pathService) where T : class
         {
 

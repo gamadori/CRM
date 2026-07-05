@@ -50,9 +50,6 @@ namespace CRM.Client.Pages.Tickets
         IRestService<ApplicationUser> _userService { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
-
-        [Inject]
         IJSRuntime JsRuntime { get; set; }
 
         [Inject]
@@ -99,8 +96,6 @@ namespace CRM.Client.Pages.Tickets
         private RadzenDataGrid<TicketDTO> grdTickets;
 
         private string _header = "Tickets";
-
-        private List<BreadcrumbItem> _breadcrumbItems = new List<BreadcrumbItem>();
 
         private int? _stateType = null;
 
@@ -203,8 +198,6 @@ namespace CRM.Client.Pages.Tickets
 
                 _numRecords = _ticketView.MetaData.TotalCount;
 
-                _breadcrumbItems = BreadCrumbService.TicketAssigned(_idUser, (TicketTypeSearch)TypeSearch, LoadDataTickets);
-                
             }
 
             catch (Exception ex)

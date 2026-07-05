@@ -1,8 +1,7 @@
 ﻿@page "/Projects/New"
 @page "/Projects/{Id:int}/Edit"
 
-<h3>Progetto</h3>
-<hr />
+<PageHeader Model="_pageHeader" Visible=@(OnClickSave == null)></PageHeader>
 
 @if (_project == null)
 {

@@ -1,0 +1,158 @@
+@page "/Quotes"
+@page "/Quotes/Index"
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IQuoteService QuoteService
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+@inject DialogService DialogService
+
+<PageHeader Model="_pageHeader">
+    <Actions>
+        <RadzenButton Icon="add" Text="Nuovo preventivo" ButtonStyle="ButtonStyle.Primary"
+                      Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/New"))" />
+    </Actions>
+</PageHeader>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 d-flex flex-wrap gap-2 align-items-center">
+        <div class="input-group" style="max-width: 320px;">
+            <span class="input-group-text"><span class="material-icons">search</span></span>
+            <input class="form-control" placeholder="Cerca numero, azienda, note"
+                   @bind="_filter.Search" @bind:event="oninput" @onkeyup="OnSearchKey" />
+        </div>
+        <RadzenDropDown TValue="QuoteStates?" @bind-Value="_stateFilter" Data="_stateOptions"
+                        TextProperty="Text" ValueProperty="Value" AllowClear="true"
+                        Placeholder="Stato" Style="width: 180px;" Change="@(async _ => await Reload())" />
+        <div class="ms-auto text-muted">
+            Totale filtrato: <strong>@_total.ToString("C")</strong>
+        </div>
+    </div>
+</div>
+
+<RadzenDataGrid @ref="_grid" IsLoading="@_isLoading" Count="@_count" Data="@_items" LoadData="@LoadData"
+                AllowPaging="true" PageSize="15" PagerHorizontalAlign="HorizontalAlign.Center"
+                TItem="QuoteDTO" AllowSorting="true" EmptyText="Nessun preventivo">
+    <Columns>
+        <RadzenDataGridColumn TItem="QuoteDTO" Property="Number" Title="Numero" Width="140px" />
+        <RadzenDataGridColumn TItem="QuoteDTO" Property="Date" Title="Data" Width="110px" FormatString="{0:dd/MM/yyyy}" />
+        <RadzenDataGridColumn TItem="QuoteDTO" Property="CompanyName" Title="Azienda" />
+        <RadzenDataGridColumn TItem="QuoteDTO" Property="State" Title="Stato" Width="130px" Sortable="false">
+            <Template Context="q">
+                <span class="badge @StateClass(q.State)">@StateText(q.State)</span>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="QuoteDTO" Property="Total" Title="Totale" Width="130px" TextAlign="TextAlign.Right" FormatString="{0:C}" />
+        <RadzenDataGridColumn TItem="QuoteDTO" Context="q" Title="" Width="150px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
+            <Template Context="q">
+                <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
+                              Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{q.Id}/Details"))" />
+                @if (q.Permits.Edit())
+                {
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                  Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{q.Id}/Edit"))" />
+                }
+                @if (q.Permits.Delete())
+                {
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                  Click="@(() => Delete(q))" />
+                }
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    private PageHeaderModel? _pageHeader;
+    private RadzenDataGrid<QuoteDTO>? _grid;
+    private IEnumerable<QuoteDTO>? _items;
+    private QuoteFilter _filter = new() { PageSize = 15, Skip = 0, Top = 15 };
+    private QuoteStates? _stateFilter;
+    private int _count;
+    private decimal _total;
+    private bool _isLoading;
+
+    private record StateOption(string Text, QuoteStates? Value);
+    private readonly List<StateOption> _stateOptions = new()
+    {
+        new("Bozza", QuoteStates.Draft),
+        new("Inviato", QuoteStates.Sent),
+        new("Accettato", QuoteStates.Accepted),
+        new("Rifiutato", QuoteStates.Rejected),
+        new("Scaduto", QuoteStates.Expired),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+    }
+
+    private async Task LoadData(LoadDataArgs args)
+    {
+        _isLoading = true;
+        try
+        {
+            _filter.Skip = args.Skip;
+            _filter.Top = args.Top;
+            _filter.OrderBy = args.OrderBy;
+            _filter.State = _stateFilter;
+
+            var resp = await QuoteService.GetSummaryAsync(_filter);
+            _items = resp?.Items ?? new List<QuoteDTO>();
+            _count = resp?.MetaData?.TotalCount ?? 0;
+            _total = resp?.Total ?? 0;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task Reload()
+    {
+        if (_grid != null)
+            await _grid.Reload();
+    }
+
+    private async Task OnSearchKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await Reload();
+    }
+
+    private async Task Delete(QuoteDTO q)
+    {
+        if (await DialogService.Confirm($"Eliminare il preventivo {q.Number}?", "Conferma") == true)
+        {
+            await QuoteService.DeleteAsync(q.Id);
+            await Reload();
+        }
+    }
+
+    private static string StateText(QuoteStates s) => s switch
+    {
+        QuoteStates.Draft => "Bozza",
+        QuoteStates.Sent => "Inviato",
+        QuoteStates.Accepted => "Accettato",
+        QuoteStates.Rejected => "Rifiutato",
+        QuoteStates.Expired => "Scaduto",
+        _ => s.ToString()
+    };
+
+    private static string StateClass(QuoteStates s) => s switch
+    {
+        QuoteStates.Draft => "bg-secondary",
+        QuoteStates.Sent => "bg-info text-dark",
+        QuoteStates.Accepted => "bg-success",
+        QuoteStates.Rejected => "bg-danger",
+        QuoteStates.Expired => "bg-warning text-dark",
+        _ => "bg-light text-dark"
+    };
+}

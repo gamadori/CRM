@@ -12,8 +12,8 @@
 else
 {
 
-    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
-   
+    <PageHeader Model="_pageHeader"></PageHeader>
+
     <RadzenSelectBar @bind-Value="_selectView" TValue="ProjectViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
         <Items>
             <RadzenSelectBarItem Text="@Localize["Dati Progetto"]" Value="ProjectViews.Project" />

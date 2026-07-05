@@ -24,6 +24,7 @@ else
                 <RadzenSelectBarItem Text=@Localize["Contacts"] Value="CompanyViews.Contacts" />
                 <RadzenSelectBarItem Text=@Localize["Articles"] Value="CompanyViews.Articles" />
                 <RadzenSelectBarItem Text=@Localize["Tickets"] Value="CompanyViews.Ticket" />
+                <RadzenSelectBarItem Text=@Localize["Activities"] Value="CompanyViews.Activities" />
                
                 @if (_company.CompanyType == CompanyTypes.Reseller)
                 {
@@ -142,8 +143,12 @@ else
         {
             <CRM.Client.Pages.Companies.Index IdReseller="@Id" PageMode="PageModality.Child" OnSelectCompany="DetailsCustomer" OnEditCompany="EditCustomer" OnRemoveCompany="RemoveCustomer" OnAddCustomer="AddCustomer" IdCompanyParent="@Id"></CRM.Client.Pages.Companies.Index>
         }
-        
-       
+
+
+    }
+    else if (_selectView == CompanyViews.Activities)
+    {
+        <CRM.Client.Pages.Activities.ActivityTimeline EntityType="ActivityEntityType.Company" EntityId="@Id"></CRM.Client.Pages.Activities.ActivityTimeline>
     }
 
 

@@ -42,9 +42,6 @@ namespace CRM.Client.Pages.ContractTypeTicketTypes
         [Inject]
         DialogService DialogService { get; set; }
 
-        [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
-
         [Parameter]
         public int IdContractType { get; set; }
 

@@ -1,0 +1,106 @@
+@using CRM.Client.Helpers
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@inject IQuoteService QuoteService
+@inject NavigationManager Nav
+@inject DialogService DialogService
+
+<div class="d-flex align-items-center mb-2">
+    <h6 class="mb-0">Preventivi collegati</h6>
+    <RadzenButton class="ms-auto" Icon="add" Text="Nuovo preventivo" ButtonStyle="ButtonStyle.Primary"
+                  Size="ButtonSize.Small" Click="NewQuote" />
+</div>
+
+@if (_quotes == null)
+{
+    <Waiting></Waiting>
+}
+else if (!_quotes.Any())
+{
+    <div class="text-muted text-center py-4">Nessun preventivo per questa trattativa.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Numero</th>
+                    <th>Data</th>
+                    <th>Stato</th>
+                    <th class="text-end">Totale</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var q in _quotes)
+                {
+                    <tr>
+                        <td>@q.Number</td>
+                        <td>@q.Date.ToString("dd/MM/yyyy")</td>
+                        <td><span class="badge @StateClass(q.State)">@StateText(q.State)</span></td>
+                        <td class="text-end">@q.Total.ToString("C")</td>
+                        <td class="text-end">
+                            <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
+                                          Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{q.Id}/Details"))" />
+                            @if (q.Permits.Edit())
+                            {
+                                <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                              Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{q.Id}/Edit"))" />
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    [Parameter] public int IdDeal { get; set; }
+    [Parameter] public int? IdCompany { get; set; }
+
+    private List<QuoteDTO>? _quotes;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        _quotes = await QuoteService.GetListAsync(new QuoteFilter { IdDeal = IdDeal }) ?? new();
+    }
+
+    private void NewQuote()
+    {
+        var url = $"/{ConstHelper.ClientQuotesPath}/New?IdDeal={IdDeal}";
+        if (IdCompany != null)
+            url += $"&IdCompany={IdCompany}";
+        Nav.NavigateTo(url);
+    }
+
+    private static string StateText(QuoteStates s) => s switch
+    {
+        QuoteStates.Draft => "Bozza",
+        QuoteStates.Sent => "Inviato",
+        QuoteStates.Accepted => "Accettato",
+        QuoteStates.Rejected => "Rifiutato",
+        QuoteStates.Expired => "Scaduto",
+        _ => s.ToString()
+    };
+
+    private static string StateClass(QuoteStates s) => s switch
+    {
+        QuoteStates.Draft => "bg-secondary",
+        QuoteStates.Sent => "bg-info text-dark",
+        QuoteStates.Accepted => "bg-success",
+        QuoteStates.Rejected => "bg-danger",
+        QuoteStates.Expired => "bg-warning text-dark",
+        _ => "bg-light text-dark"
+    };
+}

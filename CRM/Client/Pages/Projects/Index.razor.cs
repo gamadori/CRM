@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
@@ -38,7 +39,7 @@ namespace CRM.Client.Pages.Projects
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
 
 
         [Parameter]
@@ -63,7 +64,7 @@ namespace CRM.Client.Pages.Projects
 
         private PagingHeaderModel _paging = new PagingHeaderModel();
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private PageHeaderModel _pageHeader = null;
 
         private bool _isLoading = false;
 
@@ -73,7 +74,7 @@ namespace CRM.Client.Pages.Projects
 
             _isLoading = true;
 
-            _bread = await BreadCrumbService.Projects(false);
+            _pageHeader = await HeaderService.Create();
 
             _pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
 

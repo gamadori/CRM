@@ -8,17 +8,11 @@
 
 
 
-<BlazorHeader Header="@_header" Visible="@(IdAccessoryType == null)"></BlazorHeader>
-
-
-
+<PageHeader Model="_pageHeader" Visible="@(IdAccessoryType == null)"></PageHeader>
 
 @if (_accessories != null)
 {
-    
-    <BlazorBreadCrumb Model=@_bread Visible=@(IdAccessoryType == null)></BlazorBreadCrumb>
-    
-    
+
     <div class=row>
         <div class="col">
             <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewAccessory"></BlazorButton>

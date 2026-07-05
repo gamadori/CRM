@@ -14,7 +14,7 @@
     <div class="settings-grid">
         <!-- User Management Section -->
         <div class="settings-section">
-            <h3 class="section-title">👥 Gestione Utenti</h3>
+            <h3 class="section-title">👥 @Localize["UserManagement"]</h3>
             <div class="settings-cards">
                 <SettingCard Icon="account_circle" 
                            Href="Settings/Users" 
@@ -32,7 +32,7 @@
 
         <!-- Product & Ticket Configuration -->
         <div class="settings-section">
-            <h3 class="section-title">📦 Prodotti e Ticket</h3>
+            <h3 class="section-title">📦 @Localize["ProductsAndTickets"]</h3>
             <div class="settings-cards">
                 <SettingCard Icon="category" 
                            Href="Settings/ProductsTypes" 
@@ -58,17 +58,23 @@
                            Description="Gestisci tipi intervento"
                            Color="#7b1fa2" />
                 
-                <SettingCard Icon="precision_manufacturing" 
-                           Href="@ConstHelper.ClientProductsSettings" 
-                           Title="@Localize["ProductsSettings"]" 
+                <SettingCard Icon="precision_manufacturing"
+                           Href="@ConstHelper.ClientProductsSettings"
+                           Title="@Localize["ProductsSettings"]"
                            Description="Configurazione prodotti"
                            Color="#00897b" />
+
+                <SettingCard Icon="sell"
+                           Href="@ConstHelper.ClientPriceListPath"
+                           Title="@Localize["PriceList"]"
+                           Description="Prezzi dedicati per cliente"
+                           Color="#6a1b9a" />
             </div>
         </div>
 
         <!-- Communication Settings -->
         <div class="settings-section">
-            <h3 class="section-title">📧 Comunicazioni</h3>
+            <h3 class="section-title">📧 @Localize["Communications"]</h3>
             <div class="settings-cards">
                 <SettingCard Icon="forward_to_inbox" 
                            Href="Settings/Smtps" 
@@ -92,7 +98,7 @@
 
         <!-- System Configuration -->
         <div class="settings-section">
-            <h3 class="section-title">🔧 Configurazione Sistema</h3>
+            <h3 class="section-title">🔧 @Localize["SystemConfiguration"]</h3>
             <div class="settings-cards">
                 <SettingCard Icon="language"
                              Href="Settings/Languages" 
@@ -121,12 +127,26 @@
                              Title="@Localize["logevents"]"
                              Description="Visualizza log di sistema"
                            Color="#388e3c" />
-
+                
                 <SettingCard Icon="vpn_key"
                              Href="Settings/MachineParameterApiKeys"
                              Title="Chiavi API macchina"
                              Description="Accesso ai backup via API"
                              Color="#0f4a8a" />
+            </div>
+        </div>
+        <!-- AI -->
+        <div class="settings-section">
+            <h3 class="section-title">🤖 @Localize["ArtificialIntelligence"]</h3>
+            <div class="settings-cards">
+                
+                <!-- Base di Conoscenza (solo admin) -->
+                <SettingCard Icon="menu_book"
+                                Href="Knowledge"
+                                Title="@Localize["KnowledgeBase"]"
+                                Description="Knowledge Base"
+                                Color="#388e3c" />
+                    
             </div>
         </div>
     </div>

@@ -1,0 +1,396 @@
+using CNM.Authorize;
+using CRM.Client.Models;
+using CRM.Client.Services;
+using CRM.Server.Data;
+using CRM.Shared;
+using CRM.Shared.DTOs;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Dynamic.Core;
+using static CRM.Shared.LogEvent;
+
+namespace CRM.Server.Services
+{
+    /// <summary>
+    /// Modulo Fatture (parte indipendente dal provider). Genera l'XML FatturaPA e delega
+    /// la trasmissione a SdI a un IEInvoiceProvider. Numerazione fiscale progressiva per anno.
+    /// </summary>
+    public class InvoicesService : IInvoicesService
+    {
+        private readonly ApplicationDbContext _context;
+        private readonly IPermitsService _permitsService;
+        private readonly ILogEventService _logEventService;
+        private readonly IEInvoiceProvider _provider;
+
+        public InvoicesService(
+            ApplicationDbContext context,
+            IPermitsService permitsService,
+            ILogEventService logEventService,
+            IEInvoiceProvider provider)
+        {
+            _context = context;
+            _permitsService = permitsService;
+            _logEventService = logEventService;
+            _provider = provider;
+        }
+
+        public async Task<InvoiceDTO?> GetItemAsync(int id)
+        {
+            var item = await _context.Invoices
+                .Include(x => x.Company)
+                .Include(x => x.Contact)
+                .Include(x => x.Order)
+                .Include(x => x.User)
+                .Include(x => x.Rows)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            var dto = item.ToDTO();
+            if (dto != null)
+                dto.Permits = await _permitsService.ObjectPermits(dto.IdCompany, dto.IdUser);
+            return dto;
+        }
+
+        public async Task<PagingResponse<InvoiceDTO, decimal>?> GetSummaryAsync(InvoiceFilter? args)
+        {
+            try
+            {
+                var items = FilterItems(args);
+                if (items == null)
+                    return new();
+
+                int count = items.Count();
+                if (args?.Skip != null && args.Top != null)
+                    items = items.Skip(args.Skip.Value).Take(args.Top.Value);
+
+                var resp = new PagingResponse<InvoiceDTO, decimal>
+                {
+                    Items = await items.Select(item => item.ToDTO()).ToListAsync(),
+                    MetaData = new PagingHeaderModel { TotalCount = count, PageSize = args != null ? args.PageSize : 0 },
+                    Total = await FilterItems(args)!.SumAsync(x => x.Total),
+                };
+
+                foreach (var o in resp.Items)
+                    o.Permits = await _permitsService.ObjectPermits(o.IdCompany, o.IdUser);
+
+                return resp;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(InvoicesService), nameof(GetSummaryAsync), EventsTypes.Error, ex);
+                return null;
+            }
+        }
+
+        public async Task<List<InvoiceDTO>?> GetListAsync(InvoiceFilter? args = null)
+        {
+            try
+            {
+                var items = FilterItems(args);
+                if (items == null)
+                    return new List<InvoiceDTO>();
+                return await items.Select(item => item.ToDTO()).ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(InvoicesService), nameof(GetListAsync), EventsTypes.Error, ex);
+                return null;
+            }
+        }
+
+        public async Task<APIResponseMessage<InvoiceDTO>> PostAsync(Invoice item)
+        {
+            try
+            {
+                Recalculate(item);
+
+                int savedId;
+                if (item.Id > 0)
+                {
+                    var existing = await _context.Invoices.Include(i => i.Rows).FirstOrDefaultAsync(x => x.Id == item.Id);
+                    if (existing == null)
+                        return Fail("Fattura non trovata", System.Net.HttpStatusCode.NotFound);
+
+                    if (string.IsNullOrWhiteSpace(item.IdUser))
+                        item.IdUser = existing.IdUser;
+                    if (string.IsNullOrWhiteSpace(item.Number))
+                        item.Number = existing.Number;
+
+                    existing.Number = item.Number;
+                    existing.Date = item.Date == default ? existing.Date : item.Date;
+                    existing.IdCompany = item.IdCompany;
+                    existing.IdContact = item.IdContact;
+                    existing.IdOrder = item.IdOrder;
+                    existing.IdUser = NormalizeUser(item.IdUser);
+                    existing.TipoDocumento = item.TipoDocumento;
+                    existing.CodiceDestinatario = item.CodiceDestinatario;
+                    existing.PecDestinatario = item.PecDestinatario;
+                    existing.Causale = item.Causale;
+                    existing.Note = item.Note;
+                    existing.State = item.State;
+                    existing.Subtotal = item.Subtotal;
+                    existing.TotalVat = item.TotalVat;
+                    existing.Total = item.Total;
+
+                    _context.InvoiceRows.RemoveRange(existing.Rows);
+                    foreach (var r in item.Rows)
+                    {
+                        r.Id = 0;
+                        r.IdInvoice = existing.Id;
+                        r.Invoice = null;
+                        _context.InvoiceRows.Add(r);
+                    }
+                    savedId = existing.Id;
+                }
+                else
+                {
+                    if (item.Date == default)
+                        item.Date = DateTime.Now;
+                    if (string.IsNullOrWhiteSpace(item.IdUser))
+                        item.IdUser = await _permitsService.IdUser();
+                    item.IdUser = NormalizeUser(item.IdUser);
+                    if (string.IsNullOrWhiteSpace(item.Number))
+                        item.Number = await GenerateNumberAsync(item.Date);
+
+                    _context.Invoices.Add(item);
+                    savedId = 0;
+                }
+
+                await _context.SaveChangesAsync();
+                if (savedId == 0) savedId = item.Id;
+
+                return Ok(await GetItemAsync(savedId), "Fattura salvata");
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(InvoicesService), nameof(PostAsync), EventsTypes.Error, ex);
+                return Fail("Errore nel salvataggio della fattura", System.Net.HttpStatusCode.InternalServerError);
+            }
+        }
+
+        public async Task<APIResponseMessage<InvoiceDTO>> CreateFromOrderAsync(int orderId)
+        {
+            try
+            {
+                var order = await _context.Orders
+                    .Include(o => o.Rows)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+
+                if (order == null)
+                    return Fail("Ordine non trovato", System.Net.HttpStatusCode.NotFound);
+
+                var invoice = new Invoice
+                {
+                    Date = DateTime.Now,
+                    IdCompany = order.IdCompany,
+                    IdContact = order.IdContact,
+                    IdOrder = order.Id,
+                    IdUser = NormalizeUser(order.IdUser ?? await _permitsService.IdUser()),
+                    TipoDocumento = "TD01",
+                    State = InvoiceStates.Issued,
+                    Note = order.Note,
+                    Rows = order.Rows.OrderBy(r => r.SortOrder).Select(r => new InvoiceRow
+                    {
+                        IdProduct = r.IdProduct,
+                        Description = r.Description,
+                        Quantity = r.Quantity,
+                        UnitPrice = r.UnitPrice,
+                        DiscountPct = r.DiscountPct,
+                        VatRate = r.VatRate,
+                        SortOrder = r.SortOrder
+                    }).ToList()
+                };
+
+                Recalculate(invoice);
+                invoice.Number = await GenerateNumberAsync(invoice.Date);
+
+                _context.Invoices.Add(invoice);
+                await _context.SaveChangesAsync();
+
+                return Ok(await GetItemAsync(invoice.Id), "Fattura creata dall'ordine");
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(InvoicesService), nameof(CreateFromOrderAsync), EventsTypes.Error, ex);
+                return Fail("Errore nella creazione della fattura", System.Net.HttpStatusCode.InternalServerError);
+            }
+        }
+
+        public async Task<(string Xml, string FileName)?> GenerateXmlAsync(int id)
+        {
+            try
+            {
+                var invoice = await _context.Invoices
+                    .Include(i => i.Company)
+                    .Include(i => i.Rows)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(i => i.Id == id);
+
+                if (invoice == null)
+                    return null;
+
+                var settings = await _context.GlobalSettings.AsNoTracking().FirstOrDefaultAsync();
+                var issuer = settings == null
+                    ? null
+                    : await _context.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Id == settings.IdHeadQuarter);
+
+                if (issuer == null)
+                    return null;
+
+                var xml = FatturaPaXmlBuilder.Build(invoice, issuer, settings?.RegimeFiscale);
+
+                // Nome file secondo la convenzione SdI: IT{PIVA}_{progressivo}.xml
+                var piva = new string((issuer.PIva ?? "").Where(char.IsDigit).ToArray());
+                var progressivo = (invoice.Number ?? invoice.Id.ToString()).Replace("/", "-");
+                var fileName = $"IT{piva}_{progressivo}.xml";
+
+                return (xml, fileName);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(InvoicesService), nameof(GenerateXmlAsync), EventsTypes.Error, ex);
+                return null;
+            }
+        }
+
+        public async Task<APIResponseMessage<InvoiceDTO>> SendAsync(int id)
+        {
+            try
+            {
+                var generated = await GenerateXmlAsync(id);
+                if (generated == null)
+                    return Fail("Impossibile generare l'XML della fattura", System.Net.HttpStatusCode.BadRequest);
+
+                var result = await _provider.SendAsync(generated.Value.Xml);
+                if (!result.Success)
+                    return Fail(result.Message ?? "Trasmissione non riuscita", System.Net.HttpStatusCode.BadGateway);
+
+                var invoice = await _context.Invoices.FirstOrDefaultAsync(i => i.Id == id);
+                if (invoice != null)
+                {
+                    invoice.State = InvoiceStates.Sent;
+                    invoice.SdiReference = result.ProviderReference;
+                    await _context.SaveChangesAsync();
+                }
+
+                return Ok(await GetItemAsync(id), "Fattura trasmessa a SdI");
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(InvoicesService), nameof(SendAsync), EventsTypes.Error, ex);
+                return Fail("Errore nella trasmissione della fattura", System.Net.HttpStatusCode.InternalServerError);
+            }
+        }
+
+        [AuthorizeRole(ePolicy.SuperUserRole)]
+        public async Task<bool> DeleteAsync(int id)
+        {
+            var item = await _context.Invoices.FindAsync(id);
+            if (item == null)
+                return false;
+            try
+            {
+                _context.Invoices.Remove(item);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(InvoicesService), nameof(DeleteAsync), EventsTypes.Error, ex);
+                return false;
+            }
+        }
+
+        private static string? NormalizeUser(string? idUser) => string.IsNullOrWhiteSpace(idUser) ? null : idUser;
+
+        private static APIResponseMessage<InvoiceDTO> Fail(string msg, System.Net.HttpStatusCode code)
+            => new() { State = false, Message = msg, Code = code };
+
+        private static APIResponseMessage<InvoiceDTO> Ok(InvoiceDTO? data, string msg)
+            => new() { State = true, Data = data, Message = msg, Code = System.Net.HttpStatusCode.OK };
+
+        private static void Recalculate(Invoice invoice)
+        {
+            invoice.Rows ??= new List<InvoiceRow>();
+
+            int position = 0;
+            foreach (var r in invoice.Rows.OrderBy(r => r.SortOrder))
+            {
+                r.SortOrder = position++;
+                var (net, vat, total) = QuoteMath.Line(r.Quantity, r.UnitPrice, r.DiscountPct, r.VatRate);
+                r.LineNet = net;
+                r.LineVat = vat;
+                r.LineTotal = total;
+            }
+
+            invoice.Subtotal = invoice.Rows.Sum(r => r.LineNet);
+            invoice.TotalVat = invoice.Rows.Sum(r => r.LineVat);
+            invoice.Total = invoice.Subtotal + invoice.TotalVat;
+        }
+
+        private async Task<string> GenerateNumberAsync(DateTime date)
+        {
+            int year = date.Year;
+            string prefix = $"FT-{year}-";
+
+            var numbers = await _context.Invoices
+                .Where(i => i.Number != null && i.Number.StartsWith(prefix))
+                .Select(i => i.Number!)
+                .ToListAsync();
+
+            int max = 0;
+            foreach (var n in numbers)
+            {
+                var suffix = n.Substring(prefix.Length);
+                if (int.TryParse(suffix, out var v) && v > max)
+                    max = v;
+            }
+            return prefix + (max + 1).ToString("D4");
+        }
+
+        private IQueryable<Invoice>? FilterItems(InvoiceFilter? args = null)
+        {
+            try
+            {
+                var items = _context.Invoices
+                    .Include(x => x.Company)
+                    .Include(x => x.Contact)
+                    .Include(x => x.Order)
+                    .Include(x => x.User)
+                    .AsQueryable();
+
+                if (args?.OrderBy != null && args.OrderBy.Length > 0)
+                    items = items.OrderBy(args.OrderBy);
+                else
+                    items = items.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id);
+
+                if (args?.IdCompany != null)
+                    items = items.Where(x => x.IdCompany == args.IdCompany);
+                if (args?.IdOrder != null)
+                    items = items.Where(x => x.IdOrder == args.IdOrder);
+                if (args?.IdUser != null)
+                    items = items.Where(x => x.IdUser == args.IdUser);
+                if (args?.State != null)
+                    items = items.Where(x => x.State == args.State);
+
+                if (!string.IsNullOrWhiteSpace(args?.Search))
+                {
+                    var search = args.Search.Trim();
+                    items = items.Where(x =>
+                        (x.Number != null && x.Number.Contains(search)) ||
+                        (x.Company != null && x.Company.RagioneSociale.Contains(search)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(args?.Filter))
+                    items = items.Where(args.Filter);
+
+                return items;
+            }
+            catch (Exception ex)
+            {
+                _logEventService.RegisterAsync(nameof(InvoicesService), nameof(FilterItems), EventsTypes.Error, ex).Wait();
+                return null;
+            }
+        }
+    }
+}

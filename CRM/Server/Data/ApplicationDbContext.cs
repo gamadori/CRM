@@ -292,6 +292,190 @@ namespace CRM.Server.Data
             modelBuilder.Entity<ArticleLicenseFeatureDef>()
                 .HasIndex(d => new { d.Key, d.IdProductType, d.IdProduct })
                 .IsUnique();
+
+            // ---- Preventivi / Offerte ----
+            modelBuilder.Entity<Quote>(entity =>
+            {
+                entity.HasOne(q => q.Company)
+                      .WithMany()
+                      .HasForeignKey(q => q.IdCompany)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(q => q.Contact)
+                      .WithMany()
+                      .HasForeignKey(q => q.IdContact)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(q => q.Deal)
+                      .WithMany()
+                      .HasForeignKey(q => q.IdDeal)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(q => q.User)
+                      .WithMany()
+                      .HasForeignKey(q => q.IdUser)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(q => q.Number);
+            });
+
+            modelBuilder.Entity<QuoteRow>(entity =>
+            {
+                entity.HasOne(r => r.Quote)
+                      .WithMany(q => q.Rows)
+                      .HasForeignKey(r => r.IdQuote)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.Product)
+                      .WithMany()
+                      .HasForeignKey(r => r.IdProduct)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(r => r.Article)
+                      .WithMany()
+                      .HasForeignKey(r => r.IdArticle)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(r => r.Quantity).HasPrecision(18, 3);
+                entity.Property(r => r.DiscountPct).HasPrecision(5, 2);
+                entity.Property(r => r.VatRate).HasPrecision(5, 2);
+            });
+
+            modelBuilder.Entity<GlobalSetting>()
+                .Property(g => g.DefaultVatRate)
+                .HasPrecision(5, 2);
+
+            // ---- Ordini ----
+            modelBuilder.Entity<Order>(entity =>
+            {
+                entity.HasOne(o => o.Company)
+                      .WithMany()
+                      .HasForeignKey(o => o.IdCompany)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(o => o.Contact)
+                      .WithMany()
+                      .HasForeignKey(o => o.IdContact)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(o => o.Quote)
+                      .WithMany()
+                      .HasForeignKey(o => o.IdQuote)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(o => o.Deal)
+                      .WithMany()
+                      .HasForeignKey(o => o.IdDeal)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(o => o.User)
+                      .WithMany()
+                      .HasForeignKey(o => o.IdUser)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(o => o.Number);
+            });
+
+            modelBuilder.Entity<OrderRow>(entity =>
+            {
+                entity.HasOne(r => r.Order)
+                      .WithMany(o => o.Rows)
+                      .HasForeignKey(r => r.IdOrder)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.Product)
+                      .WithMany()
+                      .HasForeignKey(r => r.IdProduct)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(r => r.Article)
+                      .WithMany()
+                      .HasForeignKey(r => r.IdArticle)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(r => r.Quantity).HasPrecision(18, 3);
+                entity.Property(r => r.DiscountPct).HasPrecision(5, 2);
+                entity.Property(r => r.VatRate).HasPrecision(5, 2);
+            });
+
+            // ---- Listini prezzi (prezzo prodotto per cliente) ----
+            modelBuilder.Entity<PriceListItem>(entity =>
+            {
+                entity.HasOne(p => p.Company)
+                      .WithMany()
+                      .HasForeignKey(p => p.IdCompany)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(p => p.Product)
+                      .WithMany()
+                      .HasForeignKey(p => p.IdProduct)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(p => p.DiscountPct).HasPrecision(5, 2);
+                entity.HasIndex(p => new { p.IdCompany, p.IdProduct }).IsUnique();
+            });
+
+            // ---- Fatture ----
+            modelBuilder.Entity<Invoice>(entity =>
+            {
+                entity.HasOne(i => i.Company)
+                      .WithMany()
+                      .HasForeignKey(i => i.IdCompany)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(i => i.Contact)
+                      .WithMany()
+                      .HasForeignKey(i => i.IdContact)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(i => i.Order)
+                      .WithMany()
+                      .HasForeignKey(i => i.IdOrder)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(i => i.User)
+                      .WithMany()
+                      .HasForeignKey(i => i.IdUser)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(i => i.Number);
+            });
+
+            modelBuilder.Entity<InvoiceRow>(entity =>
+            {
+                entity.HasOne(r => r.Invoice)
+                      .WithMany(i => i.Rows)
+                      .HasForeignKey(r => r.IdInvoice)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.Product)
+                      .WithMany()
+                      .HasForeignKey(r => r.IdProduct)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(r => r.Quantity).HasPrecision(18, 3);
+                entity.Property(r => r.DiscountPct).HasPrecision(5, 2);
+                entity.Property(r => r.VatRate).HasPrecision(5, 2);
+            });
+
+            // ---- Attivita' (timeline + follow-up) ----
+            modelBuilder.Entity<Activity>(entity =>
+            {
+                entity.HasOne(a => a.User)
+                      .WithMany()
+                      .HasForeignKey(a => a.IdUser)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(a => a.Assignee)
+                      .WithMany()
+                      .HasForeignKey(a => a.IdAssignee)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                // EntityId e' un riferimento polimorfico (nessuna FK): indicizzato per la timeline
+                entity.HasIndex(a => new { a.EntityType, a.EntityId });
+                entity.HasIndex(a => new { a.ReminderSent, a.ReminderAt });
+                entity.HasIndex(a => a.IdAssignee);
+            });
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -367,6 +551,22 @@ namespace CRM.Server.Data
         public DbSet<Contact> Contacts => Set<Contact>();
 
         public DbSet<Deal> Deals => Set<Deal>();
+
+        public DbSet<Quote> Quotes => Set<Quote>();
+
+        public DbSet<QuoteRow> QuoteRows => Set<QuoteRow>();
+
+        public DbSet<Order> Orders => Set<Order>();
+
+        public DbSet<OrderRow> OrderRows => Set<OrderRow>();
+
+        public DbSet<PriceListItem> PriceListItems => Set<PriceListItem>();
+
+        public DbSet<Invoice> Invoices => Set<Invoice>();
+
+        public DbSet<InvoiceRow> InvoiceRows => Set<InvoiceRow>();
+
+        public DbSet<Activity> Activities => Set<Activity>();
 
         public DbSet<AccessoryType> AccessoryTypes => Set<AccessoryType>();
 

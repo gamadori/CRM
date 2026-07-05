@@ -1,4 +1,5 @@
 using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
@@ -33,6 +34,9 @@ namespace CRM.Client.Pages.Deals
 
         [Inject]
         private DialogService DialogService { get; set; } = default!;
+
+        [Inject]
+        private IHeaderService HeaderService { get; set; } = default!;
 
         [Parameter]
         public int? IdCompany { get; set; }
@@ -81,6 +85,8 @@ namespace CRM.Client.Pages.Deals
         private List<EnumField> _states = new();
         private List<EnumField> _phases = new();
 
+        private PageHeaderModel? _pageHeader;
+
         private int TotalCount => _deals.MetaData?.TotalCount ?? _deals.Items.Count;
 
         private int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)_pageSize));
@@ -100,6 +106,7 @@ namespace CRM.Client.Pages.Deals
         protected override async Task OnInitializedAsync()
         {
             _idUser = IdUser;
+            _pageHeader = await HeaderService.Create();
             _states = EnumService.EnumGetList(typeof(DealStates));
             _phases = EnumService.EnumGetList(typeof(DealPhases));
             await LoadUsers();
@@ -204,7 +211,8 @@ namespace CRM.Client.Pages.Deals
             }
             else
             {
-                NavigationManager.NavigateTo($"/{ConstHelper.ClientDealPath}/{idDeal}/Details");
+                // Apre il contenitore a tab (Dati/Allegati/Preventivi/Tickets), non la scheda singola
+                NavigationManager.NavigateTo($"/{ConstHelper.ClientDealPath}/{idDeal}");
             }
         }
 

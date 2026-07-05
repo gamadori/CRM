@@ -12,12 +12,14 @@
 else
 {
 
-    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
-   
+    <PageHeader Model="_pageHeader"></PageHeader>
+
     <RadzenSelectBar @bind-Value="_selectView" TValue="DealsViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
         <Items>
             <RadzenSelectBarItem Text="@Localize["Dati Deal"]" Value="DealsViews.Deal" />
             <RadzenSelectBarItem Text="@Localize["Allegati"]" Value="DealsViews.Attachments" />
+            <RadzenSelectBarItem Text="@Localize["Quotes"]" Value="DealsViews.Quotes" />
+            <RadzenSelectBarItem Text="@Localize["Activities"]" Value="DealsViews.Activities" />
             <RadzenSelectBarItem Text="@Localize["Tickets"]" Value="DealsViews.Tickets" />
         </Items>
     </RadzenSelectBar>
@@ -55,6 +57,14 @@ else
 
 
     }
-    
-    
+    else if (_selectView == DealsViews.Quotes)
+    {
+        <CRM.Client.Pages.Quotes.DealQuotes IdDeal="@Id" IdCompany="@_deal.IdCompany"></CRM.Client.Pages.Quotes.DealQuotes>
+    }
+    else if (_selectView == DealsViews.Activities)
+    {
+        <CRM.Client.Pages.Activities.ActivityTimeline EntityType="ActivityEntityType.Deal" EntityId="@Id"></CRM.Client.Pages.Activities.ActivityTimeline>
+    }
+
+
 }

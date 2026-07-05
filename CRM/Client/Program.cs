@@ -93,13 +93,21 @@ namespace CRM.Client
 
             builder.Services.AddTransient<ChatService, ChatService>();
 
-            builder.Services.AddTransient<IBreadCrumbService, BreadCrumbService>();
-
             builder.Services.AddTransient<IInterventionTypesService, ProxyInterventionTypesService>();
 
             builder.Services.AddTransient<IManyToManyService<UserGroupModel>, GroupUsersService>();
             builder.Services.AddTransient<INavMenuService, NavMenuService>();
             builder.Services.AddTransient<IDealService, ProxyDealService>();
+
+            builder.Services.AddTransient<IQuoteService, ProxyQuoteService>();
+
+            builder.Services.AddTransient<IOrderService, ProxyOrderService>();
+
+            builder.Services.AddTransient<IPriceListService, PriceListService>();
+
+            builder.Services.AddTransient<IInvoiceService, ProxyInvoiceService>();
+
+            builder.Services.AddTransient<IActivityService, ProxyActivityService>();
             builder.Services.AddTransient<IManyToManyService<ProductParentChildModel>, ProductParentChildService>();
             builder.Services.AddScoped<IEnumService, EnumService>();
             builder.Services.AddScoped<IAccessoryTypesService, AccessoryTypesService>();

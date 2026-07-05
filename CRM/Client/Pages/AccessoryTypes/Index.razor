@@ -8,17 +8,11 @@
 
 
 
-<BlazorHeader Header="@_header" Visible="@(PageMode != PageHelper.PageModality.Dialog)"></BlazorHeader>
-
-
-
+<PageHeader Model="_pageHeader" Visible="@(PageMode != PageHelper.PageModality.Dialog)"></PageHeader>
 
 @if (_accessoryTypes != null)
 {
 
-    <BlazorBreadCrumb Model=@_bread Visible=@(PageMode != PageHelper.PageModality.Dialog)></BlazorBreadCrumb>
-    
-    
     <div class=row>
         <div class="col">
             <BlazorButton Template="TemplateButton.New" Label=true OnClick="NewAccessoryType"></BlazorButton>

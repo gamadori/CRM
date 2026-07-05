@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
@@ -43,7 +44,7 @@ namespace CRM.Client.Pages.ProdAccTypeLangs
         SFDialogService DialogService { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int IdProdAccType { get; set; }
@@ -73,7 +74,7 @@ namespace CRM.Client.Pages.ProdAccTypeLangs
 
         private bool _isLoading = false;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private PageHeaderModel _pageHeader = null;
 
         private List<Language> _languages;
 
@@ -85,8 +86,8 @@ namespace CRM.Client.Pages.ProdAccTypeLangs
             await GetLanguages();
             await GetProdAccType();
 
-            _bread = await BreadCrumbService.AccessoryTypes(_prodAccType?.Name, false);
-            
+            _pageHeader = await HeaderService.Create();
+
             await base.OnInitializedAsync();
         }
 

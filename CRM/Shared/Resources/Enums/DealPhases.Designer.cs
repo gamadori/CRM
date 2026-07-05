@@ -19,7 +19,7 @@ namespace CRM.Shared.Resources.Enums {
     // tramite uno strumento quale ResGen o Visual Studio.
     // Per aggiungere o rimuovere un membro, modificare il file con estensione ResX ed eseguire nuovamente ResGen
     // con l'opzione /str oppure ricompilare il progetto VS.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "18.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class DealPhases {
@@ -115,7 +115,7 @@ namespace CRM.Shared.Resources.Enums {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a .
+        ///   Cerca una stringa localizzata simile a Obtained.
         /// </summary>
         public static string Obtained {
             get {

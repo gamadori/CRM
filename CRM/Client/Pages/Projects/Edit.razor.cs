@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -32,6 +33,9 @@ namespace CRM.Client.Pages.Projects
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public int? Id { get; set; }
 
@@ -42,6 +46,8 @@ namespace CRM.Client.Pages.Projects
         public Action OnClickCancel { get; set; }
 
         private Project _project = null;
+
+        private PageHeaderModel _pageHeader = null;
 
         private List<Product> _products;
 
@@ -71,8 +77,9 @@ namespace CRM.Client.Pages.Projects
                     _project = await RestClientService.GetItem<Project, int>(Id.Value, ConstHelper.ProjectsPath);
                 else
                     _project = new Project() { State = (int)ProjectStates.Stop, StartDate = DateTime.Now };
-                
-               
+
+                if (OnClickSave == null)
+                    _pageHeader = await HeaderService.Create();
             }
             catch (Exception ex)
             {

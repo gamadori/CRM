@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
@@ -42,7 +43,7 @@ namespace CRM.Client.Pages.AccessoryTypes
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set;}
+        IHeaderService HeaderService { get; set;}
 
         [Parameter]
         public int Id { get; set; }
@@ -70,18 +71,18 @@ namespace CRM.Client.Pages.AccessoryTypes
 
         private bool _fromDetails = false;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private PageHeaderModel _pageHeader = null;
 
         bool singleValue = false;
 
         protected override async Task OnInitializedAsync()
         {
-            
+
             await LoadAccessoryType();
 
-            _bread = await BreadCrumbService.AccessoryTypes(_accessoryType?.Name, false);
+            _pageHeader = await HeaderService.Create();
 
-            
+
             if (_selectView == PageViews.Accessory)
                 _partialView = PartialViews.Index;
         }

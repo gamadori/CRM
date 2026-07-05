@@ -102,6 +102,30 @@
                         <span class="nav-text">@Localize["Deals"]</span>
                     </NavLink>
 
+                    <!-- Agenda -->
+                    <NavLink class="nav-link submenu-link" href="Agenda" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">event</span>
+                        <span class="nav-text">@Localize["Agenda"]</span>
+                    </NavLink>
+
+                    <!-- Preventivi -->
+                    <NavLink class="nav-link submenu-link" href="Quotes" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">request_quote</span>
+                        <span class="nav-text">@Localize["Quotes"]</span>
+                    </NavLink>
+
+                    <!-- Ordini -->
+                    <NavLink class="nav-link submenu-link" href="Orders" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">shopping_cart</span>
+                        <span class="nav-text">@Localize["Orders"]</span>
+                    </NavLink>
+
+                    <!-- Fatture -->
+                    <NavLink class="nav-link submenu-link" href="Invoices" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">receipt_long</span>
+                        <span class="nav-text">@Localize["Invoices"]</span>
+                    </NavLink>
+
                     <!-- AI Assistant (with sub-submenu) -->
                     <div class="nav-item">
                         <div class="nav-link submenu-link highlight-ai" @onclick="()=>_expandAI = !_expandAI">
@@ -131,13 +155,7 @@
                                     <span class="nav-text">@Localize["DataAssistant"]</span>
                                 </NavLink>
 
-                                <!-- Base di Conoscenza (solo admin) -->
-                                <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
-                                    <NavLink class="nav-link submenu-link-2 highlight-ai" href="Knowledge" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                                        <span class="material-icons nav-icon-small">menu_book</span>
-                                        <span class="nav-text">@Localize["KnowledgeBase"]</span>
-                                    </NavLink>
-                                </AuthorizeView>
+                               
                             </div>
                         }
                     </div>

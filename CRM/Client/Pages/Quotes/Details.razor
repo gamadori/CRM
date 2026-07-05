@@ -1,0 +1,254 @@
+@page "/Quotes/{Id:int}/Details"
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
+@attribute [Authorize]
+@inject IQuoteService QuoteService
+@inject IOrderService OrderService
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+@inject DialogService DialogService
+@inject NotificationService Notification
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+@if (_quote == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <RadzenButton Icon="arrow_back" Text="Lista" ButtonStyle="ButtonStyle.Light"
+                      Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}"))" />
+        <RadzenButton Icon="picture_as_pdf" Text="PDF" ButtonStyle="ButtonStyle.Secondary"
+                      IsBusy="@_downloadingPdf" Disabled="@_downloadingPdf" Click="DownloadPdf" />
+        @if (_quote.Permits.Edit())
+        {
+            <RadzenButton Icon="edit" Text="Modifica" ButtonStyle="ButtonStyle.Primary"
+                          Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{_quote.Id}/Edit"))" />
+        }
+        @if (_quote.State == QuoteStates.Draft)
+        {
+            <RadzenButton Icon="send" Text="Segna come inviato" ButtonStyle="ButtonStyle.Info"
+                          Click="@(() => ChangeState(QuoteStates.Sent))" />
+        }
+        @if (_quote.State == QuoteStates.Sent)
+        {
+            <RadzenButton Icon="check_circle" Text="Accetta" ButtonStyle="ButtonStyle.Success"
+                          Click="@(() => ChangeState(QuoteStates.Accepted))" />
+            <RadzenButton Icon="cancel" Text="Rifiuta" ButtonStyle="ButtonStyle.Danger"
+                          Click="@(() => ChangeState(QuoteStates.Rejected))" />
+        }
+        @if (_quote.State == QuoteStates.Accepted)
+        {
+            <RadzenButton Icon="shopping_cart" Text="Crea ordine" ButtonStyle="ButtonStyle.Primary"
+                          IsBusy="@_creatingOrder" Disabled="@_creatingOrder" Click="CreateOrder" />
+        }
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3"><small class="text-muted d-block">Numero</small><strong>@_quote.Number</strong></div>
+                <div class="col-md-3"><small class="text-muted d-block">Data</small>@_quote.Date.ToString("dd/MM/yyyy")</div>
+                <div class="col-md-3"><small class="text-muted d-block">Valida fino al</small>@(_quote.ValidUntil?.ToString("dd/MM/yyyy") ?? "—")</div>
+                <div class="col-md-3"><small class="text-muted d-block">Stato</small><span class="badge @StateClass(_quote.State)">@StateText(_quote.State)</span></div>
+                <div class="col-md-3"><small class="text-muted d-block">Azienda</small>@_quote.CompanyName</div>
+                <div class="col-md-3"><small class="text-muted d-block">Contatto</small>@(string.IsNullOrEmpty(_quote.ContactName) ? "—" : _quote.ContactName)</div>
+                <div class="col-md-3"><small class="text-muted d-block">Trattativa</small>@(string.IsNullOrEmpty(_quote.DealName) ? "—" : _quote.DealName)</div>
+                <div class="col-md-3"><small class="text-muted d-block">Owner</small>@_quote.UserName</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Descrizione</th>
+                        <th class="text-end">Q.tà</th>
+                        <th class="text-end">Prezzo</th>
+                        <th class="text-end">Sc.%</th>
+                        <th class="text-end">IVA%</th>
+                        <th class="text-end">Netto</th>
+                        <th class="text-end">Totale</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in _quote.Rows)
+                    {
+                        <tr>
+                            <td>@r.Description</td>
+                            <td class="text-end">@r.Quantity</td>
+                            <td class="text-end">@r.UnitPrice.ToString("C")</td>
+                            <td class="text-end">@r.DiscountPct</td>
+                            <td class="text-end">@r.VatRate</td>
+                            <td class="text-end">@r.LineNet.ToString("C")</td>
+                            <td class="text-end">@r.LineTotal.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-7">
+            @if (!string.IsNullOrWhiteSpace(_quote.Note) || !string.IsNullOrWhiteSpace(_quote.TermsConditions))
+            {
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        @if (!string.IsNullOrWhiteSpace(_quote.Note))
+                        {
+                            <small class="text-muted d-block">Note</small>
+                            <p class="mb-3">@_quote.Note</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_quote.TermsConditions))
+                        {
+                            <small class="text-muted d-block">Termini e condizioni</small>
+                            <p class="mb-0">@_quote.TermsConditions</p>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between"><span>Imponibile</span><strong>@_quote.Subtotal.ToString("C")</strong></div>
+                    <div class="d-flex justify-content-between text-muted"><span>Sconto</span><span>@_quote.TotalDiscount.ToString("C")</span></div>
+                    <div class="d-flex justify-content-between"><span>IVA</span><strong>@_quote.TotalVat.ToString("C")</strong></div>
+                    <hr />
+                    <div class="d-flex justify-content-between fs-5"><span>Totale</span><strong>@_quote.Total.ToString("C")</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PageHeaderModel? _pageHeader;
+    private QuoteDTO? _quote;
+    private bool _downloadingPdf;
+    private bool _creatingOrder;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        await Load();
+    }
+
+    private async Task DownloadPdf()
+    {
+        _downloadingPdf = true;
+        try
+        {
+            var response = await Http.GetAsync($"{ConstHelper.QuotesPath}/{Id}/pdf");
+            if (response.IsSuccessStatusCode)
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                var fileName = $"{_quote?.Number ?? $"Preventivo-{Id}"}.pdf";
+                await JS.InvokeVoidAsync("downloadFileFromBytes", fileName, "application/pdf", bytes);
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", "Download PDF fallito");
+            }
+        }
+        catch (Exception ex)
+        {
+            Notification.Notify(NotificationSeverity.Error, "Errore", ex.Message);
+        }
+        finally
+        {
+            _downloadingPdf = false;
+        }
+    }
+
+    private async Task Load()
+    {
+        _quote = await QuoteService.GetItemAsync(Id);
+    }
+
+    private async Task CreateOrder()
+    {
+        if (await DialogService.Confirm("Creare un ordine da questo preventivo?", "Conferma") != true)
+            return;
+
+        _creatingOrder = true;
+        try
+        {
+            var resp = await OrderService.CreateFromQuoteAsync(Id);
+            if (resp.State && resp.Data != null)
+            {
+                Notification.Notify(NotificationSeverity.Success, "Fatto", $"Ordine {resp.Data.Number} creato");
+                Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{resp.Data.Id}/Details");
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Warning, "Attenzione", resp.Message ?? "Operazione fallita");
+            }
+        }
+        finally
+        {
+            _creatingOrder = false;
+        }
+    }
+
+    private async Task ChangeState(QuoteStates state)
+    {
+        var msg = state switch
+        {
+            QuoteStates.Accepted => "Accettare il preventivo? La trattativa collegata verra' aggiornata.",
+            QuoteStates.Rejected => "Rifiutare il preventivo?",
+            QuoteStates.Sent => "Segnare il preventivo come inviato?",
+            _ => "Confermare il cambio di stato?"
+        };
+
+        if (await DialogService.Confirm(msg, "Conferma") != true)
+            return;
+
+        var resp = await QuoteService.ChangeStateAsync(Id, state, updateDeal: true);
+        if (resp.State)
+        {
+            _quote = resp.Data;
+            Notification.Notify(NotificationSeverity.Success, "Fatto", "Stato aggiornato");
+        }
+        else
+        {
+            Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+        }
+    }
+
+    private static string StateText(QuoteStates s) => s switch
+    {
+        QuoteStates.Draft => "Bozza",
+        QuoteStates.Sent => "Inviato",
+        QuoteStates.Accepted => "Accettato",
+        QuoteStates.Rejected => "Rifiutato",
+        QuoteStates.Expired => "Scaduto",
+        _ => s.ToString()
+    };
+
+    private static string StateClass(QuoteStates s) => s switch
+    {
+        QuoteStates.Draft => "bg-secondary",
+        QuoteStates.Sent => "bg-info text-dark",
+        QuoteStates.Accepted => "bg-success",
+        QuoteStates.Rejected => "bg-danger",
+        QuoteStates.Expired => "bg-warning text-dark",
+        _ => "bg-light text-dark"
+    };
+}

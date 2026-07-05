@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
@@ -37,12 +38,20 @@ namespace CRM.Client.Pages.Companies.Customer
 
         private CompanyDTO _company = null;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private PageHeaderModel _pageHeader = null;
 
         protected override void OnInitialized()
         {
-            _bread.Add(new BreadcrumbModel() { Title = $"Home", Url = $"DashBoardClient" });
-            _bread.Add(new BreadcrumbModel() { Title = Localize["Company"], Url = null });
+            _pageHeader = new PageHeaderModel
+            {
+                Title = Localize["Azienda"],
+                Icon = "business",
+                BreadcrumbItems = new List<BreadcrumbItem>
+                {
+                    new BreadcrumbItem("Home", "DashBoardClient"),
+                    new BreadcrumbItem(Localize["Company"], null)
+                }
+            };
             base.OnInitialized();
         }
 

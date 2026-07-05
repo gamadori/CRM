@@ -1,0 +1,227 @@
+@page "/Orders/{Id:int}/Details"
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
+@attribute [Authorize]
+@inject IOrderService OrderService
+@inject IInvoiceService InvoiceService
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+@inject DialogService DialogService
+@inject NotificationService Notification
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+@if (_order == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <RadzenButton Icon="arrow_back" Text="Lista" ButtonStyle="ButtonStyle.Light"
+                      Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}"))" />
+        <RadzenButton Icon="picture_as_pdf" Text="Fattura di cortesia" ButtonStyle="ButtonStyle.Secondary"
+                      IsBusy="@_downloadingPdf" Disabled="@_downloadingPdf" Click="DownloadPdf" />
+        @if (_order.State != OrderStates.Cancelled)
+        {
+            <RadzenButton Icon="receipt_long" Text="Crea fattura" ButtonStyle="ButtonStyle.Primary"
+                          IsBusy="@_creatingInvoice" Disabled="@_creatingInvoice" Click="CreateInvoice" />
+        }
+        @if (_order.Permits.Edit())
+        {
+            <RadzenButton Icon="edit" Text="Modifica" ButtonStyle="ButtonStyle.Primary"
+                          Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{_order.Id}/Edit"))" />
+        }
+        @if (_order.IdQuote != null)
+        {
+            <RadzenButton Icon="request_quote" Text="Preventivo" ButtonStyle="ButtonStyle.Light"
+                          Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{_order.IdQuote}/Details"))" />
+        }
+        <RadzenDropDown TValue="OrderStates" Value="_order.State" Data="_stateOptions" TextProperty="Text" ValueProperty="Value"
+                        Style="width:180px" Change="@(args => OnChangeState((OrderStates)args))" />
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3"><small class="text-muted d-block">Numero</small><strong>@_order.Number</strong></div>
+                <div class="col-md-3"><small class="text-muted d-block">Data</small>@_order.Date.ToString("dd/MM/yyyy")</div>
+                <div class="col-md-3"><small class="text-muted d-block">Consegna</small>@(_order.DeliveryDate?.ToString("dd/MM/yyyy") ?? "—")</div>
+                <div class="col-md-3"><small class="text-muted d-block">Stato</small><span class="badge @StateClass(_order.State)">@StateText(_order.State)</span></div>
+                <div class="col-md-3"><small class="text-muted d-block">Azienda</small>@_order.CompanyName</div>
+                <div class="col-md-3"><small class="text-muted d-block">Contatto</small>@(string.IsNullOrEmpty(_order.ContactName) ? "—" : _order.ContactName)</div>
+                <div class="col-md-3"><small class="text-muted d-block">Preventivo</small>@(string.IsNullOrEmpty(_order.QuoteNumber) ? "—" : _order.QuoteNumber)</div>
+                <div class="col-md-3"><small class="text-muted d-block">Owner</small>@_order.UserName</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Descrizione</th><th class="text-end">Q.tà</th><th class="text-end">Prezzo</th>
+                        <th class="text-end">Sc.%</th><th class="text-end">IVA%</th><th class="text-end">Netto</th><th class="text-end">Totale</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in _order.Rows)
+                    {
+                        <tr>
+                            <td>@r.Description</td>
+                            <td class="text-end">@r.Quantity</td>
+                            <td class="text-end">@r.UnitPrice.ToString("C")</td>
+                            <td class="text-end">@r.DiscountPct</td>
+                            <td class="text-end">@r.VatRate</td>
+                            <td class="text-end">@r.LineNet.ToString("C")</td>
+                            <td class="text-end">@r.LineTotal.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-7">
+            @if (!string.IsNullOrWhiteSpace(_order.Note))
+            {
+                <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                    <small class="text-muted d-block">Note</small>
+                    <p class="mb-0">@_order.Note</p>
+                </div></div>
+            }
+        </div>
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm"><div class="card-body">
+                <div class="d-flex justify-content-between"><span>Imponibile</span><strong>@_order.Subtotal.ToString("C")</strong></div>
+                <div class="d-flex justify-content-between text-muted"><span>Sconto</span><span>@_order.TotalDiscount.ToString("C")</span></div>
+                <div class="d-flex justify-content-between"><span>IVA</span><strong>@_order.TotalVat.ToString("C")</strong></div>
+                <hr />
+                <div class="d-flex justify-content-between fs-5"><span>Totale</span><strong>@_order.Total.ToString("C")</strong></div>
+            </div></div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PageHeaderModel? _pageHeader;
+    private OrderDTO? _order;
+    private bool _downloadingPdf;
+    private bool _creatingInvoice;
+
+    private record StateOption(string Text, OrderStates Value);
+    private readonly List<StateOption> _stateOptions = new()
+    {
+        new("Confermato", OrderStates.Confirmed),
+        new("In produzione", OrderStates.InProduction),
+        new("Consegnato", OrderStates.Delivered),
+        new("Fatturato", OrderStates.Invoiced),
+        new("Annullato", OrderStates.Cancelled),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        _order = await OrderService.GetItemAsync(Id);
+    }
+
+    private async Task DownloadPdf()
+    {
+        _downloadingPdf = true;
+        try
+        {
+            var response = await Http.GetAsync($"{ConstHelper.OrdersPath}/{Id}/pdf");
+            if (response.IsSuccessStatusCode)
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                var fileName = $"{_order?.Number ?? $"Ordine-{Id}"}-cortesia.pdf";
+                await JS.InvokeVoidAsync("downloadFileFromBytes", fileName, "application/pdf", bytes);
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", "Download PDF fallito");
+            }
+        }
+        catch (Exception ex)
+        {
+            Notification.Notify(NotificationSeverity.Error, "Errore", ex.Message);
+        }
+        finally
+        {
+            _downloadingPdf = false;
+        }
+    }
+
+    private async Task CreateInvoice()
+    {
+        if (await DialogService.Confirm("Creare una fattura da questo ordine?", "Conferma") != true)
+            return;
+
+        _creatingInvoice = true;
+        try
+        {
+            var resp = await InvoiceService.CreateFromOrderAsync(Id);
+            if (resp.State && resp.Data != null)
+            {
+                Notification.Notify(NotificationSeverity.Success, "Fatto", $"Fattura {resp.Data.Number} creata");
+                Nav.NavigateTo($"/{ConstHelper.ClientInvoicesPath}/{resp.Data.Id}/Details");
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Warning, "Attenzione", resp.Message ?? "Operazione fallita");
+            }
+        }
+        finally
+        {
+            _creatingInvoice = false;
+        }
+    }
+
+    private async Task OnChangeState(OrderStates state)
+    {
+        if (_order == null || state == _order.State) return;
+        var resp = await OrderService.ChangeStateAsync(Id, state);
+        if (resp.State)
+        {
+            _order = resp.Data;
+            Notification.Notify(NotificationSeverity.Success, "Fatto", "Stato aggiornato");
+        }
+        else
+        {
+            Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+        }
+    }
+
+    private static string StateText(OrderStates s) => s switch
+    {
+        OrderStates.Confirmed => "Confermato",
+        OrderStates.InProduction => "In produzione",
+        OrderStates.Delivered => "Consegnato",
+        OrderStates.Invoiced => "Fatturato",
+        OrderStates.Cancelled => "Annullato",
+        _ => s.ToString()
+    };
+
+    private static string StateClass(OrderStates s) => s switch
+    {
+        OrderStates.Confirmed => "bg-primary",
+        OrderStates.InProduction => "bg-info text-dark",
+        OrderStates.Delivered => "bg-success",
+        OrderStates.Invoiced => "bg-secondary",
+        OrderStates.Cancelled => "bg-danger",
+        _ => "bg-light text-dark"
+    };
+}

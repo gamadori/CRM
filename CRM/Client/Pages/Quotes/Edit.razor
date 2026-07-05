@@ -1,0 +1,313 @@
+@page "/Quotes/New"
+@page "/Quotes/{Id:int}/Edit"
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IQuoteService QuoteService
+@inject ICompaniesService CompaniesService
+@inject IContactsService ContactsService
+@inject IProductsService ProductsService
+@inject IPriceListService PriceListService
+@inject IAGRestClientService RestClient
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+@inject NotificationService Notification
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+@if (_quote == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <EditForm Model="_quote" OnValidSubmit="Save">
+        <DataAnnotationsValidator />
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Azienda</label>
+                        <RadzenDropDown TValue="int?" @bind-Value="_quote.IdCompany" Data="_companies"
+                                        TextProperty="RagioneSociale" ValueProperty="Id" AllowFiltering="true"
+                                        AllowClear="true" Placeholder="Seleziona azienda" Style="width:100%"
+                                        Change="@(async _ => await OnChangeCompany())" />
+                        <ValidationMessage For="@(() => _quote.IdCompany)" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Contatto</label>
+                        <RadzenDropDown TValue="int?" @bind-Value="_quote.IdContact" Data="_contacts"
+                                        TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true"
+                                        AllowClear="true" Placeholder="Referente" Style="width:100%" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Stato</label>
+                        <RadzenDropDown TValue="QuoteStates" @bind-Value="_quote.State" Data="_states"
+                                        TextProperty="Text" ValueProperty="Value" Style="width:100%" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Data</label>
+                        <RadzenDatePicker TValue="DateTime" @bind-Value="_quote.Date" DateFormat="dd/MM/yyyy" Style="width:100%" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Valida fino al</label>
+                        <RadzenDatePicker TValue="DateTime?" @bind-Value="_quote.ValidUntil" DateFormat="dd/MM/yyyy" Style="width:100%" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Numero</label>
+                        <input class="form-control" @bind="_quote.Number" placeholder="(assegnato automaticamente)" readonly />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-white d-flex align-items-center">
+                <h6 class="mb-0">Righe</h6>
+                <RadzenButton class="ms-auto" Icon="add" Text="Aggiungi riga" ButtonStyle="ButtonStyle.Secondary"
+                              Size="ButtonSize.Small" Click="AddRow" />
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="min-width:180px">Prodotto</th>
+                            <th style="min-width:200px">Descrizione</th>
+                            <th class="text-end" style="width:90px">Q.tà</th>
+                            <th class="text-end" style="width:120px">Prezzo</th>
+                            <th class="text-end" style="width:90px">Sc.%</th>
+                            <th class="text-end" style="width:90px">IVA%</th>
+                            <th class="text-end" style="width:120px">Netto</th>
+                            <th class="text-end" style="width:120px">Totale</th>
+                            <th style="width:40px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _quote.Rows)
+                        {
+                            <tr>
+                                <td>
+                                    <RadzenDropDown TValue="int?" Value="row.IdProduct" Data="_products"
+                                                    TextProperty="Name" ValueProperty="Id" AllowFiltering="true"
+                                                    AllowClear="true" Placeholder="—" Style="width:100%"
+                                                    Change="@(args => OnSelectProduct(row, args as int?))" />
+                                </td>
+                                <td><input class="form-control form-control-sm" @bind="row.Description" @bind:event="oninput" /></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm text-end"
+                                           @bind="row.Quantity" @bind:event="oninput" @onblur="Recalc" /></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm text-end"
+                                           @bind="row.UnitPrice" @bind:event="oninput" @onblur="Recalc" /></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm text-end"
+                                           @bind="row.DiscountPct" @bind:event="oninput" @onblur="Recalc" /></td>
+                                <td><input type="number" step="0.01" class="form-control form-control-sm text-end"
+                                           @bind="row.VatRate" @bind:event="oninput" @onblur="Recalc" /></td>
+                                <td class="text-end">@row.LineNet.ToString("C")</td>
+                                <td class="text-end">@row.LineTotal.ToString("C")</td>
+                                <td class="text-center">
+                                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                                  Click="@(() => RemoveRow(row))" />
+                                </td>
+                            </tr>
+                        }
+                        @if (!_quote.Rows.Any())
+                        {
+                            <tr><td colspan="9" class="text-center text-muted py-3">Nessuna riga. Aggiungi un prodotto o una riga libera.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-7">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <label class="form-label">Note</label>
+                        <textarea class="form-control mb-3" rows="2" @bind="_quote.Note"></textarea>
+                        <label class="form-label">Termini e condizioni</label>
+                        <textarea class="form-control" rows="2" @bind="_quote.TermsConditions"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between"><span>Imponibile</span><strong>@_quote.Subtotal.ToString("C")</strong></div>
+                        <div class="d-flex justify-content-between text-muted"><span>Sconto</span><span>@_quote.TotalDiscount.ToString("C")</span></div>
+                        <div class="d-flex justify-content-between"><span>IVA</span><strong>@_quote.TotalVat.ToString("C")</strong></div>
+                        <hr />
+                        <div class="d-flex justify-content-between fs-5"><span>Totale</span><strong>@_quote.Total.ToString("C")</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+            <RadzenButton ButtonType="ButtonType.Submit" Icon="save" Text="@(_saving ? "Salvataggio..." : "Salva")"
+                          ButtonStyle="ButtonStyle.Primary" Disabled="@_saving" />
+            <RadzenButton Icon="close" Text="Annulla" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    [SupplyParameterFromQuery] public int? IdDeal { get; set; }
+    [SupplyParameterFromQuery] public int? IdCompany { get; set; }
+
+    private PageHeaderModel? _pageHeader;
+    private QuoteDTO? _quote;
+    private List<CompanyDTO> _companies = new();
+    private List<ContactDTO> _contacts = new();
+    private List<ProductDTO> _products = new();
+    private Dictionary<int, PriceListItemDTO> _priceList = new();
+    private bool _saving;
+    private decimal _defaultVat = 22m;
+
+    private record StateOption(string Text, QuoteStates Value);
+    private readonly List<StateOption> _states = new()
+    {
+        new("Bozza", QuoteStates.Draft),
+        new("Inviato", QuoteStates.Sent),
+        new("Accettato", QuoteStates.Accepted),
+        new("Rifiutato", QuoteStates.Rejected),
+        new("Scaduto", QuoteStates.Expired),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+
+        _companies = await CompaniesService.GetListAsync(new CompanyFilter()) ?? new();
+        _products = await ProductsService.GetListAsync(new ProductFilter()) ?? new();
+
+        var settings = await RestClient.GetFirst<GlobalSetting>(ConstHelper.GlobalSettingsPath);
+        if (settings != null && settings.DefaultVatRate > 0)
+            _defaultVat = settings.DefaultVatRate;
+
+        if (Id is > 0)
+        {
+            _quote = await QuoteService.GetItemAsync(Id.Value) ?? NewQuote();
+        }
+        else
+        {
+            _quote = NewQuote();
+            _quote.IdDeal = IdDeal;
+            _quote.IdCompany = IdCompany;
+        }
+
+        await LoadContacts();
+        await LoadPriceList();
+        _quote.Recalculate();
+    }
+
+    private async Task LoadPriceList()
+    {
+        _priceList = _quote?.IdCompany == null
+            ? new()
+            : (await PriceListService.GetByCompanyAsync(_quote.IdCompany.Value)).ToDictionary(p => p.IdProduct);
+    }
+
+    private QuoteDTO NewQuote() => new()
+    {
+        Date = DateTime.Today,
+        State = QuoteStates.Draft,
+        Rows = new List<QuoteRowDTO>()
+    };
+
+    private async Task OnChangeCompany()
+    {
+        if (_quote != null) _quote.IdContact = null;
+        await LoadContacts();
+        await LoadPriceList();
+    }
+
+    private async Task LoadContacts()
+    {
+        if (_quote?.IdCompany == null)
+        {
+            _contacts = new();
+            return;
+        }
+        _contacts = await ContactsService.GetListAsync(new ContactFilter { IdCompany = _quote.IdCompany }) ?? new();
+        if (_quote.IdContact != null && !_contacts.Any(c => c.Id == _quote.IdContact))
+            _quote.IdContact = null;
+    }
+
+    private void AddRow()
+    {
+        _quote!.Rows.Add(new QuoteRowDTO { Quantity = 1, VatRate = _defaultVat, SortOrder = _quote.Rows.Count });
+        Recalc();
+    }
+
+    private void RemoveRow(QuoteRowDTO row)
+    {
+        _quote!.Rows.Remove(row);
+        Recalc();
+    }
+
+    private void OnSelectProduct(QuoteRowDTO row, int? idProduct)
+    {
+        row.IdProduct = idProduct;
+        var p = _products.FirstOrDefault(x => x.Id == idProduct);
+        if (p != null)
+        {
+            if (string.IsNullOrWhiteSpace(row.Description))
+                row.Description = string.IsNullOrWhiteSpace(p.Code) ? p.Name : $"{p.Code} - {p.Name}";
+
+            // Prezzo dedicato da listino cliente, altrimenti prezzo di catalogo
+            if (idProduct != null && _priceList.TryGetValue(idProduct.Value, out var pl))
+            {
+                row.UnitPrice = pl.UnitPrice;
+                row.DiscountPct = pl.DiscountPct;
+            }
+            else if (row.UnitPrice == 0)
+            {
+                row.UnitPrice = p.Price;
+            }
+        }
+        Recalc();
+    }
+
+    private void Recalc() => _quote?.Recalculate();
+
+    private async Task Save()
+    {
+        if (_quote == null) return;
+        _saving = true;
+        try
+        {
+            _quote.Recalculate();
+            var resp = await QuoteService.PostAsync(_quote.ToEntity());
+            if (resp.State)
+            {
+                var newId = resp.Data?.Id ?? _quote.Id;
+                Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{newId}/Details");
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
+            }
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        if (Id is > 0)
+            Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{Id}/Details");
+        else
+            Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}");
+    }
+}

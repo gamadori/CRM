@@ -1,9 +1,6 @@
 ﻿@page "/Companies/Customer/Details"
 @*@layout MainLayoutCustomer*@
-<BlazorHeader Header="@Localize["Azienda"]" />
-
-
-<BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
+<PageHeader Model="@_pageHeader"></PageHeader>
 
 @if (_company == null)
 {

@@ -1,4 +1,5 @@
 using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
@@ -25,6 +26,9 @@ namespace CRM.Client.Pages.Deals
         [Inject]
         private IEnumService EnumService { get; set; } = default!;
 
+        [Inject]
+        private IHeaderService HeaderService { get; set; } = default!;
+
         [Parameter]
         public int Id { get; set; }
 
@@ -40,10 +44,15 @@ namespace CRM.Client.Pages.Deals
         private DealDTO? _deal;
         private bool _loading = true;
 
+        private PageHeaderModel? _pageHeader;
+
         private int DealProgress => _deal == null ? 0 : PhaseProgress(_deal.Phase);
 
         protected override async Task OnInitializedAsync()
         {
+            if (OnClickCancel == null)
+                _pageHeader = await HeaderService.Create();
+
             await LoadDeal();
         }
 

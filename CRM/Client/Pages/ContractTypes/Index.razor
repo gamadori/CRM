@@ -4,13 +4,10 @@
 
 @using CRM.Shared.Helper
 
-<BlazorHeader Header="@Localize["Contract Types"]"></BlazorHeader>
-
-
+<PageHeader Model="_pageHeader"></PageHeader>
 
 @if (_items != null)
 {
-    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
 
     <div class="btn-toolbar" role="toolbar" aria-label="Comandi">
         <div class="btn-group mr-2" role="group" aria-label="First group">

@@ -742,4 +742,55 @@
   <data name="Errore di connessione: {0}" xml:space="preserve">
     <value>Error de conexión: {0}</value>
   </data>
+  <data name="UserManagement" xml:space="preserve">
+    <value>Gestión de Usuarios</value>
+  </data>
+  <data name="ProductsAndTickets" xml:space="preserve">
+    <value>Productos y Tickets</value>
+  </data>
+  <data name="Communications" xml:space="preserve">
+    <value>Comunicaciones</value>
+  </data>
+  <data name="SystemConfiguration" xml:space="preserve">
+    <value>Configuración del Sistema</value>
+  </data>
+  <data name="ArtificialIntelligence" xml:space="preserve">
+    <value>Inteligencia Artificial</value>
+  </data>
+  <data name="NoDescriptionAvailable" xml:space="preserve">
+    <value>Descripción no disponible</value>
+  </data>
+  <data name="ContractTypes" xml:space="preserve">
+    <value>Tipos de contrato</value>
+  </data>
+  <data name="Accessories" xml:space="preserve">
+    <value>Accesorios</value>
+  </data>
+  <data name="AccessoryTypes" xml:space="preserve">
+    <value>Tipos de accesorio</value>
+  </data>
+  <data name="ProductAccTypes" xml:space="preserve">
+    <value>Tipos de accesorio de producto</value>
+  </data>
+  <data name="ProductAccTypeLangs" xml:space="preserve">
+    <value>Traducciones de accesorio</value>
+  </data>
+  <data name="AzureSettings" xml:space="preserve">
+    <value>Configuración de Azure</value>
+  </data>
+  <data name="Quotes" xml:space="preserve">
+    <value>Presupuestos</value>
+  </data>
+  <data name="Orders" xml:space="preserve">
+    <value>Pedidos</value>
+  </data>
+  <data name="PriceList" xml:space="preserve">
+    <value>Listas de precios</value>
+  </data>
+  <data name="Invoices" xml:space="preserve">
+    <value>Facturas</value>
+  </data>
+  <data name="Activities" xml:space="preserve">
+    <value>Actividades</value>
+  </data>
 </root>

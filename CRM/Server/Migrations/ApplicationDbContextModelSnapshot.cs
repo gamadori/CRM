@@ -141,6 +141,67 @@ namespace CRM.Server.Migrations
                     b.ToTable("AccessoryTypeLanguages");
                 });
 
+            modelBuilder.Entity("CRM.Shared.Activity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DoneDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EntityId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EntityType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdAssignee")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("IdUser")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReminderAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("ReminderSent")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdAssignee");
+
+                    b.HasIndex("IdUser");
+
+                    b.HasIndex("EntityType", "EntityId");
+
+                    b.HasIndex("ReminderSent", "ReminderAt");
+
+                    b.ToTable("Activities");
+                });
+
             modelBuilder.Entity("CRM.Shared.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -1308,6 +1369,10 @@ namespace CRM.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("DefaultVatRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<int>("IdHeadQuarter")
                         .HasColumnType("int");
 
@@ -1319,6 +1384,9 @@ namespace CRM.Server.Migrations
 
                     b.Property<int>("MonthlySchedulerMaxNumTickets")
                         .HasColumnType("int");
+
+                    b.Property<string>("RegimeFiscale")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("RemoteSignatureEnabled")
                         .HasColumnType("bit");
@@ -1407,6 +1475,133 @@ namespace CRM.Server.Migrations
                     b.HasIndex("IdLanguage");
 
                     b.ToTable("InterventionTypeLanguages");
+                });
+
+            modelBuilder.Entity("CRM.Shared.Invoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Causale")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CodiceDestinatario")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdCompany")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdContact")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdUser")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("PecDestinatario")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SdiReference")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("Money");
+
+                    b.Property<string>("TipoDocumento")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Total")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("TotalVat")
+                        .HasColumnType("Money");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdCompany");
+
+                    b.HasIndex("IdContact");
+
+                    b.HasIndex("IdOrder");
+
+                    b.HasIndex("IdUser");
+
+                    b.HasIndex("Number");
+
+                    b.ToTable("Invoices");
+                });
+
+            modelBuilder.Entity("CRM.Shared.InvoiceRow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("DiscountPct")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int>("IdInvoice")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdProduct")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("LineNet")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("LineVat")
+                        .HasColumnType("Money");
+
+                    b.Property<string>("Natura")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("VatRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdInvoice");
+
+                    b.HasIndex("IdProduct");
+
+                    b.ToTable("InvoiceRows");
                 });
 
             modelBuilder.Entity("CRM.Shared.Language", b =>
@@ -1616,6 +1811,162 @@ namespace CRM.Server.Migrations
                         .IsUnique();
 
                     b.ToTable("MachineParameterApiKeys");
+                });
+
+            modelBuilder.Entity("CRM.Shared.Order", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeliveryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdCompany")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdContact")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdDeal")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdQuote")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdUser")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("Total")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("TotalDiscount")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("TotalVat")
+                        .HasColumnType("Money");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdCompany");
+
+                    b.HasIndex("IdContact");
+
+                    b.HasIndex("IdDeal");
+
+                    b.HasIndex("IdQuote");
+
+                    b.HasIndex("IdUser");
+
+                    b.HasIndex("Number");
+
+                    b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("CRM.Shared.OrderRow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("DiscountPct")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int?>("IdArticle")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdProduct")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("LineNet")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("LineVat")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("VatRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdArticle");
+
+                    b.HasIndex("IdOrder");
+
+                    b.HasIndex("IdProduct");
+
+                    b.ToTable("OrderRows");
+                });
+
+            modelBuilder.Entity("CRM.Shared.PriceListItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("DiscountPct")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int>("IdCompany")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdProduct")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("Money");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdProduct");
+
+                    b.HasIndex("IdCompany", "IdProduct")
+                        .IsUnique();
+
+                    b.ToTable("PriceListItems");
                 });
 
             modelBuilder.Entity("CRM.Shared.Product", b =>
@@ -1949,6 +2300,129 @@ namespace CRM.Server.Migrations
                     b.HasIndex("IdUser");
 
                     b.ToTable("ProjectUsers");
+                });
+
+            modelBuilder.Entity("CRM.Shared.Quote", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdCompany")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdContact")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdDeal")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdUser")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Number")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasColumnType("Money");
+
+                    b.Property<string>("TermsConditions")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Total")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("TotalDiscount")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("TotalVat")
+                        .HasColumnType("Money");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdCompany");
+
+                    b.HasIndex("IdContact");
+
+                    b.HasIndex("IdDeal");
+
+                    b.HasIndex("IdUser");
+
+                    b.HasIndex("Number");
+
+                    b.ToTable("Quotes");
+                });
+
+            modelBuilder.Entity("CRM.Shared.QuoteRow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("DiscountPct")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int?>("IdArticle")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdProduct")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdQuote")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("LineNet")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("LineVat")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,3)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("Money");
+
+                    b.Property<decimal>("VatRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdArticle");
+
+                    b.HasIndex("IdProduct");
+
+                    b.HasIndex("IdQuote");
+
+                    b.ToTable("QuoteRows");
                 });
 
             modelBuilder.Entity("CRM.Shared.SmtpSetting", b =>
@@ -3124,6 +3598,23 @@ namespace CRM.Server.Migrations
                     b.Navigation("Language");
                 });
 
+            modelBuilder.Entity("CRM.Shared.Activity", b =>
+                {
+                    b.HasOne("CRM.Shared.ApplicationUser", "Assignee")
+                        .WithMany()
+                        .HasForeignKey("IdAssignee")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CRM.Shared.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Assignee");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("CRM.Shared.ApplicationUser", b =>
                 {
                     b.HasOne("CRM.Shared.Company", "Company")
@@ -3520,6 +4011,56 @@ namespace CRM.Server.Migrations
                     b.Navigation("Language");
                 });
 
+            modelBuilder.Entity("CRM.Shared.Invoice", b =>
+                {
+                    b.HasOne("CRM.Shared.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("IdCompany")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.Contact", "Contact")
+                        .WithMany()
+                        .HasForeignKey("IdContact")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CRM.Shared.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("IdOrder")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CRM.Shared.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Contact");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CRM.Shared.InvoiceRow", b =>
+                {
+                    b.HasOne("CRM.Shared.Invoice", "Invoice")
+                        .WithMany("Rows")
+                        .HasForeignKey("IdInvoice")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("IdProduct")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Invoice");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("CRM.Shared.MachineBackup", b =>
                 {
                     b.HasOne("CRM.Shared.Article", "Article")
@@ -3533,6 +4074,89 @@ namespace CRM.Server.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Article");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("CRM.Shared.Order", b =>
+                {
+                    b.HasOne("CRM.Shared.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("IdCompany")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.Contact", "Contact")
+                        .WithMany()
+                        .HasForeignKey("IdContact")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CRM.Shared.Deal", "Deal")
+                        .WithMany()
+                        .HasForeignKey("IdDeal")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CRM.Shared.Quote", "Quote")
+                        .WithMany()
+                        .HasForeignKey("IdQuote")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CRM.Shared.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Contact");
+
+                    b.Navigation("Deal");
+
+                    b.Navigation("Quote");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CRM.Shared.OrderRow", b =>
+                {
+                    b.HasOne("CRM.Shared.Article", "Article")
+                        .WithMany()
+                        .HasForeignKey("IdArticle")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CRM.Shared.Order", "Order")
+                        .WithMany("Rows")
+                        .HasForeignKey("IdOrder")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("IdProduct")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Article");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("CRM.Shared.PriceListItem", b =>
+                {
+                    b.HasOne("CRM.Shared.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("IdCompany")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("IdProduct")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
 
                     b.Navigation("Product");
                 });
@@ -3660,6 +4284,63 @@ namespace CRM.Server.Migrations
                     b.Navigation("Project");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CRM.Shared.Quote", b =>
+                {
+                    b.HasOne("CRM.Shared.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("IdCompany")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.Contact", "Contact")
+                        .WithMany()
+                        .HasForeignKey("IdContact")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CRM.Shared.Deal", "Deal")
+                        .WithMany()
+                        .HasForeignKey("IdDeal")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CRM.Shared.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Contact");
+
+                    b.Navigation("Deal");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CRM.Shared.QuoteRow", b =>
+                {
+                    b.HasOne("CRM.Shared.Article", "Article")
+                        .WithMany()
+                        .HasForeignKey("IdArticle")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CRM.Shared.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("IdProduct")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CRM.Shared.Quote", "Quote")
+                        .WithMany("Rows")
+                        .HasForeignKey("IdQuote")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Article");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Quote");
                 });
 
             modelBuilder.Entity("CRM.Shared.TaskProject", b =>
@@ -4095,6 +4776,16 @@ namespace CRM.Server.Migrations
                     b.Navigation("InterventionTypeLanguages");
                 });
 
+            modelBuilder.Entity("CRM.Shared.Invoice", b =>
+                {
+                    b.Navigation("Rows");
+                });
+
+            modelBuilder.Entity("CRM.Shared.Order", b =>
+                {
+                    b.Navigation("Rows");
+                });
+
             modelBuilder.Entity("CRM.Shared.Product", b =>
                 {
                     b.Navigation("Articles");
@@ -4103,6 +4794,11 @@ namespace CRM.Server.Migrations
             modelBuilder.Entity("CRM.Shared.Project", b =>
                 {
                     b.Navigation("Tickets");
+                });
+
+            modelBuilder.Entity("CRM.Shared.Quote", b =>
+                {
+                    b.Navigation("Rows");
                 });
 
             modelBuilder.Entity("CRM.Shared.Ticket", b =>

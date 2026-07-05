@@ -250,9 +250,6 @@ namespace CRM.Server.Controllers
             }
             else if (await _permitsService.CanGetTicket(ticketChat.IdTicket))
             {
-                var breadcrumb = GetBreadcrumb(ticketChat);
-
-                HttpContext.Response.Headers.Add(ValuesHelper.BreadcrumbHeader, JsonConvert.SerializeObject(breadcrumb));
                 return ticketChat;
             }
             else
@@ -538,22 +535,6 @@ namespace CRM.Server.Controllers
         private bool TicketChatExists(int id)
         {
             return _context.TicketChats.Any(e => e.Id == id);
-        }
-
-
-        private List<BreadcrumbModel>? GetBreadcrumb(TicketChat? ticketChat)
-        {
-            List<BreadcrumbModel> bread = new List<BreadcrumbModel>();
-
-            if (ticketChat == null)
-            {
-                return null;
-            }
-
-            bread.Add(new BreadcrumbModel() { Title = $"Tickets", Url = $"Tickets" });
-            bread.Add(new BreadcrumbModel() { Title = $"{ticketChat.Date.ToString("d")}", Url = null });
-            
-            return bread;
         }
 
         private async Task<TicketChatViewModel?> GetTicket(int idTicket)

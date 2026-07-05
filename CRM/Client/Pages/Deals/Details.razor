@@ -3,6 +3,8 @@
 @using CRM.Shared.Helper
 
 <div class="deal-detail-page">
+    <PageHeader Model="_pageHeader" Visible=@(OnClickCancel == null)></PageHeader>
+
     @if (_loading)
     {
         <Waiting></Waiting>

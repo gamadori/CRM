@@ -15,8 +15,6 @@
 
 @if (_companies != null)
 {
-    
-
     <RadzenDataGrid @ref="grdCompanies" IsLoading="@_isLoading" Count="@_paging.TotalCount" Responsive=true Data="@_companies" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterMode=@_filterMode
                     AllowSorting="true" AllowFiltering="true" AllowPaging="true"
                     PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="CompanyDTO">

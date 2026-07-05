@@ -48,9 +48,6 @@ namespace CRM.Client.Pages.CompanyContracts
         [Inject]
         DialogService DialogService { get; set; }
 
-        [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
-
         [Parameter]
         public int IdCompany { get; set; }
 
@@ -86,10 +83,6 @@ namespace CRM.Client.Pages.CompanyContracts
 
         private string _header = "Company Contracts";
 
-       
-
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>() ;
-
         private ApplicationUser? _user;
 
         private FilterMode _filterMode = FilterMode.Advanced;
@@ -98,8 +91,6 @@ namespace CRM.Client.Pages.CompanyContracts
         private CompanyContractsViews _selectView = CompanyContractsViews.Active;
         protected async override Task OnInitializedAsync()
         {
-            _bread = await BreadCrumbService.ProductTypeAccs(false);
-
             _header = Localize["Company Contracts\""];
 
             _user = await UserSignedService.Get();

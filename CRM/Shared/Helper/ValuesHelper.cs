@@ -14,7 +14,8 @@ namespace CRM.Shared.Helper
         Ticket,
         Contacts,
         Contracts,
-        Customers
+        Customers,
+        Activities
     }
 
     public enum CSVTable

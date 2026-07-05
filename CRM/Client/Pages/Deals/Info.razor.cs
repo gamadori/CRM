@@ -1,4 +1,5 @@
-﻿using CRM.Client.Services;
+﻿using CRM.Client.Models;
+using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
@@ -15,7 +16,9 @@ namespace CRM.Client.Pages.Deals
         Deal,
         Attachments,
         Chat,
-        Tickets
+        Tickets,
+        Quotes,
+        Activities
     }
 
     public partial class Info : ComponentBase
@@ -46,7 +49,7 @@ namespace CRM.Client.Pages.Deals
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
 
         [Parameter]
         public int Id { get; set; }
@@ -76,16 +79,16 @@ namespace CRM.Client.Pages.Deals
 
         private bool _fromDetails = false;
 
-        private List<BreadcrumbModel> _bread = new List<BreadcrumbModel>();
+        private PageHeaderModel _pageHeader = null;
 
         bool singleValue = false;
 
         protected override async Task OnInitializedAsync()
         {
-            
+
             await LoadData();
 
-            _bread = await BreadCrumbService.Deal(false);
+            _pageHeader = await HeaderService.Create();
 
             await base.OnInitializedAsync();
             

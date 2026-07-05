@@ -52,8 +52,6 @@ namespace CRM.Client.Services
 
         Task<APIResponseMessage<T>> Post(T item);
 
-        Task<BreadCrumb<T>> GetWithBreadCrumb(K id, string root);
-
         Task<bool> Delete(K id);
 
         Task<List<I>> GetItems<I>(F data);

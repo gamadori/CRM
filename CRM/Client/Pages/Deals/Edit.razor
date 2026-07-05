@@ -11,17 +11,14 @@
     }
     else
     {
-        <section class="deal-edit-toolbar">
-            <div>
-                <span class="deal-kicker">CRM</span>
-                <h1>@Header</h1>
-                <p>Gestisci valore, fase, cliente e prossima chiusura della trattativa.</p>
-            </div>
-            <button type="button" class="deal-secondary" @onclick="Cancel">
-                <span class="material-icons">close</span>
-                <span>Annulla</span>
-            </button>
-        </section>
+        <PageHeader Model="_pageHeader" Visible=@(OnClickSave == null)>
+            <Actions>
+                <button type="button" class="deal-secondary" @onclick="Cancel">
+                    <span class="material-icons">close</span>
+                    <span>Annulla</span>
+                </button>
+            </Actions>
+        </PageHeader>
 
         @if (!string.IsNullOrWhiteSpace(_messageState))
         {

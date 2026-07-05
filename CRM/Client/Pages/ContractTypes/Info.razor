@@ -11,11 +11,8 @@
 }
 else
 {
-    <div class="page-header">
-        @_item.Name
-    </div>
-    <BlazorBreadCrumb Model=@_bread></BlazorBreadCrumb>
-   
+    <PageHeader Model="_pageHeader"></PageHeader>
+
     <RadzenSelectBar @bind-Value="_selectView" TValue="ContractViews" Change="@((args) => Change(args, "SelectBar with single selection"))" Style="margin-bottom: 20px;">
         <Items>
             <RadzenSelectBarItem Text="@Localize["Contract Type"]" Value="ContractViews.ContractType" />

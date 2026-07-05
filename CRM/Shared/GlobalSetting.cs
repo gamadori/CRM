@@ -40,5 +40,11 @@ namespace CRM.Shared
 
         [Display(Name ="Top Row Colore Sfondo")]
         public string? TopRowBgColor { get; set; }
+
+        [Display(Name = "Aliquota IVA predefinita (%)")]
+        public decimal DefaultVatRate { get; set; } = 22;
+
+        [Display(Name = "Regime fiscale (FatturaPA, es. RF01)")]
+        public string? RegimeFiscale { get; set; } = "RF01";
     }
 }

@@ -1,4 +1,5 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
@@ -28,7 +29,7 @@ namespace CRM.Client.Pages.ContractTypes
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
-        IBreadCrumbService BreadCrumbService { get; set; }
+        IHeaderService HeaderService { get; set; }
         [Parameter]
         public int Id { get; set; }
 
@@ -43,22 +44,18 @@ namespace CRM.Client.Pages.ContractTypes
 
         private ContractType _item = null;
 
-        private List<BreadcrumbModel> _bread = null;
-
-        private string _title;
+        private PageHeaderModel _pageHeader = null;
 
         protected override async Task OnInitializedAsync()
         {
-  
+
             try
             {
 
                 _item = await Service.Get(Id);
 
-                _title = Localize["Details"];
-
                 if (OnClickEdit == null)
-                    _bread = await BreadCrumbService.ContractTypes(false, _item.Name);
+                    _pageHeader = await HeaderService.Create();
 
                
 

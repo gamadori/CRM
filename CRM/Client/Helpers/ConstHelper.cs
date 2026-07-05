@@ -83,7 +83,17 @@ namespace CRM.Client.Helpers
         public static string ContractTypeTicketTypesPath = "api/ContractTypeTicketTypes";
 
         public static string DealsPath = "api/Deals";
-        
+
+        public static string QuotesPath = "api/Quotes";
+
+        public static string OrdersPath = "api/Orders";
+
+        public static string PriceListPath = "api/PriceList";
+
+        public static string InvoicesPath = "api/Invoices";
+
+        public static string ActivitiesPath = "api/Activities";
+
         public static string ExpenseReceiptsPath = "api/ExpenseReceipts";
 
         public static string RolesPath = "api/Roles";
@@ -154,6 +164,14 @@ namespace CRM.Client.Helpers
         public static string ClientContactsPath = "Contacts";
 
         public static string ClientDealPath = "Deals";
+
+        public static string ClientQuotesPath = "Quotes";
+
+        public static string ClientOrdersPath = "Orders";
+
+        public static string ClientPriceListPath = "Settings/PriceList";
+
+        public static string ClientInvoicesPath = "Invoices";
 
         public static string ClientAccessoriesPath = "Settings/Accessories";
 
