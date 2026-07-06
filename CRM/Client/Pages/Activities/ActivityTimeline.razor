@@ -28,14 +28,19 @@
                                 TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
                                 Placeholder="Me stesso" Style="width:100%" />
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label mb-1 small">Scadenza (opz.)</label>
                 <RadzenDatePicker TValue="DateTime?" @bind-Value="_new.DueDate" ShowTime="true" DateFormat="dd/MM/yyyy HH:mm" Style="width:100%" />
             </div>
-            <div class="col-md-9">
+            <div class="col-md-2">
+                <label class="form-label mb-1 small">Promemoria</label>
+                <RadzenDropDown TValue="int" @bind-Value="_reminderMinutes" Data="_reminderOptions"
+                                TextProperty="Text" ValueProperty="Value" Style="width:100%" Disabled="@(_new.DueDate == null)" />
+            </div>
+            <div class="col-md-8">
                 <input class="form-control form-control-sm" @bind="_new.Description" placeholder="Note (facoltative)" />
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <RadzenButton class="w-100" Icon="add" Text="Aggiungi" ButtonStyle="ButtonStyle.Primary"
                               Size="ButtonSize.Small" Disabled="@(_saving || string.IsNullOrWhiteSpace(_new.Subject))" Click="Add" />
             </div>
@@ -112,7 +117,17 @@ else
     private List<ActivityDTO>? _items;
     private List<ApplicationUser> _users = new();
     private Activity _new = new() { Kind = ActivityKind.Note };
+    private int _reminderMinutes;
     private bool _saving;
+
+    private record ReminderOption(string Text, int Value);
+    private readonly List<ReminderOption> _reminderOptions = new()
+    {
+        new("Nessuno", 0),
+        new("15 min prima", 15),
+        new("1 ora prima", 60),
+        new("1 giorno prima", 1440),
+    };
 
     private record KindOption(string Text, ActivityKind Value);
     private readonly List<KindOption> _kinds = new()
@@ -143,10 +158,16 @@ else
             _new.EntityType = EntityType;
             _new.EntityId = EntityId;
             _new.State = ActivityState.Planned;
+            // Promemoria derivato dalla scadenza (scadenza − offset)
+            _new.ReminderAt = (_new.DueDate != null && _reminderMinutes > 0)
+                ? _new.DueDate.Value.AddMinutes(-_reminderMinutes)
+                : null;
+
             var resp = await ActivityService.PostAsync(_new);
             if (resp.State)
             {
                 _new = new Activity { Kind = ActivityKind.Note };
+                _reminderMinutes = 0;
                 await Load();
             }
             else

@@ -163,6 +163,8 @@ builder.Services.AddScoped<IInvoicesService, InvoicesService>();
 
 builder.Services.AddScoped<IActivitiesService, ActivitiesService>();
 
+builder.Services.AddHostedService<ReminderBackgroundService>();
+
 // Provider di fatturazione elettronica: di default nessuno (genera XML ma non trasmette).
 // Sostituire con un adapter specifico del provider adottato (Aruba, InfoCert, TeamSystem, ...).
 builder.Services.AddScoped<IEInvoiceProvider, NullEInvoiceProvider>();

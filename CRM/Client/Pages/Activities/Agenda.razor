@@ -8,8 +8,11 @@
 @using Radzen
 @using Radzen.Blazor
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @attribute [Authorize]
 @inject IActivityService ActivityService
+@inject ITicketsService TicketsService
+@inject AuthenticationStateProvider AuthProvider
 @inject IHeaderService HeaderService
 @inject NavigationManager Nav
 @inject NotificationService Notification
@@ -71,6 +74,11 @@
         }
     </div>
     <div class="col-lg-7">
+        <div class="d-flex gap-3 mb-2 small text-muted">
+            <span><span class="badge" style="background:#1976d2">&nbsp;</span> Attività</span>
+            <span><span class="badge" style="background:#c62828">&nbsp;</span> Scadute</span>
+            <span><span class="badge" style="background:@TicketColor">&nbsp;</span> Ticket assegnati</span>
+        </div>
         <RadzenScheduler @ref="_scheduler" TItem="AgendaItem" Data="_appointments" style="height: 620px;"
                          StartProperty="Start" EndProperty="End" TextProperty="Text" SelectedIndex="0"
                          AppointmentSelect="OnAppointmentSelect" AppointmentRender="OnAppointmentRender">
@@ -87,13 +95,16 @@
     private List<ActivityDTO>? _items;
     private List<AgendaItem> _appointments = new();
     private int _overdue, _today, _week;
+    private string? _currentUserId;
+    private const string TicketColor = "#455a64";
 
     public class AgendaItem
     {
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
         public string Text { get; set; } = string.Empty;
-        public ActivityDTO Activity { get; set; } = default!;
+        public string Color { get; set; } = "#607d8b";
+        public string Url { get; set; } = string.Empty;
     }
 
     private record Group(string Title, string Class, List<ActivityDTO> Items);
@@ -102,6 +113,9 @@
     protected override async Task OnInitializedAsync()
     {
         _pageHeader = await HeaderService.Create();
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+            _currentUserId = authState.User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
         await Load();
     }
 
@@ -124,29 +138,66 @@
             new("Prossimi giorni", "text-body", _items.Where(a => a.DueDate >= todayEnd).OrderBy(a => a.DueDate).ToList()),
         };
 
-        _appointments = _items.Where(a => a.DueDate != null).Select(a => new AgendaItem
+        // Attività con scadenza
+        var appts = _items.Where(a => a.DueDate != null).Select(a => new AgendaItem
         {
             Start = a.DueDate!.Value,
             End = a.DueDate.Value.AddMinutes(30),
             Text = a.Subject,
-            Activity = a
+            Color = a.DueDate < now ? "#c62828" : ActivityUi.Color(a.Kind),
+            Url = EntityUrl(a)
         }).ToList();
+
+        // Ticket assegnati all'utente (read-only), nella finestra visibile
+        appts.AddRange(await LoadMyTicketsAsync());
+
+        _appointments = appts;
+    }
+
+    private async Task<List<AgendaItem>> LoadMyTicketsAsync()
+    {
+        var result = new List<AgendaItem>();
+        if (string.IsNullOrEmpty(_currentUserId))
+            return result;
+
+        var filter = new TicketFilter
+        {
+            IdUserAssigned = _currentUserId,
+            DateFrom = DateTime.Today.AddDays(-45),
+            DateTo = DateTime.Today.AddDays(120)
+        };
+
+        var tickets = await TicketsService.GetList(filter);
+        if (tickets?.Items == null)
+            return result;
+
+        foreach (var t in tickets.Items.Where(x => x.Date != null))
+        {
+            var start = t.Date!.Value.Date + (t.Time?.ToTimeSpan() ?? TimeSpan.Zero);
+            var end = t.DateEnd ?? start.AddHours(1);
+            if (end <= start) end = start.AddHours(1);
+
+            result.Add(new AgendaItem
+            {
+                Start = start,
+                End = end,
+                Text = $"🎫 {t.Numero} · {t.Company}",
+                Color = TicketColor,
+                Url = $"/Tickets/{t.Id}/Details"
+            });
+        }
+        return result;
     }
 
     private void OnAppointmentRender(SchedulerAppointmentRenderEventArgs<AgendaItem> args)
     {
-        var a = args.Data.Activity;
-        if (a.DueDate < DateTime.Now)
-            args.Attributes["style"] = "background: #c62828;";
-        else
-            args.Attributes["style"] = $"background: {ActivityUi.Color(a.Kind)};";
+        args.Attributes["style"] = $"background: {args.Data.Color};";
     }
 
     private void OnAppointmentSelect(SchedulerAppointmentSelectEventArgs<AgendaItem> args)
     {
-        var url = EntityUrl(args.Data.Activity);
-        if (!string.IsNullOrEmpty(url))
-            Nav.NavigateTo(url);
+        if (!string.IsNullOrEmpty(args.Data.Url))
+            Nav.NavigateTo(args.Data.Url);
     }
 
     private async Task Complete(ActivityDTO a)

@@ -44,6 +44,9 @@ namespace CRM.Shared
         [Display(Name = "Conferma Firma")]
         SignatureConfirm,
 
+        [Display(Name = "Promemoria Attività")]
+        NoticeReminder,
+
     }
 
     [Table("EmailTemplates")]
