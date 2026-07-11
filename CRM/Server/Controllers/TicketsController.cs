@@ -1059,10 +1059,25 @@ namespace CRM.Server.Controllers
                 }
             }
 
-            var top = scored
+            // Ordina per similarità e, a parità, per data di chiusura più recente (una soluzione
+            // recente è più probabilmente ancora valida). Poi seleziona i primi N scartando i
+            // doppioni: ticket diversi ma con la STESSA soluzione registrata non aggiungono
+            // informazione, riempirebbero solo il contesto a scapito di casi realmente diversi.
+            var seenSolutions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var top = new List<(CRM.Shared.Models.TicketSimilarityResult Result, int? IdProduct)>();
+            foreach (var s in scored
                 .OrderByDescending(s => s.Result.SimilarityPercentage)
-                .Take(Math.Max(1, topN))
-                .ToList();
+                .ThenByDescending(s => s.Result.ClosedDate ?? DateTime.MinValue))
+            {
+                // Deduplica solo le soluzioni non vuote: teniamo il primo occorso (più simile/recente).
+                var solutionKey = (s.Result.Solution ?? string.Empty).Trim();
+                if (solutionKey.Length > 0 && !seenSolutions.Add(solutionKey))
+                    continue;
+
+                top.Add(s);
+                if (top.Count >= Math.Max(1, topN))
+                    break;
+            }
 
             var productIds = top
                 .Where(s => s.IdProduct.HasValue)

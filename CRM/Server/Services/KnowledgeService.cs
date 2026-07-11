@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using static CRM.Shared.LogEvent;
 
@@ -298,18 +299,39 @@ namespace CRM.Server.Services
                 }
             }
 
-            return matches
-                .OrderByDescending(m => m.score)
-                .Take(Math.Max(1, top))
-                .Select(m => m.match)
-                .ToList();
+            // Ordina per punteggio e seleziona i primi N scartando i chunk con contenuto identico
+            // (import duplicati o voci ripetute): occuperebbero uno slot senza aggiungere nulla.
+            var seenContent = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var result = new List<KnowledgeMatch>();
+            foreach (var m in matches.OrderByDescending(m => m.score))
+            {
+                var contentKey = (m.match.Content ?? string.Empty).Trim();
+                if (contentKey.Length > 0 && !seenContent.Add(contentKey))
+                    continue;
+
+                result.Add(m.match);
+                if (result.Count >= Math.Max(1, top))
+                    break;
+            }
+
+            return result;
         }
 
         // ---------- Helper ----------
 
         /// <summary>
-        /// Suddivide il testo in blocchi coerenti (per paragrafo) entro <paramref name="maxLen"/> caratteri.
-        /// I paragrafi troppo lunghi vengono spezzati in modo forzato.
+        /// Confine di frase: fine riga logica dopo . ! ? … seguita da spazio e da un
+        /// nuovo inizio (maiuscola, cifra, virgolette, trattino). Il lookahead sulla
+        /// maiuscola evita di spezzare su abbreviazioni ("es. il") o numeri ("1.800").
+        /// </summary>
+        private static readonly Regex SentenceBoundary =
+            new(@"(?<=[.!?…])\s+(?=[\p{Lu}0-9""'«\-])", RegexOptions.Compiled);
+
+        /// <summary>
+        /// Suddivide il testo in blocchi coerenti entro <paramref name="maxLen"/> caratteri.
+        /// I blocchi vengono chiusi sempre a fine paragrafo o a fine frase (al punto):
+        /// una frase non viene mai spezzata a metà, a meno che da sola superi il limite,
+        /// nel qual caso viene divisa per parole (e solo in ultima istanza per caratteri).
         /// </summary>
         private static List<string> ChunkText(string text, int maxLen)
         {
@@ -324,29 +346,86 @@ namespace CRM.Server.Services
                 .Where(p => p.Length > 0);
 
             var sb = new StringBuilder();
-            foreach (var p in paragraphs)
-            {
-                if (p.Length > maxLen)
-                {
-                    if (sb.Length > 0) { result.Add(sb.ToString().Trim()); sb.Clear(); }
-                    for (int i = 0; i < p.Length; i += maxLen)
-                        result.Add(p.Substring(i, Math.Min(maxLen, p.Length - i)).Trim());
-                    continue;
-                }
 
-                if (sb.Length + p.Length + 1 > maxLen)
+            // Aggiunge un frammento (garantito <= maxLen) al buffer, chiudendo il chunk
+            // corrente se l'aggiunta lo farebbe sforare: così un chunk termina sempre a
+            // fine frase/paragrafo e mai a metà di una parola.
+            void AddPiece(string piece, char separator)
+            {
+                if (sb.Length > 0 && sb.Length + piece.Length + 1 > maxLen)
                 {
                     result.Add(sb.ToString().Trim());
                     sb.Clear();
                 }
+                if (sb.Length > 0) sb.Append(separator);
+                sb.Append(piece);
+            }
 
-                sb.Append(p).Append('\n');
+            foreach (var p in paragraphs)
+            {
+                // Il paragrafo entra intero: lo teniamo unito come unità.
+                if (p.Length <= maxLen)
+                {
+                    AddPiece(p, '\n');
+                    continue;
+                }
+
+                // Paragrafo troppo lungo: lo spezziamo per frasi (fino al punto).
+                foreach (var sentence in SentenceBoundary.Split(p))
+                {
+                    var s = sentence.Trim();
+                    if (s.Length == 0)
+                        continue;
+
+                    if (s.Length <= maxLen)
+                    {
+                        AddPiece(s, ' ');
+                    }
+                    else
+                    {
+                        // Frase più lunga del limite: ripiego sulle parole.
+                        foreach (var piece in SplitByWords(s, maxLen))
+                            AddPiece(piece, ' ');
+                    }
+                }
             }
 
             if (sb.Length > 0)
                 result.Add(sb.ToString().Trim());
 
             return result.Where(c => c.Length > 0).ToList();
+        }
+
+        /// <summary>
+        /// Divide un testo troppo lungo lungo i confini di parola, senza superare
+        /// <paramref name="maxLen"/>. Una singola parola più lunga del limite (raro:
+        /// URL, codici) viene tagliata per caratteri come ultima risorsa.
+        /// </summary>
+        private static IEnumerable<string> SplitByWords(string text, int maxLen)
+        {
+            var sb = new StringBuilder();
+            foreach (var word in text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (word.Length > maxLen)
+                {
+                    if (sb.Length > 0) { yield return sb.ToString(); sb.Clear(); }
+                    for (int i = 0; i < word.Length; i += maxLen)
+                        yield return word.Substring(i, Math.Min(maxLen, word.Length - i));
+                    continue;
+                }
+
+                if (sb.Length > 0 && sb.Length + word.Length + 1 > maxLen)
+                {
+                    yield return sb.ToString();
+                    sb.Clear();
+                }
+
+                if (sb.Length > 0) sb.Append(' ');
+                sb.Append(word);
+            }
+
+            if (sb.Length > 0)
+                yield return sb.ToString();
         }
 
         private async Task<string?> TryBuildEmbeddingAsync(string title, string content)
