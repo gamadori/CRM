@@ -3,6 +3,7 @@ using CRM.Client.Helpers;
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
@@ -10,9 +11,6 @@ using Radzen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Threading.Tasks;
 using static BlazoringComponents.Scheduler.AGScheduler<CRM.Client.Models.TicketSchedulerViewModel>;
 using static CRM.Client.Helpers.PageHelper;
@@ -42,11 +40,12 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         DialogService DialogService { get; set; }
 
-        // ✅ NUOVO: Inject HttpClient per API calls
         [Inject]
-        HttpClient HttpClient { get; set; }
+        NotificationService NotificationService { get; set; }
 
-       
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
         [Parameter]
         public DateTime DateCurrent
         {
@@ -119,22 +118,22 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _loading = true;
 
-        // ✅ NUOVO: Cache per utenti assegnati (evita chiamate duplicate)
-        private Dictionary<int, List<ApplicationUser>> _ticketAssignedUsersCache = new();
+        private PageHeaderModel? _pageHeader;
 
         protected override async Task OnInitializedAsync()
         {
-            // ✅ NUOVO: Imposta filtri da query string se presenti
+            _pageHeader = await HeaderService.Create();
+
             if (!string.IsNullOrEmpty(QueryUserId))
             {
                 _idUser = QueryUserId;
-                IdUserAssigned = QueryUserId; // Sincronizza con il parametro bound
+                IdUserAssigned = QueryUserId;
             }
 
             if (!string.IsNullOrEmpty(QueryDate) && DateTime.TryParse(QueryDate, out var parsedDate))
             {
                 _dateCurrent = parsedDate;
-                DateCurrent = parsedDate; // Sincronizza con il parametro bound
+                DateCurrent = parsedDate;
             }
             
             await LoadUsers();
@@ -145,8 +144,6 @@ namespace CRM.Client.Pages.Tickets
 
         private async Task<List<TicketSchedulerViewModel>> LoadTickets()
         {
-            string backColor = "white";
-
             _loading = true; 
 
             TicketFilter filter = new TicketFilter();
@@ -159,109 +156,34 @@ namespace CRM.Client.Pages.Tickets
             filter.DateFrom = _dateStart;
             filter.DateTo = _dateEnd;
 
-            var tickets = await _serviceTicket.GetList(filter);
+            var tickets = await _serviceTicket.GetScheduleItemsAsync(filter);
+            _tickets = tickets.Select(ToSchedulerViewModel).ToList();
 
-            _tickets = new List<TicketSchedulerViewModel>();
-            _ticketAssignedUsersCache.Clear(); // Pulisci cache
-
-            if (tickets != null)
-            {
-                foreach (var t in tickets.Items)
-                {
-                    // ✅ NUOVO: Carica TUTTI gli utenti assegnati dal database
-                    var assignedUsers = await LoadAssignedUsersForTicket(t.Id);
-                    
-                    // Determina colore di sfondo (usa il primo utente assegnato come principale)
-                    if (assignedUsers.Any())
-                    {
-                        var mainUser = assignedUsers.First();
-                        backColor = mainUser.Color ?? "white";
-                    }
-                    else
-                    {
-                        backColor = "white";
-                    }
-
-                    _tickets.Add(new TicketSchedulerViewModel()
-                    {
-                        Id = t.Id,
-                        Date = t.Date,
-                        Time = t.Time,
-                        DateEnd = t.DateEnd,
-                        Company = t.Company,
-                        
-                        // ⚠️ LEGACY: Mantieni User per retrocompatibilità
-                        User = assignedUsers.Any() ? assignedUsers.First().NameComplete : null,
-                        
-                        // ✅ NUOVO: Popola liste utenti multipli
-                        AssignedUserIds = assignedUsers.Select(u => u.Id).ToList(),
-                        AssignedUserNames = assignedUsers.Select(u => u.NameComplete).ToList(),
-                        
-                        BackColor = backColor,
-                        Description = t.Description,
-
-                        // ✅ NUOVO: Popola STATO del ticket
-                        Status = t.IdState ?? 0,
-                        Expired = t.DateExpired.HasValue && t.DateExpired.Value < DateTime.Now,
-                        StatusColor = t.StateColor,
-                        StatusText = t.State  // ✅ FIX: Usa State invece di StateDesc
-
-                    }); 
-                }
-            }
             _loading = false;
             StateHasChanged();
             return _tickets;
         }
 
-        /// <summary>
-        /// ✅ NUOVO: Carica tutti gli utenti assegnati a un ticket dalla tabella TicketUserAssignments
-        /// Usa cache per evitare chiamate duplicate
-        /// </summary>
-        private async Task<List<ApplicationUser>> LoadAssignedUsersForTicket(int ticketId)
+        private static TicketSchedulerViewModel ToSchedulerViewModel(TicketScheduleItemDTO ticket)
         {
-            // Controlla cache
-            if (_ticketAssignedUsersCache.TryGetValue(ticketId, out var cachedUsers))
+            var mainUser = ticket.AssignedUsers.FirstOrDefault();
+            return new TicketSchedulerViewModel
             {
-                return cachedUsers;
-            }
-
-            try
-            {
-                // Chiamata API per recuperare ID utenti assegnati
-                var userIds = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{ticketId}/assigned-users");
-
-                if (userIds == null || !userIds.Any())
-                {
-                    _ticketAssignedUsersCache[ticketId] = new List<ApplicationUser>();
-                    return _ticketAssignedUsersCache[ticketId];
-                }
-
-                // Recupera dettagli utenti dalla lista utenti già caricata
-                var users = _users.Where(u => userIds.Contains(u.Id)).ToList();
-
-                // Se alcuni utenti non sono nella lista locale, caricali dal servizio
-                var missingUserIds = userIds.Where(id => !_users.Any(u => u.Id == id)).ToList();
-                foreach (var userId in missingUserIds)
-                {
-                    var user = await _serviceUser.Get(userId);
-                    if (user != null)
-                    {
-                        users.Add(user);
-                        _users.Add(user); // Aggiungi alla cache locale
-                    }
-                }
-
-                // Salva in cache
-                _ticketAssignedUsersCache[ticketId] = users;
-                return users;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Errore caricamento utenti assegnati per ticket {ticketId}: {ex.Message}");
-                _ticketAssignedUsersCache[ticketId] = new List<ApplicationUser>();
-                return _ticketAssignedUsersCache[ticketId];
-            }
+                Id = ticket.Id,
+                Date = ticket.Date,
+                Time = ticket.Time,
+                DateEnd = ticket.DateEnd,
+                Company = ticket.Company ?? string.Empty,
+                User = mainUser?.NameComplete,
+                AssignedUserIds = ticket.AssignedUsers.Select(u => u.Id).ToList(),
+                AssignedUserNames = ticket.AssignedUsers.Select(u => u.NameComplete).Where(n => !string.IsNullOrWhiteSpace(n)).ToList(),
+                BackColor = mainUser?.Color ?? "white",
+                Description = ticket.Description ?? string.Empty,
+                Status = ticket.IdState ?? 0,
+                Expired = ticket.DateExpired.HasValue && ticket.DateExpired.Value < DateTime.Now,
+                StatusColor = ticket.StateColor ?? string.Empty,
+                StatusText = ticket.State ?? string.Empty
+            };
         }
 
         private async Task<List<ApplicationUser>> LoadUsers()
@@ -309,7 +231,7 @@ namespace CRM.Client.Pages.Tickets
         private async Task NewTicket(DateTime date)
         {
             
-            await DialogService.OpenAsync<Edit>(Localize["New Ticket"], new Dictionary<string, object>() { { "Date", date }, { "OnClickCancel", CloseDialog }, { "OnClickSave", CloseDialog }, { "Scheduler", false }, { "PageMode", PageModality.Dialog } },
+            await DialogService.OpenAsync<Edit>(Localize["New Ticket"], new Dictionary<string, object>() { { "Date", date }, { "OnClickCancel", CloseDialog }, { "OnClickSave", CloseDialog }, { "ShowPlanningPicker", false }, { "PageMode", PageModality.Dialog } },
                 new DialogOptions() { Height = "auto", Width = "100%", Top="0px" });
 
 
@@ -318,14 +240,72 @@ namespace CRM.Client.Pages.Tickets
 
         }
 
+        private async Task MoveTicket(SchedulerTicketMoveArgs args)
+        {
+            if (args?.Ticket == null || !int.TryParse(args.Ticket.Id, out var idTicket))
+                return;
+
+            var currentDate = args.Ticket.DateStart.Date;
+            var currentTime = args.Ticket.TimeStart;
+            var currentEnd = args.Ticket.DateEnd;
+
+            if (currentDate == args.Date.Date &&
+                currentTime == args.Time &&
+                currentEnd == args.DateEnd)
+            {
+                return;
+            }
+
+            var currentSchedule = FormatSchedule(currentDate, currentTime, currentEnd);
+            var newSchedule = FormatSchedule(args.Date, args.Time, args.DateEnd);
+            var confirmed = await DialogService.Confirm(
+                $"Confermi lo spostamento del ticket #{idTicket}?\n\nDa: {currentSchedule}\nA: {newSchedule}",
+                "Conferma nuova pianificazione",
+                new ConfirmOptions
+                {
+                    OkButtonText = "Sposta ticket",
+                    CancelButtonText = "Annulla"
+                });
+
+            if (confirmed != true)
+                return;
+
+            var request = new TicketScheduleUpdateRequest
+            {
+                Date = args.Date,
+                Time = args.Time,
+                DateEnd = args.DateEnd
+            };
+
+            var updated = await _serviceTicket.UpdateScheduleAsync(idTicket, request);
+            if (updated)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Pianificazione", $"Ticket #{idTicket} spostato");
+                await schedulerTickets.Update();
+                return;
+            }
+
+            NotificationService.Notify(NotificationSeverity.Error, "Pianificazione", $"Impossibile spostare il ticket #{idTicket}");
+            await schedulerTickets.Update();
+        }
+
+        private static string FormatSchedule(DateTime date, TimeOnly? time, DateTime dateEnd)
+        {
+            var start = time.HasValue
+                ? $"{date:dd/MM/yyyy} alle {time.Value:HH\\:mm}"
+                : $"{date:dd/MM/yyyy}, senza orario";
+
+            if (dateEnd <= date.Date)
+                return start;
+
+            return $"{start} - fine {dateEnd:dd/MM/yyyy HH:mm}";
+        }
+
         private void  CloseDialog()
         {
             DialogService.Close();
         }
 
-        /// <summary>
-        /// ✅ NUOVO: Naviga alla vista Timeline mantenendo filtri e data corrente
-        /// </summary>
         private void SwitchToTimeline()
         {
             var queryParams = new List<string>();
@@ -340,6 +320,11 @@ namespace CRM.Client.Pages.Tickets
             var queryString = queryParams.Any() ? "?" + string.Join("&", queryParams) : "";
 
             NavigationManager.NavigateTo($"/Tickets/Timeline{queryString}");
+        }
+
+        private void GoToAgenda()
+        {
+            NavigationManager.NavigateTo("/Agenda");
         }
     }
 }

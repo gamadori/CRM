@@ -2,6 +2,7 @@ using CRM.Client.Handlers;
 using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using CRM.Shared.Resources;
 using MediatR;
 using Microsoft.AspNetCore.Components;
@@ -99,6 +100,10 @@ namespace CRM.Client
             builder.Services.AddTransient<INavMenuService, NavMenuService>();
             builder.Services.AddTransient<IDealService, ProxyDealService>();
 
+            builder.Services.AddTransient<ILeadService, ProxyLeadService>();
+
+            builder.Services.AddTransient<IWorkflowAutomationClientService, ProxyWorkflowAutomationService>();
+
             builder.Services.AddTransient<IQuoteService, ProxyQuoteService>();
 
             builder.Services.AddTransient<IOrderService, ProxyOrderService>();
@@ -108,6 +113,7 @@ namespace CRM.Client
             builder.Services.AddTransient<IInvoiceService, ProxyInvoiceService>();
 
             builder.Services.AddTransient<IActivityService, ProxyActivityService>();
+            builder.Services.AddTransient<ICalendarService, ProxyCalendarService>();
             builder.Services.AddTransient<IManyToManyService<ProductParentChildModel>, ProductParentChildService>();
             builder.Services.AddScoped<IEnumService, EnumService>();
             builder.Services.AddScoped<IAccessoryTypesService, AccessoryTypesService>();
@@ -126,6 +132,7 @@ namespace CRM.Client
             builder.Services.AddScoped<IProjectsService, ProjectsService>();
             builder.Services.AddScoped<ILanguagesService, ProxyLanguagesService>();
             builder.Services.AddScoped<ISmtpSettingsService, ProxySmtpSettingsService>();
+            builder.Services.AddScoped<IEmailInboxService, ProxyEmailInboxService>();
             builder.Services.AddScoped<ILocalizationService, LocalizationService>();
             builder.Services.AddScoped<IHeaderService, HeaderService>();
             builder.Services.AddScoped<ILogosService, ProxyLogosService>();
@@ -249,6 +256,11 @@ namespace CRM.Client
                 await DynamicNotificationHandlers.Publish(notificationJson);
             });
 
+            HubHelper.HubConnection.On<MaintenanceNoticeDTO>("MaintenanceNotice", notice =>
+            {
+                HubHelper.SetMaintenanceNotice(notice);
+            });
+
             await HubHelper.HubConnection.StartAsync();
 
             await app.RunAsync();
@@ -257,7 +269,10 @@ namespace CRM.Client
         public static class DynamicNotificationHandlers
         {
             private static Dictionary<Type, List<(object, Func<SerializedNotification, Task>)>> _handlers = new Dictionary<Type, List<(object, Func<SerializedNotification, Task>)>>();
-            public static void Register<T>(INotificationHandler<T> handler) where T : SerializedNotification
+            // Non generico: un handler può implementare più INotificationHandler<T>; per ciascuna
+            // interfaccia registra un delegato che invoca la Handle specifica di quel tipo (via reflection),
+            // così il dispatch resta corretto anche con più tipi di notifica sullo stesso componente.
+            public static void Register(object handler)
             {
                 lock (_handlers)
                 {
@@ -271,16 +286,23 @@ namespace CRM.Client
                     foreach (var item in handlerInterfaces)
                     {
                         var notificationType = item.GenericTypeArguments.First();
+                        if (!typeof(SerializedNotification).IsAssignableFrom(notificationType))
+                            continue;
+
+                        var handleMethod = item.GetMethod("Handle");
+                        if (handleMethod == null)
+                            continue;
+
                         if (!_handlers.TryGetValue(notificationType, out var handlers))
                         {
                             handlers = new List<(object, Func<SerializedNotification, Task>)>();
                             _handlers.Add(notificationType, handlers);
                         }
-                        handlers.Add((handler, async s => await handler.Handle((T)s, default(CancellationToken))));
+                        handlers.Add((handler, async s => await (Task)handleMethod.Invoke(handler, new object[] { s, default(CancellationToken) })));
                     }
                 }
             }
-            public static void Unregister<T>(INotificationHandler<T> handler) where T : SerializedNotification
+            public static void Unregister(object handler)
             {
                 lock (_handlers)
                 {

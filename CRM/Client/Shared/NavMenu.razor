@@ -32,28 +32,130 @@
             @if (_expandHome)
             {
                 <div class="nav-submenu">
-                    <!-- DashBoard -->
                     <NavLink class="nav-link submenu-link" href="/" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">dashboard</span>
                         <span class="nav-text">@Localize["DashBoard"]</span>
                     </NavLink>
-                    <!-- Aziende -->
-                    <NavLink class="nav-link submenu-link" href="Companies" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">domain</span>
-                        <span class="nav-text">@Localize["Aziende"]</span>
-                    </NavLink>
 
-                    <!-- Contacts -->
-                    <NavLink class="nav-link submenu-link" href="Contacts" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">contacts</span>
-                        <span class="nav-text">@Localize["Contacts"]</span>
-                    </NavLink>
+                    <div class="nav-item">
+                        <div class="nav-link submenu-link" @onclick="()=>_expandCRM = !_expandCRM">
+                            <span class="material-icons nav-icon">groups</span>
+                            <span class="nav-text">CRM</span>
+                            <span class="material-icons expand-icon-small">@(_expandCRM ? "expand_less" : "expand_more")</span>
+                        </div>
 
-                    <!-- Prodotti (with sub-submenu) -->
+                        @if (_expandCRM)
+                        {
+                            <div class="nav-submenu-2">
+                                <NavLink class="nav-link submenu-link-2" href="Companies" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">domain</span>
+                                    <span class="nav-text">@Localize["Aziende"]</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="Contacts" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">contacts</span>
+                                    <span class="nav-text">@Localize["Contacts"]</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="Agenda" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">event</span>
+                                    <span class="nav-text">@Localize["Agenda"]</span>
+                                </NavLink>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="nav-item">
+                        <div class="nav-link submenu-link" @onclick="()=>_expandCommerciale = !_expandCommerciale">
+                            <span class="material-icons nav-icon">trending_up</span>
+                            <span class="nav-text">Commerciale</span>
+                            <span class="material-icons expand-icon-small">@(_expandCommerciale ? "expand_less" : "expand_more")</span>
+                        </div>
+
+                        @if (_expandCommerciale)
+                        {
+                            <div class="nav-submenu-2">
+                                <NavLink class="nav-link submenu-link-2" href="Leads" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">person_search</span>
+                                    <span class="nav-text">Lead</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="Deals" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">handshake</span>
+                                    <span class="nav-text">@Localize["Deals"]</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="Deals/Forecast" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">query_stats</span>
+                                    <span class="nav-text">Forecast</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="Quotes" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">request_quote</span>
+                                    <span class="nav-text">@Localize["Quotes"]</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="Orders" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">shopping_cart</span>
+                                    <span class="nav-text">@Localize["Orders"]</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="Invoices" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">receipt_long</span>
+                                    <span class="nav-text">@Localize["Invoices"]</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="WorkflowAutomations" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">rule</span>
+                                    <span class="nav-text">Automazioni</span>
+                                </NavLink>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="nav-item">
+                        <div class="nav-link submenu-link" @onclick="()=>_expandService = !_expandService">
+                            <span class="material-icons nav-icon">support_agent</span>
+                            <span class="nav-text">Service</span>
+                            <span class="material-icons expand-icon-small">@(_expandService ? "expand_less" : "expand_more")</span>
+                        </div>
+
+                        @if (_expandService)
+                        {
+                            <div class="nav-submenu-2">
+                                <NavLink class="nav-link submenu-link-2" href="Tickets" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">confirmation_number</span>
+                                    <span class="nav-text">@Localize["Tickets"]</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="Tickets/Schedule" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">event_note</span>
+                                    <span class="nav-text">Pianificazione Ticket</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2" href="Projects" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">account_tree</span>
+                                    <span class="nav-text">@Localize["Projects"]</span>
+                                </NavLink>
+
+                                <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                                    <NavLink class="nav-link submenu-link-2" href="TicketFeedbacks" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                                        <span class="material-icons nav-icon-small">rate_review</span>
+                                        <span class="nav-text">Feedback Clienti</span>
+                                        @if (_unreadFeedbacksCount > 0)
+                                        {
+                                            <span class="badge bg-danger ms-auto">@_unreadFeedbacksCount</span>
+                                        }
+                                    </NavLink>
+                                </AuthorizeView>
+                            </div>
+                        }
+                    </div>
+
                     <div class="nav-item">
                         <div class="nav-link submenu-link" @onclick="()=>_expandMenuProdotti = !_expandMenuProdotti">
-                            <span class="material-icons nav-icon">layers</span>
-                            <span class="nav-text">@Localize["Products"]</span>
+                            <span class="material-icons nav-icon">inventory_2</span>
+                            <span class="nav-text">Catalogo</span>
                             <span class="material-icons expand-icon-small">@(_expandMenuProdotti ? "expand_less" : "expand_more")</span>
                         </div>
 
@@ -71,62 +173,13 @@
                                 </NavLink>
 
                                 <NavLink class="nav-link submenu-link-2" href="Articles" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                                    <span class="material-icons nav-icon-small">inventory</span>
+                                    <span class="material-icons nav-icon-small">precision_manufacturing</span>
                                     <span class="nav-text">@Localize["Articles"]</span>
                                 </NavLink>
                             </div>
                         }
                     </div>
 
-                    <!-- Tickets -->
-                    <NavLink class="nav-link submenu-link" href="Tickets" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">support_agent</span>
-                        <span class="nav-text">@Localize["Tickets"]</span>
-                    </NavLink>
-
-                    <!-- Schedule -->
-                    <NavLink class="nav-link submenu-link" href="Tickets/Schedule" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">schedule</span>
-                        <span class="nav-text">@Localize["Schedule"]</span>
-                    </NavLink>
-
-                    <!-- Projects -->
-                    <NavLink class="nav-link submenu-link" href="Projects" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">apps</span>
-                        <span class="nav-text">@Localize["Projects"]</span>
-                    </NavLink>
-
-                    <!-- Deals -->
-                    <NavLink class="nav-link submenu-link" href="Deals" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">forum</span>
-                        <span class="nav-text">@Localize["Deals"]</span>
-                    </NavLink>
-
-                    <!-- Agenda -->
-                    <NavLink class="nav-link submenu-link" href="Agenda" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">event</span>
-                        <span class="nav-text">@Localize["Agenda"]</span>
-                    </NavLink>
-
-                    <!-- Preventivi -->
-                    <NavLink class="nav-link submenu-link" href="Quotes" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">request_quote</span>
-                        <span class="nav-text">@Localize["Quotes"]</span>
-                    </NavLink>
-
-                    <!-- Ordini -->
-                    <NavLink class="nav-link submenu-link" href="Orders" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">shopping_cart</span>
-                        <span class="nav-text">@Localize["Orders"]</span>
-                    </NavLink>
-
-                    <!-- Fatture -->
-                    <NavLink class="nav-link submenu-link" href="Invoices" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">receipt_long</span>
-                        <span class="nav-text">@Localize["Invoices"]</span>
-                    </NavLink>
-
-                    <!-- AI Assistant (with sub-submenu) -->
                     <div class="nav-item">
                         <div class="nav-link submenu-link highlight-ai" @onclick="()=>_expandAI = !_expandAI">
                             <span class="material-icons nav-icon">auto_awesome</span>
@@ -137,40 +190,23 @@
                         @if (_expandAI)
                         {
                             <div class="nav-submenu-2">
-                                <!-- AI Search -->
                                 <NavLink class="nav-link submenu-link-2 highlight-ai" href="Tickets/Search" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                                     <span class="material-icons nav-icon-small">psychology</span>
                                     <span class="nav-text">@Localize["Search"] AI</span>
                                 </NavLink>
 
-                                <!-- AI Assistant (chat) -->
                                 <NavLink class="nav-link submenu-link-2 highlight-ai" href="Tickets/Assistant" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                                     <span class="material-icons nav-icon-small">smart_toy</span>
                                     <span class="nav-text">@Localize["Assistant"]</span>
                                 </NavLink>
 
-                                <!-- AI Data Assistant (query dati CRM) -->
                                 <NavLink class="nav-link submenu-link-2 highlight-ai" href="Tickets/DataAssistant" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                                     <span class="material-icons nav-icon-small">storage</span>
                                     <span class="nav-text">@Localize["DataAssistant"]</span>
                                 </NavLink>
-
-                               
                             </div>
                         }
                     </div>
-
-                    <!-- Feedback Clienti (NUOVO) -->
-                    <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
-                        <NavLink class="nav-link submenu-link" href="TicketFeedbacks" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                            <span class="material-icons nav-icon">rate_review</span>
-                            <span class="nav-text">Feedback Clienti</span>
-                            @if (_unreadFeedbacksCount > 0)
-                            {
-                                <span class="badge bg-danger ms-auto">@_unreadFeedbacksCount</span>
-                            }
-                        </NavLink>
-                    </AuthorizeView>
                 </div>
             }
         </div>
@@ -209,6 +245,12 @@
     private bool _expandHome = false;
 
     private bool _hasPageName = true;
+
+    private bool _expandCRM = false;
+
+    private bool _expandCommerciale = false;
+
+    private bool _expandService = false;
 
     private bool _expandMenuProdotti = false;
 

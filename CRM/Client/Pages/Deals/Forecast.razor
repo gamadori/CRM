@@ -1,0 +1,93 @@
+@page "/Deals/Forecast"
+@using CRM.Shared.DTOs
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<div class="forecast-page">
+    <PageHeader Model="_pageHeader" />
+
+    <section class="forecast-filters">
+        <label>
+            <span>Da</span>
+            <InputDate class="forecast-input" @bind-Value="_dateFrom" />
+        </label>
+        <label>
+            <span>A</span>
+            <InputDate class="forecast-input" @bind-Value="_dateTo" />
+        </label>
+        <select class="forecast-input" @bind="_idUser">
+            <option value="">Tutti gli owner</option>
+            @foreach (var user in _users)
+            {
+                <option value="@user.Id">@user.NameComplete</option>
+            }
+        </select>
+        <button type="button" class="primary-action" @onclick="LoadForecast">
+            <span class="material-icons">query_stats</span>
+            <span>Aggiorna</span>
+        </button>
+    </section>
+
+    @if (_loading)
+    {
+        <Waiting></Waiting>
+    }
+    else if (_forecast == null)
+    {
+        <section class="empty-state">
+            <span class="material-icons">troubleshoot</span>
+            <strong>Forecast non disponibile</strong>
+            <p>Riprova o verifica i filtri selezionati.</p>
+        </section>
+    }
+    else
+    {
+        <section class="forecast-metrics">
+            <article>
+                <span>Pipeline aperta</span>
+                <strong>@_forecast.OpenPipeline.ToString("C")</strong>
+                <small>@_forecast.DealCount opportunita</small>
+            </article>
+            <article>
+                <span>Ponderato</span>
+                <strong>@_forecast.WeightedPipeline.ToString("C")</strong>
+                <small>Probabilita applicata</small>
+            </article>
+            <article>
+                <span>Vinto</span>
+                <strong>@_forecast.WonAmount.ToString("C")</strong>
+                <small>Copertura @_forecast.CoveragePct.ToString("0.0")%</small>
+            </article>
+            <article>
+                <span>Perso</span>
+                <strong>@_forecast.LostAmount.ToString("C")</strong>
+                <small>Target @_forecast.TargetAmount.ToString("C")</small>
+            </article>
+        </section>
+
+        <section class="forecast-grid">
+            <ForecastTable Title="Per mese" Icon="calendar_month" Items="_forecast.ByMonth" />
+            <ForecastTable Title="Per owner" Icon="groups" Items="_forecast.ByOwner" />
+            <ForecastTable Title="Per fase" Icon="account_tree" Items="_forecast.ByPhase" />
+        </section>
+    }
+</div>
+
+<style>
+    .forecast-page { min-height: calc(100vh - 1rem); padding: 1.25rem; background: #f7f9fc; color: #182235; }
+    .forecast-filters { display: grid; grid-template-columns: 170px 170px minmax(220px, 1fr) 130px; gap: .65rem; align-items: end; border: 1px solid #dfe7f1; border-radius: 8px; background: #fff; padding: .75rem; margin-bottom: 1rem; box-shadow: 0 12px 28px rgba(31, 42, 68, .07); }
+    .forecast-filters label { display: grid; gap: .25rem; }
+    .forecast-filters label span { color: #526174; font-size: .82rem; font-weight: 800; }
+    .forecast-input { width: 100%; min-height: 40px; border: 1px solid #d7e0ec; border-radius: 8px; background: #fff; padding: .48rem .6rem; }
+    .primary-action { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid #0f4a8a; border-radius: 8px; padding: .55rem .8rem; background: #0f4a8a; color: #fff; font-weight: 800; }
+    .forecast-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .85rem; margin-bottom: 1rem; }
+    .forecast-metrics article, .forecast-panel { border: 1px solid #dfe7f1; border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(31, 42, 68, .07); }
+    .forecast-metrics article { display: grid; gap: .2rem; padding: .9rem; min-width: 0; }
+    .forecast-metrics span, .forecast-metrics small { color: #64748b; }
+    .forecast-metrics strong { font-size: 1.35rem; overflow-wrap: anywhere; }
+    .forecast-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+    .empty-state { min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; color: #64748b; text-align: center; }
+    .empty-state .material-icons { font-size: 48px; }
+    @@media (max-width: 1160px) { .forecast-grid, .forecast-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .forecast-filters { grid-template-columns: 1fr 1fr; } }
+    @@media (max-width: 720px) { .forecast-grid, .forecast-metrics, .forecast-filters { grid-template-columns: 1fr; } }
+</style>

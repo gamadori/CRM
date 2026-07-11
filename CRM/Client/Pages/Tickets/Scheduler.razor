@@ -3,44 +3,55 @@
 @using Radzen
 @using Radzen.Blazor
 
-<div class="row">
-    <div class="col p-4">
-       @*  <!-- ? NUOVO: Toggle Vista Timeline -->
-        <div class="view-toggle-container mb-3">
-            <RadzenButton Click="@SwitchToTimeline" Icon="schedule" ButtonStyle="ButtonStyle.Info" 
-                         Variant="Variant.Flat" Size="ButtonSize.Medium" 
-                         Text="@Localize["Vista Timeline Oraria"]" 
-                         class="timeline-toggle-btn" />
-            <span class="toggle-hint">@Localize["Visualizza i ticket per fasce orarie"]</span>
-        </div> *@
+<div class="ticket-planning-page">
+    <PageHeader Model="_pageHeader">
+        <Actions>
+            <div class="ticket-planning-actions">
+                <RadzenButton Click="@GoToAgenda" Icon="event" ButtonStyle="ButtonStyle.Light"
+                              Variant="Variant.Flat" Size="ButtonSize.Medium"
+                              Text="@Localize["Agenda"]" />
+                <RadzenButton Click="@SwitchToTimeline" Icon="view_timeline" ButtonStyle="ButtonStyle.Primary"
+                              Variant="Variant.Flat" Size="ButtonSize.Medium"
+                              Text="Timeline giorno" />
+            </div>
+        </Actions>
+    </PageHeader>
 
+    <div class="ticket-planning-surface">
         <CascadingValue Value="_maxNumMonthlyTicket" TValue="int" Name="MaxNumDaylyTicket">
-            
-            <BlazoringComponents.Scheduler.AGScheduler @ref="schedulerTickets" TItem="TicketSchedulerViewModel" @bind-DateCurrent="@DateCurrent" @bind-CurrentView="@_viewMode"  Loader="LoadTickets" UpdatePeriod="UpdatePeriod"
-                                                       DateProperty="Date" TimeProperty="Time" DateEndProperty="DateEnd" CompanyProperty="Company" UserProperty="User" BackColorProperty="BackColor"
-                                                       DescriptionProperty="Description" OnNewTicket="NewTicket" ViewMode=@ViewMode Loading=@_loading>
-
+            <BlazoringComponents.Scheduler.AGScheduler @ref="schedulerTickets" TItem="TicketSchedulerViewModel"
+                                                       @bind-DateCurrent="@DateCurrent"
+                                                       @bind-CurrentView="@_viewMode"
+                                                       Loader="LoadTickets"
+                                                       UpdatePeriod="UpdatePeriod"
+                                                       DateProperty="Date"
+                                                       TimeProperty="Time"
+                                                       DateEndProperty="DateEnd"
+                                                       CompanyProperty="Company"
+                                                       UserProperty="User"
+                                                       BackColorProperty="BackColor"
+                                                       DescriptionProperty="Description"
+                                                       OnNewTicket="NewTicket"
+                                                       OnTicketMove="MoveTicket"
+                                                       ViewMode="@ViewMode"
+                                                       Loading="@_loading">
                 <Filter>
-                
-                    <div class="form-floating">
-                        
-                        <RadzenDropDownDataGrid class="form-control" @bind-value="@IdUserAssigned" TValue="string" AllowFiltering="true" AllowClear="true" Change="OnChangeIdUser" FilterCaseSensitivity=FilterCaseSensitivity.CaseInsensitive
-                                                Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id">
+                    <div class="ticket-planning-filter">
+                        <RadzenDropDownDataGrid class="form-control" @bind-value="@IdUserAssigned" TValue="string"
+                                                AllowFiltering="true" AllowClear="true" Change="OnChangeIdUser"
+                                                FilterCaseSensitivity="@FilterCaseSensitivity.CaseInsensitive"
+                                                Data="@_users" Count="@_users.Count"
+                                                TextProperty="NameComplete" ValueProperty="Id">
                             <Columns>
                                 <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
                                 <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
-
                             </Columns>
                         </RadzenDropDownDataGrid>
-
                         <label>@Localize["User"]</label>
-
                     </div>
                 </Filter>
                 <Details>
-
-                    <CRM.Client.Pages.Tickets.Preview IdTicket=context ViewCommands="false"></CRM.Client.Pages.Tickets.Preview>
-
+                    <CRM.Client.Pages.Tickets.Preview IdTicket="@context" ViewCommands="false"></CRM.Client.Pages.Tickets.Preview>
                 </Details>
             </BlazoringComponents.Scheduler.AGScheduler>
         </CascadingValue>
@@ -48,39 +59,36 @@
 </div>
 
 <style>
-    .view-toggle-container {
-        background: white;
-        border-radius: 12px;
-        padding: 1rem 1.5rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        display: flex;
+    .ticket-planning-page {
+        padding: 1.25rem;
+    }
+
+    .ticket-planning-actions {
         align-items: center;
-        gap: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
     }
 
-    .timeline-toggle-btn {
-        transition: all 0.3s ease;
+    .ticket-planning-surface {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1rem;
     }
 
-    .timeline-toggle-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
-    }
-
-    .toggle-hint {
-        color: #6b7280;
-        font-size: 0.9rem;
-        font-style: italic;
+    .ticket-planning-filter {
+        min-width: min(360px, 100%);
+        position: relative;
     }
 
     @@media (max-width: 768px) {
-        .view-toggle-container {
-            flex-direction: column;
-            align-items: flex-start;
+        .ticket-planning-page {
+            padding: .75rem;
         }
 
-        .toggle-hint {
-            font-size: 0.8rem;
+        .ticket-planning-actions {
+            width: 100%;
         }
     }
 </style>

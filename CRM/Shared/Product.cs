@@ -39,6 +39,12 @@ namespace CRM.Shared
         [Column(TypeName = "Money")]
         public decimal Price { get; set; }
 
+        public bool IsArchived { get; set; }
+
+        public DateTime? ArchivedAt { get; set; }
+
+        public string? ArchivedReason { get; set; }
+
         [Display(Name = nameof(Product.ProductType), ResourceType = typeof(Resources.Models.Product))]
         public ProductType ProductType { get; set; }
 
@@ -67,6 +73,8 @@ namespace CRM.Shared
         public string Code { get; set; }
 
         public string Description { get; set; }
+
+        public bool IncludeArchived { get; set; }
     }
 
     

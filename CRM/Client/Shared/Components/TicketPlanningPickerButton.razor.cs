@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace CRM.Client.Shared.Components
 {
-    public partial class BtnScheduler: ComponentBase
+    public partial class TicketPlanningPickerButton : ComponentBase
     {
         [Inject]
         DialogService DialogService { get; set; }
@@ -19,7 +19,7 @@ namespace CRM.Client.Shared.Components
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Parameter]
-        public EventCallback<SchedulerUserDate> OnGetItem { get; set; }
+        public EventCallback<TicketPlanningSelection> SelectionChanged { get; set; }
 
       
         [Parameter]
@@ -34,22 +34,17 @@ namespace CRM.Client.Shared.Components
         [Parameter]
         public int? IdTicketType { get; set; }
 
-        private async Task OpenScheduler()
+        private async Task OpenPlanningPicker()
         {
-            var dateUser = await DialogService.OpenSideAsync<Pages.Tickets.TicketCalendar>(Localize["Seleziona Data..."], new Dictionary<string, object>() { { "Date", Date }, {  "IdUser", IdUser } , 
+            var selection = await DialogService.OpenSideAsync<Pages.Tickets.TicketPlanningPicker>(Localize["Seleziona Data..."], new Dictionary<string, object>() { { "Date", Date }, {  "IdUser", IdUser } , 
                     { "IdTicket", IdTicket }, {"IdTicketType", IdTicketType } } ,
                 new SideDialogOptions { Position = DialogPosition.Top, ShowMask = false, Height = "auto", Style = "max-height: 90%;" });
 
-            if (OnGetItem.HasDelegate)
-                await OnGetItem.InvokeAsync(dateUser);
+            if (selection is TicketPlanningSelection value && SelectionChanged.HasDelegate)
+                await SelectionChanged.InvokeAsync(value);
 
         }
 
-
-        private void OnClickCancel()
-        {
-            DialogService.CloseSide();
-        }
 
     }
 }

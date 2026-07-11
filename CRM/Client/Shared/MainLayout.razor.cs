@@ -18,7 +18,7 @@ using static CRM.Client.Program;
 
 namespace CRM.Client.Shared
 {
-    public partial class MainLayout: LayoutComponentBase, INotificationHandler<MsgNotify>, IDisposable
+    public partial class MainLayout: LayoutComponentBase, INotificationHandler<MsgNotify>, INotificationHandler<InboundEmailNotify>, IDisposable
     {
         [Inject]
         IAGRestClientService RestClientService { get; set; }
@@ -113,6 +113,12 @@ namespace CRM.Client.Shared
             var id = notification.Id;
             var sender = notification.Sender;
             Notify(Localize["New Message"], string.Format(Localize["New Message From"], sender), NotificationSeverity.Info);
+        }
+
+        public async Task Handle(InboundEmailNotify notification, System.Threading.CancellationToken cancellationToken)
+        {
+            var from = string.IsNullOrWhiteSpace(notification.From) ? "sconosciuto" : notification.From;
+            Notify("Nuova email", $"Da {from}: {notification.Subject}", NotificationSeverity.Info);
         }
 
        

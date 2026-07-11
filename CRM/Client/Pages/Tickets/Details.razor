@@ -43,6 +43,95 @@ else
                 </div>
             </div>
 
+            <div class="description-card operational-summary-card">
+                <div class="card-header-modern summary-header">
+                    <div class="summary-title">
+                        <span class="material-icons">summarize</span>
+                        <h5>Riepilogo operativo</h5>
+                    </div>
+                    @if (_ticket.OperationalSummaryUpdatedAt.HasValue)
+                    {
+                        <span class="summary-meta">
+                            Aggiornato @_ticket.OperationalSummaryUpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                            @if (!string.IsNullOrWhiteSpace(_ticket.OperationalSummaryUpdatedByName))
+                            {
+                                <text> da @_ticket.OperationalSummaryUpdatedByName</text>
+                            }
+                        </span>
+                    }
+                </div>
+                <div class="card-body-modern summary-body">
+                    @if (_isEditingSummary && _ticket.Permits.Edit())
+                    {
+                        <RadzenTextArea @bind-Value="_summaryDraft"
+                                        Rows="6"
+                                        class="summary-editor"
+                                        Style="width: 100%;"
+                                        Placeholder="Nessun riepilogo operativo salvato." />
+
+                        @if (!string.IsNullOrWhiteSpace(_summaryMessage))
+                        {
+                            <div class="summary-message @(_summaryMessageIsError ? "summary-message-error" : "summary-message-info")">
+                                @_summaryMessage
+                            </div>
+                        }
+
+                        <div class="summary-actions">
+                            <RadzenButton Text="@(_isSavingSummary ? "Salvataggio..." : "Salva riepilogo")"
+                                          Icon="save"
+                                          Size="ButtonSize.Small"
+                                          ButtonStyle="ButtonStyle.Primary"
+                                          Click="SaveSummary"
+                                          Disabled="@(_isProposingSummary || _isSavingSummary)" />
+                            <RadzenButton Text="Annulla"
+                                          Icon="close"
+                                          Size="ButtonSize.Small"
+                                          ButtonStyle="ButtonStyle.Light"
+                                          Click="CancelSummaryEdit"
+                                          Disabled="@(_isProposingSummary || _isSavingSummary)" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="summary-read-row">
+                            @if (!string.IsNullOrWhiteSpace(_ticket.OperationalSummary))
+                            {
+                                <div class="summary-readonly">@_ticket.OperationalSummary</div>
+                            }
+                            else
+                            {
+                                <div class="summary-empty">Nessun riepilogo operativo salvato.</div>
+                            }
+
+                            @if (_ticket.Permits.Edit())
+                            {
+                                <div class="summary-actions summary-actions-readonly">
+                                    <RadzenButton Text="@(_isProposingSummary ? "Generazione..." : "Proponi da chat")"
+                                                  Icon="auto_awesome"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Light"
+                                                  Click="ProposeSummary"
+                                                  Disabled="@(_isProposingSummary || _isSavingSummary)" />
+                                    <RadzenButton Text="Modifica"
+                                                  Icon="edit"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Light"
+                                                  Click="EditSummary"
+                                                  Disabled="@(_isProposingSummary || _isSavingSummary)" />
+                                </div>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(_summaryMessage))
+                        {
+                            <div class="summary-message @(_summaryMessageIsError ? "summary-message-error" : "summary-message-info")">
+                                @_summaryMessage
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
             <div class="info-grid">
                 <!-- Ticket Type -->
                 <div class="info-card">
@@ -123,7 +212,7 @@ else
                                 @if (!string.IsNullOrEmpty(_ticket.RequesterName))
                                 {
                                     <span class="material-icons" style="font-size: 16px; vertical-align: middle; margin-right: 4px;">
-                                        @(_ticket.RequesterType == RequesterType.Contact ? "contact_phone" : "person")
+                                        contact_phone
                                     </span>
                                     @_ticket.RequesterName
                                 }
@@ -294,6 +383,12 @@ else
                         }
 
                         <RedGButton RGButtonType="RGButtonType.Download" Text="@Localize["Download PDF"]" Click="DownloadPdf" Disabled="_isDownloadingPdf"></RedGButton>
+
+                        @if (_idInboundEmail != null)
+                        {
+                            <RadzenButton Icon="mail" Text="Email originale" ButtonStyle="ButtonStyle.Light"
+                                          Click="@(() => NavigationManager.NavigateTo($"/InboundEmails/{_idInboundEmail}"))" />
+                        }
                     </div>
                 </div>
             }

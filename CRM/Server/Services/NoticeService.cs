@@ -3,6 +3,7 @@ using CRM.Server.Controllers;
 using CRM.Server.Data;
 using CRM.Server.Helpers;
 using CRM.Shared;
+using Microsoft.EntityFrameworkCore;
 
 namespace CRM.Server.Services
 {
@@ -50,7 +51,9 @@ namespace CRM.Server.Services
                     }
                     
                 }
-                var curruser = await _context.Users.FindAsync(idUser);
+                var curruser = await _context.Users
+                    .Include(x => x.Contact)
+                    .FirstOrDefaultAsync(x => x.Id == idUser);
 
                 if (curruser != null)
                 {
@@ -60,7 +63,7 @@ namespace CRM.Server.Services
                     var keyValues = new Dictionary<string, string>();
 
                     keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Date), DateTime.Now.ToString("g"));
-                    keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Name), $"{curruser.Name} {curruser.Surname}");
+                    keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Name), curruser.NameComplete);
                     
 
                     if (callbackUrl != null)

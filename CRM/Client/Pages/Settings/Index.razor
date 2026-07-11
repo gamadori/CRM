@@ -76,11 +76,23 @@
         <div class="settings-section">
             <h3 class="section-title">📧 @Localize["Communications"]</h3>
             <div class="settings-cards">
-                <SettingCard Icon="forward_to_inbox" 
-                           Href="Settings/Smtps" 
-                           Title="@Localize["Smtp"]" 
+                <SettingCard Icon="forward_to_inbox"
+                           Href="Settings/Smtps"
+                           Title="@Localize["Smtp"]"
                            Description="Configurazione email"
                            Color="#c62828" />
+
+                <SettingCard Icon="inbox"
+                           Href="Settings/EmailInboxes"
+                           Title="Caselle in ingresso"
+                           Description="IMAP / inbound-parse"
+                           Color="#00838f" />
+
+                <SettingCard Icon="move_to_inbox"
+                           Href="Settings/InboundEmails"
+                           Title="Email in ingresso"
+                           Description="Triage e associazione"
+                           Color="#0277bd" />
                 
                 <SettingCard Icon="mail" 
                            Href="Settings/EmailTemplates" 
@@ -133,6 +145,12 @@
                              Title="Chiavi API macchina"
                              Description="Accesso ai backup via API"
                              Color="#0f4a8a" />
+
+                <SettingCard Icon="engineering"
+                             Href="Settings/Maintenance"
+                             Title="Manutenzione server"
+                             Description="Avvisa gli utenti prima di un aggiornamento"
+                             Color="#ed6c02" />
             </div>
         </div>
         <!-- AI -->

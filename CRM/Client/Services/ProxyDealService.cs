@@ -15,12 +15,20 @@ namespace CRM.Client.Services
     
     public class ProxyDealService: ProxyRestClientService<Deal, DealDTO, int, DealFilter, decimal>, IDealService
     {
+        private readonly HttpClient _httpClient;
         
         public ProxyDealService(HttpClient http): base(http, ConstHelper.DealsPath)
         {
-          
+            _httpClient = http;
         }
-        
-       
+
+        public async Task<CommercialForecastDTO?> GetForecastAsync(DealForecastFilter? filter)
+        {
+            var query = filter == null
+                ? string.Empty
+                : $"?DateFrom={filter.DateFrom:yyyy-MM-dd}&DateTo={filter.DateTo:yyyy-MM-dd}&IdUser={Uri.EscapeDataString(filter.IdUser ?? string.Empty)}";
+
+            return await _httpClient.GetFromJsonAsync<CommercialForecastDTO?>($"{ConstHelper.DealsPath}/forecast{query}");
+        }
     }
 }

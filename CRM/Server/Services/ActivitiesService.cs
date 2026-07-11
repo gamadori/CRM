@@ -40,17 +40,47 @@ namespace CRM.Server.Services
                     .AsNoTracking()
                     .ToListAsync();
 
-                return items.Select(a =>
+                var dtos = items.Select(a =>
                 {
                     var dto = a.ToDTO()!;
                     dto.Permits = ComputePermits(a.IdUser, a.IdAssignee, currentUser);
                     return dto;
                 }).ToList();
+
+                await ResolveEmailEngagementAsync(dtos);
+
+                return dtos;
             }
             catch (Exception ex)
             {
                 await _logEventService.RegisterAsync(nameof(ActivitiesService), nameof(GetByEntityAsync), EventsTypes.Error, ex);
                 return null;
+            }
+        }
+
+        /// <summary>Popola la sintesi di engagement (stato/aperture/click) per le attività email con email collegata.</summary>
+        private async Task ResolveEmailEngagementAsync(List<ActivityDTO> dtos)
+        {
+            var emailIds = dtos.Where(d => d.IdEmailSent != null).Select(d => d.IdEmailSent!.Value).Distinct().ToList();
+            if (emailIds.Count == 0)
+                return;
+
+            var emails = await _context.EmailsSent
+                .AsNoTracking()
+                .Where(e => emailIds.Contains(e.Id))
+                .Select(e => new { e.Id, e.EngagementStatus, e.OpenCount, e.ClickCount })
+                .ToListAsync();
+
+            var map = emails.ToDictionary(e => e.Id);
+
+            foreach (var d in dtos)
+            {
+                if (d.IdEmailSent != null && map.TryGetValue(d.IdEmailSent.Value, out var e))
+                {
+                    d.EmailEngagement = e.EngagementStatus;
+                    d.EmailOpenCount = e.OpenCount;
+                    d.EmailClickCount = e.ClickCount;
+                }
             }
         }
 
@@ -105,6 +135,7 @@ namespace CRM.Server.Services
 
             var companyIds = IdsOf(ActivityEntityType.Company);
             var contactIds = IdsOf(ActivityEntityType.Contact);
+            var leadIds = IdsOf(ActivityEntityType.Lead);
             var dealIds = IdsOf(ActivityEntityType.Deal);
             var ticketIds = IdsOf(ActivityEntityType.Ticket);
 
@@ -112,6 +143,8 @@ namespace CRM.Server.Services
                 .Select(c => new { c.Id, Name = c.RagioneSociale }).ToDictionaryAsync(x => x.Id, x => x.Name);
             var contacts = await _context.Contacts.Where(c => contactIds.Contains(c.Id))
                 .Select(c => new { c.Id, Name = c.Name + " " + c.Surname }).ToDictionaryAsync(x => x.Id, x => x.Name);
+            var leads = await _context.Leads.Where(l => leadIds.Contains(l.Id))
+                .Select(l => new { l.Id, l.Name }).ToDictionaryAsync(x => x.Id, x => x.Name);
             var deals = await _context.Deals.Where(d => dealIds.Contains(d.Id))
                 .Select(d => new { d.Id, d.Name }).ToDictionaryAsync(x => x.Id, x => x.Name);
             var tickets = await _context.Tickets.Where(t => ticketIds.Contains(t.Id))
@@ -123,6 +156,7 @@ namespace CRM.Server.Services
                 {
                     ActivityEntityType.Company => companies.GetValueOrDefault(d.EntityId, string.Empty),
                     ActivityEntityType.Contact => contacts.GetValueOrDefault(d.EntityId, string.Empty),
+                    ActivityEntityType.Lead => leads.GetValueOrDefault(d.EntityId, string.Empty),
                     ActivityEntityType.Deal => deals.GetValueOrDefault(d.EntityId, string.Empty),
                     ActivityEntityType.Ticket => tickets.GetValueOrDefault(d.EntityId, string.Empty) ?? string.Empty,
                     _ => string.Empty
@@ -157,8 +191,18 @@ namespace CRM.Server.Services
                     existing.Kind = item.Kind;
                     existing.Subject = item.Subject;
                     existing.Description = item.Description;
+                    existing.EntityType = item.EntityType;
+                    existing.EntityId = item.EntityId;
                     existing.IdAssignee = string.IsNullOrWhiteSpace(item.IdAssignee) ? existing.IdUser : item.IdAssignee;
                     existing.DueDate = item.DueDate;
+                    // Se il promemoria viene spostato, ne va rischedulata la consegna da zero.
+                    if (existing.ReminderAt != item.ReminderAt)
+                    {
+                        existing.ReminderStatus = ReminderStatus.Pending;
+                        existing.ReminderRetryCount = 0;
+                        existing.ReminderLastAttemptAt = null;
+                        existing.ReminderLastError = null;
+                    }
                     existing.ReminderAt = item.ReminderAt;
                     existing.State = item.State;
                     existing.DoneDate = item.State == ActivityState.Done ? (item.DoneDate ?? existing.DoneDate ?? DateTime.Now) : null;

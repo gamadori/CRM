@@ -177,9 +177,6 @@
   <data name="IdUserClosed" xml:space="preserve">
     <value>Chiuso Da</value>
   </data>
-  <data name="IdUserCustomer" xml:space="preserve">
-    <value>Utente Cliente</value>
-  </data>
   <data name="IdUserOpened" xml:space="preserve">
     <value>Aperto Da</value>
   </data>

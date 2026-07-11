@@ -50,8 +50,16 @@ else
         }
         @if (_quote.State == QuoteStates.Accepted)
         {
-            <RadzenButton Icon="shopping_cart" Text="Crea ordine" ButtonStyle="ButtonStyle.Primary"
-                          IsBusy="@_creatingOrder" Disabled="@_creatingOrder" Click="CreateOrder" />
+            @if (_quote.IdOrder.HasValue)
+            {
+                <RadzenButton Icon="shopping_cart" Text="@OrderButtonText" ButtonStyle="ButtonStyle.Primary"
+                              Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{_quote.IdOrder}/Details"))" />
+            }
+            else
+            {
+                <RadzenButton Icon="shopping_cart" Text="Crea ordine" ButtonStyle="ButtonStyle.Primary"
+                              IsBusy="@_creatingOrder" Disabled="@_creatingOrder" Click="CreateOrder" />
+            }
         }
     </div>
 
@@ -144,6 +152,10 @@ else
     private bool _downloadingPdf;
     private bool _creatingOrder;
 
+    private string OrderButtonText => string.IsNullOrWhiteSpace(_quote?.OrderNumber)
+        ? "Apri ordine"
+        : $"Ordine {_quote.OrderNumber}";
+
     protected override async Task OnInitializedAsync()
     {
         _pageHeader = await HeaderService.Create();
@@ -211,7 +223,7 @@ else
     {
         var msg = state switch
         {
-            QuoteStates.Accepted => "Accettare il preventivo? La trattativa collegata verra' aggiornata.",
+            QuoteStates.Accepted => "Accettare il preventivo? Verranno aggiornate la trattativa collegata e generato l'ordine.",
             QuoteStates.Rejected => "Rifiutare il preventivo?",
             QuoteStates.Sent => "Segnare il preventivo come inviato?",
             _ => "Confermare il cambio di stato?"
@@ -224,7 +236,7 @@ else
         if (resp.State)
         {
             _quote = resp.Data;
-            Notification.Notify(NotificationSeverity.Success, "Fatto", "Stato aggiornato");
+            Notification.Notify(NotificationSeverity.Success, "Fatto", resp.Message ?? "Stato aggiornato");
         }
         else
         {

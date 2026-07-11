@@ -1,49 +1,82 @@
-﻿@page "/Settings/EmailTemplates"
+@page "/Settings/EmailTemplates"
 @page "/Settings/EmailTemplates/Index"
+@using CRM.Client.Helpers
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IHeaderService HeaderService
 
+<PageHeader Model="_pageHeader"></PageHeader>
 
-@if (_templates != null)
+@if (_configured == null)
 {
-    <PageHeader Model="_pageHeader">
-    </PageHeader>
-
-    <RadzenDataGrid @ref="grdEmails" IsLoading="@_isLoading" Count="@_paging.TotalCount" Responsive=true Data="@_templates" LoadData="@LoadData" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                    AllowSorting="true" AllowFiltering="true" AllowPaging="true"
-                    PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="EmailTemplate">
-        <HeaderTemplate>
-            <div class="d-flex align-items-center gap-5">
-
-                <RedGButton RGButtonType="RGButtonType.New" Click="@NewTemplate"></RedGButton>
-                
-            </div>
-
-        </HeaderTemplate>
-        <Columns>
-            <RadzenDataGridColumn Context="item" TItem="EmailTemplate" Title=@TranslateHelper.GetDisplayName(nameof(EmailTemplate.Tipo), typeof(EmailTemplate)) Property=@nameof(Company.RagioneSociale)>
-                <Template>
-                    <RadzenLabel Text=@EnumService.Get(typeof(EmailsTypes), item.Tipo)></RadzenLabel>
-                </Template>
-            </RadzenDataGridColumn>
-
-        
-            <RadzenDataGridColumn TItem="EmailTemplate" Property="@nameof(EmailTemplate.Subject)" Title=@TranslateHelper.GetDisplayName(nameof(EmailTemplate.Subject), typeof(EmailTemplate)) />
-
-
-
-            <RadzenDataGridColumn Context="item" TItem="EmailTemplate" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
-                    <Template Context="item">
-                    
-                        
-                        <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id))></RedGButton>
-                        <RedGButton RGButtonType="RGButtonType.Delete" Click=@(() => Delete(item))></RedGButton>
-
-                    </Template>
-                </RadzenDataGridColumn>
-        
-        </Columns>
-    </RadzenDataGrid>
+    <Waiting></Waiting>
 }
 else
 {
-    <Waiting></Waiting>
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Template</th>
+                        <th>Lingue configurate</th>
+                        <th class="text-end">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tipo in _types)
+                    {
+                        var langs = _configured.TryGetValue(tipo, out var s) ? s : new HashSet<string>();
+                        <tr>
+                            <td>@UtilityHelper.GetDisplayName(tipo)</td>
+                            <td>
+                                @foreach (var lang in _languages)
+                                {
+                                    var on = langs.Contains(lang);
+                                    <span class="badge me-1 @(on ? "bg-success" : "bg-light text-muted border")">@lang</span>
+                                }
+                                @if (langs.Count == 0)
+                                {
+                                    <span class="text-muted small ms-1">(nessuna)</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <RedGButton RGButtonType="RGButtonType.Edit" Click="@(() => Edit(tipo))" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="text-muted small mt-2">
+        Ogni tipo di email si gestisce in un unico template, con una scheda per lingua. Il badge verde indica le lingue già compilate.
+    </div>
+}
+
+@code {
+    private readonly List<EmailsTypes> _types = Enum.GetValues<EmailsTypes>().ToList();
+    private readonly string[] _languages = { "it", "en", "es", "fr" };
+
+    private Dictionary<EmailsTypes, HashSet<string>>? _configured;
+    private PageHeaderModel? _pageHeader;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+
+        var all = await Http.GetFromJsonAsync<List<EmailTemplate>>("api/EmailTemplates") ?? new();
+        _configured = all
+            .GroupBy(t => t.Tipo)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(t => string.IsNullOrEmpty(t.Language) ? "it" : t.Language.ToLowerInvariant()).ToHashSet());
+    }
+
+    private void Edit(EmailsTypes tipo) => NavigationManager.NavigateTo($"/Settings/EmailTemplates/{(int)tipo}");
 }

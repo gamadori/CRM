@@ -26,7 +26,7 @@ namespace BlazoringComponents.Scheduler
         Sheduler,
         Calendar
     }
-    public partial class AGScheduler<TItem>: ComponentBase
+    public partial class AGScheduler<TItem>: ComponentBase, IAsyncDisposable
     {
        
 
@@ -116,6 +116,9 @@ namespace BlazoringComponents.Scheduler
         public EventCallback<DateTime> OnNewTicket { get; set; }
 
         [Parameter]
+        public EventCallback<SchedulerTicketMoveArgs> OnTicketMove { get; set; }
+
+        [Parameter]
         public bool Loading { get; set; } = true;
 
         protected string _period;
@@ -138,6 +141,14 @@ namespace BlazoringComponents.Scheduler
 
         private bool _isMobile = false;
 
+        private readonly SchedulerDragDropContext _dragDropContext = new SchedulerDragDropContext();
+
+        private ElementReference _schedulerElement;
+
+        private IJSObjectReference _dragDropModule;
+
+        private IJSObjectReference _dragDropRegistration;
+
         public async Task Update()
         {
             await Period(true);
@@ -155,6 +166,13 @@ namespace BlazoringComponents.Scheduler
         {
             if (firstRender)
             {
+                _dragDropModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+                    "import",
+                    "./_content/BlazoringComponents/schedulerDragDrop.js");
+                _dragDropRegistration = await _dragDropModule.InvokeAsync<IJSObjectReference>(
+                    "initialize",
+                    _schedulerElement);
+
                 await CheckIfMobile();
                 if (_isMobile && CurrentView == SchedulerViews.Month)
                 {
@@ -165,6 +183,27 @@ namespace BlazoringComponents.Scheduler
                 }
             }
             await base.OnAfterRenderAsync(firstRender);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            try
+            {
+                if (_dragDropRegistration != null)
+                {
+                    await _dragDropRegistration.InvokeVoidAsync("dispose");
+                    await _dragDropRegistration.DisposeAsync();
+                }
+
+                if (_dragDropModule != null)
+                {
+                    await _dragDropModule.DisposeAsync();
+                }
+            }
+            catch (JSDisconnectedException)
+            {
+                // The browser connection has already closed.
+            }
         }
 
         private async Task CheckIfMobile()
@@ -181,7 +220,7 @@ namespace BlazoringComponents.Scheduler
 
         protected override async Task OnParametersSetAsync()
         {
-           
+            _dragDropContext.OnTicketMove = OnTicketMove;
 
             await base.OnParametersSetAsync();
         }

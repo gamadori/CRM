@@ -102,5 +102,18 @@ namespace CRM.Server.Controllers
             return email;
         }
 
+        // GET: api/EmailsSent/5/events -> storico eventi di engagement dell'email
+        [HttpGet("{id}/events")]
+        public async Task<ActionResult<List<EmailEvent>>> GetEvents(int id)
+        {
+            var events = await _context.EmailEvents
+                .AsNoTracking()
+                .Where(e => e.IdEmailSent == id)
+                .OrderByDescending(e => e.OccurredAt)
+                .ToListAsync();
+
+            return events;
+        }
+
     }
 }

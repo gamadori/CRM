@@ -29,10 +29,16 @@ namespace CRM.Server.Services
                     await _logEventService.RegisterAsync(nameof(WTelegramService), nameof(SendMessage), Shared.LogEvent.EventsTypes.Warning, "Telegram Disabled in Global Settings");
                     return;
                 }
-                var contacts = await _wTelegramService.Client.Contacts_ImportContacts(new[] { new InputPhoneContact { phone = phoneNumber } });
+                if (!_wTelegramService.TryGetClient(out var client))
+                {
+                    await _logEventService.RegisterAsync(nameof(WTelegramService), nameof(SendMessage), Shared.LogEvent.EventsTypes.Warning, _wTelegramService.LastError ?? "Telegram non disponibile");
+                    return;
+                }
+
+                var contacts = await client.Contacts_ImportContacts(new[] { new InputPhoneContact { phone = phoneNumber } });
                 if (contacts.imported.Length > 0)
                 {
-                    var resp = await _wTelegramService.Client.SendMessageAsync(contacts.users[contacts.imported[0].user_id], message);
+                    var resp = await client.SendMessageAsync(contacts.users[contacts.imported[0].user_id], message);
 
                     await _logEventService.RegisterAsync(nameof(WTelegramService), nameof(SendMessage), Shared.LogEvent.EventsTypes.Info, $"{phoneNumber}: {resp.message}");
                 }

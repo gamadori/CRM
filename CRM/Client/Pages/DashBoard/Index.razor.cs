@@ -22,7 +22,7 @@ namespace CRM.Client.Pages.DashBoard
 {
     [Authorize(Policy = "StandardRole")]
     
-    public partial class Index : ComponentBase, INotificationHandler<MsgNotify>, IDisposable
+    public partial class Index : ComponentBase, INotificationHandler<MsgNotify>, INotificationHandler<InboundEmailNotify>, IDisposable
     {
         [Inject]
         HttpClient Http { get; set; }   
@@ -74,6 +74,11 @@ namespace CRM.Client.Pages.DashBoard
             await LoadData();
         }
 
+        public async Task Handle(InboundEmailNotify notification, System.Threading.CancellationToken cancellationToken)
+        {
+            await LoadData();
+        }
+
         private async Task LoadData()
         {
             TicketDashBoardModelFilter filter = new TicketDashBoardModelFilter();
@@ -106,6 +111,11 @@ namespace CRM.Client.Pages.DashBoard
         protected void TicketsNewMessage()
         {
             NavigationManager.NavigateTo(Url($"/Tickets/Index/{(int)TicketTypeSearch.NewMessage}"));
+        }
+
+        protected void InboundEmailsToHandle()
+        {
+            NavigationManager.NavigateTo("/Settings/InboundEmails");
         }
 
         protected void TicketAll()

@@ -1,0 +1,232 @@
+@page "/Leads/New"
+@page "/Leads/{Id:int}/Edit"
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<div class="lead-edit-page">
+    @if (_loading || _lead == null)
+    {
+        <Waiting></Waiting>
+    }
+    else
+    {
+        <PageHeader Model="_pageHeader">
+            <Actions>
+                <button type="button" class="secondary-action" @onclick="Cancel">
+                    <span class="action-icon close-icon" aria-hidden="true"></span>
+                    <span>Annulla</span>
+                </button>
+            </Actions>
+        </PageHeader>
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <div class="form-alert">@_message</div>
+        }
+
+        <EditForm Model="_lead" OnValidSubmit="Save">
+            <DataAnnotationsValidator />
+            <section class="lead-form-grid">
+                <article>
+                    <div class="panel-title">
+                        <span class="material-icons">badge</span>
+                        <h2>Dati lead</h2>
+                    </div>
+                    <label class="field wide">
+                        <span>Nome</span>
+                        <InputText class="form-input" @bind-Value="_lead.Name" />
+                        <ValidationMessage For="@(() => _lead.Name)" />
+                    </label>
+                    <label class="field wide">
+                        <span>Azienda esistente</span>
+                        <InputSelect class="form-input" @bind-Value="SelectedCompanyId">
+                            <option value="">Nessuna azienda collegata</option>
+                            @foreach (var company in _companies)
+                            {
+                                <option value="@company.Id">@company.RagioneSociale</option>
+                            }
+                        </InputSelect>
+                        <small>
+                            <span>Seleziona l'anagrafica quando esiste: listino e conversione useranno questo collegamento.</span>
+                        </small>
+                    </label>
+                    <div class="two-cols">
+                        <label class="field">
+                            <span>Nome azienda</span>
+                            <InputText class="form-input" @bind-Value="_lead.CompanyName" disabled="@(_lead.IdCompany != null)" />
+                        </label>
+                        <label class="field">
+                            <span>Ruolo</span>
+                            <InputText class="form-input" @bind-Value="_lead.JobTitle" />
+                        </label>
+                    </div>
+                    <div class="two-cols">
+                        <label class="field">
+                            <span>Email</span>
+                            <InputText class="form-input" @bind-Value="_lead.Email" />
+                            <ValidationMessage For="@(() => _lead.Email)" />
+                        </label>
+                        <label class="field">
+                            <span>Telefono</span>
+                            <InputText class="form-input" @bind-Value="_lead.Phone" />
+                        </label>
+                    </div>
+                </article>
+
+                <article>
+                    <div class="panel-title">
+                        <span class="material-icons">monitoring</span>
+                        <h2>Qualifica</h2>
+                    </div>
+                    <div class="two-cols">
+                        <label class="field">
+                            <span>Stato</span>
+                            <InputSelect class="form-input" @bind-Value="_lead.Status">
+                                @foreach (var status in Enum.GetValues<LeadStatus>())
+                                {
+                                    <option value="@status">@StatusText(status)</option>
+                                }
+                            </InputSelect>
+                        </label>
+                        <label class="field">
+                            <span>Fonte</span>
+                            <InputSelect class="form-input" @bind-Value="_lead.Source">
+                                @foreach (var source in Enum.GetValues<LeadSource>())
+                                {
+                                    <option value="@source">@SourceText(source)</option>
+                                }
+                            </InputSelect>
+                        </label>
+                    </div>
+                    <div class="two-cols">
+                        <label class="field">
+                            <span>Score</span>
+                            <InputNumber class="form-input" @bind-Value="_lead.Score" />
+                            <ValidationMessage For="@(() => _lead.Score)" />
+                        </label>
+                        <label class="field">
+                            <span>Valore stimato</span>
+                            <InputNumber class="form-input" @bind-Value="_lead.EstimatedValue" disabled="@(_lead.ProductInterests.Any())" />
+                        </label>
+                    </div>
+                    <div class="field">
+                        <span>Prodotti interessati</span>
+                        <div class="product-picker">
+                            <InputSelect class="form-input" @bind-Value="_selectedProductId">
+                                <option value="">Seleziona prodotto</option>
+                                @foreach (var product in ProductsAvailableToAdd)
+                                {
+                                    <option value="@product.Id">@ProductText(product)</option>
+                                }
+                            </InputSelect>
+                            <button type="button" class="secondary-action" @onclick="AddProductInterest">
+                                <span class="action-icon add-icon" aria-hidden="true"></span>
+                                <span>Aggiungi</span>
+                            </button>
+                        </div>
+                        @if (!_lead.ProductInterests.Any())
+                        {
+                            <small><span>Nessun prodotto selezionato: puoi indicare un valore manuale.</span></small>
+                        }
+                        else
+                        {
+                            <div class="product-table-wrap">
+                                <table class="product-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Prodotto</th>
+                                            <th>Qta</th>
+                                            <th>Prezzo</th>
+                                            <th>Sconto %</th>
+                                            <th>Totale</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var row in _lead.ProductInterests.OrderBy(x => x.SortOrder))
+                                        {
+                                            <tr>
+                                                <td>@row.DisplayName</td>
+                                                <td><InputNumber class="form-input compact" @bind-Value="row.Quantity" @onchange="@(() => RecalculateProductInterest(row))" /></td>
+                                                <td><InputNumber class="form-input compact" @bind-Value="row.UnitPrice" @onchange="@(() => RecalculateProductInterest(row))" /></td>
+                                                <td><InputNumber class="form-input compact" @bind-Value="row.DiscountPct" @onchange="@(() => RecalculateProductInterest(row))" /></td>
+                                                <td class="money">@row.LineTotal.ToString("C")</td>
+                                                <td>
+                                                    <button type="button" class="icon-row-action" title="Rimuovi prodotto" @onclick="@(() => RemoveProductInterest(row))">
+                                                        <span class="action-icon delete-icon" aria-hidden="true"></span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            <small><span>Al salvataggio il valore viene ricalcolato dal listino cliente, poi dal prezzo prodotto.</span></small>
+                        }
+                    </div>
+                    <label class="field">
+                        <span>Chiusura prevista</span>
+                        <InputDate class="form-input" @bind-Value="_lead.ExpectedCloseDate" />
+                    </label>
+                    <label class="field">
+                        <span>Note</span>
+                        <InputTextArea class="form-input notes" @bind-Value="_lead.Note" />
+                    </label>
+                </article>
+            </section>
+
+            <section class="form-footer">
+                <button type="button" class="secondary-action" @onclick="Cancel" disabled="@_saving">
+                    <span class="action-icon back-icon" aria-hidden="true"></span>
+                    <span>Annulla</span>
+                </button>
+                <button type="submit" class="primary-action" disabled="@_saving">
+                    <span class="action-icon save-icon" aria-hidden="true"></span>
+                    <span>@(_saving ? "Salvataggio..." : "Salva lead")</span>
+                </button>
+            </section>
+        </EditForm>
+    }
+</div>
+
+<style>
+    .lead-edit-page { min-height: calc(100vh - 1rem); padding: 1.25rem; background: #f7f9fc; color: #182235; }
+    .form-footer { display: flex; justify-content: flex-end; align-items: flex-start; gap: 1rem; margin-top: 1rem; }
+    .primary-action, .secondary-action { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid #bfd2e7; border-radius: 8px; padding: .55rem .8rem; background: #fff; color: #0f4a8a; font-weight: 800; }
+    .primary-action { background: #0f4a8a; color: #fff; }
+    .action-icon { position: relative; display: inline-flex; width: 16px; height: 16px; flex: 0 0 16px; align-items: center; justify-content: center; }
+    .action-icon::before, .action-icon::after { content: ""; position: absolute; box-sizing: border-box; }
+    .close-icon::before, .close-icon::after { width: 15px; height: 2px; background: currentColor; border-radius: 2px; }
+    .close-icon::before { transform: rotate(45deg); }
+    .close-icon::after { transform: rotate(-45deg); }
+    .add-icon::before { width: 14px; height: 2px; background: currentColor; border-radius: 2px; }
+    .add-icon::after { width: 2px; height: 14px; background: currentColor; border-radius: 2px; }
+    .delete-icon::before { width: 11px; height: 12px; border: 2px solid currentColor; border-top: 0; border-radius: 0 0 2px 2px; transform: translateY(2px); }
+    .delete-icon::after { width: 13px; height: 2px; background: currentColor; box-shadow: 0 -3px 0 -1px currentColor; transform: translateY(-5px); }
+    .back-icon::before { width: 13px; height: 2px; background: currentColor; }
+    .back-icon::after { width: 8px; height: 8px; border-top: 2px solid currentColor; border-left: 2px solid currentColor; transform: translateX(-4px) rotate(-45deg); }
+    .save-icon::before { width: 13px; height: 13px; border: 2px solid currentColor; border-radius: 2px; }
+    .save-icon::after { width: 7px; height: 5px; border-left: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(3px); }
+    .lead-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .85fr); gap: 1rem; }
+    .lead-form-grid article { border: 1px solid #dfe7f1; border-radius: 8px; background: #fff; padding: 1rem; box-shadow: 0 12px 28px rgba(31, 42, 68, .07); min-width: 0; }
+    .panel-title { display: flex; align-items: center; gap: .5rem; margin-bottom: .9rem; }
+    .panel-title h2 { margin: 0; font-size: 1.1rem; font-weight: 850; }
+    .two-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+    .field { display: grid; gap: .35rem; margin-bottom: .8rem; min-width: 0; }
+    .field span { color: #526174; font-size: .82rem; font-weight: 800; }
+    .field small span { color: #64748b; font-size: .78rem; font-weight: 650; }
+    .form-input { width: 100%; min-height: 40px; border: 1px solid #d7e0ec; border-radius: 8px; background: #fff; padding: .48rem .6rem; }
+    .form-input.compact { min-height: 34px; padding: .35rem .45rem; }
+    .notes { min-height: 150px; resize: vertical; }
+    .product-picker { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; align-items: center; }
+    .product-table-wrap { overflow-x: auto; border: 1px solid #e6edf5; border-radius: 8px; }
+    .product-table { width: 100%; min-width: 640px; border-collapse: collapse; }
+    .product-table th, .product-table td { padding: .5rem; border-bottom: 1px solid #e6edf5; vertical-align: middle; }
+    .product-table th { color: #64748b; font-size: .72rem; text-transform: uppercase; background: #fbfdff; }
+    .icon-row-action { width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #bfd2e7; border-radius: 8px; background: #fff; color: #9f1d1d; }
+    .form-alert { border: 1px solid #f5b5b5; border-radius: 8px; margin-bottom: 1rem; padding: .75rem; background: #fff1f1; color: #9f1d1d; font-weight: 700; }
+    .validation-message { color: #b91c1c; font-size: .78rem; }
+    @@media (max-width: 900px) { .form-footer { flex-direction: column; } .lead-form-grid, .two-cols { grid-template-columns: 1fr; } }
+</style>

@@ -54,12 +54,23 @@
 
                         <label class="deal-field">
                             <span><DisplayName For="@(() => _deal.Amount)" /></span>
-                            <InputNumber class="deal-input" @bind-Value="_deal.Amount" />
+                            <InputNumber class="deal-input" @bind-Value="_deal.Amount" disabled="@_deal.ProductInterests.Any()" />
                         </label>
 
                         <label class="deal-field">
                             <span><DisplayName For="@(() => _deal.Target)" /></span>
-                            <InputNumber class="deal-input" @bind-Value="_deal.Target" />
+                            <InputNumber class="deal-input" @bind-Value="_deal.Target" disabled="@_deal.ProductInterests.Any()" />
+                        </label>
+
+                        <label class="deal-field">
+                            <span>Probabilita</span>
+                            <InputNumber class="deal-input" @bind-Value="_deal.Probability" />
+                            <ValidationMessage For="@(() => _deal.Probability)" />
+                        </label>
+
+                        <label class="deal-field">
+                            <span>Chiusura prevista</span>
+                            <InputDate class="deal-input" @bind-Value="_deal.ExpectedCloseDate" />
                         </label>
 
                         <label class="deal-field">
@@ -120,6 +131,69 @@
                             <InputTextArea class="deal-input deal-notes-input" @bind-Value="_deal.Note" />
                         </label>
                     </div>
+                </article>
+
+                <article class="deal-form-panel deal-products-panel">
+                    <div class="deal-panel-title">
+                        <span class="material-icons">inventory_2</span>
+                        <h2>Prodotti collegati</h2>
+                    </div>
+
+                    <div class="deal-field">
+                        <span>Prodotto</span>
+                        <div class="product-picker">
+                            <InputSelect class="deal-input" @bind-Value="_selectedProductId">
+                                <option value="">Seleziona prodotto</option>
+                                @foreach (var product in ProductsAvailableToAdd)
+                                {
+                                    <option value="@product.Id">@ProductText(product)</option>
+                                }
+                            </InputSelect>
+                            <button type="button" class="deal-secondary" @onclick="AddProductInterest">
+                                <span class="material-icons">add</span>
+                                <span>Aggiungi</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (_deal.ProductInterests.Any())
+                    {
+                        <div class="product-table-wrap">
+                            <table class="product-table">
+                                <thead>
+                                    <tr>
+                                        <th>Prodotto</th>
+                                        <th>Qta</th>
+                                        <th>Prezzo</th>
+                                        <th>Sconto %</th>
+                                        <th>Totale</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in _deal.ProductInterests.OrderBy(x => x.SortOrder))
+                                    {
+                                        <tr>
+                                            <td>@row.DisplayName</td>
+                                            <td><InputNumber class="deal-input compact" @bind-Value="row.Quantity" @onchange="@(() => RecalculateProductInterest(row))" /></td>
+                                            <td><InputNumber class="deal-input compact" @bind-Value="row.UnitPrice" @onchange="@(() => RecalculateProductInterest(row))" /></td>
+                                            <td><InputNumber class="deal-input compact" @bind-Value="row.DiscountPct" @onchange="@(() => RecalculateProductInterest(row))" /></td>
+                                            <td class="money">@row.LineTotal.ToString("C")</td>
+                                            <td>
+                                                <button type="button" class="deal-icon-row-action" title="Rimuovi prodotto" @onclick="@(() => RemoveProductInterest(row))">
+                                                    <span class="material-icons">delete</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="product-empty">Nessun prodotto collegato.</p>
+                    }
                 </article>
             </section>
 
@@ -272,6 +346,11 @@
         padding: 0.48rem 0.6rem;
     }
 
+    .deal-input.compact {
+        min-height: 34px;
+        padding: 0.35rem 0.45rem;
+    }
+
     .deal-radzen-input {
         padding: 0;
     }
@@ -279,6 +358,65 @@
     .deal-notes-input {
         min-height: 190px;
         resize: vertical;
+    }
+
+    .deal-products-panel {
+        grid-column: 1 / -1;
+    }
+
+    .product-picker {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .product-table-wrap {
+        overflow-x: auto;
+        border: 1px solid #e6edf5;
+        border-radius: 8px;
+    }
+
+    .product-table {
+        width: 100%;
+        min-width: 720px;
+        border-collapse: collapse;
+    }
+
+    .product-table th,
+    .product-table td {
+        padding: 0.5rem;
+        border-bottom: 1px solid #e6edf5;
+        vertical-align: middle;
+    }
+
+    .product-table th {
+        color: #64748b;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        background: #fbfdff;
+    }
+
+    .money {
+        font-weight: 850;
+    }
+
+    .deal-icon-row-action {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #bfd2e7;
+        border-radius: 8px;
+        background: #fff;
+        color: #9f1d1d;
+    }
+
+    .product-empty {
+        margin: 0;
+        color: #64748b;
+        font-weight: 700;
     }
 
     .validation-message {

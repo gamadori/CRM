@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Codex build artifacts
+.codex/
+
 # User-specific files
 *.rsuser
 *.suo
@@ -343,3 +346,12 @@ healthchecksdb
 
 # Upload files and archives
 CRM/Server/Archives/
+
+# Visual Studio 2026 / Copilot Workspace build artifacts
+/.tmpbuild/
+/.codex-build/
+**/.codex-build/
+/.verifybuild/
+/.verifybuild*/
+**/.verifybuild/
+**/.verifybuild*/

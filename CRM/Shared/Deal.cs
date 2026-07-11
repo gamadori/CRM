@@ -59,6 +59,13 @@ namespace CRM.Shared
         [Display(Name = nameof(Deal.Target), ResourceType = typeof(Resources.Models.Deal))]
         public decimal Target { get; set; }
 
+        [Range(0, 100)]
+        [Display(Name = "Probabilita'")]
+        public int Probability { get; set; }
+
+        [Display(Name = "Chiusura prevista")]
+        public DateTime? ExpectedCloseDate { get; set; }
+
         [Display(Name = nameof(Deal.Note), ResourceType = typeof(Resources.Models.Deal))]
         public string Note { get; set; }
 
@@ -79,7 +86,9 @@ namespace CRM.Shared
 
         public virtual Contact? Contact { get; set; }
 
-        public virtual ApplicationUser User { get; set; }   
+        public virtual ApplicationUser User { get; set; }
+
+        public virtual ICollection<DealProductInterest> ProductInterests { get; set; } = new List<DealProductInterest>();
     }
 
     public class DealFilter: PagingParameterModel
@@ -91,5 +100,9 @@ namespace CRM.Shared
         public DealStates? State { get; set; }
 
         public DealPhases? Phase { get; set; }
+
+        public DateTime? ExpectedCloseFrom { get; set; }
+
+        public DateTime? ExpectedCloseTo { get; set; }
     }
 }

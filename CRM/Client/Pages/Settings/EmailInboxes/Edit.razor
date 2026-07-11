@@ -1,0 +1,104 @@
+@page "/Settings/EmailInboxes/New"
+@page "/Settings/EmailInboxes/{Id:int}/Edit"
+@using CRM.Shared
+@using Radzen
+@using Radzen.Blazor
+
+@if (_item == null || _isLoading)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <PageHeader Model="_pageHeader"></PageHeader>
+
+    <EditForm Model="@_item" OnValidSubmit="HandleValidSubmit">
+        <RadzenRow Gap="1rem" class="mb-3">
+            <RadzenColumn Size="12" SizeSM="6">
+                <RadzenStack>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <RedGTextBox For="@(() => _item.Name)" @bind-value="@_item.Name" />
+                    <RedGTextBox For="@(() => _item.Address)" @bind-value="@_item.Address" />
+
+                    <div class="mb-1">
+                        <DisplayName For="@(() => _item.Mode)" />
+                        <RadzenDropDown TValue="EmailInboxMode" @bind-Value="_item.Mode" Data="_modes" TextProperty="Text" ValueProperty="Value" Style="width:100%" />
+                    </div>
+
+                    <div class="mb-1">
+                        <DisplayName For="@(() => _item.DefaultAction)" />
+                        <RadzenDropDown TValue="InboundAction" @bind-Value="_item.DefaultAction" Data="_actions" TextProperty="Text" ValueProperty="Value" Style="width:100%" />
+                    </div>
+
+                    <div class="mb-1">
+                        <DisplayName For="@(() => _item.UseAiTriage)" />
+                        <RadzenCheckBox @bind-Value="_item.UseAiTriage" Name="chkAi" />
+                        <div class="text-muted small">
+                            L'AI riassume l'email (descrizione del ticket più leggibile) e valuta se è una richiesta
+                            di assistenza. Le email non pertinenti non aprono ticket automatici, ma restano registrate
+                            e segnalate come da leggere: puoi sempre creare il ticket a mano.
+                        </div>
+                    </div>
+
+                    @if (_item.DefaultAction == InboundAction.NewTicket)
+                    {
+                        <div class="mb-1">
+                            <DisplayName For="@(() => _item.IdDefaultType)" />
+                            <RadzenDropDown TValue="int?" @bind-Value="_item.IdDefaultType" Data="_ticketTypes" ValueProperty="Id" TextProperty="Desc"
+                                            AllowClear="true" AllowFiltering="true" Placeholder="Tipo ticket..." Style="width:100%" />
+                        </div>
+                        <div class="mb-1">
+                            <DisplayName For="@(() => _item.IdDefaultOwner)" />
+                            <RadzenDropDown TValue="string" @bind-Value="_item.IdDefaultOwner" Data="_users" ValueProperty="Id" TextProperty="NameComplete"
+                                            AllowClear="true" AllowFiltering="true" Placeholder="Proprietario..." Style="width:100%" />
+                        </div>
+                        <div class="text-muted small">La creazione automatica di ticket richiede tipo e proprietario impostati; altrimenti l'email diventa un'attività.</div>
+                    }
+
+                    <div class="mb-1">
+                        <DisplayName For="@(() => _item.IsActive)" />
+                        <RadzenCheckBox @bind-Value="_item.IsActive" Name="chkActive" />
+                    </div>
+
+                    @if (_item.Mode == EmailInboxMode.Imap)
+                    {
+                        <RedGTextBox For="@(() => _item.Host)" @bind-value="@_item.Host" />
+                        <RedGNumeric For="@(() => _item.Port)" @bind-value="@_item.Port" />
+                        <div class="mb-1">
+                            <DisplayName For="@(() => _item.Ssl)" />
+                            <RadzenCheckBox @bind-Value="_item.Ssl" Name="chkSsl" />
+                        </div>
+                        <RedGTextBox For="@(() => _item.Username)" @bind-value="@_item.Username" />
+                        <RedGPassword For="@(() => _item.Password)" @bind-value="@_item.Password" />
+                        <RedGTextBox For="@(() => _item.Folder)" @bind-value="@_item.Folder" />
+                        <RedGNumeric For="@(() => _item.PollingSeconds)" @bind-value="@_item.PollingSeconds" />
+                    }
+                    else
+                    {
+                        <div class="mb-1">
+                            <DisplayName For="@(() => _item.Provider)" />
+                            <RadzenDropDown TValue="EmailProvider" @bind-Value="_item.Provider" Data="_providers" TextProperty="Text" ValueProperty="Value" Style="width:100%" />
+                        </div>
+                        <RedGTextBox For="@(() => _item.WebhookToken)" @bind-value="@_item.WebhookToken" />
+                        <div class="text-muted small">
+                            Configura nel provider l'URL inbound: <code>/api/EmailInbound/@(_item.Provider.ToString().ToLower())?token=&lt;token&gt;</code> (richiede record MX verso l'ESP).
+                        </div>
+                    }
+
+                    <div class="mt-2">
+                        <RedGButton RGButtonType="RGButtonType.Submit" Click="TestAsync" Disabled="@_testInProgress">Test casella</RedGButton>
+                        @if (!string.IsNullOrEmpty(_testResult))
+                        {
+                            <div class="mt-2 @(_testOk ? "text-success" : "text-danger")">@_testResult</div>
+                        }
+                    </div>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" AutoLabel="true" />
+        <RedGButton RGButtonType="RGButtonType.Submit" AutoLabel="true" />
+    </EditForm>
+}

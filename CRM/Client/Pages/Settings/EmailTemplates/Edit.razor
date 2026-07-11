@@ -1,60 +1,238 @@
-﻿@page "/Settings/EmailTemplates/New"
-@page "/Settings/EmailTemplates/{Id:int}/Edit"
+@page "/Settings/EmailTemplates/{TipoValue:int}"
+@using CRM.Client.Helpers
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Microsoft.AspNetCore.Authorization
 @using Radzen
 @using Radzen.Blazor
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IHeaderService HeaderService
+@inject ILogosService LogosService
+@inject NotificationService Notification
 
+<PageHeader Model="_pageHeader"></PageHeader>
 
-@if (_template == null)
+@if (_group == null)
 {
     <Waiting></Waiting>
 }
 else
 {
-    <PageHeader Model="_pageHeader">
-    </PageHeader>
+    <div class="mb-2">
+        <h5 class="fw-bold mb-0">@UtilityHelper.GetDisplayName(_group.Tipo)</h5>
+        <div class="text-muted small">Un template, una scheda per lingua.</div>
+    </div>
 
-    <EditForm Model="@_template" OnValidSubmit="HandleValidSubmit">
-        <RadzenRow Gap="1rem" class="mb-3">
-            <RadzenColumn Size="12" SizeSM="8">
-                <RadzenStack>
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
-                    <RadzenRow>
-                        <RadzenColumn Size="12">
-                            <RadzenStack>
-                                
-                                <RedGSelectEnumGeneric TEnum="CRM.Shared.EmailsTypes" @bind-Value="@_template.Tipo" />
-                            </RadzenStack>
-                        </RadzenColumn>
-                    </RadzenRow>
-                     <RadzenRow>
-                        <RadzenColumn Size="12" >
-                            <RadzenStack>
-                                <RedGTextBox @bind-Value="@_template.Subject" For="@(() => _template.Subject)" />
-                            </RadzenStack>
-                        </RadzenColumn>
-                    </RadzenRow>
-                    <RadzenRow>
-                        <RadzenColumn Size="12">
-                            <RadzenStack>
-                                <RedGTextArea @bind-Value="@_template.Body" For="@(() => _template.Subject)" Rows="9" />
-                            </RadzenStack>
-                        </RadzenColumn>
-                    </RadzenRow>
-                    <RadzenRow>
-                        <RadzenColumn Size="12" >
-                            <RadzenStack>
-                                <RedGDropDown TValue="int?" TItem="Logo" Data="_loghi" @bind-Value="@_template.IdLogo" For="@(() => _template.IdLogo)" ValueProperty="Id" TextProperty="Codice" />
-                            </RadzenStack>
-                        </RadzenColumn>
-                    </RadzenRow>
-                </RadzenStack>
+    <!-- Schede lingua -->
+    <ul class="nav nav-pills mb-3">
+        @foreach (var v in _group.Versions)
+        {
+            var filled = !string.IsNullOrWhiteSpace(v.Subject);
+            <li class="nav-item">
+                <button type="button" class="nav-link @(v.Language == _activeLang ? "active" : "")"
+                        @onclick="@(() => _activeLang = v.Language)">
+                    @v.Language.ToUpper()
+                    @if (filled)
+                    {
+                        <span class="ms-1" style="color:#28a745">●</span>
+                    }
+                </button>
+            </li>
+        }
+    </ul>
 
-            </RadzenColumn>
-        </RadzenRow>
-        <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" AutoLabel="true" />
-        <RedGButton RGButtonType="RGButtonType.Submit" AutoLabel="true" />
-    </EditForm>
-    
-    
+    <RadzenRow Gap="1rem" class="mb-3">
+        <RadzenColumn Size="12" SizeSM="9">
+            <RadzenStack>
+                <div>
+                    <label class="form-label mb-1 small">Oggetto (@_activeLang)</label>
+                    <RadzenTextBox @bind-Value="Current.Subject" Style="width:100%" />
+                </div>
+
+                <div class="small text-muted">
+                    Segnaposto (clic per inserire):
+                    @foreach (var p in EmailPlaceholders.All)
+                    {
+                        <span class="badge bg-light text-dark border me-1" role="button" title="@p.Description"
+                              @onclick="@(() => InsertPlaceholder(p.Token))">@p.Token</span>
+                    }
+                </div>
+
+                <div>
+                    <label class="form-label mb-1 small">Corpo (@_activeLang)</label>
+                    <RadzenTextArea @bind-Value="Current.Body" Rows="12" Style="width:100%" />
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <RadzenButton Icon="visibility" Text="Anteprima" ButtonStyle="ButtonStyle.Light" Click="Preview" />
+                    <RadzenButton Icon="send" Text="Invia test a me" ButtonStyle="ButtonStyle.Secondary" Disabled="@_busy" Click="SendTest" />
+                    @if (!string.IsNullOrWhiteSpace(Current.Subject))
+                    {
+                        <RadzenButton Icon="translate" Text="Traduci nelle altre lingue" ButtonStyle="ButtonStyle.Info" Disabled="@_translating" Click="TranslateOthers" />
+                        <RadzenButton Icon="delete" Text="Svuota lingua" ButtonStyle="ButtonStyle.Light" Click="ClearCurrent" />
+                    }
+                    @if (_translating)
+                    {
+                        <span class="text-muted small align-self-center">Traduzione in corso…</span>
+                    }
+                </div>
+
+                @if (_previewBody != null)
+                {
+                    <div class="card border-0 shadow-sm mt-2">
+                        <div class="card-header bg-light py-2"><strong>Oggetto:</strong> @_previewSubject</div>
+                        <div class="card-body">@((MarkupString)_previewBody)</div>
+                    </div>
+                }
+            </RadzenStack>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeSM="3">
+            <RadzenStack>
+                <div>
+                    <label class="form-label mb-1 small">Logo (comune a tutte le lingue)</label>
+                    <RadzenDropDown TValue="int?" TItem="Logo" Data="_loghi" @bind-Value="_group.IdLogo"
+                                    ValueProperty="Id" TextProperty="Codice" AllowClear="true" Style="width:100%" />
+                </div>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" AutoLabel="true" />
+    <RedGButton RGButtonType="RGButtonType.Submit" Click="Save" AutoLabel="true" />
+}
+
+@code {
+    [Parameter] public int TipoValue { get; set; }
+
+    private readonly string[] _languages = { "it", "en", "es", "fr" };
+
+    private EmailTemplateGroupDTO? _group;
+    private string _activeLang = "it";
+    private List<Logo> _loghi = new();
+
+    private string? _previewSubject;
+    private string? _previewBody;
+    private bool _busy;
+    private bool _translating;
+
+    private PageHeaderModel? _pageHeader;
+
+    private EmailTemplateVersionDTO Current => _group!.Versions.First(v => v.Language == _activeLang);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        _loghi = await LogosService.GetListAsync(new LogosFilterModel()) ?? new();
+
+        var group = await Http.GetFromJsonAsync<EmailTemplateGroupDTO>($"api/EmailTemplates/by-type/{TipoValue}")
+                    ?? new EmailTemplateGroupDTO { Tipo = (EmailsTypes)TipoValue };
+
+        // Garantisce una versione per ogni lingua (schede sempre presenti).
+        foreach (var lang in _languages)
+            if (group.Versions.All(v => v.Language != lang))
+                group.Versions.Add(new EmailTemplateVersionDTO { Language = lang });
+
+        group.Versions = group.Versions.OrderBy(v => Array.IndexOf(_languages, v.Language)).ToList();
+        _group = group;
+        _activeLang = "it";
+    }
+
+    private void InsertPlaceholder(string token) => Current.Body = (Current.Body ?? string.Empty) + token;
+
+    private void ClearCurrent()
+    {
+        Current.Subject = null;
+        Current.Body = null;
+        _previewBody = null;
+    }
+
+    private async Task Preview()
+    {
+        var resp = await Http.PostAsJsonAsync("api/EmailTemplates/preview", new EmailTemplate { Subject = Current.Subject ?? "", Body = Current.Body ?? "" });
+        if (resp.IsSuccessStatusCode)
+        {
+            var r = await resp.Content.ReadFromJsonAsync<PreviewResult>();
+            _previewSubject = r?.Subject;
+            _previewBody = r?.Body;
+        }
+    }
+
+    private async Task SendTest()
+    {
+        _busy = true;
+        try
+        {
+            var resp = await Http.PostAsJsonAsync("api/EmailTemplates/test", new EmailTemplate { Subject = Current.Subject ?? "", Body = Current.Body ?? "" });
+            var r = await resp.Content.ReadFromJsonAsync<TestResult>();
+            Notification.Notify(resp.IsSuccessStatusCode && (r?.Success ?? false) ? NotificationSeverity.Success : NotificationSeverity.Error,
+                "Invio test", r?.Message ?? "");
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task TranslateOthers()
+    {
+        // Traduce solo verso le lingue ancora vuote, per non sovrascrivere traduzioni esistenti.
+        var targets = _languages
+            .Where(l => l != _activeLang && string.IsNullOrWhiteSpace(_group!.Versions.First(v => v.Language == l).Subject))
+            .ToList();
+
+        if (targets.Count == 0)
+        {
+            Notification.Notify(NotificationSeverity.Info, "Traduzione", "Le altre lingue sono già compilate.");
+            return;
+        }
+
+        _translating = true;
+        try
+        {
+            var req = new EmailTemplateTranslateRequest
+            {
+                SourceLanguage = _activeLang,
+                Subject = Current.Subject ?? "",
+                Body = Current.Body,
+                TargetLanguages = targets
+            };
+
+            var resp = await Http.PostAsJsonAsync("api/EmailTemplates/translate", req);
+            if (!resp.IsSuccessStatusCode)
+            {
+                Notification.Notify(NotificationSeverity.Error, "Traduzione", "Traduzione non riuscita (verifica la chiave AI).");
+                return;
+            }
+
+            var versions = await resp.Content.ReadFromJsonAsync<List<EmailTemplateVersionDTO>>() ?? new();
+            foreach (var tv in versions)
+            {
+                var target = _group!.Versions.FirstOrDefault(v => v.Language == tv.Language);
+                if (target != null)
+                {
+                    target.Subject = tv.Subject;
+                    target.Body = tv.Body;
+                }
+            }
+
+            Notification.Notify(NotificationSeverity.Success, "Traduzione", $"Tradotto in: {string.Join(", ", versions.Select(v => v.Language))}. Verifica e salva.");
+        }
+        finally { _translating = false; }
+    }
+
+    private async Task Save()
+    {
+        var resp = await Http.PostAsJsonAsync("api/EmailTemplates/by-type", _group);
+        if (resp.IsSuccessStatusCode)
+            NavigationManager.NavigateTo("/Settings/EmailTemplates");
+        else
+            Notification.Notify(NotificationSeverity.Error, "Errore", "Salvataggio fallito.");
+    }
+
+    private void Annulla() => NavigationManager.NavigateTo("/Settings/EmailTemplates");
+
+    private class PreviewResult { public string? Subject { get; set; } public string? Body { get; set; } }
+    private class TestResult { public bool Success { get; set; } public string? Message { get; set; } }
 }

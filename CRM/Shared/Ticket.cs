@@ -74,14 +74,6 @@ namespace CRM.Shared
         ForAFee
     }
 
-    public enum RequesterType
-    {
-        [Display(Name = "Contatto")]
-        Contact,
-        [Display(Name = "Utente")]
-        User
-    }
-
     public class Ticket
     {
         public Ticket()
@@ -144,15 +136,19 @@ namespace CRM.Shared
         [Display(Name = nameof(Ticket.Description), ResourceType = typeof(Resources.Models.Ticket))]
         public string Description { get; set; }
 
+        public string? OperationalSummary { get; set; }
+
+        public DateTime? OperationalSummaryUpdatedAt { get; set; }
+
+        [ForeignKey(nameof(OperationalSummaryUpdatedByUser))]
+        public string? OperationalSummaryUpdatedBy { get; set; }
+
         [Display(Name = nameof(Ticket.MinuteWork), ResourceType = typeof(Resources.Models.Ticket))]
         public int MinuteWork { get; set; }
 
+        [ForeignKey(nameof(UserOpened))]
         [Display(Name = nameof(Ticket.IdUserOpened), ResourceType = typeof(Resources.Models.Ticket))]
         public string IdUserOpened { get; set; }
-        [ForeignKey("UserOpend")]
-
-        [Display(Name = nameof(Ticket.IdUserCustomer), ResourceType = typeof(Resources.Models.Ticket))]
-        public string IdUserCustomer { get; set; }
 
         [ForeignKey(nameof(Contact))]
         [Display(Name = nameof(Ticket.IdContact), ResourceType = typeof(Resources.Models.Ticket))]
@@ -257,6 +253,9 @@ namespace CRM.Shared
         [JsonIgnore]
         public virtual ApplicationUser UserClosed { get; set; }
 
+        [JsonIgnore]
+        public virtual ApplicationUser? OperationalSummaryUpdatedByUser { get; set; }
+
 
         [JsonIgnore]
         public virtual Contact? Contact { get; set; }
@@ -298,8 +297,6 @@ namespace CRM.Shared
         public string? Search { get; set; }
 
         public string IdUserOpened { get; set; }
-
-        public string IdUserCustomer { get; set; }
 
         public string IdUserAssigned { get; set; }
 

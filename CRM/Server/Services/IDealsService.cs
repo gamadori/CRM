@@ -9,6 +9,7 @@ namespace CRM.Server.Services
         Task<DealDTO?> GetItemAsync(int id);
         Task<DealDTO?> GetFirstAsync();
         Task<PagingResponse<DealDTO, decimal>?> GetSummaryAsync(DealFilter? args);
+        Task<CommercialForecastDTO?> GetForecastAsync(DealForecastFilter? args);
         Task<PagingResponse<DealDTO>?> GetPagingAsync(DealFilter? args = null);
         Task<List<DealDTO>?> GetListAsync(DealFilter? args = null);
         Task<APIResponseMessage<DealDTO>> PostAsync(Deal item);

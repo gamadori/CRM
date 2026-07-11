@@ -3,6 +3,7 @@ using CRM.Client.Helpers;
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
@@ -10,8 +11,6 @@ using Radzen;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Threading.Tasks;
 using static CRM.Client.Helpers.PageHelper;
 
@@ -39,9 +38,6 @@ namespace CRM.Client.Pages.Tickets
 
         [Inject]
         DialogService DialogService { get; set; }
-
-        [Inject]
-        HttpClient HttpClient { get; set; }
 
         [Parameter]
         public DateTime DateCurrent
@@ -93,8 +89,6 @@ namespace CRM.Client.Pages.Tickets
         private List<TicketSchedulerViewModel> _ticketsWithoutTime = new List<TicketSchedulerViewModel>();
         private string? _idUser;
         private bool _loading = true;
-        private Dictionary<int, List<ApplicationUser>> _ticketAssignedUsersCache = new();
-
         // Timeline configuration
         private TimeOnly _workDayStart = new TimeOnly(8, 0);
         private TimeOnly _workDayEnd = new TimeOnly(20, 0);
@@ -178,7 +172,6 @@ namespace CRM.Client.Pages.Tickets
             _allTickets.Clear();
             _ticketsByTimeSlot.Clear();
             _ticketsWithoutTime.Clear();
-            _ticketAssignedUsersCache.Clear();
 
             TicketFilter filter = new TicketFilter();
             if (_idUser != null && _idUser.Length > 0)
@@ -191,43 +184,9 @@ namespace CRM.Client.Pages.Tickets
             filter.DateFrom = _dateCurrent.Date;
             filter.DateTo = _dateCurrent.Date.AddDays(1).AddSeconds(-1);
 
-            var tickets = await _serviceTicket.GetList(filter);
+            var tickets = await _serviceTicket.GetScheduleItemsAsync(filter);
+            _allTickets = tickets.Select(ToSchedulerViewModel).ToList();
 
-            if (tickets != null)
-            {
-                foreach (var t in tickets.Items)
-                {
-                    var assignedUsers = await LoadAssignedUsersForTicket(t.Id);
-
-                    string backColor = assignedUsers.Any()
-                        ? assignedUsers.First().Color ?? "white"
-                        : "white";
-
-                    var ticketViewModel = new TicketSchedulerViewModel
-                    {
-                        Id = t.Id,
-                        Date = t.Date,
-                        Time = t.Time,
-                        DateEnd = t.DateEnd,
-                        Company = t.Company,
-                        User = assignedUsers.Any() ? assignedUsers.First().NameComplete : null,
-                        AssignedUserIds = assignedUsers.Select(u => u.Id).ToList(),
-                        AssignedUserNames = assignedUsers.Select(u => u.NameComplete).ToList(),
-                        BackColor = backColor,
-                        Description = t.Description,
-                        
-                        // ? NUOVO: Popola STATO del ticket
-                        Status = t.IdState ?? 0,
-                        Expired = t.DateExpired.HasValue && t.DateExpired.Value < DateTime.Now,
-                        StatusColor = t.StateColor,
-                        StatusText = t.State  // ? FIX: Usa State invece di StateDesc
-                    };
-
-                    _allTickets.Add(ticketViewModel);
-                }
-            }
-
-            // Organizza i ticket per slot orari
             OrganizeTicketsByTimeSlots();
 
             _loading = false;
@@ -239,23 +198,15 @@ namespace CRM.Client.Pages.Tickets
             _ticketsByTimeSlot.Clear();
             _ticketsWithoutTime.Clear();
 
-            Console.WriteLine($"?? Organizing {_allTickets.Count} tickets into time slots");
-
             foreach (var ticket in _allTickets)
             {
                 if (ticket.Time.HasValue)
                 {
-                    Console.WriteLine($"?? Ticket #{ticket.Id} has time: {ticket.Time.Value:HH:mm}");
-
-                    // ? FIX: Trova lo slot orario con confronto corretto
-                    // Un ticket alle 08:15 deve stare nello slot 08:00-08:30
                     var slot = _timeSlots.FirstOrDefault(s =>
                         ticket.Time.Value >= s.Start && ticket.Time.Value < s.End);
 
                     if (slot != null)
                     {
-                        Console.WriteLine($"   ? Assigned to slot {slot.Start:HH:mm}-{slot.End:HH:mm}");
-
                         if (!_ticketsByTimeSlot.ContainsKey(slot))
                         {
                             _ticketsByTimeSlot[slot] = new List<TicketSchedulerViewModel>();
@@ -265,61 +216,36 @@ namespace CRM.Client.Pages.Tickets
                     }
                     else
                     {
-                        Console.WriteLine($"   ?? Time {ticket.Time.Value:HH:mm} is outside working hours ({_workDayStart:HH:mm}-{_workDayEnd:HH:mm})");
-                        // Fuori orario lavorativo
                         _ticketsWithoutTime.Add(ticket);
                     }
                 }
                 else
                 {
-                    Console.WriteLine($"?? Ticket #{ticket.Id} has NO time");
-                    // Ticket senza orario
                     _ticketsWithoutTime.Add(ticket);
                 }
             }
-
-            Console.WriteLine($"? Organized into {_ticketsByTimeSlot.Count} time slots + {_ticketsWithoutTime.Count} without time");
         }
 
-        private async Task<List<ApplicationUser>> LoadAssignedUsersForTicket(int ticketId)
+        private static TicketSchedulerViewModel ToSchedulerViewModel(TicketScheduleItemDTO ticket)
         {
-            if (_ticketAssignedUsersCache.TryGetValue(ticketId, out var cachedUsers))
+            var mainUser = ticket.AssignedUsers.FirstOrDefault();
+            return new TicketSchedulerViewModel
             {
-                return cachedUsers;
-            }
-
-            try
-            {
-                var userIds = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{ticketId}/assigned-users");
-
-                if (userIds == null || !userIds.Any())
-                {
-                    _ticketAssignedUsersCache[ticketId] = new List<ApplicationUser>();
-                    return _ticketAssignedUsersCache[ticketId];
-                }
-
-                var users = _users.Where(u => userIds.Contains(u.Id)).ToList();
-
-                var missingUserIds = userIds.Where(id => !_users.Any(u => u.Id == id)).ToList();
-                foreach (var userId in missingUserIds)
-                {
-                    var user = await _serviceUser.Get(userId);
-                    if (user != null)
-                    {
-                        users.Add(user);
-                        _users.Add(user);
-                    }
-                }
-
-                _ticketAssignedUsersCache[ticketId] = users;
-                return users;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Errore caricamento utenti assegnati per ticket {ticketId}: {ex.Message}");
-                _ticketAssignedUsersCache[ticketId] = new List<ApplicationUser>();
-                return _ticketAssignedUsersCache[ticketId];
-            }
+                Id = ticket.Id,
+                Date = ticket.Date,
+                Time = ticket.Time,
+                DateEnd = ticket.DateEnd,
+                Company = ticket.Company ?? string.Empty,
+                User = mainUser?.NameComplete,
+                AssignedUserIds = ticket.AssignedUsers.Select(u => u.Id).ToList(),
+                AssignedUserNames = ticket.AssignedUsers.Select(u => u.NameComplete).Where(n => !string.IsNullOrWhiteSpace(n)).ToList(),
+                BackColor = mainUser?.Color ?? "white",
+                Description = ticket.Description ?? string.Empty,
+                Status = ticket.IdState ?? 0,
+                Expired = ticket.DateExpired.HasValue && ticket.DateExpired.Value < DateTime.Now,
+                StatusColor = ticket.StateColor ?? string.Empty,
+                StatusText = ticket.State ?? string.Empty
+            };
         }
 
         public async Task RefreshTimeline()
@@ -362,7 +288,7 @@ namespace CRM.Client.Pages.Tickets
                 { "Date", _dateCurrent },
                 { "OnClickCancel", new Action(CloseDialog) },
                 { "OnClickSave", new Action(CloseDialog) },
-                { "Scheduler", false },
+                { "ShowPlanningPicker", false },
                 { "PageMode", PageModality.Dialog }
             };
 

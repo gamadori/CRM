@@ -112,7 +112,9 @@ namespace CRM.Server.Controllers
                 var listChats = await ticketChats.Select(x => new TicketChatViewModel
                 {
                     Id = x.Id, Date = x.Date, Message = x.Deleted ? null : x.Message, IdUser = x.IdUser,
-                    TypeMessage = TicketHelper.GetTypeMessage(x, user.IdCompany), Color = x.User.Color, UserName = x.User.UserName,
+                    TypeMessage = TicketHelper.GetTypeMessage(x, user.IdCompany),
+                    Color = x.User != null ? x.User.Color : null,
+                    UserName = x.User != null ? x.User.UserName : x.ExternalSender,
                     Deleted = x.Deleted,
                     CanDelete = !x.Deleted && x.IdUser == user.Id,
                     AttachmentFileId = x.Deleted ? null : x.IdAttachmentFile,
@@ -225,8 +227,11 @@ namespace CRM.Server.Controllers
                 // var list = await companies.ToListAsync();
                 var user = await _permitsService.GetUser();
 
-                var listChats = await ticketChats.Select(x => new TicketChatViewModel() { Id = x.Id, Date = x.Date, Message = x.Message, 
-                    TypeMessage = TicketHelper.GetTypeMessage( x, user.IdCompany), Color = x.User.Color, UserName = x.User.UserName, IdUser = x.IdUser }).ToListAsync();
+                var listChats = await ticketChats.Select(x => new TicketChatViewModel() { Id = x.Id, Date = x.Date, Message = x.Message,
+                    TypeMessage = TicketHelper.GetTypeMessage( x, user.IdCompany),
+                    Color = x.User != null ? x.User.Color : null,
+                    UserName = x.User != null ? x.User.UserName : x.ExternalSender,
+                    IdUser = x.IdUser }).ToListAsync();
 
                 return listChats;
             }

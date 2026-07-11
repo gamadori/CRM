@@ -18,6 +18,11 @@
         <HeaderTemplate>
             <div class="d-flex align-items-center gap-5">
                 <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
+                <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                    <Authorized>
+                        <RadzenButton Icon="upload_file" Text="Importa Excel" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" Click="@(() => NavigationManager.NavigateTo("/Articles/Import"))" />
+                    </Authorized>
+                </AuthorizeView>
                 <RedGTextBox @bind-Value="@_filter.SerialNumber" Label="@Localize["search serial..."]" @oninput="@OnChangeSerialNumberFilter">
                     <End>
                         <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
@@ -78,7 +83,9 @@
             
             <RadzenDataGridColumn TItem="ArticleDTO" Property="CompanyName" Title="@TranslateHelper.GetDisplayName(nameof(Company.RagioneSociale), typeof(Company))" />
 
-           
+            <RadzenDataGridColumn TItem="ArticleDTO" Property="RecipientCompanyName" Title="@TranslateHelper.GetDisplayName(nameof(Article.IdRecipientCompany), typeof(Article))" />
+
+
             @if (PageMode != PageHelper.PageModality.Dialog)
             {
                 <RadzenDataGridColumn Context="item"

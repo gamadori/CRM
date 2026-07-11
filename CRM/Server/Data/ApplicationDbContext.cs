@@ -26,6 +26,14 @@ namespace CRM.Server.Data
         {
             modelBuilder.Entity<ApplicationUser>().HasMany(x => x.Tickets).WithOne(x => x.UserOpened).HasForeignKey(y => y.IdUserOpened);
             modelBuilder.Entity<ApplicationUser>().HasMany(x => x.UserClosedTickets).WithOne(x => x.UserClosed).HasForeignKey(y => y.IdUserClosed);
+            modelBuilder.Entity<Contact>().HasMany(x => x.ApplicationUsers).WithOne(x => x.Contact).HasForeignKey(x => x.IdContact).OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<ApplicationUser>().Navigation(x => x.Contact).AutoInclude();
+
+            modelBuilder.Entity<Ticket>()
+                .HasOne(t => t.OperationalSummaryUpdatedByUser)
+                .WithMany()
+                .HasForeignKey(t => t.OperationalSummaryUpdatedBy)
+                .OnDelete(DeleteBehavior.NoAction);
             
             // ⚠️ LEGACY: Relazione 1-to-many tradizionale (mantenuta per compatibilità)
             modelBuilder.Entity<ApplicationUser>()
@@ -246,6 +254,15 @@ namespace CRM.Server.Data
                 entity.Property(e => e.IsActive)
                       .HasDefaultValue(1);
             });
+
+            // Articolo -> Company destinataria: seconda FK verso Company (oltre a IdCompany, l'acquirente).
+            // Configurata esplicitamente perche' con due relazioni verso la stessa entita' la convenzione
+            // non riesce ad accoppiare le navigation; Restrict evita "multiple cascade paths" su SQL Server.
+            modelBuilder.Entity<Article>()
+                .HasOne(a => a.RecipientCompany)
+                .WithMany()
+                .HasForeignKey(a => a.IdRecipientCompany)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<ArticleLicense>()
                 .HasOne(l => l.Article)
@@ -471,10 +488,163 @@ namespace CRM.Server.Data
                       .HasForeignKey(a => a.IdAssignee)
                       .OnDelete(DeleteBehavior.Restrict);
 
+                // Email collegata (opzionale): se l'email viene rimossa l'attività resta, con il link azzerato.
+                entity.HasOne(a => a.EmailSent)
+                      .WithMany()
+                      .HasForeignKey(a => a.IdEmailSent)
+                      .OnDelete(DeleteBehavior.SetNull);
+
                 // EntityId e' un riferimento polimorfico (nessuna FK): indicizzato per la timeline
                 entity.HasIndex(a => new { a.EntityType, a.EntityId });
-                entity.HasIndex(a => new { a.ReminderSent, a.ReminderAt });
+                entity.HasIndex(a => new { a.ReminderStatus, a.ReminderAt });
                 entity.HasIndex(a => a.IdAssignee);
+            });
+
+            // ---- Coda di invio email (outbox) ----
+            modelBuilder.Entity<EmailOutbox>(entity =>
+            {
+                // Indice a supporto del polling del worker: prima i Pending/Failed piu' vecchi.
+                entity.HasIndex(e => new { e.Status, e.CreatedAt });
+            });
+
+            // Un template per (tipo, lingua): consente versioni linguistiche distinte dello stesso tipo.
+            modelBuilder.Entity<EmailTemplate>()
+                .HasIndex(x => new { x.Tipo, x.Language })
+                .IsUnique();
+
+            // ---- Engagement email (Tier 3) ----
+            modelBuilder.Entity<EmailSent>(entity =>
+            {
+                // Correlazione evento->email: i webhook cercano per MessageRef.
+                entity.HasIndex(e => e.MessageRef);
+            });
+
+            modelBuilder.Entity<EmailEvent>(entity =>
+            {
+                entity.HasOne(e => e.EmailSent)
+                      .WithMany()
+                      .HasForeignKey(e => e.IdEmailSent)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.IdEmailSent);
+            });
+
+            // ---- Posta in ingresso (Tier 4) ----
+            modelBuilder.Entity<InboundEmail>(entity =>
+            {
+                entity.HasOne(e => e.Inbox)
+                      .WithMany()
+                      .HasForeignKey(e => e.IdInbox)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Deduplica: stessa casella + stesso Message-Id/UID non riprocessati.
+                entity.HasIndex(e => new { e.IdInbox, e.MessageId });
+                entity.HasIndex(e => new { e.IdInbox, e.Uid });
+            });
+
+            modelBuilder.Entity<InboundEmailAttachment>(entity =>
+            {
+                entity.HasOne(a => a.InboundEmail)
+                      .WithMany()
+                      .HasForeignKey(a => a.IdInboundEmail)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(a => a.IdInboundEmail);
+            });
+
+            // ---- Lead management + workflow automation ----
+            modelBuilder.Entity<Lead>(entity =>
+            {
+                entity.HasOne(l => l.Company)
+                      .WithMany()
+                      .HasForeignKey(l => l.IdCompany)
+                      .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasOne(l => l.Contact)
+                      .WithMany()
+                      .HasForeignKey(l => l.IdContact)
+                      .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasOne(l => l.User)
+                      .WithMany()
+                      .HasForeignKey(l => l.IdUser)
+                      .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasOne(l => l.ConvertedDeal)
+                      .WithMany()
+                      .HasForeignKey(l => l.ConvertedDealId)
+                      .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasIndex(l => l.Status);
+                entity.HasIndex(l => l.Source);
+                entity.HasIndex(l => l.IdUser);
+                entity.HasIndex(l => l.CreatedAt);
+            });
+
+            modelBuilder.Entity<LeadProductInterest>(entity =>
+            {
+                entity.HasOne(x => x.Lead)
+                      .WithMany(x => x.ProductInterests)
+                      .HasForeignKey(x => x.IdLead)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Product)
+                      .WithMany()
+                      .HasForeignKey(x => x.IdProduct)
+                      .OnDelete(DeleteBehavior.NoAction);
+
+                entity.Property(x => x.Quantity).HasPrecision(18, 3);
+                entity.Property(x => x.DiscountPct).HasPrecision(5, 2);
+                entity.HasIndex(x => x.IdLead);
+                entity.HasIndex(x => x.IdProduct);
+            });
+
+            modelBuilder.Entity<Deal>(entity =>
+            {
+                entity.Property(d => d.Probability).HasDefaultValue(0);
+                entity.HasIndex(d => d.ExpectedCloseDate);
+                entity.HasIndex(d => d.IdUser);
+            });
+
+            modelBuilder.Entity<DealProductInterest>(entity =>
+            {
+                entity.HasOne(x => x.Deal)
+                      .WithMany(x => x.ProductInterests)
+                      .HasForeignKey(x => x.IdDeal)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Product)
+                      .WithMany()
+                      .HasForeignKey(x => x.IdProduct)
+                      .OnDelete(DeleteBehavior.NoAction);
+
+                entity.Property(x => x.Quantity).HasPrecision(18, 3);
+                entity.Property(x => x.DiscountPct).HasPrecision(5, 2);
+                entity.HasIndex(x => x.IdDeal);
+                entity.HasIndex(x => x.IdProduct);
+            });
+
+            modelBuilder.Entity<WorkflowAutomation>(entity =>
+            {
+                entity.Property(w => w.MinAmount).HasColumnType("Money");
+                entity.HasIndex(w => new { w.IsActive, w.Trigger });
+            });
+
+            modelBuilder.Entity<WorkflowAutomationExecution>(entity =>
+            {
+                entity.HasOne(x => x.WorkflowAutomation)
+                      .WithMany()
+                      .HasForeignKey(x => x.IdWorkflowAutomation)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Activity)
+                      .WithMany()
+                      .HasForeignKey(x => x.IdActivity)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.Property(x => x.Error).HasMaxLength(1000);
+                entity.HasIndex(x => new { x.IdWorkflowAutomation, x.Trigger, x.EntityType, x.EntityId }).IsUnique();
+                entity.HasIndex(x => x.ExecutedAt);
             });
         }
 
@@ -546,11 +716,31 @@ namespace CRM.Server.Data
 
         public DbSet<EmailSent> EmailsSent => Set<EmailSent>();
 
+        public DbSet<EmailOutbox> EmailsOutbox => Set<EmailOutbox>();
+
+        public DbSet<EmailEvent> EmailEvents => Set<EmailEvent>();
+
+        public DbSet<EmailInbox> EmailInboxes => Set<EmailInbox>();
+
+        public DbSet<InboundEmail> InboundEmails => Set<InboundEmail>();
+
+        public DbSet<InboundEmailAttachment> InboundEmailAttachments => Set<InboundEmailAttachment>();
+
         public DbSet<Attachment> ProjectAttachments => Set<Attachment>();
 
         public DbSet<Contact> Contacts => Set<Contact>();
 
         public DbSet<Deal> Deals => Set<Deal>();
+
+        public DbSet<Lead> Leads => Set<Lead>();
+
+        public DbSet<LeadProductInterest> LeadProductInterests => Set<LeadProductInterest>();
+
+        public DbSet<DealProductInterest> DealProductInterests => Set<DealProductInterest>();
+
+        public DbSet<WorkflowAutomation> WorkflowAutomations => Set<WorkflowAutomation>();
+
+        public DbSet<WorkflowAutomationExecution> WorkflowAutomationExecutions => Set<WorkflowAutomationExecution>();
 
         public DbSet<Quote> Quotes => Set<Quote>();
 

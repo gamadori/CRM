@@ -1,4 +1,6 @@
 ﻿using CRM.Client.Helpers;
+using CRM.Client.Models;
+using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -18,11 +20,16 @@ namespace CRM.Client.Pages.About
         [Inject]
         HttpClient Client { get; set; }
 
+        [Inject]
+        IHeaderService HeaderService { get; set; }
+
+        private PageHeaderModel? _pageHeader;
         private AboutModel? _data = null;
         private AboutModel? _dataClient = null;
 
         protected override async Task OnInitializedAsync()
         {
+            _pageHeader = await HeaderService.Create();
             await LoadData();
             await base.OnInitializedAsync();
         }

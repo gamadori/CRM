@@ -65,6 +65,14 @@ namespace CRM.Shared.DTOs
         [Display(Name = nameof(Ticket.Description), ResourceType = typeof(Resources.Models.Ticket))]
         public string Description { get; set; }
 
+        public string? OperationalSummary { get; set; }
+
+        public DateTime? OperationalSummaryUpdatedAt { get; set; }
+
+        public string? OperationalSummaryUpdatedBy { get; set; }
+
+        public string? OperationalSummaryUpdatedByName { get; set; }
+
         [Display(Name = nameof(Ticket.MinuteWork), ResourceType = typeof(Resources.Models.Ticket))]
         public int MinuteWork { get; set; }
 
@@ -88,18 +96,7 @@ namespace CRM.Shared.DTOs
         public string UserOpened { get; set; }
 
 
-        [Display(Name = nameof(Ticket.IdUserCustomer), ResourceType = typeof(Resources.Models.Ticket))]
-        public string UserCustomer { get; set; }
-
-        /// <summary>
-        /// Nome del richiedente (risolto da Contact o User)
-        /// </summary>
-        public string RequesterName => !string.IsNullOrEmpty(ContactName) ? ContactName : UserCustomer;
-
-        /// <summary>
-        /// Tipo di richiedente: Contact o User
-        /// </summary>
-        public RequesterType RequesterType => !string.IsNullOrEmpty(ContactName) ? RequesterType.Contact : RequesterType.User;
+        public string RequesterName => ContactName;
 
         public int IdContact { get; set; }
 
@@ -148,6 +145,51 @@ namespace CRM.Shared.DTOs
 
         public TicketType? TicketType { get; set; }  
 
+    }
+
+    public class TicketScheduleItemDTO
+    {
+        public int Id { get; set; }
+
+        public string? Numero { get; set; }
+
+        public DateTime? Date { get; set; }
+
+        public TimeOnly? Time { get; set; }
+
+        public DateTime? DateEnd { get; set; }
+
+        public DateTime? DateExpired { get; set; }
+
+        public string? Company { get; set; }
+
+        public string? Description { get; set; }
+
+        public int? IdState { get; set; }
+
+        public string? State { get; set; }
+
+        public string? StateColor { get; set; }
+
+        public List<TicketScheduleUserDTO> AssignedUsers { get; set; } = new();
+    }
+
+    public class TicketScheduleUserDTO
+    {
+        public string Id { get; set; } = string.Empty;
+
+        public string NameComplete { get; set; } = string.Empty;
+
+        public string? Color { get; set; }
+    }
+
+    public class TicketScheduleUpdateRequest
+    {
+        public DateTime Date { get; set; }
+
+        public TimeOnly? Time { get; set; }
+
+        public DateTime? DateEnd { get; set; }
     }
 
 }

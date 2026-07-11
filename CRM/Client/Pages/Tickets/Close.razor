@@ -1,56 +1,133 @@
-﻿@page "/Tickets/Close/{Id:int}"
+@page "/Tickets/Close/{Id:int}"
 @using Radzen
 @using Radzen.Blazor
+@using CRM.Shared
 @using CRM.Shared.Helper
 
-
-<h3>Chiudi Ticket</h3>
-
-@if (_ticket != null && Id > 0)
+@if (_ticket == null || Id <= 0)
 {
- 
+    <div class="preview-loading">
+        <Waiting></Waiting>
+    </div>
+}
+else
+{
+    <div class="ticket-details-page">
+        <div class="modern-preview-container">
 
-    <hr />
-    <EditForm Model="@_ticketClose" OnValidSubmit="HandleValidSubmit">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-        <div class="container m-3">
-
-            <div class="row mb-3">
-                <div class="col-md-8">
-
-                    <DisplayName For="@(()=>_ticketClose.Description)" />
-                    <RadzenTextArea class="form-control" @bind-value="@_ticketClose.Description" Rows="8" />
-                    <ValidationMessage For="@(() => _ticketClose.Description)" />
+            <!-- Header -->
+            <div class="preview-header-card">
+                <div class="header-content">
+                    <div class="ticket-number">
+                        <span class="material-icons">task_alt</span>
+                        <h3>Chiusura ticket #@_ticket.Id</h3>
+                    </div>
+                    <div class="ticket-status priority-@GetPriorityKey()">
+                        <span class="material-icons">flag</span>
+                        Priorità @GetPriorityLabel()
+                    </div>
                 </div>
             </div>
-            <div class="row mb-3">
-                <div class="col-md-8">
-                    <div>
-                        <a class="btn btn-light" data-bs-toggle="collapse" href="#collapseNote" role="button" aria-expanded="false" aria-controls="collapseNote">
-                            Note Interne
-                        </a>
-                    </div>
-                    <div class="mb-3 collapse" id="collapseNote">
 
-                        <RadzenTextArea class="form-control" @bind-value="@_ticketClose.Note" Rows="8" />
-                        <ValidationMessage For="@(() => _ticketClose.Note)" />
-                    </div>
-
+            <!-- Contesto: il problema -->
+            <div class="description-card">
+                <div class="card-header-modern">
+                    <span class="material-icons">description</span>
+                    <h5>Il problema</h5>
+                    @if (!string.IsNullOrWhiteSpace(_ticket.Company?.RagioneSociale))
+                    {
+                        <span class="header-meta">@_ticket.Company.RagioneSociale</span>
+                    }
+                </div>
+                <div class="card-body-modern">
+                    <p class="description-text">@_ticket.Description</p>
                 </div>
             </div>
-        </div>
-        <hr />
-        
-        <div class="row" >
-            <div class="col">
-                @if (_ticket != null && !_ticket.Closed && _ticket.Permits.Close())
+
+            <EditForm Model="@_ticketClose" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+
+                <!-- Riepilogo operativo (riutilizzabile) -->
+                @if (_hasOperationalSummary)
                 {
-                    <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Primary" Text="Chiudi Ticket" Icon="save"></BlazorButton>
-                    <BlazorButton Style="BtnStyle.Secondary" Text="Annulla" Icon="cancel" OnClick="Cancel"></BlazorButton>
+                    <div class="description-card">
+                        <div class="card-header-modern summary-header">
+                            <div class="summary-title">
+                                <span class="material-icons">summarize</span>
+                                <h5>Riepilogo operativo</h5>
+                            </div>
+                            <button type="button" class="btn-use-summary" @onclick="UseOperationalSummary">
+                                <span class="material-icons">south</span>Usa come soluzione
+                            </button>
+                        </div>
+                        <div class="card-body-modern">
+                            <div class="summary-readonly">@_ticket.OperationalSummary</div>
+                        </div>
+                    </div>
                 }
-            </div>
-        </div>
-    </EditForm>
 
+                <!-- Soluzione (visibile al cliente) -->
+                <div class="description-card">
+                    <div class="card-header-modern summary-header">
+                        <div class="summary-title">
+                            <span class="material-icons text-success">check_circle</span>
+                            <h5>Soluzione applicata <span class="req-dot">*</span></h5>
+                        </div>
+                        <span class="visibility-badge visible">
+                            <span class="material-icons">visibility</span>Visibile al cliente
+                        </span>
+                    </div>
+                    <div class="card-body-modern">
+                        <RadzenTextArea @bind-Value="@_ticketClose.Description" Rows="7" Style="width: 100%;"
+                                        Placeholder="Descrivi come è stato risolto il problema." />
+                        <ValidationMessage For="@(() => _ticketClose.Description)" />
+                    </div>
+                </div>
+
+                <!-- Info grid: modalità intervento + note interne -->
+                <div class="info-grid">
+                    <div class="description-card">
+                        <div class="card-header-modern">
+                            <span class="material-icons">support_agent</span>
+                            <h5>Modalità di intervento</h5>
+                        </div>
+                        <div class="card-body-modern">
+                            <RedGSelectEnum TEnum="TypesSupport" TValue="TypesSupport" @bind-Value="@_ticketClose.Support"
+                                            For="@(() => _ticketClose.Support)" AllowClear="false" Style="width: 100%;" />
+                        </div>
+                    </div>
+
+                    <div class="description-card">
+                        <button type="button" class="card-header-modern note-toggle @(_showNotes ? "" : "collapsed")" @onclick="ToggleNotes">
+                            <span class="material-icons">lock</span>
+                            <h5>Note interne</h5>
+                            <span class="note-toggle-right">
+                                <span class="visibility-badge hidden">
+                                    <span class="material-icons">visibility_off</span>Solo staff
+                                </span>
+                                <span class="material-icons chevron @(_showNotes ? "open" : "")">expand_more</span>
+                            </span>
+                        </button>
+                        @if (_showNotes)
+                        {
+                            <div class="card-body-modern">
+                                <RadzenTextArea @bind-Value="@_ticketClose.Note" Rows="5" Style="width: 100%;"
+                                                Placeholder="Annotazioni riservate al team (non compaiono nel report cliente)." />
+                                <ValidationMessage For="@(() => _ticketClose.Note)" />
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Azioni -->
+                @if (!_ticket.Closed && _ticket.Permits.Close())
+                {
+                    <div class="close-actions-card">
+                        <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Success" Text="Chiudi ticket" Icon="task_alt"></BlazorButton>
+                        <BlazorButton Style="BtnStyle.Light" Text="Annulla" Icon="close" OnClick="Cancel"></BlazorButton>
+                    </div>
+                }
+            </EditForm>
+        </div>
+    </div>
 }

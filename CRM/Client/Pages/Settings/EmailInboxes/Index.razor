@@ -1,0 +1,98 @@
+@page "/Settings/EmailInboxes"
+@using CRM.Client.Helpers
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using Radzen
+@using Radzen.Blazor
+@inject IEmailInboxService Service
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject IHeaderService HeaderService
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+@if (_items == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="mb-3">
+        <RedGButton RGButtonType="RGButtonType.New" Click="@(() => NavigationManager.NavigateTo("/Settings/EmailInboxes/New"))" AutoLabel="true" />
+    </div>
+
+    @if (_items.Count == 0)
+    {
+        <div class="text-muted text-center py-4">Nessuna casella configurata. Aggiungi la prima casella in ingresso.</div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Indirizzo</th>
+                            <th>Modalità</th>
+                            <th>Azione</th>
+                            <th class="text-center">Attiva</th>
+                            <th class="text-end">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _items)
+                        {
+                            <tr class="@(item.IsActive ? "" : "text-muted")">
+                                <td>@item.DisplayName</td>
+                                <td>@item.Address</td>
+                                <td>
+                                    <span class="material-icons align-middle me-1" style="font-size:16px">@(item.Mode == EmailInboxMode.Imap ? "inbox" : "cloud_download")</span>
+                                    @UtilityHelper.GetDisplayName(item.Mode)
+                                </td>
+                                <td>@UtilityHelper.GetDisplayName(item.DefaultAction)</td>
+                                <td class="text-center">
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="badge bg-success">Sì</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">No</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <RedGButton RGButtonType="RGButtonType.Edit" Click="@(() => NavigationManager.NavigateTo($"/Settings/EmailInboxes/{item.Id}/Edit"))" />
+                                    <RedGButton RGButtonType="RGButtonType.Delete" Click="@(() => Delete(item))" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="text-muted small mt-2">
+            Le caselle IMAP vengono lette periodicamente dal server; quelle inbound-parse ricevono i messaggi via webhook del provider.
+        </div>
+    }
+}
+
+@code {
+    private List<EmailInbox>? _items;
+    private PageHeaderModel? _pageHeader;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        await Load();
+    }
+
+    private async Task Load() => _items = await Service.GetListAsync();
+
+    private async Task Delete(EmailInbox item)
+    {
+        if (await DialogService.Confirm($"Eliminare la casella \"{item.DisplayName}\"?", "Conferma") != true) return;
+        if (await Service.DeleteAsync(item.Id)) await Load();
+    }
+}

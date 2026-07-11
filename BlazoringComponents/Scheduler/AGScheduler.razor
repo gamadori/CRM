@@ -2,7 +2,7 @@
 @using Radzen
 @using Radzen.Blazor
 
-<div class="modern-scheduler-wrapper">
+<div class="modern-scheduler-wrapper" @ref="_schedulerElement">
     <!-- Modern Toolbar -->
     <div class="scheduler-toolbar">
         <!-- Left: Filter -->
@@ -86,26 +86,28 @@
                                                 <CascadingValue Value="CurrentView" TValue="SchedulerViews" Name="CurrentView">
                                                     <CascadingValue Value="OnNewTicket" TValue="EventCallback<DateTime>" Name="OnNewTicket">
                                                         <CascadingValue Value="ViewMode" TValue="SchedulerViewMode" Name="ViewMode">
+                                                            <CascadingValue Value="_dragDropContext">
 
-                                                            @if (Loading)
-                                                            {
-                                                                <WaitingSpinner></WaitingSpinner>
-                                                            }
-                                                            else
-                                                            {
-                                                                @if (CurrentView == SchedulerViews.Week)
+                                                                @if (Loading)
                                                                 {
-                                                                    <AGWeekScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal"></AGWeekScheduler>
-                                                                }
-                                                                else if (CurrentView == SchedulerViews.Day)
-                                                                {
-                                                                    <AGDayTimelineScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal"></AGDayTimelineScheduler>
+                                                                    <WaitingSpinner></WaitingSpinner>
                                                                 }
                                                                 else
                                                                 {
-                                                                    <AGMonthScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal" OpenDaylyScheduler="OpenDaylyScheduler"></AGMonthScheduler>
+                                                                    @if (CurrentView == SchedulerViews.Week)
+                                                                    {
+                                                                        <AGWeekScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal"></AGWeekScheduler>
+                                                                    }
+                                                                    else if (CurrentView == SchedulerViews.Day)
+                                                                    {
+                                                                        <AGDayTimelineScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal"></AGDayTimelineScheduler>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <AGMonthScheduler TItem="TItem" OnSelect="OnSelectDate" OpenModal="OpenModal" OpenDaylyScheduler="OpenDaylyScheduler"></AGMonthScheduler>
+                                                                    }
                                                                 }
-                                                            }
+                                                            </CascadingValue>
                                                         </CascadingValue>
                                                     </CascadingValue>
                                                 </CascadingValue>

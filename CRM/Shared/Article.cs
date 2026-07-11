@@ -42,6 +42,13 @@ namespace CRM.Shared
         [Display(Name = nameof(Article.Country), ResourceType = typeof(Resources.Models.Article))]
         public string Country { get; set; }
 
+        [ForeignKey("RecipientCompany")]
+        [Display(Name = nameof(Article.IdRecipientCompany), ResourceType = typeof(Resources.Models.Article))]
+        public int? IdRecipientCompany { get; set; }
+
+        [Display(Name = nameof(Article.RecipientCountry), ResourceType = typeof(Resources.Models.Article))]
+        public string RecipientCountry { get; set; }
+
         [Display(Name = nameof(Article.TestDate), ResourceType = typeof(Resources.Models.Article))]
         public DateTime? TestDate { get; set; }
 
@@ -50,6 +57,12 @@ namespace CRM.Shared
 
         [Display(Name = nameof(Article.Note), ResourceType = typeof(Resources.Models.Article))]
         public string Note { get; set; }
+
+        public bool IsArchived { get; set; }
+
+        public DateTime? ArchivedAt { get; set; }
+
+        public string? ArchivedReason { get; set; }
 
         [NotMapped]
         [Display(Name = nameof(Article.Name), ResourceType = typeof(Resources.Models.Article))]
@@ -64,6 +77,8 @@ namespace CRM.Shared
         public virtual Product Product { get; set; }
 
         public virtual Company Company { get; set; }
+
+        public virtual Company RecipientCompany { get; set; }
 
         public virtual ICollection<ArticleDomainState> StatesCurrent { get; set; }
     }
@@ -80,6 +95,8 @@ namespace CRM.Shared
         public int? Year { get; set; }
 
         public bool UserLogged { get; set; }
+
+        public bool IncludeArchived { get; set; }
     }
 
     public class TicketInterventionProductModel

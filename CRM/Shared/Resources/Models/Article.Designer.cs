@@ -115,6 +115,24 @@ namespace CRM.Shared.Resources.Models {
         }
         
         /// <summary>
+        ///   Cerca una stringa localizzata simile a Recipient.
+        /// </summary>
+        public static string IdRecipientCompany {
+            get {
+                return ResourceManager.GetString("IdRecipientCompany", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Recipient Country.
+        /// </summary>
+        public static string RecipientCountry {
+            get {
+                return ResourceManager.GetString("RecipientCountry", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Cerca una stringa localizzata simile a Logistic State.
         /// </summary>
         public static string LogisticState {

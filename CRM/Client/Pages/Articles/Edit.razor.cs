@@ -178,11 +178,23 @@ namespace CRM.Client.Pages.Articles
             if (id != null)
             {
                 await LoadCompanies();
-              
+
                 StateHasChanged();
                 _article.IdCompany = (int)id;
                 StateHasChanged();
 
+            }
+        }
+
+        private async Task OnGetRecipientCompany(object? id)
+        {
+            if (id != null)
+            {
+                await LoadCompanies();
+
+                StateHasChanged();
+                _article.IdRecipientCompany = (int)id;
+                StateHasChanged();
             }
         }
 

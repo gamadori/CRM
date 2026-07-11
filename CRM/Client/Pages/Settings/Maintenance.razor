@@ -1,0 +1,97 @@
+@page "/Settings/Maintenance"
+@using CRM.Client.Models
+@using CRM.Client.Services
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AdminRole")]
+@inject HttpClient Http
+
+<PageHeader Model="_pageHeader" />
+
+<div class="card shadow-sm" style="max-width:760px">
+    <div class="card-header">
+        <h5 class="mb-0">Manutenzione server</h5>
+    </div>
+    <div class="card-body">
+        <p>
+            Invia un avviso immediato a tutti i client collegati. Il conto alla rovescia
+            non arresta automaticamente IIS: al termine devi pubblicare
+            <code>app_offline.htm</code> nella cartella dell'applicazione.
+        </p>
+
+        <div class="mb-3">
+            <label class="form-label">Minuti di preavviso</label>
+            <RadzenNumeric @bind-Value="_request.Minutes" Min="1" Max="1440" Style="width:100%" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Messaggio</label>
+            <RadzenTextArea @bind-Value="_request.Message" Rows="3" Style="width:100%" />
+        </div>
+
+        <div class="d-flex gap-2">
+            <RadzenButton Text="Programma manutenzione"
+                          Icon="schedule"
+                          ButtonStyle="ButtonStyle.Warning"
+                          Click="ScheduleAsync"
+                          Disabled="_working" />
+            <RadzenButton Text="Annulla avviso"
+                          Icon="cancel"
+                          ButtonStyle="ButtonStyle.Light"
+                          Click="CancelAsync"
+                          Disabled="@(_working || _current?.Active != true)" />
+        </div>
+
+        @if (_current?.Active == true)
+        {
+            <div class="alert alert-warning mt-3 mb-0">
+                Manutenzione programmata per
+                <strong>@_current.StartsAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong>.
+                @_current.Message
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Inject] IHeaderService HeaderService { get; set; } = default!;
+
+    private PageHeaderModel? _pageHeader;
+    private ScheduleMaintenanceRequest _request = new();
+    private MaintenanceNoticeDTO? _current;
+    private bool _working;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        _current = await Http.GetFromJsonAsync<MaintenanceNoticeDTO>("api/Maintenance");
+    }
+
+    private async Task ScheduleAsync()
+    {
+        _working = true;
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/Maintenance/schedule", _request);
+            response.EnsureSuccessStatusCode();
+            _current = await response.Content.ReadFromJsonAsync<MaintenanceNoticeDTO>();
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        _working = true;
+        try
+        {
+            var response = await Http.DeleteAsync("api/Maintenance");
+            response.EnsureSuccessStatusCode();
+            _current = await response.Content.ReadFromJsonAsync<MaintenanceNoticeDTO>();
+        }
+        finally
+        {
+            _working = false;
+        }
+    }
+}

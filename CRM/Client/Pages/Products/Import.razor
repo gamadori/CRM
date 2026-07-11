@@ -7,7 +7,7 @@
 @using Microsoft.Extensions.Localization
 @using Radzen
 @using Radzen.Blazor
-@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AdminRole")]
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize

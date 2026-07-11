@@ -87,6 +87,8 @@ namespace CRM.Server.Services
 
         Task<bool> CanEditTicketChat(int id);
 
+        Task<bool> CanReadTicketChat(int idTicket, string? idUser = null);
+
         Task<string[]> GetUsersCanReadTicketChat(int idTicket);
 
         Task<bool> CanDownloadInterventionReport(int idIntervention);

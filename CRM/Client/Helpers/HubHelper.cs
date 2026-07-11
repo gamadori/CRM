@@ -1,4 +1,5 @@
 ﻿using CRM.Shared;
+using CRM.Shared.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -14,6 +15,14 @@ namespace CRM.Client.Helpers
     public static class HubHelper
     {
         public static HubConnection HubConnection { get; set; } = null;
+        public static MaintenanceNoticeDTO? CurrentMaintenanceNotice { get; private set; }
+        public static event Action<MaintenanceNoticeDTO>? MaintenanceNoticeChanged;
+
+        public static void SetMaintenanceNotice(MaintenanceNoticeDTO notice)
+        {
+            CurrentMaintenanceNotice = notice;
+            MaintenanceNoticeChanged?.Invoke(notice);
+        }
 
         public static void Timertick()
         {

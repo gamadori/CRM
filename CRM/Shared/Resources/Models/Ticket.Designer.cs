@@ -250,15 +250,6 @@ namespace CRM.Shared.Resources.Models {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a Client User.
-        /// </summary>
-        public static string IdUserCustomer {
-            get {
-                return ResourceManager.GetString("IdUserCustomer", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Cerca una stringa localizzata simile a Open by.
         /// </summary>
         public static string IdUserOpened {

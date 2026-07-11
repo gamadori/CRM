@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -48,6 +49,7 @@ namespace CRM.Server.Controllers
         private readonly ITicketPdfGenerator _pdfGenerator;
         private readonly IPushNotificationService _pushService;
         private readonly Services.ITicketsService _ticketsService;
+        private readonly ITicketSummaryService _ticketSummaryService;
 
         // ✅ NUOVO: Aggiungi IConfiguration
         private readonly IConfiguration _configuration;
@@ -65,7 +67,8 @@ namespace CRM.Server.Controllers
             ITicketPdfGenerator pdfGenerator, 
             IPushNotificationService pushService,
             IConfiguration configuration,
-            Services.ITicketsService ticketsService) // ✅ AGGIUNTO
+            Services.ITicketsService ticketsService,
+            ITicketSummaryService ticketSummaryService) // ✅ AGGIUNTO
         {
             _context = context;
             _userManager = userManager;
@@ -81,6 +84,7 @@ namespace CRM.Server.Controllers
             _pushService = pushService;
             _configuration = configuration;
             _ticketsService = ticketsService;
+            _ticketSummaryService = ticketSummaryService;
         }
 
         [HttpGet("search")]
@@ -185,7 +189,82 @@ namespace CRM.Server.Controllers
             }
         }
 
-        
+        [HttpGet("schedule-items")]
+        public async Task<ActionResult<IEnumerable<TicketScheduleItemDTO>>> GetScheduleItems([FromQuery] TicketFilter args)
+        {
+            try
+            {
+                var tickets = _context.Tickets
+                    .Include(t => t.Company)
+                    .Include(t => t.State)
+                    .Include(t => t.AssignedUsers)
+                        .ThenInclude(a => a.User)
+                    .AsQueryable();
+
+                if (!await _permits.CanAccessOtherCompany())
+                {
+                    var idCompany = await _permits.GetIdCompany();
+                    tickets = tickets.Where(t => t.IdCompany == idCompany);
+                }
+
+                if (args.DateFrom.HasValue)
+                    tickets = tickets.Where(t => t.Date >= args.DateFrom || t.DateEnd >= args.DateFrom);
+
+                if (args.DateTo.HasValue)
+                {
+                    var dateTo = args.DateTo.Value.Date == args.DateTo.Value
+                        ? args.DateTo.Value.AddDays(1)
+                        : args.DateTo.Value;
+
+                    tickets = tickets.Where(t => t.Date < dateTo || t.DateEnd < dateTo);
+                }
+
+                if (!string.IsNullOrWhiteSpace(args.IdUserAssigned))
+                {
+                    tickets = args.ViewNotAssigned
+                        ? tickets.Where(t => t.IdUserAssigned == args.IdUserAssigned || t.IdUserAssigned == null)
+                        : tickets.Where(t => t.IdUserAssigned == args.IdUserAssigned
+                                           || t.AssignedUsers.Any(a => a.IdUser == args.IdUserAssigned));
+                }
+
+                var items = await tickets
+                    .OrderBy(t => t.Date)
+                    .ThenBy(t => t.Time)
+                    .Select(t => new TicketScheduleItemDTO
+                    {
+                        Id = t.Id,
+                        Numero = t.Numero,
+                        Date = t.Date,
+                        Time = t.Time,
+                        DateEnd = t.DateEnd,
+                        DateExpired = t.DateExpired,
+                        Company = t.Company != null ? t.Company.RagioneSociale : string.Empty,
+                        Description = t.Description,
+                        IdState = t.IdState,
+                        State = t.State != null ? t.State.Description : string.Empty,
+                        StateColor = t.State != null ? t.State.Color : string.Empty,
+                        AssignedUsers = t.AssignedUsers
+                            .OrderBy(a => a.AssignedDate)
+                            .Select(a => new TicketScheduleUserDTO
+                            {
+                                Id = a.IdUser,
+                                NameComplete = a.User != null ? a.User.NameComplete : string.Empty,
+                                Color = a.User != null ? a.User.Color : null
+                            })
+                            .ToList()
+                    })
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                return Ok(items);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(GetScheduleItems), LogEvent.EventsTypes.Error, ex);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<Ticket>> GetTicket(int id)
         {
@@ -244,6 +323,55 @@ namespace CRM.Server.Controllers
             }
         }
 
+        [HttpPost("{id}/summary/propose")]
+        public async Task<ActionResult<TicketSummaryProposalResponse>> ProposeSummary(int id, TicketSummaryProposalRequest request)
+        {
+            try
+            {
+                var response = await _ticketSummaryService.ProposeAsync(id, request ?? new TicketSummaryProposalRequest());
+                if (response == null)
+                    return NotFound();
+
+                return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(ProposeSummary), LogEvent.EventsTypes.Error, ex.Message);
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(ProposeSummary), LogEvent.EventsTypes.Error, ex);
+                return Problem(ex.Message);
+            }
+        }
+
+        [HttpPut("{id}/summary")]
+        public async Task<ActionResult<TicketDTO>> UpdateSummary(int id, UpdateTicketSummaryRequest request)
+        {
+            try
+            {
+                if (request == null || !ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                var response = await _ticketSummaryService.UpdateAsync(id, request);
+                if (response == null)
+                    return NotFound();
+
+                return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(UpdateSummary), LogEvent.EventsTypes.Error, ex.Message);
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(UpdateSummary), LogEvent.EventsTypes.Error, ex);
+                return Problem(ex.Message);
+            }
+        }
+
         [HttpGet("Report/{id}")]
         public async Task<string?> CreateDocPdf(int id)
         {
@@ -298,6 +426,88 @@ namespace CRM.Server.Controllers
             }
 
             return NoContent();
+        }
+
+        [HttpPut("{id}/schedule")]
+        public async Task<IActionResult> UpdateSchedule(int id, TicketScheduleUpdateRequest request)
+        {
+            try
+            {
+                if (!await _permits.CanEditTicket())
+                {
+                    await _logEventService.RegisterAsync(nameof(TicketsController), nameof(UpdateSchedule), LogEvent.EventsTypes.Error, "Attempt to schedule without rights");
+                    return BadRequest();
+                }
+
+                var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
+                if (ticket == null)
+                    return NotFound();
+
+                if (!await _permits.CanGetObject(ticket.IdCompany))
+                {
+                    await _logEventService.RegisterAsync(nameof(TicketsController), nameof(UpdateSchedule), LogEvent.EventsTypes.Error, "Attempt to schedule ticket without object rights");
+                    return BadRequest();
+                }
+
+                var start = request.Date.Date + (request.Time?.ToTimeSpan() ?? TimeSpan.Zero);
+                var end = request.DateEnd;
+                if (end.HasValue && end.Value < start)
+                    end = start;
+
+                ticket.Date = request.Date.Date;
+                ticket.Time = request.Time;
+                ticket.DateEnd = end;
+
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(UpdateSchedule), LogEvent.EventsTypes.Error, ex);
+                return Problem(ex.Message);
+            }
+        }
+
+        [HttpPut("{id}/start-processing")]
+        public async Task<IActionResult> StartProcessing(int id)
+        {
+            try
+            {
+                if (!await _permits.CanEditTicket())
+                    return Forbid();
+
+                var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
+                if (ticket == null)
+                    return NotFound();
+
+                if (!await _permits.CanGetObject(ticket.IdCompany))
+                    return Forbid();
+
+                if (ticket.Closed)
+                    return BadRequest("Un ticket chiuso non puo essere messo in lavorazione.");
+
+                var hasAssignedUser = !string.IsNullOrWhiteSpace(ticket.IdUserAssigned)
+                    || await _context.TicketUserAssignments.AnyAsync(a => a.IdTicket == id);
+                if (!hasAssignedUser)
+                    return BadRequest("Assegna almeno un utente prima di mettere il ticket in lavorazione.");
+
+                var processingStateId = await _context.TicketStates
+                    .Where(s => s.State == (int)eTicketStates.Processing)
+                    .Select(s => (int?)s.Id)
+                    .FirstOrDefaultAsync();
+
+                if (!processingStateId.HasValue)
+                    return Problem("Lo stato In lavorazione non e configurato.");
+
+                ticket.IdState = processingStateId.Value;
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(StartProcessing), LogEvent.EventsTypes.Error, ex);
+                return Problem(ex.Message);
+            }
         }
 
        
@@ -629,8 +839,20 @@ namespace CRM.Server.Controllers
                 var retrieval = await RetrieveSimilarClosedTicketsAsync(
                     lastUser.Content, embeddingService, request.TopTickets, request.MinSimilarityThreshold);
 
+                // Rilevamento prodotto su TUTTA la conversazione (il modello può essere citato prima)
+                var conversationText = string.Join("\n", request.Messages
+                    .Where(m => string.Equals(m.Role, "user", StringComparison.OrdinalIgnoreCase))
+                    .Select(m => m.Content));
+
+                // Modelli rilevanti: ticket simili + prodotto citato nella conversazione + contesto esplicito
+                var relevantProductIds = await BuildRelevantProductIdsAsync(
+                    retrieval.ProductIds, conversationText, request.IdTicket, request.IdProduct);
+
+                // Soglia KB più permissiva dei ticket: con text-embedding-3-small una domanda
+                // specifica in linguaggio naturale contro un blocco di manuale supera raramente il 55%.
+                // Il cap top:4 + l'ordinamento per punteggio evitano di introdurre rumore.
                 var knowledge = await knowledgeService.SearchSimilarAsync(
-                    retrieval.QueryEmbedding, retrieval.ProductIds, top: 4, minSimilarity: 55.0);
+                    retrieval.QueryEmbedding, relevantProductIds, top: 4, minSimilarity: 45.0);
 
                 // Costruisci il contesto (ticket + KB) e genera la risposta con Claude
                 var context = BuildTicketContext(retrieval.Tickets) + BuildKnowledgeContext(knowledge);
@@ -693,8 +915,20 @@ namespace CRM.Server.Controllers
                     lastUser.Content, embeddingService, request.TopTickets, request.MinSimilarityThreshold);
                 var referenced = retrieval.Tickets;
 
+                // Rilevamento prodotto su TUTTA la conversazione (il modello può essere citato prima)
+                var conversationText = string.Join("\n", request.Messages
+                    .Where(m => string.Equals(m.Role, "user", StringComparison.OrdinalIgnoreCase))
+                    .Select(m => m.Content));
+
+                // Modelli rilevanti: ticket simili + prodotto citato nella conversazione + contesto esplicito
+                var relevantProductIds = await BuildRelevantProductIdsAsync(
+                    retrieval.ProductIds, conversationText, request.IdTicket, request.IdProduct);
+
+                // Soglia KB più permissiva dei ticket: con text-embedding-3-small una domanda
+                // specifica in linguaggio naturale contro un blocco di manuale supera raramente il 55%.
+                // Il cap top:4 + l'ordinamento per punteggio evitano di introdurre rumore.
                 var knowledge = await knowledgeService.SearchSimilarAsync(
-                    retrieval.QueryEmbedding, retrieval.ProductIds, top: 4, minSimilarity: 55.0);
+                    retrieval.QueryEmbedding, relevantProductIds, top: 4, minSimilarity: 45.0);
 
                 // Ticket di riferimento in forma ridotta nell'header (Base64 per gestire accenti)
                 var slim = referenced.Select(t => new
@@ -846,6 +1080,71 @@ namespace CRM.Server.Controllers
             List<int> ProductIds);
 
         /// <summary>
+        /// Costruisce l'insieme dei modelli "rilevanti" per il recupero della conoscenza, unendo:
+        /// i modelli dei ticket chiusi simili, quelli citati esplicitamente nel testo della domanda
+        /// (per nome o codice) e quello del contesto (ticket/prodotto di partenza della chat).
+        /// La conoscenza di questi modelli riceve il bonus di similarità in <see cref="KnowledgeService"/>.
+        /// </summary>
+        private async Task<List<int>> BuildRelevantProductIdsAsync(
+            IEnumerable<int> fromSimilarTickets, string query, int? idTicket, int? idProduct)
+        {
+            var ids = new HashSet<int>(fromSimilarTickets ?? Enumerable.Empty<int>());
+
+            // Modello citato nella conversazione (es. "TABMACHINE 80100", ma anche solo "tabmachine"):
+            // match su nome completo, codice, oppure token distintivo del nome (>=5 char, a parola intera).
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                var q = " " + query.ToLowerInvariant() + " ";
+                var products = await _context.Products
+                    .Where(p => !p.IsArchived)
+                    .Select(p => new { p.Id, p.Name, p.Code })
+                    .ToListAsync();
+
+                foreach (var p in products)
+                {
+                    var name = (p.Name ?? string.Empty).Trim().ToLowerInvariant();
+                    var code = (p.Code ?? string.Empty).Trim().ToLowerInvariant();
+
+                    var matched =
+                        (name.Length >= 3 && q.Contains(name)) ||
+                        (code.Length >= 3 && q.Contains(code));
+
+                    // Token distintivi del nome (es. "tabmachine", "80100") come parola intera
+                    if (!matched && name.Length > 0)
+                    {
+                        foreach (var tok in Regex.Split(name, @"[^a-z0-9]+"))
+                        {
+                            if (tok.Length >= 5 && Regex.IsMatch(q, $@"\b{Regex.Escape(tok)}\b"))
+                            {
+                                matched = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (matched)
+                        ids.Add(p.Id);
+                }
+            }
+
+            // Contesto esplicito: prodotto passato direttamente o dedotto dal ticket di partenza
+            if (idProduct.HasValue)
+                ids.Add(idProduct.Value);
+
+            if (idTicket.HasValue)
+            {
+                var pid = await _context.Tickets
+                    .Where(t => t.Id == idTicket.Value)
+                    .Select(t => t.IdProduct)
+                    .FirstOrDefaultAsync();
+                if (pid.HasValue)
+                    ids.Add(pid.Value);
+            }
+
+            return ids.ToList();
+        }
+
+        /// <summary>
         /// Formatta l'elenco dei ticket simili in un blocco di testo da passare al modello.
         /// </summary>
         private static string BuildTicketContext(List<CRM.Shared.Models.TicketSimilarityResult> tickets)
@@ -885,7 +1184,10 @@ namespace CRM.Server.Controllers
                 var modello = string.IsNullOrWhiteSpace(k.ProductName) ? "generale" : k.ProductName;
                 var categoria = string.IsNullOrWhiteSpace(k.Category) ? string.Empty : $", categoria: {k.Category}";
                 sb.AppendLine($"--- KB: {k.Title} (modello: {modello}{categoria}) ---");
-                sb.AppendLine(TrimText(k.Content, 900));
+                // Le chunk KB sono già limitate a MaxChunkLength (1800) in fase di import: passiamo
+                // il blocco intero, altrimenti dati come le tabelle tecniche vengono troncati a metà
+                // (es. "Capacità magazzino lamelle 3000" cadeva oltre i 900 caratteri).
+                sb.AppendLine(TrimText(k.Content, 1800));
                 sb.AppendLine();
             }
             return sb.ToString();

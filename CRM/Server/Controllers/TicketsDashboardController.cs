@@ -65,7 +65,8 @@ namespace CRM.Server.Controllers
 
             if (filter?.IdUser != null)
             {
-                tickets = tickets.Where(x=>x.AssignedUsers.Where(u=>u.IdUser == filter.IdUser).Any() || x.IdUserAssigned == filter.IdUser);  
+                tickets = tickets.Where(x=>x.AssignedUsers.Where(u=>u.IdUser == filter.IdUser).Any() || x.IdUserAssigned == filter.IdUser || 
+                    (x.IdUserAssigned == null && (x.AssignedUsers == null || x.AssignedUsers.Count == 0)));  
             }
             /* Ricerca dei ticket non chiusi */
             
@@ -102,6 +103,10 @@ namespace CRM.Server.Controllers
                 model.UsersNeedConfirm = 0;
 
             model.ChatMessageToRead = await _context.TicketChatReads.Where(x => x.IdUser == idUser && x.Displayed == false).CountAsync();
+
+            // Email in ingresso non ancora prese in carico (avviso operatori).
+            if (!model.IsClient)
+                model.InboundEmailsToHandle = await _context.InboundEmails.Where(x => !x.Handled).CountAsync();
 
             // Conta interventi con firma in attesa di conferma (Pending)
             var interventionsQuery = _context.TicketsInterventions.AsQueryable();

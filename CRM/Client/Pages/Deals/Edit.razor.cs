@@ -32,6 +32,9 @@ namespace CRM.Client.Pages.Deals
         private IContactsService ContactsService { get; set; } = default!;
 
         [Inject]
+        private IProductsService ProductsService { get; set; } = default!;
+
+        [Inject]
         private IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; } = default!;
 
         [Inject]
@@ -64,8 +67,10 @@ namespace CRM.Client.Pages.Deals
         private DealDTO? _deal;
         private List<CompanyDTO> _companies = new();
         private List<ContactDTO> _contacts = new();
+        private List<ProductDTO> _products = new();
         private List<EnumField> _dealPhases = new();
         private List<EnumField> _dealStates = new();
+        private int? _selectedProductId;
         private bool _loading = true;
         private bool _saving;
         private bool _lockCompany;
@@ -81,6 +86,7 @@ namespace CRM.Client.Pages.Deals
             _dealStates = EnumService.EnumGetList(typeof(DealStates));
             _dealPhases = EnumService.EnumGetList(typeof(DealPhases));
             await LoadCompanies();
+            await LoadProducts();
             await LoadDeal();
         }
 
@@ -101,13 +107,16 @@ namespace CRM.Client.Pages.Deals
                         DateClosed = default,
                         IdCompany = IdCompany,
                         State = DealStates.Open,
-                        Phase = DealPhases.InitialContact
+                        Phase = DealPhases.InitialContact,
+                        Probability = 15,
+                        ExpectedCloseDate = DateTime.Today.AddMonths(1)
                     };
 
                     _lockCompany = IdCompany != null;
                 }
 
                 await LoadContacts();
+                RecalculateDealValue();
             }
             finally
             {
@@ -119,6 +128,12 @@ namespace CRM.Client.Pages.Deals
         {
             var items = await CompaniesService.GetListAsync(new CompanyFilter());
             _companies = items ?? new List<CompanyDTO>();
+        }
+
+        private async Task LoadProducts()
+        {
+            var items = await ProductsService.GetListAsync(new ProductFilter());
+            _products = items ?? new List<ProductDTO>();
         }
 
         private async Task LoadContacts()
@@ -241,6 +256,84 @@ namespace CRM.Client.Pages.Deals
                 StateHasChanged();
 
             }
+        }
+
+        private IEnumerable<ProductDTO> ProductsAvailableToAdd =>
+            _products.Where(product => _deal?.ProductInterests.All(row => row.IdProduct != product.Id) != false);
+
+        private void AddProductInterest()
+        {
+            if (_deal == null || _selectedProductId == null)
+            {
+                return;
+            }
+
+            var product = _products.FirstOrDefault(x => x.Id == _selectedProductId.Value);
+            if (product == null || _deal.ProductInterests.Any(x => x.IdProduct == product.Id))
+            {
+                _selectedProductId = null;
+                return;
+            }
+
+            var row = new ProductInterestDTO
+            {
+                IdProduct = product.Id,
+                ProductCode = product.Code ?? string.Empty,
+                ProductName = product.Name,
+                Quantity = 1,
+                UnitPrice = product.Price,
+                SortOrder = _deal.ProductInterests.Count
+            };
+            RecalculateRow(row);
+            _deal.ProductInterests.Add(row);
+            _selectedProductId = null;
+            RecalculateDealValue();
+        }
+
+        private void RemoveProductInterest(ProductInterestDTO row)
+        {
+            if (_deal == null)
+            {
+                return;
+            }
+
+            _deal.ProductInterests.Remove(row);
+            for (var index = 0; index < _deal.ProductInterests.Count; index++)
+            {
+                _deal.ProductInterests[index].SortOrder = index;
+            }
+
+            RecalculateDealValue();
+        }
+
+        private void RecalculateProductInterest(ProductInterestDTO row)
+        {
+            RecalculateRow(row);
+            RecalculateDealValue();
+        }
+
+        private void RecalculateDealValue()
+        {
+            if (_deal == null || _deal.ProductInterests.Count == 0)
+            {
+                return;
+            }
+
+            _deal.Amount = _deal.ProductInterests.Sum(x => x.LineTotal);
+            _deal.Target = _deal.Amount;
+        }
+
+        private string ProductText(ProductDTO product)
+        {
+            var code = string.IsNullOrWhiteSpace(product.Code) ? string.Empty : $"{product.Code} - ";
+            return $"{code}{product.Name}";
+        }
+
+        private static void RecalculateRow(ProductInterestDTO row)
+        {
+            row.Quantity = row.Quantity <= 0 ? 1 : row.Quantity;
+            row.DiscountPct = Math.Clamp(row.DiscountPct, 0, 100);
+            row.LineTotal = ProductInterestHelper.CalculateTotal(row.Quantity, row.UnitPrice, row.DiscountPct);
         }
     }
 }

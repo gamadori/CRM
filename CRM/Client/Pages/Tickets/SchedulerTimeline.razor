@@ -4,11 +4,10 @@
 @using Radzen.Blazor
 
 <div class="timeline-scheduler-container">
-    <!-- Toolbar Header -->
     <div class="timeline-toolbar">
         <div class="toolbar-left">
             <RadzenButton Click="@GoBackToScheduler" Icon="arrow_back" ButtonStyle="ButtonStyle.Light" 
-                         Variant="Variant.Flat" Size="ButtonSize.Medium" Text="@Localize["Torna al Calendario"]" />
+                         Variant="Variant.Flat" Size="ButtonSize.Medium" Text="Pianificazione Ticket" />
         </div>
 
         <div class="toolbar-center">
@@ -30,7 +29,6 @@
         </div>
     </div>
 
-    <!-- Filtro Utente -->
     <div class="timeline-filter">
         <div class="form-floating" style="max-width: 400px;">
             <RadzenDropDownDataGrid class="form-control" @bind-value="@IdUserAssigned" TValue="string" 
@@ -48,7 +46,6 @@
         </div>
     </div>
 
-    <!-- Timeline principale -->
     @if (_loading)
     {
         <div class="timeline-loading">
@@ -60,12 +57,11 @@
     else
     {
         <div class="timeline-content">
-            <!-- Ticket senza orario -->
             @if (_ticketsWithoutTime.Any())
             {
                 <div class="no-time-section">
                     <div class="section-header">
-                        <span class="material-icons">event_available</span>
+                        <span class="material-icons">event_busy</span>
                         <h5>@Localize["Ticket senza orario specifico"] (@_ticketsWithoutTime.Count)</h5>
                     </div>
                     <div class="tickets-grid">
@@ -98,7 +94,6 @@
                 </div>
             }
 
-            <!-- Timeline oraria -->
             <div class="timeline-grid">
                 @foreach (var slot in _timeSlots)
                 {
@@ -156,18 +151,17 @@
 
 <style>
     .timeline-scheduler-container {
-        background: #f8f9fa;
+        background: #f8fafc;
         min-height: 100vh;
         padding: 1.5rem;
     }
 
-    /* Toolbar */
     .timeline-toolbar {
         background: white;
-        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
         padding: 1rem 1.5rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -195,16 +189,14 @@
         text-align: center;
     }
 
-    /* Filtro */
     .timeline-filter {
         background: white;
-        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
-    /* Loading */
     .timeline-loading {
         display: flex;
         align-items: center;
@@ -212,15 +204,13 @@
         min-height: 400px;
     }
 
-    /* Timeline Content */
     .timeline-content {
         background: white;
-        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
         padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
-    /* No Time Section */
     .no-time-section {
         margin-bottom: 2rem;
         padding-bottom: 2rem;
@@ -232,7 +222,7 @@
         align-items: center;
         gap: 0.75rem;
         margin-bottom: 1rem;
-        color: #667eea;
+        color: #374151;
     }
 
     .section-header .material-icons {
@@ -250,7 +240,6 @@
         gap: 1rem;
     }
 
-    /* Timeline Grid */
     .timeline-grid {
         display: flex;
         flex-direction: column;
@@ -271,23 +260,22 @@
     }
 
     .timeline-slot.has-tickets {
-        background: linear-gradient(90deg, #f0f9ff 0%, white 20%);
+        background: #f8fafc;
     }
 
-    /* Time Label */
     .time-label {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
         justify-content: center;
         padding-right: 1rem;
-        border-right: 3px solid #667eea;
+        border-right: 3px solid #2563eb;
     }
 
     .time-text {
         font-size: 1.5rem;
         font-weight: 700;
-        color: #667eea;
+        color: #2563eb;
         line-height: 1;
     }
 
@@ -297,7 +285,6 @@
         margin-top: 0.25rem;
     }
 
-    /* Slot Content */
     .slot-content {
         display: flex;
         flex-direction: column;
@@ -305,28 +292,27 @@
         min-height: 60px;
     }
 
-    /* Ticket Card */
     .ticket-card {
         background: white;
         border-radius: 8px;
         padding: 1rem;
-        border-left: 4px solid #667eea;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e5e7eb;
+        border-left: 4px solid #2563eb;
         transition: all 0.3s ease;
         cursor: pointer;
     }
 
     .ticket-card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        border-color: #cbd5e1;
         transform: translateX(4px);
     }
 
     .ticket-card.timed {
-        background: linear-gradient(135deg, #fff 0%, #f9fafb 100%);
+        background: white;
     }
 
     .ticket-card.no-time {
-        background: linear-gradient(135deg, #fef3c7 0%, #fff 100%);
+        background: #fffdf5;
     }
 
     .ticket-card-header {
@@ -340,7 +326,7 @@
     .ticket-time {
         font-size: 1rem;
         font-weight: 700;
-        color: #667eea;
+        color: #2563eb;
     }
 
     .ticket-id {
@@ -364,7 +350,7 @@
         justify-content: center;
         width: 28px;
         height: 28px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #2563eb;
         color: white;
         border-radius: 50%;
         font-size: 0.75rem;
@@ -398,7 +384,6 @@
         overflow: hidden;
     }
 
-    /* Empty Slot */
     .empty-slot {
         display: flex;
         align-items: center;
@@ -413,16 +398,15 @@
     }
 
     .empty-slot:hover {
-        border-color: #667eea;
-        background: #f0f9ff;
-        color: #667eea;
+        border-color: #2563eb;
+        background: #eff6ff;
+        color: #2563eb;
     }
 
     .empty-slot .material-icons {
         font-size: 24px;
     }
 
-    /* Responsive */
     @@media (max-width: 1200px) {
         .timeline-slot {
             grid-template-columns: 120px 1fr;
@@ -461,7 +445,7 @@
         .time-label {
             align-items: flex-start;
             border-right: none;
-            border-bottom: 2px solid #667eea;
+            border-bottom: 2px solid #2563eb;
             padding-right: 0;
             padding-bottom: 0.5rem;
         }

@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CRM.Shared.Helper;
 
 namespace CRM.Shared
 {
@@ -19,6 +20,8 @@ namespace CRM.Shared
 
         
         public int? IdCustomer { get; set; }
+
+        public int? IdContact { get; set; }
 
         [Display(Name = nameof(ApplicationUser.Name), ResourceType = typeof(Resources.Models.ApplicationUser))]
         [Required(ErrorMessage = "Il campo {0} è necessario.")]
@@ -88,9 +91,10 @@ namespace CRM.Shared
             {
                 Id = user.Id,
                 IdCompany = user.IdCompany,
+                IdContact = user.IdContact,
                
-                Name = user.Name,
-                Surname = user.Surname,
+                Name = user.Contact?.Name ?? string.Empty,
+                Surname = user.Contact?.Surname ?? string.Empty,
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
                 LanguageCode = user.LanguageCode,
@@ -100,7 +104,7 @@ namespace CRM.Shared
                 Photo = user.Photo,
                 Enabled = user.Enabled,
                 AdminConfirmed = user.AdminConfirmed,
-                AvatarTxt = $"{user.Name.Substring(0, 1)}{user.Surname.Substring(0, 1)}",
+                AvatarTxt = AvatarsHelper.AvatarTxt(user.Contact?.Surname, user.Contact?.Name),
                
             };
         }

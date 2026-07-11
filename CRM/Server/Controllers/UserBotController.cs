@@ -23,8 +23,10 @@ namespace CRM.Server.Controllers
 			{
 				case "connecting":
 					return new TelegramStatus() { State = TelegramButState.Connecting };
+				case "unavailable":
+					return new TelegramStatus() { State = TelegramButState.ConfigNeed, Desc = WT.LastError ?? "Telegram non disponibile" };
 				case null: 
-					return new TelegramStatus() { State = TelegramButState.Connected, User = WT.User.phone  };
+					return new TelegramStatus() { State = TelegramButState.Connected, User = WT.User?.phone  };
 				default: 
 					return new TelegramStatus() { State = TelegramButState.ConfigNeed, Desc = WT.ConfigNeeded };
 			}
@@ -40,8 +42,9 @@ namespace CRM.Server.Controllers
 		[HttpGet("chats")]
 		public async Task<object> Chats()
 		{
-			if (WT.User == null) throw new Exception("Complete the login first");
-			var chats = await WT.Client.Messages_GetAllChats();
+			if (WT.User == null) return StatusCode(503, WT.LastError ?? "Complete the login first");
+			if (!WT.TryGetClient(out var client)) return StatusCode(503, WT.LastError ?? "Telegram non disponibile");
+			var chats = await client.Messages_GetAllChats();
 		
 			return chats.chats;
 		}

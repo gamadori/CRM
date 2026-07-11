@@ -59,7 +59,11 @@ namespace CRM.Server.Controllers
         {
             try
             {
-                var users = _userManager.Users.Where(x=>!x.IsDeleted).Include(x => x.Company).AsQueryable();
+                var users = _userManager.Users
+                    .Where(x=>!x.IsDeleted)
+                    .Include(x => x.Company)
+                    .Include(x => x.Contact)
+                    .AsQueryable();
 
 
                 if (!(await _permitsService.BelongsToHeadQuarter()))
@@ -81,10 +85,10 @@ namespace CRM.Server.Controllers
                     users = users.Where(x => x.idCustomer == args.IdCustomer);
 
                 if (args.Name != null && args.Name.Length > 0)
-                    users = users.Where(x => x.Name.Contains(args.Name));
+                    users = users.Where(x => x.Contact != null && x.Contact.Name.Contains(args.Name));
 
                 if (args.SurName != null && args.SurName.Length > 0)
-                    users = users.Where(x => x.Surname.Contains(args.SurName));
+                    users = users.Where(x => x.Contact != null && x.Contact.Surname.Contains(args.SurName));
 
                 if (args.Email != null && args.Email.Length > 0)
                     users = users.Where(x => x.Email.Contains(args.Email));
@@ -110,7 +114,7 @@ namespace CRM.Server.Controllers
                     var fields = args.NameComplete.Split(" ");
                     foreach (var field in fields)
                     {
-                        users = users.Where(x => x.Name.Contains(field) || x.Surname.Contains(field));
+                        users = users.Where(x => x.Contact != null && (x.Contact.Name.Contains(field) || x.Contact.Surname.Contains(field)));
                         
                     }
 
@@ -150,7 +154,7 @@ namespace CRM.Server.Controllers
                     users = users.OrderBy(args.OrderBy);
                 }
                 else
-                    users = users.OrderBy(x=>x.Surname).ThenBy(x=>x.Name);
+                    users = users.OrderBy(x=>x.Contact != null ? x.Contact.Surname : x.Email).ThenBy(x=>x.Contact != null ? x.Contact.Name : x.Email);
 
                 if (args.Skip != null && args.Top != null)
                 {
@@ -206,7 +210,9 @@ namespace CRM.Server.Controllers
                 // Se l'ID è vuoto, restituisci l'utente corrente
                 if (HttpContext?.User?.Identity != null)
                 {
-                    user = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
+                    user = await _userManager.Users
+                        .Include(x => x.Contact)
+                        .FirstOrDefaultAsync(x => x.UserName == HttpContext.User.Identity.Name);
                     if (user != null)
                     {
                         user.Company = await _context.Companies.FindAsync(user.IdCompany);
@@ -216,7 +222,7 @@ namespace CRM.Server.Controllers
             else
             {
                 // Altrimenti restituisci l'utente richiesto
-                user = await _userManager.Users.Where(x => x.Id == id).FirstOrDefaultAsync();
+                user = await _userManager.Users.Include(x => x.Contact).Where(x => x.Id == id).FirstOrDefaultAsync();
                 if (user != null)
                 {
                     user.Company = await _context.Companies.FindAsync(user.IdCompany);
@@ -239,21 +245,22 @@ namespace CRM.Server.Controllers
             ApplicationUser? user = null;
             
             if (id != null)
-                user = await _userManager.FindByIdAsync(id);
+                user = await _userManager.Users.Include(x => x.Contact).FirstOrDefaultAsync(x => x.Id == id);
             else if (HttpContext.User?.Identity?.Name != null)
-                user = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
+                user = await _userManager.Users.Include(x => x.Contact).FirstOrDefaultAsync(x => x.UserName == HttpContext.User.Identity.Name);
 
             if (user != null)
             {
                 model.Id = user.Id;
-                model.AvatarTxt = @AvatarsHelper.AvatarTxt(user.Surname, user.Name);
+                model.AvatarTxt = @AvatarsHelper.AvatarTxt(user.Contact?.Surname, user.Contact?.Name);
                 model.Color = user.Color;
                 model.Email = user.Email;
                 model.IdCompany = user.IdCompany;
+                model.IdContact = user.IdContact;
                 model.LanguageCode = user.LanguageCode;
-                model.Name = user.Name;
+                model.Name = user.Contact?.Name ?? string.Empty;
                 model.PhoneNumber = user.PhoneNumber;
-                model.Surname = user.Surname;
+                model.Surname = user.Contact?.Surname ?? string.Empty;
                 model.Photo =  await GetAvatar(user.Id);
                 model.UserName = user.UserName;
                 model.CompanyPreview = user.CompanyPreview;
@@ -283,19 +290,20 @@ namespace CRM.Server.Controllers
 
            
             if (HttpContext.User?.Identity?.Name != null)
-                user = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
+                user = await _userManager.Users.Include(x => x.Contact).FirstOrDefaultAsync(x => x.UserName == HttpContext.User.Identity.Name);
 
             if (user != null)
             {
                 model.Id = user.Id;
-                model.AvatarTxt = @AvatarsHelper.AvatarTxt(user.Surname, user.Name);
+                model.AvatarTxt = @AvatarsHelper.AvatarTxt(user.Contact?.Surname, user.Contact?.Name);
                 model.Color = user.Color;
                 model.Email = user.Email;
                 model.IdCompany = user.IdCompany;
+                model.IdContact = user.IdContact;
                 model.LanguageCode = user.LanguageCode;
-                model.Name = user.Name;
+                model.Name = user.Contact?.Name ?? string.Empty;
                 model.PhoneNumber = user.PhoneNumber;
-                model.Surname = user.Surname;
+                model.Surname = user.Contact?.Surname ?? string.Empty;
                 model.Photo = await GetAvatar(user.Id);
                 model.UserName = user.UserName;
                 model.IsDeleted = user.IsDeleted;
@@ -337,12 +345,12 @@ namespace CRM.Server.Controllers
 
             user.IdCompany = model.IdCompany;
            
-            user.Name = model.Name;
             user.PhoneNumber = model.PhoneNumber;
-            user.Surname = model.Surname;
             user.Enabled = model.Enabled;
             user.AdminConfirmed = model.AdminConfirmed;
             user.Color = model.Color;
+            user.LanguageCode = model.LanguageCode;
+            user.IdContact = await EnsureContactForUserAsync(user, model);
             
            
             try
@@ -381,11 +389,11 @@ namespace CRM.Server.Controllers
                 {
                     Email = user.Email,
                     IdCompany = user.IdCompany,
-                    Name = user.Name,
-                    Surname = user.Surname,
+                    PhoneNumber = user.PhoneNumber,
                     UserName = user.Email,
                     Enabled = user.Enabled,
-                    Color = user.Color
+                    Color = user.Color,
+                    LanguageCode = user.LanguageCode
                    
                 };
                 var identityResult = await _userManager.CreateAsync(appUser);
@@ -393,6 +401,8 @@ namespace CRM.Server.Controllers
                 
                 if (identityResult.Succeeded)
                 {
+                    appUser.IdContact = await EnsureContactForUserAsync(appUser, user);
+                    await _userManager.UpdateAsync(appUser);
                     await _userManager.AddToRoleAsync(appUser, eRoles.Client.ToString());
                     await SetAvatar(appUser.Id, user.Photo);
 
@@ -465,7 +475,7 @@ namespace CRM.Server.Controllers
                     values: new { area = "Identity" },
                     protocol: Request.Scheme);
 
-            Dictionary<string, string> keyValues = new Dictionary<string, string>() { { EmailHelper.KeyWord(EmailHelper.KeyWords.Name), user.Name }, { EmailHelper.KeyWord(EmailHelper.KeyWords.Url), callbackUrl ?? "" } };
+            Dictionary<string, string> keyValues = new Dictionary<string, string>() { { EmailHelper.KeyWord(EmailHelper.KeyWords.Name), user.NameComplete }, { EmailHelper.KeyWord(EmailHelper.KeyWords.Url), callbackUrl ?? "" } };
             await _emailSender.SendEmailAsync(user.Email, EmailsTypes.ConfirmRegister, null, keyValues);
 
             return user;
@@ -496,7 +506,7 @@ namespace CRM.Server.Controllers
 
                 Dictionary<string, string> keyValues = new Dictionary<string, string>();
 
-                keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Name), user.Name);
+                keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Name), user.NameComplete);
                 keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Url), callbackUrl ?? "");
 
 
@@ -557,6 +567,58 @@ namespace CRM.Server.Controllers
             }
             avatar.Avatar = image;
             await _context.SaveChangesAsync();
+        }
+
+        private async Task<int?> EnsureContactForUserAsync(ApplicationUser user, UserModel model)
+        {
+            if (user == null)
+                return null;
+
+            CRM.Shared.Contact? contact = null;
+
+            if (model.IdContact != null)
+            {
+                contact = await _context.Contacts.FindAsync(model.IdContact.Value);
+            }
+
+            if (contact == null && user.IdContact != null)
+            {
+                contact = await _context.Contacts.FindAsync(user.IdContact.Value);
+            }
+
+            if (contact == null && !string.IsNullOrWhiteSpace(user.Email))
+            {
+                contact = await _context.Contacts
+                    .Where(x => x.Email == user.Email && x.IdCompany == user.IdCompany)
+                    .OrderBy(x => x.Id)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (contact == null)
+            {
+                contact = new CRM.Shared.Contact();
+                _context.Contacts.Add(contact);
+            }
+
+            contact.IdCompany = user.IdCompany;
+            contact.Name = FirstNotEmpty(model.Name, contact.Name, user.UserName, user.Email, "Utente");
+            contact.Surname = FirstNotEmpty(model.Surname, contact.Surname, "-");
+            contact.Email = string.IsNullOrWhiteSpace(model.Email) ? user.Email : model.Email;
+            contact.Phone = string.IsNullOrWhiteSpace(model.PhoneNumber) ? user.PhoneNumber : model.PhoneNumber;
+
+            await _context.SaveChangesAsync();
+            return contact.Id;
+        }
+
+        private static string FirstNotEmpty(params string?[] values)
+        {
+            foreach (var value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    return value;
+            }
+
+            return string.Empty;
         }
 
         // POST: api/Customers

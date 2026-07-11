@@ -17,6 +17,12 @@ namespace CRM.Client.Services
 
         Task<PagingResponse<TicketDTO>> Search(TicketFilter args);
 
+        Task<List<TicketScheduleItemDTO>> GetScheduleItemsAsync(TicketFilter args);
+
+        Task<bool> UpdateScheduleAsync(int idTicket, TicketScheduleUpdateRequest request);
+
+        Task<bool> StartProcessingAsync(int idTicket);
+
         Task<SemanticSearchResponse> SemanticSearch(SemanticSearchRequest request);
 
         Task<AssistantChatResponse> AssistantChat(AssistantChatRequest request);
@@ -28,6 +34,10 @@ namespace CRM.Client.Services
             Action<string> onError);
 
         Task<AssistantChatResponse> DataAssistantAsk(AssistantChatRequest request);
+
+        Task<TicketSummaryProposalResponse> ProposeSummary(int idTicket, TicketSummaryProposalRequest request);
+
+        Task<TicketDTO?> UpdateSummary(int idTicket, UpdateTicketSummaryRequest request);
 
         Task<HashSet<string>?> LoadAssignedUsers(int IdTicket);
 

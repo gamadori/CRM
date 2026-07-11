@@ -619,6 +619,48 @@
   <data name="Deals" xml:space="preserve">
     <value>Deals</value>
   </data>
+  <data name="Leads" xml:space="preserve">
+    <value>Leads</value>
+  </data>
+  <data name="LeadsListSubTitle" xml:space="preserve">
+    <value>Capture, qualify and convert leads into deals.</value>
+  </data>
+  <data name="Catalog" xml:space="preserve">
+    <value>Catalog</value>
+  </data>
+  <data name="CatalogListSubTitle" xml:space="preserve">
+    <value>Browse catalog products with images and previews.</value>
+  </data>
+  <data name="Schedule" xml:space="preserve">
+    <value>Ticket planning</value>
+  </data>
+  <data name="ScheduleListSubTitle" xml:space="preserve">
+    <value>Plan and assign service tickets on the calendar.</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>System information</value>
+  </data>
+  <data name="AboutListSubTitle" xml:space="preserve">
+    <value>Application version, server and client details.</value>
+  </data>
+  <data name="WorkflowAutomations" xml:space="preserve">
+    <value>Automations</value>
+  </data>
+  <data name="Executions" xml:space="preserve">
+    <value>Execution log</value>
+  </data>
+  <data name="Forecast" xml:space="preserve">
+    <value>Pipeline forecast</value>
+  </data>
+  <data name="WorkflowAutomationsListSubTitle" xml:space="preserve">
+    <value>Simple, auditable rules that create follow-ups on leads and deals.</value>
+  </data>
+  <data name="ExecutionsListSubTitle" xml:space="preserve">
+    <value>Check what the worker ran and which activities were generated.</value>
+  </data>
+  <data name="ForecastListSubTitle" xml:space="preserve">
+    <value>Open pipeline, weighted amount, won, lost and target coverage per period.</value>
+  </data>
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
@@ -825,5 +867,11 @@
   </data>
   <data name="Activities" xml:space="preserve">
     <value>Activities</value>
+  </data>
+  <data name="InboundEmails" xml:space="preserve">
+    <value>Inbound Emails</value>
+  </data>
+  <data name="EmailInboxes" xml:space="preserve">
+    <value>Email Inboxes</value>
   </data>
 </root>

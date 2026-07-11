@@ -14,15 +14,31 @@ namespace CRM.Shared
     [DataContract]
     public class ApplicationUser: IdentityUser
     {
-        [Required]
         [DataMember]
+        [NotMapped]
         [Display(Name = nameof(ApplicationUser.Name), ResourceType = typeof(Resources.Models.ApplicationUser))]
-        public string Name { get; set; }
+        public string Name
+        {
+            get => Contact?.Name ?? string.Empty;
+            set
+            {
+                Contact ??= new Contact();
+                Contact.Name = value;
+            }
+        }
 
-        [Required]
         [DataMember]
+        [NotMapped]
         [Display(Name = nameof(ApplicationUser.Surname), ResourceType = typeof(Resources.Models.ApplicationUser))]
-        public string Surname { get; set; }
+        public string Surname
+        {
+            get => Contact?.Surname ?? string.Empty;
+            set
+            {
+                Contact ??= new Contact();
+                Contact.Surname = value;
+            }
+        }
 
         [DataMember]
         public int? idCustomer { get; set; }
@@ -44,6 +60,10 @@ namespace CRM.Shared
         [ForeignKey("Company")]
         [Display(Name = nameof(ApplicationUser.IdCompany), ResourceType = typeof(Resources.Models.ApplicationUser))]
         public int? IdCompany { get; set; }
+
+        [DataMember]
+        [ForeignKey(nameof(Contact))]
+        public int? IdContact { get; set; }
 
         [Display(Name = nameof(ApplicationUser.Enabled), ResourceType = typeof(Resources.Models.ApplicationUser))]
         public bool Enabled { get; set; }
@@ -93,10 +113,11 @@ namespace CRM.Shared
             
             get 
             {
-                if (this != null)
-                    return $"{this?.Surname} {this?.Name}";
-                else
-                    return null;
+                var contactName = Contact?.NameComplete?.Trim();
+                if (!string.IsNullOrWhiteSpace(contactName))
+                    return contactName;
+
+                return UserName ?? Email ?? string.Empty;
             } 
         }
 
@@ -155,6 +176,9 @@ namespace CRM.Shared
         [DataMember]
 
         public Company Company { get; set; }
+
+        [DataMember]
+        public Contact? Contact { get; set; }
 
        
 

@@ -7,6 +7,13 @@ namespace CRM.Server
 {
     public class SignalRHub: Hub
     {
+        private readonly CRM.Server.Services.MaintenanceState _maintenanceState;
+
+        public SignalRHub(CRM.Server.Services.MaintenanceState maintenanceState)
+        {
+            _maintenanceState = maintenanceState;
+        }
+
         public static Dictionary<string, string> Connections { get { return _connections.ToDictionary(c => c.Key, c => c.Value); } }
 
         private static ConcurrentDictionary<string,string> _connections = new ConcurrentDictionary<string,string>();
@@ -26,15 +33,19 @@ namespace CRM.Server
         }
 
 
-        public override Task OnConnectedAsync()
+        public override async Task OnConnectedAsync()
         {
             var name = Context.User?.Identity?.Name;
             if (name != null)
             {
                 _connections.TryAdd(name, Context.ConnectionId);
             }
-            return base.OnConnectedAsync();
 
+            var maintenance = _maintenanceState.GetCurrent();
+            if (maintenance.Active)
+                await Clients.Caller.SendAsync("MaintenanceNotice", maintenance);
+
+            await base.OnConnectedAsync();
         }
 
         public override Task OnDisconnectedAsync(Exception? exception)

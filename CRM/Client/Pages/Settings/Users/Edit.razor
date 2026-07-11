@@ -55,6 +55,17 @@ else
                     <RadzenRow>
                         <RadzenColumn Size="6">
                             <RadzenStack>
+                                <RadzenLabel Component="LanguageCode">
+                                    <DisplayName For="@(() => _user.LanguageCode)" />
+                                </RadzenLabel>
+                                <LanguageSelectorDb Languages="@_languages" @bind-Value="@_user.LanguageCode" />
+                                <ValidationMessage For="@(() => _user.LanguageCode)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="6">
+                            <RadzenStack>
                                 <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
                                     <Authorized Context="AuthorizeRole">
                                         

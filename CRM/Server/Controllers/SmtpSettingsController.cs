@@ -1,13 +1,10 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CRM.Server.Data;
 using CRM.Shared;
-using CRM.Server.Services;
 
 namespace CRM.Server.Controllers
 {
@@ -16,21 +13,34 @@ namespace CRM.Server.Controllers
     public class SmtpSettingsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IHttpClientFactory _httpFactory;
 
-        private readonly IEmailSenderPlus _emailService;
-        public SmtpSettingsController(ApplicationDbContext context, IEmailSenderPlus emailService   )
+        public SmtpSettingsController(ApplicationDbContext context, IHttpClientFactory httpFactory)
         {
             _context = context;
-            _emailService = emailService;
+            _httpFactory = httpFactory;
         }
 
-        // GET: api/SmtpSettings
+        // GET: api/SmtpSettings -> canale a priorità più alta (retrocompatibilità)
         [HttpGet]
         public async Task<ActionResult<SmtpSetting?>> Get()
         {
-            var item = await _context.SmtpSettings.FirstOrDefaultAsync() ?? new SmtpSetting();
+            var item = await _context.SmtpSettings
+                .OrderBy(s => s.Priority).ThenBy(s => s.Id)
+                .FirstOrDefaultAsync() ?? new SmtpSetting();
 
             return Ok(item);
+        }
+
+        // GET: api/SmtpSettings/list -> tutti i canali in ordine di priorità
+        [HttpGet("list")]
+        public async Task<ActionResult<List<SmtpSetting>>> GetList()
+        {
+            var items = await _context.SmtpSettings
+                .OrderBy(s => s.Priority).ThenBy(s => s.Id)
+                .ToListAsync();
+
+            return Ok(items);
         }
 
         // GET: api/SmtpSettings/5
@@ -38,24 +48,18 @@ namespace CRM.Server.Controllers
         public async Task<ActionResult<SmtpSetting>> Get(int id)
         {
             var smtpSettings = await _context.SmtpSettings.FindAsync(id);
-
             if (smtpSettings == null)
-            {
                 return NotFound();
-            }
 
             return smtpSettings;
         }
 
         // PUT: api/SmtpSettings/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutSmtpSettings(int id, SmtpSetting smtpSettings)
         {
             if (id != smtpSettings.Id)
-            {
                 return BadRequest();
-            }
 
             _context.Entry(smtpSettings).State = EntityState.Modified;
 
@@ -66,27 +70,25 @@ namespace CRM.Server.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!SmtpSettingsExists(id))
-                {
                     return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
 
             return NoContent();
         }
 
         // POST: api/SmtpSettings
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<SmtpSetting>> PostSmtpSettings(SmtpSetting smtpSettings)
         {
+            // Nuovo canale in coda alla catena se la priorità non è stata impostata esplicitamente.
+            if (smtpSettings.Priority == 0 && await _context.SmtpSettings.AnyAsync())
+                smtpSettings.Priority = await _context.SmtpSettings.MaxAsync(s => s.Priority) + 1;
+
             _context.SmtpSettings.Add(smtpSettings);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetSmtpSettings", new { id = smtpSettings.Id }, smtpSettings);
+            return Ok(smtpSettings);
         }
 
         // DELETE: api/SmtpSettings/5
@@ -95,9 +97,7 @@ namespace CRM.Server.Controllers
         {
             var smtpSettings = await _context.SmtpSettings.FindAsync(id);
             if (smtpSettings == null)
-            {
                 return NotFound();
-            }
 
             _context.SmtpSettings.Remove(smtpSettings);
             await _context.SaveChangesAsync();
@@ -105,33 +105,89 @@ namespace CRM.Server.Controllers
             return NoContent();
         }
 
-        // POST: api/SmtpSettings/Test
+        // POST: api/SmtpSettings/reorder -> riassegna le priorità secondo l'ordine degli id ricevuti
+        [HttpPost("reorder")]
+        public async Task<IActionResult> Reorder([FromBody] List<int> orderedIds)
+        {
+            if (orderedIds == null || orderedIds.Count == 0)
+                return BadRequest();
+
+            var items = await _context.SmtpSettings
+                .Where(s => orderedIds.Contains(s.Id))
+                .ToListAsync();
+
+            foreach (var item in items)
+                item.Priority = orderedIds.IndexOf(item.Id);
+
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        // POST: api/SmtpSettings/Test -> verifica il canale (connettività SMTP o validità API key)
         [HttpPost("Test")]
-        public async Task<IActionResult> TestSmtp([FromBody] SmtpSetting smtpSettings)
+        public async Task<IActionResult> TestSmtp([FromBody] SmtpSetting settings)
         {
             try
             {
-                // Invia una mail di test a se stesso
-                var to = smtpSettings.SenderEmail;
-                var subject = "Test SMTP";
-                var message = "Questa è una mail di test.";
+                if (settings.Provider == EmailProvider.Brevo)
+                {
+                    await TestBrevoAsync(settings);
+                    return Ok(new { Success = true, Message = "API key Brevo valida." });
+                }
 
-                // Usa direttamente MailKit per testare la connessione
+                if (settings.Provider == EmailProvider.SendGrid)
+                {
+                    await TestSendGridAsync(settings);
+                    return Ok(new { Success = true, Message = "API key SendGrid valida." });
+                }
+
                 using var smtp = new MailKit.Net.Smtp.SmtpClient();
                 System.Net.ServicePointManager.ServerCertificateValidationCallback =
                     (sender, certificate, chain, sslPolicyErrors) => true;
-                await smtp.ConnectAsync(smtpSettings.Server, smtpSettings.Port, smtpSettings.Ssl);
-                await smtp.AuthenticateAsync(smtpSettings.Username, smtpSettings.Password);
+                await smtp.ConnectAsync(settings.Server, settings.Port, settings.Ssl);
+                if (!string.IsNullOrEmpty(settings.Username))
+                    await smtp.AuthenticateAsync(settings.Username, settings.Password);
                 await smtp.DisconnectAsync(true);
-
-                // Se vuoi inviare anche una mail reale, decommenta:
-                await _emailService.SendEmailAsync(to, subject, message);
 
                 return Ok(new { Success = true, Message = "Connessione SMTP riuscita." });
             }
             catch (System.Exception ex)
             {
                 return BadRequest(new { Success = false, Message = ex.Message });
+            }
+        }
+
+        private async Task TestBrevoAsync(SmtpSetting settings)
+        {
+            if (string.IsNullOrWhiteSpace(settings.ApiKey))
+                throw new System.Exception("API key mancante.");
+
+            using var client = _httpFactory.CreateClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.brevo.com/v3/account");
+            request.Headers.Add("api-key", settings.ApiKey);
+
+            using var response = await client.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new System.Exception($"Brevo {(int)response.StatusCode}: {body}");
+            }
+        }
+
+        private async Task TestSendGridAsync(SmtpSetting settings)
+        {
+            if (string.IsNullOrWhiteSpace(settings.ApiKey))
+                throw new System.Exception("API key mancante.");
+
+            using var client = _httpFactory.CreateClient();
+            using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.sendgrid.com/v3/scopes");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", settings.ApiKey);
+
+            using var response = await client.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                throw new System.Exception($"SendGrid {(int)response.StatusCode}: {body}");
             }
         }
 

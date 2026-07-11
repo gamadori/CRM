@@ -24,6 +24,7 @@ namespace CRM.Server.Services
         private readonly IPermitsService _permitsService;
         private readonly ILogEventService _logEventService;
         private readonly IQuotePdfGenerator _pdfGenerator;
+        private readonly IOrdersService _ordersService;
 
         public QuotesService(
             ApplicationDbContext context,
@@ -31,7 +32,8 @@ namespace CRM.Server.Services
             IHttpContextAccessor httpContextAccessor,
             IPermitsService permitsService,
             ILogEventService logEventService,
-            IQuotePdfGenerator pdfGenerator)
+            IQuotePdfGenerator pdfGenerator,
+            IOrdersService ordersService)
         {
             _context = context;
             _userManager = userManager;
@@ -39,6 +41,7 @@ namespace CRM.Server.Services
             _permitsService = permitsService;
             _logEventService = logEventService;
             _pdfGenerator = pdfGenerator;
+            _ordersService = ordersService;
         }
 
         public async Task<QuoteDTO?> GetItemAsync(int id)
@@ -55,6 +58,18 @@ namespace CRM.Server.Services
             var dto = item.ToDTO();
             if (dto != null)
             {
+                var order = await _context.Orders
+                    .AsNoTracking()
+                    .Where(o => o.IdQuote == id)
+                    .Select(o => new { o.Id, o.Number })
+                    .FirstOrDefaultAsync();
+
+                if (order != null)
+                {
+                    dto.IdOrder = order.Id;
+                    dto.OrderNumber = order.Number ?? string.Empty;
+                }
+
                 dto.Permits = await _permitsService.ObjectPermits(dto.IdCompany, dto.IdUser);
             }
             return dto;
@@ -126,6 +141,7 @@ namespace CRM.Server.Services
         {
             try
             {
+                await PopulateRowsFromDealAsync(item);
                 Recalculate(item);
 
                 int savedId;
@@ -226,6 +242,8 @@ namespace CRM.Server.Services
         {
             try
             {
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
                 var quote = await _context.Quotes.FirstOrDefaultAsync(x => x.Id == id);
                 if (quote == null)
                 {
@@ -268,11 +286,30 @@ namespace CRM.Server.Services
 
                 await _context.SaveChangesAsync();
 
+                if (state == QuoteStates.Accepted)
+                {
+                    var orderResp = await _ordersService.CreateFromQuoteAsync(id);
+                    if (!orderResp.State)
+                    {
+                        await transaction.RollbackAsync();
+                        return new APIResponseMessage<QuoteDTO>
+                        {
+                            State = false,
+                            Message = orderResp.Message ?? "Errore nella creazione dell'ordine dal preventivo",
+                            Code = orderResp.Code
+                        };
+                    }
+                }
+
+                await transaction.CommitAsync();
+
                 return new APIResponseMessage<QuoteDTO>
                 {
                     State = true,
                     Data = await GetItemAsync(id),
-                    Message = "Stato aggiornato",
+                    Message = state == QuoteStates.Accepted
+                        ? "Preventivo accettato e ordine generato"
+                        : "Stato aggiornato",
                     Code = System.Net.HttpStatusCode.OK
                 };
             }
@@ -390,6 +427,64 @@ namespace CRM.Server.Services
             quote.TotalDiscount = quote.Rows.Sum(r => QuoteMath.DiscountAmount(r.Quantity, r.UnitPrice, r.DiscountPct));
             quote.TotalVat = quote.Rows.Sum(r => r.LineVat);
             quote.Total = quote.Subtotal + quote.TotalVat;
+        }
+
+        private async Task PopulateRowsFromDealAsync(Quote quote)
+        {
+            if (quote.Id != 0 || quote.IdDeal == null || quote.Rows.Any())
+            {
+                return;
+            }
+
+            var deal = await _context.Deals
+                .Include(x => x.ProductInterests)
+                    .ThenInclude(x => x.Product)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == quote.IdDeal.Value);
+
+            if (deal == null || deal.ProductInterests.Count == 0)
+            {
+                return;
+            }
+
+            quote.IdCompany ??= deal.IdCompany;
+            quote.IdContact ??= deal.IdContact;
+
+            var defaultVat = await _context.GlobalSettings
+                .AsNoTracking()
+                .Select(x => x.DefaultVatRate)
+                .FirstOrDefaultAsync();
+
+            if (defaultVat <= 0)
+            {
+                defaultVat = 22m;
+            }
+
+            quote.Rows = deal.ProductInterests
+                .OrderBy(x => x.SortOrder)
+                .Select((row, index) => new QuoteRow
+                {
+                    IdProduct = row.IdProduct,
+                    Description = ProductDescription(row),
+                    Quantity = row.Quantity,
+                    UnitPrice = row.UnitPrice,
+                    DiscountPct = row.DiscountPct,
+                    VatRate = defaultVat,
+                    SortOrder = index
+                })
+                .ToList();
+        }
+
+        private static string ProductDescription(DealProductInterest row)
+        {
+            if (row.Product == null)
+            {
+                return string.Empty;
+            }
+
+            return string.IsNullOrWhiteSpace(row.Product.Code)
+                ? row.Product.Name
+                : $"{row.Product.Code} - {row.Product.Name}";
         }
 
         private async Task<string> GenerateNumberAsync(DateTime date)

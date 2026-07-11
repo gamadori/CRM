@@ -43,6 +43,19 @@ namespace CRM.Shared.DTOs
 
         public DateTime CreatedAt { get; set; }
 
+        /// <summary>Id dell'email collegata (se l'attività rappresenta una comunicazione email registrata).</summary>
+        public int? IdEmailSent { get; set; }
+
+        /// <summary>Id dell'email in ingresso collegata (attività da email ricevuta).</summary>
+        public int? IdInboundEmail { get; set; }
+
+        /// <summary>Stato di engagement dell'email collegata (risolto per la timeline).</summary>
+        public EmailEngagementStatus? EmailEngagement { get; set; }
+
+        public int EmailOpenCount { get; set; }
+
+        public int EmailClickCount { get; set; }
+
         public string UserName { get; set; } = string.Empty;
 
         public string AssigneeName { get; set; } = string.Empty;
@@ -74,6 +87,8 @@ namespace CRM.Shared.DTOs
                 State = a.State,
                 ReminderAt = a.ReminderAt,
                 CreatedAt = a.CreatedAt,
+                IdEmailSent = a.IdEmailSent,
+                IdInboundEmail = a.IdInboundEmail,
                 UserName = a.User != null ? a.User.NameComplete : string.Empty,
                 AssigneeName = a.Assignee != null ? a.Assignee.NameComplete : string.Empty
             };

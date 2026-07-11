@@ -6,6 +6,7 @@ using CRM.Server.Data;
 using CRM.Server.Helpers;
 using CRM.Server.Services;
 using CRM.Shared;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -19,8 +20,20 @@ using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 // Configura licenza QuestPDF (Community - gratuita per progetti sotto $1M revenue)
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+}
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -33,6 +46,7 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // Aggiungi IHttpContextAccessor per accedere all'HttpContext nei servizi
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<MaintenanceState>();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddRoles<IdentityRole>()
@@ -80,6 +94,7 @@ builder.Services.AddScoped<SignInManager<ApplicationUser>, ApplicationSignInMana
 builder.Services.AddScoped<ILangSelectorService, LangSelectorService>();
 
 builder.Services.AddScoped<CRM.Server.Services.ITicketsService, TicketsService>();
+builder.Services.AddScoped<ITicketSummaryService, TicketSummaryService>();
 
 builder.Services.AddScoped<TranslateService>();
 
@@ -149,6 +164,10 @@ builder.Services.AddScoped<IContactsService, ContactsService>();
 
 builder.Services.AddScoped<IDealsService, DealsService>();
 
+builder.Services.AddScoped<ILeadsService, LeadsService>();
+
+builder.Services.AddScoped<IWorkflowAutomationService, WorkflowAutomationService>();
+
 builder.Services.AddScoped<IQuotesService, QuotesService>();
 
 builder.Services.AddScoped<IQuotePdfGenerator, QuotePdfGenerator>();
@@ -162,8 +181,18 @@ builder.Services.AddScoped<CRM.Server.Services.IPriceListService, CRM.Server.Ser
 builder.Services.AddScoped<IInvoicesService, InvoicesService>();
 
 builder.Services.AddScoped<IActivitiesService, ActivitiesService>();
+builder.Services.AddScoped<CRM.Server.Services.ICalendarService, CRM.Server.Services.CalendarService>();
 
+// IHttpClientFactory per i canali email basati su API (es. Brevo) e altri client HTTP.
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<CRM.Server.Services.Email.IEmailEngagementService, CRM.Server.Services.Email.EmailEngagementService>();
+builder.Services.AddScoped<CRM.Server.Services.Email.IInboundEmailAiService, CRM.Server.Services.Email.InboundEmailAiService>();
+builder.Services.AddScoped<CRM.Server.Services.Email.IEmailTemplateTranslator, CRM.Server.Services.Email.EmailTemplateTranslator>();
+builder.Services.AddScoped<CRM.Server.Services.Email.IInboundEmailRouter, CRM.Server.Services.Email.InboundEmailRouter>();
 builder.Services.AddHostedService<ReminderBackgroundService>();
+builder.Services.AddHostedService<WorkflowAutomationBackgroundService>();
+builder.Services.AddHostedService<EmailOutboxBackgroundService>();
+builder.Services.AddHostedService<EmailInboxBackgroundService>();
 
 // Provider di fatturazione elettronica: di default nessuno (genera XML ma non trasmette).
 // Sostituire con un adapter specifico del provider adottato (Aruba, InfoCert, TeamSystem, ...).

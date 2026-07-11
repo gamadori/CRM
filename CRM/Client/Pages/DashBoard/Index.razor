@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @page "/DashBoard"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
@@ -11,502 +11,259 @@
 }
 else
 {
-    <div class="container-fluid px-4 py-3 dashboard-page">
-        <!-- Header Section -->
-        <div class="row mb-4 align-items-center">
-            <div class="col-12 col-md-8">
-                <div class="dashboard-hero">
-                    <h2 class="fw-bold text-dark mb-1 dashboard-title">Dashboard</h2>
-                    <p class="text-muted dashboard-subtitle">Pannello di controllo</p>
-                </div>
+    <div class="dashboard-page">
+
+        <!-- Header -->
+        <div class="dash-header">
+            <div>
+                <h2 class="dash-title">Dashboard</h2>
+                <p class="dash-subtitle">Pannello di controllo</p>
             </div>
-            <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
-                <RedGButton Icon="refresh" Text="Aggiorna" Click="ReloadDashboard" ButtonStyle="ButtonStyle.Secondary" />
-            </div>
+            <RedGButton Icon="refresh" Text="Aggiorna" Click="ReloadDashboard" ButtonStyle="ButtonStyle.Light" />
         </div>
 
-        <!-- User Selection -->
+        <!-- Toolbar: utente + azioni -->
         @if (!_model.IsClient && _users != null)
         {
-            <div class="row mb-4">
-                <RadzenCard class="dashboard-toolbar dashboard-surface">
-                    <div class="card-body">
-                        <div class="row align-items-end">
-                            <div class="col-md-4 col-lg-3">
-                                <RedGDropDownGrid Label="@Localize["User"]" TItem="ApplicationUser" @bind-value="@_userId" TValue="string" Data="@_users" Change="OnChangeIdUser" TextProperty="NameComplete" ValueProperty="Id">
-                                    <ChildColumns>
-                                        <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
-                                        <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
-                                    </ChildColumns>
-                                </RedGDropDownGrid>
-                            </div>
-                            <div class="col-md-8 col-lg-9">
-                                <div class="d-flex flex-wrap gap-2">
-                                    <RedGButton Icon="add_box" Text="@Localize["Nuovo Ticket"]" Click="AddTicket" ButtonStyle="ButtonStyle.Primary" />
-                                    <RedGButton Icon="list" Text="@Localize["Storico TICKETS"]" Click="TicketAll" ButtonStyle="ButtonStyle.Secondary" />
-                                    <RedGButton Icon="schedule" Text=@Localize["Scheduler"] Click="Schedule" ButtonStyle="ButtonStyle.Light" />
-                                    <RedGButton Icon="manage_search" Text=@Localize["Ricerca Ticket"] Click="TicketsSearch" ButtonStyle="ButtonStyle.Light" />
-                                    <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
-                                        <RedGButton Icon="money" Text="@Localize["Ticket da Fatturare"]" Click="TicketsToInvoice" ButtonStyle="ButtonStyle.Light" />
-                                    </AuthorizeView>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </RadzenCard>
+            <div class="dash-toolbar">
+                <div class="toolbar-user">
+                    <RedGDropDownGrid Label="@Localize["User"]" TItem="ApplicationUser" @bind-value="@_userId" TValue="string" Data="@_users" Change="OnChangeIdUser" TextProperty="NameComplete" ValueProperty="Id">
+                        <ChildColumns>
+                            <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
+                            <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
+                        </ChildColumns>
+                    </RedGDropDownGrid>
+                </div>
+                <div class="toolbar-actions">
+                    <RedGButton Icon="add_box" Text="@Localize["Nuovo Ticket"]" Click="AddTicket" ButtonStyle="ButtonStyle.Primary" class="tb-btn tb-primary" />
+                    <RedGButton Icon="list" Text="@Localize["Storico TICKETS"]" Click="TicketAll" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
+                    <RedGButton Icon="event_note" Text="Pianificazione Ticket" Click="Schedule" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
+                    <RedGButton Icon="manage_search" Text=@Localize["Ricerca Ticket"] Click="TicketsSearch" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
+                    <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
+                        <RedGButton Icon="money" Text="@Localize["Ticket da Fatturare"]" Click="TicketsToInvoice" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
+                    </AuthorizeView>
+                </div>
             </div>
         }
 
-        <!-- KPI Cards -->
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-md-4 col-xl-2">
-                <RadzenCard class="dashboard-card h-100 kpi-card kpi-warning" @onclick="TicketNotAssigned">
-                    <div class="text-center">
-                        <span class="material-icons text-warning mb-2" style="font-size: 28px;">assignment_late</span>
-                        <p class="text-muted text-uppercase small fw-semibold mb-1">Non Assegnati</p>
-                        <h3 class="fw-bold mb-0 text-warning">@_model.TicketsNotAssigned</h3>
-                    </div>
-                </RadzenCard>
+        <!-- Metriche -->
+        <div class="metric-grid">
+            <div class="metric-tile tile-warning" @onclick="TicketNotAssigned">
+                <div class="metric-icon"><span class="material-icons">assignment_late</span></div>
+                <div class="metric-text">
+                    <div class="metric-value">@_model.TicketsNotAssigned</div>
+                    <div class="metric-label">Non assegnati</div>
+                </div>
             </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <RadzenCard class="dashboard-card h-100 kpi-card kpi-success" @onclick="TicketWorking">
-                    <div class="text-center">
-                        <span class="material-icons text-success mb-2" style="font-size: 28px;">engineering</span>
-                        <p class="text-muted text-uppercase small fw-semibold mb-1">In Lavorazione</p>
-                        <h3 class="fw-bold mb-0 text-success">@_model.TicketsWorking</h3>
-                    </div>
-                </RadzenCard>
+
+            <div class="metric-tile tile-success" @onclick="TicketWorking">
+                <div class="metric-icon"><span class="material-icons">engineering</span></div>
+                <div class="metric-text">
+                    <div class="metric-value">@_model.TicketsWorking</div>
+                    <div class="metric-label">In lavorazione</div>
+                </div>
             </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <RadzenCard class="dashboard-card h-100 kpi-card kpi-danger" @onclick="TicketExpired">
-                    <div class="text-center">
-                        <span class="material-icons text-danger mb-2" style="font-size: 28px;">schedule</span>
-                        <p class="text-muted text-uppercase small fw-semibold mb-1">Scaduti</p>
-                        <h3 class="fw-bold mb-0 text-danger">@_model.TicketsExpired</h3>
-                    </div>
-                </RadzenCard>
+
+            <div class="metric-tile tile-danger" @onclick="TicketExpired">
+                <div class="metric-icon"><span class="material-icons">schedule</span></div>
+                <div class="metric-text">
+                    <div class="metric-value">@_model.TicketsExpired</div>
+                    <div class="metric-label">Scaduti</div>
+                </div>
             </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <RadzenCard class="dashboard-card h-100 kpi-card kpi-info" @onclick="TicketsNewMessage">
-                    <div class="text-center">
-                        <span class="material-icons text-info mb-2" style="font-size: 28px;">chat</span>
-                        <p class="text-muted text-uppercase small fw-semibold mb-1">Nuovi Messaggi</p>
-                        <h3 class="fw-bold mb-0 text-info">@_model.ChatMessageToRead</h3>
-                    </div>
-                </RadzenCard>
+
+            <div class="metric-tile tile-info" @onclick="TicketsNewMessage">
+                <div class="metric-icon"><span class="material-icons">chat</span></div>
+                <div class="metric-text">
+                    <div class="metric-value">@_model.ChatMessageToRead</div>
+                    <div class="metric-label">Nuovi messaggi</div>
+                </div>
             </div>
-            @if (_model.InterventionsPendingSignature > 0)
+
+            @if (!_model.IsClient && _model.InboundEmailsToHandle > 0)
             {
-                <div class="col-6 col-md-4 col-xl-2">
-                    <RadzenCard class="dashboard-card h-100 kpi-card kpi-signature" @onclick="InterventionsPendingSignature">
-                        <div class="text-center">
-                            <span class="material-icons mb-2" style="font-size: 28px; color: #f59e0b;">draw</span>
-                            <p class="text-muted text-uppercase small fw-semibold mb-1">Firme Pending</p>
-                            <h3 class="fw-bold mb-0" style="color: #f59e0b;">@_model.InterventionsPendingSignature</h3>
-                        </div>
-                    </RadzenCard>
+                <div class="metric-tile tile-indigo" @onclick="InboundEmailsToHandle">
+                    <div class="metric-icon"><span class="material-icons">move_to_inbox</span></div>
+                    <div class="metric-text">
+                        <div class="metric-value">@_model.InboundEmailsToHandle</div>
+                        <div class="metric-label">Email in arrivo</div>
+                    </div>
                 </div>
             }
+
+            @if (_model.InterventionsPendingSignature > 0)
+            {
+                <div class="metric-tile tile-orange" @onclick="InterventionsPendingSignature">
+                    <div class="metric-icon"><span class="material-icons">draw</span></div>
+                    <div class="metric-text">
+                        <div class="metric-value">@_model.InterventionsPendingSignature</div>
+                        <div class="metric-label">Firme pending</div>
+                    </div>
+                </div>
+            }
+
             @if (_model.UsersNeedConfirm > 0)
             {
-                <div class="col-6 col-md-4 col-xl-2">
-                    <RadzenCard class="dashboard-card h-100 kpi-card kpi-info" @onclick="UsersNeedConfirm">
-                        <div class="text-center">
-                            <span class="material-icons text-info mb-2" style="font-size: 28px;">person_add</span>
-                            <p class="text-muted text-uppercase small fw-semibold mb-1">Utenti da Confermare</p>
-                            <h3 class="fw-bold mb-0 text-info">@_model.UsersNeedConfirm</h3>
-                        </div>
-                    </RadzenCard>
+                <div class="metric-tile tile-violet" @onclick="UsersNeedConfirm">
+                    <div class="metric-icon"><span class="material-icons">person_add</span></div>
+                    <div class="metric-text">
+                        <div class="metric-value">@_model.UsersNeedConfirm</div>
+                        <div class="metric-label">Utenti da confermare</div>
+                    </div>
+                </div>
+            }
+
+            <div class="metric-tile tile-primary">
+                <div class="metric-icon"><span class="material-icons">assignment_ind</span></div>
+                <div class="metric-text">
+                    <div class="metric-value">@_model.TicketAssigned</div>
+                    <div class="metric-label">Assegnati a me</div>
+                </div>
+            </div>
+
+            <div class="metric-tile tile-teal">
+                <div class="metric-icon"><span class="material-icons">assignment_turned_in</span></div>
+                <div class="metric-text">
+                    <div class="metric-value">@_model.TicketsClosed</div>
+                    <div class="metric-label">Ticket chiusi</div>
+                </div>
+            </div>
+
+            @if (_model.UnreadFeedbacksCount > 0)
+            {
+                <div class="metric-tile tile-warning clickable" @onclick="ViewAllFeedbacks">
+                    <div class="metric-icon"><span class="material-icons">star_rate</span></div>
+                    <div class="metric-text">
+                        <div class="metric-value">@_model.UnreadFeedbacksCount</div>
+                        <div class="metric-label">Feedback da leggere</div>
+                    </div>
                 </div>
             }
         </div>
 
-        <!-- Average Feedback Section -->
+        <!-- Media valutazioni clienti -->
         @if (_averageFeedback != null && _averageFeedback.Companies.Any())
         {
-            <div class="row mb-4">
-                <div class="col-12">
-                    <RadzenCard class="dashboard-surface dashboard-section">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
-                                <span class="material-icons" style="color: #f59e0b;">analytics</span>
-                                Media Valutazioni Clienti
-                            </h5>
-                            <div class="overall-rating d-flex align-items-center gap-2">
-                                <span class="text-muted">Media Globale:</span>
-                                <div class="overall-stars">
-                                    @for (int i = 1; i <= 5; i++)
-                                    {
-                                        var filled = i <= Math.Round(_averageFeedback.OverallAverage);
-                                        <span class="material-icons @(filled ? "star-filled" : "star-empty")">star</span>
-                                    }
-                                </div>
-                                <span class="overall-value">@_averageFeedback.OverallAverage.ToString("0.0")</span>
-                                <span class="text-muted">(@_averageFeedback.TotalFeedbacks feedback)</span>
-                            </div>
-                        </div>
-
-                        <div class="company-ratings-grid">
-                            @foreach (var company in _averageFeedback.Companies.OrderByDescending(c => c.Average).Take(6))
+            <div class="dash-card">
+                <div class="dash-card-head">
+                    <div class="dash-card-title">
+                        <span class="material-icons" style="color:#f59e0b;">analytics</span>
+                        <span>Media valutazioni clienti</span>
+                    </div>
+                    <div class="overall-rating">
+                        <span class="overall-caption">Media globale</span>
+                        <div class="overall-stars">
+                            @for (int i = 1; i <= 5; i++)
                             {
-                                <div class="company-rating-card">
-                                    <div class="company-rating-header">
-                                        <span class="company-name" title="@company.Name">@TruncateCompanyName(company.Name)</span>
-                                        <span class="company-feedbacks">@company.TotalFeedbacks feedback</span>
+                                var filled = i <= Math.Round(_averageFeedback.OverallAverage);
+                                <span class="material-icons @(filled ? "star-filled" : "star-empty")">star</span>
+                            }
+                        </div>
+                        <span class="overall-value">@_averageFeedback.OverallAverage.ToString("0.0")</span>
+                        <span class="overall-count">(@_averageFeedback.TotalFeedbacks)</span>
+                    </div>
+                </div>
+
+                <div class="dash-card-body">
+                    <div class="company-ratings-grid">
+                        @foreach (var company in _averageFeedback.Companies.OrderByDescending(c => c.Average).Take(6))
+                        {
+                            <div class="company-rating-card">
+                                <div class="company-rating-header">
+                                    <span class="company-name" title="@company.Name">@TruncateCompanyName(company.Name)</span>
+                                    <span class="company-feedbacks">@company.TotalFeedbacks</span>
+                                </div>
+                                <div class="rating-bar-container">
+                                    <div class="rating-bar" style="width: @(company.Average / 5 * 100)%; background: @GetRatingColor(company.Average);"></div>
+                                </div>
+                                <div class="rating-details">
+                                    <div class="rating-stars">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            var filled = i <= Math.Round(company.Average);
+                                            <span class="material-icons star-sm @(filled ? "star-filled" : "star-empty")">star</span>
+                                        }
                                     </div>
-                                    <div class="company-rating-body">
-                                        <div class="rating-bar-container">
-                                            <div class="rating-bar" style="width: @(company.Average / 5 * 100)%; background: @GetRatingColor(company.Average);"></div>
+                                    <span class="rating-value">@company.Average.ToString("0.0")</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (_averageFeedback.Companies.Count > 6)
+                    {
+                        <div class="dash-card-foot">
+                            <RedGButton Icon="visibility" Text="@GetViewAllButtonText()" Click="ViewAllFeedbacks" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Feedback recenti -->
+        @if (_model.UnreadFeedbacksCount > 0 || (_model.RecentFeedbacks != null && _model.RecentFeedbacks.Any()))
+        {
+            <div class="dash-card">
+                <div class="dash-card-head">
+                    <div class="dash-card-title">
+                        <span class="material-icons text-primary">rate_review</span>
+                        <span>Feedback dai clienti</span>
+                        @if (_model.UnreadFeedbacksCount > 0)
+                        {
+                            <span class="pill-new">@_model.UnreadFeedbacksCount nuovi</span>
+                        }
+                    </div>
+                    <RedGButton Icon="visibility" Text="Vedi tutti" Click="ViewAllFeedbacks" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+                </div>
+
+                <div class="dash-card-body">
+                    @if (_model.RecentFeedbacks != null && _model.RecentFeedbacks.Any())
+                    {
+                        <div class="feedback-list">
+                            @foreach (var feedback in _model.RecentFeedbacks)
+                            {
+                                <div class="feedback-item @(feedback.IsRead ? "" : "unread")" @onclick="() => ViewTicketDetails(feedback.TicketId)">
+                                    <div class="feedback-header">
+                                        <div class="feedback-info">
+                                            <span class="feedback-company">@feedback.CompanyName</span>
+                                            <span class="feedback-ticket">Ticket #@feedback.TicketId</span>
                                         </div>
-                                        <div class="rating-details">
-                                            <div class="rating-stars">
-                                                @for (int i = 1; i <= 5; i++)
-                                                {
-                                                    var filled = i <= Math.Round(company.Average);
-                                                    <span class="material-icons star-sm @(filled ? "star-filled" : "star-empty")">star</span>
-                                                }
-                                            </div>
-                                            <span class="rating-value">@company.Average.ToString("0.0")</span>
+                                        <div class="feedback-rating">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                <span class="material-icons star @(i <= feedback.Rating ? "filled" : "")">star</span>
+                                            }
                                         </div>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(feedback.Comment))
+                                    {
+                                        <p class="feedback-comment">"@feedback.Comment"</p>
+                                    }
+                                    else
+                                    {
+                                        <p class="feedback-comment no-comment"><em>Nessun commento</em></p>
+                                    }
+                                    <div class="feedback-footer">
+                                        <span class="feedback-meta">
+                                            <span class="material-icons">person</span>@feedback.UserName
+                                        </span>
+                                        <span class="feedback-meta">
+                                            <span class="material-icons">schedule</span>@feedback.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                        </span>
                                     </div>
                                 </div>
                             }
                         </div>
-
-                        @if (_averageFeedback.Companies.Count > 6)
-                        {
-                            <div class="text-center mt-3">
-                                <RedGButton Icon="visibility" Text="@GetViewAllButtonText()" Click="ViewAllFeedbacks" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
-                            </div>
-                        }
-                    </RadzenCard>
+                    }
+                    else
+                    {
+                        <div class="dash-empty">
+                            <span class="material-icons">sentiment_satisfied</span>
+                            <p>Nessun feedback recente</p>
+                        </div>
+                    }
                 </div>
             </div>
         }
-
-        <!-- Feedback Section -->
-        @if (_model.UnreadFeedbacksCount > 0 || (_model.RecentFeedbacks != null && _model.RecentFeedbacks.Any()))
-        {
-            <div class="row mb-4">
-                <div class="col-12">
-                    <RadzenCard class="dashboard-surface dashboard-section">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
-                                <span class="material-icons text-primary">rate_review</span>
-                                Feedback dai Clienti
-                                @if (_model.UnreadFeedbacksCount > 0)
-                                {
-                                    <span class="badge bg-danger">@_model.UnreadFeedbacksCount nuovi</span>
-                                }
-                            </h5>
-                            <RedGButton Icon="visibility" Text="Vedi Tutti" Click="ViewAllFeedbacks" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
-                        </div>
-
-                        @if (_model.RecentFeedbacks != null && _model.RecentFeedbacks.Any())
-                        {
-                            <div class="feedback-list">
-                                @foreach (var feedback in _model.RecentFeedbacks)
-                                {
-                                    <div class="feedback-item @(feedback.IsRead ? "" : "unread")" @onclick="() => ViewTicketDetails(feedback.TicketId)">
-                                        <div class="feedback-header">
-                                            <div class="feedback-info">
-                                                <span class="feedback-company">@feedback.CompanyName</span>
-                                                <span class="feedback-ticket">Ticket #@feedback.TicketId</span>
-                                            </div>
-                                            <div class="feedback-rating">
-                                                @for (int i = 1; i <= 5; i++)
-                                                {
-                                                    <span class="material-icons star @(i <= feedback.Rating ? "filled" : "")">star</span>
-                                                }
-                                            </div>
-                                        </div>
-                                        <div class="feedback-body">
-                                            @if (!string.IsNullOrWhiteSpace(feedback.Comment))
-                                            {
-                                                <p class="feedback-comment">"@feedback.Comment"</p>
-                                            }
-                                            else
-                                            {
-                                                <p class="feedback-comment no-comment"><em>Nessun commento</em></p>
-                                            }
-                                        </div>
-                                        <div class="feedback-footer">
-                                            <span class="feedback-user">
-                                                <span class="material-icons">person</span>
-                                                @feedback.UserName
-                                            </span>
-                                            <span class="feedback-date">
-                                                <span class="material-icons">schedule</span>
-                                                @feedback.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                                            </span>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="text-center text-muted py-4">
-                                <span class="material-icons" style="font-size: 48px;">sentiment_satisfied</span>
-                                <p class="mt-2">Nessun feedback recente</p>
-                            </div>
-                        }
-                    </RadzenCard>
-                </div>
-            </div>
-        }
-
-        <!-- Quick Stats -->
-        <div class="row g-3">
-            <div class="col-md-6 col-lg-3">
-                <RadzenCard class="h-100 stat-card dashboard-surface">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="stat-icon bg-primary bg-opacity-10 text-primary">
-                            <span class="material-icons">assignment_turned_in</span>
-                        </div>
-                        <div>
-                            <p class="text-muted small mb-0">Ticket Chiusi</p>
-                            <h4 class="fw-bold mb-0">@_model.TicketsClosed</h4>
-                        </div>
-                    </div>
-                </RadzenCard>
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <RadzenCard class="h-100 stat-card dashboard-surface">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="stat-icon bg-success bg-opacity-10 text-success">
-                            <span class="material-icons">assignment_ind</span>
-                        </div>
-                        <div>
-                            <p class="text-muted small mb-0">Assegnati a Me</p>
-                            <h4 class="fw-bold mb-0">@_model.TicketAssigned</h4>
-                        </div>
-                    </div>
-                </RadzenCard>
-            </div>
-            @if (_model.UnreadFeedbacksCount > 0)
-            {
-                <div class="col-md-6 col-lg-3">
-                    <RadzenCard class="h-100 stat-card dashboard-surface clickable" @onclick="ViewAllFeedbacks">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="stat-icon bg-warning bg-opacity-10 text-warning">
-                                <span class="material-icons">star_rate</span>
-                            </div>
-                            <div>
-                                <p class="text-muted small mb-0">Feedback da Leggere</p>
-                                <h4 class="fw-bold mb-0">@_model.UnreadFeedbacksCount</h4>
-                            </div>
-                        </div>
-                    </RadzenCard>
-                </div>
-            }
-        </div>
     </div>
 }
-
-<style>
-    .kpi-card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-    }
-
-    .stat-card .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .stat-card .stat-icon .material-icons {
-        font-size: 24px;
-    }
-
-    /* Average Feedback Styles */
-    .overall-rating {
-        background: #fffbeb;
-        padding: 8px 16px;
-        border-radius: 8px;
-        border: 1px solid #fcd34d;
-    }
-    .overall-stars .material-icons {
-        font-size: 20px;
-    }
-    .overall-stars .star-filled {
-        color: #f59e0b;
-    }
-    .overall-stars .star-empty {
-        color: #d1d5db;
-    }
-    .overall-value {
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: #f59e0b;
-    }
-
-    .company-ratings-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
-        gap: 16px;
-    }
-
-    .company-rating-card {
-        background: #f9fafb;
-        border-radius: 10px;
-        padding: 16px;
-        border: 1px solid #e5e7eb;
-        transition: all 0.2s ease;
-        max-width: 320px;
-    }
-    .company-rating-card:hover {
-        background: #f3f4f6;
-        border-color: #d1d5db;
-    }
-
-    .company-rating-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-    }
-    .company-name {
-        font-weight: 600;
-        color: #1f2937;
-        font-size: 0.95rem;
-        max-width: 180px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-    .company-feedbacks {
-        font-size: 0.75rem;
-        color: #6b7280;
-        background: #e5e7eb;
-        padding: 2px 8px;
-        border-radius: 12px;
-    }
-
-    .rating-bar-container {
-        height: 8px;
-        background: #e5e7eb;
-        border-radius: 4px;
-        overflow: hidden;
-        margin-bottom: 8px;
-    }
-    .rating-bar {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.5s ease;
-    }
-
-    .rating-details {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .rating-stars .star-sm {
-        font-size: 16px;
-    }
-    .rating-stars .star-filled {
-        color: #f59e0b;
-    }
-    .rating-stars .star-empty {
-        color: #d1d5db;
-    }
-    .rating-value {
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: #374151;
-    }
-
-    /* Feedback Styles */
-    .feedback-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        max-height: 400px;
-        overflow-y: auto;
-    }
-
-    .feedback-item {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 16px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border-left: 4px solid #dee2e6;
-    }
-    .feedback-item:hover {
-        background: #e9ecef;
-        transform: translateX(4px);
-    }
-    .feedback-item.unread {
-        border-left-color: #0d6efd;
-        background: #f0f7ff;
-    }
-
-    .feedback-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 8px;
-    }
-    .feedback-info {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-    .feedback-company {
-        font-weight: 600;
-        color: #212529;
-    }
-    .feedback-ticket {
-        font-size: 0.8rem;
-        color: #6c757d;
-    }
-
-    .feedback-rating {
-        display: flex;
-        gap: 2px;
-    }
-    .feedback-rating .star {
-        font-size: 18px;
-        color: #dee2e6;
-    }
-    .feedback-rating .star.filled {
-        color: #ffc107;
-    }
-
-    .feedback-body {
-        margin-bottom: 8px;
-    }
-    .feedback-comment {
-        margin: 0;
-        color: #495057;
-        font-style: italic;
-        font-size: 0.9rem;
-        line-height: 1.4;
-    }
-    .feedback-comment.no-comment {
-        color: #adb5bd;
-    }
-
-    .feedback-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.8rem;
-        color: #6c757d;
-    }
-    .feedback-user, .feedback-date {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-    .feedback-user .material-icons, .feedback-date .material-icons {
-        font-size: 14px;
-    }
-</style>

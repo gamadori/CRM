@@ -1,0 +1,351 @@
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+@inject IActivityService ActivityService
+@inject IBaseRestService<ApplicationUser, UsersFilterModel, string> UserService
+@inject ICompaniesService CompaniesService
+@inject ILeadService LeadService
+@inject IDealService DealService
+@inject ITicketsService TicketsService
+@inject DialogService DialogService
+@inject NotificationService Notification
+
+@if (_loading)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <EditForm Model="_activity" OnValidSubmit="Save">
+        <DataAnnotationsValidator />
+
+        <div class="activity-dialog">
+            <div class="activity-dialog-grid">
+                <div class="activity-field">
+                    <label>Tipo</label>
+                    <RadzenDropDown TValue="ActivityKind" @bind-Value="_activity.Kind" Data="_kindOptions"
+                                    TextProperty="Text" ValueProperty="Value" Style="width:100%" />
+                </div>
+
+                <div class="activity-field activity-field-wide">
+                    <label>Oggetto</label>
+                    <input class="form-control" @bind="_activity.Subject" />
+                    <ValidationMessage For="@(() => _activity.Subject)" />
+                </div>
+
+                <div class="activity-field">
+                    <label>Collega a</label>
+                    <RadzenDropDown TValue="ActivityEntityType" Value="_activity.EntityType" Data="_entityTypeOptions"
+                                    TextProperty="Text" ValueProperty="Value" Style="width:100%"
+                                    Change="@OnEntityTypeChanged" />
+                </div>
+
+                <div class="activity-field activity-field-wide">
+                    <label>@EntityLabel</label>
+                    @switch (_activity.EntityType)
+                    {
+                        case ActivityEntityType.Company:
+                            <RadzenDropDown TValue="int" @bind-Value="_activity.EntityId" Data="_companies"
+                                            TextProperty="RagioneSociale" ValueProperty="Id" AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            AllowClear="false" Style="width:100%" />
+                            break;
+                        case ActivityEntityType.Lead:
+                            <RadzenDropDown TValue="int" @bind-Value="_activity.EntityId" Data="_leads"
+                                            TextProperty="Name" ValueProperty="Id" AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            AllowClear="false" Style="width:100%" />
+                            break;
+                        case ActivityEntityType.Deal:
+                            <RadzenDropDown TValue="int" @bind-Value="_activity.EntityId" Data="_deals"
+                                            TextProperty="Name" ValueProperty="Id" AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            AllowClear="false" Style="width:100%" />
+                            break;
+                        case ActivityEntityType.Ticket:
+                            <RadzenDropDown TValue="int" @bind-Value="_activity.EntityId" Data="_tickets"
+                                            TextProperty="DisplayName" ValueProperty="Id" AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            AllowClear="false" Style="width:100%" />
+                            break;
+                    }
+                </div>
+
+                <div class="activity-field">
+                    <label>Assegnata a</label>
+                    <RadzenDropDown TValue="string" @bind-Value="_activity.IdAssignee" Data="_users"
+                                    TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true"
+                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                    AllowClear="true" Placeholder="Creatore" Style="width:100%" />
+                </div>
+
+                <div class="activity-field">
+                    <label>Scadenza</label>
+                    <RadzenDatePicker TValue="DateTime?" @bind-Value="_activity.DueDate" ShowTime="true"
+                                      DateFormat="dd/MM/yyyy HH:mm" Style="width:100%" />
+                </div>
+
+                <div class="activity-field">
+                    <label>Promemoria</label>
+                    <RadzenDatePicker TValue="DateTime?" @bind-Value="_activity.ReminderAt" ShowTime="true"
+                                      DateFormat="dd/MM/yyyy HH:mm" AllowClear="true" Style="width:100%" />
+                </div>
+
+                <div class="activity-field">
+                    <label>Stato</label>
+                    <RadzenDropDown TValue="ActivityState" @bind-Value="_activity.State" Data="_stateOptions"
+                                    TextProperty="Text" ValueProperty="Value" Style="width:100%" />
+                </div>
+
+                <div class="activity-field activity-field-full">
+                    <label>Descrizione</label>
+                    <textarea class="form-control" rows="4" @bind="_activity.Description"></textarea>
+                </div>
+            </div>
+
+            <div class="activity-dialog-actions">
+                <RadzenButton Icon="close" Text="Annulla" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
+                              Click="@Cancel" Disabled="@_saving" />
+                <RadzenButton Icon="save" Text="Salva" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat"
+                              ButtonType="ButtonType.Submit" Disabled="@_saving" />
+            </div>
+        </div>
+    </EditForm>
+}
+
+<style>
+    .activity-dialog {
+        min-width: min(860px, 82vw);
+    }
+
+    .activity-dialog-grid {
+        display: grid;
+        gap: .9rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .activity-field {
+        min-width: 0;
+    }
+
+    .activity-field label {
+        color: #4b5563;
+        display: block;
+        font-size: .74rem;
+        font-weight: 700;
+        margin-bottom: .25rem;
+        text-transform: uppercase;
+    }
+
+    .activity-field-wide {
+        grid-column: span 2;
+    }
+
+    .activity-field-full {
+        grid-column: 1 / -1;
+    }
+
+    .activity-dialog-actions {
+        display: flex;
+        gap: .5rem;
+        justify-content: flex-end;
+        margin-top: 1rem;
+    }
+
+    @@media (max-width: 860px) {
+        .activity-dialog {
+            min-width: 0;
+        }
+
+        .activity-dialog-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .activity-field-wide,
+        .activity-field-full {
+            grid-column: auto;
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public int? ActivityId { get; set; }
+    [Parameter] public DateTime? DefaultDueDate { get; set; }
+    [Parameter] public string? DefaultAssigneeId { get; set; }
+    [Parameter] public ActivityEntityType? DefaultEntityType { get; set; }
+    [Parameter] public int? DefaultEntityId { get; set; }
+    [Parameter] public string? DefaultSubject { get; set; }
+
+    private Activity _activity = new()
+    {
+        Kind = ActivityKind.Task,
+        EntityType = ActivityEntityType.Company,
+        State = ActivityState.Planned
+    };
+
+    private bool _loading = true;
+    private bool _saving;
+    private List<ApplicationUser> _users = new();
+    private List<CompanyDTO> _companies = new();
+    private List<LeadDTO> _leads = new();
+    private List<DealDTO> _deals = new();
+    private List<TicketOption> _tickets = new();
+
+    private record Option<T>(string Text, T Value);
+    private record TicketOption(int Id, string DisplayName);
+
+    private readonly List<Option<ActivityKind>> _kindOptions = new()
+    {
+        new("Chiamata", ActivityKind.Call),
+        new("Email", ActivityKind.Email),
+        new("Meeting", ActivityKind.Meeting),
+        new("Nota", ActivityKind.Note),
+        new("Task", ActivityKind.Task)
+    };
+
+    private readonly List<Option<ActivityEntityType>> _entityTypeOptions = new()
+    {
+        new("Azienda", ActivityEntityType.Company),
+        new("Ticket", ActivityEntityType.Ticket),
+        new("Lead", ActivityEntityType.Lead),
+        new("Deal", ActivityEntityType.Deal)
+    };
+
+    private readonly List<Option<ActivityState>> _stateOptions = new()
+    {
+        new("Pianificata", ActivityState.Planned),
+        new("Completata", ActivityState.Done),
+        new("Annullata", ActivityState.Cancelled)
+    };
+
+    private string EntityLabel => _activity.EntityType switch
+    {
+        ActivityEntityType.Company => "Azienda",
+        ActivityEntityType.Ticket => "Ticket",
+        ActivityEntityType.Lead => "Lead",
+        ActivityEntityType.Deal => "Deal",
+        _ => "Collegamento"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLookups();
+
+        if (ActivityId.HasValue)
+        {
+            var item = await ActivityService.GetAsync(ActivityId.Value);
+            if (item != null)
+                _activity = item.ToEntity();
+        }
+        else
+        {
+            _activity.DueDate = DefaultDueDate ?? DateTime.Now.AddHours(1);
+            _activity.IdAssignee = DefaultAssigneeId;
+            _activity.EntityType = DefaultEntityType ?? ActivityEntityType.Company;
+            _activity.EntityId = DefaultEntityId ?? 0;
+            _activity.Subject = DefaultSubject ?? string.Empty;
+        }
+
+        EnsureValidEntity();
+        _loading = false;
+    }
+
+    private async Task LoadLookups()
+    {
+        var userResponse = await UserService.GetList(new UsersFilterModel());
+        _users = userResponse?.Items?.OrderBy(x => x.NameComplete).ToList() ?? new List<ApplicationUser>();
+
+        _companies = (await CompaniesService.GetListAsync(new CompanyFilter()))?
+            .OrderBy(x => x.RagioneSociale)
+            .ToList() ?? new List<CompanyDTO>();
+
+        _leads = (await LeadService.GetListAsync(new LeadFilter()))?
+            .OrderBy(x => x.Name)
+            .ToList() ?? new List<LeadDTO>();
+
+        _deals = (await DealService.GetListAsync(new DealFilter()))?
+            .OrderBy(x => x.Name)
+            .ToList() ?? new List<DealDTO>();
+
+        var ticketResponse = await TicketsService.Search(new TicketFilter());
+        _tickets = ticketResponse?.Items?
+            .OrderByDescending(x => x.DateOpened)
+            .Take(200)
+            .Select(x => new TicketOption(x.Id, TicketLabel(x)))
+            .ToList() ?? new List<TicketOption>();
+    }
+
+    private void OnEntityTypeChanged(object value)
+    {
+        if (value is ActivityEntityType entityType)
+            _activity.EntityType = entityType;
+
+        _activity.EntityId = 0;
+        EnsureValidEntity();
+    }
+
+    private void EnsureValidEntity()
+    {
+        if (_activity.EntityId > 0)
+            return;
+
+        _activity.EntityId = _activity.EntityType switch
+        {
+            ActivityEntityType.Company => _companies.FirstOrDefault()?.Id ?? 0,
+            ActivityEntityType.Lead => _leads.FirstOrDefault()?.Id ?? 0,
+            ActivityEntityType.Deal => _deals.FirstOrDefault()?.Id ?? 0,
+            ActivityEntityType.Ticket => _tickets.FirstOrDefault()?.Id ?? 0,
+            _ => 0
+        };
+    }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(_activity.Subject))
+        {
+            Notification.Notify(NotificationSeverity.Warning, "Attivita", "Inserisci un oggetto");
+            return;
+        }
+
+        if (_activity.EntityId <= 0)
+        {
+            Notification.Notify(NotificationSeverity.Warning, "Attivita", "Seleziona un collegamento valido");
+            return;
+        }
+
+        if (_activity.DueDate == null)
+        {
+            Notification.Notify(NotificationSeverity.Warning, "Attivita", "Inserisci una scadenza per visualizzarla in Agenda");
+            return;
+        }
+
+        if (_activity.ReminderAt.HasValue && _activity.ReminderAt.Value > _activity.DueDate.Value)
+        {
+            Notification.Notify(NotificationSeverity.Warning, "Promemoria", "Il promemoria non puo essere successivo alla scadenza");
+            return;
+        }
+
+        _saving = true;
+        var response = await ActivityService.PostAsync(_activity);
+        _saving = false;
+
+        if (response.State)
+            DialogService.Close(true);
+        else
+            Notification.Notify(NotificationSeverity.Error, "Errore", response.Message ?? "Salvataggio fallito");
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+
+    private static string TicketLabel(TicketDTO ticket)
+    {
+        var number = string.IsNullOrWhiteSpace(ticket.Numero) ? ticket.Id.ToString("000000") : ticket.Numero;
+        var company = string.IsNullOrWhiteSpace(ticket.Company) ? string.Empty : $" - {ticket.Company}";
+        return $"Ticket {number}{company}";
+    }
+}

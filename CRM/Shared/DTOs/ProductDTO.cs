@@ -26,6 +26,12 @@ namespace CRM.Shared.DTOs
 
         [Display(Name = nameof(Product.Price), ResourceType = typeof(Resources.Models.Product))]
         public decimal Price { get; set; }
+
+        public bool IsArchived { get; set; }
+
+        public DateTime? ArchivedAt { get; set; }
+
+        public string? ArchivedReason { get; set; }
         
         [Display(Name = nameof(Product.IdProductType), ResourceType = typeof(Resources.Models.Product))]
         public string ProductTypeName { get; set; }
@@ -51,6 +57,9 @@ namespace CRM.Shared.DTOs
                 Code = product.Code,
                 IdProductType = product.IdProductType,
                 Price = product.Price,
+                IsArchived = product.IsArchived,
+                ArchivedAt = product.ArchivedAt,
+                ArchivedReason = product.ArchivedReason,
                 ProductTypeName = product.ProductType != null ? product.ProductType.Name : string.Empty,
                 CompanyName = product.Company != null ? product.Company.RagioneSociale : string.Empty,
                 IdCompany = product.IdCompany
@@ -68,6 +77,9 @@ namespace CRM.Shared.DTOs
                 Code = dto.Code,
                 IdProductType = dto.IdProductType,
                 Price = dto.Price,
+                IsArchived = dto.IsArchived,
+                ArchivedAt = dto.ArchivedAt,
+                ArchivedReason = dto.ArchivedReason,
                 IdCompany = dto.IdCompany
             };
         }

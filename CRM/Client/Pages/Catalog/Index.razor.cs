@@ -1,3 +1,4 @@
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
@@ -12,6 +13,7 @@ namespace CRM.Client.Pages.Catalog
     {
         private const int PageSize = 24;
 
+        private PageHeaderModel? _pageHeader;
         private ProductCatalogPageDTO? _page;
         private bool _loading = true;
         private int? _selectedTypeId;
@@ -24,6 +26,9 @@ namespace CRM.Client.Pages.Catalog
 
         [Inject]
         private NavigationManager NavigationManager { get; set; } = default!;
+
+        [Inject]
+        private IHeaderService HeaderService { get; set; } = default!;
 
         private bool CanGoPrevious => _page != null && _page.PageNumber > 1;
 
@@ -40,6 +45,7 @@ namespace CRM.Client.Pages.Catalog
 
         protected override async Task OnInitializedAsync()
         {
+            _pageHeader = await HeaderService.Create();
             await LoadPage();
         }
 

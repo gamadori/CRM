@@ -9,6 +9,6 @@ namespace CRM.Client.Services
 {
     public interface IDealService : IDataService<Deal, DealDTO, int, DealFilter, decimal>
     {
-    
+        Task<CommercialForecastDTO?> GetForecastAsync(DealForecastFilter? filter);
     }
 }

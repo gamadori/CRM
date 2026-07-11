@@ -1,0 +1,294 @@
+@page "/WorkflowAutomations"
+@using CRM.Shared
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<div class="workflow-page">
+    <PageHeader Model="_pageHeader">
+        <Actions>
+            <div class="header-actions">
+                <a class="secondary-action" href="WorkflowAutomations/Executions">
+                    <span class="action-icon history-icon" aria-hidden="true"></span>
+                    <span>Registro esecuzioni</span>
+                </a>
+                <button type="button" class="secondary-action" @onclick="LoadRules" disabled="@_loading">
+                    <span class="action-icon refresh-icon" aria-hidden="true"></span>
+                    <span>Aggiorna</span>
+                </button>
+                <button type="button" class="primary-action" @onclick="NewRule">
+                    <span class="action-icon add-icon" aria-hidden="true"></span>
+                    <span>Nuova regola</span>
+                </button>
+            </div>
+        </Actions>
+    </PageHeader>
+
+    <section class="workflow-metrics" aria-label="Stato automazioni">
+        <div class="metric">
+            <span class="material-icons">rule</span>
+            <div>
+                <strong>@ActiveRules</strong>
+                <small>Regole attive</small>
+            </div>
+        </div>
+        <div class="metric">
+            <span class="material-icons">bolt</span>
+            <div>
+                <strong>@_rules.Sum(x => x.ExecutionCount)</strong>
+                <small>Run regole</small>
+            </div>
+        </div>
+        <div class="metric">
+            <span class="material-icons">schedule</span>
+            <div>
+                <strong>@LastExecutionText</strong>
+                <small>Ultimo run</small>
+            </div>
+        </div>
+        <div class="metric">
+            <span class="material-icons">playlist_add_check</span>
+            <div>
+                <strong>@_rules.Count</strong>
+                <small>Regole totali</small>
+            </div>
+        </div>
+    </section>
+
+    <section class="workflow-layout">
+        <article class="workflow-list">
+            @if (_loading)
+            {
+                <Waiting></Waiting>
+            }
+            else if (!_rules.Any())
+            {
+                <div class="empty-state">
+                    <span class="material-icons">rule</span>
+                    <strong>Nessuna automazione</strong>
+                    <p>Crea una prima regola per generare follow-up automatici.</p>
+                </div>
+            }
+            else
+            {
+                <table class="workflow-table">
+                    <thead>
+                        <tr>
+                            <th>Regola</th>
+                            <th>Evento</th>
+                            <th>Azione</th>
+                            <th>Run</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var rule in _rules)
+                        {
+                            <tr class="@(_selected?.Id == rule.Id ? "selected" : "")">
+                                <td>
+                                    <button type="button" class="text-link" @onclick="@(() => EditRule(rule))">@rule.Name</button>
+                                    <small>@(rule.IsActive ? "Attiva" : "Disattiva")</small>
+                                </td>
+                                <td>@TriggerText(rule.Trigger)</td>
+                                <td>
+                                    <strong>@rule.ActivitySubject</strong>
+                                    <small>Scadenza +@rule.DueDays giorni</small>
+                                </td>
+                                <td>
+                                    <strong>@rule.ExecutionCount</strong>
+                                    <small>@FormatDate(rule.LastRunAt)</small>
+                                </td>
+                                <td>
+                                    <div class="row-actions">
+                                        <button type="button" title="Modifica" @onclick="@(() => EditRule(rule))">
+                                            <span class="material-icons">edit</span>
+                                        </button>
+                                        <button type="button" title="Elimina" @onclick="@(() => Delete(rule.Id))">
+                                            <span class="material-icons">delete</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </article>
+
+        <article class="workflow-form">
+            <div class="panel-title">
+                <span class="material-icons">settings_suggest</span>
+                <h2>@(_selected?.Id > 0 ? "Modifica regola" : "Nuova regola")</h2>
+            </div>
+
+            @if (_selected != null)
+            {
+                @if (!string.IsNullOrWhiteSpace(_message))
+                {
+                    <div class="form-alert">@_message</div>
+                }
+
+                <EditForm Model="_selected" OnValidSubmit="Save">
+                    <DataAnnotationsValidator />
+                    <label class="field">
+                        <span>Nome</span>
+                        <InputText class="form-input" @bind-Value="_selected.Name" />
+                        <ValidationMessage For="@(() => _selected.Name)" />
+                    </label>
+                    <label class="switch-line">
+                        <InputCheckbox @bind-Value="_selected.IsActive" />
+                        <span>Regola attiva</span>
+                    </label>
+                    <div class="two-cols">
+                        <label class="field">
+                            <span>Evento</span>
+                            <InputSelect class="form-input" @bind-Value="_selected.Trigger">
+                                @foreach (var trigger in Enum.GetValues<WorkflowTrigger>())
+                                {
+                                    <option value="@trigger">@TriggerText(trigger)</option>
+                                }
+                            </InputSelect>
+                        </label>
+                        <label class="field">
+                            <span>Importo minimo</span>
+                            <InputNumber class="form-input" @bind-Value="_selected.MinAmount" />
+                        </label>
+                    </div>
+
+                    <div class="two-cols">
+                        <label class="field">
+                            <span>Fonte lead</span>
+                            <InputSelect class="form-input" @bind-Value="_selected.LeadSource">
+                                <option value="">Qualsiasi</option>
+                                @foreach (var source in Enum.GetValues<LeadSource>())
+                                {
+                                    <option value="@source">@SourceText(source)</option>
+                                }
+                            </InputSelect>
+                        </label>
+                        <label class="field">
+                            <span>Stato lead</span>
+                            <InputSelect class="form-input" @bind-Value="_selected.LeadStatus">
+                                <option value="">Qualsiasi</option>
+                                @foreach (var status in Enum.GetValues<LeadStatus>())
+                                {
+                                    <option value="@status">@LeadStatusText(status)</option>
+                                }
+                            </InputSelect>
+                        </label>
+                    </div>
+
+                    <div class="two-cols">
+                        <label class="field">
+                            <span>Stato deal</span>
+                            <InputSelect class="form-input" @bind-Value="_selected.DealState">
+                                <option value="">Qualsiasi</option>
+                                @foreach (var state in Enum.GetValues<DealStates>())
+                                {
+                                    <option value="@state">@DealStateText(state)</option>
+                                }
+                            </InputSelect>
+                        </label>
+                        <label class="field">
+                            <span>Fase deal</span>
+                            <InputSelect class="form-input" @bind-Value="_selected.DealPhase">
+                                <option value="">Qualsiasi</option>
+                                @foreach (var phase in Enum.GetValues<DealPhases>())
+                                {
+                                    <option value="@phase">@DealPhaseText(phase)</option>
+                                }
+                            </InputSelect>
+                        </label>
+                    </div>
+
+                    <div class="two-cols">
+                        <label class="field">
+                            <span>Tipo attivita</span>
+                            <InputSelect class="form-input" @bind-Value="_selected.ActivityKind">
+                                @foreach (var kind in Enum.GetValues<ActivityKind>())
+                                {
+                                    <option value="@kind">@ActivityKindText(kind)</option>
+                                }
+                            </InputSelect>
+                        </label>
+                        <label class="field">
+                            <span>Scadenza dopo giorni</span>
+                            <InputNumber class="form-input" @bind-Value="_selected.DueDays" />
+                            <ValidationMessage For="@(() => _selected.DueDays)" />
+                        </label>
+                    </div>
+
+                    <label class="field">
+                        <span>Oggetto attivita</span>
+                        <InputText class="form-input" @bind-Value="_selected.ActivitySubject" />
+                        <ValidationMessage For="@(() => _selected.ActivitySubject)" />
+                    </label>
+                    <label class="field">
+                        <span>Descrizione</span>
+                        <InputTextArea class="form-input notes" @bind-Value="_selected.ActivityDescription" />
+                    </label>
+                    <label class="switch-line">
+                        <InputCheckbox @bind-Value="_selected.AssignToOwner" />
+                        <span>Assegna all'owner del record</span>
+                    </label>
+
+                    <section class="form-footer">
+                        <button type="button" class="secondary-action" @onclick="NewRule" disabled="@_saving">
+                            <span class="material-icons">restart_alt</span>
+                            <span>Nuova</span>
+                        </button>
+                        <button type="submit" class="primary-action" disabled="@_saving">
+                            <span class="material-icons">save</span>
+                            <span>@(_saving ? "Salvataggio..." : "Salva")</span>
+                        </button>
+                    </section>
+                </EditForm>
+            }
+        </article>
+    </section>
+</div>
+
+<style>
+    .workflow-page { min-height: calc(100vh - 1rem); padding: 1.25rem; background: #f7f9fc; color: #182235; }
+    .header-actions { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .workflow-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+    .metric { display: flex; align-items: center; gap: .75rem; min-width: 0; border: 1px solid #dfe7f1; border-radius: 8px; background: #fff; padding: .85rem; box-shadow: 0 10px 22px rgba(31, 42, 68, .05); }
+    .metric > .material-icons { color: #0f4a8a; background: #edf6ff; border-radius: 8px; padding: .45rem; }
+    .metric strong { display: block; font-size: 1.25rem; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .metric small { color: #64748b; font-weight: 750; }
+    .workflow-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr); gap: 1rem; align-items: start; }
+    .workflow-list, .workflow-form { border: 1px solid #dfe7f1; border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(31, 42, 68, .07); min-width: 0; }
+    .workflow-list { overflow-x: auto; }
+    .workflow-form { padding: 1rem; }
+    .primary-action, .secondary-action, .row-actions button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid #bfd2e7; border-radius: 8px; padding: .55rem .8rem; background: #fff; color: #0f4a8a; font-weight: 800; text-decoration: none; }
+    .primary-action { background: #0f4a8a; color: #fff; }
+    .action-icon { position: relative; display: inline-flex; width: 16px; height: 16px; flex: 0 0 16px; align-items: center; justify-content: center; }
+    .action-icon::before, .action-icon::after { content: ""; position: absolute; box-sizing: border-box; }
+    .history-icon::before { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; }
+    .history-icon::after { width: 6px; height: 6px; border-top: 2px solid currentColor; border-left: 2px solid currentColor; transform: translate(-5px, -4px) rotate(-25deg); }
+    .refresh-icon::before { width: 14px; height: 14px; border: 2px solid currentColor; border-left-color: transparent; border-radius: 50%; }
+    .refresh-icon::after { width: 6px; height: 6px; border-top: 2px solid currentColor; border-right: 2px solid currentColor; transform: translate(4px, -5px) rotate(25deg); }
+    .add-icon::before { width: 14px; height: 2px; background: currentColor; border-radius: 2px; }
+    .add-icon::after { width: 2px; height: 14px; background: currentColor; border-radius: 2px; }
+    .workflow-table { width: 100%; min-width: 760px; border-collapse: collapse; }
+    .workflow-table th, .workflow-table td { padding: .78rem .85rem; border-bottom: 1px solid #e6edf5; vertical-align: middle; }
+    .workflow-table th { color: #64748b; font-size: .76rem; text-transform: uppercase; letter-spacing: 0; background: #fbfdff; }
+    .workflow-table tr.selected { background: #f3f8fd; }
+    .workflow-table small { display: block; margin-top: .15rem; color: #64748b; }
+    .text-link { border: 0; padding: 0; background: transparent; color: #0f4a8a; font-weight: 850; text-align: left; }
+    .row-actions { display: flex; justify-content: flex-end; gap: .35rem; }
+    .row-actions button { width: 34px; height: 34px; padding: 0; }
+    .panel-title { display: flex; align-items: center; gap: .5rem; margin-bottom: .9rem; }
+    .panel-title h2 { margin: 0; font-size: 1.1rem; font-weight: 850; }
+    .two-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+    .field { display: grid; gap: .35rem; margin-bottom: .8rem; min-width: 0; }
+    .field span, .switch-line span { color: #526174; font-size: .82rem; font-weight: 800; }
+    .form-input { width: 100%; min-height: 40px; border: 1px solid #d7e0ec; border-radius: 8px; background: #fff; padding: .48rem .6rem; }
+    .notes { min-height: 110px; resize: vertical; }
+    .switch-line { display: flex; align-items: center; gap: .5rem; margin-bottom: .8rem; }
+    .form-footer { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }
+    .form-alert { border: 1px solid #f5b5b5; border-radius: 8px; margin-bottom: 1rem; padding: .75rem; background: #fff1f1; color: #9f1d1d; font-weight: 700; }
+    .validation-message { color: #b91c1c; font-size: .78rem; }
+    .empty-state { min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; color: #64748b; text-align: center; }
+    .empty-state .material-icons { font-size: 48px; }
+    @@media (max-width: 1100px) { .workflow-layout, .two-cols, .workflow-metrics { grid-template-columns: 1fr; } .header-actions { justify-content: flex-start; } }
+</style>

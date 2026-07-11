@@ -1,0 +1,75 @@
+@implements IDisposable
+
+@if (_notice?.Active == true)
+{
+    <div class="maintenance-banner" role="alert">
+        <RadzenIcon Icon="engineering" />
+        <div>
+            <strong>@Title</strong>
+            <span>@_notice.Message</span>
+        </div>
+    </div>
+}
+
+@code {
+    private MaintenanceNoticeDTO? _notice;
+    private System.Threading.Timer? _timer;
+
+    private string Title
+    {
+        get
+        {
+            if (_notice?.StartsAtUtc is not DateTimeOffset startsAt)
+                return "Manutenzione programmata";
+
+            var remaining = startsAt - DateTimeOffset.UtcNow;
+            if (remaining <= TimeSpan.Zero)
+                return "Manutenzione in corso";
+
+            var minutes = Math.Max(1, (int)Math.Ceiling(remaining.TotalMinutes));
+            return $"Manutenzione tra {minutes} {(minutes == 1 ? "minuto" : "minuti")}";
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        _notice = HubHelper.CurrentMaintenanceNotice;
+        HubHelper.MaintenanceNoticeChanged += OnMaintenanceNoticeChanged;
+        _timer = new System.Threading.Timer(
+            _ => InvokeAsync(StateHasChanged),
+            null,
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(1));
+    }
+
+    private void OnMaintenanceNoticeChanged(MaintenanceNoticeDTO notice)
+    {
+        _notice = notice;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        HubHelper.MaintenanceNoticeChanged -= OnMaintenanceNoticeChanged;
+        _timer?.Dispose();
+    }
+}
+
+<style>
+    .maintenance-banner {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .7rem 1rem;
+        color: #5f3700;
+        background: #fff3cd;
+        border-bottom: 1px solid #ffda6a;
+        z-index: 1100;
+    }
+
+    .maintenance-banner div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .35rem .75rem;
+    }
+</style>

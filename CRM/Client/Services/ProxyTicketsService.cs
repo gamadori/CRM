@@ -65,6 +65,65 @@ namespace CRM.Client.Services
             }
         }
 
+        public async Task<List<TicketScheduleItemDTO>> GetScheduleItemsAsync(TicketFilter args)
+        {
+            try
+            {
+                var query = new List<string>();
+
+                if (args.DateFrom.HasValue)
+                    query.Add($"dateFrom={Uri.EscapeDataString(args.DateFrom.Value.ToString("O"))}");
+
+                if (args.DateTo.HasValue)
+                    query.Add($"dateTo={Uri.EscapeDataString(args.DateTo.Value.ToString("O"))}");
+
+                if (!string.IsNullOrWhiteSpace(args.IdUserAssigned))
+                    query.Add($"idUserAssigned={Uri.EscapeDataString(args.IdUserAssigned)}");
+
+                if (args.ViewNotAssigned)
+                    query.Add("viewNotAssigned=true");
+
+                var url = $"{_pathService}/schedule-items";
+                if (query.Any())
+                    url += "?" + string.Join("&", query);
+
+                return await _http.GetFromJsonAsync<List<TicketScheduleItemDTO>>(url) ?? new List<TicketScheduleItemDTO>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento pianificazione ticket: {ex.Message}");
+                return new List<TicketScheduleItemDTO>();
+            }
+        }
+
+        public async Task<bool> UpdateScheduleAsync(int idTicket, TicketScheduleUpdateRequest request)
+        {
+            try
+            {
+                var response = await _http.PutAsJsonAsync($"{_pathService}/{idTicket}/schedule", request);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore aggiornamento pianificazione ticket: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> StartProcessingAsync(int idTicket)
+        {
+            try
+            {
+                var response = await _http.PutAsync($"{_pathService}/{idTicket}/start-processing", null);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore avvio lavorazione ticket: {ex.Message}");
+                return false;
+            }
+        }
+
         public async Task<SemanticSearchResponse> SemanticSearch(SemanticSearchRequest request)
         {
             try
@@ -191,6 +250,51 @@ namespace CRM.Client.Services
             {
                 Console.WriteLine($"Errore data assistant: {ex.Message}");
                 return new AssistantChatResponse { Success = false, Message = ex.Message };
+            }
+        }
+
+        public async Task<TicketSummaryProposalResponse> ProposeSummary(int idTicket, TicketSummaryProposalRequest request)
+        {
+            try
+            {
+                var response = await _http.PostAsJsonAsync($"{_pathService}/{idTicket}/summary/propose", request);
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<TicketSummaryProposalResponse>()
+                        ?? new TicketSummaryProposalResponse { IdTicket = idTicket };
+                }
+
+                return new TicketSummaryProposalResponse
+                {
+                    IdTicket = idTicket,
+                    Warning = $"Errore dal server ({(int)response.StatusCode})"
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore proposta riepilogo ticket: {ex.Message}");
+                return new TicketSummaryProposalResponse
+                {
+                    IdTicket = idTicket,
+                    Warning = ex.Message
+                };
+            }
+        }
+
+        public async Task<TicketDTO?> UpdateSummary(int idTicket, UpdateTicketSummaryRequest request)
+        {
+            try
+            {
+                var response = await _http.PutAsJsonAsync($"{_pathService}/{idTicket}/summary", request);
+                if (response.IsSuccessStatusCode)
+                    return await response.Content.ReadFromJsonAsync<TicketDTO>();
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore salvataggio riepilogo ticket: {ex.Message}");
+                return null;
             }
         }
 

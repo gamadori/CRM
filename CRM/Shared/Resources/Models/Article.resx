@@ -135,6 +135,12 @@
   <data name="IdProduct" xml:space="preserve">
     <value>Product</value>
   </data>
+  <data name="IdRecipientCompany" xml:space="preserve">
+    <value>Recipient</value>
+  </data>
+  <data name="RecipientCountry" xml:space="preserve">
+    <value>Recipient Country</value>
+  </data>
   <data name="LogisticState" xml:space="preserve">
     <value>Logistic State</value>
   </data>

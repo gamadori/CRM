@@ -20,6 +20,9 @@ namespace BlazoringComponents.Scheduler
         [CascadingParameter]
         public SchedulerTicket Ticket { get; set; }
 
+        [CascadingParameter]
+        public SchedulerDragDropContext DragDropContext { get; set; }
+
         [Parameter]
         public Action<string> OpenModal { get; set; }
 
@@ -75,6 +78,16 @@ namespace BlazoringComponents.Scheduler
             
             // Apri sempre il modale
             OpenModal?.Invoke(Ticket.Id);
+        }
+
+        private void HandleDragStart()
+        {
+            DragDropContext?.Start(Ticket);
+        }
+
+        private void HandleDragEnd()
+        {
+            DragDropContext?.Clear();
         }
 
         /// <summary>

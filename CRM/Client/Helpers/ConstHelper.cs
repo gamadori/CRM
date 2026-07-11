@@ -34,6 +34,8 @@ namespace CRM.Client.Helpers
 
         public static string SmtpSettingsPath = "api/SmtpSettings";
 
+        public static string EmailInboxPath = "api/EmailInbox";
+
         public static string GlobalSettingsPath = "api/GlobalSettings";
 
         public static string GroupsPath = "api/Groups";
@@ -84,6 +86,10 @@ namespace CRM.Client.Helpers
 
         public static string DealsPath = "api/Deals";
 
+        public static string LeadsPath = "api/Leads";
+
+        public static string WorkflowAutomationsPath = "api/WorkflowAutomations";
+
         public static string QuotesPath = "api/Quotes";
 
         public static string OrdersPath = "api/Orders";
@@ -93,6 +99,8 @@ namespace CRM.Client.Helpers
         public static string InvoicesPath = "api/Invoices";
 
         public static string ActivitiesPath = "api/Activities";
+
+        public static string CalendarPath = "api/Calendar";
 
         public static string ExpenseReceiptsPath = "api/ExpenseReceipts";
 
@@ -164,6 +172,12 @@ namespace CRM.Client.Helpers
         public static string ClientContactsPath = "Contacts";
 
         public static string ClientDealPath = "Deals";
+
+        public static string ClientLeadsPath = "Leads";
+
+        public static string ClientForecastPath = "Deals/Forecast";
+
+        public static string ClientWorkflowAutomationsPath = "WorkflowAutomations";
 
         public static string ClientQuotesPath = "Quotes";
 

@@ -49,6 +49,10 @@ namespace CRM.Client.Pages.Tickets
 
         private List<ApplicationUser> _users = new List<ApplicationUser>();
 
+        private bool _showNotes;
+
+        /// <summary>True se il ticket ha un riepilogo operativo riutilizzabile come soluzione.</summary>
+        private bool _hasOperationalSummary => !string.IsNullOrWhiteSpace(_ticket?.OperationalSummary);
 
 
         protected override void OnParametersSet()
@@ -56,17 +60,47 @@ namespace CRM.Client.Pages.Tickets
             //the param will be set now
             _ticketClose.Id = Id;
 
-            
+
         }
 
         protected override async Task OnInitializedAsync()
         {
             _ticket = await _service.Get(Id);
-            
+
             _ticketClose.Description = _ticket.CloseDescription;
             _ticketClose.Note = _ticket.CloseNote;
             _ticketClose.Support = _ticket.Support;
+
+            // Apri automaticamente le note interne se ne esistono già
+            _showNotes = !string.IsNullOrWhiteSpace(_ticketClose.Note);
         }
+
+        private void ToggleNotes() => _showNotes = !_showNotes;
+
+        /// <summary>Copia il riepilogo operativo del ticket nella descrizione di chiusura.</summary>
+        private void UseOperationalSummary()
+        {
+            if (_hasOperationalSummary)
+                _ticketClose.Description = _ticket.OperationalSummary;
+        }
+
+        /// <summary>Chiave testuale della priorità (low/medium/high) per lo stile del chip.</summary>
+        private string GetPriorityKey() => ((TicketPriorities)_ticket.Priority) switch
+        {
+            TicketPriorities.Low => "low",
+            TicketPriorities.Medium => "medium",
+            TicketPriorities.High => "high",
+            _ => "low"
+        };
+
+        /// <summary>Etichetta leggibile della priorità.</summary>
+        private string GetPriorityLabel() => ((TicketPriorities)_ticket.Priority) switch
+        {
+            TicketPriorities.Low => "bassa",
+            TicketPriorities.Medium => "media",
+            TicketPriorities.High => "alta",
+            _ => "bassa"
+        };
         
         protected async Task HandleValidSubmit()
         {

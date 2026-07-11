@@ -14,6 +14,7 @@
 @inject IContactsService ContactsService
 @inject IProductsService ProductsService
 @inject IPriceListService PriceListService
+@inject IDealService DealService
 @inject IAGRestClientService RestClient
 @inject IHeaderService HeaderService
 @inject NavigationManager Nav
@@ -202,6 +203,7 @@ else
             _quote = NewQuote();
             _quote.IdDeal = IdDeal;
             _quote.IdCompany = IdCompany;
+            await ApplyDealDefaults();
         }
 
         await LoadContacts();
@@ -222,6 +224,42 @@ else
         State = QuoteStates.Draft,
         Rows = new List<QuoteRowDTO>()
     };
+
+    private async Task ApplyDealDefaults()
+    {
+        if (_quote?.IdDeal == null)
+        {
+            return;
+        }
+
+        var deal = await DealService.GetItemAsync(_quote.IdDeal.Value);
+        if (deal == null)
+        {
+            return;
+        }
+
+        _quote.IdCompany ??= deal.IdCompany;
+        _quote.IdContact ??= deal.IdContact;
+
+        if (_quote.Rows.Any() || !deal.ProductInterests.Any())
+        {
+            return;
+        }
+
+        _quote.Rows = deal.ProductInterests
+            .OrderBy(x => x.SortOrder)
+            .Select((row, index) => new QuoteRowDTO
+            {
+                IdProduct = row.IdProduct,
+                Description = row.DisplayName,
+                Quantity = row.Quantity,
+                UnitPrice = row.UnitPrice,
+                DiscountPct = row.DiscountPct,
+                VatRate = _defaultVat,
+                SortOrder = index
+            })
+            .ToList();
+    }
 
     private async Task OnChangeCompany()
     {

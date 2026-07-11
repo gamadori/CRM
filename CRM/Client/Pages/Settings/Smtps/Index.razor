@@ -1,0 +1,133 @@
+@page "/Settings/Smtps"
+@using CRM.Client.Helpers
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using Radzen
+@using Radzen.Blazor
+@inject ISmtpSettingsService Service
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+@inject IHeaderService HeaderService
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+@if (_items == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="mb-3">
+        <RedGButton RGButtonType="RGButtonType.New" Click="@(() => NavigationManager.NavigateTo("/Settings/Smtps/New"))" AutoLabel="true" />
+    </div>
+
+    @if (_items.Count == 0)
+    {
+        <div class="text-muted text-center py-4">Nessun canale configurato. Aggiungi il primo canale di invio.</div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:120px">Priorità</th>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Mittente</th>
+                            <th>Dettaglio</th>
+                            <th class="text-center">Attivo</th>
+                            <th class="text-end">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < _items.Count; i++)
+                        {
+                            var item = _items[i];
+                            var index = i;
+                            <tr class="@(item.IsActive ? "" : "text-muted")">
+                                <td>
+                                    <span class="badge bg-secondary me-2">@(index + 1)</span>
+                                    <RadzenButton Icon="arrow_upward" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall"
+                                                  Disabled="@(index == 0)" Click="@(() => Move(index, -1))" title="Su" />
+                                    <RadzenButton Icon="arrow_downward" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall"
+                                                  Disabled="@(index == _items.Count - 1)" Click="@(() => Move(index, 1))" title="Giù" />
+                                </td>
+                                <td>
+                                    @item.DisplayName
+                                    @if (index == 0)
+                                    {
+                                        <span class="badge bg-primary ms-1">primario</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="material-icons align-middle me-1" style="font-size:16px">@(item.Provider == EmailProvider.Smtp ? "dns" : "cloud")</span>
+                                    @item.Provider
+                                </td>
+                                <td>@item.SenderEmail</td>
+                                <td>
+                                    @if (item.Provider == EmailProvider.Smtp)
+                                    {
+                                        @($"{item.Server}:{item.Port}")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">API key @(string.IsNullOrEmpty(item.ApiKey) ? "—" : "••••")</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="badge bg-success">Sì</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">No</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <RedGButton RGButtonType="RGButtonType.Edit" Click="@(() => NavigationManager.NavigateTo($"/Settings/Smtps/{item.Id}/Edit"))" />
+                                    <RedGButton RGButtonType="RGButtonType.Delete" Click="@(() => Delete(item))" />
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="text-muted small mt-2">
+            I canali vengono provati dall'alto verso il basso: se il primario non è disponibile, l'invio passa automaticamente al successivo.
+        </div>
+    }
+}
+
+@code {
+    private List<SmtpSetting>? _items;
+    private PageHeaderModel? _pageHeader;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        await Load();
+    }
+
+    private async Task Load() => _items = await Service.GetListAsync();
+
+    private async Task Move(int index, int direction)
+    {
+        var target = index + direction;
+        if (_items == null || target < 0 || target >= _items.Count) return;
+
+        (_items[index], _items[target]) = (_items[target], _items[index]);
+        await Service.ReorderAsync(_items.Select(x => x.Id).ToList());
+        await Load();
+    }
+
+    private async Task Delete(SmtpSetting item)
+    {
+        if (await DialogService.Confirm($"Eliminare il canale \"{item.DisplayName}\"?", "Conferma") != true) return;
+        if (await Service.DeleteAsync(item.Id)) await Load();
+    }
+}

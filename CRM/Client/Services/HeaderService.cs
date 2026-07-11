@@ -327,6 +327,12 @@ namespace CRM.Client.Services
                 "groups" or "group" => "groups",
                 "tickettypes" or "tickettype" => "class",
                 "azuresettings" => "cloud",
+                "workflowautomations" or "workflowautomation" => "settings_suggest",
+                "executions" or "execution" => "history",
+                "forecast" => "query_stats",
+                "catalog" => "grid_view",
+                "schedule" => "calendar_month",
+                "about" => "info",
                 _ => "dashboard"
             };
         }

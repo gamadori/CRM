@@ -40,6 +40,9 @@ namespace BlazoringComponents.Scheduler
         [CascadingParameter(Name = "Tickets")]
         public IEnumerable<TItem> Items { get; set; }
 
+        [CascadingParameter]
+        public SchedulerDragDropContext DragDropContext { get; set; }
+
         [Parameter]
         public Action<string> OpenModal { get; set; }
 
@@ -206,6 +209,12 @@ namespace BlazoringComponents.Scheduler
             }
 
             return "?";
+        }
+
+        private async Task OnTicketDrop(TimeSlot slot)
+        {
+            if (DragDropContext != null)
+                await DragDropContext.DropAsync(DateCurrent.Date, slot.Start);
         }
 
         public class TimeSlot

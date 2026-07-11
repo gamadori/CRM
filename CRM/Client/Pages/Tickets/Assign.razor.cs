@@ -86,6 +86,9 @@ namespace CRM.Client.Pages.Tickets
         // ✅ NUOVO: Mappa del carico di lavoro per ogni utente
         private Dictionary<string, UserWorkloadInfo> _userWorkloadMap = new();
         private bool _isLoadingWorkload = false;
+
+        /// <summary>Gli indicatori di carico sono disponibili solo con una data di riferimento (workload giornaliero).</summary>
+        private bool _showWorkload => Date.HasValue;
         
         private bool _isLoadingPage = true;
 
@@ -314,8 +317,20 @@ namespace CRM.Client.Pages.Tickets
         private void RemoveUser(string userId)
         {
             _selectedUserIds.Remove(userId);
-            
+
             // ✅ FIX: Aggiorna la lista filtrata per mostrare di nuovo l'utente rimosso
+            OnSearchChanged(_searchQuery);
+        }
+
+        /// <summary>
+        /// Rimuove in un colpo solo tutti gli utenti selezionati.
+        /// </summary>
+        private void ClearAllUsers()
+        {
+            if (_selectedUserIds.Count == 0)
+                return;
+
+            _selectedUserIds.Clear();
             OnSearchChanged(_searchQuery);
         }
 

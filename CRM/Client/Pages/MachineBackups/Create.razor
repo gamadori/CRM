@@ -1,4 +1,5 @@
 @page "/MachineBackups/{OwnerTypeName}/{OwnerId:int}/New"
+@using CRM.Client.Models
 @using CRM.Client.Services
 @using CRM.Shared
 @using Microsoft.AspNetCore.Components.Forms
@@ -8,19 +9,17 @@
 @inject IMachineBackupsService BackupsService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+@inject IHeaderService HeaderService
 @implements IAsyncDisposable
 
 <main class="backup-create-page">
-    <header class="create-header">
-        <button class="icon-command" title="Torna ai backup" @onclick="Cancel">
-            <span class="material-symbols-outlined">arrow_back</span>
-        </button>
-        <div>
-            <span class="context-label">@ContextLabel</span>
-            <h1>Nuovo backup</h1>
-            <p>Carica un file completo senza modificarne il contenuto.</p>
-        </div>
-    </header>
+    <PageHeader Model="_pageHeader">
+        <Actions>
+            <button class="icon-command" title="Torna ai backup" @onclick="Cancel">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+        </Actions>
+    </PageHeader>
 
     <section class="create-content">
         <div class="file-section">
@@ -76,6 +75,7 @@
     [Parameter] public string OwnerTypeName { get; set; } = string.Empty;
     [Parameter] public int OwnerId { get; set; }
 
+    private PageHeaderModel? _pageHeader;
     private IBrowserFile? _selectedFile;
     private string? _description;
     private string? _externalReference;
@@ -93,6 +93,23 @@
         ? "Backup predefinito prodotto"
         : "Backup macchina articolo";
     private string FileType => string.IsNullOrWhiteSpace(_selectedFile?.ContentType) ? "Formato non dichiarato" : _selectedFile.ContentType;
+
+    protected override void OnInitialized()
+    {
+        // La rotta polimorfica (owner + id) non si mappa sull'header derivato dall'URL:
+        // costruiamo il modello manualmente mantenendo il componente PageHeader condiviso.
+        _pageHeader = new PageHeaderModel
+        {
+            Title = "Nuovo backup",
+            Subtitle = "Carica un file completo senza modificarne il contenuto.",
+            Icon = "backup",
+            BreadcrumbItems = new List<BreadcrumbItem>
+            {
+                new(ContextLabel, ReturnUrl),
+                new("Nuovo backup")
+            }
+        };
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

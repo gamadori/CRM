@@ -13,28 +13,9 @@
             <div class="tickets-grid">
                 @foreach (var ticket in _ticketsWithoutTime)
                 {
-                    <div class="ticket-card no-time" style="border-left-color: @ticket.BackGroundColor" @onclick="() => OpenModal(ticket.Id)">
-                        <div class="ticket-card-header">
-                            <span class="ticket-id">#@ticket.Id</span>
-                            @if (ticket.AssignedUserNames.Any())
-                            {
-                                <div class="assigned-users">
-                                    @foreach (var userName in ticket.AssignedUserNames.Take(3))
-                                    {
-                                        <span class="user-badge" title="@userName">@GetUserInitials(userName)</span>
-                                    }
-                                    @if (ticket.AssignedUserNames.Count > 3)
-                                    {
-                                        <span class="user-badge more">+@(ticket.AssignedUserNames.Count - 3)</span>
-                                    }
-                                </div>
-                            }
-                        </div>
-                        <div class="ticket-card-body">
-                            <div class="ticket-company">@ticket.Company</div>
-                            <div class="ticket-description">@ticket.Description</div>
-                        </div>
-                    </div>
+                    <CascadingValue Value="ticket" TValue="SchedulerTicket">
+                        <AGTicketScheduler OpenModal="OpenModal"></AGTicketScheduler>
+                    </CascadingValue>
                 }
             </div>
         </div>
@@ -45,7 +26,10 @@
         @foreach (var slot in _timeSlots)
         {
             var hasTickets = _ticketsByTimeSlot.ContainsKey(slot) && _ticketsByTimeSlot[slot].Any();
-            <div class="timeline-slot @(hasTickets ? "has-tickets" : "")">
+            <div class="timeline-slot scheduler-drop-zone @(hasTickets ? "has-tickets" : "")"
+                 data-scheduler-drop-zone
+                 @ondragover:preventDefault
+                 @ondrop="() => OnTicketDrop(slot)">
                 <div class="time-label">
                     <span class="time-text">@slot.Label</span>
                     <span class="time-range">@slot.Start.ToString("HH:mm") - @slot.End.ToString("HH:mm")</span>

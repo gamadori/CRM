@@ -1,0 +1,210 @@
+@page "/Settings/InboundEmails"
+@using CRM.Client.Helpers
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+@inject HttpClient Http
+@inject ICompaniesService CompaniesService
+@inject NotificationService Notification
+@inject IHeaderService HeaderService
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+@if (_items == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="d-flex align-items-center flex-wrap gap-3 mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <RadzenCheckBox @bind-Value="_onlyUnhandled" Change="@OnUnhandledChanged" Name="chkUnhandled" TValue="bool" />
+            <label class="mb-0">Solo non lette</label>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <RadzenCheckBox @bind-Value="_onlyUnmatched" Change="@OnUnmatchedChanged" Name="chkUnmatched" TValue="bool" />
+            <label class="mb-0">Solo non associate</label>
+        </div>
+
+        <div class="ms-auto">
+            <RadzenButton Icon="mark_email_read" Text="Segna tutte come lette" ButtonStyle="ButtonStyle.Secondary"
+                          Size="ButtonSize.Small" Disabled="@_busy" Click="MarkAllRead" />
+        </div>
+    </div>
+
+    @if (_items.Count == 0)
+    {
+        <div class="text-muted text-center py-4">Nessuna email in ingresso.</div>
+    }
+    else
+    {
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Data</th>
+                            <th>Mittente</th>
+                            <th>Oggetto</th>
+                            <th>Stato</th>
+                            <th style="min-width:280px">Associa</th>
+                            <th class="text-end">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _items)
+                        {
+                            <tr class="@(item.Handled ? "" : "table-active fw-semibold")">
+                                <td class="text-nowrap">@item.ReceivedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@(string.IsNullOrWhiteSpace(item.FromName) ? item.FromAddress : $"{item.FromName} <{item.FromAddress}>")</td>
+                                <td>
+                                    <a href="@($"/InboundEmails/{item.Id}")" class="link-primary text-decoration-none">@item.Subject</a>
+                                </td>
+                                <td>
+                                    @if (item.Handled)
+                                    {
+                                        <span class="badge bg-light text-dark">Letta</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-primary">Da leggere</span>
+                                    }
+                                    @if (item.IsMatched)
+                                    {
+                                        <span class="badge bg-success ms-1">Associata</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark ms-1">Non associata</span>
+                                    }
+                                    @if (item.IdTicket != null)
+                                    {
+                                        <span class="badge bg-info ms-1">Ticket #@item.IdTicket</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!item.IsMatched)
+                                    {
+                                        <div class="d-flex gap-2">
+                                            <RadzenDropDown TValue="int?" @bind-Value="_selectedCompany[item.Id]" Data="_companies"
+                                                            ValueProperty="Id" TextProperty="RagioneSociale" AllowFiltering="true"
+                                                            Placeholder="Azienda..." Style="width:100%" />
+                                            <RadzenButton Text="Associa" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                                          Disabled="@(_busy || _selectedCompany[item.Id] == null)"
+                                                          Click="@(() => Associate(item))" />
+                                        </div>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    @if (item.Handled)
+                                    {
+                                        <RadzenButton Icon="mark_email_unread" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall"
+                                                      title="Segna come da leggere" Disabled="@_busy" Click="@(() => SetHandled(item, false))" />
+                                    }
+                                    else
+                                    {
+                                        <RadzenButton Icon="mark_email_read" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.ExtraSmall"
+                                                      title="Segna come letta" Disabled="@_busy" Click="@(() => SetHandled(item, true))" />
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<InboundEmail>? _items;
+    private List<CompanyDTO> _companies = new();
+    private readonly Dictionary<int, int?> _selectedCompany = new();
+    private bool _onlyUnhandled = true;
+    private bool _onlyUnmatched = false;
+    private bool _busy;
+    private PageHeaderModel? _pageHeader;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        _companies = await CompaniesService.GetListAsync(null) ?? new();
+        await Load();
+    }
+
+    private async Task OnUnhandledChanged(bool value)
+    {
+        _onlyUnhandled = value;
+        await Load();
+    }
+
+    private async Task OnUnmatchedChanged(bool value)
+    {
+        _onlyUnmatched = value;
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        _items = await Http.GetFromJsonAsync<List<InboundEmail>>(
+            $"api/InboundEmails/list?onlyUnmatched={_onlyUnmatched}&onlyUnhandled={_onlyUnhandled}") ?? new();
+
+        // Garantisce una voce nel dizionario per ogni riga (il binding del dropdown legge la chiave).
+        foreach (var it in _items)
+            if (!_selectedCompany.ContainsKey(it.Id))
+                _selectedCompany[it.Id] = null;
+    }
+
+    private async Task SetHandled(InboundEmail item, bool value)
+    {
+        _busy = true;
+        try
+        {
+            var resp = await Http.PostAsync($"api/InboundEmails/{item.Id}/handled?value={value}", null);
+            if (resp.IsSuccessStatusCode) await Load();
+            else Notification.Notify(NotificationSeverity.Error, "Errore", "Operazione fallita.");
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task MarkAllRead()
+    {
+        _busy = true;
+        try
+        {
+            var resp = await Http.PostAsync("api/InboundEmails/mark-all-read", null);
+            if (resp.IsSuccessStatusCode)
+            {
+                var count = await resp.Content.ReadFromJsonAsync<int>();
+                Notification.Notify(NotificationSeverity.Success, "Fatto", $"{count} email segnate come lette.");
+                await Load();
+            }
+        }
+        finally { _busy = false; }
+    }
+
+    private async Task Associate(InboundEmail item)
+    {
+        var idCompany = _selectedCompany[item.Id];
+        if (idCompany == null) return;
+
+        _busy = true;
+        try
+        {
+            var resp = await Http.PostAsync($"api/InboundEmails/{item.Id}/associate?idCompany={idCompany}", null);
+            if (resp.IsSuccessStatusCode)
+            {
+                Notification.Notify(NotificationSeverity.Success, "Associata", "Email collegata all'azienda.");
+                await Load();
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", "Associazione fallita.");
+            }
+        }
+        finally { _busy = false; }
+    }
+}

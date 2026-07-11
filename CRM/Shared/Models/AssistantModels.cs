@@ -37,6 +37,18 @@ namespace CRM.Shared.Models
         /// Soglia minima di similarità (0-100) per considerare un ticket rilevante.
         /// </summary>
         public double MinSimilarityThreshold { get; set; } = 55.0;
+
+        /// <summary>
+        /// Ticket di contesto (opzionale): se la chat parte da un ticket, il suo modello
+        /// viene usato per dare priorità alla conoscenza specifica di quel prodotto.
+        /// </summary>
+        public int? IdTicket { get; set; }
+
+        /// <summary>
+        /// Modello/prodotto di contesto (opzionale): forza la rilevanza della conoscenza
+        /// associata a questo prodotto, anche in assenza di ticket chiusi simili.
+        /// </summary>
+        public int? IdProduct { get; set; }
     }
 
     /// <summary>

@@ -190,7 +190,15 @@ namespace CRM.Server.Services
 
                 var existing = await _context.Orders.FirstOrDefaultAsync(o => o.IdQuote == quoteId);
                 if (existing != null)
-                    return Fail($"Esiste gia' un ordine ({existing.Number}) per questo preventivo", System.Net.HttpStatusCode.Conflict);
+                {
+                    return new APIResponseMessage<OrderDTO>
+                    {
+                        State = true,
+                        Data = await GetItemAsync(existing.Id),
+                        Message = $"Ordine {existing.Number} gia' esistente per questo preventivo",
+                        Code = System.Net.HttpStatusCode.OK
+                    };
+                }
 
                 var order = new Order
                 {

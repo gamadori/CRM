@@ -22,6 +22,24 @@ namespace CRM.Client.Services
             _http = http;
         }
 
+        public async Task<ActivityDTO?> GetAsync(int id)
+        {
+            try
+            {
+                return await _http.GetFromJsonAsync<ActivityDTO>($"{ConstHelper.ActivitiesPath}/{id}");
+            }
+            catch (AccessTokenNotAvailableException exception)
+            {
+                exception.Redirect();
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+        }
+
         public async Task<List<ActivityDTO>> GetByEntityAsync(ActivityEntityType entityType, int entityId)
         {
             try

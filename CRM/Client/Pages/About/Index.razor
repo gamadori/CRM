@@ -9,13 +9,7 @@
 else
 {
     <div class="about-container">
-        <!-- Simple Header -->
-        <div class="about-header">
-            <div class="header-icon">
-                <span class="material-icons">info</span>
-            </div>
-            <h1>System Information</h1>
-        </div>
+        <PageHeader Model="_pageHeader" />
 
         <!-- Info Cards -->
         <div class="info-grid">
@@ -86,35 +80,6 @@ else
         max-width: 1000px;
         margin: 0 auto;
         padding: 2rem;
-    }
-
-    /* Simple Header */
-    .about-header {
-        text-align: center;
-        margin-bottom: 2.5rem;
-    }
-
-    .header-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 64px;
-        height: 64px;
-        background: #f3f4f6;
-        border-radius: 50%;
-        margin-bottom: 1rem;
-    }
-
-    .header-icon .material-icons {
-        font-size: 32px;
-        color: #6b7280;
-    }
-
-    .about-header h1 {
-        margin: 0;
-        font-size: 1.875rem;
-        font-weight: 600;
-        color: #1f2937;
     }
 
     /* Info Grid */
@@ -199,19 +164,6 @@ else
 
         .info-grid {
             grid-template-columns: 1fr;
-        }
-
-        .about-header h1 {
-            font-size: 1.5rem;
-        }
-
-        .header-icon {
-            width: 56px;
-            height: 56px;
-        }
-
-        .header-icon .material-icons {
-            font-size: 28px;
         }
 
         .card-content {

@@ -19,6 +19,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Printing;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
@@ -143,39 +144,75 @@ namespace CRM.Server.Controllers
 
         [HttpPost("import-excel")]
         [RequestSizeLimit(20 * 1024 * 1024)]
-        [Obsolete("Sostituito da ProductsController.ImportExcel")]
+        [AuthorizeRole(ePolicy.AdminRole)]
         public async Task<ActionResult<ArticleImportResult>> ImportExcel([FromForm] IFormFile file, [FromForm] bool deleteExisting = false)
         {
             if (file == null || file.Length == 0)
                 return BadRequest("File mancante.");
 
             var result = new ArticleImportResult();
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
             try
             {
+                var existingArticles = await _context.Articles.ToListAsync();
                 if (deleteExisting)
                 {
-                    _context.Articles.RemoveRange(_context.Articles);
-                    await _context.SaveChangesAsync();
+                    _context.Articles.RemoveRange(existingArticles);
+                    existingArticles.Clear();
                 }
+
+                var productsByCode = (await _context.Products
+                        .AsNoTracking()
+                        .Where(p => p.Code != null && p.Code != "")
+                        .ToListAsync())
+                    .GroupBy(p => p.Code!.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+                static string CompanyKey(string name, string country) =>
+                    $"{name.Trim()}\u001F{country.Trim()}";
+
+                var companiesByNameAndCountry = (await _context.Companies.ToListAsync())
+                    .Where(c => !string.IsNullOrWhiteSpace(c.RagioneSociale))
+                    .GroupBy(
+                        c => CompanyKey(c.RagioneSociale, c.Stato ?? string.Empty),
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+                var serialNumbers = new HashSet<string>(
+                    existingArticles
+                        .Where(a => !string.IsNullOrWhiteSpace(a.SerialNumber))
+                        .Select(a => a.SerialNumber.Trim()),
+                    StringComparer.OrdinalIgnoreCase);
 
                 using var stream = file.OpenReadStream();
                 using var doc = SpreadsheetDocument.Open(stream, false);
 
-                var workbookPart = doc.WorkbookPart!;
-                var sheets = workbookPart.Workbook.Sheets!.Elements<Sheet>();
+                var workbookPart = doc.WorkbookPart
+                    ?? throw new InvalidOperationException("Il file non contiene una cartella di lavoro Excel valida.");
+                var sheets = workbookPart.Workbook.Sheets?.Elements<Sheet>().ToList()
+                    ?? new List<Sheet>();
                 var sharedStrings = workbookPart.SharedStringTablePart?.SharedStringTable;
 
-                // Estrae solo le lettere dalla CellReference (es. "AB12" -> "AB")
                 static string ColLetter(string? cellRef) =>
                     cellRef == null ? string.Empty : new string(cellRef.TakeWhile(char.IsLetter).ToArray());
 
                 string GetCellValue(Cell? cell)
                 {
-                    if (cell?.CellValue == null) return string.Empty;
-                    var val = cell.CellValue.InnerText;
+                    if (cell == null) return string.Empty;
+
+                    if (cell.DataType?.Value == CellValues.InlineString)
+                        return cell.InlineString?.InnerText?.Trim() ?? string.Empty;
+
+                    var val = cell.CellValue?.InnerText ?? string.Empty;
                     if (cell.DataType?.Value == CellValues.SharedString && sharedStrings != null)
-                        return sharedStrings.ElementAt(int.Parse(val)).InnerText;
-                    return val;
+                    {
+                        return int.TryParse(val, NumberStyles.Integer, CultureInfo.InvariantCulture, out var index)
+                            ? sharedStrings.ElementAt(index).InnerText.Trim()
+                            : string.Empty;
+                    }
+
+                    return val.Trim();
                 }
 
                 string GetColValue(Row row, string col)
@@ -184,76 +221,125 @@ namespace CRM.Server.Controllers
                     return GetCellValue(cell);
                 }
 
+                static string NormalizeSerialNumber(string value)
+                {
+                    var separator = value.LastIndexOf('-');
+                    return (separator >= 0 ? value[(separator + 1)..] : value).Trim();
+                }
+
+                static bool IsKnownCompany(string value) =>
+                    !string.IsNullOrWhiteSpace(value) &&
+                    !string.Equals(value.Trim(), "???", StringComparison.OrdinalIgnoreCase);
+
+                Company? GetOrCreateCompany(string name, string country)
+                {
+                    name = name.Trim();
+                    country = country.Trim();
+                    if (!IsKnownCompany(name))
+                        return null;
+
+                    var key = CompanyKey(name, country);
+                    if (companiesByNameAndCountry.TryGetValue(key, out var company))
+                        return company;
+
+                    company = new Company
+                    {
+                        RagioneSociale = name,
+                        Stato = string.IsNullOrWhiteSpace(country) ? null : country,
+                        CompanyType = CompanyTypes.Customer
+                    };
+                    _context.Companies.Add(company);
+                    companiesByNameAndCountry.Add(key, company);
+                    result.CompaniesCreated++;
+                    return company;
+                }
+
                 foreach (var sheet in sheets)
                 {
                     var sheetName = (sheet.Name?.Value ?? string.Empty).Trim();
                     if (string.IsNullOrWhiteSpace(sheetName)) continue;
 
-                    var productType = await _context.ProductTypes.FirstOrDefaultAsync(pt => pt.Name == sheetName);
-                    if (productType == null)
-                    {
-                        productType = new ProductType { Name = sheetName };
-                        _context.ProductTypes.Add(productType);
-                        await _context.SaveChangesAsync();
-                        result.ProductTypesCreated++;
-                    }
+                    if (sheet.Id?.Value == null)
+                        continue;
 
-                    var wsPart = (WorksheetPart)workbookPart.GetPartById(sheet.Id!.Value!);
-                    // Skip riga 1 (intestazione)
+                    result.SheetsProcessed++;
+                    var wsPart = (WorksheetPart)workbookPart.GetPartById(sheet.Id.Value);
                     var rows = wsPart.Worksheet.Descendants<Row>().Where(r => r.RowIndex?.Value > 1);
 
                     foreach (var row in rows)
                     {
-                        // Colonna A = Codice articolo (SerialNumber)
-                        var serialNumber = GetColValue(row, "A");
-                        // Colonna B = Descrizione (Product.Name)
-                        var productName = GetColValue(row, "B");
-                        // Colonna V = Creato il (SaleDate, valore OADate numerico)
-                        var saleDateRaw = GetColValue(row, "V");
+                        var yearRaw = GetColValue(row, "A");
+                        var productCode = GetColValue(row, "B");
+                        var serialNumberRaw = GetColValue(row, "C");
+                        var customerName = GetColValue(row, "D");
+                        var customerCountry = GetColValue(row, "E");
+                        var recipientName = GetColValue(row, "F");
+                        var recipientCountry = GetColValue(row, "G");
 
-                        if (string.IsNullOrWhiteSpace(serialNumber))
+                        if (string.IsNullOrWhiteSpace(yearRaw) &&
+                            string.IsNullOrWhiteSpace(productCode) &&
+                            string.IsNullOrWhiteSpace(serialNumberRaw))
                             continue;
 
-                        if (string.IsNullOrWhiteSpace(productName))
+                        result.RowsProcessed++;
+                        var rowNumber = row.RowIndex?.Value ?? 0;
+
+                        if (!int.TryParse(yearRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var year))
                         {
                             result.ArticlesSkipped++;
-                            result.Errors.Add($"Riga {row.RowIndex}: SerialNumber='{serialNumber}' senza nome prodotto.");
+                            result.Errors.Add($"Foglio '{sheetName}', riga {rowNumber}: anno '{yearRaw}' non valido.");
                             continue;
                         }
 
-                        var product = await _context.Products.FirstOrDefaultAsync(p => p.Name == productName && p.IdProductType == productType.Id);
-                        if (product == null)
+                        if (string.IsNullOrWhiteSpace(productCode) ||
+                            !productsByCode.TryGetValue(productCode, out var product))
                         {
-                            product = new Product { Name = productName, IdProductType = productType.Id };
-                            _context.Products.Add(product);
-                            await _context.SaveChangesAsync();
-                            result.ProductsCreated++;
+                            result.ArticlesSkipped++;
+                            result.Errors.Add($"Foglio '{sheetName}', riga {rowNumber}: prodotto con codice '{productCode}' non trovato.");
+                            continue;
                         }
 
-                        DateTime? saleDate = null;
-                        if (!string.IsNullOrWhiteSpace(saleDateRaw) &&
-                            double.TryParse(saleDateRaw, System.Globalization.NumberStyles.Any,
-                                System.Globalization.CultureInfo.InvariantCulture, out double oaDate))
+                        var serialNumber = NormalizeSerialNumber(serialNumberRaw);
+                        if (string.IsNullOrWhiteSpace(serialNumber))
                         {
-                            saleDate = DateTime.FromOADate(oaDate);
+                            result.ArticlesSkipped++;
+                            result.Errors.Add($"Foglio '{sheetName}', riga {rowNumber}: matricola mancante.");
+                            continue;
                         }
+
+                        if (!serialNumbers.Add(serialNumber))
+                        {
+                            result.ArticlesSkipped++;
+                            result.Errors.Add($"Foglio '{sheetName}', riga {rowNumber}: matricola '{serialNumber}' già presente.");
+                            continue;
+                        }
+
+                        var customer = GetOrCreateCompany(customerName, customerCountry);
+                        var recipient = GetOrCreateCompany(recipientName, recipientCountry);
 
                         _context.Articles.Add(new Article
                         {
+                            Year = year,
                             SerialNumber = serialNumber,
                             IdProduct = product.Id,
-                            SaleDate = saleDate,
+                            IdCompany = customer?.Id > 0 ? customer.Id : null,
+                            Company = customer,
+                            Country = string.IsNullOrWhiteSpace(customerCountry) ? null : customerCountry.Trim(),
+                            IdRecipientCompany = recipient?.Id > 0 ? recipient.Id : null,
+                            RecipientCompany = recipient,
+                            RecipientCountry = string.IsNullOrWhiteSpace(recipientCountry) ? null : recipientCountry.Trim()
                         });
                         result.ArticlesCreated++;
                     }
-
-                    await _context.SaveChangesAsync();
                 }
 
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 result.Success = true;
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await _logEventService.RegisterAsync(nameof(ArticlesController), nameof(ImportExcel), LogEvent.EventsTypes.Error, ex);
                 result.Success = false;
                 result.Errors.Add($"Errore durante l'importazione: {ex.Message}");

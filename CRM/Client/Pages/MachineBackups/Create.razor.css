@@ -1,8 +1,4 @@
 .backup-create-page { max-width: 1040px; margin: 0 auto; padding: 1rem 0 2rem; display: grid; gap: 1.25rem; }
-.create-header { display: flex; align-items: flex-start; gap: .85rem; border-bottom: 1px solid var(--rz-border-color); padding-bottom: 1rem; }
-.create-header h1 { margin: .1rem 0 .25rem; font-size: 1.65rem; letter-spacing: 0; }
-.create-header p { margin: 0; color: var(--rz-text-secondary-color); }
-.context-label { color: var(--rz-primary); font-size: .8rem; font-weight: 700; text-transform: uppercase; }
 .icon-command { width: 38px; height: 38px; flex: 0 0 38px; border: 0; background: transparent; color: var(--rz-text-color); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 .icon-command:hover { background: var(--rz-base-200); }
 .create-content { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(290px, .65fr); gap: 1.25rem; align-items: start; }

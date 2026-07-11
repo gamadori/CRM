@@ -133,6 +133,12 @@
   <data name="IdProduct" xml:space="preserve">
     <value>Produit</value>
   </data>
+  <data name="IdRecipientCompany" xml:space="preserve">
+    <value>Destinataire</value>
+  </data>
+  <data name="RecipientCountry" xml:space="preserve">
+    <value>Pays du destinataire</value>
+  </data>
   <data name="LogisticState" type="System.Resources.ResXNullRef, System.Windows.Forms">
     <value />
   </data>

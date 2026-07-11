@@ -62,6 +62,8 @@ namespace CRM.Client.Pages.EmailsSent
 
         private ApplicationUser _user = null;
 
+        private List<EmailEvent> _events = new();
+
 
         protected override async Task OnInitializedAsync()
         {
@@ -77,6 +79,7 @@ namespace CRM.Client.Pages.EmailsSent
                 {
 
                     _email = await _service.Get(Id.Value);
+                    _events = await _httpClient.GetFromJsonAsync<List<EmailEvent>>($"api/EmailsSent/{Id.Value}/events") ?? new();
                 }
                 else
                     _email = new EmailSent();

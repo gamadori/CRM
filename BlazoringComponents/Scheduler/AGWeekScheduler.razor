@@ -6,7 +6,10 @@
     <div class="week-grid">
         @foreach (var day in _weekTickets)
         {
-            <div class="day-column @GetDayCellClass(day)" @onclick="() => OnDayClick(day.Date)">
+            <div class="day-column scheduler-drop-zone @GetDayCellClass(day)" data-scheduler-drop-zone
+                 @onclick="() => OnDayClick(day.Date)"
+                 @ondragover:preventDefault
+                 @ondrop="() => OnTicketDrop(day.Date)">
                 <!-- Header del giorno -->
                 <div class="day-column-header">
                     <AGDayHead Day="@day" OnSelect="OnSelect"></AGDayHead>
@@ -217,5 +220,11 @@
     private async Task OnDayClick(DateTime date)
     {
         await OnSelect.InvokeAsync(date);
+    }
+
+    private async Task OnTicketDrop(DateTime date)
+    {
+        if (DragDropContext != null)
+            await DragDropContext.DropAsync(date, null);
     }
 }

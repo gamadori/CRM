@@ -189,13 +189,14 @@ namespace CRM.Server.Services
                     UserClosed = (x.UserClosed != null) ? x.UserClosed.NameComplete : "",
                     MinuteWork = x.TicketInterventions.Sum(y => y.Minute),
                     Description = x.Description,
+                    OperationalSummary = x.OperationalSummary,
+                    OperationalSummaryUpdatedAt = x.OperationalSummaryUpdatedAt,
+                    OperationalSummaryUpdatedBy = x.OperationalSummaryUpdatedBy,
+                    OperationalSummaryUpdatedByName = x.OperationalSummaryUpdatedByUser != null ? x.OperationalSummaryUpdatedByUser.NameComplete : "",
                     IdType = x.IdType,
                     DescType = (x.TicketType.Languages.Where(l => l.IdLanguage == idLanguage).Any()) ? x.TicketType.Languages.Where(l => l.IdLanguage == idLanguage).FirstOrDefault().Name : "",
                     TicketType = x.TicketType,
                     ContactName = x.Contact != null ? x.Contact.NameComplete : "",
-                    UserCustomer = x.IdUserCustomer != null
-                        ? _context.Users.Where(u => u.Id == x.IdUserCustomer).Select(u => u.NameComplete).FirstOrDefault() ?? ""
-                        : "",
                     CloseDescription = x.CloseDescription,
                     Closed = x.Closed,
                 }).FirstOrDefaultAsync();
@@ -341,10 +342,11 @@ namespace CRM.Server.Services
                             .Sum(z => (int)EF.Functions.DateDiffMinute(z.StartDateTime, z.EndDateTime)),
                     Invoiced = x.Invoiced,
                     Description = x.Description,
-                    ContactName = x.Contact != null ? x.Contact.Name : "",
-                    UserCustomer = x.IdUserCustomer != null
-                        ? _context.Users.Where(u => u.Id == x.IdUserCustomer).Select(u => u.NameComplete).FirstOrDefault() ?? ""
-                        : "",
+                    OperationalSummary = x.OperationalSummary,
+                    OperationalSummaryUpdatedAt = x.OperationalSummaryUpdatedAt,
+                    OperationalSummaryUpdatedBy = x.OperationalSummaryUpdatedBy,
+                    OperationalSummaryUpdatedByName = x.OperationalSummaryUpdatedByUser != null ? x.OperationalSummaryUpdatedByUser.NameComplete : "",
+                    ContactName = x.Contact != null ? x.Contact.NameComplete : "",
                     Time = x.Time,
                     Closed = x.Closed,
                 });
@@ -409,6 +411,24 @@ namespace CRM.Server.Services
         {
             try
             {
+                var currentSummary = await _context.Tickets
+                    .AsNoTracking()
+                    .Where(x => x.Id == id)
+                    .Select(x => new
+                    {
+                        x.OperationalSummary,
+                        x.OperationalSummaryUpdatedAt,
+                        x.OperationalSummaryUpdatedBy
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (currentSummary == null)
+                    return false;
+
+                ticket.OperationalSummary = currentSummary.OperationalSummary;
+                ticket.OperationalSummaryUpdatedAt = currentSummary.OperationalSummaryUpdatedAt;
+                ticket.OperationalSummaryUpdatedBy = currentSummary.OperationalSummaryUpdatedBy;
+
                 ticket.IdCompanyAssigned =
                     (ticket.IdUserAssigned != null) ? _context.Users.Where(x => x.Id == ticket.IdUserAssigned).Select(x => x.IdCompany).FirstOrDefault() : null;
 
@@ -534,11 +554,15 @@ namespace CRM.Server.Services
                 else
                 {
                     await CheckTicketExpired(ticket.Id);
+                    var processingState = await GetIdState(eTicketStates.Processing);
+                    var hasAssignedUser = await HasAssignedUserAsync(ticket.Id, ticket.IdUserAssigned);
 
                     if (await _permitsService.IsClient())
                     {
-                        return await GetIdState(eTicketStates.Processing);
+                        return processingState;
                     }
+                    else if (ticket.IdState == processingState?.Id && hasAssignedUser)
+                        return processingState;
                     else if (ticket.DateExpired != null && DateTime.Now.Date > ticket.DateExpired)
                         return await GetIdState(eTicketStates.Expired);
 
@@ -562,11 +586,15 @@ namespace CRM.Server.Services
                 else
                 {
                     await CheckTicketExpired(ticket.Id);
+                    var processingState = await GetIdState(eTicketStates.Processing);
+                    var hasAssignedUser = await HasAssignedUserAsync(ticket.Id, ticket.IdUserAssigned);
 
                     if (await _permitsService.IsClient())
                     {
-                        return await GetIdState(eTicketStates.Processing);
+                        return processingState;
                     }
+                    else if (ticket.IdState == processingState?.Id && hasAssignedUser)
+                        return processingState;
                     else if (DateTime.Now.Date > ticket.DateExpired)
                         return await GetIdState(eTicketStates.Expired);
 
@@ -585,6 +613,12 @@ namespace CRM.Server.Services
             if (ticketState != null)
                 ticketState.idState = state;
             return ticketState;
+        }
+
+        private async Task<bool> HasAssignedUserAsync(int ticketId, string? legacyAssignedUserId)
+        {
+            return !string.IsNullOrWhiteSpace(legacyAssignedUserId)
+                || await _context.TicketUserAssignments.AnyAsync(a => a.IdTicket == ticketId);
         }
 
         #endregion

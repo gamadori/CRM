@@ -165,16 +165,19 @@ else
             return;
 
         string cultureCode = _selectedItem.Value ?? CultureInfo.CurrentCulture.Name;
+        if (_value != cultureCode)
+        {
+            _value = cultureCode;
+            if (ValueChanged.HasDelegate)
+            {
+                await ValueChanged.InvokeAsync(cultureCode);
+            }
+        }
 
-        if (CultureInfo.CurrentCulture.Name != cultureCode)
+        if (AutoSetting && CultureInfo.CurrentCulture.Name != cultureCode)
         {
             await JSRuntime.InvokeVoidAsync("appCulture.set", cultureCode);
-            
-            if (AutoSetting)
-            {
-                await http.PostAsJsonAsync<string>($"{ConstHelper.UserSignedPath}/Language", cultureCode);
-            }
-            
+            await http.PostAsJsonAsync<string>($"{ConstHelper.UserSignedPath}/Language", cultureCode);
             Culture = new CultureInfo(cultureCode);
             Nav.NavigateTo(Nav.Uri, forceLoad: true);
         }

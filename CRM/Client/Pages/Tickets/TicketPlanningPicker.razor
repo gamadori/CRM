@@ -8,7 +8,8 @@
 <BlazorHeader Header="@_header"></BlazorHeader>
 
    
-    <Scheduler @bind-DateCurrent=@Date @bind-IdUserAssigned=@IdUser ViewMode=@SchedulerViewMode.Calendar IdTicket=@IdTicket IdTicketType=@IdTicketType ></Scheduler>
+    <Scheduler @bind-DateCurrent="@Date" @bind-IdUserAssigned="@IdUser" ViewMode="@SchedulerViewMode.Calendar"
+               IdTicket="@IdTicket" IdTicketType="@IdTicketType" />
     <div class="mb-3">
         <BlazorButton Template="TemplateButton.Submit" Type=BtnType.Button Text="@Localize["OK"]" OnClick="HandleValidSubmit" />
         <BlazorButton Template="TemplateButton.Cancel" OnClick="Cancel" Text=@Localize["Cancel"] />

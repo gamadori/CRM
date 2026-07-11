@@ -34,14 +34,40 @@ else
                                               Data="_products" AllowFiltering="true" />
                             </RadzenStack>
                         </RadzenColumn>
+                    </RadzenRow>
+                    @* Acquirente *@
+                    <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
                                 <RedGDropDown TItem="CompanyDTO" TValue="int?" ValueProperty="@nameof(CompanyDTO.Id)" TextProperty="@nameof(CompanyDTO.RagioneSociale)" @bind-Value="@_article.IdCompany" For="@(() => _article.IdCompany)"
-                                              Data="_companies" AllowFiltering="true">
+                                              Data="_companies" AllowFiltering="true" Disabled="_lockCompany">
                                     <End>
                                         <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetCompany DialogType="RedGDialog.DialogType.Companies"></RedGButtonDialog>
                                     </End>
                                 </RedGDropDown>
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_article.Country" For="@(() => _article.Country)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    @* Destinatario *@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGDropDown TItem="CompanyDTO" TValue="int?" ValueProperty="@nameof(CompanyDTO.Id)" TextProperty="@nameof(CompanyDTO.RagioneSociale)" @bind-Value="@_article.IdRecipientCompany" For="@(() => _article.IdRecipientCompany)"
+                                              Data="_companies" AllowFiltering="true">
+                                    <End>
+                                        <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetRecipientCompany DialogType="RedGDialog.DialogType.Companies"></RedGButtonDialog>
+                                    </End>
+                                </RedGDropDown>
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGTextBox @bind-Value="@_article.RecipientCountry" For="@(() => _article.RecipientCountry)" />
                             </RadzenStack>
                         </RadzenColumn>
                     </RadzenRow>

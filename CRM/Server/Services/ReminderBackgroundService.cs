@@ -8,14 +8,25 @@ namespace CRM.Server.Services
 {
     /// <summary>
     /// Motore dei promemoria (Fase 3). Periodicamente cerca le attività con promemoria maturo
-    /// e notifica l'assegnatario via push (fallback email). Idempotente: marca ReminderSent
-    /// prima dell'invio per evitare doppioni. Non fa retry sui fallimenti di consegna.
+    /// e notifica l'assegnatario via push (fallback email).
+    /// Gestisce uno stato di consegna esplicito (Pending → Sent | Failed): in caso di errore il
+    /// promemoria resta in Failed e viene ritentato, con backoff, fino a <see cref="MaxRetries"/>
+    /// tentativi prima di essere considerato definitivamente non consegnato.
     /// </summary>
     public class ReminderBackgroundService : BackgroundService
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<ReminderBackgroundService> _logger;
         private static readonly TimeSpan Interval = TimeSpan.FromMinutes(1);
+
+        /// <summary>Numero massimo di tentativi di consegna prima di rinunciare.</summary>
+        private const int MaxRetries = 5;
+
+        /// <summary>Attesa minima tra due tentativi sullo stesso promemoria (backoff).</summary>
+        private static readonly TimeSpan RetryDelay = TimeSpan.FromMinutes(5);
+
+        /// <summary>Lunghezza massima del messaggio d'errore salvato per diagnostica.</summary>
+        private const int MaxErrorLength = 1000;
 
         public ReminderBackgroundService(IServiceScopeFactory scopeFactory, ILogger<ReminderBackgroundService> logger)
         {
@@ -52,11 +63,18 @@ namespace CRM.Server.Services
             var email = sp.GetRequiredService<IEmailSenderPlus>();
 
             var now = DateTime.Now;
+            var retryThreshold = now - RetryDelay;
 
+            // Candidati: promemoria maturi su attività ancora pianificate che sono
+            //   - mai tentati (Pending), oppure
+            //   - falliti ma con tentativi residui e passato il backoff.
             var due = await db.Activities
-                .Where(a => !a.ReminderSent
-                         && a.ReminderAt != null && a.ReminderAt <= now
-                         && a.State == ActivityState.Planned)
+                .Where(a => a.ReminderAt != null && a.ReminderAt <= now
+                         && a.State == ActivityState.Planned
+                         && (a.ReminderStatus == ReminderStatus.Pending
+                             || (a.ReminderStatus == ReminderStatus.Failed
+                                 && a.ReminderRetryCount < MaxRetries
+                                 && (a.ReminderLastAttemptAt == null || a.ReminderLastAttemptAt <= retryThreshold))))
                 .OrderBy(a => a.ReminderAt)
                 .Take(50)
                 .ToListAsync(ct);
@@ -66,14 +84,22 @@ namespace CRM.Server.Services
 
             foreach (var activity in due)
             {
-                // 1) Marca subito (idempotenza): evita doppio invio se un tick si sovrappone.
-                activity.ReminderSent = true;
-                await db.SaveChangesAsync(ct);
+                // Registra il tentativo prima dell'invio: se il processo cade a metà,
+                // il conteggio e l'istante restano coerenti e il backoff evita retry a raffica.
+                activity.ReminderRetryCount++;
+                activity.ReminderLastAttemptAt = DateTime.Now;
 
-                // 2) Notifica l'assegnatario (o il creatore se non assegnata).
+                // Destinatario: assegnatario, altrimenti creatore.
                 var userId = string.IsNullOrWhiteSpace(activity.IdAssignee) ? activity.IdUser : activity.IdAssignee;
                 if (string.IsNullOrWhiteSpace(userId))
+                {
+                    // Nessun destinatario: fallimento permanente, non ha senso ritentare.
+                    activity.ReminderStatus = ReminderStatus.Failed;
+                    activity.ReminderRetryCount = MaxRetries;
+                    activity.ReminderLastError = "Nessun destinatario per il promemoria.";
+                    await db.SaveChangesAsync(ct);
                     continue;
+                }
 
                 var title = "Promemoria attività";
                 var body = activity.DueDate != null
@@ -84,7 +110,7 @@ namespace CRM.Server.Services
                 {
                     var sent = await push.SendToUserAsync(userId, new { title, body, url = "/Agenda" });
 
-                    // 3) Fallback email se la push non ha raggiunto nessuna subscription.
+                    // Fallback email se la push non ha raggiunto nessuna subscription.
                     if (sent <= 0)
                     {
                         var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
@@ -94,14 +120,31 @@ namespace CRM.Server.Services
                                 null, title, body, null);
                         }
                     }
+
+                    // Consegna riuscita.
+                    activity.ReminderStatus = ReminderStatus.Sent;
+                    activity.ReminderLastError = null;
                 }
                 catch (Exception ex)
                 {
-                    // Consegna fallita: il promemoria resta marcato come inviato (niente retry infinito), si logga.
+                    // Consegna fallita: resta in Failed e verrà ritentato al prossimo giro
+                    // (rispettando il backoff) finché non si esauriscono i tentativi.
+                    activity.ReminderStatus = ReminderStatus.Failed;
+                    activity.ReminderLastError = Truncate(ex.Message, MaxErrorLength);
+
                     var log = sp.GetRequiredService<ILogEventService>();
                     await log.RegisterAsync(nameof(ReminderBackgroundService), nameof(ProcessDueRemindersAsync), EventsTypes.Error, ex);
                 }
+
+                await db.SaveChangesAsync(ct);
             }
+        }
+
+        private static string Truncate(string? value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+            return value.Length <= maxLength ? value : value.Substring(0, maxLength);
         }
     }
 }

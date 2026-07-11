@@ -3,6 +3,8 @@
 @using CRM.Client.Services
 
 <div class="catalog-detail-page">
+    <PageHeader Model="_pageHeader" />
+
     @if (_loading)
     {
         <Waiting></Waiting>
@@ -19,11 +21,6 @@
     else
     {
         <section class="catalog-detail">
-            <button class="catalog-back" type="button" @onclick="BackToCatalog">
-                <span class="material-icons">arrow_back</span>
-                <span>Torna al catalogo</span>
-            </button>
-
             <div class="catalog-detail-hero">
                 <div class="catalog-detail-cover">
                     <CatalogCover CoverAssetId="@_detail.Product.CoverAssetId"
@@ -33,9 +30,6 @@
                 </div>
 
                 <div class="catalog-detail-info">
-                    <div class="catalog-detail-type">@_detail.Product.ProductTypeName</div>
-                    <h1>@_detail.Product.Name</h1>
-
                     @if (!string.IsNullOrWhiteSpace(_detail.Product.Description))
                     {
                         <p>@_detail.Product.Description</p>

@@ -1,0 +1,300 @@
+@using CRM.Client.Pages.Tickets
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@inject ITicketsService TicketsService
+@inject DialogService DialogService
+@inject NotificationService Notification
+@inject NavigationManager Navigation
+
+@if (_loading)
+{
+    <Waiting />
+}
+else if (_ticket == null)
+{
+    <div class="quick-action-error">Impossibile caricare il ticket.</div>
+}
+else
+{
+    <div class="ticket-quick-actions">
+        <div class="ticket-quick-summary">
+            <strong>@Item.Title</strong>
+            <span>@Item.Subtitle</span>
+            <small>@CurrentSchedule</small>
+        </div>
+
+        @if (!CanEditTicket)
+        {
+            <div class="ticket-read-only">
+                <span class="material-icons">visibility</span>
+                Ticket disponibile in sola lettura
+            </div>
+        }
+
+        @if (!_showMove)
+        {
+            <div class="ticket-action-list">
+                <button type="button" class="ticket-action" @onclick="OpenTicket">
+                    <span class="material-icons">open_in_new</span>
+                    <span><strong>Apri ticket</strong><small>Visualizza dettagli e interventi</small></span>
+                    <span class="material-icons ticket-action-arrow">chevron_right</span>
+                </button>
+                <button type="button" class="ticket-action" disabled="@(!CanEditTicket)" @onclick="Assign">
+                    <span class="material-icons">person_add</span>
+                    <span><strong>Assegna</strong><small>Gestisci gli utenti responsabili</small></span>
+                    <span class="material-icons ticket-action-arrow">chevron_right</span>
+                </button>
+                <button type="button" class="ticket-action" disabled="@(!CanEditTicket)" @onclick="ShowMove">
+                    <span class="material-icons">edit_calendar</span>
+                    <span><strong>Sposta</strong><small>Modifica data e orario pianificati</small></span>
+                    <span class="material-icons ticket-action-arrow">chevron_right</span>
+                </button>
+                <button type="button" class="ticket-action" disabled="@(_saving || !CanEditTicket || Item.IsCompleted || !HasAssignedUser)" @onclick="StartProcessing">
+                    <span class="material-icons">play_circle</span>
+                    <span>
+                        <strong>Segna in lavorazione</strong>
+                        <small>@ProcessingAvailabilityText</small>
+                    </span>
+                    <span class="material-icons ticket-action-arrow">chevron_right</span>
+                </button>
+                <button type="button" class="ticket-action" @onclick="CreateFollowUp">
+                    <span class="material-icons">add_task</span>
+                    <span><strong>Crea attivita follow-up</strong><small>Collega una nuova attivita a questo ticket</small></span>
+                    <span class="material-icons ticket-action-arrow">chevron_right</span>
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="ticket-move-form">
+                <div class="ticket-move-heading">
+                    <button type="button" class="icon-button" title="Indietro" @onclick="HideMove">
+                        <span class="material-icons">arrow_back</span>
+                    </button>
+                    <div>
+                        <strong>Nuova pianificazione</strong>
+                        <small>Controlla data e intervallo prima di salvare</small>
+                    </div>
+                </div>
+                <label>Inizio</label>
+                <RadzenDatePicker TValue="DateTime" @bind-Value="_start" ShowTime="true"
+                                  DateFormat="dd/MM/yyyy HH:mm" HoursStep="1" MinutesStep="15" Style="width:100%" />
+                <label>Fine</label>
+                <RadzenDatePicker TValue="DateTime" @bind-Value="_end" ShowTime="true"
+                                  DateFormat="dd/MM/yyyy HH:mm" HoursStep="1" MinutesStep="15" Style="width:100%" />
+                <div class="ticket-move-actions">
+                    <RadzenButton Text="Annulla" Icon="close" ButtonStyle="ButtonStyle.Light"
+                                  Disabled="@_saving" Click="@HideMove" />
+                    <RadzenButton Text="Salva pianificazione" Icon="event_available" ButtonStyle="ButtonStyle.Primary"
+                                  Disabled="@_saving" Click="@SaveMove" />
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<style>
+    .ticket-quick-actions { padding: .1rem; }
+    .ticket-quick-summary {
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        gap: .2rem;
+        padding: 0 .25rem 1rem;
+    }
+    .ticket-quick-summary strong { color: #111827; font-size: 1rem; }
+    .ticket-quick-summary span, .ticket-quick-summary small { color: #6b7280; }
+    .ticket-action-list { display: grid; padding-top: .5rem; }
+    .ticket-read-only {
+        align-items: center;
+        background: #f8fafc;
+        color: #475569;
+        display: flex;
+        font-size: .8rem;
+        gap: .4rem;
+        margin-top: .75rem;
+        padding: .65rem .75rem;
+    }
+    .ticket-read-only .material-icons { font-size: 1rem; }
+    .ticket-action {
+        align-items: center;
+        background: transparent;
+        border: 0;
+        border-bottom: 1px solid #f1f5f9;
+        color: #374151;
+        display: grid;
+        gap: .8rem;
+        grid-template-columns: 28px minmax(0, 1fr) 24px;
+        padding: .85rem .5rem;
+        text-align: left;
+        width: 100%;
+    }
+    .ticket-action:hover { background: #f8fafc; }
+    .ticket-action:disabled { cursor: wait; opacity: .55; }
+    .ticket-action > .material-icons:first-child { color: #2563eb; font-size: 1.3rem; }
+    .ticket-action span:nth-child(2) { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+    .ticket-action strong { color: #111827; font-size: .9rem; }
+    .ticket-action small { color: #6b7280; font-size: .78rem; }
+    .ticket-action-arrow { color: #9ca3af; font-size: 1.15rem; }
+    .ticket-move-form { display: grid; gap: .75rem; padding-top: 1rem; }
+    .ticket-move-form label { color: #4b5563; font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+    .ticket-move-heading { align-items: center; display: flex; gap: .75rem; }
+    .ticket-move-heading > div { display: flex; flex-direction: column; }
+    .ticket-move-heading small { color: #6b7280; }
+    .icon-button { align-items: center; background: transparent; border: 0; display: inline-flex; padding: .35rem; }
+    .ticket-move-actions { display: flex; gap: .5rem; justify-content: flex-end; margin-top: .5rem; }
+    .quick-action-error { color: #b91c1c; padding: 1rem; }
+</style>
+
+@code {
+    [Parameter, EditorRequired] public CalendarItemDTO Item { get; set; } = default!;
+
+    private TicketDTO? _ticket;
+    private bool _loading = true;
+    private bool _showMove;
+    private bool _saving;
+    private DateTime _start;
+    private DateTime _end;
+
+    private bool CanEditTicket => Item.Permits.Edit();
+
+    private bool HasAssignedUser => !string.IsNullOrWhiteSpace(Item.AssigneeName);
+
+    private string ProcessingAvailabilityText => Item.IsCompleted
+        ? "Non disponibile per un ticket chiuso"
+        : !HasAssignedUser
+            ? "Assegna prima almeno un utente"
+            : "Comunica che il ticket e stato preso in carico";
+
+    private string CurrentSchedule => Item.Start.TimeOfDay == TimeSpan.Zero
+        ? Item.Start.ToString("dd/MM/yyyy")
+        : $"{Item.Start:dd/MM/yyyy HH:mm} - {Item.End:dd/MM/yyyy HH:mm}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _ticket = await TicketsService.GetDetails(Item.SourceId);
+        _start = Item.Start;
+        _end = Item.End > Item.Start ? Item.End : Item.Start.AddHours(1);
+        _loading = false;
+    }
+
+    private void OpenTicket()
+    {
+        DialogService.Close(false);
+        Navigation.NavigateTo($"/Tickets/{Item.SourceId}/Details");
+    }
+
+    private async Task Assign()
+    {
+        if (_ticket == null)
+            return;
+
+        var result = await DialogService.OpenAsync<Assign>(
+            "Assegna utenti",
+            new Dictionary<string, object>
+            {
+                ["Id"] = Item.SourceId,
+                ["Date"] = _ticket.Date,
+                ["TicketTypeId"] = _ticket.IdType
+            },
+            new DialogOptions
+            {
+                Width = "900px",
+                Height = "650px",
+                Resizable = true,
+                Draggable = true,
+                CloseDialogOnEsc = true
+            });
+
+        if (result is HashSet<string>)
+            DialogService.Close(true);
+    }
+
+    private void ShowMove() => _showMove = true;
+    private void HideMove() => _showMove = false;
+
+    private async Task SaveMove()
+    {
+        if (_end < _start)
+        {
+            Notification.Notify(NotificationSeverity.Warning, "Pianificazione", "La fine non puo precedere l'inizio");
+            return;
+        }
+
+        var confirmed = await DialogService.Confirm(
+            $"Spostare il ticket da {CurrentSchedule} a {_start:dd/MM/yyyy HH:mm} - {_end:dd/MM/yyyy HH:mm}?",
+            "Conferma pianificazione",
+            new ConfirmOptions { OkButtonText = "Sposta ticket", CancelButtonText = "Annulla" });
+
+        if (confirmed != true)
+            return;
+
+        _saving = true;
+        var saved = await TicketsService.UpdateScheduleAsync(
+            Item.SourceId,
+            new TicketScheduleUpdateRequest
+            {
+                Date = _start.Date,
+                Time = TimeOnly.FromDateTime(_start),
+                DateEnd = _end
+            });
+        _saving = false;
+
+        if (saved)
+        {
+            Notification.Notify(NotificationSeverity.Success, "Pianificazione", "Ticket spostato");
+            DialogService.Close(true);
+        }
+        else
+        {
+            Notification.Notify(NotificationSeverity.Error, "Pianificazione", "Impossibile spostare il ticket");
+        }
+    }
+
+    private async Task StartProcessing()
+    {
+        var confirmed = await DialogService.Confirm(
+            $"Segnare {Item.Title} come In lavorazione?",
+            "Conferma presa in carico",
+            new ConfirmOptions { OkButtonText = "Inizia lavorazione", CancelButtonText = "Annulla" });
+
+        if (confirmed != true)
+            return;
+
+        _saving = true;
+        var saved = await TicketsService.StartProcessingAsync(Item.SourceId);
+        _saving = false;
+
+        if (saved)
+        {
+            Notification.Notify(NotificationSeverity.Success, "Ticket", "Ticket segnato come In lavorazione");
+            DialogService.Close(true);
+        }
+        else
+        {
+            Notification.Notify(NotificationSeverity.Error, "Ticket", "Impossibile aggiornare lo stato del ticket");
+        }
+    }
+
+    private async Task CreateFollowUp()
+    {
+        var saved = await DialogService.OpenAsync<ActivityAgendaDialog>(
+            "Nuova attivita follow-up",
+            new Dictionary<string, object?>
+            {
+                ["DefaultDueDate"] = DateTime.Now.AddDays(1),
+                ["DefaultAssigneeId"] = Item.IdAssignee,
+                ["DefaultEntityType"] = ActivityEntityType.Ticket,
+                ["DefaultEntityId"] = Item.SourceId,
+                ["DefaultSubject"] = $"Follow-up {Item.Title}"
+            },
+            new DialogOptions { Width = "920px", Height = "auto", Resizable = true, Draggable = true });
+
+        if (saved == true)
+            DialogService.Close(true);
+    }
+}

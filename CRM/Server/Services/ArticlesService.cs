@@ -42,6 +42,9 @@ namespace CRM.Server.Services
         public async Task<ArticleDTO?> GetItemAsync(int id)
         {
             var item = await _context.Articles
+                .Include(x => x.Company)
+                .Include(x => x.RecipientCompany)
+                .Include(x => x.Product)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
             return item.ToDTO() != null ? item.ToDTO() : null;
@@ -168,6 +171,14 @@ namespace CRM.Server.Services
 
                 if (item.Id > 0)
                 {
+                    var existing = await _context.Articles.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.Id);
+                    if (existing != null)
+                    {
+                        item.IsArchived = existing.IsArchived;
+                        item.ArchivedAt = existing.ArchivedAt;
+                        item.ArchivedReason = existing.ArchivedReason;
+                    }
+
                     _context.Articles.Update(item);
                 }
                 else
@@ -206,8 +217,17 @@ namespace CRM.Server.Services
             }
             try
             {
+                if (await HasArticleReferencesAsync(id))
+                {
+                    item.IsArchived = true;
+                    item.ArchivedAt = DateTime.UtcNow;
+                    item.ArchivedReason = "Archiviato automaticamente perche' l'articolo ha relazioni storiche.";
+                }
+                else
+                {
+                    _context.Articles.Remove(item);
+                }
 
-                _context.Articles.Remove(item);
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -216,6 +236,20 @@ namespace CRM.Server.Services
                 await _logEventService.RegisterAsync(nameof(ArticlesService), nameof(DeleteAsync), EventsTypes.Error, ex);
                 return false;
             }
+        }
+
+        private async Task<bool> HasArticleReferencesAsync(int id)
+        {
+            return await _context.Tickets.AsNoTracking().AnyAsync(x => x.IdArticle == id)
+                || await _context.TicketInterventionArticles.AsNoTracking().AnyAsync(x => x.IdArticle == id)
+                || await _context.MachineBackups.AsNoTracking().AnyAsync(x => x.IdArticle == id)
+                || await _context.Attachments.AsNoTracking().AnyAsync(x => x.AttchmentType == AttachmentTypes.Article && x.IdParent == id)
+                || await _context.QuoteRows.AsNoTracking().AnyAsync(x => x.IdArticle == id)
+                || await _context.OrderRows.AsNoTracking().AnyAsync(x => x.IdArticle == id)
+                || await _context.ArticleAccessory.AsNoTracking().AnyAsync(x => x.IdArticle == id)
+                || await _context.ArticleDomainStates.AsNoTracking().AnyAsync(x => x.ArticleId == id)
+                || await _context.ArticleEvents.AsNoTracking().AnyAsync(x => x.ArticleId == id)
+                || await _context.ArticleLicenses.AsNoTracking().AnyAsync(x => x.IdArticle == id);
         }
 
         // Aggiungi questi metodi al controller Articles esistente
@@ -258,14 +292,14 @@ namespace CRM.Server.Services
             var domain = await _context.ArticleDomains.FindAsync(domainId);
             if (domain == null) return null;
 
-            // Verifica se già esiste uno stato per questo dominio
+            // Verifica se giÃ  esiste uno stato per questo dominio
             var existingState = await _context.ArticleDomainStates
                 .FirstOrDefaultAsync(ads => ads.ArticleId == id && ads.DomainId == domainId);
 
             if (existingState != null)
                 return null;
 
-            // Trova lo stato iniziale per questo dominio (quello con SortOrder più basso)
+            // Trova lo stato iniziale per questo dominio (quello con SortOrder piÃ¹ basso)
             var initialState = await _context.ArticleStates
                 .Where(s => s.DomainId == domainId && s.IsActive)
                 .OrderBy(s => s.SortOrder)
@@ -295,7 +329,12 @@ namespace CRM.Server.Services
         {
             try
             {
-                var articles = _context.Articles.Include(x => x.Company).Include(x => x.Product).AsQueryable();
+                var articles = _context.Articles.Include(x => x.Company).Include(x => x.RecipientCompany).Include(x => x.Product).AsQueryable();
+
+                if (args?.IncludeArchived != true)
+                {
+                    articles = articles.Where(x => !x.IsArchived);
+                }
 
                 var resp = await _permitsService.GetIdCompanies();
 

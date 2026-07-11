@@ -24,6 +24,9 @@ namespace CRM.Shared
 
         public int ChatMessageToRead { get; set; }
 
+        /// <summary>Email in ingresso non ancora prese in carico da un operatore.</summary>
+        public int InboundEmailsToHandle { get; set; }
+
         public int InterventionsPendingSignature { get; set; }
 
         /// <summary>

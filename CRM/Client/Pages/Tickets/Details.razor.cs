@@ -46,6 +46,9 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         ITicketFeedbackService FeedbackService { get; set; }
 
+        [Inject]
+        NotificationService NotificationService { get; set; }
+
         [Parameter]
         public int? Id { get; set; }
 
@@ -83,12 +86,36 @@ namespace CRM.Client.Pages.Tickets
         private PageHeaderModel? _pageHeader = null;
         private TicketFeedbackResponse _feedback = null;
         private bool _isLoadingFeedback = false;
+        private string _summaryDraft = string.Empty;
+        private string? _summaryMessage = null;
+        private bool _summaryMessageIsError = false;
+        private bool _isProposingSummary = false;
+        private bool _isSavingSummary = false;
+        private bool _isEditingSummary = false;
+
+        /// <summary>Email in arrivo da cui è nato (o a cui è agganciato) il ticket, se presente.</summary>
+        private int? _idInboundEmail;
 
         protected override async Task OnInitializedAsync()
         {
             await LoadData();
+            await LoadInboundEmail();
             _pageHeader = await HeaderService.Create(PageMode);
             StateHasChanged();
+        }
+
+        private async Task LoadInboundEmail()
+        {
+            if (Id == null) return;
+            try
+            {
+                var email = await HttpClient.GetFromJsonAsync<CRM.Shared.InboundEmail>($"api/InboundEmails/by-ticket/{Id}");
+                _idInboundEmail = email?.Id;
+            }
+            catch
+            {
+                _idInboundEmail = null;
+            }
         }
 
         private async Task LoadData()
@@ -98,6 +125,7 @@ namespace CRM.Client.Pages.Tickets
                 if (Id != null)
                 {
                     _ticket = await _service.GetDetails(Id.Value);
+                    _summaryDraft = _ticket?.OperationalSummary ?? string.Empty;
                     await LoadAssignedUsers();
                     if (_ticket.Closed)
                     {
@@ -105,7 +133,10 @@ namespace CRM.Client.Pages.Tickets
                     }
                 }
                 else
+                {
                     _ticket = new TicketDTO();
+                    _summaryDraft = string.Empty;
+                }
             }
             catch (Exception ex)
             {
@@ -195,6 +226,95 @@ namespace CRM.Client.Pages.Tickets
                 _isLoadingUsers = false;
                 await InvokeAsync(StateHasChanged);
             }
+        }
+
+        private async Task ProposeSummary()
+        {
+            if (Id == null)
+                return;
+
+            try
+            {
+                _isProposingSummary = true;
+                _summaryMessage = null;
+                _summaryMessageIsError = false;
+
+                var proposal = await _service.ProposeSummary(Id.Value, new TicketSummaryProposalRequest());
+                _summaryDraft = proposal.Summary ?? string.Empty;
+                _isEditingSummary = true;
+                _summaryMessage = proposal.Warning
+                    ?? $"Bozza generata da {(proposal.GeneratedByAi ? "AI" : "chat")} su {proposal.SourceMessageCount} messaggi.";
+            }
+            catch (Exception ex)
+            {
+                _summaryMessage = $"Errore durante la proposta del riepilogo: {ex.Message}";
+                _summaryMessageIsError = true;
+                NotificationService?.Notify(NotificationSeverity.Error, "Riepilogo operativo", _summaryMessage);
+            }
+            finally
+            {
+                _isProposingSummary = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        private async Task SaveSummary()
+        {
+            if (Id == null)
+                return;
+
+            try
+            {
+                _isSavingSummary = true;
+                _summaryMessage = null;
+                _summaryMessageIsError = false;
+
+                var updatedTicket = await _service.UpdateSummary(Id.Value, new UpdateTicketSummaryRequest
+                {
+                    Summary = _summaryDraft ?? string.Empty
+                });
+
+                if (updatedTicket == null)
+                {
+                    _summaryMessage = "Riepilogo non salvato.";
+                    _summaryMessageIsError = true;
+                    NotificationService?.Notify(NotificationSeverity.Error, "Riepilogo operativo", _summaryMessage);
+                    return;
+                }
+
+                _ticket = updatedTicket;
+                _summaryDraft = _ticket.OperationalSummary ?? string.Empty;
+                _isEditingSummary = false;
+                _summaryMessage = "Riepilogo salvato.";
+                NotificationService?.Notify(NotificationSeverity.Success, "Riepilogo operativo", _summaryMessage);
+            }
+            catch (Exception ex)
+            {
+                _summaryMessage = $"Errore durante il salvataggio del riepilogo: {ex.Message}";
+                _summaryMessageIsError = true;
+                NotificationService?.Notify(NotificationSeverity.Error, "Riepilogo operativo", _summaryMessage);
+            }
+            finally
+            {
+                _isSavingSummary = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        private void EditSummary()
+        {
+            _summaryDraft = _ticket?.OperationalSummary ?? string.Empty;
+            _summaryMessage = null;
+            _summaryMessageIsError = false;
+            _isEditingSummary = true;
+        }
+
+        private void CancelSummaryEdit()
+        {
+            _summaryDraft = _ticket?.OperationalSummary ?? string.Empty;
+            _summaryMessage = null;
+            _summaryMessageIsError = false;
+            _isEditingSummary = false;
         }
 
         /// <summary>

@@ -40,12 +40,12 @@ namespace CRM.Server.Controllers
 
             ApplicationUser user;
 
-            user = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
+            user = await _userManager.Users.Include(x => x.Contact).FirstOrDefaultAsync(x => x.UserName == HttpContext.User.Identity.Name);
        
             user.Roles = (await _userManager.GetRolesAsync(user)).ToList();
 
             user.Company = await _context.Companies.FindAsync(user.IdCompany);
-            user.AvatarTxt = AvatarsHelper.AvatarTxt(user.Surname, user.Name);
+            user.AvatarTxt = AvatarsHelper.AvatarTxt(user.Contact?.Surname, user.Contact?.Name);
 
             user.CanManageOtherCompany = await _permitsService.CanAccessOtherCompany();
 
@@ -113,7 +113,7 @@ namespace CRM.Server.Controllers
         {
             UserModel model = new UserModel();
 
-            var user = await _userManager.FindByNameAsync(HttpContext.User.Identity.Name);
+            var user = await _userManager.Users.Include(x => x.Contact).FirstOrDefaultAsync(x => x.UserName == HttpContext.User.Identity.Name);
 
             if (user != null)
             {
@@ -123,9 +123,9 @@ namespace CRM.Server.Controllers
                 model.Email = user.Email;
                 model.IdCompany = user.IdCompany;
                 model.LanguageCode = user.LanguageCode;
-                model.Name = user.Name;
+                model.Name = user.Contact?.Name ?? string.Empty;
                 model.PhoneNumber = user.PhoneNumber;                
-                model.Surname = user.Surname;
+                model.Surname = user.Contact?.Surname ?? string.Empty;
                 model.Photo = await GetAvatar(user.Id);
                 model.AdminConfirmed = user.AdminConfirmed;
                 model.Enabled = user.Enabled;

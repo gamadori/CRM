@@ -22,6 +22,15 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         IJSRuntime JS { get; set; }
 
+        /// <summary>Ticket di contesto (dalla route /Tickets/Assistant/{IdTicket}): il suo modello guida la conoscenza.</summary>
+        [Parameter]
+        public int? IdTicket { get; set; }
+
+        /// <summary>Modello/prodotto di contesto (query string ?IdProduct=): forza la conoscenza di quel prodotto.</summary>
+        [Parameter]
+        [SupplyParameterFromQuery]
+        public int? IdProduct { get; set; }
+
         private const string ScrollAreaId = "assistant-messages";
 
         private readonly List<ChatTurn> _turns = new();
@@ -57,7 +66,10 @@ namespace CRM.Client.Pages.Tickets
             {
                 Messages = _turns
                     .Select(t => new AssistantChatMessage { Role = t.Role, Content = t.Content })
-                    .ToList()
+                    .ToList(),
+                // Contesto opzionale: se la chat parte da un ticket/prodotto, dà priorità alla sua conoscenza
+                IdTicket = IdTicket,
+                IdProduct = IdProduct
             };
 
             _turns.Add(assistantTurn);

@@ -39,6 +39,9 @@ namespace CRM.Server.Services
         public async Task<TicketFeedbackResponse?> GetItemAsync(int id)
         {
             var item = await _context.TicketFeedbacks
+                .Include(x => x.User)
+                .Include(x => x.Ticket)
+                    .ThenInclude(x => x.Company)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
             return item != null ? new TicketFeedbackResponse
@@ -50,13 +53,16 @@ namespace CRM.Server.Services
                 Rating = item.Rating,
                 Comment = item.Comment,
                 CreatedAt = item.CreatedAt,
-                UserName = (await _userManager.FindByIdAsync(item.IdUser))?.NameComplete ?? "N/A"
+                UserName = item.User?.NameComplete ?? "N/A"
             } : null;
         }
 
         public async Task<TicketFeedbackResponse?> GetFirstAsync()
         {
             var item = await _context.TicketFeedbacks
+                .Include(x => x.User)
+                .Include(x => x.Ticket)
+                    .ThenInclude(x => x.Company)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
             return item != null ? new TicketFeedbackResponse()
@@ -68,7 +74,7 @@ namespace CRM.Server.Services
                 Rating = item.Rating,
                 Comment = item.Comment,
                 CreatedAt = item.CreatedAt,
-                UserName = (await _userManager.FindByIdAsync(item.IdUser))?.NameComplete ?? "N/A"
+                UserName = item.User?.NameComplete ?? "N/A"
             } : null;
         }
 
@@ -510,7 +516,7 @@ namespace CRM.Server.Services
 
             if (await userFeedbacks.AnyAsync())
             {
-                var user = await _userManager.FindByIdAsync(userId);
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
                 feedback.Users.Add(new AverageFeedbackItemDTO<string>
                 {
                     Id = userId,        
@@ -527,7 +533,11 @@ namespace CRM.Server.Services
         {
             try
             {
-                var items = _context.TicketFeedbacks.AsQueryable();
+                var items = _context.TicketFeedbacks
+                    .Include(x => x.User)
+                    .Include(x => x.Ticket)
+                        .ThenInclude(x => x.Company)
+                    .AsQueryable();
                 if (args?.OrderBy != null && args.OrderBy.Length > 0)
                 {
                     items = items.OrderBy(args.OrderBy);

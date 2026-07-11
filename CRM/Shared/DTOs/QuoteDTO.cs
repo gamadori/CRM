@@ -56,6 +56,10 @@ namespace CRM.Shared.DTOs
 
         public string UserName { get; set; } = string.Empty;
 
+        public int? IdOrder { get; set; }
+
+        public string OrderNumber { get; set; } = string.Empty;
+
         public int Permits { get; set; }
 
         public List<QuoteRowDTO> Rows { get; set; } = new();

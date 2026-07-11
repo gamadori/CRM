@@ -5,7 +5,7 @@
 @using CRM.Client.Services
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.Extensions.Localization
-@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AdminRole")]
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize
@@ -70,12 +70,16 @@
                     <div class="card-body">
                         <ul class="list-group list-group-flush mb-3">
                             <li class="list-group-item d-flex justify-content-between">
-                                <span>@Localize["Product Types created"]</span>
-                                <span class="badge bg-primary rounded-pill">@_result.ProductTypesCreated</span>
+                                <span>@Localize["Sheets processed"]</span>
+                                <span class="badge bg-primary rounded-pill">@_result.SheetsProcessed</span>
                             </li>
                             <li class="list-group-item d-flex justify-content-between">
-                                <span>@Localize["Products created"]</span>
-                                <span class="badge bg-info rounded-pill">@_result.ProductsCreated</span>
+                                <span>@Localize["Rows processed"]</span>
+                                <span class="badge bg-secondary rounded-pill">@_result.RowsProcessed</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>@Localize["Companies created"]</span>
+                                <span class="badge bg-info rounded-pill">@_result.CompaniesCreated</span>
                             </li>
                             <li class="list-group-item d-flex justify-content-between">
                                 <span>@Localize["Articles imported"]</span>

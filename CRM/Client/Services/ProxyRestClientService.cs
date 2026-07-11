@@ -310,7 +310,17 @@ namespace CRM.Client.Services
         /// <param name="data">The object containing properties to be converted into query string parameters. Cannot be null.</param>
         /// <returns>A query string representing the object's properties and their values. The query string is empty if the
         /// object has no properties.</returns>
-        private string CreateQueryString(F? data)
+        protected string CreateQueryString(F? data)
+        {
+            return CreateQueryStringFromObject(data);
+        }
+
+        protected string CreateQueryString<TFilter>(TFilter? data)
+        {
+            return CreateQueryStringFromObject(data);
+        }
+
+        private string CreateQueryStringFromObject<TFilter>(TFilter? data)
         {
             if (data == null)
                 return string.Empty;    

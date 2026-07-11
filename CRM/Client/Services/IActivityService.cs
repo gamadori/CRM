@@ -8,6 +8,7 @@ namespace CRM.Client.Services
 {
     public interface IActivityService
     {
+        Task<ActivityDTO?> GetAsync(int id);
         Task<List<ActivityDTO>> GetByEntityAsync(ActivityEntityType entityType, int entityId);
         Task<List<ActivityDTO>> GetMyAgendaAsync(ActivityFilter? filter = null);
         Task<APIResponseMessage<ActivityDTO>> PostAsync(Activity item);

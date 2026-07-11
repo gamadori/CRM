@@ -1,69 +1,68 @@
-﻿using CRM.Client.Models;
+using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 
-
-
 namespace CRM.Client.Pages.Settings.Smtps
 {
-    public partial class Edit: ComponentBase
+    public partial class Edit : ComponentBase
     {
         [Inject]
         ISmtpSettingsService SmtpSettingsService { get; set; } = default!;
-        
-       
-        
+
         [Inject]
         NavigationManager NavigationManager { get; set; } = default!;
-        
+
         [Inject]
         HttpClient Http { get; set; } = default!;
-        
+
         [Inject]
         IHeaderService HeaderService { get; set; } = default!;
 
-        private SmtpSetting? _item = null;
+        [Parameter]
+        public int? Id { get; set; }
+
+        private SmtpSetting? _item;
         private bool _isLoading = true;
-        private string? _smtpTestResult = null;
-        private bool _smtpTestInProgress = false;
+        private string? _testResult;
+        private bool _testOk;
+        private bool _testInProgress;
 
-        private PageHeaderModel? _pageHeader = null;
+        private readonly List<EmailProvider> _providers = Enum.GetValues<EmailProvider>().ToList();
 
-        protected override async Task OnInitializedAsync()
+        private PageHeaderModel? _pageHeader;
+
+        protected override async Task OnParametersSetAsync()
         {
             _isLoading = true;
             StateHasChanged();
-            _item = await SmtpSettingsService.GetFirstAsync() ?? new SmtpSetting();
+
+            _item = Id != null
+                ? await SmtpSettingsService.GetItemAsync(Id.Value) ?? new SmtpSetting()
+                : new SmtpSetting();
+
             _pageHeader = await HeaderService.Create();
 
             _isLoading = false;
             StateHasChanged();
-
-        }
-        private async Task SaveAsync()
-        {
-            if (_item != null)
-            {
-                var resp = await SmtpSettingsService.PostAsync(_item);
-            }
         }
 
         protected async Task HandleValidSubmit()
         {
-            bool resp;
-
             try
             {
                 _isLoading = true;
                 StateHasChanged();
 
-               await SaveAsync();
-                resp = true;
+                if (_item != null)
+                    await SmtpSettingsService.PostAsync(_item);
             }
             catch (AccessTokenNotAvailableException exception)
             {
@@ -72,47 +71,41 @@ namespace CRM.Client.Pages.Settings.Smtps
             finally
             {
                 _isLoading = false;
-                NavigationManager.NavigateTo("/Settings");
+                NavigationManager.NavigateTo("/Settings/Smtps");
             }
         }
 
         protected void Annulla()
         {
-            NavigationManager.NavigateTo("/Settings");
+            NavigationManager.NavigateTo("/Settings/Smtps");
         }
 
-        protected async Task TestSmtpAsync()
+        protected async Task TestAsync()
         {
             if (_item == null) return;
-            _smtpTestResult = null;
-            _smtpTestInProgress = true;
+            _testResult = null;
+            _testInProgress = true;
             StateHasChanged();
             try
             {
                 var response = await Http.PostAsJsonAsync("api/SmtpSettings/Test", _item);
-                if (response.IsSuccessStatusCode)
-                {
-                    var result = await response.Content.ReadFromJsonAsync<TestSmtpResult>();
-                    _smtpTestResult = result?.Message ?? "Test completato.";
-                }
-                else
-                {
-                    var result = await response.Content.ReadFromJsonAsync<TestSmtpResult>();
-                    _smtpTestResult = result?.Message ?? "Errore durante il test SMTP.";
-                }
+                var result = await response.Content.ReadFromJsonAsync<TestResult>();
+                _testOk = response.IsSuccessStatusCode && (result?.Success ?? false);
+                _testResult = result?.Message ?? (_testOk ? "Test completato." : "Errore durante il test.");
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                _smtpTestResult = $"Errore: {ex.Message}";
+                _testOk = false;
+                _testResult = $"Errore: {ex.Message}";
             }
             finally
             {
-                _smtpTestInProgress = false;
+                _testInProgress = false;
                 StateHasChanged();
             }
         }
 
-        public class TestSmtpResult
+        public class TestResult
         {
             public bool Success { get; set; }
             public string? Message { get; set; }

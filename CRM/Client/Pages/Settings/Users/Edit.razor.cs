@@ -14,6 +14,7 @@ using QLNet;
 using Radzen;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -76,6 +77,8 @@ namespace CRM.Client.Pages.Settings.Users
 
         private List<CompanyDTO> _companies = new List<CompanyDTO>();
 
+        private List<Language> _languages = new List<Language>();
+
         private string _message;
 
         private string _header = "User";
@@ -123,6 +126,7 @@ namespace CRM.Client.Pages.Settings.Users
                 //_pageHeader = HeaderService.Create("Users", Id, _user?.UserName, true, ConstHelper.ClientUsersPath, null, PageMode);
                 _pageHeader = await HeaderService.Create(PageMode);
                 await LoadCompanies(new LoadDataArgs());
+                await LoadLanguages();
 
                 
 
@@ -216,11 +220,23 @@ namespace CRM.Client.Pages.Settings.Users
             {
                 data.RagioneSociale = args.Filter;
             }
-            var resp = await RestClientService.GetListPag<CompanyFilter, CompanyDTO>(data, ConstHelper.CompaniesPath);
+            var items = await RestClientService.GetList<CompanyDTO, CompanyFilter>(data, ConstHelper.CompaniesPath);
 
-            _companies = resp?.Items;
+            _companies = items?
+                .OrderBy(x => x.RagioneSociale)
+                .ToList() ?? new List<CompanyDTO>();
 
             //StateHasChanged();
+        }
+
+        private async Task LoadLanguages()
+        {
+            _languages = await Http.GetFromJsonAsync<List<Language>>($"{ConstHelper.LanguagesPath}/list") ?? new List<Language>();
+
+            if (string.IsNullOrWhiteSpace(_user?.LanguageCode))
+            {
+                _user.LanguageCode = _languages.FirstOrDefault()?.LanguageCode ?? CultureInfo.CurrentCulture.Name;
+            }
         }
 
         private async Task PrepareSendInvite()

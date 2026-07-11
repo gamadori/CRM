@@ -49,6 +49,62 @@ else
                 <ChildContent><p class="mb-0 text-dark">@_email.Result</p></ChildContent>
             </RedGDetailField>
 
+            @{ var ui = CRM.Client.Helpers.EmailEngagementUi.Status(_email.EngagementStatus); }
+            <RedGDetailField Icon="insights" ContainerClass="mt-4">
+                <LabelContent>Engagement</LabelContent>
+                <ChildContent>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="badge @ui.Css">
+                            <span class="material-icons align-middle" style="font-size:14px">@ui.Icon</span> @ui.Label
+                        </span>
+                        @if (_email.DeliveredAt != null)
+                        {
+                            <span class="text-muted small">Consegnata @_email.DeliveredAt?.ToString("dd/MM/yyyy HH:mm")</span>
+                        }
+                        @if (_email.OpenCount > 0)
+                        {
+                            <span class="text-muted small">· @_email.OpenCount aperture (prima @_email.OpenedAt?.ToString("dd/MM HH:mm"))</span>
+                        }
+                        @if (_email.ClickCount > 0)
+                        {
+                            <span class="text-muted small">· @_email.ClickCount click (ultimo @_email.LastClickedAt?.ToString("dd/MM HH:mm"))</span>
+                        }
+                        @if (_email.BouncedAt != null)
+                        {
+                            <span class="text-danger small">· Bounce: @_email.BounceReason</span>
+                        }
+                    </div>
+                </ChildContent>
+            </RedGDetailField>
+
+            @if (_events.Any())
+            {
+                <div class="mt-4">
+                    <h6 class="text-muted mb-2"><span class="material-icons align-middle" style="font-size:16px">history</span> Storico eventi</h6>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var ev in _events)
+                        {
+                            var eui = CRM.Client.Helpers.EmailEngagementUi.Event(ev.Type);
+                            <li class="list-group-item px-0 d-flex align-items-center gap-2">
+                                <span class="badge @eui.Css">
+                                    <span class="material-icons align-middle" style="font-size:13px">@eui.Icon</span> @eui.Label
+                                </span>
+                                <span class="text-muted small">@ev.OccurredAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                <span class="badge bg-light text-dark">@ev.Provider</span>
+                                @if (!string.IsNullOrWhiteSpace(ev.Url))
+                                {
+                                    <a href="@ev.Url" target="_blank" class="small text-truncate" style="max-width:320px">@ev.Url</a>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(ev.Detail))
+                                {
+                                    <span class="text-muted small">— @ev.Detail</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+
         </div>
 
         <!-- Footer con azioni -->

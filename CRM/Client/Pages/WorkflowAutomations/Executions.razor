@@ -1,0 +1,195 @@
+@page "/WorkflowAutomations/Executions"
+@using CRM.Shared
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<div class="workflow-page">
+    <PageHeader Model="_pageHeader">
+        <Actions>
+            <div class="header-actions">
+                <a class="secondary-action" href="WorkflowAutomations">
+                    <span class="action-icon rules-icon" aria-hidden="true"></span>
+                    <span>Regole</span>
+                </a>
+                <button type="button" class="primary-action" @onclick="LoadExecutions" disabled="@_executionsLoading">
+                    <span class="action-icon refresh-icon" aria-hidden="true"></span>
+                    <span>@(_executionsLoading ? "Aggiorno..." : "Aggiorna")</span>
+                </button>
+            </div>
+        </Actions>
+    </PageHeader>
+
+    <section class="workflow-metrics" aria-label="Stato esecuzioni">
+        <div class="metric">
+            <span class="material-icons">bolt</span>
+            <div>
+                <strong>@TotalExecutions</strong>
+                <small>Esecuzioni totali</small>
+            </div>
+        </div>
+        <div class="metric">
+            <span class="material-icons">schedule</span>
+            <div>
+                <strong>@LastExecutionText</strong>
+                <small>Ultima esecuzione</small>
+            </div>
+        </div>
+        <div class="metric @(_failedExecutions > 0 ? "attention" : "")">
+            <span class="material-icons">@(_failedExecutions > 0 ? "error" : "check_circle")</span>
+            <div>
+                <strong>@_failedExecutions</strong>
+                <small>Errori nella pagina</small>
+            </div>
+        </div>
+        <div class="metric">
+            <span class="material-icons">filter_alt</span>
+            <div>
+                <strong>@_rules.Count</strong>
+                <small>Regole filtrabili</small>
+            </div>
+        </div>
+    </section>
+
+    <section class="execution-panel">
+        <div class="execution-filters">
+            <label class="field compact-field">
+                <span>Regola</span>
+                <InputSelect class="form-input" @bind-Value="_executionFilter.IdWorkflowAutomation" @bind-Value:after="LoadExecutions">
+                    <option value="">Tutte</option>
+                    @foreach (var rule in _rules)
+                    {
+                        <option value="@rule.Id">@rule.Name</option>
+                    }
+                </InputSelect>
+            </label>
+            <label class="field compact-field">
+                <span>Evento</span>
+                <InputSelect class="form-input" @bind-Value="_executionFilter.Trigger" @bind-Value:after="LoadExecutions">
+                    <option value="">Tutti</option>
+                    @foreach (var trigger in Enum.GetValues<WorkflowTrigger>())
+                    {
+                        <option value="@trigger">@TriggerText(trigger)</option>
+                    }
+                </InputSelect>
+            </label>
+            <label class="field compact-field">
+                <span>Esito</span>
+                <InputSelect class="form-input" @bind-Value="_executionStatus" @bind-Value:after="OnExecutionStatusChanged">
+                    <option value="">Tutti</option>
+                    <option value="ok">Completate</option>
+                    <option value="error">Con errori</option>
+                </InputSelect>
+            </label>
+        </div>
+
+        @if (_executionsLoading)
+        {
+            <Waiting></Waiting>
+        }
+        else if (!_executions.Any())
+        {
+            <div class="empty-executions">
+                <span class="material-icons">history_toggle_off</span>
+                <strong>Nessuna esecuzione registrata</strong>
+                <p>Il worker mostrera qui le attivita generate dalle automazioni.</p>
+            </div>
+        }
+        else
+        {
+            <div class="execution-table-wrap">
+                <table class="execution-table">
+                    <thead>
+                        <tr>
+                            <th>Quando</th>
+                            <th>Regola</th>
+                            <th>Entita</th>
+                            <th>Attivita</th>
+                            <th>Esito</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var execution in _executions)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@execution.ExecutedAt.ToString("dd/MM/yyyy")</strong>
+                                    <small>@execution.ExecutedAt.ToString("HH:mm")</small>
+                                </td>
+                                <td>
+                                    <strong>@execution.RuleName</strong>
+                                    <small>@TriggerText(execution.Trigger)</small>
+                                </td>
+                                <td>
+                                    <span class="entity-pill">@EntityText(execution.EntityType)</span>
+                                    <small>@execution.EntityName</small>
+                                </td>
+                                <td>
+                                    @if (execution.IdActivity != null)
+                                    {
+                                        <strong>@execution.ActivitySubject</strong>
+                                        <small>@ActivityKindText(execution.ActivityKind ?? ActivityKind.Task)</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="muted">Nessuna attivita</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (execution.Succeeded)
+                                    {
+                                        <span class="status-pill ok"><span class="material-icons">check_circle</span> Completata</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-pill error"><span class="material-icons">error</span> Errore</span>
+                                        <small>@execution.Error</small>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+<style>
+    .workflow-page { min-height: calc(100vh - 1rem); padding: 1.25rem; background: #f7f9fc; color: #182235; }
+    .header-actions { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .workflow-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+    .metric { display: flex; align-items: center; gap: .75rem; min-width: 0; border: 1px solid #dfe7f1; border-radius: 8px; background: #fff; padding: .85rem; box-shadow: 0 10px 22px rgba(31, 42, 68, .05); }
+    .metric > .material-icons { color: #0f4a8a; background: #edf6ff; border-radius: 8px; padding: .45rem; }
+    .metric strong { display: block; font-size: 1.25rem; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .metric small { color: #64748b; font-weight: 750; }
+    .metric.attention > .material-icons { color: #b42318; background: #fff1f1; }
+    .primary-action, .secondary-action { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid #bfd2e7; border-radius: 8px; padding: .55rem .8rem; background: #fff; color: #0f4a8a; font-weight: 800; text-decoration: none; }
+    .primary-action { background: #0f4a8a; color: #fff; }
+    .action-icon { position: relative; display: inline-flex; width: 16px; height: 16px; flex: 0 0 16px; align-items: center; justify-content: center; }
+    .action-icon::before, .action-icon::after { content: ""; position: absolute; box-sizing: border-box; }
+    .rules-icon::before { width: 13px; height: 13px; border: 2px solid currentColor; border-radius: 3px; }
+    .rules-icon::after { width: 7px; height: 2px; background: currentColor; box-shadow: 0 4px 0 currentColor; transform: translateY(-2px); }
+    .refresh-icon::before { width: 14px; height: 14px; border: 2px solid currentColor; border-left-color: transparent; border-radius: 50%; }
+    .refresh-icon::after { width: 6px; height: 6px; border-top: 2px solid currentColor; border-right: 2px solid currentColor; transform: translate(4px, -5px) rotate(25deg); }
+    .execution-panel { border: 1px solid #dfe7f1; border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(31, 42, 68, .07); overflow: hidden; }
+    .execution-filters { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(180px, .7fr) minmax(150px, .5fr); gap: .75rem; padding: 1rem 1rem .25rem; border-bottom: 1px solid #e6edf5; background: #fbfdff; }
+    .field { display: grid; gap: .35rem; margin-bottom: .8rem; min-width: 0; }
+    .field span { color: #526174; font-size: .82rem; font-weight: 800; }
+    .compact-field { margin-bottom: .5rem; }
+    .form-input { width: 100%; min-height: 40px; border: 1px solid #d7e0ec; border-radius: 8px; background: #fff; padding: .48rem .6rem; }
+    .execution-table-wrap { overflow-x: auto; }
+    .execution-table { width: 100%; min-width: 880px; border-collapse: collapse; }
+    .execution-table th, .execution-table td { padding: .82rem 1rem; border-top: 1px solid #edf2f7; vertical-align: top; }
+    .execution-table th { color: #64748b; font-size: .76rem; text-transform: uppercase; letter-spacing: 0; background: #fff; }
+    .execution-table strong { display: block; font-weight: 850; }
+    .execution-table small { display: block; margin-top: .18rem; color: #64748b; max-width: 360px; overflow: hidden; text-overflow: ellipsis; }
+    .entity-pill, .status-pill { display: inline-flex; align-items: center; gap: .3rem; border-radius: 999px; padding: .22rem .5rem; font-size: .78rem; font-weight: 850; }
+    .entity-pill { background: #eef6f3; color: #116149; }
+    .status-pill .material-icons { font-size: 16px; }
+    .status-pill.ok { background: #ecfdf3; color: #067647; }
+    .status-pill.error { background: #fff1f1; color: #b42318; }
+    .muted { color: #8a98aa; }
+    .empty-executions { min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .45rem; color: #64748b; text-align: center; }
+    .empty-executions .material-icons { font-size: 44px; color: #8da2bd; }
+    @@media (max-width: 1100px) { .workflow-metrics, .execution-filters { grid-template-columns: 1fr; } .header-actions { justify-content: flex-start; } }
+</style>

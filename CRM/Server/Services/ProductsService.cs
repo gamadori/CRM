@@ -176,6 +176,14 @@ namespace CRM.Server.Services
 
                 if (item.Id > 0)
                 {
+                    var existing = await _context.Products.AsNoTracking().FirstOrDefaultAsync(x => x.Id == item.Id);
+                    if (existing != null)
+                    {
+                        item.IsArchived = existing.IsArchived;
+                        item.ArchivedAt = existing.ArchivedAt;
+                        item.ArchivedReason = existing.ArchivedReason;
+                    }
+
                     _context.Products.Update(item);
                 }
                 else
@@ -217,7 +225,17 @@ namespace CRM.Server.Services
             }
             try
             {
-                _context.Products.Remove(item);
+                if (await HasProductReferencesAsync(id))
+                {
+                    item.IsArchived = true;
+                    item.ArchivedAt = DateTime.UtcNow;
+                    item.ArchivedReason = "Archiviato automaticamente perche' il prodotto ha relazioni storiche.";
+                }
+                else
+                {
+                    _context.Products.Remove(item);
+                }
+
                 await _context.SaveChangesAsync();
                 return true;
             }
@@ -228,6 +246,27 @@ namespace CRM.Server.Services
             }
         }
 
+        private async Task<bool> HasProductReferencesAsync(int id)
+        {
+            return await _context.Articles.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.Tickets.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.TicketInterventionArticles.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.MachineBackups.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.Attachments.AsNoTracking().AnyAsync(x => x.AttchmentType == AttachmentTypes.Product && x.IdParent == id)
+                || await _context.Projects.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.QuoteRows.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.OrderRows.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.InvoiceRows.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.PriceListItems.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.ProductAccessoryTypes.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.ProductCatalogAssets.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.ProductKnowledge.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.LeadProductInterests.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.DealProductInterests.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.ArticleLicenseFeatureDefs.AsNoTracking().AnyAsync(x => x.IdProduct == id)
+                || await _context.Products.AsNoTracking().AnyAsync(x => x.Parents.Any(parent => parent.Id == id) || x.Childs.Any(child => child.Id == id));
+        }
+
        
        
         private async Task<IQueryable<Product>?> FilterItems(ProductFilter? args = null)
@@ -235,6 +274,11 @@ namespace CRM.Server.Services
             try
             {
                 var items = _context.Products.Include(x=>x.ProductType).Include(x=>x.Company).AsQueryable();
+
+                if (args?.IncludeArchived != true)
+                {
+                    items = items.Where(x => !x.IsArchived);
+                }
 
                 if (args?.OrderBy != null && args.OrderBy.Length > 0)
                 {

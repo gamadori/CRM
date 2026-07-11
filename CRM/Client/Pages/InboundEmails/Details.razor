@@ -1,0 +1,182 @@
+@page "/InboundEmails/{Id:int}"
+@using CRM.Shared
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<BlazorHeader Header="Email ricevuta" />
+
+@if (_email == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+
+            <RedGDetailField Icon="schedule" ContainerClass="mb-4">
+                <LabelContent>Data</LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_email.ReceivedAt.ToString("dd/MM/yyyy HH:mm")</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="person" ContainerClass="mb-4">
+                <LabelContent>Mittente</LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@(string.IsNullOrWhiteSpace(_email.FromName) ? _email.FromAddress : $"{_email.FromName} <{_email.FromAddress}>")</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="subject" ContainerClass="mb-4">
+                <LabelContent>Oggetto</LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_email.Subject</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="mail" ContainerClass="mb-4">
+                <LabelContent>Stato</LabelContent>
+                <ChildContent>
+                    @if (_email.IsMatched)
+                    {
+                        <span class="badge bg-success">Associata</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Non associata</span>
+                    }
+                    @if (_email.IdTicket != null)
+                    {
+                        <span class="badge bg-info ms-1">Ticket #@_email.IdTicket</span>
+                    }
+                </ChildContent>
+            </RedGDetailField>
+
+            @if (_email.AiIsSupportRequest != null)
+            {
+                <RedGDetailField Icon="smart_toy" ContainerClass="mb-4">
+                    <LabelContent>Analisi AI</LabelContent>
+                    <ChildContent>
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            @if (_email.AiIsSupportRequest == true)
+                            {
+                                <span class="badge bg-success">Richiesta di assistenza</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Non è una richiesta di assistenza</span>
+                            }
+                            @if (_email.AiConfidence != null)
+                            {
+                                <span class="text-muted small">confidenza @(((double)_email.AiConfidence * 100).ToString("0"))%</span>
+                            }
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(_email.AiReason))
+                        {
+                            <div class="text-muted small mb-2"><em>@_email.AiReason</em></div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_email.AiSummary))
+                        {
+                            <div class="p-2 bg-light rounded"><strong>Riassunto:</strong> @_email.AiSummary</div>
+                        }
+                        @if (_email.AiIsSupportRequest == false && _email.IdTicket == null)
+                        {
+                            <div class="text-muted small mt-2">
+                                Nessun ticket è stato aperto automaticamente. Se l'AI ha sbagliato, usa "Crea ticket".
+                            </div>
+                        }
+                    </ChildContent>
+                </RedGDetailField>
+            }
+
+            <RedGDetailField Icon="message">
+                <LabelContent>Messaggio</LabelContent>
+                <ChildContent><pre class="mb-0" style="white-space:pre-wrap">@_email.Body</pre></ChildContent>
+            </RedGDetailField>
+
+            @if (_attachments.Any())
+            {
+                <div class="mt-4">
+                    <h6 class="text-muted mb-2"><span class="material-icons align-middle" style="font-size:16px">attach_file</span> Allegati</h6>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var att in _attachments)
+                        {
+                            <li class="list-group-item px-0 d-flex align-items-center gap-2">
+                                <span class="material-icons text-muted" style="font-size:18px">description</span>
+                                <a href="#" @onclick:preventDefault @onclick="@(() => Download(att))">@att.FileName</a>
+                                <span class="text-muted small">(@FormatSize(att.Size))</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2 align-items-center">
+                <RadzenButton Icon="arrow_back" Text="Indietro" ButtonStyle="ButtonStyle.Light" Click="@(() => NavigationManager.NavigateTo("/Settings/InboundEmails"))" />
+
+                @if (_email.IdTicket != null)
+                {
+                    <RadzenButton Icon="confirmation_number" Text="@($"Vai al ticket #{_email.IdTicket}")" ButtonStyle="ButtonStyle.Info"
+                                  Click="@(() => NavigationManager.NavigateTo($"/Tickets/{_email.IdTicket}"))" />
+                }
+                else if (_email.IsMatched)
+                {
+                    <RadzenButton Icon="add_task" Text="Crea ticket" ButtonStyle="ButtonStyle.Primary" Disabled="@_creating" Click="CreateTicket" />
+                }
+                else
+                {
+                    <span class="text-muted small">Associa l'email a un'azienda per poter creare un ticket.</span>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private InboundEmail? _email;
+    private List<InboundEmailAttachmentInfo> _attachments = new();
+    private bool _creating;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _email = await Http.GetFromJsonAsync<InboundEmail>($"api/InboundEmails/{Id}");
+        _attachments = await Http.GetFromJsonAsync<List<InboundEmailAttachmentInfo>>($"api/InboundEmails/{Id}/attachments") ?? new();
+    }
+
+    private async Task CreateTicket()
+    {
+        _creating = true;
+        try
+        {
+            var resp = await Http.PostAsync($"api/InboundEmails/{Id}/create-ticket", null);
+            if (resp.IsSuccessStatusCode)
+            {
+                var ticketId = await resp.Content.ReadFromJsonAsync<int>();
+                NavigationManager.NavigateTo($"/Tickets/{ticketId}");
+            }
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+    private async Task Download(InboundEmailAttachmentInfo att)
+    {
+        var resp = await Http.GetAsync($"api/InboundEmails/attachments/{att.Id}/download");
+        if (resp.IsSuccessStatusCode)
+        {
+            var bytes = await resp.Content.ReadAsByteArrayAsync();
+            await JS.InvokeVoidAsync("downloadFileFromBytes", att.FileName, att.ContentType ?? "application/octet-stream", bytes);
+        }
+    }
+
+    private static string FormatSize(long size)
+    {
+        if (size < 1024) return $"{size} B";
+        if (size < 1024 * 1024) return $"{size / 1024.0:0.#} KB";
+        return $"{size / (1024.0 * 1024.0):0.#} MB";
+    }
+}

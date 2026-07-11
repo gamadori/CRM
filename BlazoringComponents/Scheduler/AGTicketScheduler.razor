@@ -3,7 +3,11 @@
 
 <div class="modern-ticket-card" 
      style="border-left-color: @Ticket.BackGroundColor" 
+     draggable="true"
+     data-scheduler-ticket
      @onclick="HandleCardClick"
+     @ondragstart="HandleDragStart"
+     @ondragend="HandleDragEnd"
      @onmouseleave="CloseTooltip">
     
     <div class="ticket-card-header">
@@ -94,9 +98,14 @@
         border-left: 4px solid #667eea;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
         transition: all 0.3s ease;
-        cursor: pointer;
+        cursor: grab;
         position: relative;
         animation: slideIn 0.3s ease-out;
+    }
+
+    .modern-ticket-card:active {
+        cursor: grabbing;
+        opacity: .72;
     }
 
     .modern-ticket-card:hover {

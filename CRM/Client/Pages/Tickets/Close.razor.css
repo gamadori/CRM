@@ -1,0 +1,285 @@
+/* ========================================
+   TICKET CLOSE - stesso linguaggio visivo
+   della tab Ticket Data (Details.razor.css)
+   ======================================== */
+
+.ticket-details-page {
+    background: #fafbfc;
+    padding-bottom: 2rem;
+}
+
+.modern-preview-container {
+    max-width: 1200px;
+    margin: 0;
+    padding: 1.5rem;
+}
+
+/* Header Card */
+.preview-header-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.ticket-number {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ticket-number .material-icons {
+    font-size: 1.75rem;
+    color: #16a34a;
+    opacity: 0.9;
+}
+
+.ticket-number h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2d3748;
+    letter-spacing: -0.02em;
+}
+
+.ticket-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.ticket-status .material-icons {
+    font-size: 1rem;
+}
+
+.ticket-status.priority-low { background: #eafaf1; color: #16a34a; }
+.ticket-status.priority-medium { background: #fef6e7; color: #ca8a04; }
+.ticket-status.priority-high { background: #fdecec; color: #dc2626; }
+
+/* Section Cards */
+.description-card {
+    background: #ffffff;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.card-header-modern {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: #f8f9fb;
+    border-bottom: 1px solid #e8ecf1;
+}
+
+.card-header-modern .material-icons {
+    font-size: 1.25rem;
+    color: #64748b;
+}
+
+.card-header-modern .material-icons.text-success {
+    color: #16a34a;
+}
+
+.card-header-modern h5 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.header-meta {
+    margin-left: auto;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.req-dot {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+.card-body-modern {
+    padding: 1.5rem;
+}
+
+.description-text {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #374151;
+    white-space: pre-wrap;
+    text-align: left;
+}
+
+/* Summary header (title + action/badge on the right) */
+.summary-header {
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.summary-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.summary-readonly {
+    color: #243244;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    padding: 0.6rem 0.8rem;
+    border-left: 3px solid #8091c8;
+    background: #f8fafc;
+    border-radius: 6px;
+}
+
+/* Visibility badges */
+.visibility-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 2rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.visibility-badge .material-icons {
+    font-size: 14px;
+}
+
+.visibility-badge.visible { background: #eafaf1; color: #16a34a; }
+.visibility-badge.hidden { background: #eef1f5; color: #667085; }
+
+/* "Usa come soluzione" button */
+.btn-use-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #3b5bdb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-use-summary:hover { background: #364fc7; }
+.btn-use-summary .material-icons { font-size: 16px; }
+
+/* Info grid (modalità intervento + note) */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.info-grid .description-card {
+    margin-bottom: 0;
+}
+
+/* Note toggle header behaves like a section header */
+.note-toggle {
+    width: 100%;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+}
+
+.note-toggle.collapsed {
+    border-bottom: none;
+}
+
+.note-toggle-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.chevron {
+    color: #94a3b8;
+    transition: transform 0.2s ease;
+}
+
+.chevron.open { transform: rotate(180deg); }
+
+/* Footer actions */
+.close-actions-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e8ecf1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+/* Loading */
+.preview-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    background: #fafbfc;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .modern-preview-container {
+        padding: 1rem;
+    }
+
+    .preview-header-card {
+        padding: 1rem 1.25rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .ticket-number h3 {
+        font-size: 1.25rem;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+}

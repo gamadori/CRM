@@ -43,6 +43,9 @@ namespace BlazoringComponents.Scheduler
         [CascadingParameter(Name = "Tickets")]
         public IEnumerable<TItem> Items { get; set; }
 
+        [CascadingParameter]
+        public SchedulerDragDropContext DragDropContext { get; set; }
+
         [CascadingParameter(Name = "DateLocked")]
         public bool DateLocked { get; set; } = false;
 
@@ -95,7 +98,7 @@ namespace BlazoringComponents.Scheduler
                 model.Id = item.GetPropertyValue<object>("Id").ToString();
                 model.DateStart = item.GetPropertyValue<DateTime>(DateProperty).Date;
                 model.TimeStart = item.GetPropertyValue<TimeOnly>(TimeProperty);
-                model.DateEnd = item.GetPropertyValue<DateTime>(DateEndProperty).Date;
+                model.DateEnd = item.GetPropertyValue<DateTime>(DateEndProperty);
                 model.User = item.GetPropertyValue<string>(UserProperty);
                 model.Company = item.GetPropertyValue<string>(CompanyProperty);
                 model.Description = item.GetPropertyValue<string>(DescriptionProperty);

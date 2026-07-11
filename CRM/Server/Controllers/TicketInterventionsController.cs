@@ -525,7 +525,13 @@ namespace CRM.Server.Controllers
 
             List<string> listAttachment = new List<string>() { { path } };
 
-            var state = await _emailSender.SendEmailAsync(email.To.ToList(";"), EmailsTypes.InvioDocumento, new List<string>() { { path } }, email.Subject, email.Message, null, email.CC);
+            // Aggancia la comunicazione alla scheda dell'azienda del ticket: comparirà nella timeline Attività.
+            var ticket = await _context.Tickets.FindAsync(intervention.IdTicket);
+            EmailContext? context = ticket != null && ticket.IdCompany > 0
+                ? new EmailContext(ActivityEntityType.Company, ticket.IdCompany)
+                : null;
+
+            var state = await _emailSender.SendEmailAsync(email.To.ToList(";"), EmailsTypes.InvioDocumento, new List<string>() { { path } }, email.Subject, email.Message, null, email.CC, context);
 
             if (state)
             {

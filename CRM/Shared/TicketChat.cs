@@ -16,8 +16,15 @@ namespace CRM.Shared
         [ForeignKey("Ticket")]
         public int IdTicket { get; set; }
 
+        /// <summary>Autore interno. Null per i messaggi ricevuti dall'esterno (es. risposta email del cliente).</summary>
         [ForeignKey("User")]
         public string IdUser { get; set; }
+
+        /// <summary>
+        /// Mittente esterno (indirizzo email) quando il messaggio non proviene da un utente interno:
+        /// usato al posto del nome utente nella chat.
+        /// </summary>
+        public string? ExternalSender { get; set; }
 
         public DateTime Date { get; set; }
 

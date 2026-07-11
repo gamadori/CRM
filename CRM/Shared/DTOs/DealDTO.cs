@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace CRM.Shared.DTOs
 {
@@ -27,6 +29,20 @@ namespace CRM.Shared.DTOs
         [Display(Name = nameof(Deal.Target), ResourceType = typeof(Resources.Models.Deal))]
         public decimal Target { get; set; }
 
+        [Display(Name = "Probabilita'")]
+        [Range(0, 100)]
+        public int Probability { get; set; }
+
+        [Display(Name = "Chiusura prevista")]
+        public DateTime? ExpectedCloseDate { get; set; }
+
+        public decimal WeightedAmount => State switch
+        {
+            DealStates.CloseWon => Amount,
+            DealStates.CloseLost => 0,
+            _ => Math.Round(Amount * Probability / 100m, 2)
+        };
+
         [Display(Name = nameof(Deal.Note), ResourceType = typeof(Resources.Models.Deal))]
         public string? Note { get; set; }
 
@@ -51,6 +67,12 @@ namespace CRM.Shared.DTOs
         [Display(Name = nameof(Deal.IdUser), ResourceType = typeof(Resources.Models.Deal))]
         public string UserName { get; set; } = string.Empty;
 
+        public List<ProductInterestDTO> ProductInterests { get; set; } = new();
+
+        public string ProductSummary => ProductInterests.Count == 0
+            ? string.Empty
+            : string.Join(", ", ProductInterests.OrderBy(x => x.SortOrder).Select(x => x.DisplayName));
+
         public int Permits { get; set; }
     }
 
@@ -69,6 +91,8 @@ namespace CRM.Shared.DTOs
                 IdContact = deal.IdContact,
                 Amount = deal.Amount,
                 Target = deal.Target,
+                Probability = deal.Probability,
+                ExpectedCloseDate = deal.ExpectedCloseDate,
                 Note = deal.Note,
                 State = deal.State,
                 Phase = deal.Phase,
@@ -76,7 +100,11 @@ namespace CRM.Shared.DTOs
                 IdUser = deal.IdUser,
                 CompanyName = deal.Company != null ? deal.Company.RagioneSociale : string.Empty,
                 ContactName = deal.Contact != null ? deal.Contact.NameComplete : string.Empty,
-                UserName = deal.User != null ? deal.User.NameComplete : string.Empty
+                UserName = deal.User != null ? deal.User.NameComplete : string.Empty,
+                ProductInterests = deal.ProductInterests
+                    .OrderBy(x => x.SortOrder)
+                    .Select(x => x.ToDTO())
+                    .ToList()
             };
         }
 
@@ -93,11 +121,17 @@ namespace CRM.Shared.DTOs
                 IdContact = dto.IdContact,
                 Amount = dto.Amount,
                 Target = dto.Target,
+                Probability = dto.Probability,
+                ExpectedCloseDate = dto.ExpectedCloseDate,
                 Note = dto.Note,
                 State = dto.State,
                 Phase = dto.Phase,
                 DateClosed = dto.DateClosed,
-                IdUser = dto.IdUser
+                IdUser = dto.IdUser,
+                ProductInterests = dto.ProductInterests
+                    .OrderBy(x => x.SortOrder)
+                    .Select(x => x.ToDealProductInterest())
+                    .ToList()
             };
         }
     }

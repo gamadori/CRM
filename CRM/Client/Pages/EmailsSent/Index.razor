@@ -19,6 +19,23 @@
        
             <RadzenDataGridColumn TItem="EmailSent" Property="@nameof(EmailSent.Subject)" Title="@Localize["Oggetto"]" />
 
+            <RadzenDataGridColumn TItem="EmailSent" Property="@nameof(EmailSent.EngagementStatus)" Title="Engagement" Filterable="false">
+                <Template Context="item">
+                    @{ var ui = CRM.Client.Helpers.EmailEngagementUi.Status(item.EngagementStatus); }
+                    <span class="badge @ui.Css">
+                        <span class="material-icons align-middle" style="font-size:13px">@ui.Icon</span> @ui.Label
+                    </span>
+                    @if (item.OpenCount > 0)
+                    {
+                        <span class="text-muted small ms-2" title="Aperture">@item.OpenCount ⤢</span>
+                    }
+                    @if (item.ClickCount > 0)
+                    {
+                        <span class="text-muted small ms-1" title="Click">@item.ClickCount ↗</span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
             <RadzenDataGridColumn Context="item" TItem="EmailSent" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.Center">
                 <Template Context="item">
                         <RadzenButton ButtonStyle="Radzen.ButtonStyle.Secondary" Icon="format_list_bulleted" title="Dettagli"  Size="Radzen.ButtonSize.Medium" Click="@(async args => await Details(item.Id))">

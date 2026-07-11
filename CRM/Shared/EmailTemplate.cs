@@ -55,15 +55,20 @@ namespace CRM.Shared
         [Key]
         public int Id { get; set; }
 
-        [Display(Name = nameof(EmailTemplate.Tipo), ResourceType = typeof(Resources.Models.EmailTemplates))]        
+        [Display(Name = nameof(EmailTemplate.Tipo), ResourceType = typeof(Resources.Models.EmailTemplates))]
         public EmailsTypes Tipo { get; set; }
+
+        /// <summary>Codice lingua del template (es. "it", "en"). Consente una versione per lingua per ogni tipo.</summary>
+        [Display(Name = "Lingua")]
+        [MaxLength(10)]
+        public string? Language { get; set; }
 
         [Required]
         [Display(Name = nameof(EmailTemplate.Subject), ResourceType = typeof(Resources.Models.EmailTemplates))]
         public string Subject { get; set; }
 
         [Required]
-        [MaxLength(5000)]
+        [MaxLength(20000)]
         public string Body { get; set; }
 
         [Display(Name = nameof(EmailTemplate.Logo), ResourceType = typeof(Resources.Models.EmailTemplates))]

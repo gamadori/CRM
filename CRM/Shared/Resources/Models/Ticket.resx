@@ -177,9 +177,6 @@
   <data name="IdUserClosed" xml:space="preserve">
     <value>Closed by</value>
   </data>
-  <data name="IdUserCustomer" xml:space="preserve">
-    <value>Client User</value>
-  </data>
   <data name="IdUserOpened" xml:space="preserve">
     <value>Open by</value>
   </data>

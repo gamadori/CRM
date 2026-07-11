@@ -43,6 +43,15 @@ namespace CRM.Shared.DTOs
         [Display(Name = nameof(Article.Country), ResourceType = typeof(Resources.Models.Article))]
         public string Country { get; set; }
 
+        [Display(Name = nameof(Article.IdRecipientCompany), ResourceType = typeof(Resources.Models.Article))]
+        public int? IdRecipientCompany { get; set; }
+
+        [Display(Name = nameof(Article.IdRecipientCompany), ResourceType = typeof(Resources.Models.Article))]
+        public string RecipientCompanyName { get; set; }
+
+        [Display(Name = nameof(Article.RecipientCountry), ResourceType = typeof(Resources.Models.Article))]
+        public string RecipientCountry { get; set; }
+
         [Display(Name = nameof(Article.TestDate), ResourceType = typeof(Resources.Models.Article))]
         public DateTime? TestDate { get; set; }
 
@@ -51,6 +60,12 @@ namespace CRM.Shared.DTOs
 
         [Display(Name = nameof(Article.Note), ResourceType = typeof(Resources.Models.Article))]
         public string Note { get; set; }
+
+        public bool IsArchived { get; set; }
+
+        public DateTime? ArchivedAt { get; set; }
+
+        public string? ArchivedReason { get; set; }
 
         [NotMapped]
         [Display(Name = nameof(Article.Name), ResourceType = typeof(Resources.Models.Article))]
@@ -76,9 +91,15 @@ namespace CRM.Shared.DTOs
                 IdCompany = article.IdCompany,
                 CompanyName = article.Company?.RagioneSociale,
                 Country = article.Country,
+                IdRecipientCompany = article.IdRecipientCompany,
+                RecipientCompanyName = article.RecipientCompany?.RagioneSociale,
+                RecipientCountry = article.RecipientCountry,
                 TestDate = article.TestDate,
                 DeliveryDate = article.DeliveryDate,
                 Note = article.Note,
+                IsArchived = article.IsArchived,
+                ArchivedAt = article.ArchivedAt,
+                ArchivedReason = article.ArchivedReason,
                 CompleteName = $"{article.Name} - {article.SerialNumber}",
                 
 
@@ -99,9 +120,14 @@ namespace CRM.Shared.DTOs
                 Description = dto.Description,
                 IdCompany = dto.IdCompany,
                 Country = dto.Country,
+                IdRecipientCompany = dto.IdRecipientCompany,
+                RecipientCountry = dto.RecipientCountry,
                 TestDate = dto.TestDate,
                 DeliveryDate = dto.DeliveryDate,
                 Note = dto.Note,
+                IsArchived = dto.IsArchived,
+                ArchivedAt = dto.ArchivedAt,
+                ArchivedReason = dto.ArchivedReason,
             
 
             };

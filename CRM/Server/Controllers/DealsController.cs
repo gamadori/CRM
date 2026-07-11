@@ -67,6 +67,21 @@ namespace CRM.Server.Controllers
             }
         }
 
+        [HttpGet("forecast")]
+        public async Task<ActionResult<CommercialForecastDTO>> GetForecast([FromQuery] DealForecastFilter? args = null)
+        {
+            try
+            {
+                var forecast = await _dealService.GetForecastAsync(args);
+                return forecast == null ? StatusCode(StatusCodes.Status500InternalServerError) : Ok(forecast);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(DealsController), nameof(GetForecast), LogEvent.EventsTypes.Error, ex);
+                return Problem(ex.Message);
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<DealDTO?>> GetItem(int id)
         {

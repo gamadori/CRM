@@ -92,7 +92,7 @@ namespace CRM.Client.Pages.Tickets
         public DateTime? Date { get; set; }
 
         [Parameter]
-        public bool Scheduler { get; set; } = true;
+        public bool ShowPlanningPicker { get; set; } = true;
 
         [Parameter]
         public PageModality PageMode { get; set; } = PageModality.Visualization;
@@ -116,10 +116,6 @@ namespace CRM.Client.Pages.Tickets
         private List<TicketType> _ticketTypes = new List<TicketType>();
 
         private List<Project> _projects = new List<Project>();
-
-        private List<ApplicationUser> _usersCustomer = new List<ApplicationUser>();
-
-        private RequesterType _requesterType = RequesterType.Contact;
 
         private bool _lockCompany = false;
 
@@ -172,12 +168,6 @@ namespace CRM.Client.Pages.Tickets
                     path += $"/{Id}";
                     _header = Localize["Ticket Edit"];
                     _ticket = await _service.Get(Id.Value);
-                    
-                    // Determina il tipo di richiedente dal ticket caricato
-                    _requesterType = _ticket.IdContact != null ? RequesterType.Contact : 
-                                     !string.IsNullOrEmpty(_ticket.IdUserCustomer) ? RequesterType.User : 
-                                     RequesterType.Contact;
-
                     // ✅ NUOVO: Carica gli utenti già assegnati al ticket
                     await LoadAssignedUsers();
                 }
@@ -206,7 +196,6 @@ namespace CRM.Client.Pages.Tickets
                 await LoadTicketType();
                 await LoadUsers();
                 await LoadContactsCustomer();
-                await LoadUsersCustomer();
 
                 _inputTextAreaAttributes.Add("rows", "20");
 
@@ -376,48 +365,6 @@ namespace CRM.Client.Pages.Tickets
             _contactsCustomer = await ContactsService.GetListAsync(request);
 
            
-
-            StateHasChanged();
-        }
-
-        private async Task LoadUsersCustomer()
-        {
-            try
-            {
-                if (_ticket?.IdCompany == null || _ticket.IdCompany == 0)
-                {
-                    _usersCustomer = new List<ApplicationUser>();
-                    return;
-                }
-
-                UsersFilterModel request = new UsersFilterModel
-                {
-                    IdCompany = _ticket.IdCompany,
-                    PageSize = 0
-                };
-
-                var response = await _serviceUser.Get(request);
-                _usersCustomer = response.Items?.ToList() ?? new List<ApplicationUser>();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Errore caricamento utenti cliente: {ex.Message}");
-                _usersCustomer = new List<ApplicationUser>();
-            }
-        }
-
-        private void OnRequesterTypeChanged(RequesterType value)
-        {
-            _requesterType = value;
-
-            if (_requesterType == RequesterType.Contact)
-            {
-                _ticket.IdUserCustomer = null;
-            }
-            else
-            {
-                _ticket.IdContact = null;
-            }
 
             StateHasChanged();
         }
@@ -679,7 +626,6 @@ namespace CRM.Client.Pages.Tickets
             await LoadProducts(new LoadDataArgs());
             await LoadArticles(new LoadDataArgs());
             await LoadContactsCustomer();
-            await LoadUsersCustomer();
         }
 
         private void CompanyOnClickCancel()
@@ -710,22 +656,22 @@ namespace CRM.Client.Pages.Tickets
             }
         }
 
-        private void OnGetScheduler(SchedulerUserDate? userDate)
+        private void ApplyPlanningSelection(TicketPlanningSelection? selection)
         {
-            if (userDate != null)
+            if (selection != null)
             {
-                _ticket.Date = userDate.Date;
+                _ticket.Date = selection.Date;
 
-                if (userDate.IdUser != null)
+                if (selection.IdUser != null)
                 {
                     // ✅ NUOVO: Aggiungi utente alla selezione multipla invece di sostituire
-                    if (!_selectedUserIds.Contains(userDate.IdUser))
+                    if (!_selectedUserIds.Contains(selection.IdUser))
                     {
-                        _selectedUserIds.Add(userDate.IdUser);
+                        _selectedUserIds.Add(selection.IdUser);
                     }
                     
                     // Mantieni retrocompatibilità
-                    _ticket.IdUserAssigned = userDate.IdUser;
+                    _ticket.IdUserAssigned = selection.IdUser;
                     _ddUser?.SelectItem(_ticket.IdUserAssigned, true);
                 }
                 
@@ -847,16 +793,5 @@ namespace CRM.Client.Pages.Tickets
             }
         }
 
-        private async Task OnGetUser(object? id)
-        {
-            if (id != null)
-            {
-                await LoadUsersCustomer();
-                StateHasChanged();
-                _ticket.IdUserCustomer = (string)id;
-                StateHasChanged();
-
-            }
-        }
     }
 }

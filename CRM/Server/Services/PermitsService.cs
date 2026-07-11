@@ -686,16 +686,14 @@ namespace CRM.Server.Services
                 {
                     // Utente della main company
 
-                    // Verifico se esiste il referente del cliente
-                    if (ticket.IdUserCustomer != null)
-                    {
-                        list = new List<string>() { ticket.IdUserCustomer };
-                    }
-                    else
-                    {
-                        // Invio a tutti gli utenti del cliete.
-                        list = await GetCompanyIdUsers(ticket.IdCompany);
-                    }
+                    var contactUserId = await _context.Users
+                        .Where(x => x.IdContact == ticket.IdContact)
+                        .Select(x => x.Id)
+                        .FirstOrDefaultAsync();
+
+                    list = !string.IsNullOrWhiteSpace(contactUserId)
+                        ? new List<string>() { contactUserId }
+                        : await GetCompanyIdUsers(ticket.IdCompany);
 
                     if (ticketChat.IdUser != ticket.IdUserAssigned && ticket.IdUserAssigned != null)
                     {

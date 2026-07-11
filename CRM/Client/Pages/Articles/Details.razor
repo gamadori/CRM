@@ -63,6 +63,30 @@ else
                             <ChildContent><p class="mb-0 text-dark">@_article.CompanyName</p></ChildContent>
                         </RedGDetailField>
 
+                        @if (!string.IsNullOrWhiteSpace(_article.Country))
+                        {
+                            <RedGDetailField Icon="public" ContainerClass="mb-4">
+                                <LabelContent><DisplayName For="@(() => _article.Country)" /></LabelContent>
+                                <ChildContent><p class="mb-0 text-dark">@_article.Country</p></ChildContent>
+                            </RedGDetailField>
+                        }
+
+                        @if (_article.IdRecipientCompany != null)
+                        {
+                            <RedGDetailField Icon="local_shipping" ContainerClass="mb-4">
+                                <LabelContent><DisplayName For="@(() => _article.IdRecipientCompany)" /></LabelContent>
+                                <ChildContent><p class="mb-0 text-dark">@_article.RecipientCompanyName</p></ChildContent>
+                            </RedGDetailField>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(_article.RecipientCountry))
+                        {
+                            <RedGDetailField Icon="public" ContainerClass="mb-4">
+                                <LabelContent><DisplayName For="@(() => _article.RecipientCountry)" /></LabelContent>
+                                <ChildContent><p class="mb-0 text-dark">@_article.RecipientCountry</p></ChildContent>
+                            </RedGDetailField>
+                        }
+
                         <RedGDetailField Icon="description">
                             <LabelContent><DisplayName For="@(() => _article.Description)" /></LabelContent>
                             <ChildContent><p class="mb-0 text-dark">@_article.Description</p></ChildContent>

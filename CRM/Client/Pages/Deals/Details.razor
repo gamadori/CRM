@@ -47,7 +47,7 @@
             <div class="deal-value-box">
                 <span>Valore</span>
                 <strong>@_deal.Amount.ToString("C")</strong>
-                <small>Target @_deal.Target.ToString("C")</small>
+                <small>Ponderato @_deal.WeightedAmount.ToString("C")</small>
             </div>
         </section>
 
@@ -63,6 +63,18 @@
                     <small>Avanzamento fase trattativa</small>
                 </div>
                 <div class="deal-facts">
+                    <div>
+                        <span>Chiusura prevista</span>
+                        <strong>@(_deal.ExpectedCloseDate == null ? "-" : _deal.ExpectedCloseDate.Value.ToString("dd/MM/yyyy"))</strong>
+                    </div>
+                    <div>
+                        <span>Probabilita</span>
+                        <strong>@_deal.Probability%</strong>
+                    </div>
+                    <div>
+                        <span>Target</span>
+                        <strong>@_deal.Target.ToString("C")</strong>
+                    </div>
                     <div>
                         <span>Data apertura</span>
                         <strong>@_deal.Date.ToString("dd/MM/yyyy")</strong>

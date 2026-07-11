@@ -77,7 +77,18 @@ else
                         }
                         @if (a.State == ActivityState.Done)
                         {
-                            <span class="badge bg-success ms-2">Fatta</span>
+                            @if (a.Kind == ActivityKind.Email && a.IdInboundEmail != null)
+                            {
+                                <span class="badge bg-info ms-2">Ricevuta</span>
+                            }
+                            else if (a.Kind == ActivityKind.Email && a.IdEmailSent != null)
+                            {
+                                <span class="badge bg-success ms-2">Inviata</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success ms-2">Fatta</span>
+                            }
                         }
                         <div class="ms-auto">
                             @if (a.State == ActivityState.Planned && a.Permits.Edit())
@@ -95,6 +106,37 @@ else
                     @if (!string.IsNullOrWhiteSpace(a.Description))
                     {
                         <div class="text-body small mt-1">@a.Description</div>
+                    }
+                    @if (a.IdInboundEmail != null)
+                    {
+                        <div class="small mt-1">
+                            <a href="@($"/InboundEmails/{a.IdInboundEmail}")" class="link-primary text-decoration-none">
+                                <span class="material-icons align-middle" style="font-size:14px">mail</span> Apri email ricevuta
+                            </a>
+                        </div>
+                    }
+                    @if (a.IdEmailSent != null)
+                    {
+                        <div class="small mt-1 d-flex align-items-center flex-wrap gap-2">
+                            <a href="@($"/EmailSent/{a.IdEmailSent}")" class="link-primary text-decoration-none">
+                                <span class="material-icons align-middle" style="font-size:14px">mail</span> Apri email
+                            </a>
+                            @if (a.EmailEngagement != null)
+                            {
+                                var eui = CRM.Client.Helpers.EmailEngagementUi.Status(a.EmailEngagement.Value);
+                                <span class="badge @eui.Css">
+                                    <span class="material-icons align-middle" style="font-size:12px">@eui.Icon</span> @eui.Label
+                                </span>
+                                @if (a.EmailOpenCount > 0)
+                                {
+                                    <span class="text-muted" style="font-size:0.75rem">@a.EmailOpenCount aperture</span>
+                                }
+                                @if (a.EmailClickCount > 0)
+                                {
+                                    <span class="text-muted" style="font-size:0.75rem">· @a.EmailClickCount click</span>
+                                }
+                            }
+                        </div>
                     }
                     <div class="text-muted" style="font-size:0.75rem">
                         @a.CreatedAt.ToString("dd/MM/yyyy HH:mm")
