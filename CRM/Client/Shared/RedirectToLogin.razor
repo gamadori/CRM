@@ -1,14 +1,33 @@
-﻿@inject NavigationManager Navigation
+@inject NavigationManager Navigation
+
+<div class="redirect-login">
+    <div class="spinner-border text-primary" role="status"></div>
+    <span>Reindirizzamento al login…</span>
+</div>
+
+<style>
+    .redirect-login {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        min-height: 100vh;
+        color: var(--crm-text-muted, #64748b);
+    }
+</style>
+
 @code {
 
-     [Parameter]
-    public string ReturnUrl {get; set;}
+    [Parameter]
+    public string ReturnUrl { get; set; }
 
     protected override void OnInitialized()
     {
-        Console.WriteLine("Initial");
-        Console.WriteLine(Navigation.Uri);
+        // Navigazione client-side (niente forceLoad): evita di riavviare l'intera app
+        // WebAssembly. Il RemoteAuthenticatorView su /authentication/login avvia il
+        // flusso OIDC e reindirizza al login del server.
         var url = $"authentication/login?returnUrl={Uri.EscapeDataString(Navigation.Uri)}";
-        Navigation.NavigateTo(url, true);
+        Navigation.NavigateTo(url);
     }
 }

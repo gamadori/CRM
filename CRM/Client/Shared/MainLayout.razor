@@ -3,51 +3,54 @@
 
 @inherits LayoutComponentBase
 <RadzenTheme Theme="material" />
-<div class="page">
-    <AuthorizeView>
-        <div class="sidebar">
-             <AuthorizeView Policy="@ePolicy.StandardRole.ToString()">
-                <Authorized Context="AuthorizeRole">
-                    <NavMenu />
-                </Authorized>
-                <NotAuthorized Context="AuthorizeRole">
-                    <NavMenuClient />
-                </NotAuthorized>
-            </AuthorizeView>
-          
-        
-        </div>
-    </AuthorizeView>
-  
+<AuthorizeView>
+    <Authorized>
+        <div class="page">
+            <div class="sidebar">
+                <AuthorizeView Policy="@ePolicy.StandardRole.ToString()" Context="AuthorizeRole">
+                    <Authorized Context="AuthorizeRole">
+                        <NavMenu />
+                    </Authorized>
+                    <NotAuthorized Context="AuthorizeRole">
+                        <NavMenuClient />
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
 
-    <div class="d-flex  flex-column main overflow-auto min-vh-100 vh-100">
-        <MaintenanceBanner />
-        <div class="top-row auth px-4 mb-2">
-            @if (_logo != null)
-            {
-                <img class="logo" src="@_logo" />
-            }
-            else
-            {
-                <img src="/img/logoCrm.png" class="logo" alt="CRM System Logo" />
-            }
-            @if (_iconConnected != null)
-            {
-                <div class="connection-status"><RadzenIcon Icon="@_iconConnected" /></div>
-            }
-            <div class="topbar-actions">
-                <ThemeToggle />
-                <LoginDisplay></LoginDisplay>
+            <div class="d-flex  flex-column main overflow-auto min-vh-100 vh-100">
+                <MaintenanceBanner />
+                <div class="top-row auth px-4 mb-2">
+                    @if (_logo != null)
+                    {
+                        <img class="logo" src="@_logo" />
+                    }
+                    else
+                    {
+                        <img src="/img/logoCrm.png" class="logo" alt="CRM System Logo" />
+                    }
+                    @if (_iconConnected != null)
+                    {
+                        <div class="connection-status"><RadzenIcon Icon="@_iconConnected" /></div>
+                    }
+                    <div class="topbar-actions">
+                        <ThemeToggle />
+                        <LoginDisplay></LoginDisplay>
+                    </div>
+                </div>
+                <div class="d-flex flex-column flex-fill overflow-scroll px-4">
+                    @Body
+                </div>
             </div>
         </div>
-        <div class="d-flex flex-column flex-fill overflow-scroll px-4">
-            @Body
-        </div>
-    </div>
-</div>
-<audio id="roar" src="./sounds/alert.wav" />
-<RadzenDialog/>
-<RadzenNotification/>
-<RadzenContextMenu/>
-<RadzenTooltip/>
+        <audio id="roar" src="./sounds/alert.wav" />
+        <RadzenDialog />
+        <RadzenNotification />
+        <RadzenContextMenu />
+        <RadzenTooltip />
+    </Authorized>
+    <NotAuthorized>
+        @* Utente non autenticato: nessun chrome, solo la schermata di redirect al login *@
+        @Body
+    </NotAuthorized>
+</AuthorizeView>
 
