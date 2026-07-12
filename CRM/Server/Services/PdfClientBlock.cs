@@ -15,12 +15,12 @@ namespace CRM.Server.Services
         public static void Compose(ColumnDescriptor c, Company? company, string? contactName)
         {
             c.Item().PaddingBottom(6).Text("Cliente").FontSize(12).Bold().FontColor(Colors.Blue.Darken1);
-            c.Item().Text(company?.RagioneSociale ?? "N/D").FontSize(11).Bold();
+            c.Item().Text((company?.RagioneSociale ?? "N/D").Trim()).FontSize(11).Bold();
 
             if (company != null)
             {
                 if (!string.IsNullOrWhiteSpace(company.Indirizzo))
-                    Line(c, company.Indirizzo!);
+                    Line(c, company.Indirizzo);
 
                 var location = string.Join(" ", new[]
                 {
@@ -37,20 +37,22 @@ namespace CRM.Server.Services
                     Line(c, location);
 
                 if (!string.IsNullOrWhiteSpace(company.PIva))
-                    Line(c, $"P.IVA {company.PIva}");
+                    Line(c, $"P.IVA {company.PIva!.Trim()}");
 
                 if (!string.IsNullOrWhiteSpace(company.CodiceFiscale))
-                    Line(c, $"C.F. {company.CodiceFiscale}");
+                    Line(c, $"C.F. {company.CodiceFiscale!.Trim()}");
 
                 if (!string.IsNullOrWhiteSpace(company.CodiceSDI))
-                    Line(c, $"Cod. SDI {company.CodiceSDI}");
+                    Line(c, $"Cod. SDI {company.CodiceSDI!.Trim()}");
             }
 
             if (!string.IsNullOrWhiteSpace(contactName))
-                Line(c, $"Rif. {contactName}");
+                Line(c, $"Rif. {contactName!.Trim()}");
         }
 
-        private static void Line(ColumnDescriptor c, string text) =>
-            c.Item().Text(text).FontSize(9).FontColor(Colors.Grey.Darken1);
+        // Trim in un unico punto: elimina spazi iniziali/finali che in QuestPDF
+        // sposterebbero la riga a destra, garantendo l'allineamento a sinistra.
+        private static void Line(ColumnDescriptor c, string? text) =>
+            c.Item().Text((text ?? string.Empty).Trim()).FontSize(9).FontColor(Colors.Grey.Darken1);
     }
 }

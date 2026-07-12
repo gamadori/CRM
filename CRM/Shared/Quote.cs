@@ -84,6 +84,44 @@ namespace CRM.Shared
         public virtual ApplicationUser? User { get; set; }
 
         public virtual ICollection<QuoteRow> Rows { get; set; } = new List<QuoteRow>();
+
+        public virtual ICollection<QuoteDelivery> Deliveries { get; set; } = new List<QuoteDelivery>();
+    }
+
+    /// <summary>
+    /// Registro di un invio del preventivo al cliente. Ogni riga è uno "snapshot" spedito:
+    /// congela il PDF esatto (percorso su disco) inviato in quel momento, chi era il
+    /// destinatario e quando, così l'invio è tracciato e il documento non cambia più.
+    /// </summary>
+    [Table("QuoteDeliveries")]
+    public class QuoteDelivery
+    {
+        [Key]
+        public int Id { get; set; }
+
+        [ForeignKey(nameof(Quote))]
+        public int IdQuote { get; set; }
+
+        public DateTime Date { get; set; }
+
+        /// <summary>Destinatario/i (email), separati da ';' se più di uno.</summary>
+        public string To { get; set; } = string.Empty;
+
+        public string? Cc { get; set; }
+
+        /// <summary>Canale di invio (per ora sempre "Email").</summary>
+        public string Channel { get; set; } = "Email";
+
+        public string FileName { get; set; } = string.Empty;
+
+        /// <summary>Percorso su disco del PDF congelato inviato.</summary>
+        public string FilePath { get; set; } = string.Empty;
+
+        /// <summary>Utente che ha effettuato l'invio.</summary>
+        public string? IdUser { get; set; }
+
+        [JsonIgnore]
+        public virtual Quote? Quote { get; set; }
     }
 
     /// <summary>

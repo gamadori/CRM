@@ -746,6 +746,8 @@ namespace CRM.Server.Data
 
         public DbSet<QuoteRow> QuoteRows => Set<QuoteRow>();
 
+        public DbSet<QuoteDelivery> QuoteDeliveries => Set<QuoteDelivery>();
+
         public DbSet<Order> Orders => Set<Order>();
 
         public DbSet<OrderRow> OrderRows => Set<OrderRow>();

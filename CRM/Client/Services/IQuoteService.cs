@@ -8,5 +8,6 @@ namespace CRM.Client.Services
     public interface IQuoteService : IDataService<Quote, QuoteDTO, int, QuoteFilter, decimal>
     {
         Task<APIResponseMessage<QuoteDTO>> ChangeStateAsync(int id, QuoteStates state, bool updateDeal = true);
+        Task<APIResponseMessage<QuoteDTO>> SendAsync(int id, QuoteSendRequest request);
     }
 }

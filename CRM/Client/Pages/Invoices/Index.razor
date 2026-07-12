@@ -42,13 +42,13 @@
             <Template Context="i"><span class="badge @StateClass(i.State)">@StateText(i.State)</span></Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="InvoiceDTO" Property="Total" Title="Totale" Width="130px" TextAlign="TextAlign.Right" FormatString="{0:C}" />
-        <RadzenDataGridColumn TItem="InvoiceDTO" Context="i" Title="" Width="110px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
+        <RadzenDataGridColumn TItem="InvoiceDTO" Context="i" Title="" Width="200px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
             <Template Context="i">
-                <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
+                <RedGButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary" 
                               Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientInvoicesPath}/{i.Id}/Details"))" />
                 @if (i.Permits.Delete())
                 {
-                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => Delete(i))" />
+                    <RedGButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Click="@(() => Delete(i))" />
                 }
             </Template>
         </RadzenDataGridColumn>

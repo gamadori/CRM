@@ -25,6 +25,8 @@ namespace CRM.Server.Services
         private readonly ILogEventService _logEventService;
         private readonly IQuotePdfGenerator _pdfGenerator;
         private readonly IOrdersService _ordersService;
+        private readonly IEmailSenderPlus _emailSender;
+        private readonly IWebHostEnvironment _env;
 
         public QuotesService(
             ApplicationDbContext context,
@@ -33,7 +35,9 @@ namespace CRM.Server.Services
             IPermitsService permitsService,
             ILogEventService logEventService,
             IQuotePdfGenerator pdfGenerator,
-            IOrdersService ordersService)
+            IOrdersService ordersService,
+            IEmailSenderPlus emailSender,
+            IWebHostEnvironment env)
         {
             _context = context;
             _userManager = userManager;
@@ -42,6 +46,8 @@ namespace CRM.Server.Services
             _logEventService = logEventService;
             _pdfGenerator = pdfGenerator;
             _ordersService = ordersService;
+            _emailSender = emailSender;
+            _env = env;
         }
 
         public async Task<QuoteDTO?> GetItemAsync(int id)
@@ -71,6 +77,19 @@ namespace CRM.Server.Services
                 }
 
                 dto.Permits = await _permitsService.ObjectPermits(dto.IdCompany, dto.IdUser);
+
+                var lastDelivery = await _context.QuoteDeliveries
+                    .AsNoTracking()
+                    .Where(d => d.IdQuote == id)
+                    .OrderByDescending(d => d.Date)
+                    .Select(d => new { d.Date, d.To })
+                    .FirstOrDefaultAsync();
+
+                if (lastDelivery != null)
+                {
+                    dto.LastSentAt = lastDelivery.Date;
+                    dto.LastSentTo = lastDelivery.To;
+                }
             }
             return dto;
         }
@@ -366,6 +385,134 @@ namespace CRM.Server.Services
                 return null;
             }
         }
+
+        /// <summary>
+        /// Restituisce il PDF del preventivo: se è già stato inviato usa lo snapshot congelato
+        /// su disco (il documento che il cliente ha ricevuto), altrimenti lo genera al volo.
+        /// </summary>
+        public async Task<(byte[] Bytes, string FileName)?> GetPdfAsync(int id)
+        {
+            var last = await _context.QuoteDeliveries
+                .AsNoTracking()
+                .Where(d => d.IdQuote == id)
+                .OrderByDescending(d => d.Date)
+                .Select(d => new { d.FilePath, d.FileName })
+                .FirstOrDefaultAsync();
+
+            if (last != null && !string.IsNullOrWhiteSpace(last.FilePath) && File.Exists(last.FilePath))
+                return (await File.ReadAllBytesAsync(last.FilePath), last.FileName);
+
+            return await GeneratePdfAsync(id);
+        }
+
+        /// <summary>
+        /// Invia il preventivo al cliente via email con il PDF in allegato, congela lo snapshot
+        /// spedito, registra l'invio e (se in Bozza) porta lo stato a Inviato.
+        /// </summary>
+        public async Task<APIResponseMessage<QuoteDTO>> SendAsync(int id, QuoteSendRequest request)
+        {
+            try
+            {
+                var quote = await _context.Quotes
+                    .Include(q => q.Company)
+                    .Include(q => q.Contact)
+                    .FirstOrDefaultAsync(q => q.Id == id);
+
+                if (quote == null)
+                    return QuoteFail("Preventivo non trovato", System.Net.HttpStatusCode.NotFound);
+
+                // Destinatario: esplicito → email contatto → email azienda
+                var to = FirstEmail(request?.To)
+                         ?? FirstEmail(quote.Contact?.Email)
+                         ?? FirstEmail(quote.Company?.Email);
+
+                if (string.IsNullOrWhiteSpace(to))
+                    return QuoteFail("Nessun indirizzo email disponibile per il cliente", System.Net.HttpStatusCode.BadRequest);
+
+                // Snapshot congelato: generato una volta e salvato su disco (serve anche
+                // all'outbox, che invia in background e legge l'allegato dal percorso).
+                var pdf = await GeneratePdfAsync(id);
+                if (pdf == null)
+                    return QuoteFail("Impossibile generare il PDF del preventivo", System.Net.HttpStatusCode.BadRequest);
+
+                var filePath = await SaveSnapshotAsync(id, pdf.Value.FileName, pdf.Value.Bytes);
+
+                var number = string.IsNullOrWhiteSpace(quote.Number) ? $"#{id}" : quote.Number;
+                var subject = $"Preventivo {number}";
+                var body = string.IsNullOrWhiteSpace(request?.Message)
+                    ? $"In allegato il preventivo {number}."
+                    : request!.Message!;
+
+                var cc = string.IsNullOrWhiteSpace(request?.Cc) ? null : request!.Cc!.Trim();
+
+                var context = quote.IdCompany.HasValue
+                    ? new EmailContext(ActivityEntityType.Company, quote.IdCompany.Value)
+                    : null;
+
+                var enqueued = await _emailSender.SendEmailAsync(
+                    new List<string> { to },
+                    EmailsTypes.InvioDocumento,
+                    new List<string> { filePath },
+                    subject,
+                    body,
+                    keyValues: null,
+                    cc: cc,
+                    context: context);
+
+                if (!enqueued)
+                    return QuoteFail("Invio email non riuscito (verifica la configurazione SMTP)", System.Net.HttpStatusCode.BadGateway);
+
+                _context.QuoteDeliveries.Add(new QuoteDelivery
+                {
+                    IdQuote = id,
+                    Date = DateTime.Now,
+                    To = to,
+                    Cc = cc,
+                    Channel = "Email",
+                    FileName = pdf.Value.FileName,
+                    FilePath = filePath,
+                    IdUser = await _permitsService.IdUser()
+                });
+
+                if (quote.State == QuoteStates.Draft)
+                    quote.State = QuoteStates.Sent;
+
+                await _context.SaveChangesAsync();
+
+                return new APIResponseMessage<QuoteDTO>
+                {
+                    State = true,
+                    Data = await GetItemAsync(id),
+                    Message = $"Preventivo inviato a {to}",
+                    Code = System.Net.HttpStatusCode.OK
+                };
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(QuotesService), nameof(SendAsync), EventsTypes.Error, ex);
+                return QuoteFail("Errore nell'invio del preventivo", System.Net.HttpStatusCode.InternalServerError);
+            }
+        }
+
+        private async Task<string> SaveSnapshotAsync(int quoteId, string fileName, byte[] bytes)
+        {
+            var root = string.IsNullOrWhiteSpace(_env.ContentRootPath) ? AppContext.BaseDirectory : _env.ContentRootPath;
+            var dir = Path.Combine(root, "Storage", "Quotes", quoteId.ToString());
+            Directory.CreateDirectory(dir);
+
+            var safeName = $"{Path.GetFileNameWithoutExtension(fileName)}-{DateTime.Now:yyyyMMddHHmmss}.pdf";
+            var path = Path.Combine(dir, safeName);
+            await File.WriteAllBytesAsync(path, bytes);
+            return path;
+        }
+
+        private static string? FirstEmail(string? value)
+            => string.IsNullOrWhiteSpace(value)
+                ? null
+                : value.Split(';', ',').Select(s => s.Trim()).FirstOrDefault(s => s.Length > 0);
+
+        private static APIResponseMessage<QuoteDTO> QuoteFail(string message, System.Net.HttpStatusCode code)
+            => new() { State = false, Message = message, Code = code };
 
         private static byte[]? DecodeLogo(string? inputFile)
         {

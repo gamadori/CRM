@@ -12,6 +12,8 @@ namespace CRM.Server.Services
         Task<APIResponseMessage<QuoteDTO>> PostAsync(Quote item);
         Task<APIResponseMessage<QuoteDTO>> ChangeStateAsync(int id, QuoteStates state, bool updateDeal);
         Task<(byte[] Bytes, string FileName)?> GeneratePdfAsync(int id);
+        Task<(byte[] Bytes, string FileName)?> GetPdfAsync(int id);
+        Task<APIResponseMessage<QuoteDTO>> SendAsync(int id, QuoteSendRequest request);
         Task<bool> DeleteAsync(int id);
     }
 }

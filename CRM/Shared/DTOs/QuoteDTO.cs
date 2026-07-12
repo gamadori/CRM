@@ -62,6 +62,10 @@ namespace CRM.Shared.DTOs
 
         public int Permits { get; set; }
 
+        public DateTime? LastSentAt { get; set; }
+
+        public string? LastSentTo { get; set; }
+
         public List<QuoteRowDTO> Rows { get; set; } = new();
 
         /// <summary>Ricalcolo lato client per anteprima live. La verita' resta il server.</summary>
@@ -114,6 +118,18 @@ namespace CRM.Shared.DTOs
         public decimal LineVat { get; set; }
 
         public decimal LineTotal { get; set; }
+    }
+
+    /// <summary>Richiesta di invio del preventivo via email (con PDF in allegato).</summary>
+    public class QuoteSendRequest
+    {
+        /// <summary>Destinatario. Se vuoto, il server usa l'email del contatto o dell'azienda.</summary>
+        public string? To { get; set; }
+
+        public string? Cc { get; set; }
+
+        /// <summary>Messaggio aggiuntivo opzionale nel corpo dell'email.</summary>
+        public string? Message { get; set; }
     }
 
     /// <summary>Formule di calcolo delle righe/preventivo, condivise fra client e server.</summary>

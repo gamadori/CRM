@@ -107,7 +107,8 @@ namespace CRM.Server.Controllers
         {
             try
             {
-                var pdf = await _quotesService.GeneratePdfAsync(id);
+                // Se il preventivo è già stato inviato restituisce lo snapshot congelato
+                var pdf = await _quotesService.GetPdfAsync(id);
                 if (pdf == null)
                     return NotFound();
 
@@ -118,6 +119,15 @@ namespace CRM.Server.Controllers
                 await _logEventService.RegisterAsync(nameof(QuotesController), nameof(GetPdf), LogEvent.EventsTypes.Error, ex);
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
+        }
+
+        [HttpPost("{id}/send")]
+        public async Task<ActionResult<APIResponseMessage<QuoteDTO>>> Send(int id, QuoteSendRequest request)
+        {
+            var resp = await _quotesService.SendAsync(id, request ?? new QuoteSendRequest());
+            if (resp == null)
+                return StatusCode(StatusCodes.Status500InternalServerError, "Send return null");
+            return Ok(resp);
         }
 
         [HttpDelete("{id}")]

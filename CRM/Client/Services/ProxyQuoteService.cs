@@ -49,5 +49,38 @@ namespace CRM.Client.Services
                 return new APIResponseMessage<QuoteDTO> { State = false, Message = ex.Message };
             }
         }
+
+        public async Task<APIResponseMessage<QuoteDTO>> SendAsync(int id, QuoteSendRequest request)
+        {
+            try
+            {
+                var resp = await _http.PostAsJsonAsync($"{_pathService}/{id}/send", request);
+
+                if (resp.IsSuccessStatusCode)
+                {
+                    return JsonSerializer.Deserialize<APIResponseMessage<QuoteDTO>>(
+                        await resp.Content.ReadAsStringAsync(),
+                        new JsonSerializerOptions() { PropertyNameCaseInsensitive = true })
+                        ?? new APIResponseMessage<QuoteDTO> { State = false, Message = "null" };
+                }
+
+                return new APIResponseMessage<QuoteDTO>
+                {
+                    State = false,
+                    Code = resp.StatusCode,
+                    Message = $"{resp.ReasonPhrase}\n\r{await resp.Content.ReadAsStringAsync()}"
+                };
+            }
+            catch (AccessTokenNotAvailableException exception)
+            {
+                exception.Redirect();
+                return new APIResponseMessage<QuoteDTO> { State = false, Code = System.Net.HttpStatusCode.Unauthorized };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return new APIResponseMessage<QuoteDTO> { State = false, Message = ex.Message };
+            }
+        }
     }
 }

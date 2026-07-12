@@ -73,17 +73,14 @@ namespace CRM.Client.Pages.LogEvents
         private async Task LoadDataAsync(LoadDataArgs? args = null)
         {
             _isLoading = true;
-            if (args != null)
-            {
-                _filter.Skip = args?.Skip;
-                _filter.Top = args?.Top;
 
-                _filter.OrderBy = args?.OrderBy;
-                _filter.Filter = args?.Filter;
+            // Sempre valorizzati: senza Skip/Top il server restituisce tutti i record
+            // (grid in modalità server-side, mostra esattamente ciò che riceve in Data).
+            _filter.Skip = args?.Skip ?? 0;
+            _filter.Top = args?.Top ?? ConstHelper.PageSize;
+            _filter.OrderBy = args?.OrderBy;
+            _filter.Filter = args?.Filter;
 
-                
-
-            }
             _filter.Message = _searchText;
             _filter.EventType = _eventType;
             var resp = await LogEventService.GetPagingAsync(_filter);

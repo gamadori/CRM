@@ -31,6 +31,11 @@ else
                       Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}"))" />
         <RadzenButton Icon="picture_as_pdf" Text="PDF" ButtonStyle="ButtonStyle.Secondary"
                       IsBusy="@_downloadingPdf" Disabled="@_downloadingPdf" Click="DownloadPdf" />
+        @if (_quote.State == QuoteStates.Draft || _quote.State == QuoteStates.Sent)
+        {
+            <RadzenButton Icon="forward_to_inbox" Text="Invia al cliente" ButtonStyle="ButtonStyle.Info"
+                          IsBusy="@_sending" Disabled="@_sending" Click="SendQuote" />
+        }
         @if (_quote.Permits.Edit())
         {
             <RadzenButton Icon="edit" Text="Modifica" ButtonStyle="ButtonStyle.Primary"
@@ -74,6 +79,14 @@ else
                 <div class="col-md-3"><small class="text-muted d-block">Contatto</small>@(string.IsNullOrEmpty(_quote.ContactName) ? "—" : _quote.ContactName)</div>
                 <div class="col-md-3"><small class="text-muted d-block">Trattativa</small>@(string.IsNullOrEmpty(_quote.DealName) ? "—" : _quote.DealName)</div>
                 <div class="col-md-3"><small class="text-muted d-block">Owner</small>@_quote.UserName</div>
+                @if (_quote.LastSentAt.HasValue)
+                {
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Ultimo invio</small>
+                        @_quote.LastSentAt.Value.ToString("dd/MM/yyyy HH:mm")
+                        @(string.IsNullOrEmpty(_quote.LastSentTo) ? "" : $" → {_quote.LastSentTo}")
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -151,6 +164,7 @@ else
     private QuoteDTO? _quote;
     private bool _downloadingPdf;
     private bool _creatingOrder;
+    private bool _sending;
 
     private string OrderButtonText => string.IsNullOrWhiteSpace(_quote?.OrderNumber)
         ? "Apri ordine"
@@ -216,6 +230,55 @@ else
         finally
         {
             _creatingOrder = false;
+        }
+    }
+
+    private async Task SendQuote()
+    {
+        var to = string.Empty;
+        var cc = string.Empty;
+        var message = string.Empty;
+
+        var confirmed = await DialogService.OpenAsync("Invia preventivo al cliente", ds =>
+    @<div>
+        <div class="mb-3">
+            <label class="form-label">Destinatario</label>
+            <RadzenTextBox @bind-Value="to" Placeholder="Lascia vuoto per usare l'email del cliente" Style="width:100%" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Cc (opzionale)</label>
+            <RadzenTextBox @bind-Value="cc" Style="width:100%" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Messaggio (opzionale)</label>
+            <RadzenTextArea @bind-Value="message" Rows="3" Style="width:100%" />
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+            <RadzenButton Text="Annulla" ButtonStyle="ButtonStyle.Light" Click="() => ds.Close(false)" />
+            <RadzenButton Text="Invia" Icon="send" ButtonStyle="ButtonStyle.Primary" Click="() => ds.Close(true)" />
+        </div>
+    </div>);
+
+        if (confirmed != true)
+            return;
+
+        _sending = true;
+        try
+        {
+            var resp = await QuoteService.SendAsync(Id, new QuoteSendRequest { To = to, Cc = cc, Message = message });
+            if (resp.State)
+            {
+                _quote = resp.Data;
+                Notification.Notify(NotificationSeverity.Success, "Fatto", resp.Message ?? "Preventivo inviato");
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Warning, "Non inviato", resp.Message ?? "Invio fallito");
+            }
+        }
+        finally
+        {
+            _sending = false;
         }
     }
 
