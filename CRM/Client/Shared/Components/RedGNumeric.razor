@@ -10,9 +10,9 @@
 
 @if (!ReadOnly)
 {
-    <RtzDisplayName For="For">
+    <RtzDisplayName For="For" Text="@Label">
         <ChildContent>
-       
+
             <RadzenNumeric Value="@Value" @rendermode="renderMode" Format="@Format"
               ValueChanged="@ValueChanged" Style="@Style" Name="@Name" Placeholder="@Placeholder" class="@($"{CssClass} remove-border")" />
         </ChildContent>
@@ -24,14 +24,14 @@
 }
 else
 {
-    <RtzDisplayName For="For" Variant="Variant.Filled">
+    <RtzDisplayName For="For" Text="@Label" Variant="Variant.Filled">
         <ChildContent>
 
             <RadzenNumeric Value="@Value" @rendermode="renderMode" Format="@Format"
                             Style="@Style" Name="@Name" Placeholder="@Placeholder" class="@($"{CssClass} remove-border")" ReadOnly="true"  />
         </ChildContent>
         <Helper>
-            
+
         </Helper>
         <End>@End</End>
     </RtzDisplayName>
@@ -65,5 +65,7 @@ else
     public string? Format { get; set; }
     [Parameter]
     public bool ReadOnly { get; set; } = false;
-   
+    [Parameter]
+    public string? Label { get; set; }
+
 }

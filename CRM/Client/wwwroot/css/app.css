@@ -411,7 +411,7 @@ td {
 
 
 .label-floating {
-    color: #222e3c;
+    color: var(--crm-text, #222e3c);
     font-size: medium;
 }
 

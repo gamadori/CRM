@@ -3,16 +3,19 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Globalization
 @using Humanizer
+@using Microsoft.Extensions.Localization
 
 @typeparam TEnum where TEnum : struct, Enum
 
 @inherits InputBase<TEnum>
 
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
 <RtzDisplayName For="For" Text="@Label">
     <ChildContent>
         <RadzenDropDown TValue="TEnum" Data="@_enumValues" TextProperty="@nameof(EnumItem.DisplayName)" ValueProperty="@nameof(EnumItem.Value)"
-                        Value="@CurrentValue" Change=Change ValueChanged="OnValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" 
-                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="@AllowClear" Placeholder="@Placeholder"
+                        Value="@CurrentValue" Change=Change ValueChanged="OnValueChanged" Style="@Style" AllowFiltering="@AllowFiltering"
+                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="@AllowClear" Placeholder="@EffectivePlaceholder"
                         Disabled="@Disabled" />
     </ChildContent>
     <Helper>
@@ -35,6 +38,9 @@
 
     [Parameter]
     public string Placeholder { get; set; } = string.Empty;
+
+    private string EffectivePlaceholder =>
+        string.IsNullOrWhiteSpace(Placeholder) ? Localize["Seleziona"] : Placeholder;
 
     [Parameter]
     public Expression<Func<TEnum>>? For { get; set; }

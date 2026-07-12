@@ -79,28 +79,29 @@
         position: relative;
         width: 100%;
         max-width: 200px;
-        font-family: Arial, sans-serif;
+        font-family: inherit;
     }
 
     .imagedropdown-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 10px 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        background-color: #fff;
+        padding: 8px 12px;
+        border: 1px solid var(--crm-border, #ddd);
+        border-radius: 6px;
+        background-color: var(--crm-surface, #fff);
+        color: var(--crm-text, inherit);
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: all 0.15s ease;
     }
 
     .imagedropdown-header:hover {
-        border-color: #999;
+        border-color: var(--crm-border-strong, #999);
     }
 
     .imagedropdown-header.active {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        border-color: var(--rz-primary, #007bff);
+        box-shadow: 0 0 0 3px var(--rz-primary-lighter, rgba(0, 123, 255, 0.25));
     }
 
     .imagedropdown-selected-item {
@@ -136,10 +137,10 @@
         left: 0;
         right: 0;
         margin-top: 5px;
-        background-color: #fff;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background-color: var(--crm-surface, #fff);
+        border: 1px solid var(--crm-border, #ddd);
+        border-radius: 6px;
+        box-shadow: var(--crm-shadow, 0 4px 6px rgba(0, 0, 0, 0.1));
         max-height: 300px;
         overflow-y: auto;
         z-index: 1000;
@@ -149,17 +150,18 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 10px 15px;
+        padding: 10px 12px;
+        color: var(--crm-text, inherit);
         cursor: pointer;
-        transition: background-color 0.2s ease;
+        transition: background-color 0.15s ease;
     }
 
     .imagedropdown-item:hover {
-        background-color: #f8f9fa;
+        background-color: var(--crm-surface-hover, #f8f9fa);
     }
 
     .imagedropdown-item.selected {
-        background-color: #e7f3ff;
+        background-color: var(--rz-primary-lighter, #e7f3ff);
         font-weight: 600;
     }
 

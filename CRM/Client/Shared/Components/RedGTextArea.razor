@@ -6,24 +6,19 @@
 
 
 
-@* <RtzDisplayName For="For" Variant="_variant">
+<RtzDisplayName For="For" Text="@Label" Variant="_variant" AllowFloatingLabel="@(!ReadOnly)">
     <ChildContent>
-        <RadzenTextArea Placeholder="@Placeholder" @rendermode="renderMode" ValueChanged="@ValueChanged" Value="@Value" Style="width: 100%"  
-            ReadOnly="ReadOnly" />
-        
+        <RadzenTextArea Value="@Value" ValueChanged="@ValueChanged" @rendermode="renderMode" Placeholder="@Placeholder" Style="width: 100%" Rows="@Rows" Cols="@Cols"
+            ReadOnly="ReadOnly" class="@($"{CssClass} remove-border")" />
     </ChildContent>
     <Helper>
-        @if (!ReadOnly)
+        @if (For != null && !ReadOnly)
         {
             <ValidationMessage For="@For" />
         }
     </Helper>
     <End>@End</End>
-</RtzDisplayName> *@
-<DisplayName For="For">
-    <RadzenTextArea Value="@Value" ValueChanged="@ValueChanged" @rendermode="renderMode" Placeholder="@Placeholder" Style="width: 100%" Rows="@Rows" Cols="@Cols"
-    ReadOnly="ReadOnly" />
-</DisplayName>
+</RtzDisplayName>
 @code {
 
    
@@ -49,21 +44,22 @@
     public RenderFragment Helper { get; set; } = default!;
     [Parameter]
     public RenderFragment? End { get; set; } = default!;
-    [Parameter] 
+    [Parameter]
     public string CssClass { get; set; } = string.Empty;
     [Parameter]
     public bool ReadOnly { get; set; } = false;
+    [Parameter]
+    public string? Label { get; set; }
 
     private Variant _variant = Variant.Text;
 
     protected override void OnInitialized()
     {
-        @if (ReadOnly)
+        if (ReadOnly)
             _variant = Variant.Filled;
-        
-        
+
         base.OnInitialized();
     }
-    
-    
+
+
 }
