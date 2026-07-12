@@ -126,6 +126,9 @@
   <data name="CodiceFiscale" xml:space="preserve">
     <value>Code des impôts</value>
   </data>
+  <data name="CodiceSDI" xml:space="preserve">
+    <value>Code SDI</value>
+  </data>
   <data name="Email" xml:space="preserve">
     <value>Email</value>
   </data>

@@ -64,6 +64,9 @@ namespace CRM.Shared
         [Display(Name = nameof(Company.CodiceFiscale), ResourceType = typeof(Resources.Models.Company))]
         public string? CodiceFiscale { get; set; }
 
+        [Display(Name = nameof(Company.CodiceSDI), ResourceType = typeof(Resources.Models.Company))]
+        public string? CodiceSDI { get; set; }
+
         [Display(Name = nameof(Company.CompanyType), ResourceType = typeof(Resources.Models.Company))]
         public CompanyTypes CompanyType { get; set; }
 

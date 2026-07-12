@@ -31,6 +31,14 @@ else
                 </RedGDetailField>
             }
 
+            @if (!string.IsNullOrEmpty(_company.CodiceSDI))
+            {
+                <RedGDetailField Icon="qr_code_2">
+                    <LabelContent><DisplayName For="@(() => _company.CodiceSDI)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_company.CodiceSDI</p></ChildContent>
+                </RedGDetailField>
+            }
+
             <RedGDetailField Icon="location_on">
                 <LabelContent><DisplayName For="@(() => _company.Indirizzo)" /></LabelContent>
                 <ChildContent><p class="mb-0 text-dark">@_company.Indirizzo</p></ChildContent>

@@ -51,6 +51,9 @@ namespace CRM.Shared.DTOs
         [Display(Name = nameof(Company.CodiceFiscale), ResourceType = typeof(Resources.Models.Company))]
         public string? CodiceFiscale { get; set; }
 
+        [Display(Name = nameof(Company.CodiceSDI), ResourceType = typeof(Resources.Models.Company))]
+        public string? CodiceSDI { get; set; }
+
         [Display(Name = nameof(Company.CompanyType), ResourceType = typeof(Resources.Models.Company))]
         public CompanyTypes CompanyType { get; set; }
 
@@ -84,6 +87,7 @@ namespace CRM.Shared.DTOs
                 Cap = company.Cap,
                 Citta = company.Citta,
                 CodiceFiscale = company.CodiceFiscale,
+                CodiceSDI = company.CodiceSDI,
                 CompanyType = company.CompanyType,
                 Email = company.Email,
                 IdReseller = company.IdReseller,
@@ -112,6 +116,7 @@ namespace CRM.Shared.DTOs
                 Cap = dto.Cap,
                 Citta = dto.Citta,
                 CodiceFiscale = dto.CodiceFiscale,
+                CodiceSDI = dto.CodiceSDI,
                 CompanyType = dto.CompanyType,
                 Email = dto.Email,
                 IdReseller = dto.IdReseller,

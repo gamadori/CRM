@@ -151,6 +151,10 @@ namespace CRM.Server.Services
                     if (string.IsNullOrWhiteSpace(item.Number))
                         item.Number = await GenerateNumberAsync(item.Date);
 
+                    // Se non indicato manualmente, eredita il codice destinatario SdI dal cliente
+                    if (string.IsNullOrWhiteSpace(item.CodiceDestinatario))
+                        item.CodiceDestinatario = await GetCompanySdiAsync(item.IdCompany);
+
                     _context.Invoices.Add(item);
                     savedId = 0;
                 }
@@ -201,6 +205,9 @@ namespace CRM.Server.Services
                     }).ToList()
                 };
 
+                // Precompila il codice destinatario SdI dall'anagrafica del cliente
+                invoice.CodiceDestinatario = await GetCompanySdiAsync(order.IdCompany);
+
                 Recalculate(invoice);
                 invoice.Number = await GenerateNumberAsync(invoice.Date);
 
@@ -213,6 +220,32 @@ namespace CRM.Server.Services
             {
                 await _logEventService.RegisterAsync(nameof(InvoicesService), nameof(CreateFromOrderAsync), EventsTypes.Error, ex);
                 return Fail("Errore nella creazione della fattura", System.Net.HttpStatusCode.InternalServerError);
+            }
+        }
+
+        public async Task<APIResponseMessage<InvoiceDTO>> UpdateRecipientAsync(int id, string? codiceDestinatario)
+        {
+            try
+            {
+                var invoice = await _context.Invoices.FirstOrDefaultAsync(x => x.Id == id);
+                if (invoice == null)
+                    return Fail("Fattura non trovata", System.Net.HttpStatusCode.NotFound);
+
+                // Dopo la trasmissione a SdI il dato è congelato: non si tocca
+                if (invoice.State == InvoiceStates.Sent || invoice.State == InvoiceStates.Delivered)
+                    return Fail("La fattura è già stata trasmessa: codice destinatario non modificabile", System.Net.HttpStatusCode.Conflict);
+
+                var codice = string.IsNullOrWhiteSpace(codiceDestinatario) ? "0000000" : codiceDestinatario.Trim();
+                invoice.CodiceDestinatario = codice;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(await GetItemAsync(id), "Codice destinatario aggiornato");
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(InvoicesService), nameof(UpdateRecipientAsync), EventsTypes.Error, ex);
+                return Fail("Errore nell'aggiornamento del codice destinatario", System.Net.HttpStatusCode.InternalServerError);
             }
         }
 
@@ -302,6 +335,23 @@ namespace CRM.Server.Services
         }
 
         private static string? NormalizeUser(string? idUser) => string.IsNullOrWhiteSpace(idUser) ? null : idUser;
+
+        /// <summary>
+        /// Recupera il codice destinatario SdI (campo CodiceSDI) dall'anagrafica del cliente.
+        /// Restituisce null se non impostato, così il builder FatturaPA applica il default "0000000".
+        /// </summary>
+        private async Task<string?> GetCompanySdiAsync(int? idCompany)
+        {
+            if (idCompany == null)
+                return null;
+
+            var sdi = await _context.Companies
+                .Where(c => c.Id == idCompany.Value)
+                .Select(c => c.CodiceSDI)
+                .FirstOrDefaultAsync();
+
+            return string.IsNullOrWhiteSpace(sdi) ? null : sdi.Trim();
+        }
 
         private static APIResponseMessage<InvoiceDTO> Fail(string msg, System.Net.HttpStatusCode code)
             => new() { State = false, Message = msg, Code = code };

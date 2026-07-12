@@ -46,6 +46,13 @@ else
                     <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
+                                <RedGTextBox @bind-Value="@_company.CodiceSDI" For="@(() => _company.CodiceSDI)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
                                 <RedGTextBox @bind-Value="@_company.Indirizzo" For="@(() => _company.Indirizzo)" />
                             </RadzenStack>
                         </RadzenColumn>

@@ -56,7 +56,23 @@ else
                 <div class="col-md-3"><small class="text-muted d-block">Tipo documento</small>@_invoice.TipoDocumento</div>
                 <div class="col-md-3"><small class="text-muted d-block">Stato</small><span class="badge @StateClass(_invoice.State)">@StateText(_invoice.State)</span></div>
                 <div class="col-md-3"><small class="text-muted d-block">Azienda</small>@_invoice.CompanyName</div>
-                <div class="col-md-3"><small class="text-muted d-block">Cod. destinatario</small>@_invoice.CodiceDestinatario</div>
+                <div class="col-md-3">
+                    <small class="text-muted d-block">Cod. destinatario</small>
+                    @if (_invoice.State == InvoiceStates.Issued || _invoice.State == InvoiceStates.Draft)
+                    {
+                        <div class="d-flex align-items-center gap-2">
+                            <RadzenTextBox @bind-Value="_codice" Style="max-width:150px" Disabled="@_savingRecipient" title="Ereditato dall'anagrafica cliente (SDI). Modificabile fino alla trasmissione." />
+                            <RadzenButton Icon="save" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                          IsBusy="@_savingRecipient"
+                                          Disabled="@(_savingRecipient || string.Equals(_codice, _invoice.CodiceDestinatario))"
+                                          Click="SaveRecipient" />
+                        </div>
+                    }
+                    else
+                    {
+                        @_invoice.CodiceDestinatario
+                    }
+                </div>
                 <div class="col-md-3"><small class="text-muted d-block">Ordine</small>@(string.IsNullOrEmpty(_invoice.OrderNumber) ? "—" : _invoice.OrderNumber)</div>
                 <div class="col-md-3"><small class="text-muted d-block">Rif. SdI</small>@(string.IsNullOrEmpty(_invoice.SdiReference) ? "—" : _invoice.SdiReference)</div>
             </div>
@@ -110,11 +126,34 @@ else
     private InvoiceDTO? _invoice;
     private bool _downloading;
     private bool _sending;
+    private string? _codice;
+    private bool _savingRecipient;
 
     protected override async Task OnInitializedAsync()
     {
         _pageHeader = await HeaderService.Create();
         _invoice = await InvoiceService.GetItemAsync(Id);
+        _codice = _invoice?.CodiceDestinatario;
+    }
+
+    private async Task SaveRecipient()
+    {
+        _savingRecipient = true;
+        try
+        {
+            var resp = await InvoiceService.UpdateRecipientAsync(Id, _codice);
+            if (resp.State && resp.Data != null)
+            {
+                _invoice = resp.Data;
+                _codice = _invoice.CodiceDestinatario;
+                Notification.Notify(NotificationSeverity.Success, "Fatto", "Codice destinatario aggiornato");
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Warning, "Non salvato", resp.Message ?? "Errore");
+            }
+        }
+        finally { _savingRecipient = false; }
     }
 
     private async Task DownloadXml()

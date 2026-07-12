@@ -98,14 +98,7 @@ namespace CRM.Server.Services
 
                 // Cliente
                 col.Item().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(12).Column(c =>
-                {
-                    c.Item().PaddingBottom(6).Text("Cliente").FontSize(12).Bold().FontColor(Colors.Blue.Darken1);
-                    c.Item().Text(quote.Company?.RagioneSociale ?? "N/D").FontSize(11).Bold();
-                    if (!string.IsNullOrWhiteSpace(quote.Company?.PIva))
-                        c.Item().Text($"P.IVA {quote.Company!.PIva}").FontSize(9).FontColor(Colors.Grey.Darken1);
-                    if (quote.Contact != null)
-                        c.Item().Text($"Rif. {quote.Contact.NameComplete}").FontSize(9).FontColor(Colors.Grey.Darken1);
-                });
+                    PdfClientBlock.Compose(c, quote.Company, quote.Contact?.NameComplete));
 
                 // Righe
                 col.Item().Table(table =>

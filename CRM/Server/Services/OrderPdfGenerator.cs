@@ -104,14 +104,7 @@ namespace CRM.Server.Services
                 col.Spacing(15);
 
                 col.Item().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(12).Column(c =>
-                {
-                    c.Item().PaddingBottom(6).Text("Cliente").FontSize(12).Bold().FontColor(Colors.Blue.Darken1);
-                    c.Item().Text(order.Company?.RagioneSociale ?? "N/D").FontSize(11).Bold();
-                    if (!string.IsNullOrWhiteSpace(order.Company?.PIva))
-                        c.Item().Text($"P.IVA {order.Company!.PIva}").FontSize(9).FontColor(Colors.Grey.Darken1);
-                    if (order.Contact != null)
-                        c.Item().Text($"Rif. {order.Contact.NameComplete}").FontSize(9).FontColor(Colors.Grey.Darken1);
-                });
+                    PdfClientBlock.Compose(c, order.Company, order.Contact?.NameComplete));
 
                 col.Item().Table(table =>
                 {

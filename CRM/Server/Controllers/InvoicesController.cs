@@ -98,6 +98,15 @@ namespace CRM.Server.Controllers
             return Ok(resp);
         }
 
+        [HttpPut("{id}/recipient")]
+        public async Task<ActionResult<APIResponseMessage<InvoiceDTO>>> UpdateRecipient(int id, InvoiceRecipientDTO payload)
+        {
+            var resp = await _invoicesService.UpdateRecipientAsync(id, payload?.CodiceDestinatario);
+            if (resp == null)
+                return StatusCode(StatusCodes.Status500InternalServerError, "Update recipient return null");
+            return Ok(resp);
+        }
+
         [HttpGet("{id}/xml")]
         public async Task<IActionResult> GetXml(int id)
         {

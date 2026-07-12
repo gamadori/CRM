@@ -11,6 +11,7 @@ namespace CRM.Server.Services
         Task<List<InvoiceDTO>?> GetListAsync(InvoiceFilter? args = null);
         Task<APIResponseMessage<InvoiceDTO>> PostAsync(Invoice item);
         Task<APIResponseMessage<InvoiceDTO>> CreateFromOrderAsync(int orderId);
+        Task<APIResponseMessage<InvoiceDTO>> UpdateRecipientAsync(int id, string? codiceDestinatario);
         Task<(string Xml, string FileName)?> GenerateXmlAsync(int id);
         Task<APIResponseMessage<InvoiceDTO>> SendAsync(int id);
         Task<bool> DeleteAsync(int id);

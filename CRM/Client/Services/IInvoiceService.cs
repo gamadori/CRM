@@ -9,5 +9,6 @@ namespace CRM.Client.Services
     {
         Task<APIResponseMessage<InvoiceDTO>> CreateFromOrderAsync(int orderId);
         Task<APIResponseMessage<InvoiceDTO>> SendAsync(int id);
+        Task<APIResponseMessage<InvoiceDTO>> UpdateRecipientAsync(int id, string? codiceDestinatario);
     }
 }

@@ -67,6 +67,14 @@ namespace CRM.Shared.DTOs
         public List<InvoiceRowDTO> Rows { get; set; } = new();
     }
 
+    /// <summary>
+    /// Payload per l'aggiornamento mirato del codice destinatario SdI di una fattura.
+    /// </summary>
+    public class InvoiceRecipientDTO
+    {
+        public string? CodiceDestinatario { get; set; }
+    }
+
     public class InvoiceRowDTO
     {
         public int Id { get; set; }

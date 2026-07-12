@@ -24,7 +24,7 @@
     <PackageReference Include="QLNet" Version="1.13.1" />
     <PackageReference Include="Radzen.Blazor" Version="5.7.4" />
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.2" />
-    <PackageReference Include="System.Private.Uri" Version="4.3.0" />
+    <PackageReference Include="System.Private.Uri" Version="4.3.2" />
 
   </ItemGroup>
 

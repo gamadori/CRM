@@ -86,7 +86,16 @@ namespace CRM.Shared.Resources.Models {
                 return ResourceManager.GetString("CodiceFiscale", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a SDI Code.
+        /// </summary>
+        public static string CodiceSDI {
+            get {
+                return ResourceManager.GetString("CodiceSDI", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Cerca una stringa localizzata simile a Company Type.
         /// </summary>

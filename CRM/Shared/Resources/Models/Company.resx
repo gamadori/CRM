@@ -126,6 +126,9 @@
   <data name="CodiceFiscale" xml:space="preserve">
     <value>Fiscal Code</value>
   </data>
+  <data name="CodiceSDI" xml:space="preserve">
+    <value>SDI Code</value>
+  </data>
   <data name="CompanyType" xml:space="preserve">
     <value>Company Type</value>
   </data>
