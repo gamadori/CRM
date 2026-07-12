@@ -143,7 +143,33 @@ namespace CRM.Client.Pages.Tickets
 
            
             _pageHeader = await HeaderService.Create(PageMode);
+            ApplyHeaderFilters();
             StateHasChanged();
+        }
+
+        /// <summary>
+        /// I parametri di rotta (stato e utente) sono filtri della lista, non risorse:
+        /// vengono mostrati nel sottotitolo invece che nel breadcrumb.
+        /// </summary>
+        private void ApplyHeaderFilters()
+        {
+            if (_pageHeader == null)
+                return;
+
+            var filters = new List<string>();
+
+            if (TypeSearch != (int)TicketTypeSearch.All)
+                filters.Add($"{Localize["State"]}: {Localize[((TicketTypeSearch)TypeSearch).ToString()]}");
+
+            if (!string.IsNullOrEmpty(_idUser))
+            {
+                var userName = _users.FirstOrDefault(u => u.Id == _idUser)?.NameComplete;
+                if (!string.IsNullOrEmpty(userName))
+                    filters.Add(userName);
+            }
+
+            if (filters.Any())
+                _pageHeader.Subtitle = string.Join(" · ", filters);
         }
 
         private async Task LoadDataAllUser()
@@ -448,8 +474,9 @@ namespace CRM.Client.Pages.Tickets
         protected async void OnChangeFilter()
         {
 
-            
+
             await LoadData();
+            ApplyHeaderFilters();
             StateHasChanged();
         }
 
@@ -457,6 +484,8 @@ namespace CRM.Client.Pages.Tickets
         {
             IdUser = _idUser;
             await LoadData();
+            ApplyHeaderFilters();
+            StateHasChanged();
         }
 
         public async Task FindResponsiveness()

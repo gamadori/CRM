@@ -3,15 +3,18 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Globalization
 @using System.Resources
+@using Microsoft.Extensions.Localization
 
 @typeparam TItem
 @typeparam TValue
+
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 <RtzDisplayName For="For" Text="@Label">
     <ChildContent>
 
         <RadzenDropDown Disabled=@Disabled @rendermode="renderMode" TValue="TValue" Data="@Data" TextProperty="@TextProperty" AllowClear="true" Change="@Change" Multiple=@Multiple
-        ValueProperty="@ValueProperty" Value="@Value" ValueChanged="ValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" PageSize="@PageSize" />
+        ValueProperty="@ValueProperty" Value="@Value" ValueChanged="ValueChanged" Style="@Style" AllowFiltering="@AllowFiltering" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" PageSize="@PageSize" Placeholder="@EffectivePlaceholder" />
     </ChildContent>
     <Helper>
         @if (For != null)
@@ -33,8 +36,14 @@
     public string Style { get; set; } = string.Empty;
     [Parameter] 
     public string Name { get; set; } = string.Empty;
-    [Parameter] 
+    [Parameter]
     public string Placeholder { get; set; } = string.Empty;
+
+    // Segnaposto mostrato quando non c'è selezione (Value null): evita che la
+    // floating label resti al centro del campo sembrando un valore selezionato.
+    // Se il chiamante non specifica un Placeholder si usa "Seleziona" localizzato.
+    private string EffectivePlaceholder =>
+        string.IsNullOrWhiteSpace(Placeholder) ? Localize["Seleziona"] : Placeholder;
     [Parameter] 
     public IComponentRenderMode renderMode { get; set; } = RenderMode.InteractiveAuto;
     [Parameter] 

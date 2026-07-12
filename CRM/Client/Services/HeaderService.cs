@@ -21,7 +21,13 @@ namespace CRM.Client.Services
 
         // Cache per action keywords per evitare ricreazione ripetuta
         private static readonly HashSet<string> ActionKeywords = new(
-            new[] { "details", "edit", "info", "new", "create", "index", "view" }, 
+            new[] { "details", "edit", "info", "new", "create", "index", "view" },
+            StringComparer.OrdinalIgnoreCase
+        );
+
+        // Azioni di lista: i segmenti che le seguono sono parametri di filtro, non risorse
+        private static readonly HashSet<string> ListActionKeywords = new(
+            new[] { "index", "filter", "search" },
             StringComparer.OrdinalIgnoreCase
         );
 
@@ -356,8 +362,16 @@ namespace CRM.Client.Services
                 return items;
 
             var path = url.Split('?', '#')[0];
-            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries)
-                .Where(s => !s.Equals("details", StringComparison.OrdinalIgnoreCase) 
+            var rawSegments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            // I segmenti che seguono un'azione di lista (Index/filter/search) sono
+            // parametri di filtro, non risorse: non vanno resi come voci di breadcrumb.
+            var listActionIndex = Array.FindIndex(rawSegments, s => ListActionKeywords.Contains(s));
+            if (listActionIndex >= 0)
+                rawSegments = rawSegments.Take(listActionIndex).ToArray();
+
+            var segments = rawSegments
+                .Where(s => !s.Equals("details", StringComparison.OrdinalIgnoreCase)
                          && !s.Equals("index", StringComparison.OrdinalIgnoreCase)
                          && !s.Equals("info", StringComparison.OrdinalIgnoreCase))
                 .ToArray();
@@ -373,23 +387,34 @@ namespace CRM.Client.Services
 
                 if (i > 0 && IsIdSegment(segment, out var isNumeric, out var isGuid))
                 {
+                    // Un id rappresenta una risorsa solo se segue il NOME di una risorsa
+                    // (es. "tickets/13"). Se segue un altro id (es. "tickets/13/0/{guid}"),
+                    // i segmenti restanti sono parametri di contesto (filtro, id utente,
+                    // back-url...), non risorse gerarchiche: interrompiamo qui.
+                    if (IsIdSegment(segments[i - 1], out _, out _))
+                        break;
+
                     var text = await GetSegmentTextForIdAsync(segments[i - 1].ToLower(), segment, isNumeric, isGuid);
+                    if (string.IsNullOrWhiteSpace(text))
+                        text = segment;
+
                     cumulative += "/" + segment;
                     items.Add(new BreadcrumbItem { Text = text, Url = cumulative });
                 }
                 else
                 {
-                    var text = GetLocalizedResourceNotFound(segment) 
-                        ? ToTitle(segment) 
+                    var text = GetLocalizedResourceNotFound(segment)
+                        ? ToTitle(segment)
                         : GetLocalizedString(segment);
 
                     cumulative += "/" + segment;
-
-                    // Ultimo segmento non cliccabile
-                    var breadcrumbUrl = i == segments.Length - 1 ? null : cumulative;
-                    items.Add(new BreadcrumbItem { Text = text, Url = breadcrumbUrl });
+                    items.Add(new BreadcrumbItem { Text = text, Url = cumulative });
                 }
             }
+
+            // La voce corrente (ultima rimasta dopo eventuale troncamento) non è cliccabile
+            if (items.Count > 0)
+                items[items.Count - 1].Url = null;
 
             return items;
         }
