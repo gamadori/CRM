@@ -21,6 +21,9 @@ namespace CRM.Shared.DTOs
         /// <summary>Documento sorgente (se la voce deriva da un import), altrimenti null.</summary>
         public string? SourceDocument { get; set; }
 
+        /// <summary>Id dell'import di provenienza: le parti dello stesso documento lo condividono. Null per le voci manuali.</summary>
+        public Guid? DocumentGroupId { get; set; }
+
         /// <summary>True se la voce ha già un embedding calcolato.</summary>
         public bool HasEmbedding { get; set; }
 

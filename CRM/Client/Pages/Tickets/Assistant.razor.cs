@@ -95,6 +95,11 @@ namespace CRM.Client.Pages.Tickets
                         if (string.IsNullOrEmpty(assistantTurn.Content))
                             assistantTurn.Content = $"⚠️ {error}";
                         InvokeAsync(StateHasChanged);
+                    },
+                    onLogId: id =>
+                    {
+                        assistantTurn.LogId = id;
+                        InvokeAsync(StateHasChanged);
                     });
             }
             catch (Exception ex)
@@ -129,11 +134,62 @@ namespace CRM.Client.Pages.Tickets
             }
         }
 
+        private async Task VoteUp(ChatTurn turn)
+        {
+            await SubmitFeedback(turn, 1, null);
+        }
+
+        private void VoteDown(ChatTurn turn)
+        {
+            // Il voto negativo apre il campo commento: il "perché" è il dato più utile.
+            turn.ShowComment = true;
+            StateHasChanged();
+        }
+
+        private async Task SubmitDownWithComment(ChatTurn turn)
+        {
+            var comment = string.IsNullOrWhiteSpace(turn.CommentDraft) ? null : turn.CommentDraft.Trim();
+            await SubmitFeedback(turn, -1, comment);
+        }
+
+        private async Task SubmitFeedback(ChatTurn turn, int vote, string comment)
+        {
+            if (turn.LogId == null)
+                return;
+
+            var ok = await Service.SendAssistantFeedback(new AssistantFeedbackRequest
+            {
+                LogId = turn.LogId.Value,
+                Vote = vote,
+                Comment = comment
+            });
+
+            if (ok)
+            {
+                turn.Feedback = vote;
+                turn.FeedbackSent = true;
+                turn.ShowComment = false;
+            }
+            StateHasChanged();
+        }
+
         private class ChatTurn
         {
             public string Role { get; set; } = "user";
             public string Content { get; set; } = string.Empty;
             public List<TicketSimilarityResult> Tickets { get; set; }
+
+            /// <summary>Id del log lato server: presente quando la risposta è completa e votabile.</summary>
+            public int? LogId { get; set; }
+
+            /// <summary>Voto dato dall'operatore: 1 = su, -1 = giù, null = nessuno.</summary>
+            public int? Feedback { get; set; }
+
+            public bool FeedbackSent { get; set; }
+
+            public bool ShowComment { get; set; }
+
+            public string CommentDraft { get; set; } = string.Empty;
         }
     }
 }

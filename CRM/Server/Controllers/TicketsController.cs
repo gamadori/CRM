@@ -858,11 +858,15 @@ namespace CRM.Server.Controllers
                 var context = BuildTicketContext(retrieval.Tickets) + BuildKnowledgeContext(knowledge);
                 var reply = await chatService.AnswerAsync(request.Messages, context);
 
+                var logId = await CreateAssistantLogAsync(
+                    lastUser.Content, reply, retrieval.Tickets, request.IdTicket, request.IdProduct);
+
                 return new CRM.Shared.Models.AssistantChatResponse
                 {
                     Reply = reply,
                     ReferencedTickets = retrieval.Tickets,
-                    Success = true
+                    Success = true,
+                    LogId = logId
                 };
             }
             catch (Exception ex)
@@ -944,14 +948,25 @@ namespace CRM.Server.Controllers
                 Response.Headers["X-Referenced-Tickets"] =
                     Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(slimJson));
 
+                // Crea subito il log (risposta ancora vuota) così da poterne restituire l'Id
+                // nell'header prima dello streaming; il testo verrà aggiornato a fine risposta.
+                var logId = await CreateAssistantLogAsync(
+                    lastUser.Content, string.Empty, referenced, request.IdTicket, request.IdProduct);
+                Response.Headers["X-Assistant-Log-Id"] = logId.ToString();
+
                 var context = BuildTicketContext(referenced) + BuildKnowledgeContext(knowledge);
 
+                var answer = new System.Text.StringBuilder();
                 await foreach (var chunk in chatService
                     .AnswerStreamAsync(request.Messages, context, cancellationToken))
                 {
+                    answer.Append(chunk);
                     await Response.WriteAsync(chunk, cancellationToken);
                     await Response.Body.FlushAsync(cancellationToken);
                 }
+
+                // Risposta completa: salva il testo generato nel log
+                await UpdateAssistantLogAnswerAsync(logId, answer.ToString());
             }
             catch (OperationCanceledException)
             {
@@ -966,6 +981,191 @@ namespace CRM.Server.Controllers
                     await Response.WriteAsync($"\n\n⚠️ Errore durante l'elaborazione: {ex.Message}", cancellationToken);
                 }
                 catch { }
+            }
+        }
+
+        // ==========================================
+        // Log Q&A assistente + feedback operatore
+        // ==========================================
+
+        /// <summary>Registra il voto di feedback dell'operatore su una risposta dell'assistente.</summary>
+        [HttpPost("assistant-feedback")]
+        public async Task<IActionResult> AssistantFeedback([FromBody] CRM.Shared.Models.AssistantFeedbackRequest request)
+        {
+            try
+            {
+                if (request == null || request.LogId <= 0)
+                    return BadRequest("Log non valido");
+
+                var log = await _context.AssistantChatLogs.FirstOrDefaultAsync(l => l.Id == request.LogId);
+                if (log == null)
+                    return NotFound();
+
+                log.Feedback = request.Vote >= 0 ? CRM.Shared.AssistantFeedbackVote.Up : CRM.Shared.AssistantFeedbackVote.Down;
+                log.FeedbackComment = string.IsNullOrWhiteSpace(request.Comment) ? null : request.Comment.Trim();
+                log.FeedbackAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(AssistantFeedback), LogEvent.EventsTypes.Error, ex);
+                return Problem($"Errore durante il salvataggio del feedback: {ex.Message}");
+            }
+        }
+
+        /// <summary>Elenco dei log Q&A dell'assistente (consultazione admin).</summary>
+        [HttpGet("assistant-logs")]
+        [Authorize(Policy = "AdminRole")]
+        public async Task<ActionResult<List<CRM.Shared.DTOs.AssistantChatLogDTO>>> GetAssistantLogs(
+            [FromQuery] CRM.Shared.AssistantChatLogFilter filter)
+        {
+            try
+            {
+                var q = _context.AssistantChatLogs.AsNoTracking().AsQueryable();
+
+                if (filter != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(filter.Search))
+                    {
+                        var s = filter.Search;
+                        q = q.Where(l => l.Question.Contains(s) || l.Answer.Contains(s));
+                    }
+
+                    if (filter.Vote.HasValue)
+                    {
+                        if (filter.Vote.Value == 0)
+                            q = q.Where(l => l.Feedback == null);
+                        else if (filter.Vote.Value > 0)
+                            q = q.Where(l => l.Feedback == CRM.Shared.AssistantFeedbackVote.Up);
+                        else
+                            q = q.Where(l => l.Feedback == CRM.Shared.AssistantFeedbackVote.Down);
+                    }
+                }
+
+                var rows = await q
+                    .OrderByDescending(l => l.CreatedAt)
+                    .Take(500)
+                    .Select(l => new
+                    {
+                        l.Id,
+                        l.Question,
+                        l.Answer,
+                        UserName = l.User != null ? (l.User.Surname + " " + l.User.Name).Trim() : null,
+                        l.IdTicket,
+                        l.IdProduct,
+                        l.ReferencedTicketsJson,
+                        l.CreatedAt,
+                        l.Feedback,
+                        l.FeedbackComment,
+                        l.FeedbackAt
+                    })
+                    .ToListAsync();
+
+                return rows.Select(r => new CRM.Shared.DTOs.AssistantChatLogDTO
+                {
+                    Id = r.Id,
+                    Question = r.Question,
+                    Answer = r.Answer,
+                    UserName = string.IsNullOrWhiteSpace(r.UserName) ? null : r.UserName,
+                    IdTicket = r.IdTicket,
+                    IdProduct = r.IdProduct,
+                    ReferencedCount = CountReferencedTickets(r.ReferencedTicketsJson),
+                    CreatedAt = r.CreatedAt,
+                    Feedback = r.Feedback.HasValue ? (int?)(int)r.Feedback.Value : null,
+                    FeedbackComment = r.FeedbackComment,
+                    FeedbackAt = r.FeedbackAt
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(GetAssistantLogs), LogEvent.EventsTypes.Error, ex);
+                return Problem($"Errore durante il recupero dei log dell'assistente: {ex.Message}");
+            }
+        }
+
+        /// <summary>Crea una voce di log per una risposta dell'assistente e ne restituisce l'Id (0 se il logging fallisce).</summary>
+        private async Task<int> CreateAssistantLogAsync(
+            string question, string answer,
+            List<CRM.Shared.Models.TicketSimilarityResult> referenced, int? idTicket, int? idProduct)
+        {
+            try
+            {
+                string? refsJson = null;
+                if (referenced != null && referenced.Count > 0)
+                {
+                    var slim = referenced.Select(t => new
+                    {
+                        t.TicketId,
+                        t.TicketNumber,
+                        t.SimilarityPercentage,
+                        t.CanAccess
+                    });
+                    refsJson = System.Text.Json.JsonSerializer.Serialize(slim);
+                }
+
+                string? idUser = null;
+                try { idUser = await _permits.IdUser(); } catch { /* utente non risolvibile: log anonimo */ }
+
+                var log = new CRM.Shared.AssistantChatLog
+                {
+                    Question = question ?? string.Empty,
+                    Answer = answer ?? string.Empty,
+                    ReferencedTicketsJson = refsJson,
+                    IdTicket = idTicket,
+                    IdProduct = idProduct,
+                    IdUser = idUser,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.AssistantChatLogs.Add(log);
+                await _context.SaveChangesAsync();
+                return log.Id;
+            }
+            catch (Exception ex)
+            {
+                // Il logging non deve mai far fallire la risposta all'utente.
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(CreateAssistantLogAsync), LogEvent.EventsTypes.Warning, ex.Message);
+                return 0;
+            }
+        }
+
+        /// <summary>Aggiorna il testo della risposta di un log al termine dello streaming.</summary>
+        private async Task UpdateAssistantLogAnswerAsync(int logId, string answer)
+        {
+            if (logId <= 0)
+                return;
+
+            try
+            {
+                var log = await _context.AssistantChatLogs.FirstOrDefaultAsync(l => l.Id == logId);
+                if (log != null)
+                {
+                    log.Answer = answer ?? string.Empty;
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(UpdateAssistantLogAnswerAsync), LogEvent.EventsTypes.Warning, ex.Message);
+            }
+        }
+
+        private static int CountReferencedTickets(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return 0;
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                return doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Array
+                    ? doc.RootElement.GetArrayLength()
+                    : 0;
+            }
+            catch
+            {
+                return 0;
             }
         }
 

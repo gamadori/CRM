@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CRM.Shared;
@@ -20,6 +21,12 @@ namespace CRM.Server.Services
         Task<ProductKnowledgeDTO> SaveAsync(ProductKnowledge item);
 
         Task<bool> DeleteAsync(int id);
+
+        /// <summary>Elimina in blocco tutte le parti di un documento importato. Restituisce il numero di parti rimosse.</summary>
+        Task<int> DeleteDocumentAsync(Guid groupId);
+
+        /// <summary>Rigenera l'embedding di tutte le parti di un documento importato. Restituisce il numero di parti rielaborate.</summary>
+        Task<int> RegenerateDocumentEmbeddingsAsync(Guid groupId);
 
         /// <summary>Genera gli embedding mancanti per le voci esistenti (batch).</summary>
         Task<KnowledgeEmbeddingStats> GenerateMissingEmbeddingsAsync(int batchSize = 20);

@@ -78,6 +78,40 @@ namespace CRM.Server.Controllers
             return ok ? NoContent() : NotFound();
         }
 
+        /// <summary>Elimina un intero documento importato (tutte le sue parti) in un colpo solo.</summary>
+        [HttpDelete("document/{groupId:guid}")]
+        [Authorize(Policy = "AdminRole")]
+        public async Task<IActionResult> DeleteDocument(Guid groupId)
+        {
+            try
+            {
+                var removed = await _knowledge.DeleteDocumentAsync(groupId);
+                return removed > 0 ? Ok(new { removed }) : NotFound();
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(ProductKnowledgeController), nameof(DeleteDocument), LogEvent.EventsTypes.Error, ex);
+                return Problem($"Errore durante l'eliminazione del documento: {ex.Message}");
+            }
+        }
+
+        /// <summary>Rigenera l'embedding di tutte le parti di un documento importato.</summary>
+        [HttpPost("document/{groupId:guid}/generate-embeddings")]
+        [Authorize(Policy = "AdminRole")]
+        public async Task<IActionResult> RegenerateDocumentEmbeddings(Guid groupId)
+        {
+            try
+            {
+                var processed = await _knowledge.RegenerateDocumentEmbeddingsAsync(groupId);
+                return Ok(new { processed });
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(ProductKnowledgeController), nameof(RegenerateDocumentEmbeddings), LogEvent.EventsTypes.Error, ex);
+                return Problem($"Errore durante la rigenerazione degli embedding del documento: {ex.Message}");
+            }
+        }
+
         [HttpPost("generate-embeddings")]
         [Authorize(Policy = "AdminRole")]
         public async Task<ActionResult<KnowledgeEmbeddingStats>> GenerateEmbeddings([FromQuery] int batchSize = 20)

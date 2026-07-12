@@ -89,6 +89,47 @@ namespace CRM.Client.Services
             }
         }
 
+        public async Task<int?> DeleteDocument(Guid groupId)
+        {
+            try
+            {
+                var resp = await _http.DeleteAsync($"{Path}/document/{groupId}");
+                if (!resp.IsSuccessStatusCode)
+                    return null;
+                var body = await resp.Content.ReadFromJsonAsync<DocumentActionResult>();
+                return body?.Removed ?? 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore DeleteDocument KB: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<int?> RegenerateDocumentEmbeddings(Guid groupId)
+        {
+            try
+            {
+                var resp = await _http.PostAsync($"{Path}/document/{groupId}/generate-embeddings", null);
+                if (!resp.IsSuccessStatusCode)
+                    return null;
+                var body = await resp.Content.ReadFromJsonAsync<DocumentActionResult>();
+                return body?.Processed ?? 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore RegenerateDocumentEmbeddings KB: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>Risposta compatta delle azioni a livello di documento (elimina/rigenera).</summary>
+        private sealed class DocumentActionResult
+        {
+            public int Removed { get; set; }
+            public int Processed { get; set; }
+        }
+
         public async Task<KnowledgeEmbeddingStats?> GenerateEmbeddings(int batchSize = 20)
         {
             try

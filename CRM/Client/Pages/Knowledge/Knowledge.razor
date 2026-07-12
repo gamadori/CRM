@@ -116,24 +116,78 @@
             <RadzenButton Click="@LoadItems" Icon="search" ButtonStyle="ButtonStyle.Light" />
         </div>
 
-        <!-- Elenco -->
-        <RadzenDataGrid Data="@_items" TItem="ProductKnowledgeDTO" IsLoading="@_loading"
+        <!-- Elenco: una riga per documento; espandi per vedere le singole parti -->
+        <RadzenDataGrid Data="@_documents" TItem="KnowledgeDocument" IsLoading="@_loading"
                         AllowSorting="true" AllowPaging="true" PageSize="15"
+                        ExpandMode="DataGridExpandMode.Single" RowRender="@OnDocRowRender"
                         EmptyText="Nessuna voce di conoscenza.">
+            <Template Context="doc">
+                <div class="p-3 bg-light">
+                    <div class="small text-muted mb-2">
+                        <span class="material-icons" style="font-size:14px;vertical-align:middle;">list</span>
+                        @doc.PartCount parti del documento
+                    </div>
+                    <RadzenDataGrid Data="@doc.Parts" TItem="ProductKnowledgeDTO" AllowPaging="false" class="shadow-sm">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Property="Title" Title="Parte" />
+                            <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Title="Embedding" Width="110px" TextAlign="Radzen.TextAlign.Center">
+                                <Template Context="p">
+                                    @if (p.HasEmbedding)
+                                    {
+                                        <span class="badge bg-success">Sì</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">No</span>
+                                    }
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Title="Azioni" Width="120px" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                                <Template Context="p">
+                                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                                  Click="@(async () => await EditItem(p.Id))" class="me-1" />
+                                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                                  Click="@(async () => await DeleteItem(p))" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                        </Columns>
+                    </RadzenDataGrid>
+                </div>
+            </Template>
             <Columns>
-                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Property="Title" Title="Titolo" />
-                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Title="Modello">
-                    <Template Context="k">
-                        @(string.IsNullOrWhiteSpace(k.ProductName) ? "Generale" : k.ProductName)
+                <RadzenDataGridColumn TItem="KnowledgeDocument" Title="Titolo">
+                    <Template Context="doc">
+                        <span class="material-icons me-1" style="font-size:16px;vertical-align:middle;color:#94a3b8;">
+                            @(doc.IsImport ? "description" : "article")
+                        </span>
+                        @doc.Title
                     </Template>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Property="Category" Title="Categoria" Width="150px" />
-                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Property="SourceDocument" Title="Documento" Width="180px" />
-                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Title="Embedding" Width="120px" TextAlign="Radzen.TextAlign.Center">
-                    <Template Context="k">
-                        @if (k.HasEmbedding)
+                <RadzenDataGridColumn TItem="KnowledgeDocument" Title="Modello">
+                    <Template Context="doc">
+                        @(string.IsNullOrWhiteSpace(doc.ProductName) ? "Generale" : doc.ProductName)
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="KnowledgeDocument" Property="Category" Title="Categoria" Width="140px" />
+                <RadzenDataGridColumn TItem="KnowledgeDocument" Property="CreatedAt" Title="Caricato il" Width="120px">
+                    <Template Context="doc">
+                        @doc.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="KnowledgeDocument" Title="Parti" Width="80px" TextAlign="Radzen.TextAlign.Center">
+                    <Template Context="doc">
+                        @(doc.IsImport ? doc.PartCount.ToString() : "—")
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="KnowledgeDocument" Title="Embedding" Width="130px" TextAlign="Radzen.TextAlign.Center">
+                    <Template Context="doc">
+                        @if (doc.AllEmbedded)
                         {
                             <span class="badge bg-success">Sì</span>
+                        }
+                        else if (doc.WithEmbedding > 0)
+                        {
+                            <span class="badge bg-warning text-dark">@doc.WithEmbedding/@doc.PartCount</span>
                         }
                         else
                         {
@@ -141,12 +195,24 @@
                         }
                     </Template>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="ProductKnowledgeDTO" Title="Azioni" Width="130px" Sortable="false" TextAlign="Radzen.TextAlign.Center">
-                    <Template Context="k">
-                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
-                                      Click="@(async () => await EditItem(k.Id))" class="me-1" />
-                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
-                                      Click="@(async () => await DeleteItem(k))" />
+                <RadzenDataGridColumn TItem="KnowledgeDocument" Title="Azioni" Width="160px" Sortable="false" TextAlign="Radzen.TextAlign.Center">
+                    <Template Context="doc">
+                        @if (doc.IsImport)
+                        {
+                            <RadzenButton Icon="bolt" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                          title="Rigenera embedding del documento"
+                                          Click="@(async () => await RegenerateDocumentEmbeddings(doc))" class="me-1" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                          title="Elimina l'intero documento"
+                                          Click="@(async () => await DeleteDocument(doc))" />
+                        }
+                        else
+                        {
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                          Click="@(async () => await EditItem(doc.Parts[0].Id))" class="me-1" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                          Click="@(async () => await DeleteItem(doc.Parts[0]))" />
+                        }
                     </Template>
                 </RadzenDataGridColumn>
             </Columns>

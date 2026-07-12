@@ -75,5 +75,21 @@ namespace CRM.Shared.Models
         /// Messaggio informativo o di errore (mostrato in caso di problemi).
         /// </summary>
         public string? Message { get; set; }
+
+        /// <summary>
+        /// Id del log di questa risposta: permette all'operatore di lasciare un voto di feedback.
+        /// </summary>
+        public int? LogId { get; set; }
+    }
+
+    /// <summary>Voto di feedback dell'operatore su una risposta dell'assistente.</summary>
+    public class AssistantFeedbackRequest
+    {
+        public int LogId { get; set; }
+
+        /// <summary>1 = pollice su, -1 = pollice giù.</summary>
+        public int Vote { get; set; }
+
+        public string? Comment { get; set; }
     }
 }

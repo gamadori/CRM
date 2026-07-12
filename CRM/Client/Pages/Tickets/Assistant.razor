@@ -45,6 +45,45 @@
                             <div class="chat-content">@turn.Content</div>
                         }
 
+                        @if (turn.Role == "assistant" && !string.IsNullOrEmpty(turn.Content) && turn.LogId != null)
+                        {
+                            <div class="feedback-row">
+                                @if (turn.FeedbackSent)
+                                {
+                                    <span class="feedback-thanks">
+                                        <span class="material-icons" style="font-size: 14px; vertical-align: middle;">check_circle</span>
+                                        Grazie per il feedback
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="feedback-label">Risposta utile?</span>
+                                    <button class="fb-btn @(turn.Feedback == 1 ? "up" : "")" title="Utile"
+                                            @onclick="() => VoteUp(turn)">
+                                        <span class="material-icons">thumb_up</span>
+                                    </button>
+                                    <button class="fb-btn @(turn.Feedback == -1 ? "down" : "")" title="Non utile"
+                                            @onclick="() => VoteDown(turn)">
+                                        <span class="material-icons">thumb_down</span>
+                                    </button>
+                                }
+                            </div>
+
+                            @if (turn.ShowComment && !turn.FeedbackSent)
+                            {
+                                <div class="feedback-comment">
+                                    <RadzenTextArea @bind-Value="turn.CommentDraft" Rows="2" Style="width: 100%;"
+                                                    Placeholder="Cosa non andava nella risposta? (facoltativo)" />
+                                    <div class="d-flex gap-2 mt-1">
+                                        <RadzenButton Text="Invia feedback" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                                      Click="() => SubmitDownWithComment(turn)" />
+                                        <RadzenButton Text="Annulla" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                                                      Click="@(() => turn.ShowComment = false)" />
+                                    </div>
+                                </div>
+                            }
+                        }
+
                         @if (turn.Tickets != null && turn.Tickets.Any())
                         {
                             <div class="mt-2 pt-2 border-top">
@@ -135,5 +174,63 @@
         padding: 4px 8px;
         border-radius: 8px;
         opacity: 0.75;
+    }
+
+    /* Feedback voto risposta */
+    .feedback-row {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.6rem;
+    }
+
+    .feedback-label {
+        font-size: 0.78rem;
+        color: #94a3b8;
+    }
+
+    .fb-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: #fff;
+        color: #94a3b8;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .fb-btn:hover {
+        border-color: #cbd5e1;
+        color: #64748b;
+    }
+
+    .fb-btn .material-icons {
+        font-size: 15px;
+    }
+
+    .fb-btn.up {
+        background: #dcfce7;
+        border-color: #86efac;
+        color: #16a34a;
+    }
+
+    .fb-btn.down {
+        background: #fee2e2;
+        border-color: #fca5a5;
+        color: #dc2626;
+    }
+
+    .feedback-thanks {
+        font-size: 0.78rem;
+        color: #16a34a;
+        font-weight: 500;
+    }
+
+    .feedback-comment {
+        margin-top: 0.5rem;
     }
 </style>

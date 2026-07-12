@@ -4,6 +4,7 @@ using CRM.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CRM.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260711235559_AddKnowledgeDocumentGroup")]
+    partial class AddKnowledgeDocumentGroup
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -775,53 +778,6 @@ namespace CRM.Server.Migrations
                     b.HasIndex("ToStateId");
 
                     b.ToTable("ArticleStateTransitions");
-                });
-
-            modelBuilder.Entity("CRM.Shared.AssistantChatLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Answer")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("Feedback")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("FeedbackAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FeedbackComment")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("IdProduct")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("IdTicket")
-                        .HasColumnType("int");
-
-                    b.Property<string>("IdUser")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Question")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ReferencedTicketsJson")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdUser");
-
-                    b.ToTable("AssistantChatLogs");
                 });
 
             modelBuilder.Entity("CRM.Shared.Attachment", b =>
@@ -4563,15 +4519,6 @@ namespace CRM.Server.Migrations
                     b.Navigation("FromState");
 
                     b.Navigation("ToState");
-                });
-
-            modelBuilder.Entity("CRM.Shared.AssistantChatLog", b =>
-                {
-                    b.HasOne("CRM.Shared.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("IdUser");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CRM.Shared.Attachment", b =>

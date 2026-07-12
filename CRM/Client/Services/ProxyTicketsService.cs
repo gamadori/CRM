@@ -174,7 +174,8 @@ namespace CRM.Client.Services
             AssistantChatRequest request,
             Action<List<TicketSimilarityResult>> onTickets,
             Action<string> onChunk,
-            Action<string> onError)
+            Action<string> onError,
+            Action<int>? onLogId = null)
         {
             try
             {
@@ -192,6 +193,13 @@ namespace CRM.Client.Services
                     var err = await resp.Content.ReadAsStringAsync();
                     onError(string.IsNullOrWhiteSpace(err) ? $"Errore dal server ({(int)resp.StatusCode})" : err);
                     return;
+                }
+
+                // Id del log di questa risposta (per il feedback)
+                if (onLogId != null && resp.Headers.TryGetValues("X-Assistant-Log-Id", out var logVals)
+                    && int.TryParse(logVals.FirstOrDefault(), out var logId) && logId > 0)
+                {
+                    onLogId(logId);
                 }
 
                 // Ticket di riferimento dall'header (Base64/UTF-8 JSON)
@@ -225,6 +233,46 @@ namespace CRM.Client.Services
             {
                 Console.WriteLine($"Errore assistant chat stream: {ex.Message}");
                 onError(ex.Message);
+            }
+        }
+
+        public async Task<bool> SendAssistantFeedback(AssistantFeedbackRequest request)
+        {
+            try
+            {
+                var resp = await _http.PostAsJsonAsync($"{_pathService}/assistant-feedback", request);
+                return resp.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore invio feedback assistente: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<List<AssistantChatLogDTO>> GetAssistantLogs(AssistantChatLogFilter filter)
+        {
+            var query = new List<string>();
+            if (filter != null)
+            {
+                if (!string.IsNullOrWhiteSpace(filter.Search))
+                    query.Add($"Search={Uri.EscapeDataString(filter.Search)}");
+                if (filter.Vote.HasValue)
+                    query.Add($"Vote={filter.Vote.Value}");
+            }
+
+            var url = query.Count > 0
+                ? $"{_pathService}/assistant-logs?{string.Join("&", query)}"
+                : $"{_pathService}/assistant-logs";
+
+            try
+            {
+                return await _http.GetFromJsonAsync<List<AssistantChatLogDTO>>(url) ?? new();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore GetAssistantLogs: {ex.Message}");
+                return new();
             }
         }
 

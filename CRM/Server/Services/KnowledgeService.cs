@@ -58,7 +58,16 @@ namespace CRM.Server.Services
                 if (!string.IsNullOrWhiteSpace(filter.Search))
                 {
                     var s = filter.Search;
-                    q = q.Where(k => k.Title.Contains(s) || k.Content.Contains(s));
+                    // I documenti importati si mostrano interi: se una qualsiasi parte matcha,
+                    // includi TUTTE le parti del suo gruppo (altrimenti il conteggio e il badge
+                    // embedding riferirebbero solo le parti che matchano, non il documento).
+                    var matchedGroups = q
+                        .Where(k => k.DocumentGroupId != null && (k.Title.Contains(s) || k.Content.Contains(s)))
+                        .Select(k => k.DocumentGroupId);
+
+                    q = q.Where(k =>
+                        (k.DocumentGroupId != null && matchedGroups.Contains(k.DocumentGroupId)) ||
+                        (k.DocumentGroupId == null && (k.Title.Contains(s) || k.Content.Contains(s))));
                 }
             }
 
@@ -74,6 +83,7 @@ namespace CRM.Server.Services
                     Content = k.Content,
                     Category = k.Category,
                     SourceDocument = k.SourceDocument,
+                    DocumentGroupId = k.DocumentGroupId,
                     HasEmbedding = k.Embedding != null && k.Embedding != "",
                     CreatedAt = k.CreatedAt,
                     UpdatedAt = k.UpdatedAt
@@ -94,6 +104,7 @@ namespace CRM.Server.Services
                     Content = k.Content,
                     Category = k.Category,
                     SourceDocument = k.SourceDocument,
+                    DocumentGroupId = k.DocumentGroupId,
                     HasEmbedding = k.Embedding != null && k.Embedding != "",
                     CreatedAt = k.CreatedAt,
                     UpdatedAt = k.UpdatedAt
@@ -139,6 +150,46 @@ namespace CRM.Server.Services
             _context.ProductKnowledge.Remove(entity);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        /// <summary>Elimina in blocco tutte le parti di un documento importato. Restituisce quante parti sono state rimosse.</summary>
+        public async Task<int> DeleteDocumentAsync(Guid groupId)
+        {
+            var parts = await _context.ProductKnowledge
+                .Where(k => k.DocumentGroupId == groupId)
+                .ToListAsync();
+
+            if (parts.Count == 0)
+                return 0;
+
+            _context.ProductKnowledge.RemoveRange(parts);
+            await _context.SaveChangesAsync();
+            return parts.Count;
+        }
+
+        /// <summary>Rigenera l'embedding di tutte le parti di un documento importato. Restituisce quante parti sono state rielaborate.</summary>
+        public async Task<int> RegenerateDocumentEmbeddingsAsync(Guid groupId)
+        {
+            var parts = await _context.ProductKnowledge
+                .Where(k => k.DocumentGroupId == groupId)
+                .ToListAsync();
+
+            int processed = 0;
+            foreach (var part in parts)
+            {
+                var embedding = await TryBuildEmbeddingAsync(part.Title, part.Content);
+                if (!string.IsNullOrEmpty(embedding))
+                {
+                    part.Embedding = embedding;
+                    part.UpdatedAt = DateTime.UtcNow;
+                    processed++;
+                }
+            }
+
+            if (processed > 0)
+                await _context.SaveChangesAsync();
+
+            return processed;
         }
 
         public async Task<KnowledgeEmbeddingStats> GenerateMissingEmbeddingsAsync(int batchSize = 20)
@@ -211,6 +262,9 @@ namespace CRM.Server.Services
             var baseName = Path.GetFileNameWithoutExtension(fileName);
             var cat = string.IsNullOrWhiteSpace(category) ? "Documento" : category.Trim();
             var now = DateTime.UtcNow;
+            // Tutte le parti di questo import condividono lo stesso gruppo: così il documento
+            // resta gestibile come unità (raggruppamento in griglia, elimina/rigenera in blocco).
+            var groupId = Guid.NewGuid();
 
             for (int i = 0; i < chunks.Count; i++)
             {
@@ -221,6 +275,7 @@ namespace CRM.Server.Services
                     Content = chunks[i],
                     Category = cat,
                     SourceDocument = fileName,
+                    DocumentGroupId = groupId,
                     Embedding = embeddingsOk ? JsonSerializer.Serialize(embeddings![i]) : null,
                     CreatedAt = now
                 });

@@ -799,6 +799,9 @@ namespace CRM.Server.Data
         // ✅ NUOVO: DbSet per i feedback dei ticket
         public DbSet<TicketFeedback> TicketFeedbacks => Set<TicketFeedback>();
 
+        // Log Q&A dell'assistente AI + feedback operatore
+        public DbSet<AssistantChatLog> AssistantChatLogs => Set<AssistantChatLog>();
+
         public DbSet<Folder> Folders => Set<Folder>();
 
         public DbSet<ExpenseReceipt> ExpenseReceipts => Set<ExpenseReceipt>();

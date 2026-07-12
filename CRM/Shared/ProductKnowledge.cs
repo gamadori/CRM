@@ -33,6 +33,13 @@ namespace CRM.Shared
         [MaxLength(300)]
         public string? SourceDocument { get; set; }
 
+        /// <summary>
+        /// Identificatore dell'import di provenienza: tutte le parti (chunk) dello stesso documento
+        /// caricato condividono lo stesso valore. Null per le voci create manualmente (non chunkate).
+        /// Permette di gestire il documento come un'unica unità (raggruppamento, elimina/rigenera).
+        /// </summary>
+        public Guid? DocumentGroupId { get; set; }
+
         /// <summary>Embedding del testo (Title + Content) serializzato come JSON di float[].</summary>
         public string? Embedding { get; set; }
 

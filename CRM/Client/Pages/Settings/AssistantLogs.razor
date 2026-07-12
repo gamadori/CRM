@@ -1,0 +1,175 @@
+@page "/Settings/AssistantLogs"
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Microsoft.AspNetCore.Authorization
+@using Radzen
+@using Radzen.Blazor
+
+@attribute [Authorize(Policy = "AdminRole")]
+
+<div class="container-fluid px-4 py-3">
+    <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">
+                <span class="material-icons me-2" style="vertical-align: middle;">forum</span>
+                Log Assistente AI
+            </h2>
+            <p class="text-muted mb-0">Domande, risposte e feedback degli operatori. Usalo per capire dove l'assistente sbaglia.</p>
+        </div>
+        <RadzenButton Click="@Load" Icon="refresh" Text="Aggiorna" ButtonStyle="ButtonStyle.Light" />
+    </div>
+
+    <!-- Riepilogo -->
+    <div class="logs-stats mb-3">
+        <div class="stat-chip">
+            <span class="stat-value">@_items.Count</span>
+            <span class="stat-label">totali</span>
+        </div>
+        <div class="stat-chip up">
+            <span class="material-icons">thumb_up</span>
+            <span class="stat-value">@_countUp</span>
+        </div>
+        <div class="stat-chip down">
+            <span class="material-icons">thumb_down</span>
+            <span class="stat-value">@_countDown</span>
+        </div>
+        <div class="stat-chip none">
+            <span class="stat-value">@_countNone</span>
+            <span class="stat-label">senza voto</span>
+        </div>
+        @if (_countUp + _countDown > 0)
+        {
+            <div class="stat-chip rate">
+                <span class="stat-value">@_satisfaction%</span>
+                <span class="stat-label">soddisfazione</span>
+            </div>
+        }
+    </div>
+
+    <!-- Filtri -->
+    <div class="d-flex gap-2 mb-3 flex-wrap">
+        <div class="input-group" style="max-width: 380px;">
+            <RadzenTextBox @bind-Value="@_search" Placeholder="Cerca in domanda/risposta..." class="form-control"
+                           @onkeyup="@(async (e) => { if (e.Key == "Enter") await Load(); })" />
+            <RadzenButton Click="@Load" Icon="search" ButtonStyle="ButtonStyle.Light" />
+        </div>
+        <RadzenDropDown @bind-Value="@_voteFilter" Data="@_voteOptions" TextProperty="Text" ValueProperty="Value"
+                        TValue="int?" Change="@(async _ => await Load())" Style="width: 200px;" />
+    </div>
+
+    <!-- Elenco -->
+    <RadzenDataGrid Data="@_items" TItem="AssistantChatLogDTO" IsLoading="@_loading"
+                    AllowSorting="true" AllowPaging="true" PageSize="15"
+                    ExpandMode="DataGridExpandMode.Single"
+                    EmptyText="Nessun log dell'assistente.">
+        <Template Context="log">
+            <div class="p-3 bg-light">
+                <div class="qa-block">
+                    <div class="qa-label">Domanda</div>
+                    <div class="qa-question">@log.Question</div>
+                </div>
+                <div class="qa-block mt-2">
+                    <div class="qa-label">Risposta</div>
+                    <div class="qa-answer">@log.Answer</div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(log.FeedbackComment))
+                {
+                    <div class="qa-block mt-2">
+                        <div class="qa-label">Commento dell'operatore</div>
+                        <div class="qa-comment">"@log.FeedbackComment"</div>
+                    </div>
+                }
+            </div>
+        </Template>
+        <Columns>
+            <RadzenDataGridColumn TItem="AssistantChatLogDTO" Property="CreatedAt" Title="Data" Width="140px">
+                <Template Context="log">@log.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="AssistantChatLogDTO" Property="UserName" Title="Operatore" Width="160px">
+                <Template Context="log">@(string.IsNullOrWhiteSpace(log.UserName) ? "—" : log.UserName)</Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="AssistantChatLogDTO" Property="Question" Title="Domanda">
+                <Template Context="log">
+                    <span class="text-truncate d-inline-block" style="max-width: 420px;">@log.Question</span>
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="AssistantChatLogDTO" Title="Voto" Width="90px" TextAlign="Radzen.TextAlign.Center">
+                <Template Context="log">
+                    @if (log.Feedback == 1)
+                    {
+                        <span class="vote-badge up"><span class="material-icons">thumb_up</span></span>
+                    }
+                    else if (log.Feedback == -1)
+                    {
+                        <span class="vote-badge down"><span class="material-icons">thumb_down</span></span>
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="AssistantChatLogDTO" Title="Commento" Width="60px" TextAlign="Radzen.TextAlign.Center" Sortable="false">
+                <Template Context="log">
+                    @if (!string.IsNullOrWhiteSpace(log.FeedbackComment))
+                    {
+                        <span class="material-icons text-muted" style="font-size: 18px;" title="@log.FeedbackComment">chat</span>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="AssistantChatLogDTO" Property="ReferencedCount" Title="Fonti" Width="70px" TextAlign="Radzen.TextAlign.Center" />
+        </Columns>
+    </RadzenDataGrid>
+</div>
+
+<style>
+    .logs-stats {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .stat-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #fff;
+        border: 1px solid #eef0f3;
+        border-radius: 12px;
+        padding: 0.5rem 0.9rem;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    }
+
+    .stat-chip .stat-value { font-weight: 700; color: #1f2430; }
+    .stat-chip .stat-label { font-size: 0.78rem; color: #98a2b3; }
+    .stat-chip .material-icons { font-size: 18px; }
+    .stat-chip.up { color: #16a34a; }
+    .stat-chip.down { color: #dc2626; }
+    .stat-chip.rate .stat-value { color: #3b5bdb; }
+
+    .vote-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+    }
+
+    .vote-badge .material-icons { font-size: 15px; }
+    .vote-badge.up { background: #dcfce7; color: #16a34a; }
+    .vote-badge.down { background: #fee2e2; color: #dc2626; }
+
+    .qa-label {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #98a2b3;
+        font-weight: 600;
+        margin-bottom: 0.2rem;
+    }
+
+    .qa-question { font-weight: 600; color: #1f2430; white-space: pre-wrap; }
+    .qa-answer { color: #374151; white-space: pre-wrap; line-height: 1.5; }
+    .qa-comment { color: #b45309; font-style: italic; white-space: pre-wrap; }
+</style>
