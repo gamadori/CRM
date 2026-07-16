@@ -223,7 +223,15 @@ else
                             </span>
                         </div>
 
-                        @if (_ticket.TicketType.IdArticolo != (int)PropertyStates.No)
+                        @if (!string.IsNullOrWhiteSpace(_ticket.Product))
+                        {
+                            <div class="info-row">
+                                <span class="info-key"><DisplayName For="@(() => _ticket.Product)" /></span>
+                                <span class="info-value">@_ticket.Product</span>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(_ticket.Article))
                         {
                             <div class="info-row">
                                 <span class="info-key"><DisplayName For="@(() => _ticket.Article)" /></span>

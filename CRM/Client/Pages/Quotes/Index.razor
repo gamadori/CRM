@@ -52,18 +52,20 @@
         <RadzenDataGridColumn TItem="QuoteDTO" Property="Total" Title="Totale" Width="130px" TextAlign="TextAlign.Right" FormatString="{0:C}" />
         <RadzenDataGridColumn TItem="QuoteDTO" Context="q" Title="" Width="150px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
             <Template Context="q">
-                <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
-                              Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{q.Id}/Details"))" />
-                @if (q.Permits.Edit())
-                {
-                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
-                                  Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{q.Id}/Edit"))" />
-                }
-                @if (q.Permits.Delete())
-                {
-                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
-                                  Click="@(() => Delete(q))" />
-                }
+                <div class="d-flex gap-2 justify-content-center">
+                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary"
+                                  Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{q.Id}/Details"))" />
+                    @if (q.Permits.Edit())
+                    {
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary"
+                                      Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{q.Id}/Edit"))" />
+                    }
+                    @if (q.Permits.Delete())
+                    {
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger"
+                                      Click="@(() => Delete(q))" />
+                    }
+                </div>
             </Template>
         </RadzenDataGridColumn>
     </Columns>

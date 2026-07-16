@@ -70,7 +70,8 @@
                                 @foreach (var file in _attachment.Files)
                                 {
                                     <RedGFile IdFile="@file.Id" ReadOnly="@ReadOnly" OnDelete="@OnDelete" OnDownload="@OnDownload" Selected="file.Selected"
-                                              Name="@file.Name" Size="@file.Size" OnSelectedChanged="@((e)=>file.Selected = e)" OnRename="@OnRename" />
+                                              Name="@file.Name" Size="@file.Size" OnSelectedChanged="@((e)=>file.Selected = e)" OnRename="@OnRename"
+                                              CanImportToKnowledge="@_canImportToKnowledge" OnImportToKnowledge="@ImportFileToKnowledge" />
                                 }
                             </div>
                         </div>
@@ -95,10 +96,11 @@
                                             var file = filesList[i];
                                             <div class="carousel-item @(i == 0 ? "active" : "")">
                                                 <div class="p-2">
-                                                    <RedGFile IdFile="@file.Id" ReadOnly="@ReadOnly" OnDelete="@OnDelete" 
+                                                    <RedGFile IdFile="@file.Id" ReadOnly="@ReadOnly" OnDelete="@OnDelete"
                                                         OnDownload="@OnDownload" OnRename="@OnRename"
-                                                        Selected="file.Selected" 
-                                                                Name="@file.Name" Size="@file.Size" OnSelectedChanged="@((e)=>file.Selected = e)" />
+                                                        Selected="file.Selected"
+                                                                Name="@file.Name" Size="@file.Size" OnSelectedChanged="@((e)=>file.Selected = e)"
+                                                                CanImportToKnowledge="@_canImportToKnowledge" OnImportToKnowledge="@ImportFileToKnowledge" />
                                                     <div class="text-center text-muted mt-3">
                                                         <small>@(i + 1) di @filesList.Count</small>
                                                     </div>

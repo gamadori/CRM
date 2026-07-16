@@ -214,12 +214,12 @@ namespace CRM.Client.Pages.TicketInterventions
             {
                 
                 if (IdProject != null)
-                    NavigationManager.NavigateTo($"Projects/{IdProject}/Tickets/{IdTicket}/interventions/{id}/info");
+                    NavigationManager.NavigateTo($"Projects/{IdProject}/Tickets/{IdTicket}/interventions/{id}");
 
                 else if (IdCompany != null)
-                    NavigationManager.NavigateTo($"Companies/{IdCompany}/Tickets/{IdTicket}/interventions/{id}/info");
+                    NavigationManager.NavigateTo($"Companies/{IdCompany}/Tickets/{IdTicket}/interventions/{id}");
                 else
-                    NavigationManager.NavigateTo($"/Tickets/{IdTicket}/interventions/{id}/info");
+                    NavigationManager.NavigateTo($"/Tickets/{IdTicket}/interventions/{id}");
             }
 
           

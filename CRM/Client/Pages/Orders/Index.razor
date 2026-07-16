@@ -44,17 +44,19 @@
         <RadzenDataGridColumn TItem="OrderDTO" Property="Total" Title="Totale" Width="130px" TextAlign="TextAlign.Right" FormatString="{0:C}" />
         <RadzenDataGridColumn TItem="OrderDTO" Context="o" Title="" Width="150px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
             <Template Context="o">
-                <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
-                              Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{o.Id}/Details"))" />
-                @if (o.Permits.Edit())
-                {
-                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
-                                  Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{o.Id}/Edit"))" />
-                }
-                @if (o.Permits.Delete())
-                {
-                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => Delete(o))" />
-                }
+                <div class="d-flex gap-2 justify-content-center">
+                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary"
+                                  Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{o.Id}/Details"))" />
+                    @if (o.Permits.Edit())
+                    {
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary"
+                                      Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{o.Id}/Edit"))" />
+                    }
+                    @if (o.Permits.Delete())
+                    {
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger"  Click="@(() => Delete(o))" />
+                    }
+                    </div>
             </Template>
         </RadzenDataGridColumn>
     </Columns>

@@ -16,5 +16,8 @@ namespace CRM.Client.Services
         Task<bool> DeleteFiles(int id);
 
         Task<(byte[] Bytes, string ContentType, string FileName)> DownloadFiles(int id);
+
+        /// <summary>Scarica un singolo file di un allegato (per <see cref="AttachmentFile"/> id).</summary>
+        Task<(byte[] Bytes, string ContentType, string FileName)> DownloadFile(int idFile);
     }
 }

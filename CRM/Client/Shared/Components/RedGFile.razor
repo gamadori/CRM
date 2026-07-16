@@ -9,59 +9,96 @@
     return;
 }
 
-<div class="col-md-3">
-    <div class="card file-card-3d m-3 shadow h-100 py-2">
-        <div class="row g-0">
-            <div class="col">
-                
-                <div class="p-3 py-4 text-center rounded" style="background: var(--crm-surface-muted);">
-                    <span class="material-icons file-icon" style="font-size:32px;color:var(--rz-primary);">
-                        @_icon
-                    </span>
-                </div>
-                
+<div class="col-md-3 rgfile-col">
+    <div class="rgfile-card" style="--rgfile-accent: @_accent;">
+        <div class="rgfile-head">
+            <div class="rgfile-icon">
+                <span class="material-icons">@_icon</span>
             </div>
-            <div class="col-md-8">
-                <div class="card-body">
-                    <h6 class="file-name mb-1" title="@_displayName">@_displayName</h6>
-                    <p class="file-size mb-0"><small class="text-muted">@_size</small></p>
-                </div>
+            <div class="rgfile-info">
+                <span class="rgfile-name" title="@_displayName">@_displayName</span>
+                <span class="rgfile-size">@_size</span>
             </div>
         </div>
-        <div class="card-footer bg-transparent pt-3">
-           
-            <RedGButton class="mx-1" RGButtonType="RGButtonType.Download" Text="" Click="@OnClickDownload"></RedGButton>
-            <RedGButton class="mx-1" RGButtonType="RGButtonType.View" Text="" Click="@OnClickView"></RedGButton>
+
+        <div class="rgfile-actions">
+            <RedGButton RGButtonType="RGButtonType.Download" Text="" Size="ButtonSize.Small" title="@Localize["Scarica"]" Click="@OnClickDownload"></RedGButton>
+            <RedGButton RGButtonType="RGButtonType.View" Text="" Size="ButtonSize.Small" title="@Localize["Anteprima"]" Click="@OnClickView"></RedGButton>
+            @if (CanImportToKnowledge && _importable)
+            {
+                <RadzenButton Icon="menu_book" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small"
+                              title="@Localize["Importa in Knowledge"]" Click="@OnClickImportToKnowledge"></RadzenButton>
+            }
             @if (!ReadOnly)
             {
-                <RedGButton class="mx-1" RGButtonType="RGButtonType.Edit"  Click="@OnClickEdit"></RedGButton>
-                <RedGButton class="mx-1" RGButtonType="RGButtonType.Delete" Click="@OnClickDelete"></RedGButton>
+                <span class="rgfile-actions-spacer"></span>
+                <RedGButton RGButtonType="RGButtonType.Edit" Size="ButtonSize.Small" title="@Localize["Rinomina File"]" Click="@OnClickEdit"></RedGButton>
+                <RedGButton RGButtonType="RGButtonType.Delete" Size="ButtonSize.Small" title="@Localize["Delete"]" Click="@OnClickDelete"></RedGButton>
             }
         </div>
     </div>
-    
 </div>
 
 <style>
-    .file-card-3d {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border-radius: 8px;
+    .rgfile-col {
+        padding: 0.5rem;
     }
 
-    .file-card-3d:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2) !important;
+    .rgfile-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+        height: 100%;
+        padding: 1rem;
+        background: var(--crm-surface-raised, #fff);
+        border: 1px solid var(--crm-border, #e5e7eb);
+        border-radius: 14px;
+        box-shadow: var(--crm-shadow, 0 6px 16px rgba(31, 42, 68, 0.06));
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     }
 
-    .file-icon {
+    .rgfile-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--rgfile-accent, var(--crm-border-strong));
+        box-shadow: 0 14px 30px rgba(31, 42, 68, 0.14);
+    }
+
+    .rgfile-head {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        min-width: 0;
+    }
+
+    .rgfile-icon {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        color: var(--rgfile-accent, var(--rz-primary));
+        background: color-mix(in srgb, var(--rgfile-accent, var(--rz-primary)) 14%, transparent);
         transition: transform 0.2s ease;
     }
 
-    .file-card-3d:hover .file-icon {
-        transform: scale(1.1);
+    .rgfile-card:hover .rgfile-icon {
+        transform: scale(1.06);
     }
 
-    .file-name {
+    .rgfile-icon .material-icons {
+        font-size: 26px;
+    }
+
+    .rgfile-info {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        gap: 0.15rem;
+    }
+
+    .rgfile-name {
         font-size: 0.875rem;
         font-weight: 600;
         color: var(--crm-text, #333);
@@ -71,9 +108,33 @@
         white-space: nowrap;
     }
 
-    .file-size {
+    .rgfile-size {
         font-size: 0.75rem;
         color: var(--crm-text-muted, #6c757d);
+    }
+
+    .rgfile-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--crm-border, #eef2f7);
+    }
+
+    .rgfile-actions-spacer {
+        margin-left: auto;
+    }
+
+    /* Uniforma i pulsanti icona nella barra azioni */
+    .rgfile-actions .rz-button {
+        border-radius: 9px;
+        transition: transform 0.15s ease, filter 0.15s ease;
+    }
+
+    .rgfile-actions .rz-button:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.05);
     }
 </style>
 
@@ -117,13 +178,25 @@
     [Parameter]
     public EventCallback<(int? IdFile, string NewName)> OnRename { get; set; }
 
+    /// <summary>Abilita il pulsante "Importa in Knowledge" (mostrato solo per formati importabili: PDF/DOCX/TXT/MD).</summary>
+    [Parameter]
+    public bool CanImportToKnowledge { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<int?> OnImportToKnowledge { get; set; }
+
     private string _icon;
 
     private string _size;
 
     private string _displayName;
 
+    private bool _importable;
+
     private FileTypes _fileTypes;
+
+    /// <summary>Colore accento del file, in base al tipo (usato per icona e hover della card).</summary>
+    private string _accent = "#64748b";
 
     protected void CheckBoxOnClick()
     {
@@ -140,6 +213,11 @@
     protected void OnClickDownload()
     {
         OnDownload.InvokeAsync(IdFile);
+    }
+
+    protected void OnClickImportToKnowledge()
+    {
+        OnImportToKnowledge.InvokeAsync(IdFile);
     }
 
     protected async Task OnClickEdit()
@@ -192,25 +270,30 @@
             case ".pdf":
                 _icon = "picture_as_pdf";
                 _fileTypes = FileTypes.Document;
+                _accent = "#e2574c"; // rosso PDF
                 break;
 
             case ".zip":
                 _icon = "folder_zip";
                 _fileTypes = FileTypes.Zip;
+                _accent = "#f0a020"; // ambra archivi
                 break;
             case ".docx":
             case ".doc":
                 _icon = "description";
                 _fileTypes = FileTypes.Document;
+                _accent = "#2b7de9"; // blu Word
                 break;
             case ".dxf":
                 _icon = "architecture";
                 _fileTypes = FileTypes.CAD;
+                _accent = "#6b7a90"; // slate CAD
                 break;
             case ".xlsx":
             case ".xls":
                 _icon = "grid_on";
                 _fileTypes = FileTypes.Spreadsheet;
+                _accent = "#21a366"; // verde Excel
                 break;
             case ".jpg":
             case ".png":
@@ -219,17 +302,22 @@
             case ".bmp":
             case ".tiff":
             case ".svg":
-            
+
                 _fileTypes = FileTypes.Image;
                 _icon = "image";
+                _accent = "#8b5cf6"; // viola immagini
             break;
             default:
                 _icon = "article";
                 _fileTypes = FileTypes.Other;
+                _accent = "#64748b"; // grigio neutro
                 break;
         }
 
         _size = FileHelper.FormatToHumanReadableFileSize(Size);
+
+        // Formati importabili nella base di conoscenza (allineato a DocumentTextExtractor lato server).
+        _importable = Path.GetExtension(Name).ToLower() is ".pdf" or ".docx" or ".txt" or ".md";
 
     }
 

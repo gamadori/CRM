@@ -63,6 +63,22 @@ namespace CRM.Client.Services
             }
             return (Array.Empty<byte>(), string.Empty, string.Empty);
         }
+        public async Task<(byte[] Bytes, string ContentType, string FileName)> DownloadFile(int idFile)
+        {
+            var response = await _http.GetAsync($"{_pathService}/files/download/{idFile}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+
+                AttachmentResponse header = JsonSerializer.Deserialize<AttachmentResponse>(response.Headers
+                        .GetValues(ConstHelper.FileHeader).First(), new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+
+                return (bytes, header.ContentType, header.Name);
+            }
+            return (Array.Empty<byte>(), string.Empty, string.Empty);
+        }
+
         public async Task<bool> DeleteFiles(int id)
         {
             var resp = await _http.DeleteAsync($"{_pathService}/files/{id}");

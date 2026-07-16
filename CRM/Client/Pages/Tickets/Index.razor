@@ -52,11 +52,11 @@
 
 
             <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Product)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdProduct), typeof(Ticket))" Type="typeof(string)"
-            FilterProperty="Product.Name" />
+            FilterProperty="Product.Name" SortProperty="Product.Name" />
 
 
             <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Article)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdArticle), typeof(Ticket))" Type="typeof(string)"
-            FilterProperty="Article.SerialNumber" />
+            FilterProperty="Article.SerialNumber" SortProperty="Article.SerialNumber" />
 
             <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.IdUserAssigned)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdUserAssigned), typeof(Ticket))" FilterProperty="@nameof(TicketDTO.IdUserAssigned)" FilterValue="@_userFilter" FilterOperator="FilterOperator.Equals">
                 <Template Context="item">
@@ -69,7 +69,7 @@
                 </FilterTemplate>
             </RadzenDataGridColumn>
 
-            <RadzenDataGridColumn Context="item" TItem="TicketDTO" Property="@nameof(TicketDTO.State)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdState), typeof(Ticket))" Filterable="true" Sortable="true" TextAlign="Radzen.TextAlign.Center">
+            <RadzenDataGridColumn Context="item" TItem="TicketDTO" Property="@nameof(TicketDTO.State)" SortProperty="IdState" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdState), typeof(Ticket))" Filterable="false" Sortable="true" TextAlign="Radzen.TextAlign.Center">
                 <Template Context="item">
                     <span class="ticket-state-text" style="@GetStateTextStyle(item?.StateColor)">
                         @Localize[item?.State ?? eTicketStates.Created.ToString()]

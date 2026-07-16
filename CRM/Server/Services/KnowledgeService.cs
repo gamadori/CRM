@@ -226,12 +226,12 @@ namespace CRM.Server.Services
             };
         }
 
-        public async Task<KnowledgeImportResult> ImportDocumentAsync(byte[] fileBytes, string fileName, int? idProduct, string? category)
+        public async Task<KnowledgeImportResult> ImportDocumentAsync(byte[] fileBytes, string fileName, int? idProduct, string? category, int? pageFrom = null, int? pageTo = null)
         {
             if (fileBytes == null || fileBytes.Length == 0)
                 return new KnowledgeImportResult { Chunks = 0, Message = "File vuoto." };
 
-            var text = DocumentTextExtractor.Extract(fileBytes, fileName);
+            var text = DocumentTextExtractor.Extract(fileBytes, fileName, pageFrom, pageTo);
             var chunks = ChunkText(text, MaxChunkLength);
 
             if (chunks.Count == 0)

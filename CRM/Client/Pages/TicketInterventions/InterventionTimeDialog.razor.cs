@@ -33,25 +33,38 @@ namespace CRM.Client.Pages.TicketInterventions
             {
                 Time = new TicketInterventionTimeModel
                 {
-                    StartDateTime = DateTime.Now,
-                    EndDateTime = DateTime.Now.AddHours(1),
+                    StartDateTime = TruncateToMinute(DateTime.Now),
+                    EndDateTime = TruncateToMinute(DateTime.Now.AddHours(1)),
                     TimeType = InterventionTimeType.Work,
                     IsBillable = true
                 };
             }
+            else
+            {
+                // Garantisce che i secondi siano azzerati anche sui valori ricevuti
+                Time.StartDateTime = TruncateToMinute(Time.StartDateTime);
+                Time.EndDateTime = TruncateToMinute(Time.EndDateTime);
+            }
         }
+
+        /// <summary>
+        /// Azzera secondi e millisecondi. Necessario perchï¿½ il calcolo del tempo lato server
+        /// usa DATEDIFF(minute, ...) e i secondi residui falsano i totali di lavoro/viaggio.
+        /// </summary>
+        private static DateTime TruncateToMinute(DateTime value)
+            => new DateTime(value.Year, value.Month, value.Day, value.Hour, value.Minute, 0, value.Kind);
 
         private void SelectTimeType(InterventionTimeType type)
         {
             Time.TimeType = type;
 
-            // Se non è un viaggio, rimuovi i km
+            // Se non ï¿½ un viaggio, rimuovi i km
             if (type != InterventionTimeType.Travel)
             {
                 Time.TravelKilometers = null;
             }
 
-            // Se è una pausa, non è fatturabile di default
+            // Se ï¿½ una pausa, non ï¿½ fatturabile di default
             if (type == InterventionTimeType.Break)
             {
                 Time.IsBillable = false;
@@ -102,6 +115,11 @@ namespace CRM.Client.Pages.TicketInterventions
 
         private void HandleValidSubmit()
         {
+            // Azzera i secondi: la UI mostra solo HH:mm ma il DatePicker conserva i secondi
+            // del valore originale, falsando il calcolo del tempo lato server (DATEDIFF minute).
+            Time.StartDateTime = TruncateToMinute(Time.StartDateTime);
+            Time.EndDateTime = TruncateToMinute(Time.EndDateTime);
+
             // Valida che la data di fine sia successiva a quella di inizio
             if (Time.EndDateTime <= Time.StartDateTime)
             {

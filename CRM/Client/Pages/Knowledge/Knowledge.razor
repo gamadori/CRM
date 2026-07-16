@@ -73,7 +73,21 @@
                 <div class="row g-2 align-items-end">
                     <div class="col-md-4">
                         <label class="form-label small">File (PDF, DOCX, TXT, MD)</label>
-                        <InputFile OnChange="@OnFileSelected" class="form-control" accept=".pdf,.docx,.txt,.md" />
+                        @if (_stagedFileName != null)
+                        {
+                            <div class="form-control d-flex align-items-center justify-content-between gap-2">
+                                <span class="text-truncate d-flex align-items-center gap-1">
+                                    <span class="material-icons text-info" style="font-size: 18px;">description</span>
+                                    <span class="text-truncate" title="@_stagedFileName">@_stagedFileName</span>
+                                </span>
+                                <a href="#" @onclick:preventDefault @onclick="ClearStaged" class="small text-danger text-nowrap">rimuovi</a>
+                            </div>
+                            <div class="small text-muted mt-1">Documento precaricato da allegato prodotto.</div>
+                        }
+                        else
+                        {
+                            <InputFile OnChange="@OnFileSelected" class="form-control" accept=".pdf,.docx,.txt,.md" />
+                        }
                     </div>
                     <div class="col-md-3">
                         <label class="form-label small">Modello (opzionale)</label>
@@ -91,6 +105,16 @@
                         <label class="form-label small">Categoria</label>
                         <RadzenTextBox @bind-Value="@_importCategory" class="w-100" Placeholder="Documento" />
                     </div>
+                    <div class="col-md-1">
+                        <label class="form-label small">Da pag.</label>
+                        <RadzenNumeric @bind-Value="@_importPageFrom" TValue="int?" Min="1" ShowUpDown="false"
+                                       Placeholder="1" class="w-100" />
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small">A pag.</label>
+                        <RadzenNumeric @bind-Value="@_importPageTo" TValue="int?" Min="1" ShowUpDown="false"
+                                       Placeholder="fine" class="w-100" />
+                    </div>
                     <div class="col-md-2">
                         <RadzenButton Click="@ImportDocumentAsync" Icon="upload" Text="Importa"
                                       ButtonStyle="ButtonStyle.Secondary" Disabled="@_importing" class="w-100" />
@@ -104,7 +128,7 @@
                 }
                 else
                 {
-                    <div class="mt-2 small text-muted">Il documento viene spezzato in blocchi e indicizzato per la ricerca dell'assistente.</div>
+                    <div class="mt-2 small text-muted">Il documento viene spezzato in blocchi e indicizzato per la ricerca dell'assistente. L'intervallo pagine vale solo per i PDF: se lasci vuoto viene elaborato l'intero documento.</div>
                 }
             </div>
         </div>

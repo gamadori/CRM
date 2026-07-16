@@ -146,7 +146,7 @@ namespace CRM.Client.Services
             }
         }
 
-        public async Task<KnowledgeImportResult?> ImportDocument(Stream fileStream, string fileName, int? idProduct, string? category)
+        public async Task<KnowledgeImportResult?> ImportDocument(Stream fileStream, string fileName, int? idProduct, string? category, int? pageFrom = null, int? pageTo = null)
         {
             try
             {
@@ -157,6 +157,10 @@ namespace CRM.Client.Services
                     content.Add(new StringContent(idProduct.Value.ToString()), "idProduct");
                 if (!string.IsNullOrWhiteSpace(category))
                     content.Add(new StringContent(category), "category");
+                if (pageFrom.HasValue)
+                    content.Add(new StringContent(pageFrom.Value.ToString()), "pageFrom");
+                if (pageTo.HasValue)
+                    content.Add(new StringContent(pageTo.Value.ToString()), "pageTo");
 
                 var resp = await _http.PostAsync($"{Path}/import-document", content);
                 return resp.IsSuccessStatusCode

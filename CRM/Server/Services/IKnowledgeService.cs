@@ -35,7 +35,7 @@ namespace CRM.Server.Services
         /// Importa un documento (PDF/Word/testo): ne estrae il testo, lo suddivide in blocchi e crea
         /// una voce di conoscenza per blocco (con embedding), opzionalmente associata a un modello.
         /// </summary>
-        Task<KnowledgeImportResult> ImportDocumentAsync(byte[] fileBytes, string fileName, int? idProduct, string? category);
+        Task<KnowledgeImportResult> ImportDocumentAsync(byte[] fileBytes, string fileName, int? idProduct, string? category, int? pageFrom = null, int? pageTo = null);
 
         /// <summary>
         /// Ricerca semantica sulle voci di conoscenza. Le voci del modello coinvolto nei ticket simili

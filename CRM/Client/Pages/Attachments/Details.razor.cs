@@ -36,6 +36,9 @@ namespace CRM.Client.Pages.Attachments
         [Inject]
         IAttachmentsService Service { get; set; }
 
+        [Inject]
+        IUserService UserService { get; set; }
+
 
         [Parameter]
         public int? Id { get; set; }
@@ -68,8 +71,27 @@ namespace CRM.Client.Pages.Attachments
 
         private bool _notFound = false;
 
+        /// <summary>True se l'utente corrente ha ruolo Admin: requisito per importare i file in Knowledge.</summary>
+        private bool _isAdmin = false;
+
+        /// <summary>True se l'allegato appartiene a un prodotto ed l'utente è Admin: abilita l'import dei file in Knowledge.</summary>
+        private bool _canImportToKnowledge => _isProductAttachment && _isAdmin;
+
+        /// <summary>True se l'allegato appartiene a un prodotto.</summary>
+        private bool _isProductAttachment => _attachment?.AttchmentType == AttachmentTypes.Product;
+
+        /// <summary>Invia il singolo file alla pagina Knowledge come documento da importare, preselezionando il prodotto.</summary>
+        private void ImportFileToKnowledge(int? idFile)
+        {
+            if (idFile == null || _attachment == null)
+                return;
+
+            NavigationManager.NavigateTo($"/Knowledge?fromAttachmentFile={idFile}&product={_attachment.IdParent}");
+        }
+
         protected override async Task OnInitializedAsync()
         {
+            _isAdmin = await UserService.CheckPolicy(ePolicy.AdminRole);
             await LoadAttachment();
         }
 

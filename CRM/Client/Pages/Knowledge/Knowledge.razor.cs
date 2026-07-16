@@ -18,9 +18,18 @@ namespace CRM.Client.Pages.Knowledge
 
         [Inject] IProductsService ProductsService { get; set; }
 
+        [Inject] IAttachmentsService AttachmentsService { get; set; }
+
         [Inject] DialogService DialogService { get; set; }
 
         [Inject] NotificationService Notify { get; set; }
+
+        /// <summary>Quando valorizzati (query string), il file di allegato indicato viene precaricato come documento da importare.</summary>
+        [Parameter, SupplyParameterFromQuery(Name = "fromAttachmentFile")]
+        public int? FromAttachmentFile { get; set; }
+
+        [Parameter, SupplyParameterFromQuery(Name = "product")]
+        public int? FromProduct { get; set; }
 
         private List<ProductKnowledgeDTO> _items = new();
 
@@ -44,12 +53,86 @@ namespace CRM.Client.Pages.Knowledge
 
         private string _importCategory = string.Empty;
 
+        // Intervallo pagine PDF (1-based, opzionale). Vuoto = intero documento.
+        private int? _importPageFrom;
+
+        private int? _importPageTo;
+
+        // Documento precaricato da un allegato del prodotto (alternativo alla selezione di un file locale).
+        private byte[]? _stagedBytes;
+
+        private string? _stagedFileName;
+
         private bool _importing;
 
         protected override async Task OnInitializedAsync()
         {
             _products = await ProductsService.GetListAsync(new ProductFilter()) ?? new();
             await LoadItems();
+
+            if (FromAttachmentFile.HasValue)
+                await StageFromAttachmentFile(FromAttachmentFile.Value, FromProduct);
+        }
+
+        /// <summary>
+        /// Scarica il file di allegato indicato e lo prepara come documento da importare, preselezionando il prodotto.
+        /// L'import non è automatico: l'operatore può rivedere categoria/pagine e confermare con "Importa".
+        /// </summary>
+        private async Task StageFromAttachmentFile(int idFile, int? productId)
+        {
+            try
+            {
+                var file = await AttachmentsService.DownloadFile(idFile);
+                if (file.Bytes == null || file.Bytes.Length == 0)
+                {
+                    Notify.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Warning,
+                        Summary = "Allegato non disponibile",
+                        Detail = "Non è stato possibile recuperare il file dell'allegato.",
+                        Duration = 5000
+                    });
+                    return;
+                }
+
+                var ext = System.IO.Path.GetExtension(file.FileName)?.ToLowerInvariant();
+                if (ext is not (".pdf" or ".docx" or ".txt" or ".md"))
+                {
+                    Notify.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Warning,
+                        Summary = "Formato non importabile",
+                        Detail = $"L'allegato \"{file.FileName}\" non è un documento importabile (ammessi PDF, DOCX, TXT, MD).",
+                        Duration = 6000
+                    });
+                    return;
+                }
+
+                _stagedBytes = file.Bytes;
+                _stagedFileName = file.FileName;
+                _uploadFile = null; // sorgenti mutuamente esclusive
+                if (productId.HasValue)
+                    _importProductId = productId;
+
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Notify.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Errore caricamento allegato",
+                    Detail = ex.Message,
+                    Duration = 6000
+                });
+            }
+        }
+
+        /// <summary>Rimuove il documento precaricato da allegato.</summary>
+        private void ClearStaged()
+        {
+            _stagedBytes = null;
+            _stagedFileName = null;
         }
 
         private async Task LoadItems()
@@ -303,11 +386,13 @@ namespace CRM.Client.Pages.Knowledge
         private void OnFileSelected(InputFileChangeEventArgs e)
         {
             _uploadFile = e.File;
+            // Selezionando un file locale si annulla l'eventuale documento precaricato da allegato.
+            ClearStaged();
         }
 
         private async Task ImportDocumentAsync()
         {
-            if (_uploadFile == null)
+            if (_uploadFile == null && _stagedBytes == null)
             {
                 Notify.Notify(new NotificationMessage
                 {
@@ -324,15 +409,32 @@ namespace CRM.Client.Pages.Knowledge
 
             try
             {
-                // Bufferizza il file lato client, poi caricalo
-                using var browserStream = _uploadFile.OpenReadStream(50 * 1024 * 1024);
-                using var ms = new MemoryStream();
-                await browserStream.CopyToAsync(ms);
-                ms.Position = 0;
+                // Sorgente: file locale selezionato oppure documento precaricato da allegato.
+                Stream sourceStream;
+                string fileName;
+                if (_stagedBytes != null)
+                {
+                    sourceStream = new MemoryStream(_stagedBytes);
+                    fileName = _stagedFileName!;
+                }
+                else
+                {
+                    // Bufferizza il file lato client, poi caricalo
+                    var browserStream = _uploadFile!.OpenReadStream(50 * 1024 * 1024);
+                    var ms = new MemoryStream();
+                    await browserStream.CopyToAsync(ms);
+                    browserStream.Dispose();
+                    ms.Position = 0;
+                    sourceStream = ms;
+                    fileName = _uploadFile.Name;
+                }
+
+                using var upload = sourceStream;
 
                 var res = await Service.ImportDocument(
-                    ms, _uploadFile.Name, _importProductId,
-                    string.IsNullOrWhiteSpace(_importCategory) ? null : _importCategory);
+                    upload, fileName, _importProductId,
+                    string.IsNullOrWhiteSpace(_importCategory) ? null : _importCategory,
+                    _importPageFrom, _importPageTo);
 
                 if (res != null)
                 {
@@ -347,6 +449,9 @@ namespace CRM.Client.Pages.Knowledge
                     _uploadFile = null;
                     _importProductId = null;
                     _importCategory = string.Empty;
+                    _importPageFrom = null;
+                    _importPageTo = null;
+                    ClearStaged();
                     await LoadItems();
                 }
                 else

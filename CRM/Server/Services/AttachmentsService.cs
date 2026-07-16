@@ -479,6 +479,21 @@ namespace CRM.Server.Services
             else
                 return (Array.Empty<byte>(), string.Empty, string.Empty);
         }
+
+        public async Task<(byte[] Bytes, string ContentType, string FileName)> DownloadFile(int idFile)
+        {
+            var file = await _context.AttachmentFiles.Where(x => x.Id == idFile).FirstOrDefaultAsync();
+
+            if (file != null)
+            {
+                var contentType = MimeKit.MimeTypes.GetMimeType(file.Name);
+                var bytes = _archiveService.GetAttachment(file.Id, file.Name);
+                return (bytes, contentType, file.Name);
+            }
+
+            return (Array.Empty<byte>(), string.Empty, string.Empty);
+        }
+
         private async Task<string?> GetCurrentUserId()
         {
             return await _permitsService.IdUser();

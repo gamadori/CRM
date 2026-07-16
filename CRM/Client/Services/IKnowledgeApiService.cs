@@ -26,6 +26,6 @@ namespace CRM.Client.Services
 
         Task<KnowledgeEmbeddingStats?> GenerateEmbeddings(int batchSize = 20);
 
-        Task<KnowledgeImportResult?> ImportDocument(Stream fileStream, string fileName, int? idProduct, string? category);
+        Task<KnowledgeImportResult?> ImportDocument(Stream fileStream, string fileName, int? idProduct, string? category, int? pageFrom = null, int? pageTo = null);
     }
 }

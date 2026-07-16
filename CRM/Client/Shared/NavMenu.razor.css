@@ -132,7 +132,9 @@
     flex: 1;
     color: inherit !important;
     font-size: 0.92rem;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .modern-nav ::deep .expand-icon,

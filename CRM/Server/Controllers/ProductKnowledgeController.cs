@@ -132,7 +132,8 @@ namespace CRM.Server.Controllers
         [Authorize(Policy = "AdminRole")]
         [RequestSizeLimit(52_428_800)] // 50 MB
         public async Task<ActionResult<KnowledgeImportResult>> ImportDocument(
-            [FromForm] IFormFile file, [FromForm] int? idProduct, [FromForm] string? category)
+            [FromForm] IFormFile file, [FromForm] int? idProduct, [FromForm] string? category,
+            [FromForm] int? pageFrom, [FromForm] int? pageTo)
         {
             try
             {
@@ -145,7 +146,7 @@ namespace CRM.Server.Controllers
                 using var ms = new MemoryStream();
                 await file.CopyToAsync(ms);
 
-                return await _knowledge.ImportDocumentAsync(ms.ToArray(), file.FileName, idProduct, category);
+                return await _knowledge.ImportDocumentAsync(ms.ToArray(), file.FileName, idProduct, category, pageFrom, pageTo);
             }
             catch (Exception ex)
             {

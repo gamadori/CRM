@@ -44,12 +44,14 @@
         <RadzenDataGridColumn TItem="InvoiceDTO" Property="Total" Title="Totale" Width="130px" TextAlign="TextAlign.Right" FormatString="{0:C}" />
         <RadzenDataGridColumn TItem="InvoiceDTO" Context="i" Title="" Width="200px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
             <Template Context="i">
-                <RedGButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary" 
-                              Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientInvoicesPath}/{i.Id}/Details"))" />
-                @if (i.Permits.Delete())
-                {
-                    <RedGButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Click="@(() => Delete(i))" />
-                }
+                <div class="d-flex gap-2 justify-content-center">
+                    <RedGButton Icon="visibility" ButtonStyle="ButtonStyle.Secondary" 
+                                Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientInvoicesPath}/{i.Id}/Details"))" />
+                    @if (i.Permits.Delete())
+                    {
+                        <RedGButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Click="@(() => Delete(i))" />
+                    }
+                </div>
             </Template>
         </RadzenDataGridColumn>
     </Columns>
