@@ -226,7 +226,13 @@ builder.Services.AddAuthorization(options =>
         }
     }
 
-    
+    // Chiuso per default: ogni endpoint privo di attributi di autorizzazione richiede
+    // un utente autenticato. Ciò che deve restare pubblico va marcato con [AllowAnonymous]
+    // esplicito (login/token OpenIddict, webhook email, licenze macchina, shell Blazor,
+    // pagine dei report lette dal convertitore PDF).
+    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
 });
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
@@ -328,10 +334,16 @@ app.UseEndpoints(endpoints => {
 
 app.MapRazorPages();
 app.MapControllers();
-app.MapFallbackToFile("index.html");
+
+// La shell della SPA deve restare scaricabile da anonimo: è l'app Blazor stessa a gestire
+// il login lato client. Senza questo la FallbackPolicy la renderebbe irraggiungibile.
+app.MapFallbackToFile("index.html").AllowAnonymous();
 
 
-app.MapHub<SignalRHub>("/signalRHub");
+// L'hub accetta oggi connessioni non autenticate e il client si collega senza token
+// (HubService non imposta AccessTokenProvider): esplicito il comportamento attuale per non
+// romperlo con la FallbackPolicy. Va protetto in un intervento dedicato.
+app.MapHub<SignalRHub>("/signalRHub").AllowAnonymous();
 
 
 var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();

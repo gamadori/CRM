@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +8,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace CRM.Server.Areas.Identity.Pages.Account
 {
+    // Landing di conferma registrazione: raggiunta da utente non autenticato.
+    [AllowAnonymous]
     public class ConfirmMasterModel : PageModel
     {
         public void OnGet()

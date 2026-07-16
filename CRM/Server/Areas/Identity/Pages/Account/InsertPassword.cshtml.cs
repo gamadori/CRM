@@ -1,5 +1,6 @@
 #nullable disable
 
+using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -16,6 +17,8 @@ using Microsoft.Extensions.Logging;
 
 namespace CRM.Server.Areas.Identity.Pages.Account
 {
+    // Raggiunta da link email (userId+code) da un utente non ancora autenticato.
+    [AllowAnonymous]
     public class InsertPasswordModel : PageModel
     {
         private readonly UserManager<ApplicationUser> _userManager;

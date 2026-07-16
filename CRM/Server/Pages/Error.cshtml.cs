@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using System;
@@ -11,6 +12,8 @@ namespace CRM.Server.Pages
 {
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     [IgnoreAntiforgeryToken]
+    // Pagina di errore: deve essere raggiungibile anche da utenti non autenticati.
+    [AllowAnonymous]
     public class ErrorModel : PageModel
     {
         public string? RequestId { get; set; }

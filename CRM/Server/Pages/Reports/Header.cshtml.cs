@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.AspNetCore.Authorization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,6 +11,8 @@ using CRM.Shared;
 
 namespace CRM.Server.Pages.Reports
 {
+    // Letta via HTTP dal convertitore HTML->PDF, che non invia cookie di autenticazione.
+    [AllowAnonymous]
     public class HeaderModel : PageModel
     {
         private readonly CRM.Server.Data.ApplicationDbContext _context;
