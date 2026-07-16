@@ -13,6 +13,10 @@ namespace CRM.Shared
 
         public T? Total { get; set; }
 
-        
+        /// <summary>Metadati di paginazione (conteggio totale, ecc.). Il conteggio totale
+        /// va calcolato prima di Skip/Take, non dedotto dagli Items della pagina corrente.</summary>
+        public PagingHeaderModel? MetaData { get; set; }
+
+
     }
 }

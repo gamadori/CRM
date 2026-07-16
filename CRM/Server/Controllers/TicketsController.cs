@@ -171,13 +171,14 @@ namespace CRM.Server.Controllers
             {
                 var result = await _ticketsService.GetPagingAsync(args);
 
+                // Il totale (conteggio complessivo dei ticket che soddisfano il filtro) è calcolato
+                // dal service prima di Skip/Take e viaggia in result.MetaData. NON va dedotto da
+                // result.Items.Count, che è solo la dimensione della pagina corrente.
                 var paginationMetadata = new
                 {
-                    totalCount = result.Items?.Count ?? 0,
+                    totalCount = result.MetaData?.TotalCount ?? result.Items?.Count ?? 0,
                 };
 
-                // Ricalcola il totalCount dal result per il paging header
-                // Il service restituisce tutti gli items paginati, il count deve essere gestito
                 HttpContext.Response.Headers.Add("Paging-Header", JsonConvert.SerializeObject(paginationMetadata));
 
                 return result;

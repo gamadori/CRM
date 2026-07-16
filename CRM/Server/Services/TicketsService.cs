@@ -367,6 +367,7 @@ namespace CRM.Server.Services
                 ObjectView<TicketDTO, string> ticketView = new ObjectView<TicketDTO, string>();
                 ticketView.Total = DateTimeHelper.MinuteFormat(totalWork);
                 ticketView.Items = items;
+                ticketView.MetaData = paginationMetadata;
 
                 return ticketView;
             }
