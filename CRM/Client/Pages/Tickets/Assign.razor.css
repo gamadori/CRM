@@ -7,7 +7,7 @@
 .assign-header h5 {
     display: flex;
     align-items: center;
-    color: #2c3e50;
+    color: var(--crm-text, #2c3e50);
     font-weight: 600;
 }
 
@@ -93,12 +93,12 @@
 }
 
 .user-card {
-    border: 2px solid #e9ecef;
+    border: 2px solid var(--crm-border, #e9ecef);
     border-radius: 12px;
     padding: 1rem;
     cursor: pointer;
     transition: all 0.3s ease;
-    background: white;
+    background: var(--crm-surface-raised, white);
     position: relative;
 }
 
@@ -140,7 +140,7 @@
 
 .user-name-full {
     font-weight: 600;
-    color: #2c3e50;
+    color: var(--crm-text, #2c3e50);
     font-size: 0.95rem;
     display: flex;
     align-items: center;
@@ -153,7 +153,7 @@
 
 .user-email {
     font-size: 0.8rem;
-    color: #6c757d;
+    color: var(--crm-text-muted, #6c757d);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -170,7 +170,7 @@
 }
 
 .assign-footer {
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--crm-border, #e9ecef);
     padding-top: 1rem;
 }
 

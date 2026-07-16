@@ -97,7 +97,7 @@
                         
                         @if (!string.IsNullOrEmpty(result.Solution))
                         {
-                            <div class="alert alert-success mb-0 mt-2" style="background-color: #f0f9ff; border-color: #3b82f6;">
+                            <div class="alert alert-success mb-0 mt-2" style="background-color: color-mix(in srgb, #3b82f6 12%, transparent); border-color: #3b82f6; color: var(--crm-text);">
                                 <strong><span class="material-icons me-1" style="font-size: 16px; vertical-align: middle;">lightbulb</span>Soluzione:</strong>
                                 <p class="mb-0 mt-1">@result.Solution.Substring(0, Math.Min(200, result.Solution.Length))@(result.Solution.Length > 200 ? "..." : "")</p>
                             </div>

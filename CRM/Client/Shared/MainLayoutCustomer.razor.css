@@ -14,12 +14,12 @@
 }
 
 .top-row {
-    border-bottom: 1px solid #d6d5d5;
+    border-bottom: 1px solid var(--crm-border, #d6d5d5);
     justify-content: space-between;
     height: 3.5rem;
     display: flex;
     align-items: center;
-    background: #f7f7f7;
+    background: var(--crm-surface, #f7f7f7);
     background-position-x: 1.5rem;
 }
 

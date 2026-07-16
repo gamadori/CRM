@@ -6,7 +6,7 @@
         <div class="alert alert-info me-auto col-auto" role="alert" style="max-width:75%;">
             <div class="d-flex justify-content-between mb-3">
                 <RedGAvatar IdUser="@TicketChat.IdUser"></RedGAvatar>
-                <h6 class="alert-heading my-auto ms-2" style="color: black;">@TicketChat.UserName</h6>
+                <h6 class="alert-heading my-auto ms-2" style="color: inherit;">@TicketChat.UserName</h6>
             </div>
             @if (TicketChat.Deleted)
             {
@@ -36,7 +36,7 @@
     {
         <div class="alert alert-success ms-auto col-auto" style="max-width:75%;" role="alert">
             <div class="d-flex justify-content-between align-items-center">
-                <h6 class="alert-heading mb-0" style="color: black;">@TicketChat.UserName</h6>
+                <h6 class="alert-heading mb-0" style="color: inherit;">@TicketChat.UserName</h6>
                 @if (TicketChat.CanDelete)
                 {
                     <button type="button" class="btn btn-link p-0 ms-2 text-danger" title="@Localize["Elimina messaggio"]"
@@ -72,7 +72,7 @@
     else if (TicketChat.TypeMessage == TypeMessage.TicketMsg)
     {
         <div class="alert alert-warning mx-auto col-auto" role="alert">
-            <h6 class="alert-heading" style="color: black;">@TicketChat.UserName</h6>
+            <h6 class="alert-heading" style="color: inherit;">@TicketChat.UserName</h6>
             @if (!string.IsNullOrWhiteSpace(TicketChat.Message))
             {
                 <p class="msg-chat"><pre>@TicketChat.Message</pre></p>

@@ -181,7 +181,7 @@
             <Columns>
                 <RadzenDataGridColumn TItem="KnowledgeDocument" Title="Titolo">
                     <Template Context="doc">
-                        <span class="material-icons me-1" style="font-size:16px;vertical-align:middle;color:#94a3b8;">
+                        <span class="material-icons me-1" style="font-size:16px;vertical-align:middle;color:var(--crm-text-muted, #94a3b8);">
                             @(doc.IsImport ? "description" : "article")
                         </span>
                         @doc.Title

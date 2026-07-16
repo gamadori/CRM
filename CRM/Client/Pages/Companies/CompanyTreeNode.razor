@@ -27,7 +27,7 @@
     </div>
     @if (_expanded && Node.Children.Any())
     {
-        <div style="margin-left: 28px; border-left: 2px solid #e0e0e0; padding-left: 8px;">
+        <div style="margin-left: 28px; border-left: 2px solid var(--crm-border, #e0e0e0); padding-left: 8px;">
             @foreach (var child in Node.Children)
             {
                 <CompanyTreeNode Node="child" OnNavigate="OnNavigate" />

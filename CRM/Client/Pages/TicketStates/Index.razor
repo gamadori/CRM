@@ -40,7 +40,7 @@
         <RadzenDataGridColumn Property="@nameof(TicketState.Color)" Title="Colore" Width="150px">
             <Template Context="state">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 24px; height: 24px; border-radius: 4px; background-color: @state.Color; border: 1px solid #ddd;"></div>
+                    <div style="width: 24px; height: 24px; border-radius: 4px; background-color: @state.Color; border: 1px solid var(--crm-border, #ddd);"></div>
                     <span>@state.Color</span>
                 </div>
             </Template>

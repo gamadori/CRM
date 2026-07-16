@@ -22,7 +22,7 @@
                 <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
                 <RedGTextBox @bind-Value="@_filter.Name" Label="@Localize["search..."]" @oninput="@OnChangeNameFilter" Style="width: 300px; margin-left: 10px;">
                     <End>
-                        <RadzenIcon Icon="search" Style="color: #9e9e9e; font-size: 20px;" />
+                        <RadzenIcon Icon="search" Style="color: var(--crm-text-muted, #9e9e9e); font-size: 20px;" />
                     </End>
                 </RedGTextBox>
             </div>

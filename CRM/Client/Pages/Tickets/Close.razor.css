@@ -4,7 +4,7 @@
    ======================================== */
 
 .ticket-details-page {
-    background: #fafbfc;
+    background: var(--crm-page-bg, #fafbfc);
     padding-bottom: 2rem;
 }
 
@@ -16,12 +16,12 @@
 
 /* Header Card */
 .preview-header-card {
-    background: #ffffff;
+    background: var(--crm-surface-raised, #ffffff);
     border-radius: 12px;
     padding: 1.5rem 2rem;
     margin-bottom: 1.5rem;
-    border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--crm-border, #e8ecf1);
+    box-shadow: var(--crm-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
 }
 
 .header-content {
@@ -48,7 +48,7 @@
     margin: 0;
     font-size: 1.5rem;
     font-weight: 600;
-    color: #2d3748;
+    color: var(--crm-text, #2d3748);
     letter-spacing: -0.02em;
 }
 
@@ -68,17 +68,17 @@
     font-size: 1rem;
 }
 
-.ticket-status.priority-low { background: #eafaf1; color: #16a34a; }
-.ticket-status.priority-medium { background: #fef6e7; color: #ca8a04; }
-.ticket-status.priority-high { background: #fdecec; color: #dc2626; }
+.ticket-status.priority-low { background: color-mix(in srgb, #16a34a 15%, transparent); color: #16a34a; }
+.ticket-status.priority-medium { background: color-mix(in srgb, #ca8a04 15%, transparent); color: #ca8a04; }
+.ticket-status.priority-high { background: color-mix(in srgb, #dc2626 15%, transparent); color: #dc2626; }
 
 /* Section Cards */
 .description-card {
-    background: #ffffff;
+    background: var(--crm-surface-raised, #ffffff);
     border-radius: 12px;
     margin-bottom: 1.5rem;
-    border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--crm-border, #e8ecf1);
+    box-shadow: var(--crm-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
     overflow: hidden;
 }
 
@@ -87,13 +87,13 @@
     align-items: center;
     gap: 0.75rem;
     padding: 1rem 1.5rem;
-    background: #f8f9fb;
-    border-bottom: 1px solid #e8ecf1;
+    background: var(--crm-surface-muted, #f8f9fb);
+    border-bottom: 1px solid var(--crm-border, #e8ecf1);
 }
 
 .card-header-modern .material-icons {
     font-size: 1.25rem;
-    color: #64748b;
+    color: var(--crm-text-muted, #64748b);
 }
 
 .card-header-modern .material-icons.text-success {
@@ -104,7 +104,7 @@
     margin: 0;
     font-size: 0.95rem;
     font-weight: 600;
-    color: #475569;
+    color: var(--crm-text, #475569);
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
@@ -112,7 +112,7 @@
 .header-meta {
     margin-left: auto;
     font-size: 0.82rem;
-    color: #94a3b8;
+    color: var(--crm-text-muted, #94a3b8);
     font-weight: 500;
     text-transform: none;
     letter-spacing: 0;
@@ -131,7 +131,7 @@
     margin: 0;
     font-size: 1rem;
     line-height: 1.7;
-    color: #374151;
+    color: var(--crm-text, #374151);
     white-space: pre-wrap;
     text-align: left;
 }
@@ -149,13 +149,13 @@
 }
 
 .summary-readonly {
-    color: #243244;
+    color: var(--crm-text, #243244);
     font-size: 0.95rem;
     line-height: 1.55;
     white-space: pre-wrap;
     padding: 0.6rem 0.8rem;
     border-left: 3px solid #8091c8;
-    background: #f8fafc;
+    background: var(--crm-surface-muted, #f8fafc);
     border-radius: 6px;
 }
 
@@ -177,8 +177,8 @@
     font-size: 14px;
 }
 
-.visibility-badge.visible { background: #eafaf1; color: #16a34a; }
-.visibility-badge.hidden { background: #eef1f5; color: #667085; }
+.visibility-badge.visible { background: color-mix(in srgb, #16a34a 15%, transparent); color: #16a34a; }
+.visibility-badge.hidden { background: var(--crm-surface-hover, #eef1f5); color: var(--crm-text-muted, #667085); }
 
 /* "Usa come soluzione" button */
 .btn-use-summary {
@@ -232,7 +232,7 @@
 }
 
 .chevron {
-    color: #94a3b8;
+    color: var(--crm-text-muted, #94a3b8);
     transition: transform 0.2s ease;
 }
 
@@ -240,10 +240,10 @@
 
 /* Footer actions */
 .close-actions-card {
-    background: #ffffff;
+    background: var(--crm-surface-raised, #ffffff);
     border-radius: 12px;
-    border: 1px solid #e8ecf1;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--crm-border, #e8ecf1);
+    box-shadow: var(--crm-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
     padding: 1.25rem 1.5rem;
     display: flex;
     gap: 0.5rem;
@@ -257,7 +257,7 @@
     justify-content: center;
     align-items: center;
     min-height: 400px;
-    background: #fafbfc;
+    background: var(--crm-page-bg, #fafbfc);
 }
 
 /* Responsive */
