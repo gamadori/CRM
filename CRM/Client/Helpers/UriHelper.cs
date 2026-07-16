@@ -50,13 +50,22 @@ namespace CRM.Client.Helpers
             }
             return query.ToString();
         }
+        /// <summary>
+        /// Codifica una coppia chiave/valore per la query string.
+        /// Senza codifica un valore che contiene '&amp;', '+', '#' o '=' spezza la richiesta o
+        /// arriva alterato al server: sono caratteri comuni nei filtri di griglia (Dynamic LINQ)
+        /// e nel testo digitato dall'utente. In particolare '&amp;' introduce un parametro
+        /// arbitrario e '+' verrebbe interpretato lato server come uno spazio.
+        /// </summary>
+        private static string EncodePair(string key, string? value)
+            => Uri.EscapeDataString(key ?? string.Empty) + "=" + Uri.EscapeDataString(value ?? string.Empty);
+
         public static string BuildQueryString(Dictionary<string, string> queryStringParams)
         {
             List<string> paramList = new List<string>();
             foreach (var parameter in queryStringParams)
             {
-               
-                paramList.Add(parameter.Key + "=" + parameter.Value);
+                paramList.Add(EncodePair(parameter.Key, parameter.Value));
             }
             return "?" + string.Join("&", paramList);
         }
@@ -72,7 +81,7 @@ namespace CRM.Client.Helpers
                         value = ((DateTime)parameter.Value).ToString("yyyy-MM-dd");
                     else
                         value = parameter.Value.ToString();
-                    paramList.Add(parameter.Key + "=" + value);
+                    paramList.Add(EncodePair(parameter.Key, value));
                 }
             }
             return "?" + string.Join("&", paramList);
