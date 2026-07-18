@@ -38,6 +38,9 @@ namespace CRM.Client.Pages.Tickets
         IBaseRestService<ApplicationUser, UsersFilterModel, string> _serviceUser { get; set; }
 
         [Inject]
+        ICompaniesService _serviceCompany { get; set; }
+
+        [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
@@ -101,6 +104,8 @@ namespace CRM.Client.Pages.Tickets
 
         private List<ApplicationUser> _users = new List<ApplicationUser>();
 
+        private List<CompanyDTO> _companies = new List<CompanyDTO>();
+
         private bool _filterState = false;
 
         private string _filterCompany = null;
@@ -115,6 +120,8 @@ namespace CRM.Client.Pages.Tickets
 
         private string _userFilter = null;
 
+        private int? _companyFilter = null;
+
         private IList<TicketDTO> _selectedTicket = new List<TicketDTO>();
 
         private int _numRecords = 0;
@@ -126,13 +133,14 @@ namespace CRM.Client.Pages.Tickets
            
             await FindResponsiveness();
             _user = await _userService.Get();
-            
+           
             if (IdCompany == null)
             {
                 _header = Localize["Tickets"];
             }
             
             await LoadUsers();
+            await LoadCompanies();
 
             if (IdUser != null)
             {
@@ -285,7 +293,11 @@ namespace CRM.Client.Pages.Tickets
             
         }
 
-      
+        private async Task LoadCompanies()
+        {
+            var response = await _serviceCompany.GetListAsync(new CompanyFilter());
+            _companies = response.ToList();
+        }
 
         private async Task<PagingResponse<TicketDTO>> Decode(HttpResponseMessage resp)
         {

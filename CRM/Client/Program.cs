@@ -1,4 +1,4 @@
-using CRM.Client.Handlers;
+﻿using CRM.Client.Handlers;
 using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Shared;
@@ -89,6 +89,8 @@ namespace CRM.Client
             builder.Services.AddMemoryCache();
 
             builder.Services.AddTransient<ITicketsService, ProxyTicketsService>();
+
+            builder.Services.AddTransient<IAssistantService, ProxyAssistantService>();
 
             builder.Services.AddTransient<ITicketChatsService, TicketChatsService>();
 

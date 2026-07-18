@@ -45,9 +45,10 @@
     .forecast-panel { padding: 1rem; min-width: 0; }
     .forecast-panel-title { display: flex; align-items: center; gap: .5rem; margin-bottom: .8rem; }
     .forecast-panel-title h2 { margin: 0; font-size: 1.05rem; font-weight: 850; }
-    .forecast-muted { color: #64748b; margin: 0; }
+    .forecast-muted { color: var(--crm-text-muted); margin: 0; }
     .forecast-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-    .forecast-table th, .forecast-table td { padding: .58rem .45rem; border-bottom: 1px solid #e6edf5; text-align: right; }
+    .forecast-table th, .forecast-table td { padding: .58rem .45rem; border-bottom: 1px solid var(--crm-border); text-align: right; }
     .forecast-table th:first-child, .forecast-table td:first-child { text-align: left; }
-    .forecast-table th { color: #64748b; font-size: .72rem; text-transform: uppercase; letter-spacing: 0; }
+    .forecast-table th { color: var(--crm-text-muted); font-size: .72rem; text-transform: uppercase; letter-spacing: 0; }
+    .forecast-table tbody tr:hover td { background: var(--crm-surface-hover); }
 </style>

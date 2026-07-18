@@ -222,6 +222,17 @@ namespace CRM.Server.Data
                 .HasIndex(x => x.KeyHash)
                 .IsUnique();
 
+            modelBuilder.Entity<ExternalTicketApiKey>(entity =>
+            {
+                entity.HasOne(x => x.Company)
+                      .WithMany()
+                      .HasForeignKey(x => x.IdCompany)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => x.KeyHash).IsUnique();
+                entity.HasIndex(x => x.IdCompany);
+            });
+
             modelBuilder.Entity<MachineBackup>(entity =>
             {
                 entity.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.IdProduct).OnDelete(DeleteBehavior.Restrict);
@@ -676,6 +687,7 @@ namespace CRM.Server.Data
 
         public DbSet<MachineBackup> MachineBackups => Set<MachineBackup>();
         public DbSet<MachineParameterApiKey> MachineParameterApiKeys => Set<MachineParameterApiKey>();
+        public DbSet<ExternalTicketApiKey> ExternalTicketApiKeys => Set<ExternalTicketApiKey>();
         public DbSet<CRM.Shared.Article> Articles => Set<Article>();
         public DbSet<CRM.Shared.TicketState> TicketStates => Set<TicketState>();
         public DbSet<CRM.Shared.Ticket> Tickets => Set<Ticket>();

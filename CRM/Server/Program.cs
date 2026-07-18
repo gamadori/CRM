@@ -1,4 +1,4 @@
-using CRM.Client.Services;
+﻿using CRM.Client.Services;
 using CRM.Server;
 using CRM.Server.Authentication;
 using CRM.Server.Controllers;
@@ -104,13 +104,13 @@ builder.Services.AddSingleton<OpenAIEmbeddingService>();
 
 builder.Services.AddSingleton<OpenAIChatService>();
 
-builder.Services.AddSingleton<AnthropicChatService>();
-
 builder.Services.AddScoped<IInterventionsService, InterventionsService>();
 
 builder.Services.AddScoped<IKnowledgeService, KnowledgeService>();
 
-builder.Services.AddScoped<CrmDataAssistantService>();
+builder.Services.AddScoped<TicketKnowledgeService>();
+
+builder.Services.AddScoped<CrmAssistantService>();
 
 builder.Services.AddScoped<ILogosService, LogosService>();
 
@@ -152,6 +152,7 @@ builder.Services.AddScoped<ICompaniesService, CompaniesService>();
 
 builder.Services.AddScoped<IProductsService, ProductsService>();
 builder.Services.AddScoped<IMachineParameterApiKeyService, MachineParameterApiKeyService>();
+builder.Services.AddScoped<IExternalTicketApiService, ExternalTicketApiService>();
 builder.Services.AddScoped<CRM.Server.Services.IMachineBackupsService, MachineBackupsService>();
 
 builder.Services.AddScoped<IProductTypesService, ProductTypesService>();

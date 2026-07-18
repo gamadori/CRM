@@ -11,10 +11,16 @@ using System.Threading.Tasks;
 
 namespace CRM.Client.Pages.Tickets
 {
-    public partial class Assistant : ComponentBase
+    /// <summary>
+    /// Assistente AI unificato: un'unica chat per interrogare i dati del CRM
+    /// (clienti, macchine, ticket…) e per cercare soluzioni a problemi tecnici
+    /// nei ticket chiusi e nella knowledge base. Le risposte arrivano in streaming
+    /// e sono renderizzate in Markdown con link alle schede del CRM.
+    /// </summary>
+    public partial class Assistant : ComponentBase, IAsyncDisposable
     {
         [Inject]
-        ITicketsService Service { get; set; }
+        IAssistantService Service { get; set; }
 
         [Inject]
         DialogService DialogService { get; set; }
@@ -33,11 +39,52 @@ namespace CRM.Client.Pages.Tickets
 
         private const string ScrollAreaId = "assistant-messages";
 
+        private const string InputId = "assistant-input";
+
+        private ElementReference _inputRef;
+
+        private static readonly string[] Suggestions =
+        {
+            "Che macchine ha il cliente Rossi?",
+            "Quanti ticket aperti abbiamo?",
+            "Il gestionale non stampa le fatture dopo l'aggiornamento",
+        };
+
         private readonly List<ChatTurn> _turns = new();
 
         private string _input = string.Empty;
 
         private bool _loading = false;
+
+        /// <summary>Modulo JS collocato al componente (Assistant.razor.js).</summary>
+        private IJSObjectReference _js;
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (firstRender)
+            {
+                try
+                {
+                    // Sopprime il newline di default su Invio (senza Shift): l'invio del
+                    // messaggio è gestito da OnKeyDown e il newline, arrivando dopo la
+                    // pulizia del campo, lo ri-riempirebbe.
+                    _js = await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/Tickets/Assistant.razor.js");
+                    await _js.InvokeVoidAsync("preventEnterNewline", InputId);
+                }
+                catch
+                {
+                    // Modulo JS non caricabile: al peggio l'Invio inserisce un a-capo.
+                }
+            }
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (_js != null)
+            {
+                try { await _js.DisposeAsync(); } catch { /* circuito già chiuso */ }
+            }
+        }
 
         private async Task OnKeyDown(KeyboardEventArgs args)
         {
@@ -46,6 +93,12 @@ namespace CRM.Client.Pages.Tickets
             {
                 await SendAsync();
             }
+        }
+
+        private async Task SendSuggestion(string text)
+        {
+            _input = text;
+            await SendAsync();
         }
 
         private async Task SendAsync()
@@ -78,29 +131,36 @@ namespace CRM.Client.Pages.Tickets
 
             try
             {
-                await Service.AssistantChatStream(
-                    request,
-                    onTickets: tickets =>
+                await Service.ChatStream(request, streamEvent =>
+                {
+                    switch (streamEvent.Type)
                     {
-                        assistantTurn.Tickets = tickets;
-                        InvokeAsync(StateHasChanged);
-                    },
-                    onChunk: chunk =>
-                    {
-                        assistantTurn.Content += chunk;
-                        InvokeAsync(StateHasChanged);
-                    },
-                    onError: error =>
-                    {
-                        if (string.IsNullOrEmpty(assistantTurn.Content))
-                            assistantTurn.Content = $"⚠️ {error}";
-                        InvokeAsync(StateHasChanged);
-                    },
-                    onLogId: id =>
-                    {
-                        assistantTurn.LogId = id;
-                        InvokeAsync(StateHasChanged);
-                    });
+                        case AssistantStreamEvent.TypeStatus:
+                            assistantTurn.Status = streamEvent.Text;
+                            break;
+
+                        case AssistantStreamEvent.TypeDelta:
+                            assistantTurn.Status = null;
+                            assistantTurn.Content += streamEvent.Text;
+                            break;
+
+                        case AssistantStreamEvent.TypeTickets:
+                            assistantTurn.Tickets = streamEvent.Tickets;
+                            break;
+
+                        case AssistantStreamEvent.TypeLogId:
+                            assistantTurn.LogId = streamEvent.LogId;
+                            break;
+
+                        case AssistantStreamEvent.TypeError:
+                            assistantTurn.Status = null;
+                            if (string.IsNullOrEmpty(assistantTurn.Content))
+                                assistantTurn.Content = $"⚠️ {streamEvent.Text}";
+                            break;
+                    }
+
+                    InvokeAsync(StateHasChanged);
+                });
             }
             catch (Exception ex)
             {
@@ -109,9 +169,28 @@ namespace CRM.Client.Pages.Tickets
             }
             finally
             {
+                assistantTurn.Status = null;
                 _loading = false;
                 StateHasChanged();
                 await ScrollToBottom();
+                await FocusInputAsync();
+            }
+        }
+
+        /// <summary>
+        /// Riporta il focus sul campo domanda: la textarea viene disabilitata durante
+        /// l'elaborazione e la disabilitazione fa perdere il focus, che va restituito
+        /// per poter proseguire la conversazione senza cliccare di nuovo nel campo.
+        /// </summary>
+        private async Task FocusInputAsync()
+        {
+            try
+            {
+                await _inputRef.FocusAsync();
+            }
+            catch
+            {
+                // Elemento non ancora renderizzato o circuito chiuso: il focus non è critico
             }
         }
 
@@ -157,7 +236,7 @@ namespace CRM.Client.Pages.Tickets
             if (turn.LogId == null)
                 return;
 
-            var ok = await Service.SendAssistantFeedback(new AssistantFeedbackRequest
+            var ok = await Service.SendFeedback(new AssistantFeedbackRequest
             {
                 LogId = turn.LogId.Value,
                 Vote = vote,
@@ -176,7 +255,12 @@ namespace CRM.Client.Pages.Tickets
         private class ChatTurn
         {
             public string Role { get; set; } = "user";
+
             public string Content { get; set; } = string.Empty;
+
+            /// <summary>Attività in corso lato server ("Cerco il cliente…"): mostrata durante l'uso dei tool.</summary>
+            public string Status { get; set; }
+
             public List<TicketSimilarityResult> Tickets { get; set; }
 
             /// <summary>Id del log lato server: presente quando la risposta è completa e votabile.</summary>

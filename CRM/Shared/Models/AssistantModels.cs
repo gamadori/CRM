@@ -82,6 +82,29 @@ namespace CRM.Shared.Models
         public int? LogId { get; set; }
     }
 
+    /// <summary>
+    /// Evento del flusso di risposta dell'assistente unificato (una riga JSON per evento, NDJSON).
+    /// Il campo valorizzato dipende da <see cref="Type"/>:
+    /// "status" e "delta" e "error" usano <see cref="Text"/>, "tickets" usa <see cref="Tickets"/>,
+    /// "logId" usa <see cref="LogId"/>.
+    /// </summary>
+    public class AssistantStreamEvent
+    {
+        public const string TypeStatus = "status";
+        public const string TypeDelta = "delta";
+        public const string TypeTickets = "tickets";
+        public const string TypeLogId = "logId";
+        public const string TypeError = "error";
+
+        public string Type { get; set; } = TypeDelta;
+
+        public string? Text { get; set; }
+
+        public List<TicketSimilarityResult>? Tickets { get; set; }
+
+        public int? LogId { get; set; }
+    }
+
     /// <summary>Voto di feedback dell'operatore su una risposta dell'assistente.</summary>
     public class AssistantFeedbackRequest
     {

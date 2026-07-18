@@ -25,23 +25,6 @@ namespace CRM.Client.Services
 
         Task<SemanticSearchResponse> SemanticSearch(SemanticSearchRequest request);
 
-        Task<AssistantChatResponse> AssistantChat(AssistantChatRequest request);
-
-        Task AssistantChatStream(
-            AssistantChatRequest request,
-            Action<List<TicketSimilarityResult>> onTickets,
-            Action<string> onChunk,
-            Action<string> onError,
-            Action<int>? onLogId = null);
-
-        /// <summary>Invia il voto di feedback dell'operatore su una risposta dell'assistente.</summary>
-        Task<bool> SendAssistantFeedback(AssistantFeedbackRequest request);
-
-        /// <summary>Elenco dei log Q&A dell'assistente (consultazione admin).</summary>
-        Task<List<AssistantChatLogDTO>> GetAssistantLogs(AssistantChatLogFilter filter);
-
-        Task<AssistantChatResponse> DataAssistantAsk(AssistantChatRequest request);
-
         Task<TicketSummaryProposalResponse> ProposeSummary(int idTicket, TicketSummaryProposalRequest request);
 
         Task<TicketDTO?> UpdateSummary(int idTicket, UpdateTicketSummaryRequest request);

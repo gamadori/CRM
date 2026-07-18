@@ -97,6 +97,7 @@ namespace CRM.Shared.DTOs
                 Note = company.Note,
                 PIva = company.PIva,
                 Provincia = company.Provincia,
+                Stato = company.Stato,
                 ResellerName = company.ResellerName,
                 Telefono = company.Telefono,
                 Web = company.Web,

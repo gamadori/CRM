@@ -47,16 +47,23 @@
             <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Date)" FormatString="{0:d}" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Date), typeof(Ticket))" />
 
 
-            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Company)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdCompany), typeof(Ticket))" Type="typeof(string)"
-                                  FilterProperty="Company.RagioneSociale" SortProperty="Company.RagioneSociale"   />
+            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Company)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdCompany), typeof(Ticket))" Type="typeof(string)" FilterProperty="@nameof(TicketDTO.IdCompany)" FilterValue="@_companyFilter" FilterOperator="FilterOperator.Equals">
+                <FilterTemplate>
+
+                    <FilterDropDown Items="@_companies" TItem="CompanyDTO" TValue="int?" @bind-Value=@_companyFilter UniqueID="@grdTickets.UniqueID" Property=@nameof(TicketDTO.IdCompany) TextProperty="@nameof(CompanyDTO.RagioneSociale)"
+                                    ValueProperty="Id"></FilterDropDown>
+                </FilterTemplate>
+            </RadzenDataGridColumn>
 
 
-            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Product)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdProduct), typeof(Ticket))" Type="typeof(string)"
-            FilterProperty="Product.Name" SortProperty="Product.Name" />
+            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Product)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdProduct), typeof(Ticket))" Type="typeof(string)" FilterProperty="Product.Name"
+                                  SortProperty="Product.Name">
+
+            </RadzenDataGridColumn>
 
 
             <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Article)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdArticle), typeof(Ticket))" Type="typeof(string)"
-            FilterProperty="Article.SerialNumber" SortProperty="Article.SerialNumber" />
+            FilterProperty="Article" SortProperty="Article" />
 
             <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.IdUserAssigned)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdUserAssigned), typeof(Ticket))" FilterProperty="@nameof(TicketDTO.IdUserAssigned)" FilterValue="@_userFilter" FilterOperator="FilterOperator.Equals">
                 <Template Context="item">
@@ -97,10 +104,6 @@
 
             <RadzenDataGridColumn Context="item" TItem="TicketDTO" Filterable="false" Sortable="false" TextAlign="Radzen.TextAlign.JustifyAll">
                 <Template Context="item">
-                   
-                    
-                   
-                   
 
                     <RedGButton RGButtonType="RGButtonType.View" Click=@(() => Details(item.Id))></RedGButton>
                     <RedGButton RGButtonType="RGButtonType.Edit" Click=@(() => Edit(item.Id)) Visible=@(item.Permits.Edit())></RedGButton>

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "crm-server",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "CRM/Server/CRM.Server.csproj", "--launch-profile", "CRM.Server"],
+      "port": 5000
+    }
+  ]
+}

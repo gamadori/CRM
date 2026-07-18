@@ -10,7 +10,7 @@ namespace CRM.Client.Pages.Settings
 {
     public partial class AssistantLogs : ComponentBase
     {
-        [Inject] ITicketsService Service { get; set; }
+        [Inject] IAssistantService Service { get; set; }
 
         private List<AssistantChatLogDTO> _items = new();
 
@@ -43,7 +43,7 @@ namespace CRM.Client.Pages.Settings
             _loading = true;
             StateHasChanged();
 
-            _items = await Service.GetAssistantLogs(new AssistantChatLogFilter
+            _items = await Service.GetLogs(new AssistantChatLogFilter
             {
                 Search = string.IsNullOrWhiteSpace(_search) ? null : _search,
                 Vote = _voteFilter
