@@ -190,14 +190,16 @@
                         @if (_expandAI)
                         {
                             <div class="nav-submenu-2">
-                                <NavLink class="nav-link submenu-link-2 highlight-ai" href="Tickets/Search" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
-                                    <span class="material-icons nav-icon-small">psychology</span>
-                                    <span class="nav-text">@Localize["Search"] AI</span>
-                                </NavLink>
+                               
 
                                 <NavLink class="nav-link submenu-link-2 highlight-ai" href="Tickets/Assistant" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                                     <span class="material-icons nav-icon-small">smart_toy</span>
                                     <span class="nav-text">@Localize["Assistant"]</span>
+                                </NavLink>
+
+                                <NavLink class="nav-link submenu-link-2 highlight-ai" href="Tickets/Search" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                                    <span class="material-icons nav-icon-small">psychology</span>
+                                    <span class="nav-text">@Localize["Search"] AI</span>
                                 </NavLink>
                             </div>
                         }

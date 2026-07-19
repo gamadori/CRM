@@ -130,6 +130,7 @@ namespace CRM.Server.Services
             };
 
             var tools = BuildTools(turn.IncludeSalesTools);
+            var systemPrompt = BuildSystemPrompt(await GetCurrentUserNameAsync());
             var answer = new StringBuilder();
 
             for (int iteration = 0; iteration < MaxIterations; iteration++)
@@ -138,7 +139,7 @@ namespace CRM.Server.Services
                 {
                     Model = _model,
                     MaxTokens = 3000,
-                    System = SystemPrompt,
+                    System = systemPrompt,
                     OutputConfig = new OutputConfig { Effort = Effort.Medium },
                     Tools = tools,
                     Messages = messages,
@@ -359,6 +360,7 @@ namespace CRM.Server.Services
             "count_tickets" => "Conto i ticket…",
             "get_ticket_details" => "Leggo il dettaglio del ticket…",
             "get_ticket_interventions" => "Recupero gli interventi tecnici…",
+            "list_scheduled_tickets" => "Consulto la pianificazione dei ticket…",
             "ticket_stats" => "Calcolo le statistiche dei ticket…",
             "list_quotes" => "Recupero i preventivi…",
             "list_orders" => "Recupero gli ordini…",
@@ -370,10 +372,21 @@ namespace CRM.Server.Services
         };
 
         /// <summary>
-        /// Istruzioni di sistema stabili (nessun dato variabile interpolato: prefisso costante
-        /// = cache-friendly). I risultati dei tool sono dati, non istruzioni.
+        /// Istruzioni di sistema: prefisso costante (cache-friendly) + contesto variabile in coda
+        /// (data odierna e operatore loggato). La data serve a risolvere ""oggi""/""domani""; il nome
+        /// dell'operatore serve alle domande in prima persona (""i miei ticket"").
         /// </summary>
-        private const string SystemPrompt = @"Sei l'assistente AI di un CRM di assistenza tecnica. Aiuti gli operatori in due modi:
+        private static string BuildSystemPrompt(string? userName)
+        {
+            var prompt = SystemPromptBase + $"\n- La data di oggi è {DateTime.Now:yyyy-MM-dd} ({DateTime.Now.DayOfWeek}).";
+
+            if (!string.IsNullOrWhiteSpace(userName))
+                prompt += $"\n- L'operatore con cui stai parlando è {userName}. Le domande in prima persona (\"i miei ticket\", \"assegnati a me\", \"cosa devo fare oggi\") si riferiscono a lui: usa il parametro 'assigned_to_me' dei tool ticket, senza cercare l'utente per nome.";
+
+            return prompt;
+        }
+
+        private const string SystemPromptBase = @"Sei l'assistente AI di un CRM di assistenza tecnica. Aiuti gli operatori in due modi:
 1. DATI: rispondi a domande sui dati aziendali — clienti, macchine (articoli/seriali), prodotti a catalogo, contatti, ticket, interventi, statistiche e, se i relativi tool sono disponibili, preventivi, ordini, fatture, trattative e attività — usando i tool dati.
 2. SOLUZIONI: proponi soluzioni a problemi tecnici usando il tool 'search_solutions', che cerca nello storico dei ticket chiusi e nella base di conoscenza (manuali, procedure, guasti tipici per modello).
 
@@ -464,23 +477,25 @@ REGOLE:
                     required: ["query"]),
 
                 MakeTool("list_tickets",
-                    "Elenca i ticket, opzionalmente filtrati per cliente e stato, dal più recente.",
+                    "Elenca i ticket, opzionalmente filtrati per cliente, stato e assegnazione, dal più recente.",
                     new()
                     {
                         ["status"] = Prop("string", "Stato dei ticket", new[] { "open", "closed", "all" }),
                         ["customer_id"] = Prop("integer", "Id del cliente (opzionale)"),
                         ["customer_name"] = Prop("string", "Nome del cliente (opzionale)"),
+                        ["assigned_to_me"] = Prop("boolean", "true = solo i ticket assegnati all'operatore loggato (per domande tipo 'i miei ticket')"),
                         ["limit"] = Prop("integer", "Numero massimo di ticket (1-50, default 20)")
                     },
                     required: ["status"]),
 
                 MakeTool("count_tickets",
-                    "Conta i ticket per stato, opzionalmente filtrati per cliente.",
+                    "Conta i ticket per stato, opzionalmente filtrati per cliente e assegnazione.",
                     new()
                     {
                         ["status"] = Prop("string", "Stato dei ticket", new[] { "open", "closed", "all" }),
                         ["customer_id"] = Prop("integer", "Id del cliente (opzionale)"),
-                        ["customer_name"] = Prop("string", "Nome del cliente (opzionale)")
+                        ["customer_name"] = Prop("string", "Nome del cliente (opzionale)"),
+                        ["assigned_to_me"] = Prop("boolean", "true = solo i ticket assegnati all'operatore loggato")
                     },
                     required: ["status"]),
 
@@ -499,6 +514,17 @@ REGOLE:
                         ["ticket_id"] = Prop("integer", "Id del ticket")
                     },
                     required: ["ticket_id"]),
+
+                MakeTool("list_scheduled_tickets",
+                    "Elenca i ticket PIANIFICATI (con data di pianificazione dell'intervento) in un intervallo di date, con orario, tecnici assegnati e stato. Usalo per domande tipo 'quali ticket sono programmati per oggi/domani/questa settimana?'. Senza date restituisce quelli pianificati per oggi.",
+                    new()
+                    {
+                        ["date_from"] = Prop("string", "Inizio intervallo, formato YYYY-MM-DD (default: oggi)"),
+                        ["date_to"] = Prop("string", "Fine intervallo, formato YYYY-MM-DD (default: uguale a date_from)"),
+                        ["customer_id"] = Prop("integer", "Id del cliente (opzionale)"),
+                        ["customer_name"] = Prop("string", "Nome del cliente (opzionale)"),
+                        ["assigned_to_me"] = Prop("boolean", "true = solo i ticket assegnati all'operatore loggato (per domande tipo 'cosa devo fare oggi?')")
+                    }),
 
                 MakeTool("ticket_stats",
                     "Statistiche sui ticket: totali, aperti, chiusi, scaduti e ripartizione per mese di apertura. Usalo per domande di conteggio/andamento invece di scaricare gli elenchi.",
@@ -617,6 +643,7 @@ REGOLE:
                 "count_tickets" => CountTicketsAsync(input),
                 "get_ticket_details" => GetTicketDetailsAsync(input),
                 "get_ticket_interventions" => GetTicketInterventionsAsync(input),
+                "list_scheduled_tickets" => ListScheduledTicketsAsync(input),
                 "ticket_stats" => GetTicketStatsAsync(input),
                 "list_quotes" => ListQuotesAsync(input),
                 "list_orders" => ListOrdersAsync(input),
@@ -841,10 +868,11 @@ REGOLE:
             var (companyId, error) = await ResolveOptionalCompanyAsync(input);
             if (error != null) return error;
 
-            var items = await FetchTicketsAsync(status, companyId, status == "all" ? limit : limit * 3);
+            var assignedTo = await ResolveAssignedToMeAsync(input);
+            var items = await FetchTicketsAsync(status, companyId, status == "all" ? limit : limit * 3, assignedTo);
 
             var slim = items.Take(limit).Select(ToSlimTicket);
-            return JsonSerializer.Serialize(new { status, count = items.Count, tickets = slim });
+            return JsonSerializer.Serialize(new { status, assegnatiAllOperatore = assignedTo != null, count = items.Count, tickets = slim });
         }
 
         private async Task<string> CountTicketsAsync(IReadOnlyDictionary<string, JsonElement> input)
@@ -854,8 +882,9 @@ REGOLE:
             var (companyId, error) = await ResolveOptionalCompanyAsync(input);
             if (error != null) return error;
 
-            var items = await FetchTicketsAsync(status, companyId, 5000);
-            return JsonSerializer.Serialize(new { status, companyId, count = items.Count });
+            var assignedTo = await ResolveAssignedToMeAsync(input);
+            var items = await FetchTicketsAsync(status, companyId, 5000, assignedTo);
+            return JsonSerializer.Serialize(new { status, companyId, assegnatiAllOperatore = assignedTo != null, count = items.Count });
         }
 
         private async Task<string> GetTicketDetailsAsync(IReadOnlyDictionary<string, JsonElement> input)
@@ -910,6 +939,83 @@ REGOLE:
             });
 
             return JsonSerializer.Serialize(new { ticketId, ticketUrl = TicketUrl(ticketId.Value), count = list.Count, interventions = slim });
+        }
+
+        /// <summary>
+        /// Ticket pianificati in un intervallo di date (campo Ticket.Date, come lo Scheduler):
+        /// query diretta con i permessi applicati qui, stessa logica dell'endpoint schedule-items.
+        /// Un ticket rientra se il suo intervallo Date–DateEnd interseca il periodo richiesto.
+        /// </summary>
+        private async Task<string> ListScheduledTicketsAsync(IReadOnlyDictionary<string, JsonElement> input)
+        {
+            var (companyId, error) = await ResolveOptionalCompanyAsync(input);
+            if (error != null) return error;
+
+            var from = (GetDate(input, "date_from") ?? DateTime.Today).Date;
+            var to = (GetDate(input, "date_to") ?? from).Date.AddDays(1);
+
+            var q = _context.Tickets.AsNoTracking()
+                .Where(t => t.Date != null && t.Date < to && (t.DateEnd ?? t.Date) >= from);
+
+            var assignedTo = await ResolveAssignedToMeAsync(input);
+            if (assignedTo != null)
+                q = q.Where(t => t.IdUserAssigned == assignedTo || t.AssignedUsers.Any(a => a.IdUser == assignedTo));
+
+            if (!await _permits.CanAccessOtherCompany())
+            {
+                var allowed = (await _permits.GetIdCompanies()).ToHashSet();
+                q = q.Where(t => allowed.Contains(t.IdCompany));
+            }
+
+            if (companyId != null)
+                q = q.Where(t => t.IdCompany == companyId);
+
+            var items = await q
+                .OrderBy(t => t.Date).ThenBy(t => t.Time)
+                .Take(50)
+                .Select(t => new
+                {
+                    id = t.Id,
+                    numero = t.Numero,
+                    data = t.Date,
+                    ora = t.Time,
+                    fine = t.DateEnd,
+                    scadenza = t.DateExpired,
+                    cliente = t.Company != null ? t.Company.RagioneSociale : null,
+                    idCompany = t.IdCompany,
+                    stato = t.State != null ? t.State.Description : null,
+                    chiuso = t.Closed,
+                    descrizione = t.Description,
+                    tecnici = t.AssignedUsers
+                        .OrderBy(a => a.AssignedDate)
+                        .Select(a => a.User != null ? a.User.NameComplete : a.IdUser)
+                        .ToList()
+                })
+                .ToListAsync();
+
+            var slim = items.Select(t => new
+            {
+                t.id,
+                url = TicketUrl(t.id),
+                t.numero,
+                t.data,
+                t.ora,
+                t.fine,
+                t.scadenza,
+                t.cliente,
+                clienteUrl = $"/Companies/{t.idCompany}",
+                t.stato,
+                t.chiuso,
+                descrizione = Trim(t.descrizione, 160),
+                t.tecnici
+            });
+
+            return JsonSerializer.Serialize(new
+            {
+                periodo = new { da = from, a = to.AddDays(-1) },
+                count = items.Count,
+                tickets = slim
+            });
         }
 
         /// <summary>
@@ -1154,11 +1260,13 @@ REGOLE:
 
         // ---------- Helper ticket ----------
 
-        private async Task<List<TicketDTO>> FetchTicketsAsync(string status, int? companyId, int top)
+        private async Task<List<TicketDTO>> FetchTicketsAsync(string status, int? companyId, int top, string? idUserAssigned = null)
         {
             var filter = new TicketFilter
             {
                 IdCompany = companyId,
+                // Il servizio filtra sia sull'assegnatario principale sia sulle assegnazioni multiple
+                IdUserAssigned = idUserAssigned,
                 Top = top,
                 Skip = 0,
                 TypeSearch = status == "closed" ? (int)TicketTypeSearch.Closed : (int)TicketTypeSearch.All
@@ -1312,6 +1420,60 @@ REGOLE:
 
         private static string? GetString(IReadOnlyDictionary<string, JsonElement> input, string key)
             => input.TryGetValue(key, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+
+        /// <summary>Nome completo dell'utente loggato (null se non risolvibile).</summary>
+        private async Task<string?> GetCurrentUserNameAsync()
+        {
+            try
+            {
+                var idUser = await _permits.IdUser();
+                if (string.IsNullOrEmpty(idUser))
+                    return null;
+
+                var name = await _context.Users
+                    .Where(u => u.Id == idUser)
+                    .Select(u => (u.Surname + " " + u.Name).Trim())
+                    .FirstOrDefaultAsync();
+
+                return string.IsNullOrWhiteSpace(name) ? null : name;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Id dell'utente loggato quando il tool chiede il filtro "assegnati a me"
+        /// (null se il filtro non è richiesto o l'utente non è risolvibile).
+        /// </summary>
+        private async Task<string?> ResolveAssignedToMeAsync(IReadOnlyDictionary<string, JsonElement> input)
+        {
+            if (GetBool(input, "assigned_to_me") != true)
+                return null;
+
+            try
+            {
+                return await _permits.IdUser();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool? GetBool(IReadOnlyDictionary<string, JsonElement> input, string key)
+        {
+            if (!input.TryGetValue(key, out var v))
+                return null;
+            return v.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.String when bool.TryParse(v.GetString(), out var b) => b,
+                _ => null
+            };
+        }
 
         private static DateTime? GetDate(IReadOnlyDictionary<string, JsonElement> input, string key)
         {
