@@ -195,12 +195,43 @@ namespace CRM.Shared
         [Display(Name = nameof(Ticket.IdProject), ResourceType = typeof(Resources.Models.Ticket))]
         public int? IdProject { get; set; }
 
+        [ForeignKey(nameof(Deal))]
+        [Display(Name = "Opportunita")]
+        public int? IdDeal { get; set; }
+
+        [ForeignKey(nameof(Order))]
+        [Display(Name = "Ordine")]
+        public int? IdOrder { get; set; }
+
         [Display(Name = nameof(Ticket.Invoiced), ResourceType = typeof(Resources.Models.Ticket))]
         public bool Invoiced { get; set; }
       
         public int Payment { get; set; }
 
         public string? DescriptionEmbedding { get; set; }
+
+        // ─── Preavviso appuntamento (Date + Time) ───────────────────────────────
+        /// <summary>Stato di consegna del preavviso sull'appuntamento (Date+Time).</summary>
+        public ReminderStatus ReminderApptStatus { get; set; } = ReminderStatus.Pending;
+
+        /// <summary>Numero di tentativi di consegna gia' effettuati per il preavviso appuntamento.</summary>
+        public int ReminderApptRetryCount { get; set; }
+
+        /// <summary>Istante dell'ultimo tentativo di consegna del preavviso appuntamento (backoff).</summary>
+        public DateTime? ReminderApptLastAttemptAt { get; set; }
+
+        // ─── Preavviso scadenza (DateExpired, solo se non chiuso) ────────────────
+        /// <summary>Stato di consegna del preavviso sulla scadenza (DateExpired).</summary>
+        public ReminderStatus ReminderExpiryStatus { get; set; } = ReminderStatus.Pending;
+
+        /// <summary>Numero di tentativi di consegna gia' effettuati per il preavviso scadenza.</summary>
+        public int ReminderExpiryRetryCount { get; set; }
+
+        /// <summary>Istante dell'ultimo tentativo di consegna del preavviso scadenza (backoff).</summary>
+        public DateTime? ReminderExpiryLastAttemptAt { get; set; }
+
+        /// <summary>Messaggio dell'ultimo errore di consegna di un preavviso (diagnostica).</summary>
+        public string? ReminderLastError { get; set; }
 
         //[DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         [NotMapped]
@@ -260,6 +291,8 @@ namespace CRM.Shared
         [JsonIgnore]
         public virtual Contact? Contact { get; set; }
         public virtual Project Project { get; set; }
+        public virtual Deal? Deal { get; set; }
+        public virtual Order? Order { get; set; }
 
         /// <summary>
         /// ✅ FONTE DI VERITÀ per assegnazioni MULTIPLE: Collezione di tutti gli utenti assegnati al ticket
@@ -293,6 +326,10 @@ namespace CRM.Shared
         public int? IdArticle { get; set; }
 
         public int? IdProject { get; set; }
+
+        public int? IdDeal { get; set; }
+
+        public int? IdOrder { get; set; }
         
         public string? Search { get; set; }
 

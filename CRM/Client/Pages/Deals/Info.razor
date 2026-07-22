@@ -65,6 +65,15 @@ else
     {
         <CRM.Client.Pages.Activities.ActivityTimeline EntityType="ActivityEntityType.Deal" EntityId="@Id"></CRM.Client.Pages.Activities.ActivityTimeline>
     }
+    else if (_selectView == DealsViews.Tickets)
+    {
+        <CRM.Client.Pages.Tickets.Index IdDeal="@Id"
+                                        IdCompany="@_deal.IdCompany"
+                                        PageMode="CRM.Client.Helpers.PageHelper.PageModality.Child"
+                                        OnClickDetails="DetailsTicket"
+                                        OnClickEdit="EditTicket">
+        </CRM.Client.Pages.Tickets.Index>
+    }
 
 
 }

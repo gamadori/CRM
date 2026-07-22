@@ -66,7 +66,7 @@ namespace CRM.Server.Controllers
                     .AsQueryable();
 
 
-                if (!(await _permitsService.BelongsToHeadQuarter()))
+                if (!(await _permitsService.BelongsToHeadCompany()))
                 {
                     var companies = await _permitsService.GetIdCompanies();
 
@@ -329,10 +329,13 @@ namespace CRM.Server.Controllers
 
         // PUT: api/Customers/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [AuthorizeRole(ePolicy.AdminRole)]
+        [AuthorizeRole(ePolicy.SuperUserRole)]
         [HttpPut("{id}")]
         public async Task<ActionResult<ApiResponseModel>> PutUser(string id, UserModel model)
         {
+            if (!await _permitsService.CanManageSettings())
+                return Forbid();
+
             if (id != model.Id)
             {
                 return new ApiResponseModel() { State = false, Message = "Errore id diversi" };
@@ -376,10 +379,13 @@ namespace CRM.Server.Controllers
 
         // POST: api/Customers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [AuthorizeRole(ePolicy.AdminRole)]
+        [AuthorizeRole(ePolicy.SuperUserRole)]
         [HttpPost]
         public async Task<ActionResult<ApplicationUser>> PostUser(UserModel user)
         {
+            if (!await _permitsService.CanManageSettings())
+                return Forbid();
+
             try
             {
                 if (_userManager.Users.Where(x => x.UserName == user.Email).Any())
@@ -423,9 +429,12 @@ namespace CRM.Server.Controllers
 
         // DELETE: api/Customers/5
         [HttpDelete("{id}")]
-        [AuthorizeRole(ePolicy.AdminRole)]
+        [AuthorizeRole(ePolicy.SuperUserRole)]
         public async Task<IActionResult> DeleteUser(string id)
         {
+            if (!await _permitsService.CanManageSettings())
+                return Forbid();
+
             try
             {
                 var user = await _userManager.Users.Where(x => x.Id == id).FirstOrDefaultAsync();
@@ -456,9 +465,12 @@ namespace CRM.Server.Controllers
 
         
         [HttpGet("Confirm/{id}")]
-        [AuthorizeRole(ePolicy.AdminRole)]
+        [AuthorizeRole(ePolicy.SuperUserRole)]
         public async Task<ActionResult<ApplicationUser>> ConfirmUser(string id)
         {
+            if (!await _permitsService.CanManageSettings())
+                return Forbid();
+
             var user = await _userManager.Users.Where(x => x.Id == id).FirstOrDefaultAsync();
 
             if (user == null || user.IsDeleted)
@@ -482,9 +494,12 @@ namespace CRM.Server.Controllers
         }
 
         [HttpGet("SendInvite/{id}")]
-        [AuthorizeRole(ePolicy.AdminRole)]
+        [AuthorizeRole(ePolicy.SuperUserRole)]
         public async Task <ActionResult<bool>> SendInvite(string id)
         {
+            if (!await _permitsService.CanManageSettings())
+                return Forbid();
+
             try
             {
                 var user = await _userManager.Users.Where(x => x.Id == id && !x.IsDeleted).FirstOrDefaultAsync();
@@ -623,10 +638,13 @@ namespace CRM.Server.Controllers
 
         // POST: api/Customers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [AuthorizeRole(ePolicy.AdminRole)]
+        [AuthorizeRole(ePolicy.SuperUserRole)]
         [HttpGet("disable/{id}")]
         public async Task<ActionResult<bool>> Disable(string id)
         {
+            if (!await _permitsService.CanManageSettings())
+                return Forbid();
+
             try
             {
                 var user = await _context.Users.FindAsync(id);

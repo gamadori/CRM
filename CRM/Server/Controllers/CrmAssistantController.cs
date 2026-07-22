@@ -31,18 +31,24 @@ namespace CRM.Server.Controllers
             DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
         };
 
+        /// <summary>Limite di dimensione dell'audio caricato per la trascrizione (Whisper accetta fino a 25 MB).</summary>
+        private const long MaxAudioBytes = 25 * 1024 * 1024;
+
         private readonly CrmAssistantService _assistant;
         private readonly ApplicationDbContext _context;
         private readonly ILogEventService _logEventService;
+        private readonly IVoiceTranscriptionService _transcription;
 
         public CrmAssistantController(
             CrmAssistantService assistant,
             ApplicationDbContext context,
-            ILogEventService logEventService)
+            ILogEventService logEventService,
+            IVoiceTranscriptionService transcription)
         {
             _assistant = assistant;
             _context = context;
             _logEventService = logEventService;
+            _transcription = transcription;
         }
 
         /// <summary>
@@ -98,6 +104,47 @@ namespace CRM.Server.Controllers
             var line = JsonSerializer.Serialize(streamEvent, StreamJsonOptions);
             await Response.WriteAsync(line + "\n", cancellationToken);
             await Response.Body.FlushAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Trascrive in testo l'audio registrato dal microfono (modalità vocale "Server"/Whisper).
+        /// Attivo solo se l'amministratore ha scelto quella modalità nei Settaggi globali: è la
+        /// stessa impostazione che abilita il pulsante microfono lato client, verificata anche qui
+        /// per non esporre un endpoint a consumo quando la funzione è disattivata.
+        /// </summary>
+        [HttpPost("transcribe")]
+        [RequestSizeLimit(MaxAudioBytes + 1024)]
+        public async Task<IActionResult> Transcribe(IFormFile audio, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var settings = await _context.GlobalSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+                if (settings?.VoiceInputMode != VoiceInputMode.Whisper)
+                    return BadRequest("La trascrizione vocale sul server non è abilitata.");
+
+                if (!_transcription.IsConfigured)
+                    return StatusCode(StatusCodes.Status503ServiceUnavailable, "Trascrizione vocale non configurata sul server.");
+
+                if (audio == null || audio.Length == 0)
+                    return BadRequest("Nessun audio ricevuto.");
+                if (audio.Length > MaxAudioBytes)
+                    return BadRequest("Audio troppo lungo per la trascrizione.");
+
+                await using var stream = audio.OpenReadStream();
+                var fileName = string.IsNullOrWhiteSpace(audio.FileName) ? "audio.webm" : audio.FileName;
+
+                var text = await _transcription.TranscribeAsync(stream, fileName, cancellationToken);
+                return Ok(new { text });
+            }
+            catch (OperationCanceledException)
+            {
+                return new EmptyResult();
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(CrmAssistantController), nameof(Transcribe), LogEvent.EventsTypes.Error, ex);
+                return Problem($"Errore durante la trascrizione: {ex.Message}");
+            }
         }
 
         /// <summary>Registra il voto di feedback dell'operatore su una risposta dell'assistente.</summary>

@@ -53,13 +53,13 @@ namespace CRM.Server.Services
             {
                 var settings = await _context.GlobalSettings.FirstOrDefaultAsync();
                 Log($"Settings caricati: {settings != null}");
-                
+
+                _company = await _context.GetHeadCompanyAsync();
+
                 if (settings != null)
-                {
                     _logoId = settings.LogoReport;
-                    _company = await _context.Companies.FirstOrDefaultAsync(c => c.Id == settings.IdHeadQuarter);
-                    Log($"LogoId: {_logoId}, Company: {_company?.RagioneSociale ?? "NULL"}");
-                }
+
+                Log($"LogoId: {_logoId}, Company: {_company?.RagioneSociale ?? "NULL"}");
                 
                 Log($"Inizio caricamento labels...");
                 // Carica le traduzioni per la lingua selezionata

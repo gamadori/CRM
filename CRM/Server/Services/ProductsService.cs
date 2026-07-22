@@ -214,7 +214,7 @@ namespace CRM.Server.Services
             }
         }
 
-        [AuthorizeRole(ePolicy.SuperUserRole)]
+        [AuthorizeRole(ePolicy.StandardRole)]
         public async Task<bool> DeleteAsync(int id)
         {
             var item = await _context.Products.FindAsync(id);

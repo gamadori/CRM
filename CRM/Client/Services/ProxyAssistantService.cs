@@ -86,6 +86,54 @@ namespace CRM.Client.Services
             }
         }
 
+        public async Task<VoiceTranscriptionResult> Transcribe(byte[] audio, string contentType, string fileName)
+        {
+            try
+            {
+                using var content = new MultipartFormDataContent();
+                var audioContent = new ByteArrayContent(audio);
+
+                // Il costruttore di MediaTypeHeaderValue NON accetta i parametri (";codecs=opus"
+                // che Chrome mette nel MIME del MediaRecorder): si tiene solo il media type base.
+                // Per Whisper conta comunque l'estensione del filename, non l'header.
+                var mediaType = contentType;
+                if (!string.IsNullOrWhiteSpace(mediaType))
+                {
+                    var semi = mediaType.IndexOf(';');
+                    if (semi > 0)
+                        mediaType = mediaType.Substring(0, semi);
+                    try { audioContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(mediaType.Trim()); }
+                    catch { /* MIME non valido: si lascia il default del multipart */ }
+                }
+
+                content.Add(audioContent, "audio", string.IsNullOrWhiteSpace(fileName) ? "audio.webm" : fileName);
+
+                var resp = await _http.PostAsync($"{BasePath}/transcribe", content);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    var err = await resp.Content.ReadAsStringAsync();
+                    return new VoiceTranscriptionResult
+                    {
+                        Success = false,
+                        Error = string.IsNullOrWhiteSpace(err) ? $"Errore dal server ({(int)resp.StatusCode})" : err
+                    };
+                }
+
+                var result = await resp.Content.ReadFromJsonAsync<TranscriptionResult>(JsonOptions);
+                return new VoiceTranscriptionResult { Success = true, Text = result?.Text };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore trascrizione vocale: {ex.Message}");
+                return new VoiceTranscriptionResult { Success = false, Error = ex.Message };
+            }
+        }
+
+        private sealed class TranscriptionResult
+        {
+            public string? Text { get; set; }
+        }
+
         public async Task<bool> SendFeedback(AssistantFeedbackRequest request)
         {
             try

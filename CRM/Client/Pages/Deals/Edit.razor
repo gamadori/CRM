@@ -1,439 +1,181 @@
 @page "/Deals/New"
 @page "/Deals/{Id:int}/Edit"
+@using CRM.Shared.DTOs
 @using Radzen
 @using Radzen.Blazor
-@using CRM.Shared.DTOs
 
-<div class="deal-edit-page">
-    @if (_loading || _deal == null)
+@if (_loading || _deal == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <PageHeader Model="_pageHeader" Visible="@(OnClickSave == null)">
+    </PageHeader>
+
+    @if (!string.IsNullOrWhiteSpace(_messageState))
     {
-        <Waiting></Waiting>
+        <div class="alert alert-danger">@_messageState</div>
     }
-    else
-    {
-        <PageHeader Model="_pageHeader" Visible=@(OnClickSave == null)>
-            <Actions>
-                <button type="button" class="deal-secondary" @onclick="Cancel">
-                    <span class="material-icons">close</span>
-                    <span>Annulla</span>
-                </button>
-            </Actions>
-        </PageHeader>
 
-        @if (!string.IsNullOrWhiteSpace(_messageState))
-        {
-            <div class="deal-alert">@_messageState</div>
-        }
+    <EditForm Model="@_deal" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
 
-        <EditForm Model="@_deal" OnValidSubmit="HandleValidSubmit">
-            <DataAnnotationsValidator />
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h6 class="text-uppercase text-muted fw-bold mb-3">Dati opportunita</h6>
 
-            <section class="deal-edit-layout">
-                <article class="deal-form-panel">
-                    <div class="deal-panel-title">
-                        <span class="material-icons">work</span>
-                        <h2>Dati opportunita</h2>
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label"><DisplayName For="@(() => _deal.Name)" /></label>
+                        <InputText class="form-control" @bind-Value="_deal.Name" />
+                        <ValidationMessage For="@(() => _deal.Name)" />
                     </div>
 
-                    <div class="deal-form-grid">
-                        <label class="deal-field wide">
-                            <span><DisplayName For="@(() => _deal.Name)" /></span>
-                            <InputText class="deal-input" @bind-Value="_deal.Name" />
-                            <ValidationMessage For="@(() => _deal.Name)" />
-                        </label>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label"><DisplayName For="@(() => _deal.Date)" /></label>
+                        <InputDate class="form-control" @bind-Value="_deal.Date" />
+                    </div>
 
-                        <label class="deal-field">
-                            <span><DisplayName For="@(() => _deal.Date)" /></span>
-                            <InputDate class="deal-input" @bind-Value="_deal.Date" />
-                        </label>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label"><DisplayName For="@(() => _deal.DateClosed)" /></label>
+                        <InputDate class="form-control" @bind-Value="_deal.DateClosed" />
+                    </div>
 
-                        <label class="deal-field">
-                            <span><DisplayName For="@(() => _deal.DateClosed)" /></span>
-                            <InputDate class="deal-input" @bind-Value="_deal.DateClosed" />
-                        </label>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label"><DisplayName For="@(() => _deal.Amount)" /></label>
+                        <InputNumber class="form-control" @bind-Value="_deal.Amount" disabled="@_deal.ProductInterests.Any()" />
+                    </div>
 
-                        <label class="deal-field">
-                            <span><DisplayName For="@(() => _deal.Amount)" /></span>
-                            <InputNumber class="deal-input" @bind-Value="_deal.Amount" disabled="@_deal.ProductInterests.Any()" />
-                        </label>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label"><DisplayName For="@(() => _deal.Target)" /></label>
+                        <InputNumber class="form-control" @bind-Value="_deal.Target" disabled="@_deal.ProductInterests.Any()" />
+                    </div>
 
-                        <label class="deal-field">
-                            <span><DisplayName For="@(() => _deal.Target)" /></span>
-                            <InputNumber class="deal-input" @bind-Value="_deal.Target" disabled="@_deal.ProductInterests.Any()" />
-                        </label>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label">Probabilita</label>
+                        <InputNumber class="form-control" @bind-Value="_deal.Probability" />
+                        <ValidationMessage For="@(() => _deal.Probability)" />
+                    </div>
 
-                        <label class="deal-field">
-                            <span>Probabilita</span>
-                            <InputNumber class="deal-input" @bind-Value="_deal.Probability" />
-                            <ValidationMessage For="@(() => _deal.Probability)" />
-                        </label>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="form-label">Chiusura prevista</label>
+                        <InputDate class="form-control" @bind-Value="_deal.ExpectedCloseDate" />
+                    </div>
 
-                        <label class="deal-field">
-                            <span>Chiusura prevista</span>
-                            <InputDate class="deal-input" @bind-Value="_deal.ExpectedCloseDate" />
-                        </label>
+                    <div class="col-12 col-md-6">
+                        <label class="form-label"><DisplayName For="@(() => _deal.State)" /></label>
+                        <InputSelect class="form-select" @bind-Value="_deal.State">
+                            @foreach (var state in _dealStates)
+                            {
+                                <option value="@state.Value">@StateText(state.Value)</option>
+                            }
+                        </InputSelect>
+                    </div>
 
-                        <label class="deal-field">
-                            <span><DisplayName For="@(() => _deal.State)" /></span>
-                            <InputSelect class="deal-input" @bind-Value="_deal.State">
-                                @foreach (var state in _dealStates)
+                    <div class="col-12 col-md-6">
+                        <label class="form-label"><DisplayName For="@(() => _deal.Phase)" /></label>
+                        <InputSelect class="form-select" @bind-Value="_deal.Phase">
+                            @foreach (var phase in _dealPhases)
+                            {
+                                <option value="@phase.Value">@PhaseText(phase.Value)</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <h6 class="text-uppercase text-muted fw-bold mb-3">Cliente e contatto</h6>
+
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label"><DisplayName For="@(() => _deal.IdCompany)" /></label>
+                        <RedGDropDown TItem="CompanyDTO" TValue="int?" ValueProperty="@nameof(CompanyDTO.Id)" TextProperty="@nameof(CompanyDTO.RagioneSociale)" @bind-Value="@_deal.IdCompany"
+                                      Data="_companies" AllowFiltering="true" Change="OnChangeCompany" For="@(() => _deal.IdCompany)">
+                            <End>
+                                <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem="OnGetCompany" DialogType="RedGDialog.DialogType.Companies"></RedGButtonDialog>
+                            </End>
+                        </RedGDropDown>
+                        <ValidationMessage For="@(() => _deal.IdCompany)" />
+                    </div>
+
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label"><DisplayName For="@(() => _deal.IdContact)" /></label>
+                        <RedGDropDown TItem="ContactDTO" TValue="int?" ValueProperty="@nameof(ContactDTO.Id)" TextProperty="@nameof(ContactDTO.NameComplete)" @bind-Value="@_deal.IdContact"
+                                      Data="_contacts" AllowFiltering="true" Change="OnChangeContact" For="@(() => _deal.IdContact)">
+                            <End>
+                                <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem="OnGetContact" DialogType="RedGDialog.DialogType.Contacts"></RedGButtonDialog>
+                            </End>
+                        </RedGDropDown>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label"><DisplayName For="@(() => _deal.Note)" /></label>
+                        <InputTextArea class="form-control" rows="5" @bind-Value="_deal.Note" />
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+                    <div class="flex-grow-1">
+                        <label class="form-label">Prodotto</label>
+                        <InputSelect class="form-select" @bind-Value="_selectedProductId">
+                            <option value="">Seleziona prodotto</option>
+                            @foreach (var product in ProductsAvailableToAdd)
+                            {
+                                <option value="@product.Id">@ProductText(product)</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <RadzenButton Icon="add" Text="Aggiungi" ButtonStyle="ButtonStyle.Secondary" Click="AddProductInterest" ButtonType="ButtonType.Button" />
+                </div>
+
+                @if (_deal.ProductInterests.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Prodotto</th>
+                                    <th style="width: 110px;">Qta</th>
+                                    <th style="width: 140px;">Prezzo</th>
+                                    <th style="width: 120px;">Sconto %</th>
+                                    <th class="text-end">Totale</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in _deal.ProductInterests.OrderBy(x => x.SortOrder))
                                 {
-                                    <option value="@state.Value">@StateText(state.Value)</option>
-                                }
-                            </InputSelect>
-                        </label>
-
-                        <label class="deal-field">
-                            <span><DisplayName For="@(() => _deal.Phase)" /></span>
-                            <InputSelect class="deal-input" @bind-Value="_deal.Phase">
-                                @foreach (var phase in _dealPhases)
-                                {
-                                    <option value="@phase.Value">@PhaseText(phase.Value)</option>
-                                }
-                            </InputSelect>
-                        </label>
-                    </div>
-                </article>
-
-                <article class="deal-form-panel">
-                    <div class="deal-panel-title">
-                        <span class="material-icons">business</span>
-                        <h2>Cliente e contatto</h2>
-                    </div>
-
-                    <div class="deal-form-grid">
-                        <label class="deal-field wide">
-                            <span><DisplayName For="@(() => _deal.IdCompany)" /></span>
-
-                            <RedGDropDown TItem="CompanyDTO" TValue="int?" ValueProperty="@nameof(CompanyDTO.Id)" TextProperty="@nameof(CompanyDTO.RagioneSociale)" @bind-Value="@_deal.IdCompany"
-                                              Data="_companies" AllowFiltering="true" Change="OnChangeCompany" For="@(() => _deal.IdCompany)">
-                                <End>
-                                    <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetCompany DialogType="RedGDialog.DialogType.Companies"></RedGButtonDialog>
-                                </End>
-                            </RedGDropDown>
-                           
-                            <ValidationMessage For="@(() => _deal.IdCompany)" />
-                        </label>
-
-                        <label class="deal-field wide">
-                            <span><DisplayName For="@(() => _deal.IdContact)" /></span>
-
-                            <RedGDropDown TItem="ContactDTO" TValue="int?" ValueProperty="@nameof(ContactDTO.Id)" TextProperty="@nameof(ContactDTO.NameComplete)" @bind-Value="@_deal.IdContact"
-                                              Data="_contacts" AllowFiltering="true" Change="OnChangeContact" For="@(() => _deal.IdContact)">
-                                <End>
-                                    <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetContact DialogType="RedGDialog.DialogType.Contacts"></RedGButtonDialog>
-                                </End>
-                            </RedGDropDown>
-                        </label>
-
-                        <label class="deal-field wide">
-                            <span><DisplayName For="@(() => _deal.Note)" /></span>
-                            <InputTextArea class="deal-input deal-notes-input" @bind-Value="_deal.Note" />
-                        </label>
-                    </div>
-                </article>
-
-                <article class="deal-form-panel deal-products-panel">
-                    <div class="deal-panel-title">
-                        <span class="material-icons">inventory_2</span>
-                        <h2>Prodotti collegati</h2>
-                    </div>
-
-                    <div class="deal-field">
-                        <span>Prodotto</span>
-                        <div class="product-picker">
-                            <InputSelect class="deal-input" @bind-Value="_selectedProductId">
-                                <option value="">Seleziona prodotto</option>
-                                @foreach (var product in ProductsAvailableToAdd)
-                                {
-                                    <option value="@product.Id">@ProductText(product)</option>
-                                }
-                            </InputSelect>
-                            <button type="button" class="deal-secondary" @onclick="AddProductInterest">
-                                <span class="material-icons">add</span>
-                                <span>Aggiungi</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    @if (_deal.ProductInterests.Any())
-                    {
-                        <div class="product-table-wrap">
-                            <table class="product-table">
-                                <thead>
                                     <tr>
-                                        <th>Prodotto</th>
-                                        <th>Qta</th>
-                                        <th>Prezzo</th>
-                                        <th>Sconto %</th>
-                                        <th>Totale</th>
-                                        <th></th>
+                                        <td>@row.DisplayName</td>
+                                        <td><InputNumber class="form-control form-control-sm" @bind-Value="row.Quantity" @onchange="@(() => RecalculateProductInterest(row))" /></td>
+                                        <td><InputNumber class="form-control form-control-sm" @bind-Value="row.UnitPrice" @onchange="@(() => RecalculateProductInterest(row))" /></td>
+                                        <td><InputNumber class="form-control form-control-sm" @bind-Value="row.DiscountPct" @onchange="@(() => RecalculateProductInterest(row))" /></td>
+                                        <td class="text-end fw-bold">@row.LineTotal.ToString("C")</td>
+                                        <td class="text-end">
+                                            <RedGButton RGButtonType="RGButtonType.Delete" Click="@(() => RemoveProductInterest(row))"></RedGButton>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var row in _deal.ProductInterests.OrderBy(x => x.SortOrder))
-                                    {
-                                        <tr>
-                                            <td>@row.DisplayName</td>
-                                            <td><InputNumber class="deal-input compact" @bind-Value="row.Quantity" @onchange="@(() => RecalculateProductInterest(row))" /></td>
-                                            <td><InputNumber class="deal-input compact" @bind-Value="row.UnitPrice" @onchange="@(() => RecalculateProductInterest(row))" /></td>
-                                            <td><InputNumber class="deal-input compact" @bind-Value="row.DiscountPct" @onchange="@(() => RecalculateProductInterest(row))" /></td>
-                                            <td class="money">@row.LineTotal.ToString("C")</td>
-                                            <td>
-                                                <button type="button" class="deal-icon-row-action" title="Rimuovi prodotto" @onclick="@(() => RemoveProductInterest(row))">
-                                                    <span class="material-icons">delete</span>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else
-                    {
-                        <p class="product-empty">Nessun prodotto collegato.</p>
-                    }
-                </article>
-            </section>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">Nessun prodotto collegato.</p>
+                }
+            </div>
 
-            <section class="deal-edit-footer">
-                <button type="button" class="deal-secondary" @onclick="Cancel" disabled="@_saving">
-                    <span class="material-icons">arrow_back</span>
-                    <span>Annulla</span>
-                </button>
-                <button type="submit" class="deal-primary" disabled="@_saving">
-                    <span class="material-icons">save</span>
-                    <span>@(_saving ? "Salvataggio..." : "Salva opportunita")</span>
-                </button>
-            </section>
-        </EditForm>
-    }
-</div>
-
-<style>
-    .deal-edit-page {
-        min-height: calc(100vh - 1rem);
-        padding: 1.25rem;
-        color: #182235;
-        background: #f7f9fc;
-    }
-
-    .deal-edit-toolbar,
-    .deal-edit-footer {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
-
-    .deal-edit-footer {
-        align-items: center;
-        justify-content: flex-end;
-        margin: 1rem 0 0;
-    }
-
-    .deal-kicker {
-        text-transform: uppercase;
-        font-size: 0.74rem;
-        font-weight: 800;
-        color: #64748b;
-    }
-
-    .deal-edit-toolbar h1 {
-        margin: 0;
-        font-size: 2rem;
-        font-weight: 850;
-    }
-
-    .deal-edit-toolbar p {
-        margin: 0.25rem 0 0;
-        color: #64748b;
-    }
-
-    .deal-primary,
-    .deal-secondary {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.4rem;
-        border: 1px solid #bfd2e7;
-        border-radius: 8px;
-        padding: 0.55rem 0.8rem;
-        background: #fff;
-        color: #0f4a8a;
-        font-weight: 800;
-    }
-
-    .deal-primary {
-        background: #0f4a8a;
-        color: #fff;
-    }
-
-    .deal-primary:disabled,
-    .deal-secondary:disabled {
-        opacity: 0.55;
-    }
-
-    .deal-alert {
-        border: 1px solid #f5b5b5;
-        border-radius: 8px;
-        margin-bottom: 1rem;
-        padding: 0.75rem;
-        background: #fff1f1;
-        color: #9f1d1d;
-        font-weight: 700;
-    }
-
-    .deal-edit-layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
-        gap: 1rem;
-    }
-
-    .deal-form-panel {
-        border: 1px solid #dfe7f1;
-        border-radius: 8px;
-        background: #fff;
-        padding: 1rem;
-        box-shadow: 0 12px 28px rgba(31, 42, 68, 0.07);
-        min-width: 0;
-    }
-
-    .deal-panel-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.9rem;
-    }
-
-    .deal-panel-title h2 {
-        margin: 0;
-        font-size: 1.1rem;
-        font-weight: 850;
-    }
-
-    .deal-form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.8rem;
-    }
-
-    .deal-field {
-        display: grid;
-        gap: 0.35rem;
-        min-width: 0;
-    }
-
-    .deal-field.wide {
-        grid-column: 1 / -1;
-    }
-
-    .deal-field > span {
-        color: #526174;
-        font-size: 0.82rem;
-        font-weight: 800;
-    }
-
-    .deal-input,
-    .deal-radzen-input {
-        width: 100%;
-        min-height: 40px;
-        border: 1px solid #d7e0ec;
-        border-radius: 8px;
-        background: #fff;
-        padding: 0.48rem 0.6rem;
-    }
-
-    .deal-input.compact {
-        min-height: 34px;
-        padding: 0.35rem 0.45rem;
-    }
-
-    .deal-radzen-input {
-        padding: 0;
-    }
-
-    .deal-notes-input {
-        min-height: 190px;
-        resize: vertical;
-    }
-
-    .deal-products-panel {
-        grid-column: 1 / -1;
-    }
-
-    .product-picker {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 0.5rem;
-        align-items: center;
-    }
-
-    .product-table-wrap {
-        overflow-x: auto;
-        border: 1px solid #e6edf5;
-        border-radius: 8px;
-    }
-
-    .product-table {
-        width: 100%;
-        min-width: 720px;
-        border-collapse: collapse;
-    }
-
-    .product-table th,
-    .product-table td {
-        padding: 0.5rem;
-        border-bottom: 1px solid #e6edf5;
-        vertical-align: middle;
-    }
-
-    .product-table th {
-        color: #64748b;
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        background: #fbfdff;
-    }
-
-    .money {
-        font-weight: 850;
-    }
-
-    .deal-icon-row-action {
-        width: 34px;
-        height: 34px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid #bfd2e7;
-        border-radius: 8px;
-        background: #fff;
-        color: #9f1d1d;
-    }
-
-    .product-empty {
-        margin: 0;
-        color: #64748b;
-        font-weight: 700;
-    }
-
-    .validation-message {
-        color: #b91c1c;
-        font-size: 0.78rem;
-    }
-
-    @@media (max-width: 980px) {
-        .deal-edit-layout,
-        .deal-form-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .deal-edit-toolbar,
-        .deal-edit-footer {
-            align-items: stretch;
-            flex-direction: column;
-        }
-    }
-</style>
+            <div class="card-footer bg-light border-top py-3">
+                <div class="d-flex gap-2 justify-content-end">
+                    <RedGButton RGButtonType="RGButtonType.Cancel" Click="Cancel" Text="Annulla" Disabled="@_saving" />
+                    <RedGButton RGButtonType="RGButtonType.Submit" Text="@(_saving ? "Salvataggio..." : "Salva opportunita")" Disabled="@_saving" />
+                </div>
+            </div>
+        </div>
+    </EditForm>
+}

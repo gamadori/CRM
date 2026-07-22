@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Radzen;
+using Radzen.Blazor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -84,24 +85,11 @@ namespace CRM.Client.Pages.Deals
         private List<ApplicationUser> _users = new();
         private List<EnumField> _states = new();
         private List<EnumField> _phases = new();
+        private RadzenDataGrid<DealDTO>? grdDeals;
 
         private PageHeaderModel? _pageHeader;
 
         private int TotalCount => _deals.MetaData?.TotalCount ?? _deals.Items.Count;
-
-        private int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)_pageSize));
-
-        private bool CanGoPrevious => _pageNumber > 1;
-
-        private bool CanGoNext => _pageNumber < TotalPages;
-
-        private decimal PageAmount => _deals.Items.Sum(x => x.Amount);
-
-        private decimal WonAmount => _deals.Items.Where(x => x.State == DealStates.CloseWon).Sum(x => x.Amount);
-
-        private decimal OpenAmount => _deals.Items.Where(x => x.State == DealStates.Open).Sum(x => x.Amount);
-
-        private decimal TargetAmount => _deals.Items.Sum(x => x.Target);
 
         protected override async Task OnInitializedAsync()
         {
@@ -110,29 +98,30 @@ namespace CRM.Client.Pages.Deals
             _states = EnumService.EnumGetList(typeof(DealStates));
             _phases = EnumService.EnumGetList(typeof(DealPhases));
             await LoadUsers();
-            await LoadDeals();
+            await LoadDeals(0, _pageSize, "Date desc");
         }
 
-        private async Task LoadDeals(bool resetPage = false)
+        private async Task LoadData(LoadDataArgs args)
         {
-            if (resetPage)
-            {
-                _pageNumber = 1;
-            }
+            _pageNumber = ((args.Skip ?? 0) / _pageSize) + 1;
+            await LoadDeals(args.Skip ?? 0, args.Top ?? _pageSize, args.OrderBy);
+        }
 
+        private async Task LoadDeals(int skip = 0, int top = 10, string? orderBy = null)
+        {
             _isLoading = true;
             try
             {
                 var filter = new DealFilter
                 {
-                    Skip = (_pageNumber - 1) * _pageSize,
-                    Top = _pageSize,
+                    Skip = skip,
+                    Top = top,
                     PageSize = _pageSize,
                     IdUser = _idUser,
                     Search = _search,
                     State = _state,
                     Phase = _phase,
-                    OrderBy = "Date desc"
+                    OrderBy = string.IsNullOrWhiteSpace(orderBy) ? "Date desc" : orderBy
                 };
 
                 _deals = await DealService.GetSummaryAsync(filter) ?? new PagingResponse<DealDTO, decimal>
@@ -155,9 +144,10 @@ namespace CRM.Client.Pages.Deals
             _users = response?.Items?.ToList() ?? new List<ApplicationUser>();
         }
 
-        private async Task ApplyFilters()
+        private async Task OnSearchChanged(ChangeEventArgs args)
         {
-            await LoadDeals(true);
+            _search = args?.Value?.ToString();
+            await ReloadGrid();
         }
 
         private async Task ClearFilters()
@@ -166,29 +156,13 @@ namespace CRM.Client.Pages.Deals
             _idUser = IdUser;
             _state = null;
             _phase = null;
-            await LoadDeals(true);
+            await ReloadGrid();
         }
 
-        private async Task PreviousPage()
+        private async Task ReloadGrid()
         {
-            if (!CanGoPrevious)
-            {
-                return;
-            }
-
-            _pageNumber--;
-            await LoadDeals();
-        }
-
-        private async Task NextPage()
-        {
-            if (!CanGoNext)
-            {
-                return;
-            }
-
-            _pageNumber++;
-            await LoadDeals();
+            if (grdDeals != null)
+                await grdDeals.FirstPage(true);
         }
 
         private void NewDeal()
@@ -239,7 +213,7 @@ namespace CRM.Client.Pages.Deals
                 else
                 {
                     await DealService.DeleteAsync(id);
-                    await LoadDeals();
+                    await ReloadGrid();
                 }
             }
         }
@@ -263,6 +237,18 @@ namespace CRM.Client.Pages.Deals
                 DealStates.CloseWon => "is-won",
                 DealStates.CloseLost => "is-lost",
                 _ => "is-muted"
+            };
+        }
+
+        private static string StateBadgeClass(DealStates state)
+        {
+            return state switch
+            {
+                DealStates.Open => "bg-success",
+                DealStates.Suspended => "bg-warning text-dark",
+                DealStates.CloseWon => "bg-primary",
+                DealStates.CloseLost => "bg-danger",
+                _ => "bg-secondary"
             };
         }
 

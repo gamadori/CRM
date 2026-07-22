@@ -35,8 +35,10 @@ namespace CRM.Shared.Models
 
         /// <summary>
         /// Soglia minima di similarità (0-100) per considerare un ticket rilevante.
+        /// Allineata alla ricerca semantica manuale (60): sotto questo valore i ticket
+        /// della stessa macchina ma con guasto diverso generano falsi "casi simili".
         /// </summary>
-        public double MinSimilarityThreshold { get; set; } = 55.0;
+        public double MinSimilarityThreshold { get; set; } = 60.0;
 
         /// <summary>
         /// Ticket di contesto (opzionale): se la chat parte da un ticket, il suo modello

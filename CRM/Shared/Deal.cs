@@ -89,6 +89,8 @@ namespace CRM.Shared
         public virtual ApplicationUser User { get; set; }
 
         public virtual ICollection<DealProductInterest> ProductInterests { get; set; } = new List<DealProductInterest>();
+
+        public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     }
 
     public class DealFilter: PagingParameterModel

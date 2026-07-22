@@ -74,9 +74,7 @@ namespace CRM.Shared
         public string Note { get; set; }
 
         [Display(Name = nameof(Company.IdReseller), ResourceType = typeof(Resources.Models.Company))]
-        public int? IdReseller { get; set; } 
-
-        public bool Master { get; set; }
+        public int? IdReseller { get; set; }
 
         [Display(Name = nameof(Company.Logo), ResourceType = typeof(Resources.Models.Company))]
         public string Logo { get; set; }

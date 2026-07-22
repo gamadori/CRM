@@ -100,6 +100,7 @@ namespace CRM.Server.Controllers
             }
         }
 
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPut("{id}")]
         public async Task<ActionResult<APIResponseMessage<ArticleDTO>>> Put(int id, Article item)
         {
@@ -107,6 +108,9 @@ namespace CRM.Server.Controllers
             {
                 return BadRequest();
             }
+            if (!await _permitsService.CanWriteCompanyData(item.IdCompany))
+                return Forbid();
+
             var resp = await _articlesService.PostAsync(item);
 
             if (resp == null)
@@ -115,9 +119,13 @@ namespace CRM.Server.Controllers
             return Ok(resp);
         }
 
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPost]
         public async Task<ActionResult<APIResponseMessage<ArticleDTO>>> Post(Article item)
         {
+            if (!await _permitsService.CanWriteCompanyData(item.IdCompany))
+                return Forbid();
+
             var resp = await _articlesService.PostAsync(item);
 
             if (resp == null)
@@ -128,10 +136,17 @@ namespace CRM.Server.Controllers
 
         
         // DELETE: api/Products/5
-        [AuthorizeRole(ePolicy.AdminRole)]
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
+            var article = await _context.Articles.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            if (article == null)
+                return NotFound();
+
+            if (!await _permitsService.CanWriteCompanyData(article.IdCompany))
+                return Forbid();
+
             var resp = await _articlesService.DeleteAsync(id);
 
             if (!resp)
@@ -144,7 +159,7 @@ namespace CRM.Server.Controllers
 
         [HttpPost("import-excel")]
         [RequestSizeLimit(20 * 1024 * 1024)]
-        [AuthorizeRole(ePolicy.AdminRole)]
+        [AuthorizeRole(ePolicy.StandardRole)]
         public async Task<ActionResult<ArticleImportResult>> ImportExcel([FromForm] IFormFile file, [FromForm] bool deleteExisting = false)
         {
             if (file == null || file.Length == 0)

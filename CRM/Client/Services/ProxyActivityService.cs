@@ -110,11 +110,13 @@ namespace CRM.Client.Services
             }
         }
 
-        public async Task<APIResponseMessage<ActivityDTO>> CompleteAsync(int id)
+        public async Task<APIResponseMessage<ActivityDTO>> CompleteAsync(int id, ActivityCompletionRequest? completion = null)
         {
             try
             {
-                var resp = await _http.PostAsync($"{ConstHelper.ActivitiesPath}/{id}/complete", null);
+                var resp = completion == null
+                    ? await _http.PostAsync($"{ConstHelper.ActivitiesPath}/{id}/complete", null)
+                    : await _http.PostAsJsonAsync($"{ConstHelper.ActivitiesPath}/{id}/complete", completion);
                 return await ReadResponse(resp);
             }
             catch (Exception ex)

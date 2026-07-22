@@ -94,6 +94,14 @@ namespace CRM.Server.Controllers
             }
         }
 
+        /// <summary>Azienda madre attuale: serve alla UI per avvisare prima di cambiarla.</summary>
+        [HttpGet("headcompany")]
+        public async Task<ActionResult<CompanyDTO?>> GetHeadCompany()
+        {
+            return Ok(await _companiesService.GetHeadCompanyAsync());
+        }
+
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPut("{id}")]
         public async Task<ActionResult<APIResponseMessage<CompanyDTO>>> Put(int id, Company item)
         {
@@ -109,6 +117,7 @@ namespace CRM.Server.Controllers
             return Ok(resp);
         }
 
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPost]
         public async Task<ActionResult<APIResponseMessage<CompanyDTO>>> Post(Company item)
         {
@@ -120,6 +129,7 @@ namespace CRM.Server.Controllers
             return Ok(resp);
         }
 
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -150,6 +160,7 @@ namespace CRM.Server.Controllers
 
 
 
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPost("removecustomer")]
         public async Task<IActionResult> RemoveCustomer(CustomerModel item)
         {
@@ -162,6 +173,7 @@ namespace CRM.Server.Controllers
 
         }
 
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPost("addcustomer")]
         public async Task<IActionResult> AddCustomer(CustomerModel item)
         {

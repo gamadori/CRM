@@ -263,9 +263,7 @@ namespace CRM.Server.Services
                     return null;
 
                 var settings = await _context.GlobalSettings.AsNoTracking().FirstOrDefaultAsync();
-                var issuer = settings == null
-                    ? null
-                    : await _context.Companies.AsNoTracking().FirstOrDefaultAsync(c => c.Id == settings.IdHeadQuarter);
+                var issuer = await _context.GetHeadCompanyAsync();
 
                 if (issuer == null)
                     return null;
@@ -315,7 +313,7 @@ namespace CRM.Server.Services
             }
         }
 
-        [AuthorizeRole(ePolicy.SuperUserRole)]
+        [AuthorizeRole(ePolicy.StandardRole)]
         public async Task<bool> DeleteAsync(int id)
         {
             var item = await _context.Invoices.FindAsync(id);

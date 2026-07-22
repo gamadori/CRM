@@ -156,14 +156,31 @@
                           @bind="_input"
                           @bind:event="oninput"
                           @onkeydown="@OnKeyDown"
-                          placeholder="Fai una domanda sui dati del CRM o descrivi un problema da risolvere…"
+                          placeholder="@(_recording ? "Sto ascoltando…" : _transcribing ? "Trascrivo l'audio…" : "Fai una domanda sui dati del CRM o descrivi un problema da risolvere…")"
                           rows="2"
-                          disabled="@_loading"
+                          disabled="@(_loading || _transcribing)"
                           style="resize: none;"></textarea>
+                @if (ShowMic)
+                {
+                    <button type="button"
+                            class="mic-btn @(_recording ? "recording" : "")"
+                            title="@(_recording ? "Ferma e usa il testo" : "Detta con il microfono")"
+                            @onclick="ToggleMic"
+                            disabled="@(_loading || _transcribing)">
+                        @if (_transcribing)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                        }
+                        else
+                        {
+                            <span class="material-icons">@(_recording ? "stop" : "mic")</span>
+                        }
+                    </button>
+                }
                 <RadzenButton Click="@SendAsync"
                               Icon="send"
                               ButtonStyle="ButtonStyle.Primary"
-                              Disabled="@(_loading || string.IsNullOrWhiteSpace(_input))" />
+                              Disabled="@(_loading || _transcribing || string.IsNullOrWhiteSpace(_input))" />
             </div>
         </div>
     </div>
@@ -372,5 +389,46 @@
 
     .feedback-comment {
         margin-top: 0.5rem;
+    }
+
+    /* Pulsante microfono (input vocale) */
+    .mic-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        border: 1px solid var(--crm-border);
+        border-left: none;
+        background: var(--crm-surface);
+        color: var(--crm-text-muted);
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .mic-btn:hover:not(:disabled) {
+        color: var(--crm-link);
+        background: color-mix(in srgb, var(--crm-link) 8%, transparent);
+    }
+
+    .mic-btn:disabled {
+        opacity: 0.6;
+        cursor: default;
+    }
+
+    .mic-btn .material-icons {
+        font-size: 20px;
+    }
+
+    /* Stato "in ascolto": rosso pulsante per segnalare la registrazione in corso */
+    .mic-btn.recording {
+        color: #fff;
+        background: #dc2626;
+        border-color: #dc2626;
+        animation: mic-pulse 1.2s ease-in-out infinite;
+    }
+
+    @@keyframes mic-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5); }
+        50% { box-shadow: 0 0 0 5px rgba(220, 38, 38, 0); }
     }
 </style>

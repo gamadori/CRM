@@ -21,6 +21,12 @@ namespace CRM.Server.Services
 
         Task<List<int>> GetIdCompanies(int idCompany);
 
+        Task<bool> CanAccessCompany(int? idCompany);
+
+        Task<bool> CanWriteCompanyData(int? idCompany);
+
+        Task<bool> CanManageSettings();
+
         Task<Company?> GetCompany();
 
         Task<List<ApplicationUser>> GetAdmins();
@@ -53,13 +59,12 @@ namespace CRM.Server.Services
 
         Task<bool> IsStandardUser(string idUser);
 
-        Task<bool> BelongsToHeadQuarter();
+        /// <summary>True se l'utente appartiene all'azienda madre (CompanyType = HeadCompany).</summary>
+        Task<bool> BelongsToHeadCompany();
 
-        Task<bool> BelongsToHeadQuarter(ApplicationUser user);
+        Task<bool> BelongsToHeadCompany(ApplicationUser user);
 
-        Task<bool> BelongsToHeadQuarter(string idUser);
-
-        Task<bool> BelongsToMainCompany();
+        Task<bool> BelongsToHeadCompany(string idUser);
 
         Task<bool> BelongsToReseller();
 

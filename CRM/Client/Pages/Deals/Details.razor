@@ -1,358 +1,120 @@
 @page "/Deals/{Id:int}/Details"
 @using CRM.Shared.DTOs
 @using CRM.Shared.Helper
+@using Radzen.Blazor
 
-<div class="deal-detail-page">
-    <PageHeader Model="_pageHeader" Visible=@(OnClickCancel == null)></PageHeader>
+<PageHeader Model="_pageHeader" Visible="@(OnClickCancel == null)">
+</PageHeader>
 
-    @if (_loading)
-    {
-        <Waiting></Waiting>
-    }
-    else if (_deal == null)
-    {
-        <section class="deal-empty">
-            <span class="material-icons">work_off</span>
+@if (_loading)
+{
+    <Waiting></Waiting>
+}
+else if (_deal == null)
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4 text-center text-muted">
+            <span class="material-icons d-block mb-2" style="font-size: 42px;">work_off</span>
             <strong>Opportunita non trovata</strong>
-            <button type="button" @onclick="Back">Torna alla lista</button>
-        </section>
-    }
-    else
-    {
-        <section class="deal-detail-toolbar">
-            <button type="button" class="deal-secondary" @onclick="Back">
-                <span class="material-icons">arrow_back</span>
-                <span>Opportunita</span>
-            </button>
+        </div>
+        <div class="card-footer bg-light border-top py-3">
+            <RedGButton RGButtonType="RGButtonType.Back" Click="Back" Text="Lista opportunita" />
+        </div>
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+           
 
-            @if (_deal.Permits.Edit())
+            <RedGDetailField Icon="work" ContainerClass="mb-4">
+                <LabelContent><DisplayName For="@(() => _deal.Name)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.Name</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="business">
+                <LabelContent><DisplayName For="@(() => _deal.IdCompany)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.CompanyName</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="person">
+                <LabelContent><DisplayName For="@(() => _deal.IdContact)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@(string.IsNullOrWhiteSpace(_deal.ContactName) ? "-" : _deal.ContactName)</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="flag">
+                <LabelContent><DisplayName For="@(() => _deal.State)" /></LabelContent>
+                <ChildContent><span class="badge @StateBadgeClass(_deal.State)">@StateText(_deal.State)</span></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="timeline">
+                <LabelContent><DisplayName For="@(() => _deal.Phase)" /></LabelContent>
+                <ChildContent>
+                    <div class="d-flex align-items-center gap-3">
+                        <span>@PhaseText(_deal.Phase)</span>
+                        <RadzenProgressBar Value="@DealProgress" ShowValue="false" Style="height: 6px; width: 180px;" />
+                    </div>
+                </ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="euro">
+                <LabelContent><DisplayName For="@(() => _deal.Amount)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.Amount.ToString("C")</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="track_changes">
+                <LabelContent><DisplayName For="@(() => _deal.Target)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.Target.ToString("C")</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="percent">
+                <LabelContent><DisplayName For="@(() => _deal.Probability)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.Probability%</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="query_stats">
+                <LabelContent><DisplayName For="@(() => _deal.WeightedAmount)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.WeightedAmount.ToString("C")</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="event">
+                <LabelContent><DisplayName For="@(() => _deal.Date)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.Date.ToString("dd/MM/yyyy")</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="event_available">
+                <LabelContent><DisplayName For="@(() => _deal.ExpectedCloseDate)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@(_deal.ExpectedCloseDate == null ? "-" : _deal.ExpectedCloseDate.Value.ToString("dd/MM/yyyy"))</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="event_busy">
+                <LabelContent><DisplayName For="@(() => _deal.DateClosed)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@(_deal.DateClosed == default ? "-" : _deal.DateClosed.ToString("dd/MM/yyyy"))</p></ChildContent>
+            </RedGDetailField>
+
+            <RedGDetailField Icon="account_circle">
+                <LabelContent><DisplayName For="@(() => _deal.IdUser)" /></LabelContent>
+                <ChildContent><p class="mb-0 text-dark">@_deal.UserName</p></ChildContent>
+            </RedGDetailField>
+
+            @if (!string.IsNullOrWhiteSpace(_deal.Note))
             {
-                <button type="button" class="deal-primary" @onclick="Edit">
-                    <span class="material-icons">edit</span>
-                    <span>Modifica</span>
-                </button>
+                <RedGDetailField Icon="note">
+                    <LabelContent><DisplayName For="@(() => _deal.Note)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark" style="white-space: pre-wrap;">@_deal.Note</p></ChildContent>
+                </RedGDetailField>
             }
-        </section>
+        </div>
 
-        <section class="deal-hero">
-            <div>
-                <span class="deal-kicker">Opportunita</span>
-                <h1>@_deal.Name</h1>
-                <div class="deal-hero-meta">
-                    <span class="deal-state @StateClass(_deal.State)">@StateText(_deal.State)</span>
-                    <span>@PhaseText(_deal.Phase)</span>
-                    <span>@_deal.Date.ToString("dd/MM/yyyy")</span>
-                </div>
-            </div>
-            <div class="deal-value-box">
-                <span>Valore</span>
-                <strong>@_deal.Amount.ToString("C")</strong>
-                <small>Ponderato @_deal.WeightedAmount.ToString("C")</small>
-            </div>
-        </section>
-
-        <section class="deal-detail-grid">
-            <article class="deal-panel deal-summary">
-                <div class="deal-panel-title">
-                    <span class="material-icons">trending_up</span>
-                    <h2>Avanzamento</h2>
-                </div>
-                <div class="deal-progress">
-                    <div><i style="width:@DealProgress%"></i></div>
-                    <strong>@DealProgress%</strong>
-                    <small>Avanzamento fase trattativa</small>
-                </div>
-                <div class="deal-facts">
-                    <div>
-                        <span>Chiusura prevista</span>
-                        <strong>@(_deal.ExpectedCloseDate == null ? "-" : _deal.ExpectedCloseDate.Value.ToString("dd/MM/yyyy"))</strong>
-                    </div>
-                    <div>
-                        <span>Probabilita</span>
-                        <strong>@_deal.Probability%</strong>
-                    </div>
-                    <div>
-                        <span>Target</span>
-                        <strong>@_deal.Target.ToString("C")</strong>
-                    </div>
-                    <div>
-                        <span>Data apertura</span>
-                        <strong>@_deal.Date.ToString("dd/MM/yyyy")</strong>
-                    </div>
-                    <div>
-                        <span>Data chiusura</span>
-                        <strong>@(_deal.DateClosed == default ? "-" : _deal.DateClosed.ToString("dd/MM/yyyy"))</strong>
-                    </div>
-                    <div>
-                        <span>Owner</span>
-                        <strong>@_deal.UserName</strong>
-                    </div>
-                </div>
-            </article>
-
-            <article class="deal-panel">
-                <div class="deal-panel-title">
-                    <span class="material-icons">business</span>
-                    <h2>Cliente</h2>
-                </div>
-                <div class="deal-field">
-                    <span>Azienda</span>
-                    <strong>@_deal.CompanyName</strong>
-                </div>
-                <div class="deal-field">
-                    <span>Contatto</span>
-                    <strong>@(string.IsNullOrWhiteSpace(_deal.ContactName) ? "-" : _deal.ContactName)</strong>
-                </div>
-            </article>
-
-            <article class="deal-panel deal-notes">
-                <div class="deal-panel-title">
-                    <span class="material-icons">notes</span>
-                    <h2>Note</h2>
-                </div>
-                @if (string.IsNullOrWhiteSpace(_deal.Note))
+        <div class="card-footer bg-light border-top py-3">
+            <div class="d-flex gap-2">
+                <RedGButton RGButtonType="RGButtonType.Back" Click="Back" Text="Lista opportunita" />
+                @if (_deal.Permits.Edit())
                 {
-                    <p class="deal-muted">Nessuna nota inserita.</p>
+                    <RedGButton RGButtonType="RGButtonType.Edit" Click="Edit" AutoLabel="true" />
                 }
-                else
-                {
-                    <p>@_deal.Note</p>
-                }
-            </article>
-        </section>
-    }
-</div>
-
-<style>
-    .deal-detail-page {
-        min-height: calc(100vh - 1rem);
-        padding: 1.25rem;
-        color: #182235;
-        background: #f7f9fc;
-    }
-
-    .deal-detail-toolbar {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.75rem;
-        margin-bottom: 1rem;
-    }
-
-    .deal-primary,
-    .deal-secondary,
-    .deal-empty button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.4rem;
-        border: 1px solid #bfd2e7;
-        border-radius: 8px;
-        padding: 0.55rem 0.8rem;
-        background: #fff;
-        color: #0f4a8a;
-        font-weight: 800;
-    }
-
-    .deal-primary {
-        background: #0f4a8a;
-        color: #fff;
-    }
-
-    .deal-hero,
-    .deal-panel {
-        border: 1px solid #dfe7f1;
-        border-radius: 8px;
-        background: #fff;
-        box-shadow: 0 12px 28px rgba(31, 42, 68, 0.07);
-    }
-
-    .deal-hero {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: 1.1rem;
-        margin-bottom: 1rem;
-    }
-
-    .deal-kicker {
-        text-transform: uppercase;
-        font-size: 0.74rem;
-        font-weight: 800;
-        color: #64748b;
-    }
-
-    .deal-hero h1 {
-        margin: 0.1rem 0 0.6rem;
-        font-size: 2rem;
-        line-height: 1.15;
-        font-weight: 850;
-    }
-
-    .deal-hero-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        color: #64748b;
-    }
-
-    .deal-value-box {
-        display: grid;
-        gap: 0.2rem;
-        min-width: 220px;
-        border: 1px solid #dfe7f1;
-        border-radius: 8px;
-        padding: 0.8rem;
-        background: #fbfdff;
-    }
-
-    .deal-value-box span,
-    .deal-value-box small,
-    .deal-field span,
-    .deal-facts span,
-    .deal-muted {
-        color: #64748b;
-    }
-
-    .deal-value-box strong {
-        font-size: 1.45rem;
-    }
-
-    .deal-detail-grid {
-        display: grid;
-        grid-template-columns: minmax(280px, 1.2fr) minmax(260px, 0.8fr);
-        gap: 1rem;
-    }
-
-    .deal-panel {
-        padding: 1rem;
-        min-width: 0;
-    }
-
-    .deal-notes {
-        grid-column: 1 / -1;
-    }
-
-    .deal-panel-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.8rem;
-    }
-
-    .deal-panel-title h2 {
-        margin: 0;
-        font-size: 1.1rem;
-        font-weight: 850;
-    }
-
-    .deal-progress {
-        display: grid;
-        gap: 0.35rem;
-        margin-bottom: 1rem;
-    }
-
-    .deal-progress > div {
-        height: 10px;
-        overflow: hidden;
-        border-radius: 999px;
-        background: #e6edf5;
-    }
-
-    .deal-progress i {
-        display: block;
-        height: 100%;
-        background: #0f4a8a;
-    }
-
-    .deal-facts {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.65rem;
-    }
-
-    .deal-facts div,
-    .deal-field {
-        display: grid;
-        gap: 0.2rem;
-        border: 1px solid #e1e8f0;
-        border-radius: 8px;
-        padding: 0.65rem;
-        background: #f8fafc;
-        min-width: 0;
-    }
-
-    .deal-field + .deal-field {
-        margin-top: 0.65rem;
-    }
-
-    .deal-notes p {
-        margin: 0;
-        white-space: pre-wrap;
-        line-height: 1.55;
-    }
-
-    .deal-state {
-        display: inline-flex;
-        border-radius: 999px;
-        padding: 0.2rem 0.5rem;
-        font-weight: 850;
-        font-size: 0.78rem;
-    }
-
-    .deal-state.is-open {
-        background: #eaf5f1;
-        color: #13705b;
-    }
-
-    .deal-state.is-paused {
-        background: #fff7e6;
-        color: #996515;
-    }
-
-    .deal-state.is-won {
-        background: #e7f7ea;
-        color: #176d2c;
-    }
-
-    .deal-state.is-lost {
-        background: #fdecec;
-        color: #9f1d1d;
-    }
-
-    .deal-state.is-muted {
-        background: #eef2f7;
-        color: #526174;
-    }
-
-    .deal-empty {
-        min-height: 300px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        color: #64748b;
-        text-align: center;
-    }
-
-    .deal-empty .material-icons {
-        font-size: 48px;
-    }
-
-    @@media (max-width: 900px) {
-        .deal-hero,
-        .deal-detail-toolbar {
-            flex-direction: column;
-        }
-
-        .deal-value-box {
-            width: 100%;
-        }
-
-        .deal-detail-grid,
-        .deal-facts {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
+            </div>
+        </div>
+    </div>
+}

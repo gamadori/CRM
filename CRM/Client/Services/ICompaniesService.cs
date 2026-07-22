@@ -17,6 +17,9 @@ namespace CRM.Client.Services
 
         Task<CompanyDTO?> GetUserCompany();
 
+        /// <summary>L'azienda madre attuale (CompanyType = HeadCompany), o null se non definita.</summary>
+        Task<CompanyDTO?> GetHeadCompanyAsync();
+
         Task<string?> GetLogo(int idCompany);
 
         Task<List<CompanyTreeNodeDTO>> GetTreeAsync(int? idCompany = null);

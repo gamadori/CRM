@@ -71,6 +71,12 @@ namespace CRM.Client.Pages.Tickets
         public int? IdProject { get; set; }
 
         [Parameter]
+        public int? IdDeal { get; set; }
+
+        [Parameter]
+        public int? IdOrder { get; set; }
+
+        [Parameter]
         public int TypeSearch { get; set; } = (int)TicketTypeSearch.All;
 
         [Parameter]
@@ -221,6 +227,8 @@ namespace CRM.Client.Pages.Tickets
                 paging.IdArticle = IdArticle;
                 paging.IdCompany = IdCompany;
                 paging.IdProject = IdProject;
+                paging.IdDeal = IdDeal;
+                paging.IdOrder = IdOrder;
 
                 if (_idUser != null)
                     paging.IdUserAssigned = _idUser;
@@ -395,7 +403,13 @@ namespace CRM.Client.Pages.Tickets
                 }
                 else
                 {
-                    NavigationManager.NavigateTo($"/Tickets/New");
+                    var query = new List<string>();
+                    if (IdDeal != null)
+                        query.Add($"IdDeal={IdDeal}");
+                    if (IdOrder != null)
+                        query.Add($"IdOrder={IdOrder}");
+
+                    NavigationManager.NavigateTo($"/Tickets/New{(query.Any() ? "?" + string.Join("&", query) : string.Empty)}");
                 }
             }
         }

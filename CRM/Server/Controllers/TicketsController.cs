@@ -1,4 +1,5 @@
 ﻿using System;
+using CNM.Authorize;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -50,6 +51,7 @@ namespace CRM.Server.Controllers
         private readonly IPushNotificationService _pushService;
         private readonly Services.ITicketsService _ticketsService;
         private readonly ITicketSummaryService _ticketSummaryService;
+        private readonly ITicketNotificationService _ticketNotifications;
 
         // ✅ NUOVO: Aggiungi IConfiguration
         private readonly IConfiguration _configuration;
@@ -68,7 +70,8 @@ namespace CRM.Server.Controllers
             IPushNotificationService pushService,
             IConfiguration configuration,
             Services.ITicketsService ticketsService,
-            ITicketSummaryService ticketSummaryService) // ✅ AGGIUNTO
+            ITicketSummaryService ticketSummaryService,
+            ITicketNotificationService ticketNotifications) // ✅ AGGIUNTO
         {
             _context = context;
             _userManager = userManager;
@@ -85,6 +88,7 @@ namespace CRM.Server.Controllers
             _configuration = configuration;
             _ticketsService = ticketsService;
             _ticketSummaryService = ticketSummaryService;
+            _ticketNotifications = ticketNotifications;
         }
 
         [HttpGet("search")]
@@ -227,6 +231,12 @@ namespace CRM.Server.Controllers
                         : tickets.Where(t => t.IdUserAssigned == args.IdUserAssigned
                                            || t.AssignedUsers.Any(a => a.IdUser == args.IdUserAssigned));
                 }
+
+                if (args.IdDeal != null)
+                    tickets = tickets.Where(t => t.IdDeal == args.IdDeal);
+
+                if (args.IdOrder != null)
+                    tickets = tickets.Where(t => t.IdOrder == args.IdOrder);
 
                 var items = await tickets
                     .OrderBy(t => t.Date)
@@ -396,6 +406,7 @@ namespace CRM.Server.Controllers
 
         // PUT: api/Tickets/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTicket(int id, Ticket ticket)
         {
@@ -406,10 +417,10 @@ namespace CRM.Server.Controllers
             
             var changeAssigned = await _ticketsService.TicketChangeAssigned(id, ticket.IdUserAssigned);
 
-            if (! await _permits.CanEditTicket())
+            if (!await _permits.CanWriteCompanyData(ticket.IdCompany))
             {
                 await _logEventService.RegisterAsync(nameof(TicketsController), nameof(PutTicket), LogEvent.EventsTypes.Error, "Attempt to Edit without rights");
-                return BadRequest();
+                return Forbid();
             }
 
             var result = await _ticketsService.PutAsync(id, ticket);
@@ -423,31 +434,26 @@ namespace CRM.Server.Controllers
             {
                 var updatedTicket = await _context.Tickets.Include(x => x.Company).FirstOrDefaultAsync(x => x.Id == id);
                 if (updatedTicket != null)
-                    await SendEmailUserAssigned(updatedTicket);
+                    await _ticketNotifications.NotifyTicketAssignedAsync(updatedTicket);
             }
 
             return NoContent();
         }
 
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPut("{id}/schedule")]
         public async Task<IActionResult> UpdateSchedule(int id, TicketScheduleUpdateRequest request)
         {
             try
             {
-                if (!await _permits.CanEditTicket())
-                {
-                    await _logEventService.RegisterAsync(nameof(TicketsController), nameof(UpdateSchedule), LogEvent.EventsTypes.Error, "Attempt to schedule without rights");
-                    return BadRequest();
-                }
-
                 var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
                 if (ticket == null)
                     return NotFound();
 
-                if (!await _permits.CanGetObject(ticket.IdCompany))
+                if (!await _permits.CanWriteCompanyData(ticket.IdCompany))
                 {
                     await _logEventService.RegisterAsync(nameof(TicketsController), nameof(UpdateSchedule), LogEvent.EventsTypes.Error, "Attempt to schedule ticket without object rights");
-                    return BadRequest();
+                    return Forbid();
                 }
 
                 var start = request.Date.Date + (request.Time?.ToTimeSpan() ?? TimeSpan.Zero);
@@ -469,19 +475,17 @@ namespace CRM.Server.Controllers
             }
         }
 
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPut("{id}/start-processing")]
         public async Task<IActionResult> StartProcessing(int id)
         {
             try
             {
-                if (!await _permits.CanEditTicket())
-                    return Forbid();
-
                 var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
                 if (ticket == null)
                     return NotFound();
 
-                if (!await _permits.CanGetObject(ticket.IdCompany))
+                if (!await _permits.CanWriteCompanyData(ticket.IdCompany))
                     return Forbid();
 
                 if (ticket.Closed)
@@ -521,14 +525,7 @@ namespace CRM.Server.Controllers
             {
                 var savedTicket = await _ticketsService.PostAsync(ticket);
 
-                await SendEmailNoticeNewTicket(savedTicket.Id);
-
-                if (savedTicket.IdUserAssigned == null)
-                {
-                    await SendEmailNewTicketToBeAssigned(savedTicket.Id);
-                }
-                else
-                    await SendEmailUserAssigned(savedTicket);
+                await _ticketNotifications.NotifyNewTicketAsync(savedTicket);
 
 
                 return CreatedAtAction("GetTicket", new { id = savedTicket.Id }, savedTicket);
@@ -549,11 +546,19 @@ namespace CRM.Server.Controllers
         
 
         // DELETE: api/Tickets/5
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTicket(int id)
         {
             try
             {
+                var ticket = await _context.Tickets.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
+                if (ticket == null)
+                    return NotFound();
+
+                if (!await _permits.CanWriteCompanyData(ticket.IdCompany))
+                    return Forbid();
+
                 var result = await _ticketsService.DeleteAsync(id);
                 if (!result)
                     return NotFound();
@@ -1234,18 +1239,10 @@ namespace CRM.Server.Controllers
         {
             try
             {
-                Company company;
-
                 Ticket ticket = await _context.Tickets.Include(x => x.UserAssigned).Where(x => x.Id == id).FirstOrDefaultAsync();
 
-                var settings = await _context.GlobalSettings.FirstOrDefaultAsync();
+                Company? company = await _context.GetHeadCompanyAsync();
 
-                if (settings != null)
-                    company = await _context.Companies?.FirstOrDefaultAsync(x=>x.Id == settings.IdHeadQuarter);
-                else
-                    company = await _context.Companies.Where(x => x.CompanyType == CompanyTypes.HeadCompany).FirstOrDefaultAsync();
-                
-                    
                 if (ticket == null || company == null)
                     return null;
 
@@ -1833,153 +1830,6 @@ namespace CRM.Server.Controllers
                     nameof(SendAssignmentNotifications), 
                     LogEvent.EventsTypes.Error, 
                     $"Errore invio notifiche ticket #{ticket.Id}: {ex.Message}");
-            }
-        }
-
-        private async Task SendEmailNoticeNewTicket(int idTicket)
-        {
-            try
-            {
-                var ticket = await _context.Tickets.Include(x => x.Company).FirstOrDefaultAsync(x => x.Id == idTicket);
-
-                if (ticket != null)
-                {
-                    var userOpened = await _context.Users.FindAsync(ticket.IdUserOpened);
-
-                    var callbackUrl = HttpContext.AbsoluteUrl($"/Tickets/Info/{idTicket}");
-
-                    var keyValues = new Dictionary<string, string>();
-                    keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Date), ticket.DateOpened.ToString("g"));
-
-                    if (ticket.Company != null)
-                        keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Company), ticket.Company.RagioneSociale);
-
-                    if (callbackUrl != null)
-                        keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Url), callbackUrl);
-
-                    if (userOpened != null)
-                    {
-                        keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Name), userOpened.NameComplete);
-
-                        var msg = await _emailSenderPlus.SendEmailAsync(new List<string>() { userOpened.Email }, EmailsTypes.NoticeNewTicket, null, keyValues);
-
-                        if (userOpened.PhoneNumber != null && userOpened.PhoneNumber.Length > 0 && msg != null)
-                        {
-                            await _TelegramService.SendMessage(userOpened.PhoneNumber, msg.TextBody);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(SendEmailNoticeNewTicket), LogEvent.EventsTypes.Error, ex);
-            }
-        }
-
-        private async Task SendEmailNewTicketToBeAssigned(int idTicket)
-        {
-            try
-            {
-                List<string> phones = new List<string>();
-
-                var ticket = await _context.Tickets.Include(x => x.Company).FirstOrDefaultAsync(x => x.Id == idTicket);
-
-                if (ticket == null)
-                    return;
-
-                List<string> to = new List<string>();
-
-                var users = _context.Users.Where(x => x.Groups.Where(x => x.TicketTypes.Where(y => y.Id == ticket.IdType).Any() || x.TicketTypes.Where(y => y.Id == ticket.IdType).Any()).Any());
-
-                foreach (var user in users)
-                {
-                    if (await _permits.CanAssignTicket(user.Id))
-                    {
-                        if (!to.Contains(user.Email))
-                            to.Add(user.Email);
-
-                        if (user.PhoneNumber != null && user.PhoneNumber.Length > 0 && phones.Contains(user.PhoneNumber))
-                        {
-                            phones.Add(user.PhoneNumber);
-                        }
-                    }
-                }
-
-                var admins = await _permits.GetAdmins();
-
-                foreach (var user in admins)
-                {
-                    if (await _permits.CanAssignTicket(user.Id))
-                    {
-                        if (!to.Contains(user.Email))
-                            to.Add(user.Email);
-
-                        if (user.PhoneNumber != null && user.PhoneNumber.Length > 0 && phones.Contains(user.PhoneNumber))
-                        {
-                            phones.Add(user.PhoneNumber);
-                        }
-                    }
-                }
-                var callbackUrl = HttpContext.AbsoluteUrl($"/Tickets/Info/{idTicket}");
-
-                var keyValues = new Dictionary<string, string>();
-                keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Date), ticket.DateOpened.ToString("g"));
-                keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Company), ticket.Company.RagioneSociale);
-
-                if (callbackUrl != null)
-                    keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Url), callbackUrl);
-
-                var msg = await _emailSenderPlus.SendEmailAsync(to, EmailsTypes.NoticeNewTicketToBeAssigned, null, keyValues);
-
-                if (msg != null)
-                {
-                    foreach (var phone in phones)
-                    {
-                        await _TelegramService.SendMessage(phone, msg.TextBody);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(SendEmailNewTicketToBeAssigned), LogEvent.EventsTypes.Error, ex);
-            }
-        }
-
-        private async Task<bool> SendEmailUserAssigned(Ticket ticket)
-        {
-            try
-            {
-                if (ticket.IdUserAssigned != null)
-                {
-                    var userAssigned = await _context.Users.FindAsync(ticket.IdUserAssigned);
-
-                    if (userAssigned != null)
-                    {
-                        var keyValues = new Dictionary<string, string>();
-                        keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Date), ticket.DateOpened.ToString("g"));
-                        keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Company), ticket.Company.RagioneSociale);
-                        keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Name), userAssigned.NameComplete);
-
-                        var callbackUrl = HttpContext.AbsoluteUrl($"/Tickets/Info/{ticket.Id}");
-
-                        if (callbackUrl != null)
-                            keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Url), callbackUrl);
-                        var msg = await _emailSenderPlus.SendEmailAsync(new List<string>() { userAssigned.UserName }, EmailsTypes.NoticeTicketAssigned, null, keyValues);
-
-                        if (userAssigned.PhoneNumber != null && userAssigned.PhoneNumber.Length > 0 && msg != null)
-                        {
-                            await _TelegramService.SendMessage(userAssigned.PhoneNumber, msg.TextBody);
-                        }
-
-                        return true;
-                    }
-                }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(SendEmailUserAssigned), LogEvent.EventsTypes.Error, ex);
-                return false;
             }
         }
 

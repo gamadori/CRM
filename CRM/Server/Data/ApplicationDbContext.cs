@@ -34,6 +34,18 @@ namespace CRM.Server.Data
                 .WithMany()
                 .HasForeignKey(t => t.OperationalSummaryUpdatedBy)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Ticket>()
+                .HasOne(t => t.Deal)
+                .WithMany(d => d.Tickets)
+                .HasForeignKey(t => t.IdDeal)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Ticket>()
+                .HasOne(t => t.Order)
+                .WithMany(o => o.Tickets)
+                .HasForeignKey(t => t.IdOrder)
+                .OnDelete(DeleteBehavior.NoAction);
             
             // ⚠️ LEGACY: Relazione 1-to-many tradizionale (mantenuta per compatibilità)
             modelBuilder.Entity<ApplicationUser>()
@@ -499,6 +511,16 @@ namespace CRM.Server.Data
                       .HasForeignKey(a => a.IdAssignee)
                       .OnDelete(DeleteBehavior.Restrict);
 
+                entity.HasOne(a => a.CompletedBy)
+                      .WithMany()
+                      .HasForeignKey(a => a.IdCompletedBy)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(a => a.Participants)
+                      .WithOne(p => p.Activity)
+                      .HasForeignKey(p => p.IdActivity)
+                      .OnDelete(DeleteBehavior.Cascade);
+
                 // Email collegata (opzionale): se l'email viene rimossa l'attività resta, con il link azzerato.
                 entity.HasOne(a => a.EmailSent)
                       .WithMany()
@@ -509,6 +531,17 @@ namespace CRM.Server.Data
                 entity.HasIndex(a => new { a.EntityType, a.EntityId });
                 entity.HasIndex(a => new { a.ReminderStatus, a.ReminderAt });
                 entity.HasIndex(a => a.IdAssignee);
+            });
+
+            modelBuilder.Entity<ActivityParticipant>(entity =>
+            {
+                entity.HasOne(p => p.User)
+                      .WithMany()
+                      .HasForeignKey(p => p.IdUser)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(p => p.IdActivity);
+                entity.HasIndex(p => p.IdUser);
             });
 
             // ---- Coda di invio email (outbox) ----
@@ -771,6 +804,8 @@ namespace CRM.Server.Data
         public DbSet<InvoiceRow> InvoiceRows => Set<InvoiceRow>();
 
         public DbSet<Activity> Activities => Set<Activity>();
+
+        public DbSet<ActivityParticipant> ActivityParticipants => Set<ActivityParticipant>();
 
         public DbSet<AccessoryType> AccessoryTypes => Set<AccessoryType>();
 

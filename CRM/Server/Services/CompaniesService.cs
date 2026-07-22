@@ -32,6 +32,9 @@ namespace CRM.Server.Services
 
         public async Task<CompanyDTO?> GetItemAsync(int id)
         {
+            if (!await _permitsService.CanAccessCompany(id))
+                return null;
+
             var item = await _context.Companies
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
@@ -152,10 +155,40 @@ namespace CRM.Server.Services
             }
         }
 
+        /// <summary>L'azienda madre attuale (CompanyType = HeadCompany), o null se non definita.</summary>
+        public async Task<CompanyDTO?> GetHeadCompanyAsync()
+        {
+            var company = await _context.GetHeadCompanyAsync();
+
+            return company?.ToDTO();
+        }
+
         public async Task<APIResponseMessage<CompanyDTO>> PostAsync(Company item)
         {
             try
             {
+                if (!await CanSaveCompanyAsync(item))
+                {
+                    return new APIResponseMessage<CompanyDTO>
+                    {
+                        State = false,
+                        Message = "Not authorized to save Company",
+                        Code = System.Net.HttpStatusCode.Forbidden
+                    };
+                }
+
+                // Invariante: esiste UNA sola azienda madre. Se questa viene salvata come
+                // HeadCompany, l'eventuale precedente viene declassata a Cliente. Il tutto in
+                // un'unica SaveChanges, quindi atomico: non si può restare con due (o zero) madri.
+                if (item.CompanyType == CompanyTypes.HeadCompany)
+                {
+                    var previousHeads = await _context.Companies
+                        .Where(c => c.CompanyType == CompanyTypes.HeadCompany && c.Id != item.Id)
+                        .ToListAsync();
+
+                    foreach (var previous in previousHeads)
+                        previous.CompanyType = CompanyTypes.Customer;
+                }
 
                 if (item.Id > 0)
                 {
@@ -190,6 +223,9 @@ namespace CRM.Server.Services
         }
         public async Task<bool> DeleteAsync(int id)
         {
+            if (!await _permitsService.CanWriteCompanyData(id))
+                return false;
+
             var item = await _context.Companies.FindAsync(id);
 
             if (item == null)
@@ -213,6 +249,12 @@ namespace CRM.Server.Services
         {
             try
             {
+                if (!await _permitsService.CanWriteCompanyData(item.IdReseller) ||
+                    !await _permitsService.CanWriteCompanyData(item.IdCustomer))
+                {
+                    return false;
+                }
+
                 var customer = await _context.Companies.FindAsync(item.IdCustomer);
 
                 if (customer != null && customer.IdReseller != item.IdReseller)
@@ -234,6 +276,12 @@ namespace CRM.Server.Services
         {
             try
             {
+                if (!await _permitsService.CanWriteCompanyData(item.IdReseller) ||
+                    !await _permitsService.CanWriteCompanyData(item.IdCustomer))
+                {
+                    return false;
+                }
+
                 var customer = await _context.Companies.FindAsync(item.IdCustomer);
 
                 if (customer != null && customer.IdReseller == item.IdReseller)
@@ -339,8 +387,9 @@ namespace CRM.Server.Services
                 }
                 else if (rootCompany.CompanyType == CompanyTypes.Reseller)
                 {
+                    var accessibleCompanyIds = await _permitsService.GetIdCompanies(rootCompanyId);
                     allCompanies = await _context.Companies.AsNoTracking()
-                        .Where(x => x.Id == rootCompanyId || x.IdReseller == rootCompanyId)
+                        .Where(x => accessibleCompanyIds.Contains(x.Id))
                         .OrderBy(x => x.RagioneSociale).ToListAsync();
                 }
                 else
@@ -372,20 +421,7 @@ namespace CRM.Server.Services
             if (requestedCompanyId == userCompanyId)
                 return true;
 
-            switch (userCompanyType)
-            {
-                case CompanyTypes.HeadCompany:
-                    return true;
-
-                case CompanyTypes.Reseller:
-                    // Il Reseller può vedere l'albero di un suo cliente
-                    var customer = await _context.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.Id == requestedCompanyId);
-                    return customer != null && customer.IdReseller == userCompanyId;
-
-                case CompanyTypes.Customer:
-                default:
-                    return false;
-            }
+            return await _permitsService.CanAccessCompany(requestedCompanyId);
         }
 
         private List<CompanyTreeNodeDTO> BuildTree(List<Company> companies, CompanyTypes? viewerType, int? viewerCompanyId)
@@ -441,10 +477,7 @@ namespace CRM.Server.Services
                 if (reseller != null)
                 {
                     var node = ToTreeNode(reseller);
-                    foreach (var customer in companies.Where(c => c.IdReseller == reseller.Id))
-                    {
-                        node.Children.Add(ToTreeNode(customer));
-                    }
+                    AddCompanyChildren(node, companies, reseller.Id);
                     roots.Add(node);
                 }
             }
@@ -470,6 +503,33 @@ namespace CRM.Server.Services
             };
         }
 
+        private static void AddCompanyChildren(CompanyTreeNodeDTO parentNode, List<Company> companies, int parentCompanyId)
+        {
+            foreach (var child in companies.Where(c => c.IdReseller == parentCompanyId).OrderBy(c => c.RagioneSociale))
+            {
+                var childNode = ToTreeNode(child);
+                AddCompanyChildren(childNode, companies, child.Id);
+                parentNode.Children.Add(childNode);
+            }
+        }
+
+        private async Task<bool> CanSaveCompanyAsync(Company item)
+        {
+            if (item.CompanyType == CompanyTypes.HeadCompany && !await _permitsService.CanManageSettings())
+                return false;
+
+            if (item.Id > 0)
+                return await _permitsService.CanWriteCompanyData(item.Id);
+
+            if (await _permitsService.BelongsToHeadCompany())
+                return await _permitsService.IsStandardUser();
+
+            if (item.IdReseller == null)
+                return false;
+
+            return await _permitsService.CanWriteCompanyData(item.IdReseller);
+        }
+
         private async Task<IQueryable<Company>?> FilterItems(CompanyFilter? args = null)
         {
             try
@@ -493,21 +553,11 @@ namespace CRM.Server.Services
                     companies = companies.Where(args.Filter);
                 }
 
-                var comapnyType = await _permitsService.CompanyType();
-
-
-                switch (comapnyType)
+                var companyType = await _permitsService.CompanyType();
+                if (companyType != CompanyTypes.HeadCompany)
                 {
-                    case CompanyTypes.Customer:
-
-                        companies = companies.Where(x => x.Id == idCompany);
-                        break;
-
-                    case CompanyTypes.Reseller:
-
-                        companies = companies.Where(x => x.Id == idCompany || x.IdReseller == idCompany);
-                        break;
-
+                    var accessibleCompanyIds = await _permitsService.GetIdCompanies();
+                    companies = companies.Where(x => accessibleCompanyIds.Contains(x.Id));
                 }
 
                 if (args?.RagioneSociale != null && args.RagioneSociale.Length > 0)

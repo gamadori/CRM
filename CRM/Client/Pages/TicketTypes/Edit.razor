@@ -110,7 +110,22 @@ else
                             </RadzenStack>
                         </RadzenColumn>
                     </RadzenRow>
-                    
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RedGNumeric @bind-Value="@_state.AppointmentReminderMinutes" For="@(() => _state.AppointmentReminderMinutes)" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RedGNumeric @bind-Value="@_state.ExpiryReminderMinutes" For="@(() => _state.ExpiryReminderMinutes)" />
+                                <small class="text-muted">Lascia vuoti i due campi preavviso per usare il default globale delle impostazioni.</small>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+
                 </RadzenStack>
             </RadzenColumn>
         </RadzenRow>

@@ -161,6 +161,7 @@ namespace CRM.Server.Controllers
             }
         }
 
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPut("{id}")]
         public async Task<ActionResult<APIResponseMessage<ProductDTO>>> Put(int id, Product item)
         {
@@ -168,6 +169,9 @@ namespace CRM.Server.Controllers
             {
                 return BadRequest();
             }
+            if (!await _permitsService.CanWriteCompanyData(item.IdCompany))
+                return Forbid();
+
             var resp = await _productsService.PostAsync(item);
 
             if (resp == null)
@@ -176,9 +180,13 @@ namespace CRM.Server.Controllers
             return Ok(resp);
         }
 
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPost]
         public async Task<ActionResult<APIResponseMessage<ProductDTO>>> Post(Product item)
         {
+            if (!await _permitsService.CanWriteCompanyData(item.IdCompany))
+                return Forbid();
+
             var resp = await _productsService.PostAsync(item);
 
             if (resp == null)
@@ -246,9 +254,17 @@ namespace CRM.Server.Controllers
         //    return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
         //}
 
+        [AuthorizeRole(ePolicy.StandardRole)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
+            var product = await _context.Products.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            if (product == null)
+                return NotFound();
+
+            if (!await _permitsService.CanWriteCompanyData(product.IdCompany))
+                return Forbid();
+
             var resp = await _productsService.DeleteAsync(id);
 
             if (!resp)
@@ -264,7 +280,7 @@ namespace CRM.Server.Controllers
 
         [HttpPost("import-excel")]
         [RequestSizeLimit(20 * 1024 * 1024)]
-        [AuthorizeRole(ePolicy.AdminRole)]
+        [AuthorizeRole(ePolicy.StandardRole)]
         public async Task<ActionResult<ProductImportResult>> ImportExcel(
             [FromForm] IFormFile file,
             [FromForm] bool deleteAll = false)

@@ -55,16 +55,6 @@ else
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
                                 <RadzenStack>
-                                    <RedGDropDown TValue="int" @bind-Value="@_settings.IdHeadQuarter" For="@(() => _settings.IdHeadQuarter)" TItem="CompanyDTO" 
-                                        TextProperty="@nameof(CompanyDTO.RagioneSociale)" ValueProperty="@nameof(CompanyDTO.Id)" Data="_companies"/>
-                                </RadzenStack>
-                            </RadzenStack>
-                        </RadzenColumn>
-                    </RadzenRow>
-                    <RadzenRow>
-                        <RadzenColumn Size="12" SizeSM="6">
-                            <RadzenStack>
-                                <RadzenStack>
                                     <RedGNumeric @bind-Value="@_settings.MonthlySchedulerMaxNumTickets" For="@(() => _settings.MonthlySchedulerMaxNumTickets)" />
                                 </RadzenStack>
                             </RadzenStack>
@@ -110,6 +100,140 @@ else
                                         <input class="form-check-input" type="checkbox" role="switch" @bind="@_settings.RemoteSignatureEnabled" id="switchRemoteSignature">
                                         <DisplayName For="@(() => _settings.RemoteSignatureEnabled)" CssClass="form-check-label" />
                                     </div>
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <label class="form-label mb-1">
+                                        <DisplayName For="@(() => _settings.VoiceInputMode)" />
+                                    </label>
+                                    <select class="form-select" @bind="@_settings.VoiceInputMode">
+                                        <option value="@VoiceInputMode.Off">Disattivata</option>
+                                        <option value="@VoiceInputMode.Browser">Browser (dettatura locale, gratis, solo Chrome/Edge)</option>
+                                        <option value="@VoiceInputMode.Whisper">Server (Whisper OpenAI, più accurata, a consumo)</option>
+                                    </select>
+                                    <small class="text-muted">
+                                        Abilita il microfono nell'assistente AI. "Browser" trascrive localmente senza costi (richiede Chrome/Edge);
+                                        "Server" usa OpenAI Whisper: più accurata e su tutti i browser, ma con un costo per utilizzo.
+                                    </small>
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <label class="form-label mb-1">
+                                        <DisplayName For="@(() => _settings.TicketRerankMode)" />
+                                    </label>
+                                    <select class="form-select" @bind="@_settings.TicketRerankMode">
+                                        <option value="@TicketRerankMode.Off">Nessuno (solo soglia e istruzioni)</option>
+                                        <option value="@TicketRerankMode.AgentReread">Rilettura da parte dell'assistente</option>
+                                        <option value="@TicketRerankMode.LlmJudge">Giudice AI dedicato (rilegge e filtra)</option>
+                                    </select>
+                                    <small class="text-muted">
+                                        Come l'assistente verifica i "Ticket di riferimento" prima di mostrarli. "Rilettura": l'assistente
+                                        rilegge il ticket completo prima di citarlo (nessun costo dedicato). "Giudice AI": un modello veloce
+                                        rilegge i candidati e scarta i non pertinenti (una chiamata extra a costo ridotto, massima precisione).
+                                    </small>
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    <hr class="my-2" />
+                    <h5 class="mb-1">Preavvisi ticket</h5>
+                    <small class="text-muted mb-2 d-block">
+                        Notifica automatica agli assegnatari prima dell'appuntamento (Data + Ora) e, se il ticket non è
+                        ancora chiuso, prima della scadenza. L'anticipo è espresso in minuti.
+                    </small>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <div class="mb-3 form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" @bind="@_settings.TicketReminderEnabled" id="switchTicketReminder">
+                                        <DisplayName For="@(() => _settings.TicketReminderEnabled)" CssClass="form-check-label" />
+                                    </div>
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGNumeric @bind-Value="@_settings.TicketAppointmentReminderMinutes" For="@(() => _settings.TicketAppointmentReminderMinutes)" ReadOnly="@(!_settings.TicketReminderEnabled)" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGNumeric @bind-Value="@_settings.TicketExpiryReminderMinutes" For="@(() => _settings.TicketExpiryReminderMinutes)" ReadOnly="@(!_settings.TicketReminderEnabled)" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <small class="text-muted mb-2 d-block">
+                        Il preavviso ticket può essere sovrascritto per singolo Tipo Ticket (in Impostazioni → Tipi Ticket);
+                        se lì non è indicato nulla vale il default globale qui sopra.
+                    </small>
+
+                    <hr class="my-2" />
+                    <h5 class="mb-1">Default promemoria attività per tipo</h5>
+                    <small class="text-muted mb-2 d-block">
+                        Anticipo (minuti prima della scadenza) con cui precompilare il Promemoria quando si crea un'attività
+                        di questo tipo. Lascia vuoto per non impostare alcun promemoria automatico. Resta sempre modificabile a mano.
+                    </small>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGNumeric @bind-Value="@_settings.ActivityReminderMinutesCall" For="@(() => _settings.ActivityReminderMinutesCall)" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGNumeric @bind-Value="@_settings.ActivityReminderMinutesEmail" For="@(() => _settings.ActivityReminderMinutesEmail)" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGNumeric @bind-Value="@_settings.ActivityReminderMinutesMeeting" For="@(() => _settings.ActivityReminderMinutesMeeting)" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGNumeric @bind-Value="@_settings.ActivityReminderMinutesTask" For="@(() => _settings.ActivityReminderMinutesTask)" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RadzenStack>
+                                    <RedGNumeric @bind-Value="@_settings.ActivityReminderMinutesNote" For="@(() => _settings.ActivityReminderMinutesNote)" />
                                 </RadzenStack>
                             </RadzenStack>
                         </RadzenColumn>

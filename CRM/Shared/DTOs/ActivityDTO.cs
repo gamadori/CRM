@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace CRM.Shared.DTOs
 {
@@ -35,6 +37,18 @@ namespace CRM.Shared.DTOs
         [Display(Name = "Completata il")]
         public DateTime? DoneDate { get; set; }
 
+        [Display(Name = "Esito")]
+        public string? Outcome { get; set; }
+
+        [Display(Name = "Relazione di chiusura")]
+        public string? CompletionNotes { get; set; }
+
+        [Display(Name = "Prossima azione")]
+        public string? NextStep { get; set; }
+
+        [Display(Name = "Completata da")]
+        public string? IdCompletedBy { get; set; }
+
         [Display(Name = "Stato")]
         public ActivityState State { get; set; }
 
@@ -60,6 +74,12 @@ namespace CRM.Shared.DTOs
 
         public string AssigneeName { get; set; } = string.Empty;
 
+        public string CompletedByName { get; set; } = string.Empty;
+
+        public List<string> ParticipantIds { get; set; } = new();
+
+        public List<string> ParticipantNames { get; set; } = new();
+
         /// <summary>Nome dell'entità collegata (azienda/contatto/deal/ticket), per l'agenda.</summary>
         public string EntityName { get; set; } = string.Empty;
 
@@ -84,13 +104,20 @@ namespace CRM.Shared.DTOs
                 IdAssignee = a.IdAssignee,
                 DueDate = a.DueDate,
                 DoneDate = a.DoneDate,
+                Outcome = a.Outcome,
+                CompletionNotes = a.CompletionNotes,
+                NextStep = a.NextStep,
+                IdCompletedBy = a.IdCompletedBy,
                 State = a.State,
                 ReminderAt = a.ReminderAt,
                 CreatedAt = a.CreatedAt,
                 IdEmailSent = a.IdEmailSent,
                 IdInboundEmail = a.IdInboundEmail,
                 UserName = a.User != null ? a.User.NameComplete : string.Empty,
-                AssigneeName = a.Assignee != null ? a.Assignee.NameComplete : string.Empty
+                AssigneeName = a.Assignee != null ? a.Assignee.NameComplete : string.Empty,
+                CompletedByName = a.CompletedBy != null ? a.CompletedBy.NameComplete : string.Empty,
+                ParticipantIds = a.Participants?.Select(p => p.IdUser).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList() ?? new List<string>(),
+                ParticipantNames = a.Participants?.Select(p => p.User != null ? p.User.NameComplete : string.Empty).Where(n => !string.IsNullOrWhiteSpace(n)).Distinct().ToList() ?? new List<string>()
             };
         }
 
@@ -110,10 +137,45 @@ namespace CRM.Shared.DTOs
                 IdAssignee = dto.IdAssignee,
                 DueDate = dto.DueDate,
                 DoneDate = dto.DoneDate,
+                Outcome = dto.Outcome,
+                CompletionNotes = dto.CompletionNotes,
+                NextStep = dto.NextStep,
+                IdCompletedBy = dto.IdCompletedBy,
                 State = dto.State,
                 ReminderAt = dto.ReminderAt,
-                CreatedAt = dto.CreatedAt
+                CreatedAt = dto.CreatedAt,
+                Participants = dto.ParticipantIds
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Distinct()
+                    .Select(id => new ActivityParticipant { IdUser = id })
+                    .ToList()
             };
         }
+    }
+
+    public class ActivityCompletionRequest
+    {
+        [Display(Name = "Esito")]
+        public string? Outcome { get; set; }
+
+        [Display(Name = "Relazione di chiusura")]
+        public string? CompletionNotes { get; set; }
+
+        [Display(Name = "Prossima azione")]
+        public string? NextStep { get; set; }
+
+        public bool CreateFollowUp { get; set; }
+
+        [Display(Name = "Tipo follow-up")]
+        public ActivityKind FollowUpKind { get; set; } = ActivityKind.Task;
+
+        [Display(Name = "Oggetto follow-up")]
+        public string? FollowUpSubject { get; set; }
+
+        [Display(Name = "Scadenza follow-up")]
+        public DateTime? FollowUpDueDate { get; set; }
+
+        [Display(Name = "Assegnatario follow-up")]
+        public string? FollowUpAssigneeId { get; set; }
     }
 }

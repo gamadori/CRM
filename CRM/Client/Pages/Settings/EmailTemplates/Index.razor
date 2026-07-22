@@ -5,7 +5,7 @@
 @using CRM.Client.Services
 @using CRM.Shared
 @using Microsoft.AspNetCore.Authorization
-@attribute [Authorize]
+@attribute [Authorize(Policy = "SuperUserRole")]
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject IHeaderService HeaderService

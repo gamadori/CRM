@@ -769,7 +769,7 @@ namespace CRM.Server.Controllers
 
                 List<int>? companies = null;
 
-                if (!await _permitsService.BelongsToHeadQuarter())
+                if (!await _permitsService.BelongsToHeadCompany())
                 {
                     companies = await _permitsService.GetIdCompanies() ?? new();
 

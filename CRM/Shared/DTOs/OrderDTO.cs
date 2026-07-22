@@ -54,6 +54,8 @@ namespace CRM.Shared.DTOs
 
         public string QuoteNumber { get; set; } = string.Empty;
 
+        public string DealName { get; set; } = string.Empty;
+
         public string UserName { get; set; } = string.Empty;
 
         public int Permits { get; set; }
@@ -137,6 +139,7 @@ namespace CRM.Shared.DTOs
                 CompanyName = order.Company != null ? order.Company.RagioneSociale : string.Empty,
                 ContactName = order.Contact != null ? order.Contact.NameComplete : string.Empty,
                 QuoteNumber = order.Quote != null ? (order.Quote.Number ?? string.Empty) : string.Empty,
+                DealName = order.Deal != null ? order.Deal.Name : string.Empty,
                 UserName = order.User != null ? order.User.NameComplete : string.Empty,
                 Rows = order.Rows?
                     .OrderBy(r => r.SortOrder)

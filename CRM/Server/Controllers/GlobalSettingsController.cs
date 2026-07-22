@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -45,6 +46,7 @@ namespace CRM.Server.Controllers
         // PUT: api/SmtpSettings/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
+        [Authorize(Policy = "AdminRole")]
         public async Task<IActionResult> Put(int id, GlobalSetting settings)
         {
             if (id != settings.Id)
@@ -76,6 +78,7 @@ namespace CRM.Server.Controllers
         // POST: api/SmtpSettings
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize(Policy = "AdminRole")]
         public async Task<ActionResult<SmtpSetting>> Post(GlobalSetting settings)
         {
             _context.GlobalSettings.Add(settings);
@@ -86,6 +89,7 @@ namespace CRM.Server.Controllers
 
         // DELETE: api/SmtpSettings/5
         [HttpDelete("{id}")]
+        [Authorize(Policy = "AdminRole")]
         public async Task<IActionResult> Delete(int id)
         {
             var settings = await _context.GlobalSettings.FindAsync(id);

@@ -1,129 +1,245 @@
-@* Componente per visualizzare un campo di dettaglio - Layout Verticale Pulito *@
+@* Campo dettaglio compatto, pensato per comporsi in griglie leggibili. *@
 
-<div class="@ContainerClass rg-detail-field">
+<div class="@CssClass">
     <div class="rg-field-container">
-        <div class="rg-field-label">
-            @if (!string.IsNullOrWhiteSpace(Icon))
-            {
-                <span class="material-icons rg-field-icon">@Icon</span>
-            }
-            <span class="rg-label-text">
-                @if (!string.IsNullOrWhiteSpace(Label))
+        @if (!string.IsNullOrWhiteSpace(Icon))
+        {
+            <span class="material-icons rg-field-icon">@Icon</span>
+        }
+
+        <div class="rg-field-content">
+            <div class="rg-field-label">
+                <span class="rg-label-text">
+                    @if (!string.IsNullOrWhiteSpace(Label))
+                    {
+                        @Label
+                    }
+                    else if (LabelContent != null)
+                    {
+                        @LabelContent
+                    }
+                </span>
+            </div>
+
+            <div class="rg-field-value">
+                @if (!string.IsNullOrWhiteSpace(Value))
                 {
-                    @Label
+                    @Value
                 }
-                else if (LabelContent != null)
+                else if (ChildContent != null)
                 {
-                    @LabelContent
+                    @ChildContent
                 }
-            </span>
-        </div>
-        <div class="rg-field-value">
-            @if (!string.IsNullOrWhiteSpace(Value))
-            {
-                @Value
-            }
-            else if (ChildContent != null)
-            {
-                @ChildContent
-            }
-            else
-            {
-                <span class="rg-empty-value">—</span>
-            }
+                else
+                {
+                    <span class="rg-empty-value">-</span>
+                }
+            </div>
         </div>
     </div>
 </div>
 
 <style>
-    /* Layout Verticale - Sempre allineato, anche con multi-colonna */
     .rg-detail-field {
-        --rg-color-label: var(--crm-text-muted, #6c757d);
-        --rg-color-value: var(--crm-text, #212529);
-        --rg-color-icon: var(--crm-text-muted, #9e9e9e);
-        --rg-color-border: var(--crm-border, #e9ecef);
-        --rg-color-hover: var(--crm-surface-hover, #f8f9fa);
+        --rg-color-label: var(--crm-text-muted, #667085);
+        --rg-color-value: var(--crm-text, #101828);
+        --rg-color-icon: var(--crm-primary, #4258d6);
+        --rg-color-icon-bg: color-mix(in srgb, var(--rg-color-icon) 10%, transparent);
+        --rg-color-border: var(--crm-border, #d9e2ec);
+        --rg-color-surface: var(--crm-surface, #ffffff);
+        --rg-color-hover: var(--crm-surface-hover, #f7f9fc);
+        --rg-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+        display: inline-flex;
+        width: min(100%, 18.5rem);
+        min-height: 5.25rem;
+        margin: 0 0.75rem 0.75rem 0;
+        vertical-align: top;
+    }
+
+    .rg-detail-field.rg-detail-field-wide,
+    .rg-detail-field.details-wide,
+    .rg-detail-field.wide {
+        width: min(100%, 37.75rem);
+    }
+
+    .rg-detail-field.rg-detail-field-full,
+    .rg-detail-field.details-full,
+    .rg-detail-field.full {
+        display: flex;
+        width: 100%;
+    }
+
+    .rg-detail-field.rg-detail-field-no-icon .rg-field-container {
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .rg-field-container {
-        display: flex;
-        flex-direction: column;
-        gap: 0.375rem;
-        padding: 0.75rem 0;
-        border-bottom: 1px solid var(--rg-color-border);
-        transition: background-color 0.15s ease;
+        display: grid;
+        grid-template-columns: 2rem minmax(0, 1fr);
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.875rem 0.95rem;
+        border: 1px solid var(--rg-color-border);
+        border-radius: 0.5rem;
+        background: var(--rg-color-surface);
+        box-shadow: var(--rg-shadow);
+        transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
     }
 
     .rg-field-container:hover {
+        border-color: color-mix(in srgb, var(--rg-color-icon) 28%, var(--rg-color-border));
         background-color: var(--rg-color-hover);
+        box-shadow: 0 3px 8px rgba(16, 24, 40, 0.08);
     }
 
-    .rg-detail-field:last-child .rg-field-container {
-        border-bottom: none;
+    .rg-field-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 0.45rem;
+        background: var(--rg-color-icon-bg);
+        color: var(--rg-color-icon);
+        font-size: 1.05rem !important;
+        line-height: 1;
+    }
+
+    .rg-field-content {
+        min-width: 0;
     }
 
     .rg-field-label {
         display: flex;
         align-items: center;
-        gap: 0.375rem;
+        min-height: 1rem;
         color: var(--rg-color-label);
-        font-size: 0.625rem;
+        font-size: 0.78rem;
         font-weight: 600;
-        line-height: 1.2;
-        letter-spacing: 0.025em;
-    }
-
-    .rg-field-icon {
-        font-size: 16px !important;
-        color: var(--rg-color-icon);
-        flex-shrink: 0;
+        line-height: 1.25;
+        letter-spacing: 0;
     }
 
     .rg-label-text {
+        overflow-wrap: anywhere;
         user-select: none;
     }
 
     .rg-field-value {
+        margin-top: 0.35rem;
         color: var(--rg-color-value);
-        font-size: 1rem;
-        line-height: 1.5;
-        font-weight: 400;
-        word-break: break-word;
-        padding-left: 1.25rem;
+        font-size: 0.95rem;
+        line-height: 1.45;
+        font-weight: 500;
+        overflow-wrap: anywhere;
+    }
+
+    .rg-field-value p {
+        margin-bottom: 0;
+    }
+
+    .rg-field-value .text-dark {
+        color: inherit !important;
     }
 
     .rg-empty-value {
         color: var(--rg-color-label);
-        font-style: italic;
+        font-weight: 400;
     }
 
-    /* Link styling */
     .rg-field-value a {
         color: var(--crm-link, #0d6efd);
         text-decoration: none;
-        font-weight: 500;
-        transition: all 0.15s ease;
+        font-weight: 600;
+        transition: opacity 0.15s ease, text-decoration-color 0.15s ease;
     }
 
     .rg-field-value a:hover {
-        text-decoration: underline;
         opacity: 0.85;
+        text-decoration: underline;
     }
 
-    /* Responsive */
+    @@supports not (color: color-mix(in srgb, #000 10%, transparent)) {
+        .rg-detail-field {
+            --rg-color-icon-bg: #eef2ff;
+        }
+    }
+
+    @@media (prefers-color-scheme: dark) {
+        .rg-detail-field {
+            --rg-color-surface: var(--crm-surface, #161b22);
+            --rg-color-hover: var(--crm-surface-hover, #1f2630);
+            --rg-color-border: var(--crm-border, #303947);
+            --rg-color-value: var(--crm-text, #f2f4f7);
+            --rg-color-label: var(--crm-text-muted, #a8b3c1);
+            --rg-shadow: none;
+        }
+    }
+
     @@media (max-width: 768px) {
-        .rg-field-value {
-            padding-left: 1rem;
-            font-size: 0.9375rem;
+        .rg-detail-field,
+        .rg-detail-field.rg-detail-field-wide {
+            display: flex;
+            width: 100%;
+            margin-right: 0;
+        }
+
+        .rg-field-container {
+            grid-template-columns: 1.85rem minmax(0, 1fr);
+            padding: 0.8rem 0.85rem;
+        }
+
+        .rg-field-icon {
+            width: 1.85rem;
+            height: 1.85rem;
+            font-size: 1rem !important;
         }
 
         .rg-field-label {
-            font-size: 0.5625rem;
+            font-size: 0.74rem;
+        }
+
+        .rg-field-value {
+            font-size: 0.9rem;
         }
     }
 </style>
 
 @code {
+    private static readonly HashSet<string> WideIcons = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "description",
+        "note",
+        "notes",
+        "message",
+        "mail",
+        "email",
+        "subject",
+        "forum",
+        "article",
+        "image",
+        "language",
+        "share",
+        "insights",
+        "smart_toy"
+    };
+
+    private string CssClass
+    {
+        get
+        {
+            var sizeClass = !string.IsNullOrWhiteSpace(Icon) && WideIcons.Contains(Icon)
+                ? "rg-detail-field-wide"
+                : string.Empty;
+            var iconClass = string.IsNullOrWhiteSpace(Icon)
+                ? "rg-detail-field-no-icon"
+                : string.Empty;
+
+            return string.Join(" ", new[] { ContainerClass, "rg-detail-field", sizeClass, iconClass }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+    }
+
     /// <summary>
     /// Icona Material Icons da visualizzare (es. "business", "email", "phone")
     /// </summary>

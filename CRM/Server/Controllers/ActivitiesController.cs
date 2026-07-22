@@ -89,9 +89,9 @@ namespace CRM.Server.Controllers
         }
 
         [HttpPost("{id}/complete")]
-        public async Task<ActionResult<APIResponseMessage<ActivityDTO>>> Complete(int id)
+        public async Task<ActionResult<APIResponseMessage<ActivityDTO>>> Complete(int id, ActivityCompletionRequest? completion = null)
         {
-            var resp = await _activitiesService.CompleteAsync(id);
+            var resp = await _activitiesService.CompleteAsync(id, completion);
             if (resp == null)
                 return StatusCode(StatusCodes.Status500InternalServerError, "Complete return null");
             return Ok(resp);

@@ -63,10 +63,7 @@ namespace CRM.Shared.DTOs
         [Display(Name = nameof(Company.IdReseller), ResourceType = typeof(Resources.Models.Company))]
         public int? IdReseller { get; set; }
 
-        [Display(Name = nameof(Company.Master), ResourceType = typeof(Resources.Models.Company))]
-        public bool Master { get; set; }
-        
-        [Display(Name = nameof(Company.InternalCode), ResourceType = typeof(Resources.Models.Company))] 
+        [Display(Name = nameof(Company.InternalCode), ResourceType = typeof(Resources.Models.Company))]
         public int InternalCode { get; set; }
         
         [Display(Name = nameof(Company.ResellerName), ResourceType = typeof(Resources.Models.Company))]
@@ -92,7 +89,6 @@ namespace CRM.Shared.DTOs
                 Email = company.Email,
                 IdReseller = company.IdReseller,
                 Indirizzo = company.Indirizzo,
-                Master = company.Master,
                 Mobile = company.Mobile,
                 Note = company.Note,
                 PIva = company.PIva,
@@ -122,7 +118,6 @@ namespace CRM.Shared.DTOs
                 Email = dto.Email,
                 IdReseller = dto.IdReseller,
                 Indirizzo = dto.Indirizzo,
-                Master = dto.Master,
                 Mobile = dto.Mobile,
                 Note = dto.Note,
                 PIva = dto.PIva,

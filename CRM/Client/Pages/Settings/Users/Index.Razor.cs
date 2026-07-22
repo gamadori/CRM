@@ -21,7 +21,7 @@ using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Settings.Users
 {
-    [Authorize]
+    [Authorize(Policy = "SuperUserRole")]
     public partial class Index: ComponentBase
     {
         

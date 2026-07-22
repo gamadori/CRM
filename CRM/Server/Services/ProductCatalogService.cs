@@ -237,8 +237,7 @@ namespace CRM.Server.Services
                 .Include(x => x.Files)
                 .Where(x => x.AttchmentType == AttachmentTypes.Product && x.Visibility == AttachmentVisibilities.Public);
 
-            var canSeePrivate = await _permitsService.BelongsToHeadQuarter()
-                || await _permitsService.BelongsToMainCompany();
+            var canSeePrivate = await _permitsService.BelongsToHeadCompany();
 
             if (!canSeePrivate)
             {

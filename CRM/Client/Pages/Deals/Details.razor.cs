@@ -128,5 +128,17 @@ namespace CRM.Client.Pages.Deals
                 _ => "is-muted"
             };
         }
+
+        private static string StateBadgeClass(DealStates state)
+        {
+            return state switch
+            {
+                DealStates.Open => "bg-success",
+                DealStates.Suspended => "bg-warning text-dark",
+                DealStates.CloseWon => "bg-primary",
+                DealStates.CloseLost => "bg-danger",
+                _ => "bg-secondary"
+            };
+        }
     }
 }

@@ -83,6 +83,8 @@ namespace CRM.Shared
         public virtual ApplicationUser? User { get; set; }
 
         public virtual ICollection<OrderRow> Rows { get; set; } = new List<OrderRow>();
+
+        public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     }
 
     public class OrderRow

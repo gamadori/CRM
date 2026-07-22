@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -80,6 +81,19 @@ namespace CRM.Shared
         [Display(Name = "Completata il")]
         public DateTime? DoneDate { get; set; }
 
+        [Display(Name = "Esito")]
+        public string? Outcome { get; set; }
+
+        [Display(Name = "Relazione di chiusura")]
+        public string? CompletionNotes { get; set; }
+
+        [Display(Name = "Prossima azione")]
+        public string? NextStep { get; set; }
+
+        [Display(Name = "Completata da")]
+        [ForeignKey(nameof(CompletedBy))]
+        public string? IdCompletedBy { get; set; }
+
         [Display(Name = "Stato")]
         public ActivityState State { get; set; } = ActivityState.Planned;
 
@@ -115,7 +129,32 @@ namespace CRM.Shared
 
         public virtual ApplicationUser? Assignee { get; set; }
 
+        public virtual ApplicationUser? CompletedBy { get; set; }
+
         public virtual EmailSent? EmailSent { get; set; }
+
+        public virtual ICollection<ActivityParticipant> Participants { get; set; } = new List<ActivityParticipant>();
+    }
+
+    [Table("ActivityParticipants")]
+    public class ActivityParticipant
+    {
+        [Key]
+        public int Id { get; set; }
+
+        [Required]
+        public int IdActivity { get; set; }
+
+        [Required]
+        public string IdUser { get; set; } = string.Empty;
+
+        public DateTime AddedAt { get; set; } = DateTime.Now;
+
+        public string? AddedBy { get; set; }
+
+        public virtual Activity? Activity { get; set; }
+
+        public virtual ApplicationUser? User { get; set; }
     }
 
     public class ActivityFilter : PagingParameterModel

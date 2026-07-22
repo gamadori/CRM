@@ -220,5 +220,19 @@ namespace CRM.Client.Pages.Deals
                 NavigationManager.NavigateTo($"/Deals");
         }
 
+        private void DetailsTicket(int id)
+        {
+            NavigationManager.NavigateTo($"/Tickets/{id}/Info");
+        }
+
+        private void EditTicket(int? id)
+        {
+            var url = id == null
+                ? $"/Tickets/New?IdDeal={Id}"
+                : $"/Tickets/{id}/Edit";
+
+            NavigationManager.NavigateTo(url);
+        }
+
     }
 }

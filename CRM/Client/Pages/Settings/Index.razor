@@ -5,7 +5,7 @@
 @using Microsoft.Extensions.Localization;
 @using CRM.Client.Pages.Settings.Components
 
-@attribute [Authorize(Policy = "AdminRole")]
+@attribute [Authorize(Policy = "SuperUserRole")]
 
 <PageHeader Model="_pageHeader">
 </PageHeader>
@@ -23,15 +23,15 @@
         }
     </div>
 
-    @foreach (var section in FilteredSections)
+    @foreach (var settingsSection in FilteredSections)
     {
         <div class="settings-section">
             <div class="section-title">
-                <span>@section.Title</span>
-                <span class="section-count">@section.Items.Count</span>
+                <span>@settingsSection.Title</span>
+                <span class="section-count">@settingsSection.Items.Count</span>
             </div>
             <div class="settings-cards">
-                @foreach (var item in section.Items)
+                @foreach (var item in settingsSection.Items)
                 {
                     <SettingCard Icon="@item.Icon" Href="@item.Href" Title="@item.Title"
                                  Description="@item.Description" Color="@item.Color" />

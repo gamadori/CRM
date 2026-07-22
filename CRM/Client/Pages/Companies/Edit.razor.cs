@@ -142,11 +142,41 @@ namespace CRM.Client.Pages.Companies
             StateHasChanged();
         }
 
+        /// <summary>
+        /// Se si sta designando questa azienda come azienda madre e ne esiste già un'altra,
+        /// spiega le conseguenze del cambio e chiede conferma. False se l'utente annulla.
+        /// </summary>
+        private async Task<bool> ConfirmHeadCompanyChange()
+        {
+            if (_company.CompanyType != CompanyTypes.HeadCompany)
+                return true;
+
+            var current = await CompaniesService.GetHeadCompanyAsync();
+
+            if (current == null || current.Id == _company.Id)
+                return true;
+
+            var message =
+                $"L'azienda madre attuale è \"{current.RagioneSociale}\". Impostando \"{_company.RagioneSociale}\" come azienda madre:\n\n" +
+                $"• i documenti (preventivi, ordini, fatture, PDF interventi) useranno d'ora in poi i dati e il logo di \"{_company.RagioneSociale}\";\n" +
+                $"• \"{current.RagioneSociale}\" verrà declassata a Cliente e i suoi utenti perderanno la visibilità su tutte le aziende;\n" +
+                $"• l'assegnazione dei ticket senza utenti/gruppi specifici passerà agli utenti di \"{_company.RagioneSociale}\".\n\n" +
+                "Vuoi continuare?";
+
+            var confirmed = await DialogService.Confirm(message, "Cambio azienda madre",
+                new ConfirmOptions { OkButtonText = "Continua", CancelButtonText = "Annulla" });
+
+            return confirmed == true;
+        }
+
         protected async Task HandleValidSubmit()
         {
 
             try
             {
+                if (!await ConfirmHeadCompanyChange())
+                    return;
+
                 var resp = await CompaniesService.PostAsync(_company);
 
                 if (resp != null && resp.Data != null)

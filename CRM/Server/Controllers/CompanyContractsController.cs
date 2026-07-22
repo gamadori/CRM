@@ -149,7 +149,7 @@ namespace CRM.Server.Controllers
         // PUT: api/Deals/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        [AuthorizeRole(ePolicy.SuperUserRole)]
+        [AuthorizeRole(ePolicy.StandardRole)]
         public async Task<IActionResult> PutContract(int id, CompanyContract item)
         {
             try
@@ -159,7 +159,7 @@ namespace CRM.Server.Controllers
                     return BadRequest();
                 }
 
-                if (!await _permits.CanEditContractType())
+                if (!await _permits.CanWriteCompanyData(item.IdCompany))
                     return Problem(GlobalMessages.PermitsErrors);
 
                 
@@ -219,12 +219,12 @@ namespace CRM.Server.Controllers
         // POST: api/Deals
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        [AuthorizeRole(ePolicy.SuperUserRole)]
+        [AuthorizeRole(ePolicy.StandardRole)]
         public async Task<ActionResult<CompanyContract>> PostContract(CompanyContract item)
         {
             try
             {
-                if (await _permits.CanInsertContractType())
+                if (await _permits.CanWriteCompanyData(item.IdCompany))
                 {
                     var contracts = await _context.CompanyContracts.Where(x => x.IdCompany == item.IdCompany && x.Enabled == true).ToListAsync();
 
@@ -259,7 +259,7 @@ namespace CRM.Server.Controllers
 
         // DELETE: api/Deals/5
         [HttpDelete("{id}")]
-        [AuthorizeRole(ePolicy.AdminRole)]
+        [AuthorizeRole(ePolicy.StandardRole)]
         public async Task<IActionResult> DeleteItem(int id)
         {
             var item = await _context.CompanyContracts.FindAsync(id);
@@ -267,6 +267,9 @@ namespace CRM.Server.Controllers
             {
                 return NotFound();
             }
+
+            if (!await _permits.CanWriteCompanyData(item.IdCompany))
+                return Forbid();
 
             _context.CompanyContracts.Remove(item);
             await _context.SaveChangesAsync();

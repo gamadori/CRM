@@ -125,7 +125,7 @@ namespace CRM.Server.Services
             {
                 var settings = await _context.GlobalSettings.FirstOrDefaultAsync();
 
-                if (settings != null && await _permitsService.BelongsToHeadQuarter())
+                if (settings != null && await _permitsService.BelongsToHeadCompany())
                 {
                     usersToAssign = await _userManager.Users.Where(x => x.IdCompany != null && idCompanies.Contains(x.IdCompany.Value)).Select(x => x.ToUserModel()).ToListAsync();
                 }
@@ -180,6 +180,10 @@ namespace CRM.Server.Services
                     Product = (x.Product != null) ? x.Product.Name : "",
                     Article = (x.Article != null) ? x.Article.SerialNumber : "",
                     Project = (x.Project != null) ? x.Project.Name : "",
+                    IdDeal = x.IdDeal,
+                    DealName = x.Deal != null ? x.Deal.Name : "",
+                    IdOrder = x.IdOrder,
+                    OrderNumber = x.Order != null ? (x.Order.Number ?? x.Order.Id.ToString()) : "",
                     IdUserAssigned = x.IdUserAssigned,
                     IdCompany = x.IdCompany,
                     IdState = x.IdState,
@@ -298,6 +302,16 @@ namespace CRM.Server.Services
                     tickets = tickets.Where(x => x.IdProject == args.IdProject);
                 }
 
+                if (args.IdDeal != null)
+                {
+                    tickets = tickets.Where(x => x.IdDeal == args.IdDeal);
+                }
+
+                if (args.IdOrder != null)
+                {
+                    tickets = tickets.Where(x => x.IdOrder == args.IdOrder);
+                }
+
                 tickets = FilterByType(tickets, (TicketTypeSearch)args.TypeSearch, idUser);
 
                 if (args.Filter != null && args.Filter.Length > 0)
@@ -329,6 +343,10 @@ namespace CRM.Server.Services
                     Product = (x.Product != null) ? x.Product.Name : "",
                     Article = (x.Article != null) ? x.Article.SerialNumber : "",
                     Project = (x.Project != null) ? x.Project.Name : "",
+                    IdDeal = x.IdDeal,
+                    DealName = x.Deal != null ? x.Deal.Name : "",
+                    IdOrder = x.IdOrder,
+                    OrderNumber = x.Order != null ? (x.Order.Number ?? x.Order.Id.ToString()) : "",
                     IdUserAssigned = x.IdUserAssigned,
                     IdCompany = x.IdCompany,
                     IdState = x.IdState,

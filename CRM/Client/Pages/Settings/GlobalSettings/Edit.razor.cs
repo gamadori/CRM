@@ -17,12 +17,9 @@ using static CRM.Client.Helpers.PageHelper;
 
 namespace CRM.Client.Pages.Settings.GlobalSettings
 {
-    [Authorize]
+    [Authorize(Policy = "AdminRole")]
     public partial class Edit: ComponentBase
     {
-
-        [Inject]
-        ICompaniesService CompaniesService { get; set; }
 
         [Inject]
         IAGRestClientService RestClientServer { get; set; }
@@ -40,12 +37,6 @@ namespace CRM.Client.Pages.Settings.GlobalSettings
       
         private GlobalSetting _settings = null;
 
-        private IList<CompanyDTO> _companies;
-
-        private int _pageSize = 10;
-
-        private int _companyCount = 0;
-        
         private List<Logo> _loghi;
 
         private PageHeaderModel? _pageHeader = null;
@@ -56,7 +47,6 @@ namespace CRM.Client.Pages.Settings.GlobalSettings
             {
                 
                 await LoadLoghi();
-                await LoadCompany();
                 _settings = await RestClientServer.GetFirst<GlobalSetting>(ConstHelper.GlobalSettingsPath);
 
                 _pageHeader = await HeaderService.Create(PageMode);
@@ -72,22 +62,6 @@ namespace CRM.Client.Pages.Settings.GlobalSettings
                     _settings = new GlobalSetting();
             }
         }
-
-        public async Task LoadCompany(LoadDataArgs args = null)
-        {
-            CompanyFilter request = new CompanyFilter();
-
-            if (args != null && !string.IsNullOrEmpty(args.Filter))
-            {
-                request.RagioneSociale = args.Filter;
-            }
-
-            _companies = await CompaniesService.GetListAsync(request); await RestClientServer.GetListPag<CompanyFilter, Company>(request, ConstHelper.CompaniesPath); 
-
-            
-        }
-
-       
 
         private async Task LoadLoghi()
         {

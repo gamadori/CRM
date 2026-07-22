@@ -35,6 +35,9 @@ namespace CRM.Server.Services
                 var items = await _context.Activities
                     .Include(a => a.User)
                     .Include(a => a.Assignee)
+                    .Include(a => a.CompletedBy)
+                    .Include(a => a.Participants)
+                        .ThenInclude(p => p.User)
                     .Where(a => a.EntityType == entityType && a.EntityId == entityId)
                     .OrderByDescending(a => a.CreatedAt)
                     .AsNoTracking()
@@ -93,6 +96,9 @@ namespace CRM.Server.Services
                 var q = _context.Activities
                     .Include(a => a.User)
                     .Include(a => a.Assignee)
+                    .Include(a => a.CompletedBy)
+                    .Include(a => a.Participants)
+                        .ThenInclude(p => p.User)
                     .Where(a => a.DueDate != null);
 
                 // Agenda personale: attività assegnate all'utente corrente
@@ -169,6 +175,9 @@ namespace CRM.Server.Services
             var item = await _context.Activities
                 .Include(a => a.User)
                 .Include(a => a.Assignee)
+                .Include(a => a.CompletedBy)
+                .Include(a => a.Participants)
+                    .ThenInclude(p => p.User)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Id == id);
 
@@ -184,7 +193,9 @@ namespace CRM.Server.Services
             {
                 if (item.Id > 0)
                 {
-                    var existing = await _context.Activities.FirstOrDefaultAsync(a => a.Id == item.Id);
+                    var existing = await _context.Activities
+                        .Include(a => a.Participants)
+                        .FirstOrDefaultAsync(a => a.Id == item.Id);
                     if (existing == null)
                         return Fail("Attivita' non trovata", System.Net.HttpStatusCode.NotFound);
 
@@ -206,13 +217,23 @@ namespace CRM.Server.Services
                     existing.ReminderAt = item.ReminderAt;
                     existing.State = item.State;
                     existing.DoneDate = item.State == ActivityState.Done ? (item.DoneDate ?? existing.DoneDate ?? DateTime.Now) : null;
+                    existing.Outcome = item.State == ActivityState.Done ? item.Outcome : null;
+                    existing.CompletionNotes = item.State == ActivityState.Done ? item.CompletionNotes : null;
+                    existing.NextStep = item.State == ActivityState.Done ? item.NextStep : null;
+                    existing.IdCompletedBy = item.State == ActivityState.Done
+                        ? (item.IdCompletedBy ?? existing.IdCompletedBy ?? await SafeCurrentUserAsync())
+                        : null;
+
+                    SyncParticipants(existing, item.Participants, await SafeCurrentUserAsync());
                 }
                 else
                 {
+                    var currentUserId = await SafeCurrentUserAsync();
+
                     if (item.CreatedAt == default)
                         item.CreatedAt = DateTime.Now;
                     if (string.IsNullOrWhiteSpace(item.IdUser))
-                        item.IdUser = await SafeCurrentUserAsync();
+                        item.IdUser = currentUserId;
                     if (string.IsNullOrWhiteSpace(item.IdUser))
                         item.IdUser = null;
                     // Non assegnata esplicitamente -> assegnata al creatore
@@ -220,6 +241,14 @@ namespace CRM.Server.Services
                         item.IdAssignee = item.IdUser;
                     if (item.State == ActivityState.Done && item.DoneDate == null)
                         item.DoneDate = DateTime.Now;
+                    if (item.State == ActivityState.Done && string.IsNullOrWhiteSpace(item.IdCompletedBy))
+                        item.IdCompletedBy = currentUserId;
+
+                    foreach (var participant in item.Participants)
+                    {
+                        participant.AddedAt = DateTime.Now;
+                        participant.AddedBy = currentUserId;
+                    }
 
                     _context.Activities.Add(item);
                 }
@@ -234,7 +263,7 @@ namespace CRM.Server.Services
             }
         }
 
-        public async Task<APIResponseMessage<ActivityDTO>> CompleteAsync(int id)
+        public async Task<APIResponseMessage<ActivityDTO>> CompleteAsync(int id, ActivityCompletionRequest? completion = null)
         {
             try
             {
@@ -242,8 +271,43 @@ namespace CRM.Server.Services
                 if (item == null)
                     return Fail("Attivita' non trovata", System.Net.HttpStatusCode.NotFound);
 
+                var currentUserId = await SafeCurrentUserAsync();
+
+                if (completion?.CreateFollowUp == true)
+                {
+                    if (string.IsNullOrWhiteSpace(completion.FollowUpSubject))
+                        return Fail("Inserisci l'oggetto del follow-up", System.Net.HttpStatusCode.BadRequest);
+
+                    if (completion.FollowUpDueDate == null)
+                        return Fail("Inserisci la scadenza del follow-up", System.Net.HttpStatusCode.BadRequest);
+                }
+
                 item.State = ActivityState.Done;
                 item.DoneDate = DateTime.Now;
+                item.Outcome = Clean(completion?.Outcome);
+                item.CompletionNotes = Clean(completion?.CompletionNotes);
+                item.NextStep = Clean(completion?.NextStep);
+                item.IdCompletedBy = currentUserId;
+
+                if (completion?.CreateFollowUp == true)
+                {
+                    var followUp = new Activity
+                    {
+                        Kind = completion.FollowUpKind,
+                        Subject = Clean(completion.FollowUpSubject)!,
+                        Description = FollowUpDescription(item, completion),
+                        EntityType = item.EntityType,
+                        EntityId = item.EntityId,
+                        IdUser = currentUserId,
+                        IdAssignee = Clean(completion.FollowUpAssigneeId) ?? item.IdAssignee ?? currentUserId,
+                        DueDate = completion.FollowUpDueDate,
+                        State = ActivityState.Planned,
+                        CreatedAt = DateTime.Now
+                    };
+
+                    _context.Activities.Add(followUp);
+                }
+
                 await _context.SaveChangesAsync();
 
                 return Ok(await GetItemAsync(id), "Attivita' completata");
@@ -298,5 +362,48 @@ namespace CRM.Server.Services
 
         private static APIResponseMessage<ActivityDTO> Ok(ActivityDTO? data, string msg)
             => new() { State = true, Data = data, Message = msg, Code = System.Net.HttpStatusCode.OK };
+
+        private static string? Clean(string? value)
+            => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+        private static void SyncParticipants(Activity activity, IEnumerable<ActivityParticipant>? participants, string? currentUserId)
+        {
+            var requested = participants?
+                .Select(p => p.IdUser)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct()
+                .ToHashSet()
+                ?? new HashSet<string>();
+
+            var existing = activity.Participants.Select(p => p.IdUser).ToHashSet();
+
+            foreach (var participant in activity.Participants.Where(p => !requested.Contains(p.IdUser)).ToList())
+                activity.Participants.Remove(participant);
+
+            foreach (var idUser in requested.Where(id => !existing.Contains(id)))
+            {
+                activity.Participants.Add(new ActivityParticipant
+                {
+                    IdUser = idUser,
+                    AddedAt = DateTime.Now,
+                    AddedBy = currentUserId
+                });
+            }
+        }
+
+        private static string? FollowUpDescription(Activity source, ActivityCompletionRequest completion)
+        {
+            var parts = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(completion.NextStep))
+                parts.Add(completion.NextStep.Trim());
+
+            parts.Add($"Follow-up generato dalla chiusura dell'attivita' #{source.Id}: {source.Subject}");
+
+            if (!string.IsNullOrWhiteSpace(completion.Outcome))
+                parts.Add($"Esito: {completion.Outcome.Trim()}");
+
+            return string.Join(Environment.NewLine, parts);
+        }
     }
 }

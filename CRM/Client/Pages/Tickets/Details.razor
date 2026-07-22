@@ -246,6 +246,34 @@ else
                                 <span class="info-value">@_ticket.Project</span>
                             </div>
                         }
+
+                        @if (_ticket.IdDeal != null)
+                        {
+                            <div class="info-row">
+                                <span class="info-key"><DisplayName For="@(() => _ticket.DealName)" /></span>
+                                <span class="info-value">
+                                    <RadzenButton Icon="work"
+                                                  Text="@(string.IsNullOrWhiteSpace(_ticket.DealName) ? _ticket.IdDeal.Value.ToString() : _ticket.DealName)"
+                                                  ButtonStyle="ButtonStyle.Light"
+                                                  Size="ButtonSize.Small"
+                                                  Click="@(() => NavigationManager.NavigateTo($"/Deals/{_ticket.IdDeal}"))" />
+                                </span>
+                            </div>
+                        }
+
+                        @if (_ticket.IdOrder != null)
+                        {
+                            <div class="info-row">
+                                <span class="info-key"><DisplayName For="@(() => _ticket.OrderNumber)" /></span>
+                                <span class="info-value">
+                                    <RadzenButton Icon="shopping_cart"
+                                                  Text="@(string.IsNullOrWhiteSpace(_ticket.OrderNumber) ? _ticket.IdOrder.Value.ToString() : _ticket.OrderNumber)"
+                                                  ButtonStyle="ButtonStyle.Light"
+                                                  Size="ButtonSize.Small"
+                                                  Click="@(() => NavigationManager.NavigateTo($"/Orders/{_ticket.IdOrder}/Details"))" />
+                                </span>
+                            </div>
+                        }
                     </div>
                 </div>
 

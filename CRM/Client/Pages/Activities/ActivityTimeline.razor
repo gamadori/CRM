@@ -107,6 +107,44 @@ else
                     {
                         <div class="text-body small mt-1">@a.Description</div>
                     }
+                    @if (a.ParticipantNames.Any())
+                    {
+                        <div class="small mt-1 text-primary">
+                            <span class="material-icons align-middle" style="font-size:14px">groups</span>
+                            Partecipanti: @string.Join(", ", a.ParticipantNames)
+                        </div>
+                    }
+                    @if (a.State == ActivityState.Done && HasCompletionDetails(a))
+                    {
+                        <div class="activity-completion mt-2">
+                            @if (!string.IsNullOrWhiteSpace(a.Outcome))
+                            {
+                                <div><strong>Esito:</strong> @a.Outcome</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(a.CompletionNotes))
+                            {
+                                <div><strong>Relazione:</strong> @a.CompletionNotes</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(a.NextStep))
+                            {
+                                <div><strong>Prossima azione:</strong> @a.NextStep</div>
+                            }
+                            @if (a.DoneDate != null || !string.IsNullOrWhiteSpace(a.CompletedByName))
+                            {
+                                <div class="text-muted">
+                                    Chiusura
+                                    @if (a.DoneDate != null)
+                                    {
+                                        <span> @a.DoneDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(a.CompletedByName))
+                                    {
+                                        <span> - @a.CompletedByName</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
                     @if (a.IdInboundEmail != null)
                     {
                         <div class="small mt-1">
@@ -222,7 +260,30 @@ else
 
     private async Task Complete(ActivityDTO a)
     {
-        var resp = await ActivityService.CompleteAsync(a.Id);
+        ActivityCompletionRequest? completion = null;
+        if (RequiresCompletionDetails(a.Kind))
+        {
+            completion = await DialogService.OpenAsync<ActivityCompleteDialog>(
+                "Completa attivita",
+                new Dictionary<string, object?>
+                {
+                    ["Kind"] = a.Kind,
+                    ["Subject"] = a.Subject,
+                    ["DefaultAssigneeId"] = a.IdAssignee
+                },
+                new DialogOptions
+                {
+                    Width = "680px",
+                    Height = "auto",
+                    Resizable = false,
+                    Draggable = true
+                }) as ActivityCompletionRequest;
+
+            if (completion == null)
+                return;
+        }
+
+        var resp = await ActivityService.CompleteAsync(a.Id, completion);
         if (resp.State) await Load();
         else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
     }
@@ -232,5 +293,14 @@ else
         if (await DialogService.Confirm($"Eliminare l'attività \"{a.Subject}\"?", "Conferma") != true) return;
         if (await ActivityService.DeleteAsync(a.Id)) await Load();
     }
+
+    private static bool RequiresCompletionDetails(ActivityKind kind)
+        => kind is ActivityKind.Meeting or ActivityKind.Call or ActivityKind.Task;
+
+    private static bool HasCompletionDetails(ActivityDTO activity)
+        => !string.IsNullOrWhiteSpace(activity.Outcome)
+            || !string.IsNullOrWhiteSpace(activity.CompletionNotes)
+            || !string.IsNullOrWhiteSpace(activity.NextStep)
+            || !string.IsNullOrWhiteSpace(activity.CompletedByName);
 
 }

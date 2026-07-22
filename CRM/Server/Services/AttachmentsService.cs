@@ -326,7 +326,7 @@ namespace CRM.Server.Services
             }
         }
 
-        [AuthorizeRole(ePolicy.SuperUserRole)]
+        [AuthorizeRole(ePolicy.StandardRole)]
         public async Task<bool> DeleteAsync(int id)
         {
             var item = await _context.Attachments.FindAsync(id);
@@ -350,39 +350,27 @@ namespace CRM.Server.Services
 
         public async Task<bool> CanAdd()
         {
-            return (await _permitsService.BelongsToHeadQuarter() || await _permitsService.BelongsToMainCompany());
+            return await _permitsService.BelongsToHeadCompany();
         }
 
         public async Task<bool> CanDelete(int id)
         {
             var attachment = await _context.Attachments.FindAsync(id);
-            var companyId = await _permitsService.GetIdCompany();
 
-            if (attachment == null || companyId == null)
-            {
+            if (attachment == null)
                 return false;
-            }
 
-            var companies = await _permitsService.GetIdCompanies();
-
-            return (await _permitsService.BelongsToHeadQuarter() || 
-                await _permitsService.BelongsToMainCompany() && companies.Contains(companyId.Value));
+            return await _permitsService.BelongsToHeadCompany();
         }
 
         public async Task<bool> CanEdit(int id)
         {
             var attachment = await _context.Attachments.FindAsync(id);
-            var companyId = await _permitsService.GetIdCompany();
 
-            if (attachment == null || companyId == null)
-            {
+            if (attachment == null)
                 return false;
-            }
 
-            var companies = await _permitsService.GetIdCompanies();
-
-            return (await _permitsService.BelongsToHeadQuarter() ||
-                await _permitsService.BelongsToMainCompany() && companies.Contains(companyId.Value));
+            return await _permitsService.BelongsToHeadCompany();
         }
 
 
@@ -519,7 +507,7 @@ namespace CRM.Server.Services
                 else
                     items = items.OrderByDescending(x => x.Name);
 
-                if (!await _permitsService.BelongsToHeadQuarter() && !await _permitsService.BelongsToMainCompany())
+                if (!await _permitsService.BelongsToHeadCompany())
                 {
                     items = items.Where(x => x.Visibility == AttachmentVisibilities.Public);
                 }

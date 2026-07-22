@@ -51,9 +51,13 @@ namespace CRM.Server.Areas.Identity.Pages.MainCompany
 
             if (ModelState.IsValid)
             {
+                // Primo avvio: la società registrata qui è l'azienda che opera il CRM.
+                // Nasce già come HeadCompany, unica fonte di verità per branding e permessi.
+                Company.CompanyType = CompanyTypes.HeadCompany;
+
                 _context.Companies.Add(Company);
 
-               await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
                 return RedirectToPage(Url.Content("/Account/Register"));
             }
             return Page();

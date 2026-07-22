@@ -291,6 +291,7 @@ namespace CRM.Server.Services
                         {
                             deal.Phase = DealPhases.Obtained;
                             deal.State = DealStates.CloseWon;
+                            deal.Probability = 100;
                             deal.Amount = quote.Total;
                             if (deal.DateClosed == default)
                                 deal.DateClosed = DateTime.Now;
@@ -299,6 +300,7 @@ namespace CRM.Server.Services
                         {
                             deal.Phase = DealPhases.Lost;
                             deal.State = DealStates.CloseLost;
+                            deal.Probability = 0;
                         }
                     }
                 }
@@ -362,11 +364,10 @@ namespace CRM.Server.Services
                 byte[]? logoBytes = null;
 
                 var settings = await _context.GlobalSettings.AsNoTracking().FirstOrDefaultAsync();
+                provider = await _context.GetHeadCompanyAsync();
+
                 if (settings != null)
                 {
-                    provider = await _context.Companies.AsNoTracking()
-                        .FirstOrDefaultAsync(c => c.Id == settings.IdHeadQuarter);
-
                     if (settings.LogoReport != null)
                     {
                         var logo = await _context.Logos.AsNoTracking()
@@ -535,7 +536,7 @@ namespace CRM.Server.Services
             }
         }
 
-        [AuthorizeRole(ePolicy.SuperUserRole)]
+        [AuthorizeRole(ePolicy.StandardRole)]
         public async Task<bool> DeleteAsync(int id)
         {
             var item = await _context.Quotes.FindAsync(id);

@@ -70,6 +70,14 @@ namespace CRM.Shared
         [Display(Name = nameof(TicketType.Price), ResourceType = typeof(Resources.Models.TicketType))]
         public decimal Price { get; set; }
 
+        /// <summary>Anticipo (minuti) del preavviso appuntamento per questo tipo. Null = usa il default globale.</summary>
+        [Display(Name = "Preavviso appuntamento (minuti, vuoto = globale)")]
+        public int? AppointmentReminderMinutes { get; set; }
+
+        /// <summary>Anticipo (minuti) del preavviso scadenza per questo tipo. Null = usa il default globale.</summary>
+        [Display(Name = "Preavviso scadenza (minuti, vuoto = globale)")]
+        public int? ExpiryReminderMinutes { get; set; }
+
         [NotMapped]
         public string Language { get; set; }
         public ICollection<ApplicationUser> Users { get; set; }

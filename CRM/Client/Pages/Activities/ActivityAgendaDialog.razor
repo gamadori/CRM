@@ -1,9 +1,11 @@
 @using CRM.Client.Services
+@using CRM.Client.Helpers
 @using CRM.Shared
 @using CRM.Shared.DTOs
 @using Radzen
 @using Radzen.Blazor
 @inject IActivityService ActivityService
+@inject IAGRestClientService RestClient
 @inject IBaseRestService<ApplicationUser, UsersFilterModel, string> UserService
 @inject ICompaniesService CompaniesService
 @inject ILeadService LeadService
@@ -26,7 +28,8 @@ else
                 <div class="activity-field">
                     <label>Tipo</label>
                     <RadzenDropDown TValue="ActivityKind" @bind-Value="_activity.Kind" Data="_kindOptions"
-                                    TextProperty="Text" ValueProperty="Value" Style="width:100%" />
+                                    TextProperty="Text" ValueProperty="Value" Style="width:100%"
+                                    Change="@(_ => ApplyReminderDefault())" />
                 </div>
 
                 <div class="activity-field activity-field-wide">
@@ -81,16 +84,30 @@ else
                                     AllowClear="true" Placeholder="Creatore" Style="width:100%" />
                 </div>
 
+                @if (_activity.Kind == ActivityKind.Meeting)
+                {
+                    <div class="activity-field activity-field-wide">
+                        <label>Partecipanti</label>
+                        <RadzenDropDown TValue="List<string>" @bind-Value="_participantIds" Data="_users"
+                                        TextProperty="NameComplete" ValueProperty="Id" Multiple="true"
+                                        AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        AllowClear="true" Chips="true" Placeholder="Seleziona utenti coinvolti"
+                                        Style="width:100%" />
+                    </div>
+                }
+
                 <div class="activity-field">
                     <label>Scadenza</label>
                     <RadzenDatePicker TValue="DateTime?" @bind-Value="_activity.DueDate" ShowTime="true"
-                                      DateFormat="dd/MM/yyyy HH:mm" Style="width:100%" />
+                                      DateFormat="dd/MM/yyyy HH:mm" Style="width:100%"
+                                      Change="@(_ => ApplyReminderDefault())" />
                 </div>
 
                 <div class="activity-field">
                     <label>Promemoria</label>
                     <RadzenDatePicker TValue="DateTime?" @bind-Value="_activity.ReminderAt" ShowTime="true"
-                                      DateFormat="dd/MM/yyyy HH:mm" AllowClear="true" Style="width:100%" />
+                                      DateFormat="dd/MM/yyyy HH:mm" AllowClear="true" Style="width:100%"
+                                      Change="@(_ => _reminderTouched = true)" />
                 </div>
 
                 <div class="activity-field">
@@ -103,6 +120,24 @@ else
                     <label>Descrizione</label>
                     <textarea class="form-control" rows="4" @bind="_activity.Description"></textarea>
                 </div>
+
+                @if (_activity.State == ActivityState.Done)
+                {
+                    <div class="activity-field">
+                        <label>Esito</label>
+                        <input class="form-control" @bind="_activity.Outcome" />
+                    </div>
+
+                    <div class="activity-field activity-field-wide">
+                        <label>Prossima azione</label>
+                        <input class="form-control" @bind="_activity.NextStep" />
+                    </div>
+
+                    <div class="activity-field activity-field-full">
+                        <label>Relazione di chiusura</label>
+                        <textarea class="form-control" rows="4" @bind="_activity.CompletionNotes"></textarea>
+                    </div>
+                }
             </div>
 
             <div class="activity-dialog-actions">
@@ -187,7 +222,11 @@ else
 
     private bool _loading = true;
     private bool _saving;
+    private bool _isNew;
+    private bool _reminderTouched;
+    private GlobalSetting? _settings;
     private List<ApplicationUser> _users = new();
+    private List<string> _participantIds = new();
     private List<CompanyDTO> _companies = new();
     private List<LeadDTO> _leads = new();
     private List<DealDTO> _deals = new();
@@ -231,13 +270,18 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _isNew = !ActivityId.HasValue;
         await LoadLookups();
+        await LoadSettings();
 
         if (ActivityId.HasValue)
         {
             var item = await ActivityService.GetAsync(ActivityId.Value);
             if (item != null)
+            {
                 _activity = item.ToEntity();
+                _participantIds = item.ParticipantIds.ToList();
+            }
         }
         else
         {
@@ -246,10 +290,38 @@ else
             _activity.EntityType = DefaultEntityType ?? ActivityEntityType.Company;
             _activity.EntityId = DefaultEntityId ?? 0;
             _activity.Subject = DefaultSubject ?? string.Empty;
+            ApplyReminderDefault();
         }
 
         EnsureValidEntity();
         _loading = false;
+    }
+
+    private async Task LoadSettings()
+    {
+        try
+        {
+            _settings = await RestClient.GetFirst<GlobalSetting>(ConstHelper.GlobalSettingsPath);
+        }
+        catch
+        {
+            _settings = null; // il pre-riempimento del promemoria è opzionale
+        }
+    }
+
+    /// <summary>
+    /// Precompila il Promemoria in base al default per tipo attività (solo su nuova attività e
+    /// finché l'utente non lo modifica a mano). Se per il tipo non c'è default, azzera il campo.
+    /// </summary>
+    private void ApplyReminderDefault()
+    {
+        if (!_isNew || _reminderTouched || _settings == null)
+            return;
+
+        var minutes = _settings.ActivityReminderMinutes(_activity.Kind);
+        _activity.ReminderAt = minutes.HasValue && _activity.DueDate.HasValue
+            ? _activity.DueDate.Value.AddMinutes(-minutes.Value)
+            : null;
     }
 
     private async Task LoadLookups()
@@ -326,6 +398,14 @@ else
             Notification.Notify(NotificationSeverity.Warning, "Promemoria", "Il promemoria non puo essere successivo alla scadenza");
             return;
         }
+
+        _activity.Participants = _activity.Kind == ActivityKind.Meeting
+            ? _participantIds
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct()
+                .Select(id => new ActivityParticipant { IdUser = id })
+                .ToList()
+            : new List<ActivityParticipant>();
 
         _saving = true;
         var response = await ActivityService.PostAsync(_activity);

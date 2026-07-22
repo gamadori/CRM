@@ -36,8 +36,11 @@ namespace CRM.Client.Pages.DashBoard
         [Inject]
         IBaseRestService<ApplicationUser, UsersFilterModel, string> _serviceUser { get; set; }
 
-        [Inject]        
+        [Inject]
         ITicketFeedbackService _ticketFeedbackService { get; set; }
+
+        [Inject]
+        ICalendarService _calendarService { get; set; }
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
@@ -56,6 +59,10 @@ namespace CRM.Client.Pages.DashBoard
         private List<ApplicationUser> _users;
 
         private AverageFeedbackDTO _averageFeedback = null;
+
+        // Appuntamenti (attività) del giorno / prossimo appuntamento
+        private List<CalendarItemDTO> _todayAppointments = new();
+        private CalendarItemDTO _nextAppointment = null;
 
         protected override async Task OnInitializedAsync()
         {
@@ -85,7 +92,53 @@ namespace CRM.Client.Pages.DashBoard
             filter.IdUser = _userId;
             _model = await _service.Get(filter);
             _averageFeedback = await _ticketFeedbackService.AverageRateAsync();
+            await LoadAppointments();
             StateHasChanged();
+        }
+
+        /// <summary>
+        /// Carica gli appuntamenti (attività) dell'utente selezionato: quelli di oggi
+        /// dall'orario corrente in poi, altrimenti il prossimo appuntamento in programma.
+        /// </summary>
+        private async Task LoadAppointments()
+        {
+            _todayAppointments = new();
+            _nextAppointment = null;
+
+            try
+            {
+                var now = DateTime.Now;
+
+                var agenda = await _calendarService.GetAgendaAsync(new CalendarFilter
+                {
+                    DateFrom = DateTime.Today,
+                    DateTo = DateTime.Today.AddDays(60),
+                    IdUser = _userId,
+                    Scope = CalendarScope.User,
+                    IncludeActivities = true,
+                    IncludeTickets = false
+                });
+
+                if (agenda?.Items == null || !string.IsNullOrWhiteSpace(agenda.ErrorMessage))
+                    return;
+
+                var upcoming = agenda.Items
+                    .Where(i => !i.IsCompleted && i.Start >= now)
+                    .OrderBy(i => i.Start)
+                    .ToList();
+
+                var todayEnd = DateTime.Today.AddDays(1);
+                _todayAppointments = upcoming
+                    .Where(i => i.Start < todayEnd)
+                    .ToList();
+
+                if (!_todayAppointments.Any())
+                    _nextAppointment = upcoming.FirstOrDefault();
+            }
+            catch
+            {
+                // Non bloccare la dashboard se l'agenda non è disponibile
+            }
         }
 
         protected void AddTicket()
@@ -131,6 +184,21 @@ namespace CRM.Client.Pages.DashBoard
         protected void TicketsSearch()
         {
             NavigationManager.NavigateTo("/Tickets/Search");
+        }
+
+        protected void GoToAgenda()
+        {
+            NavigationManager.NavigateTo("/Agenda");
+        }
+
+        /// <summary>
+        /// Icona material da mostrare per un appuntamento (attività).
+        /// </summary>
+        private string AppointmentIcon(CalendarItemDTO item)
+        {
+            return item.ActivityKind.HasValue
+                ? ActivityUi.Icon(item.ActivityKind.Value)
+                : "event";
         }
 
         protected void TicketsToInvoice()

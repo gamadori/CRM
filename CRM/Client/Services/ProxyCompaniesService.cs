@@ -73,6 +73,18 @@ namespace CRM.Client.Services
             }
         }
 
+        public async Task<CompanyDTO?> GetHeadCompanyAsync()
+        {
+            try
+            {
+                return await _http.GetFromJsonAsync<CompanyDTO>($"{ConstHelper.CompaniesPath}/headcompany");
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public async Task<string> GetLogo(int id)
         {
             var logo = await _http.GetStringAsync($"{ConstHelper.CompaniesPath}/logo/{id}");

@@ -61,8 +61,13 @@ namespace CRM.Server.Services
             int? idTicket = null,
             int? idProduct = null,
             int topTickets = 5,
-            double minSimilarity = 55.0)
+            double minSimilarity = 60.0)
         {
+            // Floor rigido: mai sotto il 60% (come la ricerca semantica manuale). Sotto questa
+            // soglia i ticket della stessa macchina ma con guasto diverso passano come falsi
+            // "casi simili" (cosine ~0.6 solo per il vocabolario di dominio condiviso).
+            minSimilarity = Math.Max(minSimilarity, 60.0);
+
             var retrieval = await RetrieveSimilarClosedTicketsAsync(query, topTickets, minSimilarity);
 
             var relevantProductIds = await BuildRelevantProductIdsAsync(

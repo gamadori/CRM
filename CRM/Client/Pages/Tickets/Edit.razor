@@ -227,6 +227,26 @@ else
                         </RadzenColumn>
                     </RadzenRow>
 
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGDropDown TItem="DealDTO" TValue="int?" ValueProperty="Id" TextProperty="@nameof(DealDTO.Name)"
+                                              @bind-Value="@_ticket.IdDeal" For="@(() => _ticket.IdDeal)"
+                                              Data="@_deals" AllowFiltering="true" AllowClear="true"
+                                              Change="DealChangedAsync" />
+                            </RadzenStack>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeSM="6">
+                            <RadzenStack>
+                                <RedGDropDown TItem="OrderDTO" TValue="int?" ValueProperty="Id" TextProperty="@nameof(OrderDTO.Number)"
+                                              @bind-Value="@_ticket.IdOrder" For="@(() => _ticket.IdOrder)"
+                                              Data="@_orders" AllowFiltering="true" AllowClear="true"
+                                              Change="OrderChangedAsync" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+
                     <!-- Description -->
                     <RedGTextArea @bind-Value="@_ticket.Description" For="@(() => _ticket.Description)" Rows="8" />
 

@@ -48,6 +48,12 @@ namespace CRM.Client.Pages.Tickets
         IContactsService ContactsService { get; set; }
 
         [Inject]
+        IDealService DealService { get; set; }
+
+        [Inject]
+        IOrderService OrderService { get; set; }
+
+        [Inject]
         private ITicketTypesService _serviceTicketType { get; set; }
         
 
@@ -83,6 +89,14 @@ namespace CRM.Client.Pages.Tickets
         public int? IdProject { get; set; }
 
         [Parameter]
+        [SupplyParameterFromQuery]
+        public int? IdDeal { get; set; }
+
+        [Parameter]
+        [SupplyParameterFromQuery]
+        public int? IdOrder { get; set; }
+
+        [Parameter]
         public Action? OnClickSave { get; set; }
 
         [Parameter]
@@ -116,6 +130,10 @@ namespace CRM.Client.Pages.Tickets
         private List<TicketType> _ticketTypes = new List<TicketType>();
 
         private List<Project> _projects = new List<Project>();
+
+        private List<DealDTO> _deals = new List<DealDTO>();
+
+        private List<OrderDTO> _orders = new List<OrderDTO>();
 
         private bool _lockCompany = false;
 
@@ -186,6 +204,14 @@ namespace CRM.Client.Pages.Tickets
                     if (IdProject != null)
                         _ticket.IdProject = IdProject.Value;
 
+                    if (IdDeal != null)
+                        _ticket.IdDeal = IdDeal.Value;
+
+                    if (IdOrder != null)
+                        _ticket.IdOrder = IdOrder.Value;
+
+                    await ApplyLinkedContextAsync();
+
                 }
 
                 _lockCompany = IdCompany != null && IdCompany != 0;
@@ -196,6 +222,8 @@ namespace CRM.Client.Pages.Tickets
                 await LoadTicketType();
                 await LoadUsers();
                 await LoadContactsCustomer();
+                await LoadDeals();
+                await LoadOrders();
 
                 _inputTextAreaAttributes.Add("rows", "20");
 
@@ -279,6 +307,61 @@ namespace CRM.Client.Pages.Tickets
             var resp = await RestClientService.GetListPag<ProjectFilter, Project>(request, ConstHelper.ProjectsPath);
 
             _projects = resp.Items; 
+        }
+
+        private async Task LoadDeals(LoadDataArgs args = null)
+        {
+            var request = new DealFilter();
+
+            if (args != null && !string.IsNullOrWhiteSpace(args.Filter))
+                request.Search = args.Filter;
+
+            _deals = await DealService.GetListAsync(request) ?? new List<DealDTO>();
+        }
+
+        private async Task LoadOrders(LoadDataArgs args = null)
+        {
+            var request = new OrderFilter
+            {
+                IdCompany = _ticket?.IdCompany > 0 ? _ticket.IdCompany : null,
+                IdDeal = _ticket?.IdDeal
+            };
+
+            if (args != null && !string.IsNullOrWhiteSpace(args.Filter))
+                request.Search = args.Filter;
+
+            _orders = await OrderService.GetListAsync(request) ?? new List<OrderDTO>();
+        }
+
+        private async Task ApplyLinkedContextAsync()
+        {
+            if (_ticket.IdOrder != null)
+            {
+                var order = await OrderService.GetItemAsync(_ticket.IdOrder.Value);
+
+                if (order != null)
+                {
+                    if (order.IdCompany != null)
+                        _ticket.IdCompany = order.IdCompany.Value;
+
+                    if (order.IdContact != null)
+                        _ticket.IdContact = order.IdContact;
+
+                    if (order.IdDeal != null)
+                        _ticket.IdDeal = order.IdDeal;
+                }
+            }
+
+            if (_ticket.IdDeal != null && _ticket.IdCompany <= 0)
+            {
+                var deal = await DealService.GetItemAsync(_ticket.IdDeal.Value);
+
+                if (deal?.IdCompany != null)
+                    _ticket.IdCompany = deal.IdCompany.Value;
+
+                if (deal?.IdContact != null && _ticket.IdContact == null)
+                    _ticket.IdContact = deal.IdContact;
+            }
         }
 
         public async Task LoadProducts(LoadDataArgs args = null)
@@ -626,6 +709,30 @@ namespace CRM.Client.Pages.Tickets
             await LoadProducts(new LoadDataArgs());
             await LoadArticles(new LoadDataArgs());
             await LoadContactsCustomer();
+            await LoadOrders();
+        }
+
+        private async Task DealChangedAsync()
+        {
+            _ticket.IdOrder = null;
+            await LoadOrders();
+        }
+
+        private async Task OrderChangedAsync()
+        {
+            var order = _orders.FirstOrDefault(x => x.Id == _ticket.IdOrder);
+
+            if (order == null)
+                return;
+
+            if (order.IdDeal != null)
+                _ticket.IdDeal = order.IdDeal;
+
+            if (order.IdCompany != null)
+            {
+                _ticket.IdCompany = order.IdCompany.Value;
+                await CompanyChangedAsync();
+            }
         }
 
         private void CompanyOnClickCancel()

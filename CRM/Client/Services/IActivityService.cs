@@ -12,7 +12,7 @@ namespace CRM.Client.Services
         Task<List<ActivityDTO>> GetByEntityAsync(ActivityEntityType entityType, int entityId);
         Task<List<ActivityDTO>> GetMyAgendaAsync(ActivityFilter? filter = null);
         Task<APIResponseMessage<ActivityDTO>> PostAsync(Activity item);
-        Task<APIResponseMessage<ActivityDTO>> CompleteAsync(int id);
+        Task<APIResponseMessage<ActivityDTO>> CompleteAsync(int id, ActivityCompletionRequest? completion = null);
         Task<bool> DeleteAsync(int id);
     }
 }

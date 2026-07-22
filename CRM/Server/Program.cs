@@ -95,6 +95,7 @@ builder.Services.AddScoped<ILangSelectorService, LangSelectorService>();
 
 builder.Services.AddScoped<CRM.Server.Services.ITicketsService, TicketsService>();
 builder.Services.AddScoped<ITicketSummaryService, TicketSummaryService>();
+builder.Services.AddScoped<ITicketNotificationService, TicketNotificationService>();
 
 builder.Services.AddScoped<TranslateService>();
 
@@ -111,6 +112,8 @@ builder.Services.AddScoped<IKnowledgeService, KnowledgeService>();
 builder.Services.AddScoped<TicketKnowledgeService>();
 
 builder.Services.AddScoped<CrmAssistantService>();
+
+builder.Services.AddSingleton<IVoiceTranscriptionService, VoiceTranscriptionService>();
 
 builder.Services.AddScoped<ILogosService, LogosService>();
 
@@ -191,6 +194,7 @@ builder.Services.AddScoped<CRM.Server.Services.Email.IInboundEmailAiService, CRM
 builder.Services.AddScoped<CRM.Server.Services.Email.IEmailTemplateTranslator, CRM.Server.Services.Email.EmailTemplateTranslator>();
 builder.Services.AddScoped<CRM.Server.Services.Email.IInboundEmailRouter, CRM.Server.Services.Email.InboundEmailRouter>();
 builder.Services.AddHostedService<ReminderBackgroundService>();
+builder.Services.AddHostedService<TicketReminderBackgroundService>();
 builder.Services.AddHostedService<WorkflowAutomationBackgroundService>();
 builder.Services.AddHostedService<EmailOutboxBackgroundService>();
 builder.Services.AddHostedService<EmailInboxBackgroundService>();

@@ -36,6 +36,7 @@ else
                 </div>
                 <div class="toolbar-actions">
                     <RedGButton Icon="add_box" Text="@Localize["Nuovo Ticket"]" Click="AddTicket" ButtonStyle="ButtonStyle.Primary" class="tb-btn tb-primary" />
+                    <RedGButton Icon="calendar_month" Text="Agenda" Click="GoToAgenda" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
                     <RedGButton Icon="list" Text="@Localize["Storico TICKETS"]" Click="TicketAll" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
                     <RedGButton Icon="event_note" Text="Pianificazione Ticket" Click="Schedule" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
                     <RedGButton Icon="manage_search" Text=@Localize["Ricerca Ticket"] Click="TicketsSearch" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
@@ -139,6 +140,87 @@ else
                     </div>
                 </div>
             }
+        </div>
+
+        <!-- Appuntamenti di oggi / prossimo -->
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <div class="dash-card-title">
+                    <span class="material-icons" style="color:#2563eb;">event</span>
+                    <span>@(_todayAppointments.Any() ? "Appuntamenti di oggi" : "Prossimo appuntamento")</span>
+                    @if (_todayAppointments.Any())
+                    {
+                        <span class="pill-count">@_todayAppointments.Count</span>
+                    }
+                </div>
+                <RedGButton Icon="calendar_month" Text="Vai all'agenda" Click="GoToAgenda" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+            </div>
+
+            <div class="dash-card-body">
+                @if (_todayAppointments.Any())
+                {
+                    <div class="appt-list">
+                        @foreach (var item in _todayAppointments)
+                        {
+                            <div class="appt-item" @onclick="() => NavigationManager.NavigateTo(item.Url)">
+                                <div class="appt-time">
+                                    <span class="appt-hour">@item.Start.ToString("HH:mm")</span>
+                                </div>
+                                <div class="appt-icon" style="color:@item.Color; background:color-mix(in srgb, @item.Color 16%, transparent);">
+                                    <span class="material-icons">@AppointmentIcon(item)</span>
+                                </div>
+                                <div class="appt-body">
+                                    <div class="appt-title">@item.Title</div>
+                                    <div class="appt-meta">
+                                        @if (!string.IsNullOrWhiteSpace(item.Subtitle))
+                                        {
+                                            <span>@item.Subtitle</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.AssigneeName))
+                                        {
+                                            <span class="appt-assignee"><span class="material-icons">person</span>@item.AssigneeName</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (_nextAppointment != null)
+                {
+                    <div class="appt-list">
+                        <div class="appt-item" @onclick="() => NavigationManager.NavigateTo(_nextAppointment.Url)">
+                            <div class="appt-time appt-time-date">
+                                <span class="appt-day">@_nextAppointment.Start.ToString("dd/MM")</span>
+                                <span class="appt-hour">@_nextAppointment.Start.ToString("HH:mm")</span>
+                            </div>
+                            <div class="appt-icon" style="color:@_nextAppointment.Color; background:color-mix(in srgb, @_nextAppointment.Color 16%, transparent);">
+                                <span class="material-icons">@AppointmentIcon(_nextAppointment)</span>
+                            </div>
+                            <div class="appt-body">
+                                <div class="appt-title">@_nextAppointment.Title</div>
+                                <div class="appt-meta">
+                                    @if (!string.IsNullOrWhiteSpace(_nextAppointment.Subtitle))
+                                    {
+                                        <span>@_nextAppointment.Subtitle</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(_nextAppointment.AssigneeName))
+                                    {
+                                        <span class="appt-assignee"><span class="material-icons">person</span>@_nextAppointment.AssigneeName</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="dash-empty">
+                        <span class="material-icons">event_available</span>
+                        <p>Non ci sono appuntamenti programmati</p>
+                    </div>
+                }
+            </div>
         </div>
 
         <!-- Media valutazioni clienti -->

@@ -634,7 +634,30 @@
         if (item.Source != CalendarItemSource.Activity)
             return;
 
-        var resp = await ActivityService.CompleteAsync(item.SourceId);
+        ActivityCompletionRequest? completion = null;
+        if (item.ActivityKind.HasValue && RequiresCompletionDetails(item.ActivityKind.Value))
+        {
+            completion = await DialogService.OpenAsync<ActivityCompleteDialog>(
+                "Completa attivita",
+                new Dictionary<string, object?>
+                {
+                    ["Kind"] = item.ActivityKind.Value,
+                    ["Subject"] = item.Title,
+                    ["DefaultAssigneeId"] = item.IdAssignee
+                },
+                new DialogOptions
+                {
+                    Width = "680px",
+                    Height = "auto",
+                    Resizable = false,
+                    Draggable = true
+                }) as ActivityCompletionRequest;
+
+            if (completion == null)
+                return;
+        }
+
+        var resp = await ActivityService.CompleteAsync(item.SourceId, completion);
         if (resp.State)
             await Load();
         else
@@ -787,4 +810,7 @@
 
         return item.ActivityKind.HasValue ? ActivityUi.Icon(item.ActivityKind.Value) : "event";
     }
+
+    private static bool RequiresCompletionDetails(ActivityKind kind)
+        => kind is ActivityKind.Meeting or ActivityKind.Call or ActivityKind.Task;
 }

@@ -46,6 +46,8 @@ else
             <RadzenButton Icon="request_quote" Text="Preventivo" ButtonStyle="ButtonStyle.Light"
                           Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{_order.IdQuote}/Details"))" />
         }
+        <RadzenButton Icon="confirmation_number" Text="Nuovo ticket" ButtonStyle="ButtonStyle.Light"
+                      Click="@(() => Nav.NavigateTo($"/Tickets/New?IdOrder={_order.Id}"))" />
         <RadzenDropDown TValue="OrderStates" Value="_order.State" Data="_stateOptions" TextProperty="Text" ValueProperty="Value"
                         Style="width:180px" Change="@(args => OnChangeState((OrderStates)args))" />
     </div>
