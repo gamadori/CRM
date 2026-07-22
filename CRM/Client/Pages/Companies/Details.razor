@@ -1,169 +1,172 @@
-﻿@page "/Companies/{Id:int}/Details"
+@page "/Companies/{Id:int}/Details"
 @using Radzen
 
 <PageHeader PageMode="@PageMode">
 </PageHeader>
 
-@if (_company == null)
-{
-    <Waiting></Waiting>
-}
-else
-{
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-4">
-            
-            <RedGDetailField Icon="business" ContainerClass="mb-4">
-                <LabelContent><DisplayName For="@(() => _company.RagioneSociale)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_company.RagioneSociale</p></ChildContent>
-            </RedGDetailField>
-
-            <RedGDetailField Icon="receipt_long" ContainerClass="mb-4">
-                <LabelContent><DisplayName For="@(() => _company.PIva)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_company.PIva</p></ChildContent>
-            </RedGDetailField>
-
-            @if (!string.IsNullOrEmpty(_company.CodiceFiscale))
-            {
-                <RedGDetailField Icon="badge">
-                    <LabelContent><DisplayName For="@(() => _company.CodiceFiscale)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_company.CodiceFiscale</p></ChildContent>
+<RedGDetailPage IsLoading="@(_company == null)">
+    <ChildContent>
+        @if (_company != null)
+        {
+            <RedGDetailSection Title="Anagrafica" Icon="business">
+                <RedGDetailField Icon="business">
+                    <LabelContent><DisplayName For="@(() => _company.RagioneSociale)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_company.RagioneSociale</p></ChildContent>
                 </RedGDetailField>
-            }
 
-            @if (!string.IsNullOrEmpty(_company.CodiceSDI))
-            {
-                <RedGDetailField Icon="qr_code_2">
-                    <LabelContent><DisplayName For="@(() => _company.CodiceSDI)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_company.CodiceSDI</p></ChildContent>
+                <RedGDetailField Icon="receipt_long">
+                    <LabelContent><DisplayName For="@(() => _company.PIva)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_company.PIva</p></ChildContent>
                 </RedGDetailField>
-            }
 
-            <RedGDetailField Icon="location_on">
-                <LabelContent><DisplayName For="@(() => _company.Indirizzo)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_company.Indirizzo</p></ChildContent>
-            </RedGDetailField>
+                @if (!string.IsNullOrEmpty(_company.CodiceFiscale))
+                {
+                    <RedGDetailField Icon="badge">
+                        <LabelContent><DisplayName For="@(() => _company.CodiceFiscale)" /></LabelContent>
+                        <ChildContent><p class="mb-0 text-dark">@_company.CodiceFiscale</p></ChildContent>
+                    </RedGDetailField>
+                }
 
-            <RedGDetailField Icon="markunread_mailbox">
-                <LabelContent><DisplayName For="@(() => _company.Cap)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_company.Cap</p></ChildContent>
-            </RedGDetailField>
+                @if (!string.IsNullOrEmpty(_company.CodiceSDI))
+                {
+                    <RedGDetailField Icon="qr_code_2">
+                        <LabelContent><DisplayName For="@(() => _company.CodiceSDI)" /></LabelContent>
+                        <ChildContent><p class="mb-0 text-dark">@_company.CodiceSDI</p></ChildContent>
+                    </RedGDetailField>
+                }
 
-            <RedGDetailField Icon="location_city">
-                <LabelContent><DisplayName For="@(() => _company.Citta)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_company.Citta</p></ChildContent>
-            </RedGDetailField>
-
-            <RedGDetailField Icon="flag">
-                <LabelContent><DisplayName For="@(() => _company.Stato)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_company.Stato</p></ChildContent>
-            </RedGDetailField>
-
-            <RedGDetailField Icon="category">
-                <LabelContent><DisplayName For="@(() => _company.CompanyType)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@LocalizeCompanyTypes[_company.CompanyType.ToString()]</p></ChildContent>
-            </RedGDetailField>
-
-            @if (_company.IdReseller != null && _company.IdReseller > 0)
-            {
-                <RedGDetailField Icon="store">
-                    <LabelContent><DisplayName For="@(() => _company.IdReseller)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_company.ResellerName</p></ChildContent>
+                <RedGDetailField Icon="category">
+                    <LabelContent><DisplayName For="@(() => _company.CompanyType)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@LocalizeCompanyTypes[_company.CompanyType.ToString()]</p></ChildContent>
                 </RedGDetailField>
-            }
 
-            <RedGDetailField Icon="phone">
-                <LabelContent><DisplayName For="@(() => _company.Telefono)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_company.Telefono</p></ChildContent>
-            </RedGDetailField>
+                @if (_company.IdReseller != null && _company.IdReseller > 0)
+                {
+                    <RedGDetailField Icon="store">
+                        <LabelContent><DisplayName For="@(() => _company.IdReseller)" /></LabelContent>
+                        <ChildContent><p class="mb-0 text-dark">@_company.ResellerName</p></ChildContent>
+                    </RedGDetailField>
+                }
+            </RedGDetailSection>
 
-            @if (!string.IsNullOrEmpty(_company.Mobile))
-            {
-                <RedGDetailField Icon="smartphone">
-                    <LabelContent><DisplayName For="@(() => _company.Mobile)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_company.Mobile</p></ChildContent>
+            <RedGDetailSection Title="Indirizzo" Icon="location_on">
+                <RedGDetailField Icon="location_on">
+                    <LabelContent><DisplayName For="@(() => _company.Indirizzo)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_company.Indirizzo</p></ChildContent>
                 </RedGDetailField>
-            }
 
-            @if (!string.IsNullOrEmpty(_company.Fax))
-            {
-                <RedGDetailField Icon="print">
-                    <LabelContent><DisplayName For="@(() => _company.Fax)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_company.Fax</p></ChildContent>
+                <RedGDetailField Icon="markunread_mailbox">
+                    <LabelContent><DisplayName For="@(() => _company.Cap)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_company.Cap</p></ChildContent>
                 </RedGDetailField>
-            }
 
-            <RedGDetailField Icon="email">
-                <LabelContent><DisplayName For="@(() => _company.Email)" /></LabelContent>
-                <ChildContent>
-                    @if (!string.IsNullOrWhiteSpace(_company.Email))
-                    {
-                        <a href="mailto:@_company.Email" class="text-primary text-decoration-none">
-                            <span class="material-icons" style="font-size: 18px; vertical-align: middle;">mail_outline</span>
-                            @_company.Email
-                        </a>
-                    }
-                    else
-                    {
-                        <p class="mb-0 text-muted">-</p>
-                    }
-                </ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="location_city">
+                    <LabelContent><DisplayName For="@(() => _company.Citta)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_company.Citta</p></ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="language">
-                <LabelContent><DisplayName For="@(() => _company.Web)" /></LabelContent>
-                <ChildContent>
-                    @if (!string.IsNullOrWhiteSpace(_company.Web))
-                    {
-                        var webUrl = _company.Web.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
-                                     _company.Web.StartsWith("https://", StringComparison.OrdinalIgnoreCase) 
-                                     ? _company.Web 
-                                     : $"https://{_company.Web}";
-                        <a href="@webUrl" target="_blank" rel="noopener noreferrer" class="text-primary text-decoration-none">
-                            <span class="material-icons" style="font-size: 18px; vertical-align: middle;">open_in_new</span>
-                            @_company.Web
-                        </a>
-                    }
-                    else
-                    {
-                        <p class="mb-0 text-muted">-</p>
-                    }
-                </ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="flag">
+                    <LabelContent><DisplayName For="@(() => _company.Stato)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_company.Stato</p></ChildContent>
+                </RedGDetailField>
+            </RedGDetailSection>
+
+            <RedGDetailSection Title="Contatti" Icon="contact_phone">
+                <RedGDetailField Icon="phone">
+                    <LabelContent><DisplayName For="@(() => _company.Telefono)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_company.Telefono</p></ChildContent>
+                </RedGDetailField>
+
+                @if (!string.IsNullOrEmpty(_company.Mobile))
+                {
+                    <RedGDetailField Icon="smartphone">
+                        <LabelContent><DisplayName For="@(() => _company.Mobile)" /></LabelContent>
+                        <ChildContent><p class="mb-0 text-dark">@_company.Mobile</p></ChildContent>
+                    </RedGDetailField>
+                }
+
+                @if (!string.IsNullOrEmpty(_company.Fax))
+                {
+                    <RedGDetailField Icon="print">
+                        <LabelContent><DisplayName For="@(() => _company.Fax)" /></LabelContent>
+                        <ChildContent><p class="mb-0 text-dark">@_company.Fax</p></ChildContent>
+                    </RedGDetailField>
+                }
+
+                <RedGDetailField Icon="email">
+                    <LabelContent><DisplayName For="@(() => _company.Email)" /></LabelContent>
+                    <ChildContent>
+                        @if (!string.IsNullOrWhiteSpace(_company.Email))
+                        {
+                            <a href="mailto:@_company.Email" class="text-primary text-decoration-none">
+                                <span class="material-icons" style="font-size: 18px; vertical-align: middle;">mail_outline</span>
+                                @_company.Email
+                            </a>
+                        }
+                        else
+                        {
+                            <p class="mb-0 text-muted">-</p>
+                        }
+                    </ChildContent>
+                </RedGDetailField>
+
+                <RedGDetailField Icon="language">
+                    <LabelContent><DisplayName For="@(() => _company.Web)" /></LabelContent>
+                    <ChildContent>
+                        @if (!string.IsNullOrWhiteSpace(_company.Web))
+                        {
+                            var webUrl = _company.Web.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                                         _company.Web.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                                         ? _company.Web
+                                         : $"https://{_company.Web}";
+                            <a href="@webUrl" target="_blank" rel="noopener noreferrer" class="text-primary text-decoration-none">
+                                <span class="material-icons" style="font-size: 18px; vertical-align: middle;">open_in_new</span>
+                                @_company.Web
+                            </a>
+                        }
+                        else
+                        {
+                            <p class="mb-0 text-muted">-</p>
+                        }
+                    </ChildContent>
+                </RedGDetailField>
+            </RedGDetailSection>
 
             @if (!string.IsNullOrWhiteSpace(_company.Note))
             {
-                <RedGDetailField Icon="note">
-                    <LabelContent><DisplayName For="@(() => _company.Note)" /></LabelContent>
-                    <ChildContent>@((MarkupString)_company.Note)</ChildContent>
-                </RedGDetailField>
+                <RedGDetailSection Title="Note" Icon="note">
+                    <RedGDetailField Icon="note">
+                        <LabelContent><DisplayName For="@(() => _company.Note)" /></LabelContent>
+                        <ChildContent>@((MarkupString)_company.Note)</ChildContent>
+                    </RedGDetailField>
+                </RedGDetailSection>
             }
 
             @if (!string.IsNullOrWhiteSpace(_logo))
             {
-                <RedGDetailField Icon="image">
-                    <LabelContent>@Localize["Logo"]</LabelContent>
-                    <ChildContent><img src="@_logo" style="max-width: 500px" /></ChildContent>
-                </RedGDetailField>
+                <RedGDetailSection Title="@Localize["Logo"]" Icon="image">
+                    <RedGDetailField Icon="image">
+                        <LabelContent>@Localize["Logo"]</LabelContent>
+                        <ChildContent><img src="@_logo" style="max-width: 500px" /></ChildContent>
+                    </RedGDetailField>
+                </RedGDetailSection>
             }
-        </div>
-
-        <!-- Footer con azioni -->
-        <div class="card-footer bg-light border-top py-3">
-            <div class="d-flex gap-2">
-                <RedGButton RGButtonType="RGButtonType.Back" Click="@(() => NavigationManager.NavigateTo("/Companies"))" Text="@Localize["Companies"]" />
-                <AuthorizeView Policy="@ePolicy.SuperUserRole.ToString()">
-                    <Authorized Context="AuthorizeRole">
-                        <RedGButton RGButtonType="RGButtonType.Edit" Click="EditCompany" AutoLabel=true ></RedGButton>
-                    </Authorized>
-                </AuthorizeView>
-                @if (_hasChildren)
-                {
-                    <RadzenButton Icon="account_tree" ButtonStyle="Radzen.ButtonStyle.Info" Size="Radzen.ButtonSize.Small"
-                                  Text="@Localize["Struttura Aziende"]"
-                                  Click="OpenTreeDialog" />
-                }
-            </div>
-        </div>
-    </div>
-}
+        }
+    </ChildContent>
+    <ActionsContent>
+        <RedGDetailActions>
+            <RedGButton RGButtonType="RGButtonType.Back" Click="@(() => NavigationManager.NavigateTo("/Companies"))" Text="@Localize["Companies"]" />
+            <AuthorizeView Policy="@ePolicy.SuperUserRole.ToString()">
+                <Authorized Context="AuthorizeRole">
+                    <RedGButton RGButtonType="RGButtonType.Edit" Click="EditCompany" AutoLabel=true></RedGButton>
+                </Authorized>
+            </AuthorizeView>
+            @if (_hasChildren)
+            {
+                <RadzenButton Icon="account_tree" ButtonStyle="Radzen.ButtonStyle.Info" Size="Radzen.ButtonSize.Small"
+                              Text="@Localize["Struttura Aziende"]"
+                              Click="OpenTreeDialog" />
+            }
+        </RedGDetailActions>
+    </ActionsContent>
+</RedGDetailPage>

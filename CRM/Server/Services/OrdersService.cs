@@ -46,9 +46,28 @@ namespace CRM.Server.Services
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
 
+            // Perimetro aziende: un ordine di un'altra azienda non esiste, per questo utente.
+            if (item != null && !await CanAccessAsync(item.IdCompany))
+                return null;
+
             var dto = item.ToDTO();
             if (dto != null)
+            {
                 dto.Permits = await _permitsService.ObjectPermits(dto.IdCompany, dto.IdUser);
+
+                // Fattura a valle: serve alla UI per sapere che l'ordine è congelato.
+                var invoice = await _context.Invoices
+                    .AsNoTracking()
+                    .Where(i => i.IdOrder == id)
+                    .Select(i => new { i.Id, i.Number })
+                    .FirstOrDefaultAsync();
+
+                if (invoice != null)
+                {
+                    dto.IdInvoice = invoice.Id;
+                    dto.InvoiceNumber = invoice.Number ?? string.Empty;
+                }
+            }
             return dto;
         }
 
@@ -56,7 +75,7 @@ namespace CRM.Server.Services
         {
             try
             {
-                var items = FilterItems(args);
+                var items = await FilterItems(args);
                 if (items == null)
                     return new();
 
@@ -68,7 +87,7 @@ namespace CRM.Server.Services
                 {
                     Items = await items.Select(item => item.ToDTO()).ToListAsync(),
                     MetaData = new PagingHeaderModel { TotalCount = count, PageSize = args != null ? args.PageSize : 0 },
-                    Total = await FilterItems(args)!.SumAsync(x => x.Total),
+                    Total = await (await FilterItems(args))!.SumAsync(x => x.Total),
                 };
 
                 foreach (var o in resp.Items)
@@ -87,7 +106,7 @@ namespace CRM.Server.Services
         {
             try
             {
-                var items = FilterItems(args);
+                var items = await FilterItems(args);
                 if (items == null)
                     return new List<OrderDTO>();
                 return await items.Select(item => item.ToDTO()).ToListAsync();
@@ -103,6 +122,10 @@ namespace CRM.Server.Services
         {
             try
             {
+                // Perimetro aziende: non si scrive per un'azienda che non si può vedere.
+                if (!await CanAccessAsync(item.IdCompany))
+                    return Fail("Azienda non accessibile per questo utente", System.Net.HttpStatusCode.Forbidden);
+
                 Recalculate(item);
 
                 int savedId;
@@ -110,8 +133,17 @@ namespace CRM.Server.Services
                 if (item.Id > 0)
                 {
                     var existing = await _context.Orders.Include(o => o.Rows).FirstOrDefaultAsync(x => x.Id == item.Id);
+                    // Non si modifica un ordine altrui spacciandolo per proprio.
+                    if (existing != null && !await CanAccessAsync(existing.IdCompany))
+                        existing = null;
+
                     if (existing == null)
                         return Fail("Ordine non trovato", System.Net.HttpStatusCode.NotFound);
+
+                    // Stessa regola dei preventivi: a valle della fattura il documento è congelato,
+                    // altrimenti ordine e fattura divergono in silenzio.
+                    if (await HasInvoiceAsync(existing.Id))
+                        return Fail("L'ordine ha già una fattura collegata: non è più modificabile", System.Net.HttpStatusCode.Conflict);
 
                     if (string.IsNullOrWhiteSpace(item.IdUser))
                         item.IdUser = existing.IdUser;
@@ -185,7 +217,7 @@ namespace CRM.Server.Services
                     .AsNoTracking()
                     .FirstOrDefaultAsync(q => q.Id == quoteId);
 
-                if (quote == null)
+                if (quote == null || !await CanAccessAsync(quote.IdCompany))
                     return Fail("Preventivo non trovato", System.Net.HttpStatusCode.NotFound);
 
                 var existing = await _context.Orders.FirstOrDefaultAsync(o => o.IdQuote == quoteId);
@@ -249,7 +281,7 @@ namespace CRM.Server.Services
             try
             {
                 var order = await _context.Orders.FirstOrDefaultAsync(x => x.Id == id);
-                if (order == null)
+                if (order == null || !await CanAccessAsync(order.IdCompany))
                     return Fail("Ordine non trovato", System.Net.HttpStatusCode.NotFound);
 
                 order.State = state;
@@ -281,7 +313,7 @@ namespace CRM.Server.Services
                     .AsNoTracking()
                     .FirstOrDefaultAsync(x => x.Id == id);
 
-                if (order == null)
+                if (order == null || !await CanAccessAsync(order.IdCompany))
                     return null;
 
                 Company? provider = null;
@@ -336,7 +368,11 @@ namespace CRM.Server.Services
         public async Task<bool> DeleteAsync(int id)
         {
             var item = await _context.Orders.FindAsync(id);
-            if (item == null)
+            if (item == null || !await CanAccessAsync(item.IdCompany))
+                return false;
+
+            // Un ordine già fatturato non si cancella: la fattura resterebbe agganciata al nulla.
+            if (await HasInvoiceAsync(id))
                 return false;
             try
             {
@@ -397,7 +433,24 @@ namespace CRM.Server.Services
             return prefix + (max + 1).ToString("D4");
         }
 
-        private IQueryable<Order>? FilterItems(OrderFilter? args = null)
+        /// <summary>True se dall'ordine è già stata generata una fattura.</summary>
+        private Task<bool> HasInvoiceAsync(int idOrder)
+            => _context.Invoices.AsNoTracking().AnyAsync(i => i.IdOrder == idOrder);
+
+        /// <summary>
+        /// True se l'utente corrente può vedere i dati dell'azienda indicata. Un documento senza
+        /// azienda è visibile solo a chi vede tutto (azienda madre): fail-closed.
+        /// </summary>
+        private async Task<bool> CanAccessAsync(int? idCompany)
+        {
+            var allowed = await _permitsService.GetVisibleCompanyIds();
+            if (allowed == null)
+                return true;
+
+            return idCompany != null && allowed.Contains(idCompany.Value);
+        }
+
+        private async Task<IQueryable<Order>?> FilterItems(OrderFilter? args = null)
         {
             try
             {
@@ -407,6 +460,12 @@ namespace CRM.Server.Services
                     .Include(x => x.Quote)
                     .Include(x => x.User)
                     .AsQueryable();
+
+                // Perimetro aziende dell'utente: senza questo filtro un utente cliente o
+                // rivenditore vedrebbe gli ordini di tutte le aziende dell'installazione.
+                var allowed = await _permitsService.GetVisibleCompanyIds();
+                if (allowed != null)
+                    items = items.Where(x => x.IdCompany != null && allowed.Contains(x.IdCompany.Value));
 
                 if (args?.OrderBy != null && args.OrderBy.Length > 0)
                     items = items.OrderBy(args.OrderBy);

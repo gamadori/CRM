@@ -47,6 +47,66 @@ else
             </div>
         }
 
+        <!-- Priorita operative -->
+        @if (!_model.IsClient)
+        {
+            <section class="dash-card ops-card">
+                <div class="dash-card-head ops-card-head">
+                    <div class="dash-card-title ops-title">
+                        <span class="material-icons">radar</span>
+                        <div>
+                            <h3>Priorita operative</h3>
+                            <p>@OperationalSubtitle</p>
+                        </div>
+                    </div>
+
+                    <div class="ops-load-compact">
+                        <span>Carico aperto</span>
+                        <strong>@OpenTicketsCount</strong>
+                    </div>
+                </div>
+
+                <div class="dash-card-body ops-card-body">
+                    <div class="ops-load">
+                        <div class="ops-load-copy">
+                            <span>@_model.TicketsWorking in lavorazione</span>
+                            <span>@_model.TicketsNotAssigned da assegnare</span>
+                        </div>
+                        <div class="ops-load-track">
+                            <div class="ops-load-bar" style="width:@OpenLoadPercent%"></div>
+                        </div>
+                    </div>
+
+                    <div class="ops-actions">
+                        @if (OperationalItems.Any())
+                        {
+                            @foreach (var item in OperationalItems)
+                            {
+                                <button type="button" class="ops-action @item.CssClass" @onclick="item.Click">
+                                    <span class="ops-action-icon material-icons">@item.Icon</span>
+                                    <span class="ops-action-body">
+                                        <span class="ops-action-title">@item.Title</span>
+                                        <span class="ops-action-caption">@item.Caption</span>
+                                    </span>
+                                    <span class="ops-action-value">@item.Value</span>
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <div class="ops-clear">
+                                <span class="material-icons">check_circle</span>
+                                <div>
+                                    <strong>Tutto sotto controllo</strong>
+                                    <span>Nessuna priorita critica al momento.</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </section>
+        }
+
         <!-- Metriche -->
         <div class="metric-grid">
             <div class="metric-tile tile-warning" @onclick="TicketNotAssigned">

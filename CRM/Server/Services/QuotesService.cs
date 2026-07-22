@@ -61,6 +61,10 @@ namespace CRM.Server.Services
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
 
+            // Perimetro aziende: un preventivo di un'altra azienda non esiste, per questo utente.
+            if (item != null && !await CanAccessAsync(item.IdCompany))
+                return null;
+
             var dto = item.ToDTO();
             if (dto != null)
             {
@@ -90,6 +94,11 @@ namespace CRM.Server.Services
                     dto.LastSentAt = lastDelivery.Date;
                     dto.LastSentTo = lastDelivery.To;
                 }
+
+                // Storia delle revisioni: mostrata solo se ce n'è più d'una.
+                var revisions = await GetRevisionsAsync(id);
+                if (revisions.Count > 1)
+                    dto.Revisions = revisions;
             }
             return dto;
         }
@@ -98,7 +107,7 @@ namespace CRM.Server.Services
         {
             try
             {
-                var items = FilterItems(args);
+                var items = await FilterItems(args);
                 if (items == null)
                 {
                     return new();
@@ -121,7 +130,7 @@ namespace CRM.Server.Services
                 {
                     Items = await items.Select(item => item.ToDTO()).ToListAsync(),
                     MetaData = paginationMetadata,
-                    Total = await FilterItems(args)!.SumAsync(x => x.Total),
+                    Total = await (await FilterItems(args))!.SumAsync(x => x.Total),
                 };
 
                 foreach (var q in resp.Items)
@@ -142,7 +151,7 @@ namespace CRM.Server.Services
         {
             try
             {
-                var items = FilterItems(args);
+                var items = await FilterItems(args);
                 if (items == null)
                 {
                     return new List<QuoteDTO>();
@@ -160,6 +169,10 @@ namespace CRM.Server.Services
         {
             try
             {
+                // Perimetro aziende: non si scrive per un'azienda che non si può vedere.
+                if (!await CanAccessAsync(item.IdCompany))
+                    return QuoteFail("Azienda non accessibile per questo utente", System.Net.HttpStatusCode.Forbidden);
+
                 await PopulateRowsFromDealAsync(item);
                 Recalculate(item);
 
@@ -171,6 +184,10 @@ namespace CRM.Server.Services
                         .Include(q => q.Rows)
                         .FirstOrDefaultAsync(x => x.Id == item.Id);
 
+                    // ...e non si modifica un preventivo altrui spacciandolo per proprio.
+                    if (existing != null && !await CanAccessAsync(existing.IdCompany))
+                        existing = null;
+
                     if (existing == null)
                     {
                         return new APIResponseMessage<QuoteDTO>
@@ -180,6 +197,18 @@ namespace CRM.Server.Services
                             Code = System.Net.HttpStatusCode.NotFound
                         };
                     }
+
+                    // Immutabilità del documento: una volta uscito dall'azienda il preventivo è
+                    // il riferimento di ciò che il cliente ha ricevuto e accettato. Modificarlo
+                    // farebbe divergere in silenzio preventivo, ordine, trattativa e PDF spedito.
+                    if (await HasOrderAsync(existing.Id))
+                        return QuoteFail("Il preventivo ha già un ordine collegato: non è più modificabile", System.Net.HttpStatusCode.Conflict);
+
+                    if (!existing.IsCurrent)
+                        return QuoteFail("Questa è una revisione superata: è storia, non si modifica", System.Net.HttpStatusCode.Conflict);
+
+                    if (existing.State != QuoteStates.Draft)
+                        return QuoteFail("Un preventivo già inviato non si modifica: creane una revisione", System.Net.HttpStatusCode.Conflict);
 
                     if (string.IsNullOrWhiteSpace(item.IdUser))
                         item.IdUser = existing.IdUser;
@@ -264,6 +293,9 @@ namespace CRM.Server.Services
                 await using var transaction = await _context.Database.BeginTransactionAsync();
 
                 var quote = await _context.Quotes.FirstOrDefaultAsync(x => x.Id == id);
+                if (quote != null && !await CanAccessAsync(quote.IdCompany))
+                    quote = null;   // fuori perimetro: risposta identica al "non trovato"
+
                 if (quote == null)
                 {
                     return new APIResponseMessage<QuoteDTO>
@@ -273,6 +305,11 @@ namespace CRM.Server.Services
                         Code = System.Net.HttpStatusCode.NotFound
                     };
                 }
+
+                // "Riporta in bozza" riapre il documento alle modifiche: non è ammesso se a valle
+                // esiste già un ordine, che resterebbe agganciato a un preventivo cambiato sotto.
+                if (state == QuoteStates.Draft && await HasOrderAsync(quote.Id))
+                    return QuoteFail("Il preventivo ha già un ordine collegato: non può tornare in bozza", System.Net.HttpStatusCode.Conflict);
 
                 quote.State = state;
 
@@ -357,7 +394,7 @@ namespace CRM.Server.Services
                     .AsNoTracking()
                     .FirstOrDefaultAsync(x => x.Id == id);
 
-                if (quote == null)
+                if (quote == null || !await CanAccessAsync(quote.IdCompany))
                     return null;
 
                 Company? provider = null;
@@ -393,6 +430,17 @@ namespace CRM.Server.Services
         /// </summary>
         public async Task<(byte[] Bytes, string FileName)?> GetPdfAsync(int id)
         {
+            // Il controllo va fatto QUI e non solo in GeneratePdfAsync: per un preventivo già
+            // inviato questa strada restituisce lo snapshot da disco senza passare di là.
+            var idCompany = await _context.Quotes
+                .AsNoTracking()
+                .Where(q => q.Id == id)
+                .Select(q => q.IdCompany)
+                .FirstOrDefaultAsync();
+
+            if (!await CanAccessAsync(idCompany))
+                return null;
+
             var last = await _context.QuoteDeliveries
                 .AsNoTracking()
                 .Where(d => d.IdQuote == id)
@@ -419,7 +467,7 @@ namespace CRM.Server.Services
                     .Include(q => q.Contact)
                     .FirstOrDefaultAsync(q => q.Id == id);
 
-                if (quote == null)
+                if (quote == null || !await CanAccessAsync(quote.IdCompany))
                     return QuoteFail("Preventivo non trovato", System.Net.HttpStatusCode.NotFound);
 
                 // Destinatario: esplicito → email contatto → email azienda
@@ -540,14 +588,49 @@ namespace CRM.Server.Services
         public async Task<bool> DeleteAsync(int id)
         {
             var item = await _context.Quotes.FindAsync(id);
-            if (item == null)
+            if (item == null || !await CanAccessAsync(item.IdCompany))
             {
                 return false;
             }
+
+            // Un preventivo già trasformato in ordine non si cancella: l'ordine resterebbe
+            // agganciato al nulla.
+            if (await HasOrderAsync(id))
+            {
+                return false;
+            }
+            var rootId = item.IdRootQuote ?? item.Id;
+
+            // Cancellare la radice mentre esistono revisioni successive spezzerebbe la catena
+            // (e il vincolo FK lo impedirebbe comunque): si cancella prima la più recente.
+            if (item.IdRootQuote == null &&
+                await _context.Quotes.AnyAsync(q => q.IdRootQuote == rootId))
+            {
+                return false;
+            }
+
             try
             {
                 _context.Quotes.Remove(item);
                 await _context.SaveChangesAsync();
+
+                // Cancellata la revisione corrente, la precedente torna corrente: senza questo
+                // il preventivo sparirebbe dagli elenchi, che mostrano solo IsCurrent.
+                if (item.IsCurrent)
+                {
+                    var previous = await _context.Quotes
+                        .Where(q => q.Id == rootId || q.IdRootQuote == rootId)
+                        .OrderByDescending(q => q.Revision)
+                        .FirstOrDefaultAsync();
+
+                    if (previous != null)
+                    {
+                        previous.IsCurrent = true;
+                        previous.SupersededAt = null;
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
                 return true;
             }
             catch (Exception ex)
@@ -656,7 +739,153 @@ namespace CRM.Server.Services
             return prefix + (max + 1).ToString("D4");
         }
 
-        private IQueryable<Quote>? FilterItems(QuoteFilter? args = null)
+        /// <summary>True se dal preventivo è già stato generato un ordine.</summary>
+        private Task<bool> HasOrderAsync(int idQuote)
+            => _context.Orders.AsNoTracking().AnyAsync(o => o.IdQuote == idQuote);
+
+        /// <summary>
+        /// Crea la revisione successiva di un preventivo già uscito dall'azienda: la revisione
+        /// corrente viene congelata come storia (col suo stato e il suo PDF spedito) e la nuova
+        /// nasce in bozza, con lo stesso numero e le righe clonate, pronta da modificare.
+        /// </summary>
+        public async Task<APIResponseMessage<QuoteDTO>> CreateRevisionAsync(int id)
+        {
+            try
+            {
+                var source = await _context.Quotes
+                    .Include(q => q.Rows)
+                    .FirstOrDefaultAsync(q => q.Id == id);
+
+                if (source == null || !await CanAccessAsync(source.IdCompany))
+                    return QuoteFail("Preventivo non trovato", System.Net.HttpStatusCode.NotFound);
+
+                if (!source.IsCurrent)
+                    return QuoteFail("Si revisiona solo la versione corrente del preventivo", System.Net.HttpStatusCode.Conflict);
+
+                // In bozza si modifica direttamente: una revisione non avrebbe senso.
+                if (source.State == QuoteStates.Draft)
+                    return QuoteFail("Il preventivo è in bozza: modificalo direttamente", System.Net.HttpStatusCode.Conflict);
+
+                // Accettato e trasformato in ordine: il documento è impegnativo, si interviene
+                // sull'ordine. (Regola concordata: revisione da Inviato/Rifiutato/Scaduto.)
+                if (source.State == QuoteStates.Accepted)
+                    return QuoteFail("Il preventivo è stato accettato: le variazioni si fanno sull'ordine", System.Net.HttpStatusCode.Conflict);
+
+                if (await HasOrderAsync(source.Id))
+                    return QuoteFail("Il preventivo ha già un ordine collegato: non è più revisionabile", System.Net.HttpStatusCode.Conflict);
+
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
+                var revision = new Quote
+                {
+                    // Il numero NON cambia: per il cliente è sempre lo stesso preventivo.
+                    Number = source.Number,
+                    Revision = source.Revision + 1,
+                    IdRootQuote = source.IdRootQuote ?? source.Id,
+                    IsCurrent = true,
+                    State = QuoteStates.Draft,
+                    Date = DateTime.Now,
+                    ValidUntil = source.ValidUntil,
+                    IdCompany = source.IdCompany,
+                    IdContact = source.IdContact,
+                    IdDeal = source.IdDeal,
+                    IdUser = source.IdUser ?? await _permitsService.IdUser(),
+                    Note = source.Note,
+                    TermsConditions = source.TermsConditions,
+                    Rows = source.Rows
+                        .OrderBy(r => r.SortOrder)
+                        .Select(r => new QuoteRow
+                        {
+                            IdProduct = r.IdProduct,
+                            Description = r.Description,
+                            Quantity = r.Quantity,
+                            UnitPrice = r.UnitPrice,
+                            DiscountPct = r.DiscountPct,
+                            VatRate = r.VatRate,
+                            SortOrder = r.SortOrder
+                        })
+                        .ToList()
+                };
+
+                Recalculate(revision);
+
+                // La precedente diventa storia: resta consultabile con il suo stato e il suo PDF.
+                source.IsCurrent = false;
+                source.SupersededAt = DateTime.Now;
+
+                _context.Quotes.Add(revision);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return new APIResponseMessage<QuoteDTO>
+                {
+                    State = true,
+                    Data = await GetItemAsync(revision.Id),
+                    Message = $"Creata la revisione {revision.Revision} di {revision.Number}",
+                    Code = System.Net.HttpStatusCode.OK
+                };
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(QuotesService), nameof(CreateRevisionAsync), EventsTypes.Error, ex);
+                return QuoteFail("Errore nella creazione della revisione", System.Net.HttpStatusCode.InternalServerError);
+            }
+        }
+
+        /// <summary>
+        /// Storia completa del preventivo: tutte le revisioni della catena, dalla più recente.
+        /// </summary>
+        public async Task<List<QuoteRevisionDTO>> GetRevisionsAsync(int id)
+        {
+            var quote = await _context.Quotes.AsNoTracking()
+                .Where(q => q.Id == id)
+                .Select(q => new { q.Id, q.IdRootQuote, q.IdCompany })
+                .FirstOrDefaultAsync();
+
+            if (quote == null || !await CanAccessAsync(quote.IdCompany))
+                return new List<QuoteRevisionDTO>();
+
+            var rootId = quote.IdRootQuote ?? quote.Id;
+
+            var items = await _context.Quotes.AsNoTracking()
+                .Where(q => q.Id == rootId || q.IdRootQuote == rootId)
+                .OrderByDescending(q => q.Revision)
+                .Select(q => new QuoteRevisionDTO
+                {
+                    Id = q.Id,
+                    Number = q.Number ?? string.Empty,
+                    Revision = q.Revision,
+                    Date = q.Date,
+                    State = q.State,
+                    Total = q.Total,
+                    IsCurrent = q.IsCurrent,
+                    SupersededAt = q.SupersededAt,
+                    HasSentPdf = _context.QuoteDeliveries.Any(d => d.IdQuote == q.Id),
+                    SentAt = _context.QuoteDeliveries
+                        .Where(d => d.IdQuote == q.Id)
+                        .OrderByDescending(d => d.Date)
+                        .Select(d => (DateTime?)d.Date)
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
+
+            return items;
+        }
+
+        /// <summary>
+        /// True se l'utente corrente può vedere i dati dell'azienda indicata. Un documento senza
+        /// azienda è visibile solo a chi vede tutto (azienda madre): fail-closed.
+        /// </summary>
+        private async Task<bool> CanAccessAsync(int? idCompany)
+        {
+            var allowed = await _permitsService.GetVisibleCompanyIds();
+            if (allowed == null)
+                return true;
+
+            return idCompany != null && allowed.Contains(idCompany.Value);
+        }
+
+        private async Task<IQueryable<Quote>?> FilterItems(QuoteFilter? args = null)
         {
             try
             {
@@ -666,6 +895,16 @@ namespace CRM.Server.Services
                     .Include(x => x.Deal)
                     .Include(x => x.User)
                     .AsQueryable();
+
+                // Perimetro aziende dell'utente: senza questo filtro un utente cliente o
+                // rivenditore vedrebbe i preventivi di tutte le aziende dell'installazione.
+                var allowed = await _permitsService.GetVisibleCompanyIds();
+                if (allowed != null)
+                    items = items.Where(x => x.IdCompany != null && allowed.Contains(x.IdCompany.Value));
+
+                // Gli elenchi mostrano un preventivo una volta sola: la revisione corrente.
+                // Le precedenti restano raggiungibili dal dettaglio, come storia.
+                items = items.Where(x => x.IsCurrent);
 
                 if (args?.OrderBy != null && args.OrderBy.Length > 0)
                     items = items.OrderBy(args.OrderBy);

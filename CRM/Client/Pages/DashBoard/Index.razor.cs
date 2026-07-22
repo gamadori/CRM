@@ -64,6 +64,32 @@ namespace CRM.Client.Pages.DashBoard
         private List<CalendarItemDTO> _todayAppointments = new();
         private CalendarItemDTO _nextAppointment = null;
 
+        private int OpenTicketsCount => (_model?.TicketsWorking ?? 0) + (_model?.TicketsNotAssigned ?? 0);
+
+        private int OpenLoadPercent => Math.Min(100, OpenTicketsCount * 4);
+
+        private string OperationalSubtitle
+        {
+            get
+            {
+                if (_model == null)
+                    return "Situazione non disponibile";
+
+                var criticalCount = (_model.TicketsExpired > 0 ? 1 : 0)
+                    + (_model.TicketsNotAssigned > 0 ? 1 : 0)
+                    + (_model.InboundEmailsToHandle > 0 ? 1 : 0)
+                    + (_model.ChatMessageToRead > 0 ? 1 : 0)
+                    + (_model.InterventionsPendingSignature > 0 ? 1 : 0)
+                    + (_model.UsersNeedConfirm > 0 ? 1 : 0);
+
+                return criticalCount == 0
+                    ? "Nessuna anomalia urgente rilevata"
+                    : $"{criticalCount} aree richiedono attenzione";
+            }
+        }
+
+        private IEnumerable<OperationalItem> OperationalItems => BuildOperationalItems();
+
         protected override async Task OnInitializedAsync()
         {
             DynamicNotificationHandlers.Register(this);
@@ -343,5 +369,46 @@ namespace CRM.Client.Pages.DashBoard
         {
             await LoadData();
         }
+
+        private IEnumerable<OperationalItem> BuildOperationalItems()
+        {
+            if (_model == null)
+                return Enumerable.Empty<OperationalItem>();
+
+            var items = new List<OperationalItem>();
+
+            if (_model.TicketsExpired > 0)
+                items.Add(new("Ticket scaduti", "Apri la coda piu urgente", _model.TicketsExpired, "schedule", "ops-danger", TicketExpired, 1));
+
+            if (_model.TicketsNotAssigned > 0)
+                items.Add(new("Da assegnare", "Ticket senza responsabile", _model.TicketsNotAssigned, "assignment_late", "ops-warning", TicketNotAssigned, 2));
+
+            if (_model.InboundEmailsToHandle > 0)
+                items.Add(new("Email in ingresso", "Da trasformare o archiviare", _model.InboundEmailsToHandle, "move_to_inbox", "ops-info", InboundEmailsToHandle, 3));
+
+            if (_model.ChatMessageToRead > 0)
+                items.Add(new("Messaggi ticket", "Conversazioni non lette", _model.ChatMessageToRead, "chat", "ops-primary", TicketsNewMessage, 4));
+
+            if (_model.InterventionsPendingSignature > 0)
+                items.Add(new("Firme pending", "Interventi da chiudere", _model.InterventionsPendingSignature, "draw", "ops-orange", InterventionsPendingSignature, 5));
+
+            if (_model.UsersNeedConfirm > 0)
+                items.Add(new("Utenti da confermare", "Nuovi accessi in attesa", _model.UsersNeedConfirm, "person_add", "ops-violet", UsersNeedConfirm, 6));
+
+            return items
+                .OrderBy(x => x.Priority)
+                .ThenByDescending(x => x.Value)
+                .Take(6)
+                .ToList();
+        }
+
+        private sealed record OperationalItem(
+            string Title,
+            string Caption,
+            int Value,
+            string Icon,
+            string CssClass,
+            Action Click,
+            int Priority);
     }
 }

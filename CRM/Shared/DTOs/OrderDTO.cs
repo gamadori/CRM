@@ -58,6 +58,12 @@ namespace CRM.Shared.DTOs
 
         public string UserName { get; set; } = string.Empty;
 
+        /// <summary>Fattura generata dall'ordine, se esiste: l'ordine è allora congelato.
+        /// Popolata solo dal dettaglio, come IdOrder/OrderNumber su <see cref="QuoteDTO"/>.</summary>
+        public int? IdInvoice { get; set; }
+
+        public string InvoiceNumber { get; set; } = string.Empty;
+
         public int Permits { get; set; }
 
         public List<OrderRowDTO> Rows { get; set; } = new();

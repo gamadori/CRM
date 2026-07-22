@@ -1,0 +1,83 @@
+<section class="@CssClass">
+    @if (!string.IsNullOrWhiteSpace(Title) || HeaderContent != null)
+    {
+        <div class="rg-detail-section-header">
+            @if (!string.IsNullOrWhiteSpace(Icon))
+            {
+                <span class="material-icons rg-detail-section-icon">@Icon</span>
+            }
+            <div class="rg-detail-section-title">
+                @if (HeaderContent != null)
+                {
+                    @HeaderContent
+                }
+                else
+                {
+                    @Title
+                }
+            </div>
+        </div>
+    }
+
+    <div class="rg-detail-section-content">
+        @ChildContent
+    </div>
+</section>
+
+<style>
+    .rg-detail-section {
+        min-width: 0;
+    }
+
+    .rg-detail-section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        color: var(--crm-text, #101828);
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.25;
+    }
+
+    .rg-detail-section-icon {
+        color: var(--crm-primary, #4258d6);
+        font-size: 1.15rem !important;
+        line-height: 1;
+    }
+
+    .rg-detail-section-title {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .rg-detail-section-content {
+        min-width: 0;
+    }
+
+    .rg-detail-section + .rg-detail-section {
+        padding-top: 1rem;
+        border-top: 1px solid var(--crm-border, #e9ecef);
+    }
+
+    @@media (prefers-color-scheme: dark) {
+        .rg-detail-section-header {
+            color: var(--crm-text, #f2f4f7);
+        }
+
+        .rg-detail-section + .rg-detail-section {
+            border-top-color: var(--crm-border, #303947);
+        }
+    }
+</style>
+
+@code {
+    private string CssClass => string.Join(" ", new[] { "rg-detail-section", Class }
+        .Where(value => !string.IsNullOrWhiteSpace(value)));
+
+    [Parameter] public string Title { get; set; }
+    [Parameter] public string Icon { get; set; }
+    [Parameter] public string Class { get; set; }
+    [Parameter] public RenderFragment HeaderContent { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+}

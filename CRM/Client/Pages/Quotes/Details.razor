@@ -36,10 +36,21 @@ else
             <RadzenButton Icon="forward_to_inbox" Text="Invia al cliente" ButtonStyle="ButtonStyle.Info"
                           IsBusy="@_sending" Disabled="@_sending" Click="SendQuote" />
         }
-        @if (_quote.Permits.Edit())
+        @* Il documento è modificabile solo finché è in bozza: dopo l'invio è il riferimento di
+           ciò che il cliente ha ricevuto. Per correggerlo lo si riporta in bozza, cosa che il
+           server nega se esiste già un ordine collegato. *@
+        @if (_quote.Permits.Edit() && _quote.State == QuoteStates.Draft)
         {
             <RadzenButton Icon="edit" Text="Modifica" ButtonStyle="ButtonStyle.Primary"
                           Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{_quote.Id}/Edit"))" />
+        }
+        @* Inviato/Rifiutato/Scaduto: non si modifica, se ne crea una revisione. Accettato o già
+           ordinato resta congelato: le variazioni si fanno sull'ordine. *@
+        @if (_quote.Permits.Edit() && _quote.IsCurrent && _quote.IdOrder == null
+             && (_quote.State == QuoteStates.Sent || _quote.State == QuoteStates.Rejected || _quote.State == QuoteStates.Expired))
+        {
+            <RadzenButton Icon="difference" Text="@($"Crea revisione {_quote.Revision + 1}")" ButtonStyle="ButtonStyle.Primary"
+                          IsBusy="@_creatingRevision" Disabled="@_creatingRevision" Click="CreateRevision" />
         }
         @if (_quote.State == QuoteStates.Draft)
         {
@@ -71,7 +82,14 @@ else
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-3"><small class="text-muted d-block">Numero</small><strong>@_quote.Number</strong></div>
+                <div class="col-md-3">
+                    <small class="text-muted d-block">Numero</small>
+                    <strong>@_quote.NumberWithRevision</strong>
+                    @if (!_quote.IsCurrent)
+                    {
+                        <span class="badge bg-secondary ms-1" title="Sostituita da una revisione successiva">Superata</span>
+                    }
+                </div>
                 <div class="col-md-3"><small class="text-muted d-block">Data</small>@_quote.Date.ToString("dd/MM/yyyy")</div>
                 <div class="col-md-3"><small class="text-muted d-block">Valida fino al</small>@(_quote.ValidUntil?.ToString("dd/MM/yyyy") ?? "—")</div>
                 <div class="col-md-3"><small class="text-muted d-block">Stato</small><span class="badge @StateClass(_quote.State)">@StateText(_quote.State)</span></div>
@@ -155,6 +173,60 @@ else
             </div>
         </div>
     </div>
+
+    @* Storia del preventivo: ogni revisione conserva il proprio stato e il PDF spedito. *@
+    @if (_quote.Revisions.Count > 1)
+    {
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-body pb-0">
+                <h6 class="mb-2">Revisioni di @_quote.Number</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Revisione</th>
+                            <th>Data</th>
+                            <th>Stato</th>
+                            <th class="text-end">Totale</th>
+                            <th>Inviata</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in _quote.Revisions)
+                        {
+                            <tr class="@(r.Id == _quote.Id ? "table-active" : "")">
+                                <td>
+                                    rev.@r.Revision
+                                    @if (r.IsCurrent)
+                                    {
+                                        <span class="badge bg-success ms-1">Corrente</span>
+                                    }
+                                </td>
+                                <td>@r.Date.ToString("dd/MM/yyyy")</td>
+                                <td><span class="badge @StateClass(r.State)">@StateText(r.State)</span></td>
+                                <td class="text-end">@r.Total.ToString("C")</td>
+                                <td>@(r.SentAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                                <td class="text-end">
+                                    @if (r.Id != _quote.Id)
+                                    {
+                                        <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                                      Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{r.Id}/Details", forceLoad: true))" />
+                                    }
+                                    @if (r.HasSentPdf)
+                                    {
+                                        <RadzenButton Icon="picture_as_pdf" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small"
+                                                      title="PDF inviato al cliente" Click="@(() => DownloadRevisionPdf(r.Id))" />
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -164,6 +236,7 @@ else
     private QuoteDTO? _quote;
     private bool _downloadingPdf;
     private bool _creatingOrder;
+    private bool _creatingRevision;
     private bool _sending;
 
     private string OrderButtonText => string.IsNullOrWhiteSpace(_quote?.OrderNumber)
@@ -200,6 +273,60 @@ else
         finally
         {
             _downloadingPdf = false;
+        }
+    }
+
+    /// <summary>PDF di una revisione specifica: quello congelato che il cliente ha ricevuto.</summary>
+    private async Task DownloadRevisionPdf(int idRevision)
+    {
+        try
+        {
+            var response = await Http.GetAsync($"{ConstHelper.QuotesPath}/{idRevision}/pdf");
+            if (response.IsSuccessStatusCode)
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                var rev = _quote?.Revisions.FirstOrDefault(r => r.Id == idRevision);
+                var fileName = rev != null ? $"{rev.Number}-rev{rev.Revision}.pdf" : $"Preventivo-{idRevision}.pdf";
+                await JS.InvokeVoidAsync("downloadFileFromBytes", fileName, "application/pdf", bytes);
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", "Download PDF fallito");
+            }
+        }
+        catch (Exception ex)
+        {
+            Notification.Notify(NotificationSeverity.Error, "Errore", ex.Message);
+        }
+    }
+
+    private async Task CreateRevision()
+    {
+        var msg = $"Creare la revisione {(_quote?.Revision ?? 1) + 1} di {_quote?.Number}? "
+                + "La versione attuale resta consultabile come storia, con il PDF già inviato al cliente. "
+                + "La nuova nasce in bozza e va inviata di nuovo.";
+
+        if (await DialogService.Confirm(msg, "Conferma") != true)
+            return;
+
+        _creatingRevision = true;
+        try
+        {
+            var resp = await QuoteService.CreateRevisionAsync(Id);
+            if (resp.State && resp.Data != null)
+            {
+                Notification.Notify(NotificationSeverity.Success, "Fatto", resp.Message ?? "Revisione creata");
+                // Si prosegue sulla nuova revisione: è quella che si modifica.
+                Nav.NavigateTo($"/{ConstHelper.ClientQuotesPath}/{resp.Data.Id}/Edit");
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+            }
+        }
+        finally
+        {
+            _creatingRevision = false;
         }
     }
 
@@ -289,6 +416,7 @@ else
             QuoteStates.Accepted => "Accettare il preventivo? Verranno aggiornate la trattativa collegata e generato l'ordine.",
             QuoteStates.Rejected => "Rifiutare il preventivo?",
             QuoteStates.Sent => "Segnare il preventivo come inviato?",
+            QuoteStates.Draft => "Riportare il preventivo in bozza per modificarlo? Il PDF già inviato al cliente resta invariato: dopo le modifiche va inviato di nuovo.",
             _ => "Confermare il cambio di stato?"
         };
 

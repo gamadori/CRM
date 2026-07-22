@@ -356,7 +356,17 @@ namespace CRM.Server.Data
                       .HasForeignKey(q => q.IdUser)
                       .OnDelete(DeleteBehavior.Restrict);
 
+                // Catena delle revisioni: la radice non si cancella finché esistono revisioni.
+                entity.HasOne(q => q.RootQuote)
+                      .WithMany()
+                      .HasForeignKey(q => q.IdRootQuote)
+                      .OnDelete(DeleteBehavior.Restrict);
+
                 entity.HasIndex(q => q.Number);
+
+                // Le liste filtrano sempre sulla revisione corrente.
+                entity.HasIndex(q => q.IsCurrent);
+                entity.HasIndex(q => q.IdRootQuote);
             });
 
             modelBuilder.Entity<QuoteRow>(entity =>

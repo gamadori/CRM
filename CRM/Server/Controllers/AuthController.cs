@@ -17,8 +17,12 @@ namespace CRM.Server.Controllers
 {
    
     [Route("localApi")]
-    
+
     [ApiController]
+    // Risponde "chi sono io": deve poter essere chiamato anche da non autenticati.
+    // ⚠️ Il costruttore è private, quindi il DI non riesce a istanziare il controller e
+    // qualunque chiamata fallisce: endpoint di fatto morto, da sistemare o rimuovere.
+    [AllowAnonymous]
     public class AuthController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;

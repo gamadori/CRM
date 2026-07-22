@@ -21,6 +21,13 @@ namespace CRM.Server.Services
 
         Task<List<int>> GetIdCompanies(int idCompany);
 
+        /// <summary>
+        /// Id delle aziende di cui l'utente corrente può vedere i dati, oppure <c>null</c> se
+        /// può vederli tutti (utente dell'azienda madre). Serve a filtrare per riga le query dei
+        /// moduli commerciali. Lista vuota = nessun dato visibile (utente senza azienda).
+        /// </summary>
+        Task<List<int>?> GetVisibleCompanyIds();
+
         Task<bool> CanAccessCompany(int? idCompany);
 
         Task<bool> CanWriteCompanyData(int? idCompany);

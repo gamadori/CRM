@@ -324,15 +324,20 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseCors("RedGPolicy");
-app.UseEndpoints(endpoints => {
-    app.MapControllers();
-});
-
-
-
 
 app.MapRazorPages();
-app.MapControllers();
+
+// SICUREZZA: tutta l'API richiede un utente autenticato per DEFAULT. Prima questa riga era
+// un semplice MapControllers() e la protezione dipendeva dall'attributo [Authorize] scritto a
+// mano su ogni controller: dei 92 controller 48 ne erano sprovvisti, quindi endpoint come
+// /api/Quotes/list o /api/SmtpSettings rispondevano a chiunque, senza login.
+// Gli endpoint che devono restare pubblici perché si autenticano con un token proprio
+// (webhook email, API esterne con X-Api-Key, licenze macchina, conferma firma via link email)
+// sono marcati [AllowAnonymous], che ha la precedenza su questa regola.
+// Nota: vale solo per i controller — Razor Pages (login Identity), index.html del client WASM
+// e l'hub SignalR restano com'erano.
+app.MapControllers().RequireAuthorization();
+
 app.MapFallbackToFile("index.html");
 
 

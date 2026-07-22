@@ -36,8 +36,46 @@
     <Columns>
         <RadzenDataGridColumn TItem="OrderDTO" Property="Number" Title="Numero" Width="140px" />
         <RadzenDataGridColumn TItem="OrderDTO" Property="Date" Title="Data" Width="110px" FormatString="{0:dd/MM/yyyy}" />
-        <RadzenDataGridColumn TItem="OrderDTO" Property="CompanyName" Title="Azienda" />
-        <RadzenDataGridColumn TItem="OrderDTO" Property="QuoteNumber" Title="Preventivo" Width="140px" />
+        <RadzenDataGridColumn TItem="OrderDTO" Property="CompanyName" Title="Azienda">
+            <Template Context="o">
+                @if (o.IdCompany != null)
+                {
+                    <a href="@($"/Companies/{o.IdCompany}")" class="text-decoration-none fw-semibold">@o.CompanyName</a>
+                }
+                else
+                {
+                    @o.CompanyName
+                }
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="OrderDTO" Property="QuoteNumber" Title="Preventivo" Width="140px">
+            <Template Context="o">
+                @if (o.IdQuote != null)
+                {
+                    <a href="@($"/{ConstHelper.ClientQuotesPath}/{o.IdQuote}/Details")" class="text-decoration-none fw-semibold">
+                        @(string.IsNullOrWhiteSpace(o.QuoteNumber) ? o.IdQuote.Value.ToString() : o.QuoteNumber)
+                    </a>
+                }
+                else
+                {
+                    <span>-</span>
+                }
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="OrderDTO" Property="DealName" Title="Opportunita">
+            <Template Context="o">
+                @if (o.IdDeal != null)
+                {
+                    <a href="@($"/Deals/{o.IdDeal}")" class="text-decoration-none fw-semibold">
+                        @(string.IsNullOrWhiteSpace(o.DealName) ? o.IdDeal.Value.ToString() : o.DealName)
+                    </a>
+                }
+                else
+                {
+                    <span>-</span>
+                }
+            </Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="OrderDTO" Property="State" Title="Stato" Width="140px" Sortable="false">
             <Template Context="o"><span class="badge @StateClass(o.State)">@StateText(o.State)</span></Template>
         </RadzenDataGridColumn>

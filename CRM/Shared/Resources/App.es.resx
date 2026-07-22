@@ -592,9 +592,6 @@
   <data name="LeadsListSubTitle" xml:space="preserve">
     <value>Capta, califica y convierte los leads en oportunidades.</value>
   </data>
-  <data name="Catalog" xml:space="preserve">
-    <value>Catálogo</value>
-  </data>
   <data name="CatalogListSubTitle" xml:space="preserve">
     <value>Explora los productos del catálogo con imágenes y vistas previas.</value>
   </data>
@@ -831,9 +828,6 @@
   </data>
   <data name="Invoices" xml:space="preserve">
     <value>Facturas</value>
-  </data>
-  <data name="Activities" xml:space="preserve">
-    <value>Actividades</value>
   </data>
   <data name="InboundEmails" xml:space="preserve">
     <value>Correos entrantes</value>

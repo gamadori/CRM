@@ -41,7 +41,11 @@
                 AllowPaging="true" PageSize="15" PagerHorizontalAlign="HorizontalAlign.Center"
                 TItem="QuoteDTO" AllowSorting="true" EmptyText="Nessun preventivo">
     <Columns>
-        <RadzenDataGridColumn TItem="QuoteDTO" Property="Number" Title="Numero" Width="140px" />
+        @* Property="Number" per ordinamento/filtro sul numero puro; a video si mostra anche la
+           revisione, altrimenti non si distingue un preventivo rivisto da uno originale. *@
+        <RadzenDataGridColumn TItem="QuoteDTO" Property="Number" Title="Numero" Width="140px">
+            <Template Context="q">@q.NumberWithRevision</Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="QuoteDTO" Property="Date" Title="Data" Width="110px" FormatString="{0:dd/MM/yyyy}" />
         <RadzenDataGridColumn TItem="QuoteDTO" Property="CompanyName" Title="Azienda" />
         <RadzenDataGridColumn TItem="QuoteDTO" Property="State" Title="Stato" Width="130px" Sortable="false">

@@ -1,0 +1,59 @@
+@if (IsLoading)
+{
+    <Waiting></Waiting>
+}
+else if (IsEmpty)
+{
+    <div class="@CardClass">
+        <div class="card-body p-4 text-center text-muted">
+            @if (!string.IsNullOrWhiteSpace(EmptyIcon))
+            {
+                <span class="material-icons d-block mb-2 rg-detail-page-empty-icon">@EmptyIcon</span>
+            }
+            <strong>@EmptyText</strong>
+        </div>
+        @if (ActionsContent != null)
+        {
+            <div class="card-footer bg-light border-top py-3">
+                @ActionsContent
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="@CardClass">
+        <div class="card-body p-4 rg-detail-page-body">
+            @ChildContent
+        </div>
+
+        @if (ActionsContent != null)
+        {
+            <div class="card-footer bg-light border-top py-3">
+                @ActionsContent
+            </div>
+        }
+    </div>
+}
+
+<style>
+    .rg-detail-page-body {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .rg-detail-page-empty-icon {
+        font-size: 42px;
+    }
+</style>
+
+@code {
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool IsEmpty { get; set; }
+    [Parameter] public string EmptyIcon { get; set; }
+    [Parameter] public string EmptyText { get; set; } = "Elemento non trovato";
+    [Parameter] public string CardClass { get; set; } = "card border-0 shadow-sm mb-4";
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public RenderFragment ActionsContent { get; set; }
+}

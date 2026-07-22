@@ -5,6 +5,34 @@ using System.Linq;
 
 namespace CRM.Shared.DTOs
 {
+    /// <summary>
+    /// Una revisione nella storia di un preventivo: riga sintetica per l'elenco nel dettaglio.
+    /// Ogni revisione conserva il proprio stato e il proprio PDF inviato.
+    /// </summary>
+    public class QuoteRevisionDTO
+    {
+        public int Id { get; set; }
+
+        public string Number { get; set; } = string.Empty;
+
+        public int Revision { get; set; }
+
+        public DateTime Date { get; set; }
+
+        public QuoteStates State { get; set; }
+
+        public decimal Total { get; set; }
+
+        public bool IsCurrent { get; set; }
+
+        public DateTime? SupersededAt { get; set; }
+
+        /// <summary>True se di questa revisione esiste il PDF spedito al cliente.</summary>
+        public bool HasSentPdf { get; set; }
+
+        public DateTime? SentAt { get; set; }
+    }
+
     public class QuoteDTO
     {
         public int Id { get; set; }
@@ -55,6 +83,23 @@ namespace CRM.Shared.DTOs
         public string DealName { get; set; } = string.Empty;
 
         public string UserName { get; set; } = string.Empty;
+
+        // ---- Revisioni ----
+
+        public int Revision { get; set; } = 1;
+
+        public int? IdRootQuote { get; set; }
+
+        public bool IsCurrent { get; set; } = true;
+
+        public DateTime? SupersededAt { get; set; }
+
+        /// <summary>"OFF-2026-0003" oppure "OFF-2026-0003 rev.2" dalla seconda in poi.</summary>
+        public string NumberWithRevision
+            => Revision > 1 ? $"{Number} rev.{Revision}" : (Number ?? string.Empty);
+
+        /// <summary>Altre revisioni dello stesso preventivo, popolata solo dal dettaglio.</summary>
+        public List<QuoteRevisionDTO> Revisions { get; set; } = new();
 
         public int? IdOrder { get; set; }
 
@@ -157,6 +202,10 @@ namespace CRM.Shared.DTOs
             {
                 Id = quote.Id,
                 Number = quote.Number,
+                Revision = quote.Revision,
+                IdRootQuote = quote.IdRootQuote,
+                IsCurrent = quote.IsCurrent,
+                SupersededAt = quote.SupersededAt,
                 Date = quote.Date,
                 ValidUntil = quote.ValidUntil,
                 IdCompany = quote.IdCompany,

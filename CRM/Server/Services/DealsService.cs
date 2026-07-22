@@ -53,6 +53,11 @@ namespace CRM.Server.Services
                 .Include(x => x.User)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
+
+            // Perimetro aziende: una trattativa di un'altra azienda non esiste, per questo utente.
+            if (item != null && !await CanAccessAsync(item.IdCompany))
+                return null;
+
             var dto = item.ToDTO();
             if (dto != null)
             {
@@ -66,13 +71,20 @@ namespace CRM.Server.Services
         public async Task<DealDTO?> GetFirstAsync()
         {
 
-            var item = await _context.Deals
+            var q = _context.Deals
                 .Include(x => x.Company)
                 .Include(x => x.Contact)
                 .Include(x => x.ProductInterests)
                     .ThenInclude(x => x.Product)
                 .AsNoTracking()
-                .FirstOrDefaultAsync();
+                .AsQueryable();
+
+            // Perimetro aziende: la "prima trattativa" dev'essere la prima fra quelle visibili.
+            var allowed = await _permitsService.GetVisibleCompanyIds();
+            if (allowed != null)
+                q = q.Where(x => x.IdCompany != null && allowed.Contains(x.IdCompany.Value));
+
+            var item = await q.FirstOrDefaultAsync();
             return item.ToDTO();
         }
 
@@ -137,6 +149,12 @@ namespace CRM.Server.Services
                     .Include(x => x.User)
                     .AsNoTracking()
                     .Where(x => x.State != DealStates.Missing);
+
+                // Perimetro aziende: il forecast interroga direttamente il DbSet, quindi il
+                // filtro va applicato anche qui e non solo in FilterItems.
+                var allowedForecast = await _permitsService.GetVisibleCompanyIds();
+                if (allowedForecast != null)
+                    q = q.Where(x => x.IdCompany != null && allowedForecast.Contains(x.IdCompany.Value));
 
                 q = q.Where(x =>
                     (x.ExpectedCloseDate != null && x.ExpectedCloseDate.Value.Date >= dateFrom && x.ExpectedCloseDate.Value.Date <= dateTo) ||
@@ -287,6 +305,15 @@ namespace CRM.Server.Services
         {
             try
             {
+                // Perimetro aziende: non si scrive per un'azienda che non si può vedere.
+                if (!await CanAccessAsync(item.IdCompany))
+                    return new APIResponseMessage<DealDTO>
+                    {
+                        State = false,
+                        Message = "Azienda non accessibile per questo utente",
+                        Code = System.Net.HttpStatusCode.Forbidden
+                    };
+
                 var isNew = item.Id == 0;
                 DealStates? previousState = null;
 
@@ -295,6 +322,10 @@ namespace CRM.Server.Services
                     var existing = await _context.Deals
                         .Include(x => x.ProductInterests)
                         .FirstOrDefaultAsync(x => x.Id == item.Id);
+
+                    // Non si modifica una trattativa altrui spacciandola per propria.
+                    if (existing != null && !await CanAccessAsync(existing.IdCompany))
+                        existing = null;
 
                     if (existing == null)
                     {
@@ -408,7 +439,7 @@ namespace CRM.Server.Services
         {
             var item = await _context.Deals.FindAsync(id);
 
-            if (item == null)
+            if (item == null || !await CanAccessAsync(item.IdCompany))
             {
                 return false;
             }
@@ -427,6 +458,19 @@ namespace CRM.Server.Services
 
        
        
+        /// <summary>
+        /// True se l'utente corrente può vedere i dati dell'azienda indicata. Una trattativa senza
+        /// azienda è visibile solo a chi vede tutto (azienda madre): fail-closed.
+        /// </summary>
+        private async Task<bool> CanAccessAsync(int? idCompany)
+        {
+            var allowed = await _permitsService.GetVisibleCompanyIds();
+            if (allowed == null)
+                return true;
+
+            return idCompany != null && allowed.Contains(idCompany.Value);
+        }
+
         private async Task<IQueryable<Deal>?> FilterItems(DealFilter? args = null)
         {
             try
@@ -438,6 +482,12 @@ namespace CRM.Server.Services
                         .ThenInclude(x => x.Product)
                     .Include(x => x.User)
                     .AsQueryable();
+
+                // Perimetro aziende dell'utente: senza questo filtro un utente cliente o
+                // rivenditore vedrebbe le trattative di tutte le aziende dell'installazione.
+                var allowed = await _permitsService.GetVisibleCompanyIds();
+                if (allowed != null)
+                    items = items.Where(x => x.IdCompany != null && allowed.Contains(x.IdCompany.Value));
 
                 if (args?.OrderBy != null && args.OrderBy.Length > 0)
                 {

@@ -27,6 +27,26 @@ namespace CRM.Shared
         [Display(Name = "Numero")]
         public string? Number { get; set; }
 
+        // ---- Revisioni ----
+        // Ogni revisione è una riga a sé: conserva le proprie righe, il proprio stato e il PDF
+        // spedito (QuoteDelivery è agganciata al singolo preventivo). Il numero NON cambia fra
+        // revisioni: "OFF-2026-0003 rev.2" è sempre lo stesso preventivo per il cliente.
+
+        [Display(Name = "Revisione")]
+        public int Revision { get; set; } = 1;
+
+        /// <summary>Id della revisione 1 della catena; null se questa È la revisione 1.</summary>
+        [ForeignKey(nameof(RootQuote))]
+        public int? IdRootQuote { get; set; }
+
+        /// <summary>Revisione attiva: le liste mostrano solo queste.</summary>
+        public bool IsCurrent { get; set; } = true;
+
+        /// <summary>Quando questa revisione è stata sostituita da quella successiva.</summary>
+        public DateTime? SupersededAt { get; set; }
+
+        public virtual Quote? RootQuote { get; set; }
+
         [Display(Name = "Data")]
         public DateTime Date { get; set; }
 

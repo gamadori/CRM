@@ -1,88 +1,89 @@
-﻿@page "/Products/{Id:int}/Details"
+@page "/Products/{Id:int}/Details"
 @using Microsoft.Extensions.Localization
 @using RedG.Client.Components
 @inject NavigationManager Nav
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize
 
-@if (_product == null)
-{
-    <Waiting></Waiting>
-}
-else
+@if (_product != null)
 {
     <PageHeader Model="@_pageHeader" Visible=@(PageMode != PageHelper.PageModality.Dialog)>
     </PageHeader>
+}
 
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-4">
-            
-            <RedGDetailField Icon="badge" ContainerClass="mb-4">
-                <LabelContent><DisplayName For="@(() => _product.Name)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_product.Name</p></ChildContent>
-            </RedGDetailField>
+<RedGDetailPage IsLoading="@(_product == null)">
+    <ChildContent>
+        @if (_product != null)
+        {
+            <RedGDetailSection Title="Identita prodotto" Icon="inventory_2">
+                <RedGDetailField Icon="badge">
+                    <LabelContent><DisplayName For="@(() => _product.Name)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_product.Name</p></ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="qr_code" ContainerClass="mb-4">
-                <LabelContent><DisplayName For="@(() => _product.Code)" /></LabelContent>
-                <ChildContent>
-                    @if (!string.IsNullOrWhiteSpace(_product.Code))
-                    {
-                        <p class="mb-0 text-dark">@_product.Code</p>
-                    }
-                    else
-                    {
-                        <p class="mb-0 text-muted fst-italic">—</p>
-                    }
-                </ChildContent>
-            </RedGDetailField>
-
-            <RedGDetailField Icon="category" ContainerClass="mb-4">
-                <LabelContent><DisplayName For="@(() => _product.IdProductType)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_product.ProductTypeName</p></ChildContent>
-            </RedGDetailField>
-           
-
-            <RedGDetailField Icon="business" ContainerClass="mb-4">
-                <LabelContent><DisplayName For="@(() => _product.CompanyName)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_product.CompanyName</p></ChildContent>
-            </RedGDetailField>
-
-            <RedGDetailField Icon="euro" ContainerClass="mb-4">
-                <LabelContent><DisplayName For="@(() => _product.Price)" /></LabelContent>
-                <ChildContent>
-                    <p class="mb-0 text-dark">
-                        @if (decimal.TryParse(Convert.ToString(_product.Price), out var p))
+                <RedGDetailField Icon="qr_code">
+                    <LabelContent><DisplayName For="@(() => _product.Code)" /></LabelContent>
+                    <ChildContent>
+                        @if (!string.IsNullOrWhiteSpace(_product.Code))
                         {
-                            @p.ToString("C")
+                            <p class="mb-0 text-dark">@_product.Code</p>
                         }
                         else
                         {
-                            <span>@_product.Price</span>
+                            <p class="mb-0 text-muted fst-italic">-</p>
                         }
-                    </p>
-                </ChildContent>
-            </RedGDetailField>
+                    </ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="description">
-                <LabelContent><DisplayName For="@(() => _product.Description)" /></LabelContent>
-                <ChildContent>
-                    @if (!string.IsNullOrWhiteSpace(_product.Description))
-                    {
-                        <p class="mb-0 text-dark">@_product.Description</p>
-                    }
-                    else
-                    {
-                        <p class="mb-0 text-muted fst-italic">@Localize["NoDescriptionAvailable"]</p>
-                    }
-                </ChildContent>
-            </RedGDetailField>
-        </div>
+                <RedGDetailField Icon="category">
+                    <LabelContent><DisplayName For="@(() => _product.IdProductType)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_product.ProductTypeName</p></ChildContent>
+                </RedGDetailField>
+            </RedGDetailSection>
 
-        <!-- Footer con azioni -->
-        <div class="card-footer bg-light border-top py-3">
-            <div class="d-flex gap-2">
-                <RedGButton RGButtonType="RGButtonType.Back" Click="@(() => Nav.NavigateTo("/Products"))" Text="@Localize["Lista Prodotti"]" />
-                <RedGButton RGButtonType="RGButtonType.Edit" Click="Edit" AutoLabel=true></RedGButton>
-            </div>
-        </div>
-    </div>
-}
+            <RedGDetailSection Title="Commerciale" Icon="business">
+                <RedGDetailField Icon="business">
+                    <LabelContent><DisplayName For="@(() => _product.CompanyName)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_product.CompanyName</p></ChildContent>
+                </RedGDetailField>
+
+                <RedGDetailField Icon="euro">
+                    <LabelContent><DisplayName For="@(() => _product.Price)" /></LabelContent>
+                    <ChildContent>
+                        <p class="mb-0 text-dark">
+                            @if (decimal.TryParse(Convert.ToString(_product.Price), out var p))
+                            {
+                                @p.ToString("C")
+                            }
+                            else
+                            {
+                                <span>@_product.Price</span>
+                            }
+                        </p>
+                    </ChildContent>
+                </RedGDetailField>
+            </RedGDetailSection>
+
+            <RedGDetailSection Title="Descrizione" Icon="description">
+                <RedGDetailField Icon="description">
+                    <LabelContent><DisplayName For="@(() => _product.Description)" /></LabelContent>
+                    <ChildContent>
+                        @if (!string.IsNullOrWhiteSpace(_product.Description))
+                        {
+                            <p class="mb-0 text-dark">@_product.Description</p>
+                        }
+                        else
+                        {
+                            <p class="mb-0 text-muted fst-italic">@Localize["NoDescriptionAvailable"]</p>
+                        }
+                    </ChildContent>
+                </RedGDetailField>
+            </RedGDetailSection>
+        }
+    </ChildContent>
+    <ActionsContent>
+        <RedGDetailActions>
+            <RedGButton RGButtonType="RGButtonType.Back" Click="@(() => Nav.NavigateTo("/Products"))" Text="@Localize["Lista Prodotti"]" />
+            <RedGButton RGButtonType="RGButtonType.Edit" Click="Edit" AutoLabel=true></RedGButton>
+        </RedGDetailActions>
+    </ActionsContent>
+</RedGDetailPage>

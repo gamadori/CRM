@@ -102,6 +102,19 @@ namespace CRM.Server.Controllers
             return Ok(resp);
         }
 
+        [HttpPost("{id}/revision")]
+        public async Task<ActionResult<APIResponseMessage<QuoteDTO>>> CreateRevision(int id)
+        {
+            var resp = await _quotesService.CreateRevisionAsync(id);
+            if (resp == null)
+                return StatusCode(StatusCodes.Status500InternalServerError, "Create revision return null");
+            return Ok(resp);
+        }
+
+        [HttpGet("{id}/revisions")]
+        public async Task<ActionResult<IEnumerable<QuoteRevisionDTO>>> GetRevisions(int id)
+            => Ok(await _quotesService.GetRevisionsAsync(id));
+
         [HttpGet("{id}/pdf")]
         public async Task<IActionResult> GetPdf(int id)
         {

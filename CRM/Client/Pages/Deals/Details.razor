@@ -6,115 +6,104 @@
 <PageHeader Model="_pageHeader" Visible="@(OnClickCancel == null)">
 </PageHeader>
 
-@if (_loading)
-{
-    <Waiting></Waiting>
-}
-else if (_deal == null)
-{
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-4 text-center text-muted">
-            <span class="material-icons d-block mb-2" style="font-size: 42px;">work_off</span>
-            <strong>Opportunita non trovata</strong>
-        </div>
-        <div class="card-footer bg-light border-top py-3">
-            <RedGButton RGButtonType="RGButtonType.Back" Click="Back" Text="Lista opportunita" />
-        </div>
-    </div>
-}
-else
-{
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-4">
-           
+<RedGDetailPage IsLoading="_loading" IsEmpty="@(_deal == null)" EmptyIcon="work_off" EmptyText="Opportunita non trovata">
+    <ChildContent>
+        @if (_deal != null)
+        {
+            <RedGDetailSection Title="Dati principali" Icon="work">
+                <RedGDetailField Icon="work">
+                    <LabelContent><DisplayName For="@(() => _deal.Name)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_deal.Name</p></ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="work" ContainerClass="mb-4">
-                <LabelContent><DisplayName For="@(() => _deal.Name)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_deal.Name</p></ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="business">
+                    <LabelContent><DisplayName For="@(() => _deal.IdCompany)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_deal.CompanyName</p></ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="business">
-                <LabelContent><DisplayName For="@(() => _deal.IdCompany)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_deal.CompanyName</p></ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="person">
+                    <LabelContent><DisplayName For="@(() => _deal.IdContact)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@(string.IsNullOrWhiteSpace(_deal.ContactName) ? "-" : _deal.ContactName)</p></ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="person">
-                <LabelContent><DisplayName For="@(() => _deal.IdContact)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@(string.IsNullOrWhiteSpace(_deal.ContactName) ? "-" : _deal.ContactName)</p></ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="account_circle">
+                    <LabelContent><DisplayName For="@(() => _deal.IdUser)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_deal.UserName</p></ChildContent>
+                </RedGDetailField>
+            </RedGDetailSection>
 
-            <RedGDetailField Icon="flag">
-                <LabelContent><DisplayName For="@(() => _deal.State)" /></LabelContent>
-                <ChildContent><span class="badge @StateBadgeClass(_deal.State)">@StateText(_deal.State)</span></ChildContent>
-            </RedGDetailField>
+            <RedGDetailSection Title="Pipeline" Icon="timeline">
+                <RedGDetailField Icon="flag">
+                    <LabelContent><DisplayName For="@(() => _deal.State)" /></LabelContent>
+                    <ChildContent><span class="badge @StateBadgeClass(_deal.State)">@StateText(_deal.State)</span></ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="timeline">
-                <LabelContent><DisplayName For="@(() => _deal.Phase)" /></LabelContent>
-                <ChildContent>
-                    <div class="d-flex align-items-center gap-3">
-                        <span>@PhaseText(_deal.Phase)</span>
-                        <RadzenProgressBar Value="@DealProgress" ShowValue="false" Style="height: 6px; width: 180px;" />
-                    </div>
-                </ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="timeline">
+                    <LabelContent><DisplayName For="@(() => _deal.Phase)" /></LabelContent>
+                    <ChildContent>
+                        <div class="d-flex align-items-center gap-3">
+                            <span>@PhaseText(_deal.Phase)</span>
+                            <RadzenProgressBar Value="@DealProgress" ShowValue="false" Style="height: 6px; width: 180px;" />
+                        </div>
+                    </ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="euro">
-                <LabelContent><DisplayName For="@(() => _deal.Amount)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_deal.Amount.ToString("C")</p></ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="euro">
+                    <LabelContent><DisplayName For="@(() => _deal.Amount)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_deal.Amount.ToString("C")</p></ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="track_changes">
-                <LabelContent><DisplayName For="@(() => _deal.Target)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_deal.Target.ToString("C")</p></ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="track_changes">
+                    <LabelContent><DisplayName For="@(() => _deal.Target)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_deal.Target.ToString("C")</p></ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="percent">
-                <LabelContent><DisplayName For="@(() => _deal.Probability)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_deal.Probability%</p></ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="percent">
+                    <LabelContent><DisplayName For="@(() => _deal.Probability)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_deal.Probability%</p></ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="query_stats">
-                <LabelContent><DisplayName For="@(() => _deal.WeightedAmount)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_deal.WeightedAmount.ToString("C")</p></ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="query_stats">
+                    <LabelContent><DisplayName For="@(() => _deal.WeightedAmount)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_deal.WeightedAmount.ToString("C")</p></ChildContent>
+                </RedGDetailField>
+            </RedGDetailSection>
 
-            <RedGDetailField Icon="event">
-                <LabelContent><DisplayName For="@(() => _deal.Date)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_deal.Date.ToString("dd/MM/yyyy")</p></ChildContent>
-            </RedGDetailField>
+            <RedGDetailSection Title="Date" Icon="event">
+                <RedGDetailField Icon="event">
+                    <LabelContent><DisplayName For="@(() => _deal.Date)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_deal.Date.ToString("dd/MM/yyyy")</p></ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="event_available">
-                <LabelContent><DisplayName For="@(() => _deal.ExpectedCloseDate)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@(_deal.ExpectedCloseDate == null ? "-" : _deal.ExpectedCloseDate.Value.ToString("dd/MM/yyyy"))</p></ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="event_available">
+                    <LabelContent><DisplayName For="@(() => _deal.ExpectedCloseDate)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@(_deal.ExpectedCloseDate == null ? "-" : _deal.ExpectedCloseDate.Value.ToString("dd/MM/yyyy"))</p></ChildContent>
+                </RedGDetailField>
 
-            <RedGDetailField Icon="event_busy">
-                <LabelContent><DisplayName For="@(() => _deal.DateClosed)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@(_deal.DateClosed == default ? "-" : _deal.DateClosed.ToString("dd/MM/yyyy"))</p></ChildContent>
-            </RedGDetailField>
-
-            <RedGDetailField Icon="account_circle">
-                <LabelContent><DisplayName For="@(() => _deal.IdUser)" /></LabelContent>
-                <ChildContent><p class="mb-0 text-dark">@_deal.UserName</p></ChildContent>
-            </RedGDetailField>
+                <RedGDetailField Icon="event_busy">
+                    <LabelContent><DisplayName For="@(() => _deal.DateClosed)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@(_deal.DateClosed == default ? "-" : _deal.DateClosed.ToString("dd/MM/yyyy"))</p></ChildContent>
+                </RedGDetailField>
+            </RedGDetailSection>
 
             @if (!string.IsNullOrWhiteSpace(_deal.Note))
             {
-                <RedGDetailField Icon="note">
-                    <LabelContent><DisplayName For="@(() => _deal.Note)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark" style="white-space: pre-wrap;">@_deal.Note</p></ChildContent>
-                </RedGDetailField>
+                <RedGDetailSection Title="Note" Icon="note">
+                    <RedGDetailField Icon="note">
+                        <LabelContent><DisplayName For="@(() => _deal.Note)" /></LabelContent>
+                        <ChildContent><p class="mb-0 text-dark" style="white-space: pre-wrap;">@_deal.Note</p></ChildContent>
+                    </RedGDetailField>
+                </RedGDetailSection>
             }
-        </div>
-
-        <div class="card-footer bg-light border-top py-3">
-            <div class="d-flex gap-2">
-                <RedGButton RGButtonType="RGButtonType.Back" Click="Back" Text="Lista opportunita" />
-                @if (_deal.Permits.Edit())
-                {
-                    <RedGButton RGButtonType="RGButtonType.Edit" Click="Edit" AutoLabel="true" />
-                }
-            </div>
-        </div>
-    </div>
-}
+        }
+    </ChildContent>
+    <ActionsContent>
+        <RedGDetailActions>
+            <RedGButton RGButtonType="RGButtonType.Back" Click="Back" Text="Lista opportunita" />
+            @if (_deal?.Permits.Edit() == true)
+            {
+                <RedGButton RGButtonType="RGButtonType.Edit" Click="Edit" AutoLabel="true" />
+            }
+        </RedGDetailActions>
+    </ActionsContent>
+</RedGDetailPage>

@@ -1,0 +1,20 @@
+<div class="@CssClass">
+    @ChildContent
+</div>
+
+<style>
+    .rg-detail-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+</style>
+
+@code {
+    private string CssClass => string.Join(" ", new[] { "rg-detail-actions", Class }
+        .Where(value => !string.IsNullOrWhiteSpace(value)));
+
+    [Parameter] public string Class { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+}

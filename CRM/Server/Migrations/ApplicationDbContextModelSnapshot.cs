@@ -3013,8 +3013,14 @@ namespace CRM.Server.Migrations
                     b.Property<int?>("IdDeal")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdRootQuote")
+                        .HasColumnType("int");
+
                     b.Property<string>("IdUser")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsCurrent")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
@@ -3022,11 +3028,17 @@ namespace CRM.Server.Migrations
                     b.Property<string>("Number")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<int>("Revision")
+                        .HasColumnType("int");
+
                     b.Property<int>("State")
                         .HasColumnType("int");
 
                     b.Property<decimal>("Subtotal")
                         .HasColumnType("Money");
+
+                    b.Property<DateTime?>("SupersededAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("TermsConditions")
                         .HasColumnType("nvarchar(max)");
@@ -3051,7 +3063,11 @@ namespace CRM.Server.Migrations
 
                     b.HasIndex("IdDeal");
 
+                    b.HasIndex("IdRootQuote");
+
                     b.HasIndex("IdUser");
+
+                    b.HasIndex("IsCurrent");
 
                     b.HasIndex("Number");
 
@@ -5376,6 +5392,11 @@ namespace CRM.Server.Migrations
                         .HasForeignKey("IdDeal")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("CRM.Shared.Quote", "RootQuote")
+                        .WithMany()
+                        .HasForeignKey("IdRootQuote")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("CRM.Shared.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("IdUser")
@@ -5386,6 +5407,8 @@ namespace CRM.Server.Migrations
                     b.Navigation("Contact");
 
                     b.Navigation("Deal");
+
+                    b.Navigation("RootQuote");
 
                     b.Navigation("User");
                 });

@@ -257,6 +257,35 @@ namespace CRM.Server.Services
             return new List<int>();
         }
 
+        private bool _visibleCompaniesComputed;
+        private List<int>? _visibleCompanies;
+
+        public async Task<List<int>?> GetVisibleCompanyIds()
+        {
+            // Il servizio è registrato Scoped: dentro una richiesta l'utente non cambia, quindi il
+            // perimetro si calcola una volta sola. Serve davvero: per un rivenditore il calcolo
+            // percorre l'albero delle aziende, e una singola pagina di elenco lo chiede più volte.
+            if (_visibleCompaniesComputed)
+                return _visibleCompanies;
+
+            var user = await _userManager.FindByNameAsync(_httpContextAccessor.HttpContext?.User?.Identity?.Name);
+
+            // Fail-closed: utente non risolvibile, disattivato o senza azienda non vede nulla.
+            if (user == null || user.IsDeleted || user.IdCompany == null)
+                _visibleCompanies = new List<int>();
+
+            // Solo l'azienda madre vede tutto. Attenzione: NON usare CanAccessOtherCompany qui,
+            // perché è true anche per i rivenditori, che invece vedono solo il proprio albero.
+            else if (await IsHeadCompany(user.IdCompany.Value))
+                _visibleCompanies = null;
+
+            else
+                _visibleCompanies = await GetIdCompanies(user.IdCompany.Value);
+
+            _visibleCompaniesComputed = true;
+            return _visibleCompanies;
+        }
+
         public async Task<List<int>> GetIdCompanies(int idCompany)
         {
             var company = await _context.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.Id == idCompany);

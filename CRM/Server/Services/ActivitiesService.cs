@@ -26,10 +26,46 @@ namespace CRM.Server.Services
             _logEventService = logEventService;
         }
 
+        /// <summary>
+        /// Perimetro aziende: un'attività è visibile solo se lo è l'entità a cui è agganciata.
+        /// Il legame è polimorfico, quindi l'azienda proprietaria va risolta per tipo. Un'entità
+        /// senza azienda (es. lead non ancora collegato) è riservata a chi vede tutto: fail-closed.
+        /// </summary>
+        private async Task<bool> CanAccessEntityAsync(ActivityEntityType entityType, int entityId)
+        {
+            var allowed = await _permitsService.GetVisibleCompanyIds();
+            if (allowed == null)
+                return true;   // azienda madre: nessun filtro, niente query inutili
+
+            int? idCompany = entityType switch
+            {
+                ActivityEntityType.Company => entityId,
+                ActivityEntityType.Contact => await _context.Contacts.AsNoTracking()
+                    .Where(x => x.Id == entityId).Select(x => x.IdCompany).FirstOrDefaultAsync(),
+                ActivityEntityType.Lead => await _context.Leads.AsNoTracking()
+                    .Where(x => x.Id == entityId).Select(x => x.IdCompany).FirstOrDefaultAsync(),
+                ActivityEntityType.Deal => await _context.Deals.AsNoTracking()
+                    .Where(x => x.Id == entityId).Select(x => x.IdCompany).FirstOrDefaultAsync(),
+                ActivityEntityType.Ticket => await _context.Tickets.AsNoTracking()
+                    .Where(x => x.Id == entityId).Select(x => (int?)x.IdCompany).FirstOrDefaultAsync(),
+                _ => null
+            };
+
+            return idCompany != null && allowed.Contains(idCompany.Value);
+        }
+
+        /// <summary>Come sopra, ma partendo da un'attività già caricata.</summary>
+        private Task<bool> CanAccessActivityAsync(Activity activity)
+            => CanAccessEntityAsync(activity.EntityType, activity.EntityId);
+
         public async Task<List<ActivityDTO>?> GetByEntityAsync(ActivityEntityType entityType, int entityId)
         {
             try
             {
+                // Timeline di un'entità fuori perimetro: nessun dato, come se non esistesse.
+                if (!await CanAccessEntityAsync(entityType, entityId))
+                    return new List<ActivityDTO>();
+
                 var currentUser = await SafeCurrentUserAsync();
 
                 var items = await _context.Activities
@@ -181,6 +217,9 @@ namespace CRM.Server.Services
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Id == id);
 
+            if (item != null && !await CanAccessActivityAsync(item))
+                return null;
+
             var dto = item.ToDTO();
             if (dto != null)
                 dto.Permits = ComputePermits(item!.IdUser, item.IdAssignee, await SafeCurrentUserAsync());
@@ -191,11 +230,21 @@ namespace CRM.Server.Services
         {
             try
             {
+                // Non si aggancia un'attività a un'entità fuori perimetro...
+                if (!await CanAccessEntityAsync(item.EntityType, item.EntityId))
+                    return Fail("Entità non accessibile per questo utente", System.Net.HttpStatusCode.Forbidden);
+
                 if (item.Id > 0)
                 {
                     var existing = await _context.Activities
                         .Include(a => a.Participants)
                         .FirstOrDefaultAsync(a => a.Id == item.Id);
+
+                    // ...e non si modifica l'attività di un'entità che non si potrebbe vedere,
+                    // spostandola sulla propria.
+                    if (existing != null && !await CanAccessActivityAsync(existing))
+                        existing = null;
+
                     if (existing == null)
                         return Fail("Attivita' non trovata", System.Net.HttpStatusCode.NotFound);
 
@@ -268,7 +317,7 @@ namespace CRM.Server.Services
             try
             {
                 var item = await _context.Activities.FirstOrDefaultAsync(a => a.Id == id);
-                if (item == null)
+                if (item == null || !await CanAccessActivityAsync(item))
                     return Fail("Attivita' non trovata", System.Net.HttpStatusCode.NotFound);
 
                 var currentUserId = await SafeCurrentUserAsync();
@@ -322,7 +371,7 @@ namespace CRM.Server.Services
         public async Task<bool> DeleteAsync(int id)
         {
             var item = await _context.Activities.FindAsync(id);
-            if (item == null)
+            if (item == null || !await CanAccessActivityAsync(item))
                 return false;
             try
             {

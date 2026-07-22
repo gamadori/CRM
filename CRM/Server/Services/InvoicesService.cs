@@ -44,6 +44,10 @@ namespace CRM.Server.Services
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
 
+            // Perimetro aziende: una fattura di un'altra azienda non esiste, per questo utente.
+            if (item != null && !await CanAccessAsync(item.IdCompany))
+                return null;
+
             var dto = item.ToDTO();
             if (dto != null)
                 dto.Permits = await _permitsService.ObjectPermits(dto.IdCompany, dto.IdUser);
@@ -54,7 +58,7 @@ namespace CRM.Server.Services
         {
             try
             {
-                var items = FilterItems(args);
+                var items = await FilterItems(args);
                 if (items == null)
                     return new();
 
@@ -66,7 +70,7 @@ namespace CRM.Server.Services
                 {
                     Items = await items.Select(item => item.ToDTO()).ToListAsync(),
                     MetaData = new PagingHeaderModel { TotalCount = count, PageSize = args != null ? args.PageSize : 0 },
-                    Total = await FilterItems(args)!.SumAsync(x => x.Total),
+                    Total = await (await FilterItems(args))!.SumAsync(x => x.Total),
                 };
 
                 foreach (var o in resp.Items)
@@ -85,7 +89,7 @@ namespace CRM.Server.Services
         {
             try
             {
-                var items = FilterItems(args);
+                var items = await FilterItems(args);
                 if (items == null)
                     return new List<InvoiceDTO>();
                 return await items.Select(item => item.ToDTO()).ToListAsync();
@@ -101,12 +105,20 @@ namespace CRM.Server.Services
         {
             try
             {
+                // Perimetro aziende: non si scrive per un'azienda che non si può vedere.
+                if (!await CanAccessAsync(item.IdCompany))
+                    return Fail("Azienda non accessibile per questo utente", System.Net.HttpStatusCode.Forbidden);
+
                 Recalculate(item);
 
                 int savedId;
                 if (item.Id > 0)
                 {
                     var existing = await _context.Invoices.Include(i => i.Rows).FirstOrDefaultAsync(x => x.Id == item.Id);
+                    // Non si modifica una fattura altrui spacciandola per propria.
+                    if (existing != null && !await CanAccessAsync(existing.IdCompany))
+                        existing = null;
+
                     if (existing == null)
                         return Fail("Fattura non trovata", System.Net.HttpStatusCode.NotFound);
 
@@ -180,7 +192,7 @@ namespace CRM.Server.Services
                     .AsNoTracking()
                     .FirstOrDefaultAsync(o => o.Id == orderId);
 
-                if (order == null)
+                if (order == null || !await CanAccessAsync(order.IdCompany))
                     return Fail("Ordine non trovato", System.Net.HttpStatusCode.NotFound);
 
                 var invoice = new Invoice
@@ -228,7 +240,7 @@ namespace CRM.Server.Services
             try
             {
                 var invoice = await _context.Invoices.FirstOrDefaultAsync(x => x.Id == id);
-                if (invoice == null)
+                if (invoice == null || !await CanAccessAsync(invoice.IdCompany))
                     return Fail("Fattura non trovata", System.Net.HttpStatusCode.NotFound);
 
                 // Dopo la trasmissione a SdI il dato è congelato: non si tocca
@@ -259,7 +271,7 @@ namespace CRM.Server.Services
                     .AsNoTracking()
                     .FirstOrDefaultAsync(i => i.Id == id);
 
-                if (invoice == null)
+                if (invoice == null || !await CanAccessAsync(invoice.IdCompany))
                     return null;
 
                 var settings = await _context.GlobalSettings.AsNoTracking().FirstOrDefaultAsync();
@@ -317,7 +329,7 @@ namespace CRM.Server.Services
         public async Task<bool> DeleteAsync(int id)
         {
             var item = await _context.Invoices.FindAsync(id);
-            if (item == null)
+            if (item == null || !await CanAccessAsync(item.IdCompany))
                 return false;
             try
             {
@@ -396,7 +408,20 @@ namespace CRM.Server.Services
             return prefix + (max + 1).ToString("D4");
         }
 
-        private IQueryable<Invoice>? FilterItems(InvoiceFilter? args = null)
+        /// <summary>
+        /// True se l'utente corrente può vedere i dati dell'azienda indicata. Un documento senza
+        /// azienda è visibile solo a chi vede tutto (azienda madre): fail-closed.
+        /// </summary>
+        private async Task<bool> CanAccessAsync(int? idCompany)
+        {
+            var allowed = await _permitsService.GetVisibleCompanyIds();
+            if (allowed == null)
+                return true;
+
+            return idCompany != null && allowed.Contains(idCompany.Value);
+        }
+
+        private async Task<IQueryable<Invoice>?> FilterItems(InvoiceFilter? args = null)
         {
             try
             {
@@ -406,6 +431,12 @@ namespace CRM.Server.Services
                     .Include(x => x.Order)
                     .Include(x => x.User)
                     .AsQueryable();
+
+                // Perimetro aziende dell'utente: senza questo filtro un utente cliente o
+                // rivenditore vedrebbe le fatture di tutte le aziende dell'installazione.
+                var allowed = await _permitsService.GetVisibleCompanyIds();
+                if (allowed != null)
+                    items = items.Where(x => x.IdCompany != null && allowed.Contains(x.IdCompany.Value));
 
                 if (args?.OrderBy != null && args.OrderBy.Length > 0)
                     items = items.OrderBy(args.OrderBy);

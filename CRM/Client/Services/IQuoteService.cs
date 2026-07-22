@@ -9,5 +9,8 @@ namespace CRM.Client.Services
     {
         Task<APIResponseMessage<QuoteDTO>> ChangeStateAsync(int id, QuoteStates state, bool updateDeal = true);
         Task<APIResponseMessage<QuoteDTO>> SendAsync(int id, QuoteSendRequest request);
+
+        /// <summary>Crea la revisione successiva: la corrente diventa storia, la nuova nasce in bozza.</summary>
+        Task<APIResponseMessage<QuoteDTO>> CreateRevisionAsync(int id);
     }
 }
