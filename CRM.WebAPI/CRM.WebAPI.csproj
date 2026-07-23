@@ -7,10 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MailKit" Version="4.17.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.2" />
-    <PackageReference Include="System.Private.Uri" Version="4.3.2" />
+    <PackageReference Include="MailKit" />
+    <!-- CRM.WebAPI requires Swashbuckle 6.x - pinned with VersionOverride -->
+    <PackageReference Include="Swashbuckle.AspNetCore" VersionOverride="6.6.2" />
+    <PackageReference Include="System.Linq.Dynamic.Core" />
+    <PackageReference Include="System.Private.Uri" />
   </ItemGroup>
 
 </Project>
