@@ -38,12 +38,12 @@
                     <ChildContent><span class="badge @StateBadgeClass(_deal.State)">@StateText(_deal.State)</span></ChildContent>
                 </RedGDetailField>
 
-                <RedGDetailField Icon="timeline">
+                <RedGDetailField Icon="timeline" ContainerClass="deal-phase-detail-field mb-3">
                     <LabelContent><DisplayName For="@(() => _deal.Phase)" /></LabelContent>
                     <ChildContent>
-                        <div class="d-flex align-items-center gap-3">
-                            <span>@PhaseText(_deal.Phase)</span>
-                            <RadzenProgressBar Value="@DealProgress" ShowValue="false" Style="height: 6px; width: 180px;" />
+                        <div class="deal-phase-summary">
+                            <span class="deal-phase-name" title="@PhaseText(_deal.Phase)">@PhaseText(_deal.Phase)</span>
+                            <RadzenProgressBar Value="@DealProgress" ShowValue="false" class="deal-phase-progress" />
                         </div>
                     </ChildContent>
                 </RedGDetailField>
@@ -107,3 +107,40 @@
         </RedGDetailActions>
     </ActionsContent>
 </RedGDetailPage>
+
+<style>
+    .deal-phase-detail-field .rg-field-value {
+        overflow-wrap: normal;
+    }
+
+    .deal-phase-summary {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .deal-phase-name {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--crm-text, #101828);
+        line-height: 1.25;
+    }
+
+    .deal-phase-progress {
+        width: 100%;
+        height: 0.4rem;
+        min-width: 0;
+    }
+
+    @@media (max-width: 768px) {
+        .deal-phase-name {
+            white-space: normal;
+        }
+    }
+</style>

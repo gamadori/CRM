@@ -47,6 +47,8 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 // Aggiungi IHttpContextAccessor per accedere all'HttpContext nei servizi
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<MaintenanceState>();
+builder.Services.AddSingleton<IAppOfflineService, AppOfflineService>();
+builder.Services.AddHostedService<MaintenanceAppOfflineBackgroundService>();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
                 .AddRoles<IdentityRole>()

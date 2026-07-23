@@ -13,7 +13,7 @@ namespace CRM.Server.Services
                 return Copy(_current);
         }
 
-        public MaintenanceNoticeDTO Schedule(int minutes, string? message)
+        public MaintenanceNoticeDTO Schedule(int minutes, string? message, bool autoPublishAppOffline)
         {
             lock (_sync)
             {
@@ -23,7 +23,8 @@ namespace CRM.Server.Services
                     StartsAtUtc = DateTimeOffset.UtcNow.AddMinutes(minutes),
                     Message = string.IsNullOrWhiteSpace(message)
                         ? "Il server sarà temporaneamente non disponibile per manutenzione."
-                        : message.Trim()
+                        : message.Trim(),
+                    AutoPublishAppOffline = autoPublishAppOffline
                 };
                 return Copy(_current);
             }
@@ -38,11 +39,22 @@ namespace CRM.Server.Services
             }
         }
 
+        public MaintenanceNoticeDTO MarkAppOfflinePublished()
+        {
+            lock (_sync)
+            {
+                _current.AppOfflinePublishedAtUtc = DateTimeOffset.UtcNow;
+                return Copy(_current);
+            }
+        }
+
         private static MaintenanceNoticeDTO Copy(MaintenanceNoticeDTO notice) => new()
         {
             Active = notice.Active,
             StartsAtUtc = notice.StartsAtUtc,
-            Message = notice.Message
+            Message = notice.Message,
+            AutoPublishAppOffline = notice.AutoPublishAppOffline,
+            AppOfflinePublishedAtUtc = notice.AppOfflinePublishedAtUtc
         };
     }
 }

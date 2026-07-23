@@ -15,30 +15,43 @@ namespace CRM.Server.Controllers
     {
         private readonly MaintenanceState _state;
         private readonly IHubContext<SignalRHub> _hub;
+        private readonly IAppOfflineService _appOfflineService;
 
-        public MaintenanceController(MaintenanceState state, IHubContext<SignalRHub> hub)
+        public MaintenanceController(
+            MaintenanceState state,
+            IHubContext<SignalRHub> hub,
+            IAppOfflineService appOfflineService)
         {
             _state = state;
             _hub = hub;
+            _appOfflineService = appOfflineService;
         }
 
         [HttpGet]
-        public ActionResult<MaintenanceNoticeDTO> Get() => Ok(_state.GetCurrent());
+        public ActionResult<MaintenanceStatusDTO> Get() => Ok(GetStatus());
 
         [HttpPost("schedule")]
-        public async Task<ActionResult<MaintenanceNoticeDTO>> Schedule(ScheduleMaintenanceRequest request)
+        public async Task<ActionResult<MaintenanceStatusDTO>> Schedule(ScheduleMaintenanceRequest request)
         {
-            var notice = _state.Schedule(request.Minutes, request.Message);
+            var notice = _state.Schedule(request.Minutes, request.Message, request.AutoPublishAppOffline);
             await _hub.Clients.All.SendAsync("MaintenanceNotice", notice);
-            return Ok(notice);
+            return Ok(GetStatus());
         }
 
         [HttpDelete]
-        public async Task<ActionResult<MaintenanceNoticeDTO>> Cancel()
+        public async Task<ActionResult<MaintenanceStatusDTO>> Cancel()
         {
             var notice = _state.Cancel();
             await _hub.Clients.All.SendAsync("MaintenanceNotice", notice);
-            return Ok(notice);
+            return Ok(GetStatus());
         }
+
+        private MaintenanceStatusDTO GetStatus() => new()
+        {
+            Notice = _state.GetCurrent(),
+            ConnectedUsers = SignalRHub.ConnectedUsersCount,
+            ConnectedConnections = SignalRHub.ConnectedConnectionsCount,
+            AppOfflineFileExists = _appOfflineService.Exists()
+        };
     }
 }

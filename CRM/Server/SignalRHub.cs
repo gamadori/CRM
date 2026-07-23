@@ -14,9 +14,21 @@ namespace CRM.Server
             _maintenanceState = maintenanceState;
         }
 
-        public static Dictionary<string, string> Connections { get { return _connections.ToDictionary(c => c.Key, c => c.Value); } }
+        public static Dictionary<string, string> Connections
+        {
+            get
+            {
+                return _connections.ToDictionary(
+                    c => c.Key,
+                    c => c.Value.Keys.FirstOrDefault() ?? string.Empty);
+            }
+        }
 
-        private static ConcurrentDictionary<string,string> _connections = new ConcurrentDictionary<string,string>();
+        public static int ConnectedUsersCount => _connections.Count;
+
+        public static int ConnectedConnectionsCount => _connections.Sum(c => c.Value.Count);
+
+        private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _connections = new();
 
         public async Task SendAllMessageAsync(int IdTicket, int idChat)
         {
@@ -26,9 +38,12 @@ namespace CRM.Server
 
         public  async Task SendMessageAsync(string IdUser, int idTicket, int idChat)
         {
-            if (_connections.TryGetValue(IdUser, out var connId))
+            if (_connections.TryGetValue(IdUser, out var userConnections))
             {
-                await Clients.Client(connId).SendAsync("ReceiveMessage", idTicket, idChat);
+                foreach (var connId in userConnections.Keys)
+                {
+                    await Clients.Client(connId).SendAsync("ReceiveMessage", idTicket, idChat);
+                }
             }
         }
 
@@ -38,7 +53,8 @@ namespace CRM.Server
             var name = Context.User?.Identity?.Name;
             if (name != null)
             {
-                _connections.TryAdd(name, Context.ConnectionId);
+                var userConnections = _connections.GetOrAdd(name, _ => new ConcurrentDictionary<string, byte>());
+                userConnections.TryAdd(Context.ConnectionId, 0);
             }
 
             var maintenance = _maintenanceState.GetCurrent();
@@ -53,7 +69,13 @@ namespace CRM.Server
             var name = Context.User?.Identity?.Name;
             if (name != null)
             {
-                _connections.TryRemove(name, out _);
+                if (_connections.TryGetValue(name, out var userConnections))
+                {
+                    userConnections.TryRemove(Context.ConnectionId, out _);
+
+                    if (userConnections.IsEmpty)
+                        _connections.TryRemove(name, out _);
+                }
             }
             return base.OnDisconnectedAsync(exception);
         }

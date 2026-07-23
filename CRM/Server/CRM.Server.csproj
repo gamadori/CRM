@@ -131,6 +131,10 @@
 
   <ItemGroup>
     <None Include="Pages\Shared\_LayoutReport.cshtml" />
+    <Content Update="Deployment\app_offline.template.htm">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

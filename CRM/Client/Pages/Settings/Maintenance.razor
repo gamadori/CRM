@@ -1,8 +1,11 @@
 @page "/Settings/Maintenance"
 @using CRM.Client.Models
 @using CRM.Client.Services
+@using CRM.Shared.DTOs
+@using System.Threading
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AdminRole")]
 @inject HttpClient Http
+@implements IDisposable
 
 <PageHeader Model="_pageHeader" />
 
@@ -11,10 +14,31 @@
         <h5 class="mb-0">Manutenzione server</h5>
     </div>
     <div class="card-body">
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="border rounded p-3 h-100">
+                    <div class="text-muted small">Utenti connessi</div>
+                    <div class="fs-3 fw-semibold">@(_status?.ConnectedUsers ?? 0)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border rounded p-3 h-100">
+                    <div class="text-muted small">Connessioni attive</div>
+                    <div class="fs-3 fw-semibold">@(_status?.ConnectedConnections ?? 0)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border rounded p-3 h-100">
+                    <div class="text-muted small">app_offline.htm</div>
+                    <div class="fw-semibold mt-2">@(_status?.AppOfflineFileExists == true ? "Pubblicato" : "Non pubblicato")</div>
+                </div>
+            </div>
+        </div>
+
         <p>
             Invia un avviso immediato a tutti i client collegati. Il conto alla rovescia
-            non arresta automaticamente IIS: al termine devi pubblicare
-            <code>app_offline.htm</code> nella cartella dell'applicazione.
+            puo anche pubblicare automaticamente <code>app_offline.htm</code> nella cartella
+            dell'applicazione.
         </p>
 
         <div class="mb-3">
@@ -25,6 +49,17 @@
         <div class="mb-3">
             <label class="form-label">Messaggio</label>
             <RadzenTextArea @bind-Value="_request.Message" Rows="3" Style="width:100%" />
+        </div>
+
+        <div class="form-check mb-3">
+            <InputCheckbox class="form-check-input" id="autoAppOffline" @bind-Value="_request.AutoPublishAppOffline" />
+            <label class="form-check-label" for="autoAppOffline">
+                Pubblica automaticamente app_offline.htm allo scadere del preavviso
+            </label>
+            <div class="form-text">
+                Dopo la pubblicazione l'app viene messa offline da IIS. La rimozione del file deve
+                avvenire tramite deploy o accesso al file system del server.
+            </div>
         </div>
 
         <div class="d-flex gap-2">
@@ -38,6 +73,11 @@
                           ButtonStyle="ButtonStyle.Light"
                           Click="CancelAsync"
                           Disabled="@(_working || _current?.Active != true)" />
+            <RadzenButton Text="Aggiorna"
+                          Icon="refresh"
+                          ButtonStyle="ButtonStyle.Light"
+                          Click="RefreshStatusAsync"
+                          Disabled="_working" />
         </div>
 
         @if (_current?.Active == true)
@@ -46,6 +86,12 @@
                 Manutenzione programmata per
                 <strong>@_current.StartsAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</strong>.
                 @_current.Message
+                @if (_current.AutoPublishAppOffline)
+                {
+                    <div class="mt-2">
+                        app_offline.htm verra pubblicato automaticamente allo scadere del preavviso.
+                    </div>
+                }
             </div>
         }
     </div>
@@ -56,13 +102,17 @@
 
     private PageHeaderModel? _pageHeader;
     private ScheduleMaintenanceRequest _request = new();
+    private MaintenanceStatusDTO? _status;
     private MaintenanceNoticeDTO? _current;
     private bool _working;
+    private PeriodicTimer? _refreshTimer;
+    private CancellationTokenSource? _refreshCancellation;
 
     protected override async Task OnInitializedAsync()
     {
         _pageHeader = await HeaderService.Create();
-        _current = await Http.GetFromJsonAsync<MaintenanceNoticeDTO>("api/Maintenance");
+        await RefreshStatusAsync();
+        StartStatusRefresh();
     }
 
     private async Task ScheduleAsync()
@@ -72,7 +122,8 @@
         {
             var response = await Http.PostAsJsonAsync("api/Maintenance/schedule", _request);
             response.EnsureSuccessStatusCode();
-            _current = await response.Content.ReadFromJsonAsync<MaintenanceNoticeDTO>();
+            _status = await response.Content.ReadFromJsonAsync<MaintenanceStatusDTO>();
+            _current = _status?.Notice;
         }
         finally
         {
@@ -87,11 +138,53 @@
         {
             var response = await Http.DeleteAsync("api/Maintenance");
             response.EnsureSuccessStatusCode();
-            _current = await response.Content.ReadFromJsonAsync<MaintenanceNoticeDTO>();
+            _status = await response.Content.ReadFromJsonAsync<MaintenanceStatusDTO>();
+            _current = _status?.Notice;
         }
         finally
         {
             _working = false;
         }
+    }
+
+    private async Task RefreshStatusAsync()
+    {
+        _status = await Http.GetFromJsonAsync<MaintenanceStatusDTO>("api/Maintenance");
+        _current = _status?.Notice;
+    }
+
+    private void StartStatusRefresh()
+    {
+        _refreshCancellation = new CancellationTokenSource();
+        _refreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+        _ = RefreshStatusLoopAsync(_refreshCancellation.Token);
+    }
+
+    private async Task RefreshStatusLoopAsync(CancellationToken cancellationToken)
+    {
+        if (_refreshTimer == null)
+            return;
+
+        try
+        {
+            while (await _refreshTimer.WaitForNextTickAsync(cancellationToken))
+            {
+                await InvokeAsync(async () =>
+                {
+                    await RefreshStatusAsync();
+                    StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        _refreshCancellation?.Cancel();
+        _refreshCancellation?.Dispose();
+        _refreshTimer?.Dispose();
     }
 }
