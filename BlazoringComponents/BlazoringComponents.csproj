@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
 
@@ -16,6 +16,17 @@
 
 
   <ItemGroup>
+    <PackageReference Include="Faso.Blazor.SpinKit" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="MailKit" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
+    <PackageReference Include="Microsoft.Extensions.Localization" />
+    <PackageReference Include="QLNet" />
+    <!-- BlazoringComponents requires Radzen.Blazor 5.x API - pinned with VersionOverride -->
+    <PackageReference Include="Radzen.Blazor" VersionOverride="5.7.4" />
+    <PackageReference Include="System.Linq.Dynamic.Core" />
+    <PackageReference Include="System.Private.Uri" />
     <PackageReference Include="Faso.Blazor.SpinKit" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="MailKit" />
