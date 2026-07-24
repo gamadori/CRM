@@ -1,0 +1,202 @@
+@namespace CRM.Client.Shared.Components.Gantt
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+
+<div class="redg-gantt-wrap">
+
+    <!-- Toolbar -->
+    <div class="gantt-toolbar">
+        <div class="btn-group btn-group-sm" role="group">
+            <button class="btn @(_zoom == Zoom.Day ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetZoom(Zoom.Day))">Giorno</button>
+            <button class="btn @(_zoom == Zoom.Week ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetZoom(Zoom.Week))">Settimana</button>
+            <button class="btn @(_zoom == Zoom.Month ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetZoom(Zoom.Month))">Mese</button>
+        </div>
+        <div class="ms-auto d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" @onclick="@(() => NewTask(false))">
+                <span class="material-icons" style="font-size:16px;">add_task</span> Task
+            </button>
+            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" @onclick="@(() => NewTask(true))">
+                <span class="material-icons" style="font-size:16px;">flag</span> Milestone
+            </button>
+        </div>
+    </div>
+
+    @if (_editing != null)
+    {
+        <div class="gantt-editor card border-0 shadow-sm mb-2">
+            <div class="card-body">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label small mb-1">Nome</label>
+                        <input class="form-control form-control-sm" @bind="_editing.Name" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1">Inizio</label>
+                        <RadzenDatePicker TValue="DateTime" @bind-Value="_editing.StartDate" DateFormat="dd/MM/yyyy" Style="width:100%" />
+                    </div>
+                    @if (!_editing.IsMilestone)
+                    {
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Fine</label>
+                            <RadzenDatePicker TValue="DateTime" @bind-Value="_editing.EndDate" DateFormat="dd/MM/yyyy" Style="width:100%" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Avanzamento %</label>
+                            <RadzenNumeric TValue="int" @bind-Value="_editing.Progress" Min="0" Max="100" Style="width:100%" />
+                        </div>
+                    }
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1">Padre</label>
+                        <RadzenDropDown TValue="int?" @bind-Value="_editing.ParentId" Data="_parentOptions" TextProperty="Name" ValueProperty="Id"
+                                        AllowClear="true" Placeholder="—" Style="width:100%" />
+                    </div>
+                </div>
+
+                @if (_editing.Id > 0)
+                {
+                    <div class="mt-3">
+                        <label class="form-label small mb-1">Dipendenze (predecessori)</label>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            @foreach (var dep in _editing.Dependencies)
+                            {
+                                <span class="badge bg-light text-dark border d-flex align-items-center gap-1">
+                                    @TaskName(dep.IdPredecessorFase)
+                                    <span class="material-icons gantt-dep-remove" style="font-size:14px;cursor:pointer;" @onclick="@(() => RemoveDependency(dep))">close</span>
+                                </span>
+                            }
+                            <RadzenDropDown TValue="int?" @bind-Value="_newPredecessorId" Data="_predecessorOptions" TextProperty="Name" ValueProperty="Id"
+                                            AllowClear="true" AllowFiltering="true" Placeholder="Aggiungi predecessore" Style="width:220px" />
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="AddDependency" disabled="@(_newPredecessorId == null)">Aggiungi</button>
+                        </div>
+                    </div>
+                }
+
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-sm btn-primary" @onclick="SaveTask">Salva</button>
+                    <button class="btn btn-sm btn-light" @onclick="CancelEdit">Annulla</button>
+                    @if (_editing.Id > 0)
+                    {
+                        <button class="btn btn-sm btn-outline-danger ms-auto" @onclick="DeleteTask">Elimina</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (_loading)
+    {
+        <div class="text-muted p-4 text-center">Caricamento pianificazione…</div>
+    }
+    else if (!_tasks.Any())
+    {
+        <div class="gantt-empty text-center text-muted p-5">
+            <span class="material-icons" style="font-size:42px;opacity:.4;">view_timeline</span>
+            <div class="mt-2">Nessun task pianificato. Aggiungi il primo task o una milestone.</div>
+        </div>
+    }
+    else
+    {
+        <div class="gantt-grid">
+            <!-- Pannello WBS -->
+            <div class="gantt-left">
+                <div class="gantt-left-head">Attività</div>
+                @foreach (var t in _tasks)
+                {
+                    <div class="gantt-left-row @(t.Id == _editing?.Id ? "sel" : "")" style="height:@(RowH)px" @onclick="@(() => EditTask(t))">
+                        <div class="gantt-left-name" style="padding-left:@(Depth(t) * 16 + 8)px">
+                            @if (t.IsMilestone)
+                            {
+                                <span class="material-icons gantt-ms-ico" style="font-size:14px;">flag</span>
+                            }
+                            <span class="text-truncate" title="@t.Name">@t.Name</span>
+                        </div>
+                        <div class="gantt-left-meta">
+                            <span class="gantt-progress-pill @(t.ProgressFromTickets ? "auto" : "")" title="@ProgressTitle(t)">@t.Progress%</span>
+                            @if (t.TicketCount > 0)
+                            {
+                                <span class="gantt-ticket-pill" title="@TicketTitle(t)">
+                                    <span class="material-icons" style="font-size:13px;">confirmation_number</span>
+                                    @t.ClosedTicketCount/@t.TicketCount
+                                </span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Timeline -->
+            <div class="gantt-right" @ref="_chartEl" data-pxperday="@_pxPerDay.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                <div class="gantt-chart" style="width:@(ChartWidth)px">
+                    <!-- Header temporale -->
+                    <div class="gantt-timeaxis" style="height:@(HeaderH)px">
+                        @foreach (var seg in _headerSegments)
+                        {
+                            <div class="gantt-axis-seg" style="left:@(seg.X)px;width:@(seg.W)px">@seg.Label</div>
+                        }
+                    </div>
+
+                    <!-- Corpo -->
+                    <div class="gantt-body" style="height:@(_tasks.Count * RowH)px">
+                        @foreach (var d in _dayLines)
+                        {
+                            <div class="gantt-vline @(d.Weekend ? "weekend" : "")" style="left:@(d.X)px;width:@(d.W)px"></div>
+                        }
+                        @if (_todayX >= 0)
+                        {
+                            <div class="gantt-today" style="left:@(_todayX)px"></div>
+                        }
+
+                        @for (int i = 0; i < _tasks.Count; i++)
+                        {
+                            var t = _tasks[i];
+                            var top = i * RowH;
+                            <div class="gantt-row-bg" style="top:@(top)px;height:@(RowH)px"></div>
+
+                            if (t.IsMilestone)
+                            {
+                                <div class="gantt-bar milestone @(t.IsCriticalPath ? "critical" : "")"
+                                     data-task-id="@t.Id"
+                                     style="left:@(BarLeft(t) - RowH/2 + 4)px;top:@(top + 6)px;"
+                                     title="@t.Name">
+                                    <div class="gantt-ms-diamond"></div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="gantt-bar @BarStateClass(t) @(t.IsCriticalPath ? "critical" : "")"
+                                     data-task-id="@t.Id"
+                                     style="left:@(BarLeft(t))px;top:@(top + 6)px;width:@(BarWidth(t))px;@(BarColorStyle(t))"
+                                     title="@BarTitle(t)">
+                                    <div class="gantt-bar-handle start"></div>
+                                    <div class="gantt-bar-progress" style="width:@(t.Progress)%"></div>
+                                    <span class="gantt-bar-label">@t.Name</span>
+                                    @if (t.TicketCount > 0)
+                                    {
+                                        <span class="gantt-bar-ticket-count">@t.ClosedTicketCount/@t.TicketCount</span>
+                                    }
+                                    <div class="gantt-bar-handle end"></div>
+                                    <div class="gantt-link-handle" title="Trascina per creare una dipendenza"></div>
+                                </div>
+                            }
+                        }
+
+                        <!-- Frecce dipendenze -->
+                        <svg class="gantt-deps" width="@ChartWidth" height="@(_tasks.Count * RowH)">
+                            <defs>
+                                <marker id="ganttArrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                                    <path d="M0,0 L6,3 L0,6 Z" class="gantt-arrowhead" />
+                                </marker>
+                            </defs>
+                            @foreach (var arc in _depArcs)
+                            {
+                                <polyline points="@arc.Points" class="gantt-dep-line @(arc.Critical ? "critical" : "")" marker-end="url(#ganttArrow)" />
+                            }
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

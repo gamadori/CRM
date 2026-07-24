@@ -131,16 +131,6 @@ namespace CRM.Server.Controllers
                     users = users.Where(x => usersTicket.Contains(x));
                 }
 
-                if (args.IdProject != null)
-                {
-                    users = users.Where(x=>x.Projects.Where(y=>y.IdProject == args.IdProject).Any());
-                }     
-
-                if (args.IdProjectParent != null)
-                {
-                    users = users.Where(x=>x.Projects.Where(x=>x.IdProject == args.IdProjectParent).Any() == false); 
-                }
-
                 if (args.Filter != null)
                 {
                     users = users.Where(args.Filter);

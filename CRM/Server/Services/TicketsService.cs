@@ -19,10 +19,12 @@ namespace CRM.Server.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogEventService _logEventService;
         private readonly ILanguagesService _languagesService;
+        private readonly ICommessaFasiService _commessaFasiService;
         
         public TicketsService(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor,
             IPermitsService permitsService, UserManager<ApplicationUser> userManager,
-            ILogEventService logEventService, ILanguagesService languagesService)
+            ILogEventService logEventService, ILanguagesService languagesService,
+            ICommessaFasiService projectTasksService)
         {
             _context = context;
             _httpContextAccessor = httpContextAccessor;
@@ -30,6 +32,7 @@ namespace CRM.Server.Services
             _userManager = userManager;
             _logEventService = logEventService;
             _languagesService = languagesService;
+            _commessaFasiService = projectTasksService;
         }
 
         #region Existing methods
@@ -179,11 +182,10 @@ namespace CRM.Server.Services
                     Company = x.Company.RagioneSociale,
                     Product = (x.Product != null) ? x.Product.Name : "",
                     Article = (x.Article != null) ? x.Article.SerialNumber : "",
-                    Project = (x.Project != null) ? x.Project.Name : "",
                     IdDeal = x.IdDeal,
                     DealName = x.Deal != null ? x.Deal.Name : "",
-                    IdOrder = x.IdOrder,
-                    OrderNumber = x.Order != null ? (x.Order.Number ?? x.Order.Id.ToString()) : "",
+                    IdCommessaFase = x.IdCommessaFase,
+                    CommessaFaseName = x.CommessaFase != null ? x.CommessaFase.Name : "",
                     IdUserAssigned = x.IdUserAssigned,
                     IdCompany = x.IdCompany,
                     IdState = x.IdState,
@@ -297,19 +299,20 @@ namespace CRM.Server.Services
                         tickets = tickets.Where(x => x.IdUserAssigned == args.IdUserAssigned || x.AssignedUsers.Where(y => y.IdUser == args.IdUserAssigned).Any());
                 }
 
-                if (args.IdProject != null)
-                {
-                    tickets = tickets.Where(x => x.IdProject == args.IdProject);
-                }
 
                 if (args.IdDeal != null)
                 {
                     tickets = tickets.Where(x => x.IdDeal == args.IdDeal);
                 }
 
-                if (args.IdOrder != null)
+                if (args.IdCommessaFase != null)
                 {
-                    tickets = tickets.Where(x => x.IdOrder == args.IdOrder);
+                    tickets = tickets.Where(x => x.IdCommessaFase == args.IdCommessaFase);
+                }
+
+                if (args.IdCommessa != null)
+                {
+                    tickets = tickets.Where(x => x.CommessaFase != null && x.CommessaFase.IdCommessa == args.IdCommessa);
                 }
 
                 tickets = FilterByType(tickets, (TicketTypeSearch)args.TypeSearch, idUser);
@@ -342,11 +345,10 @@ namespace CRM.Server.Services
                     Company = x.Company!.RagioneSociale,
                     Product = (x.Product != null) ? x.Product.Name : "",
                     Article = (x.Article != null) ? x.Article.SerialNumber : "",
-                    Project = (x.Project != null) ? x.Project.Name : "",
                     IdDeal = x.IdDeal,
                     DealName = x.Deal != null ? x.Deal.Name : "",
-                    IdOrder = x.IdOrder,
-                    OrderNumber = x.Order != null ? (x.Order.Number ?? x.Order.Id.ToString()) : "",
+                    IdCommessaFase = x.IdCommessaFase,
+                    CommessaFaseName = x.CommessaFase != null ? x.CommessaFase.Name : "",
                     IdUserAssigned = x.IdUserAssigned,
                     IdCompany = x.IdCompany,
                     IdState = x.IdState,
@@ -412,9 +414,11 @@ namespace CRM.Server.Services
 
                 ticket.IdUserOpened = idUserOpened;
                 ticket.DateExpired = ticket.Date?.AddWorkdays(day);
+                await NormalizeCommessaFaseLinkAsync(ticket);
 
                 _context.Tickets.Add(ticket);
                 await _context.SaveChangesAsync();
+                await _commessaFasiService.RecomputeFaseProgressAsync(ticket.IdCommessaFase);
 
                 return ticket;
             }
@@ -443,9 +447,16 @@ namespace CRM.Server.Services
                 if (currentSummary == null)
                     return false;
 
+                var previousTaskId = await _context.Tickets
+                    .AsNoTracking()
+                    .Where(x => x.Id == id)
+                    .Select(x => x.IdCommessaFase)
+                    .FirstOrDefaultAsync();
+
                 ticket.OperationalSummary = currentSummary.OperationalSummary;
                 ticket.OperationalSummaryUpdatedAt = currentSummary.OperationalSummaryUpdatedAt;
                 ticket.OperationalSummaryUpdatedBy = currentSummary.OperationalSummaryUpdatedBy;
+                await NormalizeCommessaFaseLinkAsync(ticket);
 
                 ticket.IdCompanyAssigned =
                     (ticket.IdUserAssigned != null) ? _context.Users.Where(x => x.Id == ticket.IdUserAssigned).Select(x => x.IdCompany).FirstOrDefault() : null;
@@ -456,6 +467,8 @@ namespace CRM.Server.Services
                     _context.Entry(ticket).Property(x => x.Invoiced).IsModified = false;
 
                 await _context.SaveChangesAsync();
+                await _commessaFasiService.RecomputeFaseProgressAsync(previousTaskId);
+                await _commessaFasiService.RecomputeFaseProgressAsync(ticket.IdCommessaFase);
                 return true;
             }
             catch (Exception ex)
@@ -473,8 +486,10 @@ namespace CRM.Server.Services
                 if (ticket == null)
                     return false;
 
+                var taskId = ticket.IdCommessaFase;
                 _context.Tickets.Remove(ticket);
                 await _context.SaveChangesAsync();
+                await _commessaFasiService.RecomputeFaseProgressAsync(taskId);
                 return true;
             }
             catch (Exception ex)
@@ -506,6 +521,7 @@ namespace CRM.Server.Services
                 ticket.IdState = ticketState?.Id;
 
                 await _context.SaveChangesAsync();
+                await _commessaFasiService.RecomputeFaseProgressAsync(ticket.IdCommessaFase);
                 return true;
             }
             catch (Exception ex)
@@ -524,6 +540,7 @@ namespace CRM.Server.Services
 
                 ticket.Closed = false;
                 await _context.SaveChangesAsync();
+                await _commessaFasiService.RecomputeFaseProgressAsync(ticket.IdCommessaFase);
                 return true;
             }
             catch (Exception ex)
@@ -637,6 +654,19 @@ namespace CRM.Server.Services
         {
             return !string.IsNullOrWhiteSpace(legacyAssignedUserId)
                 || await _context.TicketUserAssignments.AnyAsync(a => a.IdTicket == ticketId);
+        }
+
+        private async Task NormalizeCommessaFaseLinkAsync(Ticket ticket)
+        {
+            if (ticket.IdCommessaFase == null)
+                return;
+
+            var exists = await _context.CommessaFasi
+                .AsNoTracking()
+                .AnyAsync(t => t.Id == ticket.IdCommessaFase);
+
+            if (!exists)
+                ticket.IdCommessaFase = null;
         }
 
         #endregion

@@ -39,6 +39,9 @@ namespace CRM.Client.Pages.Products
         ICompaniesService ServiceCompanies { get; set; }
 
         [Inject]
+        IGanttPlanService GanttPlanService { get; set; }
+
+        [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
@@ -65,6 +68,8 @@ namespace CRM.Client.Pages.Products
 
         private List<CompanyDTO> _companies;
 
+        private List<GanttPlanDTO> _ganttPlans = new();
+
         private string _messageState = "";
 
         private PageHeaderModel? _pageHeader = null;
@@ -76,6 +81,7 @@ namespace CRM.Client.Pages.Products
 
                 await GetProductTypes();
                 await GetCompanies();
+                await GetGanttPlans();
 
                 if (Id != null)
                 {
@@ -139,6 +145,30 @@ namespace CRM.Client.Pages.Products
         {
             //_companies = await RestClientService.GetList<CompanyDTO>(ConstHelper.Companies);
             _companies = await ServiceCompanies.GetListAsync(null);
+        }
+
+        private async Task GetGanttPlans()
+        {
+            _ganttPlans = await GanttPlanService.GetListAsync(new GanttPlanFilter());
+        }
+
+        private async Task CreateGanttTemplate()
+        {
+            if (_product == null || string.IsNullOrWhiteSpace(_product.Name))
+                return;
+
+            var resp = await GanttPlanService.SaveAsync(new GanttPlanDTO
+            {
+                Name = $"Template produzione - {_product.Name}",
+                Description = $"Template Gantt standard per il prodotto {_product.Name}",
+                State = GanttPlanStates.Draft
+            });
+
+            if (resp.State && resp.Data != null)
+            {
+                await GetGanttPlans();
+                _product.IdGanttPlan = resp.Data.Id;
+            }
         }
 
         void Change(string value, string name)

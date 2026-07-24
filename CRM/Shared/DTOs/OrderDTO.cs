@@ -117,6 +117,12 @@ namespace CRM.Shared.DTOs
         public decimal LineVat { get; set; }
 
         public decimal LineTotal { get; set; }
+
+        /// <summary>Stato di produzione della riga (MTO).</summary>
+        public RowProductionStatus ProductionStatus { get; set; }
+
+        /// <summary>True se il prodotto della riga ha un template di produzione (→ genera commesse).</summary>
+        public bool ProductHasTemplate { get; set; }
     }
 
     public static class OrderHelper
@@ -170,7 +176,9 @@ namespace CRM.Shared.DTOs
                 SortOrder = row.SortOrder,
                 LineNet = row.LineNet,
                 LineVat = row.LineVat,
-                LineTotal = row.LineTotal
+                LineTotal = row.LineTotal,
+                ProductionStatus = row.ProductionStatus,
+                ProductHasTemplate = row.Product != null && row.Product.IdGanttPlan != null
             };
         }
 

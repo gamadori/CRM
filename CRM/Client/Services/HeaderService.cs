@@ -210,8 +210,8 @@ namespace CRM.Client.Services
                     "contracttypes" or "contracttype" =>
                         (await _restClient.GetItem<ContractType, int>((int)domainId, ConstHelper.ContractTypesPath))?.Name,
 
-                    "projects" or "project" =>
-                        (await _restClient.GetItem<TaskProject, int>((int)domainId, ConstHelper.ProjectsPath))?.Name,
+                    "commesse" or "commessa" =>
+                        (await _restClient.GetItem<CRM.Shared.DTOs.CommessaDTO, int>((int)domainId, ConstHelper.CommessePath))?.Code,
                     //"expensereceipts" or "expensereceipt" =>
                     //    (await _restClient.GetItem<ExpenseReceipt, int>((int)domainId, ConstHelper.ExpenseReceiptsPath))?.Name,
                     _ => null
@@ -467,8 +467,8 @@ namespace CRM.Client.Services
                     "contracttypes" or "contracttype" when isNumeric =>
                         (await _restClient.GetItem<ContractType, int>(int.Parse(segment), ConstHelper.ContractTypesPath))?.Name ?? segment,
 
-                    "projects" or "project" when isNumeric =>
-                        (await _restClient.GetItem<TaskProject, int>(int.Parse(segment), ConstHelper.ProjectsPath))?.Name ?? segment,
+                    "commesse" or "commessa" when isNumeric =>
+                        (await _restClient.GetItem<CRM.Shared.DTOs.CommessaDTO, int>(int.Parse(segment), ConstHelper.CommessePath))?.Code ?? segment,
 
                     _ => segment
                 };

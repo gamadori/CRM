@@ -42,7 +42,7 @@ namespace CRM.Server.Services
                 .Include(x => x.Contact)
                 .Include(x => x.Quote)
                 .Include(x => x.User)
-                .Include(x => x.Rows)
+                .Include(x => x.Rows).ThenInclude(r => r.Product)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
 

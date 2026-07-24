@@ -122,7 +122,6 @@ namespace CRM.Server.Services
                 IdType = request.IdType,
                 IdArticle = request.IdArticle,
                 IdProduct = request.IdProduct,
-                IdProject = request.IdProject,
                 IdContact = request.IdContact,
                 IdUserOpened = ownerUserId,
                 IdState = state?.Id,
@@ -208,14 +207,6 @@ namespace CRM.Server.Services
                 }
             }
 
-            if (request.IdProject.HasValue)
-            {
-                var projectExists = await _context.Projects.AnyAsync(x => x.Id == request.IdProject.Value && x.IdCompany == idCompany);
-                if (!projectExists)
-                {
-                    throw new InvalidOperationException("Progetto non trovato per la company associata alla API key.");
-                }
-            }
         }
 
         private async Task<string> ResolveOwnerUserIdAsync()

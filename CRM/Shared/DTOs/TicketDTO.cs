@@ -131,19 +131,15 @@ namespace CRM.Shared.DTOs
         [Display(Name = nameof(Ticket.IdUserClosed), ResourceType = typeof(Resources.Models.Ticket))]
         public string UserClosed { get; set; }
 
-        
-        [Display(Name = nameof(Ticket.IdProject), ResourceType = typeof(Resources.Models.Ticket))]
-        public string Project { get; set; }
-
         public int? IdDeal { get; set; }
 
         [Display(Name = "Opportunita")]
         public string DealName { get; set; } = string.Empty;
 
-        public int? IdOrder { get; set; }
+        public int? IdCommessaFase { get; set; }
 
-        [Display(Name = "Ordine")]
-        public string OrderNumber { get; set; } = string.Empty;
+        [Display(Name = "Fase")]
+        public string CommessaFaseName { get; set; } = string.Empty;
 
         public bool Invoiced { get; set; }
 

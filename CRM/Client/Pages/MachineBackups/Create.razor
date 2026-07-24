@@ -30,7 +30,7 @@
                 <strong>Trascina qui il file</strong>
                 <span>oppure</span>
                 <label for="machine-backup-input" class="browse-command">Sfoglia file</label>
-                <small>Qualsiasi formato, dimensione massima 512 MB</small>
+                <small>Qualsiasi formato, dimensione massima 5 GB</small>
             </div>
 
             @if (_selectedFile != null)
@@ -41,6 +41,14 @@
                     <button class="icon-command" title="Rimuovi file" @onclick="ClearFile">
                         <span class="material-symbols-outlined">close</span>
                     </button>
+                </div>
+            }
+
+            @if (_uploading)
+            {
+                <div class="upload-progress" aria-label="Avanzamento upload">
+                    <progress value="@_uploadProgress" max="100"></progress>
+                    <small>@_uploadProgress.ToString("0")%</small>
                 </div>
             }
         </div>
@@ -81,7 +89,9 @@
     private string? _externalReference;
     private string? _error;
     private bool _uploading;
+    private double _uploadProgress;
     private IJSObjectReference? _module;
+    private const long MaximumFileSize = 5L * 1024 * 1024 * 1024;
 
     private MachineBackupOwnerType? OwnerType =>
         Enum.TryParse<MachineBackupOwnerType>(OwnerTypeName, true, out var ownerType)
@@ -121,13 +131,15 @@
     private void SelectFile(InputFileChangeEventArgs args)
     {
         _selectedFile = args.File;
-        _error = _selectedFile.Size > 512L * 1024 * 1024 ? "Il file supera il limite di 512 MB." : null;
+        _error = _selectedFile.Size > MaximumFileSize ? "Il file supera il limite di 5 GB." : null;
+        _uploadProgress = 0;
     }
 
     private async Task ClearFile()
     {
         _selectedFile = null;
         _error = null;
+        _uploadProgress = 0;
         if (_module != null)
         {
             await _module.InvokeVoidAsync("clear", "machine-backup-input");
@@ -138,9 +150,15 @@
     {
         if (_selectedFile == null || _error != null || OwnerType is not { } ownerType) return;
         _uploading = true;
+        _uploadProgress = 0;
         try
         {
-            await BackupsService.UploadAsync(ownerType, OwnerId, _selectedFile, _description, _externalReference);
+            var progress = new Progress<double>(value =>
+            {
+                _uploadProgress = value;
+                _ = InvokeAsync(StateHasChanged);
+            });
+            await BackupsService.UploadAsync(ownerType, OwnerId, _selectedFile, _description, _externalReference, progress);
             NavigationManager.NavigateTo(ReturnUrl);
         }
         catch (Exception ex)

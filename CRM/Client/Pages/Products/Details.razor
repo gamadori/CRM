@@ -38,6 +38,20 @@
                     <LabelContent><DisplayName For="@(() => _product.IdProductType)" /></LabelContent>
                     <ChildContent><p class="mb-0 text-dark">@_product.ProductTypeName</p></ChildContent>
                 </RedGDetailField>
+
+                <RedGDetailField Icon="view_timeline">
+                    <LabelContent><DisplayName For="@(() => _product.GanttPlanName)" /></LabelContent>
+                    <ChildContent>
+                        @if (!string.IsNullOrWhiteSpace(_product.GanttPlanName))
+                        {
+                            <p class="mb-0 text-dark">@_product.GanttPlanName</p>
+                        }
+                        else
+                        {
+                            <p class="mb-0 text-muted fst-italic">Nessun template Gantt associato</p>
+                        }
+                    </ChildContent>
+                </RedGDetailField>
             </RedGDetailSection>
 
             <RedGDetailSection Title="Commerciale" Icon="business">

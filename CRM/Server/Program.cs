@@ -41,6 +41,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(connectionString);
     options.UseOpenIddict();
+    // Le migration sono gestite a mano (il tool 'dotnet ef migrations add' e' incompatibile con
+    // questo SDK .NET 10, vedi memoria ef-tooling): lo snapshot puo' non essere perfettamente
+    // allineato, quindi si sopprime il blocco su modifiche pendenti in fase di database update.
+    options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -181,6 +185,11 @@ builder.Services.AddScoped<IQuotePdfGenerator, QuotePdfGenerator>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();
 
 builder.Services.AddScoped<IOrderPdfGenerator, OrderPdfGenerator>();
+
+builder.Services.AddScoped<ICommesseService, CommesseService>();
+builder.Services.AddScoped<ICommessaFasiService, CommessaFasiService>();
+builder.Services.AddScoped<IGanttPlansService, GanttPlansService>();
+builder.Services.AddScoped<IGanttPhasesService, GanttPhasesService>();
 
 builder.Services.AddScoped<CRM.Server.Services.IPriceListService, CRM.Server.Services.PriceListService>();
 

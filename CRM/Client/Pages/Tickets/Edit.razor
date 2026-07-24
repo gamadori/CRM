@@ -209,40 +209,21 @@ else
                         }
                     </RadzenRow>
 
-                    <!-- Priority and Project -->
+                    <!-- Priority and Deal -->
                     <RadzenRow>
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
-                                <RedGSelectEnum TEnum="TicketPriorities" TValue="TicketPriorities" @bind-Value="@_ticket.Priority" 
+                                <RedGSelectEnum TEnum="TicketPriorities" TValue="TicketPriorities" @bind-Value="@_ticket.Priority"
                                                 For="@(() => _ticket.Priority)" AllowClear="false" />
                             </RadzenStack>
                         </RadzenColumn>
 
                         <RadzenColumn Size="12" SizeSM="6">
                             <RadzenStack>
-                                <RedGDropDown TItem="Project" TValue="int?" ValueProperty="Id" TextProperty="Name"
-                                              @bind-Value="@_ticket.IdProject" For="@(() => _ticket.IdProject)"
-                                              Data="@_projects" AllowFiltering="true" />
-                            </RadzenStack>
-                        </RadzenColumn>
-                    </RadzenRow>
-
-                    <RadzenRow>
-                        <RadzenColumn Size="12" SizeSM="6">
-                            <RadzenStack>
                                 <RedGDropDown TItem="DealDTO" TValue="int?" ValueProperty="Id" TextProperty="@nameof(DealDTO.Name)"
                                               @bind-Value="@_ticket.IdDeal" For="@(() => _ticket.IdDeal)"
-                                              Data="@_deals" AllowFiltering="true" AllowClear="true"
+                                              Data="@_deals" AllowFiltering="true"
                                               Change="DealChangedAsync" />
-                            </RadzenStack>
-                        </RadzenColumn>
-
-                        <RadzenColumn Size="12" SizeSM="6">
-                            <RadzenStack>
-                                <RedGDropDown TItem="OrderDTO" TValue="int?" ValueProperty="Id" TextProperty="@nameof(OrderDTO.Number)"
-                                              @bind-Value="@_ticket.IdOrder" For="@(() => _ticket.IdOrder)"
-                                              Data="@_orders" AllowFiltering="true" AllowClear="true"
-                                              Change="OrderChangedAsync" />
                             </RadzenStack>
                         </RadzenColumn>
                     </RadzenRow>

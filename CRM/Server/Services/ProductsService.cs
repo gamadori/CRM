@@ -45,6 +45,7 @@ namespace CRM.Server.Services
             var item = await _context.Products
                 .Include(x => x.ProductType)
                 .Include(x => x.Company)
+                .Include(x => x.GanttPlan)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
             return item.ToDTO();
@@ -57,6 +58,7 @@ namespace CRM.Server.Services
             var item = await _context.Products
                 .Include(x => x.ProductType)
                 .Include(x => x.Company)
+                .Include(x => x.GanttPlan)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
             return item.ToDTO();
@@ -253,7 +255,6 @@ namespace CRM.Server.Services
                 || await _context.TicketInterventionArticles.AsNoTracking().AnyAsync(x => x.IdProduct == id)
                 || await _context.MachineBackups.AsNoTracking().AnyAsync(x => x.IdProduct == id)
                 || await _context.Attachments.AsNoTracking().AnyAsync(x => x.AttchmentType == AttachmentTypes.Product && x.IdParent == id)
-                || await _context.Projects.AsNoTracking().AnyAsync(x => x.IdProduct == id)
                 || await _context.QuoteRows.AsNoTracking().AnyAsync(x => x.IdProduct == id)
                 || await _context.OrderRows.AsNoTracking().AnyAsync(x => x.IdProduct == id)
                 || await _context.InvoiceRows.AsNoTracking().AnyAsync(x => x.IdProduct == id)
@@ -273,7 +274,7 @@ namespace CRM.Server.Services
         {
             try
             {
-                var items = _context.Products.Include(x=>x.ProductType).Include(x=>x.Company).AsQueryable();
+                var items = _context.Products.Include(x=>x.ProductType).Include(x=>x.Company).Include(x => x.GanttPlan).AsQueryable();
 
                 if (args?.IncludeArchived != true)
                 {
@@ -319,7 +320,8 @@ namespace CRM.Server.Services
                     // quindi vanno tradotti nei path di navigazione corrispondenti.
                     var filter = args.Filter
                         .Replace("ProductTypeName", "ProductType.Name")
-                        .Replace("CompanyName", "Company.RagioneSociale");
+                        .Replace("CompanyName", "Company.RagioneSociale")
+                        .Replace("GanttPlanName", "GanttPlan.Name");
                     items = items.Where(filter);
                 }
 

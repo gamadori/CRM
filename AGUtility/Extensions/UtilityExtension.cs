@@ -298,18 +298,6 @@ namespace AGUtility.Extensions
            
         }
 
-        public static List<TaskDependency> ToDependencyList(this IEnumerable<TaskData> data)
-        {
-            List<TaskDependency> list = new List<TaskDependency>();
-
-            foreach (var t in data)
-            {
-                list.Add(new TaskDependency { Id = t.Id, Name = t.Name });
-            }
-
-            return list;
-        }
-
         public static string ToListString<T>(this IEnumerable<T> data) where T: class
         {
             string s = "";

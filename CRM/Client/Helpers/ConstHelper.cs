@@ -114,13 +114,11 @@ namespace CRM.Client.Helpers
 
         public static string AuthPath = "api/Auth";
 
-        public static string ProjectModelsPath = "api/ProjectModels";
+        public static string CommessePath = "api/Commesse";
 
-        public static string ProjectsPath = "api/Projects";
-
-        public static string TasksProjectsPath = "api/TasksProjects";
-
-        public static string TasksDataPath = "api/TasksData";
+        public static string CommessaFasiPath = "api/CommessaFasi";
+        public static string GanttPlansPath = "api/GanttPlans";
+        public static string GanttPhasesPath = "api/GanttPhases";
 
         public static string InterventionTypesPath = "api/InterventionTypes";
 
@@ -183,6 +181,8 @@ namespace CRM.Client.Helpers
 
         public static string ClientOrdersPath = "Orders";
 
+        public static string ClientCommessePath = "Commesse";
+
         public static string ClientPriceListPath = "Settings/PriceList";
 
         public static string ClientInvoicesPath = "Invoices";
@@ -194,6 +194,8 @@ namespace CRM.Client.Helpers
         public static string ClientAccessoryTypeLangsPath = "Settings/AccessoryTypeLangs";
 
         public static string ClientProductsSettings = "Settings/Products";
+
+        public static string ClientGanttPlansPath = "Settings/GanttPlans";
 
         public static string ClientProductAccTypesPath = "ProductAccTypes";
 

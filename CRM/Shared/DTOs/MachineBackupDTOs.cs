@@ -42,6 +42,13 @@ namespace CRM.Shared.DTOs
         public string? ExternalReference { get; set; }
     }
 
+    public class MachineBackupChunkUploadResult
+    {
+        public bool IsComplete { get; set; }
+        public int ReceivedChunks { get; set; }
+        public MachineBackupDTO? Backup { get; set; }
+    }
+
     public class MachineParameterApiKeyDTO
     {
         public int Id { get; set; }

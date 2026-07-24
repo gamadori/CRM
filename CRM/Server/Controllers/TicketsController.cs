@@ -235,8 +235,8 @@ namespace CRM.Server.Controllers
                 if (args.IdDeal != null)
                     tickets = tickets.Where(t => t.IdDeal == args.IdDeal);
 
-                if (args.IdOrder != null)
-                    tickets = tickets.Where(t => t.IdOrder == args.IdOrder);
+                if (args.IdCommessaFase != null)
+                    tickets = tickets.Where(t => t.IdCommessaFase == args.IdCommessaFase);
 
                 var items = await tickets
                     .OrderBy(t => t.Date)
@@ -1348,7 +1348,6 @@ namespace CRM.Server.Controllers
                     .Include(x => x.UserOpened)
                     .Include(x => x.UserClosed)
                     .Include(x => x.State)
-                    .Include(x => x.Project)
                     .Where(x => x.Id == id)
                     .FirstOrDefaultAsync();
 

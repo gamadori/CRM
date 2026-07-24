@@ -83,8 +83,19 @@ namespace CRM.Shared
         public virtual ApplicationUser? User { get; set; }
 
         public virtual ICollection<OrderRow> Rows { get; set; } = new List<OrderRow>();
+    }
 
-        public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+    /// <summary>Stato di produzione di una riga d'ordine (MTO).</summary>
+    public enum RowProductionStatus
+    {
+        /// <summary>Non ancora gestita.</summary>
+        None,
+        /// <summary>Riga senza produzione (magazzino/servizio): confermata pronta.</summary>
+        Ready,
+        /// <summary>Produzione avviata: esistono commesse aperte.</summary>
+        InProduction,
+        /// <summary>Tutte le commesse della riga sono chiuse.</summary>
+        Closed
     }
 
     public class OrderRow
@@ -121,6 +132,9 @@ namespace CRM.Shared
 
         public int SortOrder { get; set; }
 
+        [Display(Name = "Stato produzione")]
+        public RowProductionStatus ProductionStatus { get; set; } = RowProductionStatus.None;
+
         [Column(TypeName = "Money")]
         public decimal LineNet { get; set; }
 
@@ -136,6 +150,8 @@ namespace CRM.Shared
         public virtual Product? Product { get; set; }
 
         public virtual Article? Article { get; set; }
+
+        public virtual ICollection<Commessa> Commesse { get; set; } = new List<Commessa>();
     }
 
     public class OrderFilter : PagingParameterModel

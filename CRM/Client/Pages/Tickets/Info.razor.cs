@@ -1,6 +1,5 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Models;
-using CRM.Client.Pages.Projects;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.Helper;
@@ -116,8 +115,6 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _fromDetails = false;
 
-        private Project _project;
-
         private Company _company;
 
         private ApplicationUser _user;
@@ -146,11 +143,7 @@ namespace CRM.Client.Pages.Tickets
             
             await LoadTicket();
             
-            if (IdProject != null)
-            {
-                await GetProject();
-            }
-            else if (IdCompany != null)
+            if (IdCompany != null)
             {
                 await GetCompany();
             }
@@ -193,11 +186,6 @@ namespace CRM.Client.Pages.Tickets
             {
                 _viewOptions.Add(new ViewOption<TicketViews> { Text = Localize["Closing"], Value = TicketViews.Chiusura });
             }
-        }
-        private async Task GetProject()
-        {
-            _project = await RestClientService.GetItem<Project, int>((int)IdProject, ConstHelper.ProjectsPath);
-
         }
 
         private async Task GetCompany()

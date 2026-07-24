@@ -415,9 +415,6 @@ namespace CRM.Server.Controllers
                 .SetProperty(m => m.IdArticle, (int?)null)
                 .SetProperty(m => m.IdProduct, (int?)null));
 
-            await _context.Projects.ExecuteUpdateAsync(s => s
-                .SetProperty(p => p.IdProduct, (int?)null));
-
             // 2. Elimina dipendenti non-nullable di Articles
             await _context.ArticleLicenseFeatures.ExecuteDeleteAsync();
             await _context.ArticleLicenses.ExecuteDeleteAsync();

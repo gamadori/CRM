@@ -132,9 +132,9 @@
                         <span class="nav-text">Pianificazione Ticket</span>
                     </NavLink>
 
-                    <NavLink class="nav-link submenu-link" href="Projects" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">account_tree</span>
-                        <span class="nav-text">@Localize["Projects"]</span>
+                    <NavLink class="nav-link submenu-link" href="Commesse" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">precision_manufacturing</span>
+                        <span class="nav-text">Commesse</span>
                     </NavLink>
 
                     <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">

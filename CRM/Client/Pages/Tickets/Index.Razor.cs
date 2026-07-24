@@ -68,13 +68,13 @@ namespace CRM.Client.Pages.Tickets
         public int?  IdArticle { get; set; }
 
         [Parameter]
-        public int? IdProject { get; set; }
-
-        [Parameter]
         public int? IdDeal { get; set; }
 
         [Parameter]
-        public int? IdOrder { get; set; }
+        public int? IdCommessaFase { get; set; }
+
+        [Parameter]
+        public int? IdCommessa { get; set; }
 
         [Parameter]
         public int TypeSearch { get; set; } = (int)TicketTypeSearch.All;
@@ -226,9 +226,9 @@ namespace CRM.Client.Pages.Tickets
                 paging.TypeSearch = TypeSearch;
                 paging.IdArticle = IdArticle;
                 paging.IdCompany = IdCompany;
-                paging.IdProject = IdProject;
                 paging.IdDeal = IdDeal;
-                paging.IdOrder = IdOrder;
+                paging.IdCommessaFase = IdCommessaFase;
+                paging.IdCommessa = IdCommessa;
 
                 if (_idUser != null)
                     paging.IdUserAssigned = _idUser;
@@ -338,10 +338,7 @@ namespace CRM.Client.Pages.Tickets
             }
             else
             {
-                if (IdProject != null)
-                    NavigationManager.NavigateTo($"/Tickets/{idTicket}/Info/{IdProject}");
-
-                else if (IdCompany != null)
+                if (IdCompany != null)
                     NavigationManager.NavigateTo($"Companies/{IdCompany}/Tickets/{idTicket}");
 
                 else if (_idUser != null)
@@ -406,8 +403,6 @@ namespace CRM.Client.Pages.Tickets
                     var query = new List<string>();
                     if (IdDeal != null)
                         query.Add($"IdDeal={IdDeal}");
-                    if (IdOrder != null)
-                        query.Add($"IdOrder={IdOrder}");
 
                     NavigationManager.NavigateTo($"/Tickets/New{(query.Any() ? "?" + string.Join("&", query) : string.Empty)}");
                 }

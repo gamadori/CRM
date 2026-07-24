@@ -3,6 +3,7 @@
 
 @using Radzen
 @using Radzen.Blazor
+@using CRM.Shared.DTOs
 
 
 
@@ -55,6 +56,28 @@ else
                             <RadzenStack>
                                 <RedGDropDown TItem="CompanyDTO" TValue="int?" ValueProperty="Id" TextProperty="RagioneSociale" @bind-Value="@_product.IdCompany" For="@(() => _product.IdCompany)"
                                               Data="_companies" AllowFiltering="true" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RadzenLabel Text="Template Gantt produzione" />
+                                <div class="d-flex gap-2 align-items-center">
+                                    <RadzenDropDown TItem="GanttPlanDTO" TValue="int?" ValueProperty="Id" TextProperty="Display"
+                                                    @bind-Value="@_product.IdGanttPlan"
+                                                    Data="_ganttPlans"
+                                                    AllowFiltering="true"
+                                                    AllowClear="true"
+                                                    Placeholder="Nessun template Gantt"
+                                                    Style="width:100%" />
+                                    <RadzenButton Icon="add"
+                                                  Text="Crea"
+                                                  ButtonStyle="ButtonStyle.Secondary"
+                                                  Size="ButtonSize.Small"
+                                                  Click="CreateGanttTemplate"
+                                                  Disabled="@string.IsNullOrWhiteSpace(_product.Name)" />
+                                </div>
                             </RadzenStack>
                         </RadzenColumn>
                     </RadzenRow>

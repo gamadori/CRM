@@ -1,4 +1,5 @@
 @page "/Orders/{Id:int}/Details"
+@using CRM.Client.Helpers
 @using CRM.Client.Models
 @using CRM.Client.Services
 @using CRM.Shared
@@ -10,6 +11,7 @@
 @using Microsoft.JSInterop
 @attribute [Authorize]
 @inject IOrderService OrderService
+@inject ICommessaService CommessaService
 @inject IInvoiceService InvoiceService
 @inject IHeaderService HeaderService
 @inject NavigationManager Nav
@@ -61,8 +63,6 @@ else
             <RadzenButton Icon="receipt" Text="Fattura" ButtonStyle="ButtonStyle.Light"
                           Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientInvoicesPath}/{_order.IdInvoice}/Details"))" />
         }
-        <RadzenButton Icon="confirmation_number" Text="Nuovo ticket" ButtonStyle="ButtonStyle.Light"
-                      Click="@(() => Nav.NavigateTo($"/Tickets/New?IdOrder={_order.Id}"))" />
         <RadzenDropDown TValue="OrderStates" Value="_order.State" Data="_stateOptions" TextProperty="Text" ValueProperty="Value"
                         Style="width:180px" Change="@(args => OnChangeState((OrderStates)args))" />
     </div>
@@ -137,6 +137,7 @@ else
                     <tr>
                         <th>Descrizione</th><th class="text-end">Q.ta</th><th class="text-end">Prezzo</th>
                         <th class="text-end">Sc.%</th><th class="text-end">IVA%</th><th class="text-end">Netto</th><th class="text-end">Totale</th>
+                        <th style="min-width:230px;">Produzione</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -150,6 +151,31 @@ else
                             <td class="text-end">@r.VatRate</td>
                             <td class="text-end">@r.LineNet.ToString("C")</td>
                             <td class="text-end">@r.LineTotal.ToString("C")</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="badge @CommessaUi.RowStatusBadgeClass(r.ProductionStatus)">@CommessaUi.RowStatusText(r.ProductionStatus)</span>
+                                    @if (r.ProductionStatus == RowProductionStatus.None)
+                                    {
+                                        @if (r.ProductHasTemplate)
+                                        {
+                                            <RadzenButton Icon="precision_manufacturing" Text="Avvia produzione" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success"
+                                                          IsBusy="@(_busyRow == r.Id)" Disabled="@(_busyRow != null)" Click="@(() => StartProduction(r))" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenButton Icon="check" Text="Conferma pronto" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                                                          IsBusy="@(_busyRow == r.Id)" Disabled="@(_busyRow != null)" Click="@(() => ConfirmReady(r))" />
+                                        }
+                                    }
+                                    else if (r.ProductionStatus is RowProductionStatus.InProduction or RowProductionStatus.Closed && _commesseByRow.TryGetValue(r.Id, out var cc) && cc.Any())
+                                    {
+                                        @foreach (var c in cc)
+                                        {
+                                            <a href="@($"/Commesse/{c.Id}")" class="badge bg-light text-dark border text-decoration-none" title="@c.Name">@c.Code</a>
+                                        }
+                                    }
+                                </div>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -178,24 +204,6 @@ else
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm mt-3">
-        <div class="card-header bg-light border-bottom d-flex align-items-center justify-content-between">
-            <div class="fw-semibold d-flex align-items-center gap-2">
-                <span class="material-icons" style="font-size: 20px;">confirmation_number</span>
-                Ticket collegati
-            </div>
-            <RadzenButton Icon="add" Text="Nuovo ticket" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
-                          Click="@(() => Nav.NavigateTo($"/Tickets/New?IdOrder={_order.Id}"))" />
-        </div>
-        <div class="card-body">
-            <CRM.Client.Pages.Tickets.Index IdOrder="@_order.Id"
-                                            IdCompany="@_order.IdCompany"
-                                            PageMode="CRM.Client.Helpers.PageHelper.PageModality.Child"
-                                            OnClickDetails="OpenTicket"
-                                            OnClickEdit="EditTicket">
-            </CRM.Client.Pages.Tickets.Index>
-        </div>
-    </div>
 }
 
 @code {
@@ -205,6 +213,8 @@ else
     private OrderDTO? _order;
     private bool _downloadingPdf;
     private bool _creatingInvoice;
+    private int? _busyRow;
+    private Dictionary<int, List<CommessaDTO>> _commesseByRow = new();
 
     private record StateOption(string Text, OrderStates Value);
     private readonly List<StateOption> _stateOptions = new()
@@ -220,6 +230,50 @@ else
     {
         _pageHeader = await HeaderService.Create();
         _order = await OrderService.GetItemAsync(Id);
+        await LoadCommesse();
+    }
+
+    private async Task LoadCommesse()
+    {
+        var list = await CommessaService.GetByOrderAsync(Id);
+        _commesseByRow = list.Where(c => c.IdOrderRow != null)
+                             .GroupBy(c => c.IdOrderRow!.Value)
+                             .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    private async Task StartProduction(OrderRowDTO r)
+    {
+        if (await DialogService.Confirm($"Avviare la produzione della riga \"{r.Description}\" (x{r.Quantity})? Verranno create le commesse dal template del prodotto.", "Conferma") != true)
+            return;
+        _busyRow = r.Id;
+        try
+        {
+            var resp = await CommessaService.StartProductionAsync(r.Id);
+            if (resp.State)
+            {
+                Notification.Notify(NotificationSeverity.Success, "Fatto", resp.Message ?? "Produzione avviata");
+                _order = await OrderService.GetItemAsync(Id);
+                await LoadCommesse();
+            }
+            else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+        }
+        finally { _busyRow = null; }
+    }
+
+    private async Task ConfirmReady(OrderRowDTO r)
+    {
+        _busyRow = r.Id;
+        try
+        {
+            var resp = await CommessaService.ConfirmRowReadyAsync(r.Id);
+            if (resp.State)
+            {
+                Notification.Notify(NotificationSeverity.Success, "Fatto", "Riga confermata pronta");
+                _order = await OrderService.GetItemAsync(Id);
+            }
+            else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+        }
+        finally { _busyRow = null; }
     }
 
     private async Task DownloadPdf()
@@ -287,17 +341,6 @@ else
         {
             Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
         }
-    }
-
-    private void OpenTicket(int id) => Nav.NavigateTo($"/Tickets/{id}/Info");
-
-    private void EditTicket(int? id)
-    {
-        var url = id == null
-            ? $"/Tickets/New?IdOrder={Id}"
-            : $"/Tickets/{id}/Edit";
-
-        Nav.NavigateTo(url);
     }
 
     private static string StateText(OrderStates s) => s switch

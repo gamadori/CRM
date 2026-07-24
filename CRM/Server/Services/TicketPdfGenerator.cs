@@ -89,7 +89,7 @@ namespace CRM.Server.Services
                                 var items = new List<(string, string)>
                                 {
                                     ("Tipo", ticket.TicketType?.ToString() ?? "N/A"),
-                                    ("Priorità", priority),
+                                    ("Prioritï¿½", priority),
                                     ("Stato", ticket.State?.Description ?? (ticket.Closed ? "Chiuso" : "Aperto"))
                                 };
 
@@ -157,13 +157,6 @@ namespace CRM.Server.Services
                                 }));
                             }
 
-                            // Sezione Progetto
-                            if (ticket.Project != null)
-                            {
-                                column.Item().Element(container => RenderSection(container, "Progetto", () =>
-                                    new[] { ("Nome Progetto", ticket.Project.Name ?? "N/A") }
-                                ));
-                            }
                         });
 
                     page.Footer()

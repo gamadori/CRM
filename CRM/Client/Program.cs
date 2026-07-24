@@ -131,7 +131,10 @@ namespace CRM.Client
             builder.Services.AddScoped<IContractTypeTicketService, ContractTypeTicketService>();
             builder.Services.AddScoped<ICompanyContractsService, CompanyContractsService>();
             builder.Services.AddScoped<IAGRestClientService, AGRestClientService>();
-            builder.Services.AddScoped<IProjectsService, ProjectsService>();
+            builder.Services.AddTransient<ICommessaService, ProxyCommessaService>();
+            builder.Services.AddTransient<ICommessaFaseService, ProxyCommessaFaseService>();
+            builder.Services.AddTransient<IGanttPlanService, ProxyGanttPlanService>();
+            builder.Services.AddTransient<IGanttPhaseService, ProxyGanttPhaseService>();
             builder.Services.AddScoped<ILanguagesService, ProxyLanguagesService>();
             builder.Services.AddScoped<ISmtpSettingsService, ProxySmtpSettingsService>();
             builder.Services.AddScoped<IEmailInboxService, ProxyEmailInboxService>();

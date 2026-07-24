@@ -170,9 +170,6 @@ namespace CRM.Shared
         [JsonIgnore]
         public virtual ICollection<Ticket> UserClosedTickets { get; set; }
 
-        [JsonIgnore]
-        public virtual ICollection<ProjectUser> Projects { get; set; }
-
         [DataMember]
 
         public Company Company { get; set; }

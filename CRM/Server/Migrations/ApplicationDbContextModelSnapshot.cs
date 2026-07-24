@@ -2515,6 +2515,9 @@ namespace CRM.Server.Migrations
                     b.Property<int?>("IdDeal")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdProject")
+                        .HasColumnType("int");
+
                     b.Property<int?>("IdQuote")
                         .HasColumnType("int");
 
@@ -2549,6 +2552,8 @@ namespace CRM.Server.Migrations
                     b.HasIndex("IdContact");
 
                     b.HasIndex("IdDeal");
+
+                    b.HasIndex("IdProject");
 
                     b.HasIndex("IdQuote");
 
@@ -2671,6 +2676,9 @@ namespace CRM.Server.Migrations
                     b.Property<int?>("IdCompany")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdGanttPlan")
+                        .HasColumnType("int");
+
                     b.Property<int?>("IdProductType")
                         .HasColumnType("int");
 
@@ -2697,9 +2705,54 @@ namespace CRM.Server.Migrations
 
                     b.HasIndex("IdCompany");
 
+                    b.HasIndex("IdGanttPlan");
+
                     b.HasIndex("IdProductType");
 
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("CRM.Shared.GanttPlan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IdUserCreate")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Progress")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdUserCreate");
+
+                    b.ToTable("GanttPlans");
                 });
 
             modelBuilder.Entity("CRM.Shared.ProductAccessoryType", b =>
@@ -2891,19 +2944,28 @@ namespace CRM.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("BudgetHours")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Code")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("DurationHours")
-                        .HasColumnType("int");
+                    b.Property<DateTime?>("EndDateActual")
+                        .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("EndDate")
+                    b.Property<DateTime>("EndDatePlanned")
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("IdCompany")
                         .HasColumnType("int");
 
-                    b.Property<int?>("IdProduct")
+                    b.Property<int?>("IdContact")
                         .HasColumnType("int");
 
                     b.Property<string>("IdUserCreate")
@@ -2916,7 +2978,13 @@ namespace CRM.Server.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("StartDate")
+                    b.Property<int>("Progress")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartDateActual")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("StartDatePlanned")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("State")
@@ -2926,7 +2994,7 @@ namespace CRM.Server.Migrations
 
                     b.HasIndex("IdCompany");
 
-                    b.HasIndex("IdProduct");
+                    b.HasIndex("IdContact");
 
                     b.HasIndex("IdUserCreate");
 
@@ -2935,7 +3003,7 @@ namespace CRM.Server.Migrations
                     b.ToTable("Projects");
                 });
 
-            modelBuilder.Entity("CRM.Shared.ProjectModel", b =>
+            modelBuilder.Entity("CRM.Shared.ProjectTask", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -2943,23 +3011,32 @@ namespace CRM.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Description")
+                    b.Property<string>("Color")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("DurationHours")
-                        .HasColumnType("int");
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("IdUser")
+                    b.Property<int>("IdProject")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsMilestone")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("ProductType")
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Progress")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("StartDate")
@@ -2967,7 +3044,40 @@ namespace CRM.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ProjectModels");
+                    b.HasIndex("IdProject");
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("ProjectTasks");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProjectTaskDependency", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("IdPredecessorTask")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdTask")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LagDays")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdPredecessorTask");
+
+                    b.HasIndex("IdTask");
+
+                    b.ToTable("ProjectTaskDependencies");
                 });
 
             modelBuilder.Entity("CRM.Shared.ProjectUser", b =>
@@ -2983,6 +3093,9 @@ namespace CRM.Server.Migrations
 
                     b.Property<string>("IdUser")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -3220,54 +3333,6 @@ namespace CRM.Server.Migrations
                     b.ToTable("SmtpSettings");
                 });
 
-            modelBuilder.Entity("CRM.Shared.TaskProject", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Duration")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("End")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("IdProject")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("IdTicketType")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ParentId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Predecessor")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Progress")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("Start")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdProject");
-
-                    b.HasIndex("IdTicketType");
-
-                    b.ToTable("TasksProject");
-                });
-
             modelBuilder.Entity("CRM.Shared.TelegramAppConfig", b =>
                 {
                     b.Property<int>("Id")
@@ -3346,13 +3411,13 @@ namespace CRM.Server.Migrations
                     b.Property<int?>("IdGroupAssigned")
                         .HasColumnType("int");
 
-                    b.Property<int?>("IdOrder")
-                        .HasColumnType("int");
-
                     b.Property<int?>("IdProduct")
                         .HasColumnType("int");
 
                     b.Property<int?>("IdProject")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdProjectTask")
                         .HasColumnType("int");
 
                     b.Property<int?>("IdState")
@@ -3436,11 +3501,11 @@ namespace CRM.Server.Migrations
 
                     b.HasIndex("IdGroupAssigned");
 
-                    b.HasIndex("IdOrder");
-
                     b.HasIndex("IdProduct");
 
                     b.HasIndex("IdProject");
+
+                    b.HasIndex("IdProjectTask");
 
                     b.HasIndex("IdState");
 
@@ -5184,6 +5249,11 @@ namespace CRM.Server.Migrations
                         .HasForeignKey("IdDeal")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("CRM.Shared.Project", "Project")
+                        .WithMany("Orders")
+                        .HasForeignKey("IdProject")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("CRM.Shared.Quote", "Quote")
                         .WithMany()
                         .HasForeignKey("IdQuote")
@@ -5199,6 +5269,8 @@ namespace CRM.Server.Migrations
                     b.Navigation("Contact");
 
                     b.Navigation("Deal");
+
+                    b.Navigation("Project");
 
                     b.Navigation("Quote");
 
@@ -5255,13 +5327,29 @@ namespace CRM.Server.Migrations
                         .WithMany()
                         .HasForeignKey("IdCompany");
 
+                    b.HasOne("CRM.Shared.GanttPlan", "GanttPlan")
+                        .WithMany("Products")
+                        .HasForeignKey("IdGanttPlan")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("CRM.Shared.ProductType", "ProductType")
                         .WithMany()
                         .HasForeignKey("IdProductType");
 
                     b.Navigation("Company");
 
+                    b.Navigation("GanttPlan");
+
                     b.Navigation("ProductType");
+                });
+
+            modelBuilder.Entity("CRM.Shared.GanttPlan", b =>
+                {
+                    b.HasOne("CRM.Shared.ApplicationUser", "UserCreate")
+                        .WithMany()
+                        .HasForeignKey("IdUserCreate");
+
+                    b.Navigation("UserCreate");
                 });
 
             modelBuilder.Entity("CRM.Shared.ProductAccessoryType", b =>
@@ -5336,9 +5424,9 @@ namespace CRM.Server.Migrations
                         .WithMany()
                         .HasForeignKey("IdCompany");
 
-                    b.HasOne("CRM.Shared.Product", "Product")
+                    b.HasOne("CRM.Shared.Contact", "Contact")
                         .WithMany()
-                        .HasForeignKey("IdProduct");
+                        .HasForeignKey("IdContact");
 
                     b.HasOne("CRM.Shared.ApplicationUser", "UserCreate")
                         .WithMany()
@@ -5350,17 +5438,54 @@ namespace CRM.Server.Migrations
 
                     b.Navigation("Company");
 
-                    b.Navigation("Product");
+                    b.Navigation("Contact");
 
                     b.Navigation("UserCreate");
 
                     b.Navigation("UserLeader");
                 });
 
+            modelBuilder.Entity("CRM.Shared.ProjectTask", b =>
+                {
+                    b.HasOne("CRM.Shared.ProjectTask", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CRM.Shared.Project", "Project")
+                        .WithMany("Tasks")
+                        .HasForeignKey("IdProject")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Parent");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProjectTaskDependency", b =>
+                {
+                    b.HasOne("CRM.Shared.ProjectTask", "PredecessorTask")
+                        .WithMany()
+                        .HasForeignKey("IdPredecessorTask")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ProjectTask", "Task")
+                        .WithMany("Dependencies")
+                        .HasForeignKey("IdTask")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PredecessorTask");
+
+                    b.Navigation("Task");
+                });
+
             modelBuilder.Entity("CRM.Shared.ProjectUser", b =>
                 {
                     b.HasOne("CRM.Shared.Project", "Project")
-                        .WithMany()
+                        .WithMany("Team")
                         .HasForeignKey("IdProject")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -5449,21 +5574,6 @@ namespace CRM.Server.Migrations
                     b.Navigation("Quote");
                 });
 
-            modelBuilder.Entity("CRM.Shared.TaskProject", b =>
-                {
-                    b.HasOne("CRM.Shared.ProjectModel", "ProjectModel")
-                        .WithMany()
-                        .HasForeignKey("IdProject");
-
-                    b.HasOne("CRM.Shared.TicketType", "TicketType")
-                        .WithMany()
-                        .HasForeignKey("IdTicketType");
-
-                    b.Navigation("ProjectModel");
-
-                    b.Navigation("TicketType");
-                });
-
             modelBuilder.Entity("CRM.Shared.Ticket", b =>
                 {
                     b.HasOne("CRM.Shared.Article", "Article")
@@ -5489,18 +5599,19 @@ namespace CRM.Server.Migrations
                         .WithMany()
                         .HasForeignKey("IdGroupAssigned");
 
-                    b.HasOne("CRM.Shared.Order", "Order")
-                        .WithMany("Tickets")
-                        .HasForeignKey("IdOrder")
-                        .OnDelete(DeleteBehavior.NoAction);
-
                     b.HasOne("CRM.Shared.Product", "Product")
                         .WithMany()
                         .HasForeignKey("IdProduct");
 
                     b.HasOne("CRM.Shared.Project", "Project")
                         .WithMany("Tickets")
-                        .HasForeignKey("IdProject");
+                        .HasForeignKey("IdProject")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("CRM.Shared.ProjectTask", "ProjectTask")
+                        .WithMany("Tickets")
+                        .HasForeignKey("IdProjectTask")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("CRM.Shared.TicketState", "State")
                         .WithMany()
@@ -5541,11 +5652,11 @@ namespace CRM.Server.Migrations
 
                     b.Navigation("OperationalSummaryUpdatedByUser");
 
-                    b.Navigation("Order");
-
                     b.Navigation("Product");
 
                     b.Navigation("Project");
+
+                    b.Navigation("ProjectTask");
 
                     b.Navigation("State");
 
@@ -5948,11 +6059,14 @@ namespace CRM.Server.Migrations
                     b.Navigation("ProductInterests");
                 });
 
+            modelBuilder.Entity("CRM.Shared.GanttPlan", b =>
+                {
+                    b.Navigation("Products");
+                });
+
             modelBuilder.Entity("CRM.Shared.Order", b =>
                 {
                     b.Navigation("Rows");
-
-                    b.Navigation("Tickets");
                 });
 
             modelBuilder.Entity("CRM.Shared.Product", b =>
@@ -5962,6 +6076,21 @@ namespace CRM.Server.Migrations
 
             modelBuilder.Entity("CRM.Shared.Project", b =>
                 {
+                    b.Navigation("Orders");
+
+                    b.Navigation("Tasks");
+
+                    b.Navigation("Team");
+
+                    b.Navigation("Tickets");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ProjectTask", b =>
+                {
+                    b.Navigation("Children");
+
+                    b.Navigation("Dependencies");
+
                     b.Navigation("Tickets");
                 });
 

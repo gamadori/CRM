@@ -1,0 +1,30 @@
+using CRM.Client.Models;
+using CRM.Shared;
+using CRM.Shared.DTOs;
+
+namespace CRM.Server.Services
+{
+    public interface ICommesseService
+    {
+        Task<CommessaDTO?> GetItemAsync(int id);
+
+        Task<PagingResponse<CommessaDTO, int>?> GetSummaryAsync(CommessaFilter? args);
+
+        Task<List<CommessaDTO>?> GetListAsync(CommessaFilter? args = null);
+
+        Task<List<CommessaDTO>> GetByOrderAsync(int orderId);
+
+        Task<APIResponseMessage<CommessaDTO>> PostAsync(Commessa item);
+
+        Task<APIResponseMessage<CommessaDTO>> ChangeStateAsync(int id, CommessaStates state);
+
+        /// <summary>Avvia produzione da una riga d'ordine: crea una commessa per unità clonando le
+        /// fasi dal template del prodotto, con schedulazione all'indietro dalla consegna.</summary>
+        Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(int orderRowId);
+
+        /// <summary>Conferma "pronto" una riga senza produzione (nessuna commessa).</summary>
+        Task<APIResponseMessage<CommessaDTO>> ConfirmRowReadyAsync(int orderRowId);
+
+        Task<bool> DeleteAsync(int id);
+    }
+}

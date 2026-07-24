@@ -239,14 +239,6 @@ else
                             </div>
                         }
 
-                        @if (_ticket.Project != null && _ticket.Project.Any())
-                        {
-                            <div class="info-row">
-                                <span class="info-key"><DisplayName For="@(() => _ticket.Project)" /></span>
-                                <span class="info-value">@_ticket.Project</span>
-                            </div>
-                        }
-
                         @if (_ticket.IdDeal != null)
                         {
                             <div class="info-row">
@@ -261,16 +253,15 @@ else
                             </div>
                         }
 
-                        @if (_ticket.IdOrder != null)
+                        @if (_ticket.IdCommessaFase != null)
                         {
                             <div class="info-row">
-                                <span class="info-key"><DisplayName For="@(() => _ticket.OrderNumber)" /></span>
+                                <span class="info-key"><DisplayName For="@(() => _ticket.CommessaFaseName)" /></span>
                                 <span class="info-value">
-                                    <RadzenButton Icon="shopping_cart"
-                                                  Text="@(string.IsNullOrWhiteSpace(_ticket.OrderNumber) ? _ticket.IdOrder.Value.ToString() : _ticket.OrderNumber)"
-                                                  ButtonStyle="ButtonStyle.Light"
-                                                  Size="ButtonSize.Small"
-                                                  Click="@(() => NavigationManager.NavigateTo($"/Orders/{_ticket.IdOrder}/Details"))" />
+                                    <span class="badge bg-light text-dark border">
+                                        <span class="material-icons align-middle" style="font-size:14px;">view_timeline</span>
+                                        @(string.IsNullOrWhiteSpace(_ticket.CommessaFaseName) ? _ticket.IdCommessaFase.Value.ToString() : _ticket.CommessaFaseName)
+                                    </span>
                                 </span>
                             </div>
                         }

@@ -1,6 +1,5 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Models;
-using CRM.Client.Pages.Projects;
 using CRM.Client.Services;
 using CRM.Client.Shared;
 using CRM.Shared;

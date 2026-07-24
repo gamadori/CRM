@@ -45,6 +45,10 @@ namespace CRM.Shared
 
         public string? ArchivedReason { get; set; }
 
+        [Display(Name = "Template Gantt")]
+        [ForeignKey(nameof(GanttPlan))]
+        public int? IdGanttPlan { get; set; }
+
         [Display(Name = nameof(Product.ProductType), ResourceType = typeof(Resources.Models.Product))]
         public ProductType ProductType { get; set; }
 
@@ -57,6 +61,7 @@ namespace CRM.Shared
         public ICollection<Product> Parents { get; set; }
         public ICollection<Product> Childs { get; set; }
         public Company? Company { get; set; }
+        public GanttPlan? GanttPlan { get; set; }
 
     }
 

@@ -41,12 +41,73 @@ namespace CRM.Server.Data
                 .HasForeignKey(t => t.IdDeal)
                 .OnDelete(DeleteBehavior.NoAction);
 
+            // ─── Produzione: Commesse ────────────────────────────────────────────
+            // Ticket -> Fase di commessa (opzionale).
             modelBuilder.Entity<Ticket>()
-                .HasOne(t => t.Order)
-                .WithMany(o => o.Tickets)
-                .HasForeignKey(t => t.IdOrder)
+                .HasOne(t => t.CommessaFase)
+                .WithMany(f => f.Tickets)
+                .HasForeignKey(t => t.IdCommessaFase)
                 .OnDelete(DeleteBehavior.NoAction);
-            
+
+            // Commessa -> riga d'ordine (una commessa per unità). Scollegare la riga non la cancella.
+            modelBuilder.Entity<Commessa>()
+                .HasOne(c => c.OrderRow)
+                .WithMany(r => r.Commesse)
+                .HasForeignKey(c => c.IdOrderRow)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Gerarchia WBS delle fasi (self-reference): niente cascade multiple.
+            modelBuilder.Entity<CommessaFase>()
+                .HasOne(f => f.Parent)
+                .WithMany(f => f.Children)
+                .HasForeignKey(f => f.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CommessaFase>()
+                .HasOne(f => f.Commessa)
+                .WithMany(c => c.Phases)
+                .HasForeignKey(f => f.IdCommessa)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Dipendenze tra fasi: due FK verso CommessaFase -> Restrict per evitare cicli di cascade.
+            modelBuilder.Entity<CommessaFaseDependency>()
+                .HasOne(d => d.Fase)
+                .WithMany(f => f.Dependencies)
+                .HasForeignKey(d => d.IdFase)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CommessaFaseDependency>()
+                .HasOne(d => d.PredecessorFase)
+                .WithMany()
+                .HasForeignKey(d => d.IdPredecessorFase)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ─── Template: GanttPlan -> GanttPhase ───────────────────────────────
+            modelBuilder.Entity<GanttPhase>()
+                .HasOne(p => p.GanttPlan)
+                .WithMany(g => g.Phases)
+                .HasForeignKey(p => p.IdGanttPlan)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GanttPhase>()
+                .HasOne(p => p.Parent)
+                .WithMany(p => p.Children)
+                .HasForeignKey(p => p.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GanttPhaseDependency>()
+                .HasOne(d => d.Phase)
+                .WithMany(p => p.Dependencies)
+                .HasForeignKey(d => d.IdPhase)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GanttPhaseDependency>()
+                .HasOne(d => d.PredecessorPhase)
+                .WithMany()
+                .HasForeignKey(d => d.IdPredecessorPhase)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
             // ⚠️ LEGACY: Relazione 1-to-many tradizionale (mantenuta per compatibilità)
             modelBuilder.Entity<ApplicationUser>()
                 .HasMany(x => x.UserAssignedTickets)
@@ -700,6 +761,12 @@ namespace CRM.Server.Data
                 entity.HasIndex(x => new { x.IdWorkflowAutomation, x.Trigger, x.EntityType, x.EntityId }).IsUnique();
                 entity.HasIndex(x => x.ExecutedAt);
             });
+
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.GanttPlan)
+                .WithMany(g => g.Products)
+                .HasForeignKey(p => p.IdGanttPlan)
+                .OnDelete(DeleteBehavior.SetNull);
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -723,6 +790,7 @@ namespace CRM.Server.Data
         public DbSet<CRM.Shared.Logo> Logos => Set<Logo>();
         public DbSet<CRM.Shared.Group> Groups => Set<Group>();
         public DbSet<CRM.Shared.Product> Products => Set<Product>();
+        public DbSet<CRM.Shared.GanttPlan> GanttPlans => Set<GanttPlan>();
 
         public DbSet<CRM.Shared.ProductKnowledge> ProductKnowledge => Set<ProductKnowledge>();
 
@@ -742,9 +810,11 @@ namespace CRM.Server.Data
 
 
         public DbSet<CRM.Shared.TicketIntervention> TicketsInterventions => Set<TicketIntervention>();
-        public DbSet<CRM.Shared.TaskProject> TasksProject => Set<TaskProject>();
-        public DbSet<CRM.Shared.ProjectModel> ProjectModels => Set<ProjectModel>();
-        public DbSet<CRM.Shared.Project> Projects => Set<Project>();
+        public DbSet<CRM.Shared.Commessa> Commesse => Set<Commessa>();
+        public DbSet<CRM.Shared.CommessaFase> CommessaFasi => Set<CommessaFase>();
+        public DbSet<CRM.Shared.CommessaFaseDependency> CommessaFaseDependencies => Set<CommessaFaseDependency>();
+        public DbSet<CRM.Shared.GanttPhase> GanttPhases => Set<GanttPhase>();
+        public DbSet<CRM.Shared.GanttPhaseDependency> GanttPhaseDependencies => Set<GanttPhaseDependency>();
         public DbSet<CRM.Shared.TicketInterventionUser> TicketInterventionUser => Set<TicketInterventionUser>();
 
         public DbSet<InterventionType> InterventionTypes => Set<InterventionType>();
@@ -834,8 +904,6 @@ namespace CRM.Server.Data
         public DbSet<CompanyContract> CompanyContracts => Set<CompanyContract>();
 
         public DbSet<UserAvatar> UserAvatars => Set<UserAvatar>();
-
-        public DbSet<ProjectUser> ProjectUsers => Set<ProjectUser>();
 
         public DbSet<TicketInterventionTime> TicketInterventionTimes => Set<TicketInterventionTime>();
 

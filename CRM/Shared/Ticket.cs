@@ -81,10 +81,6 @@ namespace CRM.Shared
 
         }
 
-        public Ticket(TaskProject task)
-        {
-            this.Description = task.Description;
-        }
         [Display(Name = nameof(Ticket.Id), ResourceType = typeof(Resources.Models.Ticket))]
         public int Id { get; set; }
 
@@ -191,17 +187,13 @@ namespace CRM.Shared
 
        
 
-        [ForeignKey("Project")]
-        [Display(Name = nameof(Ticket.IdProject), ResourceType = typeof(Resources.Models.Ticket))]
-        public int? IdProject { get; set; }
-
         [ForeignKey(nameof(Deal))]
         [Display(Name = "Opportunita")]
         public int? IdDeal { get; set; }
 
-        [ForeignKey(nameof(Order))]
-        [Display(Name = "Ordine")]
-        public int? IdOrder { get; set; }
+        [ForeignKey(nameof(CommessaFase))]
+        [Display(Name = "Fase")]
+        public int? IdCommessaFase { get; set; }
 
         [Display(Name = nameof(Ticket.Invoiced), ResourceType = typeof(Resources.Models.Ticket))]
         public bool Invoiced { get; set; }
@@ -290,9 +282,8 @@ namespace CRM.Shared
 
         [JsonIgnore]
         public virtual Contact? Contact { get; set; }
-        public virtual Project Project { get; set; }
         public virtual Deal? Deal { get; set; }
-        public virtual Order? Order { get; set; }
+        public virtual CommessaFase? CommessaFase { get; set; }
 
         /// <summary>
         /// ✅ FONTE DI VERITÀ per assegnazioni MULTIPLE: Collezione di tutti gli utenti assegnati al ticket
@@ -325,12 +316,12 @@ namespace CRM.Shared
 
         public int? IdArticle { get; set; }
 
-        public int? IdProject { get; set; }
-
         public int? IdDeal { get; set; }
 
-        public int? IdOrder { get; set; }
-        
+        public int? IdCommessaFase { get; set; }
+
+        public int? IdCommessa { get; set; }
+
         public string? Search { get; set; }
 
         public string IdUserOpened { get; set; }

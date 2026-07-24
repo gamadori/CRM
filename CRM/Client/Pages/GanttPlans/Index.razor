@@ -1,0 +1,147 @@
+@page "/Settings/GanttPlans"
+@page "/Settings/GanttPlans/Index"
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IGanttPlanService GanttPlanService
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+@inject DialogService DialogService
+@inject NotificationService Notification
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 d-flex flex-wrap gap-2 align-items-center">
+        <div class="input-group" style="max-width: 340px;">
+            <span class="input-group-text"><span class="material-icons">search</span></span>
+            <input class="form-control" placeholder="Cerca template Gantt"
+                   @bind="_filter.Search" @bind:event="oninput" @onkeyup="OnSearchKey" />
+        </div>
+        <RadzenDropDown TValue="GanttPlanStates?" @bind-Value="_stateFilter" Data="_states"
+                        TextProperty="Text" ValueProperty="Value" AllowClear="true"
+                        Placeholder="Stato" Style="width: 180px;" Change="@(async _ => await Reload())" />
+        <button class="btn btn-primary ms-auto d-flex align-items-center gap-1" @onclick="@(() => Nav.NavigateTo("/Settings/GanttPlans/New"))">
+            <span class="material-icons" style="font-size:18px;">add</span> Nuovo template
+        </button>
+    </div>
+</div>
+
+<RadzenDataGrid @ref="_grid" IsLoading="@_isLoading" Data="@_items" TItem="GanttPlanDTO"
+                AllowPaging="true" PageSize="15" AllowSorting="true" EmptyText="Nessun template Gantt">
+    <Columns>
+        <RadzenDataGridColumn TItem="GanttPlanDTO" Property="Name" Title="Nome">
+            <Template Context="p">
+                <a href="@($"/Settings/GanttPlans/{p.Id}/Edit")" class="text-decoration-none fw-semibold">@p.Name</a>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="GanttPlanDTO" Property="Description" Title="Descrizione" />
+        <RadzenDataGridColumn TItem="GanttPlanDTO" Property="State" Title="Stato" Width="130px">
+            <Template Context="p">
+                <span class="badge @StateBadge(p.State)">@StateText(p.State)</span>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="GanttPlanDTO" Property="Progress" Title="Avanzamento" Width="160px">
+            <Template Context="p">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height:8px;">
+                        <div class="progress-bar" role="progressbar" style="width:@(p.Progress)%"></div>
+                    </div>
+                    <small class="text-muted" style="width:34px;">@p.Progress%</small>
+                </div>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn TItem="GanttPlanDTO" Property="StartDate" Title="Inizio" Width="120px" FormatString="{0:dd/MM/yyyy}" />
+        <RadzenDataGridColumn TItem="GanttPlanDTO" Property="EndDate" Title="Fine" Width="120px" FormatString="{0:dd/MM/yyyy}" />
+        <RadzenDataGridColumn TItem="GanttPlanDTO" Context="p" Title="" Width="120px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
+            <Template Context="p">
+                <div class="d-flex gap-2 justify-content-center">
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary"
+                                  Click="@(() => Nav.NavigateTo($"/Settings/GanttPlans/{p.Id}/Edit"))" />
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Click="@(() => Delete(p))" />
+                </div>
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    private PageHeaderModel? _pageHeader;
+    private RadzenDataGrid<GanttPlanDTO>? _grid;
+    private List<GanttPlanDTO> _items = new();
+    private GanttPlanFilter _filter = new();
+    private GanttPlanStates? _stateFilter;
+    private bool _isLoading;
+
+    private record StateOption(string Text, GanttPlanStates? Value);
+    private readonly List<StateOption> _states = new()
+    {
+        new("Bozza", GanttPlanStates.Draft),
+        new("Attivo", GanttPlanStates.Active),
+        new("Archiviato", GanttPlanStates.Archived),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        _isLoading = true;
+        try
+        {
+            _filter.State = _stateFilter;
+            _items = await GanttPlanService.GetListAsync(_filter);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task Reload()
+    {
+        await Load();
+        if (_grid != null)
+            await _grid.Reload();
+    }
+
+    private async Task OnSearchKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await Reload();
+    }
+
+    private async Task Delete(GanttPlanDTO plan)
+    {
+        if (await DialogService.Confirm($"Eliminare il template Gantt {plan.Name}? I prodotti collegati resteranno senza template.", "Conferma") == true)
+        {
+            var resp = await GanttPlanService.DeleteAsync(plan.Id);
+            if (!resp.State)
+                Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Eliminazione fallita");
+
+            await Reload();
+        }
+    }
+
+    private static string StateText(GanttPlanStates state) => state switch
+    {
+        GanttPlanStates.Active => "Attivo",
+        GanttPlanStates.Archived => "Archiviato",
+        _ => "Bozza"
+    };
+
+    private static string StateBadge(GanttPlanStates state) => state switch
+    {
+        GanttPlanStates.Active => "bg-success",
+        GanttPlanStates.Archived => "bg-secondary",
+        _ => "bg-warning text-dark"
+    };
+}

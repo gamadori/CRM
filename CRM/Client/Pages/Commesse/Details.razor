@@ -1,0 +1,357 @@
+@page "/Commesse/{Id:int}"
+@page "/Commesse/{Id:int}/Details"
+@using CRM.Client.Helpers
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Client.Shared.Components.Gantt
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject ICommessaService CommessaService
+@inject ICommessaFaseService FaseService
+@inject IBaseRestService<ApplicationUser, UsersFilterModel, string> UserSvc
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+@inject DialogService DialogService
+@inject NotificationService Notification
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+@if (_c == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <!-- Header -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex flex-wrap align-items-start gap-3">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-light text-dark border">@_c.Code</span>
+                        <span class="badge @CommessaUi.StateBadgeClass(_c.State)">@CommessaUi.StateText(_c.State)</span>
+                    </div>
+                    <h4 class="mb-1">@(string.IsNullOrWhiteSpace(_c.Name) ? _c.Code : _c.Name)</h4>
+                    <div class="text-muted small d-flex flex-wrap gap-3">
+                        @if (_c.IdCompany != null)
+                        {
+                            <a href="@($"/Companies/{_c.IdCompany}")" class="text-decoration-none"><span class="material-icons align-middle" style="font-size:16px;">business</span> @_c.CompanyName</a>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_c.ProductName))
+                        {
+                            <span><span class="material-icons align-middle" style="font-size:16px;">precision_manufacturing</span> @_c.ProductName</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_c.ArticleSerial))
+                        {
+                            <span><span class="material-icons align-middle" style="font-size:16px;">qr_code_2</span> @_c.ArticleSerial</span>
+                        }
+                        @if (_c.IdOrder != null)
+                        {
+                            <a href="@($"/{ConstHelper.ClientOrdersPath}/{_c.IdOrder}/Details")" class="text-decoration-none"><span class="material-icons align-middle" style="font-size:16px;">receipt_long</span> @(string.IsNullOrWhiteSpace(_c.OrderNumber) ? _c.IdOrder.ToString() : _c.OrderNumber)</a>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_c.ResponsibleName))
+                        {
+                            <span><span class="material-icons align-middle" style="font-size:16px;">engineering</span> @_c.ResponsibleName</span>
+                        }
+                    </div>
+                </div>
+                <div class="text-end" style="min-width:230px;">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <div class="progress flex-grow-1" style="height:10px;">
+                            <div class="progress-bar bg-success" style="width:@(_c.Progress)%"></div>
+                        </div>
+                        <strong>@_c.Progress%</strong>
+                    </div>
+                    <RadzenDropDown TValue="CommessaStates" Value="_c.State" Data="_stateOptions" TextProperty="Text" ValueProperty="Value"
+                                    Style="width:210px" Change="@(args => OnChangeState((CommessaStates)args))" />
+                </div>
+            </div>
+
+            <hr class="my-3" />
+            <div class="row g-3 small">
+                <div class="col-6 col-md-2"><div class="text-muted">Inizio piano</div><strong>@_c.StartDatePlanned.ToString("dd/MM/yyyy")</strong></div>
+                <div class="col-6 col-md-2"><div class="text-muted">Consegna</div><strong>@_c.EndDatePlanned.ToString("dd/MM/yyyy")</strong></div>
+                <div class="col-6 col-md-2"><div class="text-muted">Inizio effettivo</div><strong>@(_c.StartDateActual?.ToString("dd/MM/yyyy") ?? "-")</strong></div>
+                <div class="col-6 col-md-2"><div class="text-muted">Fine effettiva</div><strong>@(_c.EndDateActual?.ToString("dd/MM/yyyy") ?? "-")</strong></div>
+                <div class="col-6 col-md-2"><div class="text-muted">Ore a budget</div><strong>@(_c.BudgetHours?.ToString() ?? "-")</strong></div>
+                <div class="col-6 col-md-2 text-md-end">
+                    <RadzenButton Icon="edit" Text="Modifica" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="ToggleEdit" />
+                </div>
+            </div>
+
+            @if (_edit != null)
+            {
+                <div class="border rounded p-3 mt-3 bg-light">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1">Nome</label>
+                            <input class="form-control form-control-sm" @bind="_edit.Name" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Responsabile</label>
+                            <RadzenDropDown TValue="string" @bind-Value="_edit.IdUserResponsible" Data="_users" TextProperty="NameComplete" ValueProperty="Id"
+                                            AllowFiltering="true" AllowClear="true" Style="width:100%" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Priorità</label>
+                            <RadzenNumeric TValue="int" @bind-Value="_edit.Priority" Style="width:100%" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Ore a budget</label>
+                            <RadzenNumeric TValue="int?" @bind-Value="_edit.BudgetHours" Min="0" Style="width:100%" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Inizio pianificato</label>
+                            <RadzenDatePicker TValue="DateTime" @bind-Value="_edit.StartDatePlanned" DateFormat="dd/MM/yyyy" Style="width:100%" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Consegna</label>
+                            <RadzenDatePicker TValue="DateTime" @bind-Value="_edit.EndDatePlanned" DateFormat="dd/MM/yyyy" Style="width:100%" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small mb-1">Note</label>
+                            <input class="form-control form-control-sm" @bind="_edit.Note" />
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <RadzenButton Icon="save" Text="Salva" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="SaveEdit" />
+                        <RadzenButton Icon="close" Text="Annulla" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@(() => _edit = null)" />
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <RadzenSelectBar @bind-Value="_view" TValue="View" Style="margin-bottom:16px;" Size="ButtonSize.Small">
+        <Items>
+            <RadzenSelectBarItem Text="Panoramica" Value="View.Overview" Icon="dashboard" />
+            <RadzenSelectBarItem Text="Pianificazione" Value="View.Plan" Icon="view_timeline" />
+            <RadzenSelectBarItem Text="Fasi operative" Value="View.Phases" Icon="checklist" />
+            <RadzenSelectBarItem Text="Ticket" Value="View.Tickets" Icon="confirmation_number" />
+        </Items>
+    </RadzenSelectBar>
+
+    @switch (_view)
+    {
+        case View.Overview:
+            <div class="row g-3">
+                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+                    <div class="text-muted small">Fasi</div><div class="fs-3 fw-bold">@_c.PhaseCount</div></div></div></div>
+                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+                    <div class="text-muted small">Ticket</div><div class="fs-3 fw-bold">@_c.TicketCount</div></div></div></div>
+                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+                    <div class="text-muted small">Fasi completate</div><div class="fs-3 fw-bold">@_fasi.Count(f => f.State == CommessaFaseStates.Done)/@_fasi.Count</div></div></div></div>
+                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
+                    <div class="text-muted small">Giorni alla consegna</div><div class="fs-3 fw-bold @( (_c.EndDatePlanned.Date - DateTime.Today).Days < 0 ? "text-danger" : "")">@((_c.EndDatePlanned.Date - DateTime.Today).Days)</div></div></div></div>
+                @if (!string.IsNullOrWhiteSpace(_c.Description) || !string.IsNullOrWhiteSpace(_c.Note))
+                {
+                    <div class="col-12"><div class="card border-0 shadow-sm"><div class="card-body">
+                        @if (!string.IsNullOrWhiteSpace(_c.Description)) { <div class="text-muted small mb-1">Descrizione</div><p class="mb-2" style="white-space:pre-wrap;">@_c.Description</p> }
+                        @if (!string.IsNullOrWhiteSpace(_c.Note)) { <div class="text-muted small mb-1">Note</div><p class="mb-0" style="white-space:pre-wrap;">@_c.Note</p> }
+                    </div></div></div>
+                }
+            </div>
+            break;
+
+        case View.Plan:
+            <div class="card border-0 shadow-sm"><div class="card-body">
+                <RedGGantt CommessaId="@Id" OnProgressChanged="ReloadHeaderAsync" />
+            </div></div>
+            break;
+
+        case View.Phases:
+            <div class="card border-0 shadow-sm"><div class="card-body">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Fase</th><th>Gruppo</th><th>Tipo ticket</th><th style="width:120px;">Stato</th><th style="width:90px;" class="text-center">Ticket</th><th style="width:180px;"></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var f in _fasi.Where(x => !x.IsMilestone))
+                        {
+                            <tr>
+                                <td style="padding-left:@(Depth(f) * 16 + 8)px">@f.Name</td>
+                                <td>@(string.IsNullOrWhiteSpace(f.GroupName) ? "—" : f.GroupName)</td>
+                                <td>@(string.IsNullOrWhiteSpace(f.TicketTypeName) ? "—" : f.TicketTypeName)</td>
+                                <td><span class="badge @FaseBadge(f.State)">@CommessaUi.FaseStateText(f.State)</span></td>
+                                <td class="text-center">@(f.TicketCount > 0 ? $"{f.ClosedTicketCount}/{f.TicketCount}" : "—")</td>
+                                <td class="text-end">
+                                    @if (f.State == CommessaFaseStates.Done)
+                                    {
+                                        <span class="text-success small"><span class="material-icons align-middle" style="font-size:16px;">check_circle</span> Fatto</span>
+                                    }
+                                    else if (f.IdTicketType != null)
+                                    {
+                                        @if (f.State == CommessaFaseStates.InProgress && f.TicketCount > 0)
+                                        {
+                                            <RadzenButton Icon="confirmation_number" Text="Vedi ticket" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                                                          Click="@(() => _view = View.Tickets)" />
+                                        }
+                                        else
+                                        {
+                                            <RadzenButton Icon="play_arrow" Text="Prendi in carico" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                                          Disabled="@(!CanTake(f))" Click="@(() => TakeInCharge(f))" />
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <RadzenButton Icon="check" Text="Completa" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success"
+                                                      Disabled="@(!CanTake(f))" Click="@(() => MarkDone(f))" />
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        @if (!_fasi.Any(x => !x.IsMilestone))
+                        {
+                            <tr><td colspan="6" class="text-center text-muted py-3">Nessuna fase. Aggiungile dalla scheda Pianificazione.</td></tr>
+                        }
+                    </tbody>
+                </table>
+                <div class="small text-muted mt-2"><span class="material-icons align-middle" style="font-size:14px;">info</span> Una fase con dipendenze aperte non è avviabile finché i predecessori non sono completati.</div>
+            </div></div>
+            break;
+
+        case View.Tickets:
+            <CRM.Client.Pages.Tickets.Index IdCommessa="@Id"
+                                            PageMode="CRM.Client.Helpers.PageHelper.PageModality.Child"
+                                            OnClickDetails="OpenTicket" OnClickEdit="EditTicket" />
+            break;
+    }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private enum View { Overview, Plan, Phases, Tickets }
+
+    private PageHeaderModel? _pageHeader;
+    private CommessaDTO? _c;
+    private List<CommessaFaseDTO> _fasi = new();
+    private List<ApplicationUser> _users = new();
+    private View _view = View.Overview;
+    private Commessa? _edit;
+
+    private record StateOption(string Text, CommessaStates Value);
+    private readonly List<StateOption> _stateOptions = new()
+    {
+        new("Pianificata", CommessaStates.Planned),
+        new("In lavorazione", CommessaStates.InProgress),
+        new("Sospesa", CommessaStates.Suspended),
+        new("Collaudo", CommessaStates.Testing),
+        new("Completata", CommessaStates.Completed),
+        new("Consegnata", CommessaStates.Delivered),
+        new("Annullata", CommessaStates.Cancelled),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _c = await CommessaService.GetItemAsync(Id);
+        _fasi = await FaseService.GetTreeAsync(Id) ?? new();
+        if (_users.Count == 0)
+        {
+            var u = await UserSvc.Get(new UsersFilterModel { PageSize = 1000 });
+            _users = u?.Items?.ToList() ?? new();
+        }
+        StateHasChanged();
+    }
+
+    private async Task ReloadHeaderAsync()
+    {
+        _c = await CommessaService.GetItemAsync(Id);
+        _fasi = await FaseService.GetTreeAsync(Id) ?? new();
+        StateHasChanged();
+    }
+
+    private int Depth(CommessaFaseDTO f)
+    {
+        int d = 0; var cur = f; int guard = 0;
+        while (cur?.ParentId != null && guard++ < 50)
+        {
+            d++;
+            cur = _fasi.FirstOrDefault(x => x.Id == cur.ParentId);
+        }
+        return d;
+    }
+
+    private static string FaseBadge(CommessaFaseStates s) => s switch
+    {
+        CommessaFaseStates.Pending => "bg-secondary",
+        CommessaFaseStates.InProgress => "bg-primary",
+        CommessaFaseStates.Done => "bg-success",
+        _ => "bg-light text-dark"
+    };
+
+    /// <summary>Fase avviabile se tutti i predecessori sono completati (dipendenze vincolanti).</summary>
+    private bool CanTake(CommessaFaseDTO f)
+        => f.Dependencies.All(d => _fasi.FirstOrDefault(x => x.Id == d.IdPredecessorFase)?.State == CommessaFaseStates.Done);
+
+    private void TakeInCharge(CommessaFaseDTO f)
+    {
+        if (_c == null) return;
+        var q = new List<string> { $"IdCommessaFase={f.Id}" };
+        if (f.IdTicketType != null) q.Add($"IdType={f.IdTicketType}");
+        if (f.IdGroup != null) q.Add($"IdGroup={f.IdGroup}");
+        if (_c.IdCompany != null) q.Add($"IdCompany={_c.IdCompany}");
+        if (_c.IdArticle != null) q.Add($"IdArticle={_c.IdArticle}");
+        var desc = string.IsNullOrWhiteSpace(f.Description) ? $"{_c.Code} — {f.Name}" : $"{_c.Code} — {f.Name}\n{f.Description}";
+        q.Add($"Descr={Uri.EscapeDataString(desc)}");
+        Nav.NavigateTo($"/Tickets/New?{string.Join("&", q)}");
+    }
+
+    private async Task MarkDone(CommessaFaseDTO f)
+    {
+        f.State = CommessaFaseStates.Done;
+        f.Progress = 100;
+        var resp = await FaseService.SaveAsync(f);
+        if (resp.State) await ReloadHeaderAsync();
+        else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+    }
+
+    private async Task OnChangeState(CommessaStates state)
+    {
+        if (_c == null || state == _c.State) return;
+        var resp = await CommessaService.ChangeStateAsync(Id, state);
+        if (resp.State && resp.Data != null) { _c = resp.Data; Notification.Notify(NotificationSeverity.Success, "Fatto", "Stato aggiornato"); }
+        else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+    }
+
+    private void ToggleEdit()
+    {
+        if (_edit != null) { _edit = null; return; }
+        if (_c == null) return;
+        _edit = new Commessa
+        {
+            Id = _c.Id,
+            Name = _c.Name,
+            Note = _c.Note,
+            IdUserResponsible = _c.IdUserResponsible,
+            Priority = _c.Priority,
+            BudgetHours = _c.BudgetHours,
+            StartDatePlanned = _c.StartDatePlanned,
+            EndDatePlanned = _c.EndDatePlanned,
+            State = _c.State,
+            IdCompany = _c.IdCompany
+        };
+    }
+
+    private async Task SaveEdit()
+    {
+        if (_edit == null) return;
+        var resp = await CommessaService.PostAsync(_edit);
+        if (resp.State) { _edit = null; await ReloadHeaderAsync(); Notification.Notify(NotificationSeverity.Success, "Fatto", "Commessa aggiornata"); }
+        else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
+    }
+
+    private void OpenTicket(int id) => Nav.NavigateTo($"/Tickets/{id}/Info");
+    private void EditTicket(int? id) => Nav.NavigateTo(id == null ? "/Tickets/New" : $"/Tickets/{id}/Edit");
+}

@@ -1,6 +1,5 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Models;
-using CRM.Client.Pages.Projects;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.Helper;
@@ -116,8 +115,6 @@ namespace CRM.Client.Pages.TicketInterventions
 
         private bool _fromDetails = false;
 
-        private Project _project;
-
         private Company _company;
 
         private ApplicationUser _user;
@@ -139,11 +136,7 @@ namespace CRM.Client.Pages.TicketInterventions
 
             await LoadIntervention();
             
-            if (IdProject != null)
-            {
-                await GetProject();
-            }
-            else if (IdCompany != null)
+            if (IdCompany != null)
             {
                 await GetCompany();
             }
@@ -167,11 +160,6 @@ namespace CRM.Client.Pages.TicketInterventions
                 new ViewOption<InterventionViews> { Text = Localize["Intervention Data"], Value = InterventionViews.Intervention },
                 new ViewOption<InterventionViews> { Text = Localize["Attachments"], Value = InterventionViews.Allegati },
             };
-        }
-        private async Task GetProject()
-        {
-            _project = await RestClientService.GetItem<Project, int>((int)IdProject, ConstHelper.ProjectsPath);
-
         }
 
         private async Task GetCompany()
