@@ -110,11 +110,35 @@ export function init(container, dotNetRef) {
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
 
+    // La scala orizzontale si adatta allo spazio disponibile: avvisa .NET quando cambia.
+    // ResizeObserver richiama subito all'observe(), quindi da qui arriva anche la prima
+    // misura: lastWidth parte da -1 proprio per non filtrarla.
+    let resizeTimer = null;
+    let lastWidth = -1;
+    const observer = new ResizeObserver(() => {
+        const w = container.clientWidth;
+        if (w <= 0) return;                      // contenitore non ancora dimensionato
+        if (Math.abs(w - lastWidth) < 2) return; // ignora micro-variazioni
+        lastWidth = w;
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            dotNetRef.invokeMethodAsync('OnContainerResize', w).catch(() => { });
+        }, 120);
+    });
+    observer.observe(container);
+
     return {
         dispose() {
             container.removeEventListener('pointerdown', onPointerDown);
             window.removeEventListener('pointermove', onPointerMove);
             window.removeEventListener('pointerup', onPointerUp);
+            clearTimeout(resizeTimer);
+            observer.disconnect();
         }
     };
+}
+
+/// Larghezza utile del contenitore della timeline (px).
+export function clientWidth(el) {
+    return el ? el.clientWidth : 0;
 }

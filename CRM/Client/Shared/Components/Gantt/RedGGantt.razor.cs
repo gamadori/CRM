@@ -28,6 +28,12 @@ namespace CRM.Client.Shared.Components.Gantt
         private const int RowH = 34;
         private const int HeaderH = 44;
 
+        /// <summary>
+        /// Il suffisso di versione aggira la cache del service worker: senza, il browser puo'
+        /// servire una copia vecchia del modulo. Va incrementato quando redg-gantt.js cambia.
+        /// </summary>
+        private const string ModulePath = "./js/redg-gantt.js?v=2";
+
         private List<CommessaFaseDTO> _tasks = new();
         private bool _loading = true;
         private Zoom _zoom = Zoom.Week;
@@ -35,6 +41,16 @@ namespace CRM.Client.Shared.Components.Gantt
         private DateTime _min = DateTime.Today;
         private int _totalDays = 30;
         private int _todayX = -1;
+
+        /// <summary>Spazio orizzontale disponibile per la timeline, misurato via JS (0 = non ancora noto).</summary>
+        private double _availableWidth;
+
+        /// <summary>Oltre questa densita' le barre diventano enormi senza aggiungere informazione
+        /// (stesso tetto dell'anteprima template, per coerenza visiva tra i due Gantt).</summary>
+        private const double MaxDayPx = 120;
+
+        /// <summary>Limite di dilatazione rispetto allo zoom scelto, perche' resti significativo.</summary>
+        private const double MaxZoomFactor = 6;
 
         private ElementReference _chartEl;
         private IJSObjectReference? _module;
@@ -60,11 +76,7 @@ namespace CRM.Client.Shared.Components.Gantt
 
         private double ChartWidth => _totalDays * _pxPerDay;
 
-        protected override async Task OnInitializedAsync()
-        {
-            _pxPerDay = PxFor(_zoom);
-            await LoadAsync();
-        }
+        protected override async Task OnInitializedAsync() => await LoadAsync();
 
         private async Task LoadAsync()
         {
@@ -87,9 +99,37 @@ namespace CRM.Client.Shared.Components.Gantt
         private void SetZoom(Zoom z)
         {
             _zoom = z;
-            _pxPerDay = PxFor(z);
-            BuildLayout();
+            BuildLayout(); // la scala effettiva la ricalcola BuildLayout in base allo spazio
         }
+
+        /// <summary>
+        /// Scala orizzontale: parte dalla densita' dello zoom e si allarga fino a riempire lo
+        /// spazio disponibile. Non scende mai sotto lo zoom scelto (sotto, la timeline scorre).
+        /// </summary>
+        private double ResponsivePxPerDay()
+        {
+            var basePx = PxFor(_zoom);
+            if (_availableWidth <= 0 || _totalDays <= 0)
+                return basePx;
+
+            var max = Math.Max(basePx, Math.Min(MaxDayPx, basePx * MaxZoomFactor));
+            var fill = _availableWidth / _totalDays;
+            return Math.Clamp(fill, basePx, max);
+        }
+
+        /// <summary>Applica la larghezza misurata e ricostruisce il layout se e' cambiata.</summary>
+        private void ApplyAvailableWidth(double width)
+        {
+            var usable = width - 16; // respiro a destra per l'ultima barra
+            if (usable <= 0 || Math.Abs(usable - _availableWidth) < 1) return;
+
+            _availableWidth = usable;
+            BuildLayout();
+            StateHasChanged();
+        }
+
+        [JSInvokable]
+        public void OnContainerResize(double width) => ApplyAvailableWidth(width);
 
         private void BuildLayout()
         {
@@ -109,6 +149,9 @@ namespace CRM.Client.Shared.Components.Gantt
             _min = start.AddDays(-2);
             end = end.AddDays(2);
             _totalDays = Math.Max(7, (int)(end - _min).TotalDays + 1);
+
+            // Dipende da _totalDays, quindi va dopo il calcolo dell'intervallo.
+            _pxPerDay = ResponsivePxPerDay();
 
             var today = DateTime.Today;
             _todayX = (today >= _min && today <= _min.AddDays(_totalDays)) ? (int)((today - _min).TotalDays * _pxPerDay) : -1;
@@ -436,9 +479,20 @@ namespace CRM.Client.Shared.Components.Gantt
             // Inizializza il modulo JS quando il grafico e' presente nel DOM.
             if (_module == null && !_loading && _tasks.Any())
             {
-                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/redg-gantt.js");
-                _dotNetRef = DotNetObjectReference.Create(this);
-                _interop = await _module.InvokeAsync<IJSObjectReference>("init", _chartEl, _dotNetRef);
+                try
+                {
+                    _module = await JS.InvokeAsync<IJSObjectReference>("import", ModulePath);
+                    _dotNetRef = DotNetObjectReference.Create(this);
+                    _interop = await _module.InvokeAsync<IJSObjectReference>("init", _chartEl, _dotNetRef);
+                    // La prima misura arriva da sola: ResizeObserver notifica gia' all'observe().
+                }
+                catch (JSException)
+                {
+                    // Modulo assente o non aggiornato (es. copia vecchia nella cache del service
+                    // worker): il Gantt resta leggibile, senza drag&drop e senza scala adattiva.
+                    _module = null;
+                    _interop = null;
+                }
             }
         }
 
