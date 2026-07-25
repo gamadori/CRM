@@ -212,6 +212,9 @@ namespace CRM.Client.Services
 
                     "commesse" or "commessa" =>
                         (await _restClient.GetItem<CRM.Shared.DTOs.CommessaDTO, int>((int)domainId, ConstHelper.CommessePath))?.Code,
+
+                    "groups" or "group" =>
+                        (await _restClient.GetItem<CRM.Shared.Group, int>((int)domainId, ConstHelper.GroupsPath))?.Name,
                     //"expensereceipts" or "expensereceipt" =>
                     //    (await _restClient.GetItem<ExpenseReceipt, int>((int)domainId, ConstHelper.ExpenseReceiptsPath))?.Name,
                     _ => null
@@ -469,6 +472,9 @@ namespace CRM.Client.Services
 
                     "commesse" or "commessa" when isNumeric =>
                         (await _restClient.GetItem<CRM.Shared.DTOs.CommessaDTO, int>(int.Parse(segment), ConstHelper.CommessePath))?.Code ?? segment,
+
+                    "groups" or "group" when isNumeric =>
+                        (await _restClient.GetItem<CRM.Shared.Group, int>(int.Parse(segment), ConstHelper.GroupsPath))?.Name ?? segment,
 
                     _ => segment
                 };
