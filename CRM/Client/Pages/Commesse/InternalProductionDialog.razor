@@ -1,0 +1,125 @@
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+@inject IProductsService ProductsService
+@inject ICommessaService CommessaService
+@inject DialogService DialogService
+@inject NotificationService Notification
+
+@* Produzione senza ordine: magazzino, prototipi, ricambi, rilavorazioni.
+   Sono selezionabili solo i prodotti che hanno un template di produzione, perche'
+   senza fasi la commessa nascerebbe vuota. *@
+
+<div class="internal-prod">
+    @if (_loading)
+    {
+        <div class="text-muted py-3">Caricamento prodotti…</div>
+    }
+    else if (!_products.Any())
+    {
+        <div class="alert alert-warning mb-0">
+            <span class="material-icons align-middle" style="font-size:18px;">warning</span>
+            Nessun prodotto ha un template di produzione associato. Associane uno dalla scheda prodotto.
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            <div class="col-12">
+                <label class="form-label small mb-1 d-block">Prodotto</label>
+                <RadzenDropDown TValue="int?" @bind-Value="_req.IdProductNullable" Data="_products"
+                                TextProperty="Name" ValueProperty="Id" AllowFiltering="true"
+                                Placeholder="Seleziona il prodotto da produrre" />
+                @if (SelectedProduct != null)
+                {
+                    <div class="form-text">
+                        <span class="material-icons align-middle" style="font-size:14px;">view_timeline</span>
+                        Template: <strong>@SelectedProduct.GanttPlanName</strong>
+                    </div>
+                }
+            </div>
+
+            <div class="col-sm-6">
+                <label class="form-label small mb-1 d-block">Data obiettivo</label>
+                <RadzenDatePicker TValue="DateTime?" @bind-Value="_targetDate" DateFormat="dd/MM/yyyy"
+                                  Style="width:100%" />
+                <div class="form-text">Le fasi vengono schedulate all'indietro da questa data.</div>
+            </div>
+
+            <div class="col-sm-6">
+                <label class="form-label small mb-1 d-block">Quantità (unità)</label>
+                <RadzenNumeric TValue="int" @bind-Value="_req.Quantity" Min="1" Max="100" Style="width:100%" />
+                <div class="form-text">Viene creata una commessa per ogni unità.</div>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label small mb-1 d-block">Note</label>
+                <textarea class="form-control" rows="2" @bind="_req.Note"
+                          placeholder="Es. lotto a magazzino, prototipo fiera, ricambio…"></textarea>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+            <RadzenButton Icon="precision_manufacturing" Text="@(_saving ? "Creazione..." : "Crea commesse")"
+                          ButtonStyle="ButtonStyle.Primary" Disabled="@(_saving || _req.IdProductNullable == null)"
+                          Click="Create" />
+            <RadzenButton Icon="close" Text="Annulla" ButtonStyle="ButtonStyle.Light"
+                          Click="@(() => DialogService.Close(false))" />
+        </div>
+    }
+</div>
+
+@code {
+    private sealed class Request : InternalProductionRequestDTO
+    {
+        /// <summary>Comodo per il binding del dropdown, che lavora su int?.</summary>
+        public int? IdProductNullable
+        {
+            get => IdProduct == 0 ? null : IdProduct;
+            set => IdProduct = value ?? 0;
+        }
+    }
+
+    private readonly Request _req = new() { Quantity = 1 };
+    private DateTime? _targetDate = DateTime.Today.AddDays(30);
+    private List<ProductDTO> _products = new();
+    private bool _loading = true;
+    private bool _saving;
+
+    private ProductDTO? SelectedProduct => _products.FirstOrDefault(p => p.Id == _req.IdProduct);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var all = await ProductsService.GetListAsync(new ProductFilter { PageSize = 1000 }) ?? new();
+        _products = all.Where(p => p.IdGanttPlan != null).OrderBy(p => p.Name).ToList();
+        _loading = false;
+    }
+
+    private async Task Create()
+    {
+        if (_req.IdProduct <= 0) return;
+
+        _saving = true;
+        try
+        {
+            _req.TargetDate = _targetDate;
+            var resp = await CommessaService.StartInternalProductionAsync(_req);
+
+            if (!resp.State)
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Creazione fallita");
+                return;
+            }
+
+            Notification.Notify(NotificationSeverity.Success, "Fatto", resp.Message ?? "Commesse create");
+            DialogService.Close(true);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -27,6 +27,11 @@
         <RadzenDropDown TValue="CommessaStates?" @bind-Value="_stateFilter" Data="_stateOptions"
                         TextProperty="Text" ValueProperty="Value" AllowClear="true"
                         Placeholder="Stato" Style="width: 200px;" Change="@(async _ => await Reload())" />
+
+        @* Le commesse da ordine nascono da "Avvia produzione" sulla riga d'ordine.
+           Questa e' la produzione senza ordine: magazzino, prototipi, ricambi, rilavorazioni. *@
+        <RadzenButton Icon="precision_manufacturing" Text="Produzione interna" Class="ms-auto"
+                      ButtonStyle="ButtonStyle.Primary" Click="NewInternalProduction" />
     </div>
 </div>
 
@@ -59,7 +64,10 @@
                 {
                     <a href="@($"/{ConstHelper.ClientOrdersPath}/{c.IdOrder}/Details")" class="text-decoration-none">@(string.IsNullOrWhiteSpace(c.OrderNumber) ? c.IdOrder.ToString() : c.OrderNumber)</a>
                 }
-                else { <span>-</span> }
+                else
+                {
+                    <span class="badge bg-light text-dark border" title="Produzione senza ordine">Interna</span>
+                }
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="CommessaDTO" Property="State" Title="Stato" Width="140px" Sortable="false">
@@ -112,6 +120,15 @@
     };
 
     protected override async Task OnInitializedAsync() => _pageHeader = await HeaderService.Create();
+
+    private async Task NewInternalProduction()
+    {
+        var created = await DialogService.OpenAsync<InternalProductionDialog>(
+            "Produzione interna (senza ordine)",
+            options: new DialogOptions { Width = "640px", CloseDialogOnOverlayClick = false });
+
+        if (created is true) await Reload();
+    }
 
     private async Task LoadData(LoadDataArgs args)
     {

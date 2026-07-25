@@ -46,6 +46,25 @@ namespace CRM.Shared.DTOs
         public string Display => string.IsNullOrWhiteSpace(Code) ? (Name ?? $"#{Id}") : $"{Code} — {Name}";
     }
 
+    /// <summary>
+    /// Richiesta di produzione interna: commesse senza riga d'ordine (magazzino, prototipi,
+    /// ricambi, rilavorazioni). La data obiettivo sostituisce la consegna dell'ordine come
+    /// riferimento per la schedulazione all'indietro.
+    /// </summary>
+    public class InternalProductionRequestDTO
+    {
+        public int IdProduct { get; set; }
+
+        /// <summary>Data entro cui la produzione deve essere pronta.</summary>
+        public DateTime? TargetDate { get; set; }
+
+        public int Quantity { get; set; } = 1;
+
+        public string? Note { get; set; }
+
+        public string? IdUserResponsible { get; set; }
+    }
+
     public static class CommessaMapper
     {
         public static CommessaDTO? ToDTO(this Commessa? c)

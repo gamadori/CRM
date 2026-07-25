@@ -22,6 +22,10 @@ namespace CRM.Server.Services
         /// fasi dal template del prodotto, con schedulazione all'indietro dalla consegna.</summary>
         Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(int orderRowId);
 
+        /// <summary>Avvia produzione interna (magazzino, prototipi, ricambi, rilavorazioni): crea
+        /// commesse senza riga d'ordine, schedulate all'indietro dalla data obiettivo indicata.</summary>
+        Task<APIResponseMessage<List<CommessaDTO>>> StartInternalProductionAsync(InternalProductionRequestDTO req);
+
         /// <summary>Conferma "pronto" una riga senza produzione (nessuna commessa).</summary>
         Task<APIResponseMessage<CommessaDTO>> ConfirmRowReadyAsync(int orderRowId);
 

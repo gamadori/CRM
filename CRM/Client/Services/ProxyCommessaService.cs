@@ -26,6 +26,35 @@ namespace CRM.Client.Services
         public Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(int orderRowId)
             => PostAction<List<CommessaDTO>>($"{_pathService}/from-orderrow/{orderRowId}");
 
+        public async Task<APIResponseMessage<List<CommessaDTO>>> StartInternalProductionAsync(InternalProductionRequestDTO req)
+        {
+            try
+            {
+                var resp = await _http.PostAsJsonAsync($"{_pathService}/internal", req);
+                if (resp.IsSuccessStatusCode)
+                {
+                    return JsonSerializer.Deserialize<APIResponseMessage<List<CommessaDTO>>>(
+                        await resp.Content.ReadAsStringAsync(), _json)
+                        ?? new APIResponseMessage<List<CommessaDTO>> { State = false, Message = "null" };
+                }
+                return new APIResponseMessage<List<CommessaDTO>>
+                {
+                    State = false,
+                    Code = resp.StatusCode,
+                    Message = $"{resp.ReasonPhrase}\n\r{await resp.Content.ReadAsStringAsync()}"
+                };
+            }
+            catch (AccessTokenNotAvailableException exception)
+            {
+                exception.Redirect();
+                return new APIResponseMessage<List<CommessaDTO>> { State = false, Code = System.Net.HttpStatusCode.Unauthorized };
+            }
+            catch (Exception ex)
+            {
+                return new APIResponseMessage<List<CommessaDTO>> { State = false, Message = ex.Message };
+            }
+        }
+
         public Task<APIResponseMessage<CommessaDTO>> ConfirmRowReadyAsync(int orderRowId)
             => PostAction<CommessaDTO>($"{_pathService}/orderrow/{orderRowId}/ready");
 

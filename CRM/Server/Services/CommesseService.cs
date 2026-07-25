@@ -207,6 +207,100 @@ namespace CRM.Server.Services
             }
         }
 
+        public async Task<APIResponseMessage<List<CommessaDTO>>> StartInternalProductionAsync(InternalProductionRequestDTO req)
+        {
+            try
+            {
+                if (req == null || req.IdProduct <= 0)
+                    return FailList("Prodotto obbligatorio", HttpStatusCode.BadRequest);
+
+                var product = await _context.Products.AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.Id == req.IdProduct);
+
+                if (product == null)
+                    return FailList("Prodotto non trovato", HttpStatusCode.NotFound);
+
+                if (product.IdGanttPlan == null)
+                    return FailList("Il prodotto non ha un template di produzione", HttpStatusCode.BadRequest);
+
+                // Senza ordine il committente e' l'azienda madre: single-tenant, e' "noi stessi".
+                var headCompanyId = await _context.GetHeadCompanyIdAsync();
+                if (headCompanyId == null)
+                    return FailList("Azienda madre non configurata: impostare una società di tipo HeadCompany", HttpStatusCode.BadRequest);
+
+                if (!await CanAccessAsync(headCompanyId))
+                    return FailList("Azienda non accessibile", HttpStatusCode.Forbidden);
+
+                var template = await _context.GanttPhases
+                    .Include(p => p.Dependencies)
+                    .Where(p => p.IdGanttPlan == product.IdGanttPlan.Value)
+                    .OrderBy(p => p.SortOrder)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                if (template.Count == 0)
+                    return FailList("Il template di produzione non ha fasi", HttpStatusCode.BadRequest);
+
+                // Nessuna consegna da ordine: la data obiettivo la fornisce l'utente.
+                var target = (req.TargetDate ?? DateTime.Today.AddDays(30)).Date;
+                int units = Math.Clamp(req.Quantity, 1, 100);
+                var now = DateTime.Now;
+                var currentUser = await _permitsService.IdUser();
+                var created = new List<int>();
+
+                for (int u = 0; u < units; u++)
+                {
+                    var commessa = new Commessa
+                    {
+                        Code = await GenerateCodeAsync(now),
+                        IdOrderRow = null, // produzione interna: nessuna riga d'ordine
+                        IdCompany = headCompanyId,
+                        IdProduct = product.Id,
+                        IdGanttPlan = product.IdGanttPlan,
+                        Name = $"{product.Name} - Interna" + (units > 1 ? $" [{u + 1}/{units}]" : string.Empty),
+                        Note = req.Note,
+                        State = CommessaStates.Planned,
+                        IdUserResponsible = req.IdUserResponsible,
+                        IdUserCreate = currentUser,
+                        CreatedAt = now,
+                        Progress = 0
+                    };
+
+                    var (startPlan, phases) = BuildPhasesBackward(template, target);
+                    commessa.StartDatePlanned = startPlan;
+                    commessa.EndDatePlanned = target;
+                    commessa.Phases = phases;
+
+                    _context.Commesse.Add(commessa);
+                    await _context.SaveChangesAsync(); // per avere gli Id delle fasi
+
+                    await CloneStructureAsync(template, commessa);
+                    created.Add(commessa.Id);
+                }
+
+                // Nessuna cascata sulla riga d'ordine: qui non esiste.
+                var dtos = new List<CommessaDTO>();
+                foreach (var id in created)
+                {
+                    var dto = await GetItemAsync(id);
+                    if (dto != null) dtos.Add(dto);
+                }
+
+                return new APIResponseMessage<List<CommessaDTO>>
+                {
+                    State = true,
+                    Data = dtos,
+                    Message = $"{units} commessa/e interna/e create",
+                    Code = HttpStatusCode.OK
+                };
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(CommesseService), nameof(StartInternalProductionAsync), EventsTypes.Error, ex);
+                return FailList("Errore nell'avvio della produzione interna", HttpStatusCode.InternalServerError);
+            }
+        }
+
         public async Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(int orderRowId)
         {
             try

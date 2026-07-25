@@ -13,6 +13,9 @@ namespace CRM.Client.Services
         /// <summary>Avvia produzione: crea le commesse (una per unità) dalla riga d'ordine.</summary>
         Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(int orderRowId);
 
+        /// <summary>Avvia produzione interna: commesse senza ordine (magazzino, prototipi, ricambi).</summary>
+        Task<APIResponseMessage<List<CommessaDTO>>> StartInternalProductionAsync(InternalProductionRequestDTO req);
+
         Task<APIResponseMessage<CommessaDTO>> ConfirmRowReadyAsync(int orderRowId);
 
         Task<List<CommessaDTO>> GetByOrderAsync(int orderId);

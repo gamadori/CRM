@@ -62,6 +62,10 @@ namespace CRM.Server.Controllers
         public async Task<ActionResult<APIResponseMessage<List<CommessaDTO>>>> StartProduction(int orderRowId)
             => Ok(await _service.StartProductionAsync(orderRowId));
 
+        [HttpPost("internal")]
+        public async Task<ActionResult<APIResponseMessage<List<CommessaDTO>>>> StartInternalProduction(InternalProductionRequestDTO req)
+            => Ok(await _service.StartInternalProductionAsync(req));
+
         [HttpPost("orderrow/{orderRowId}/ready")]
         public async Task<ActionResult<APIResponseMessage<CommessaDTO>>> ConfirmRowReady(int orderRowId)
             => Ok(await _service.ConfirmRowReadyAsync(orderRowId));

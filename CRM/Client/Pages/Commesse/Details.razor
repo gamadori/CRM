@@ -54,6 +54,10 @@ else
                         {
                             <a href="@($"/{ConstHelper.ClientOrdersPath}/{_c.IdOrder}/Details")" class="text-decoration-none"><span class="material-icons align-middle" style="font-size:16px;">receipt_long</span> @(string.IsNullOrWhiteSpace(_c.OrderNumber) ? _c.IdOrder.ToString() : _c.OrderNumber)</a>
                         }
+                        else
+                        {
+                            <span class="badge bg-light text-dark border" title="Produzione senza ordine">Interna</span>
+                        }
                         @if (!string.IsNullOrWhiteSpace(_c.ResponsibleName))
                         {
                             <span><span class="material-icons align-middle" style="font-size:16px;">engineering</span> @_c.ResponsibleName</span>
