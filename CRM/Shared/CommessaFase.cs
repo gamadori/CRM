@@ -89,6 +89,9 @@ namespace CRM.Shared
         [NotMapped]
         public bool IsCriticalPath { get; set; }
 
+        /// <summary>Back-reference alla commessa: non serializzata per non richiudere il ciclo
+        /// Commessa -> Phases -> Commessa se una fase venisse esposta come entita'.</summary>
+        [JsonIgnore]
         public virtual Commessa? Commessa { get; set; }
 
         public virtual CommessaFase? Parent { get; set; }

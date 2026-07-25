@@ -283,6 +283,12 @@ namespace CRM.Shared
         [JsonIgnore]
         public virtual Contact? Contact { get; set; }
         public virtual Deal? Deal { get; set; }
+
+        /// <summary>
+        /// Non serializzata: porterebbe a Commessa -> Phases -> Commessa, ciclo infinito in JSON.
+        /// Al client serve solo <see cref="IdCommessaFase"/> e il nome, gia' proiettato nel DTO.
+        /// </summary>
+        [JsonIgnore]
         public virtual CommessaFase? CommessaFase { get; set; }
 
         /// <summary>
