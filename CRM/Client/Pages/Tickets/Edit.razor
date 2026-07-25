@@ -184,7 +184,14 @@ else
                                     <RedGDropDown TItem="ProductDTO" TValue="int?" ValueProperty="Id" TextProperty="@nameof(ProductDTO.Name)"
                                                   @bind-Value="@_ticket.IdProduct" For="@(() => _ticket.IdProduct)"
                                                   Data="@_products" AllowFiltering="true" PageSize="10"
-                                                  Change="ProductChange" />
+                                                  Disabled="@_lockProduct" Change="ProductChange" />
+                                    @if (_lockProduct)
+                                    {
+                                        <div class="form-text">
+                                            <span class="material-icons align-middle" style="font-size:14px;">lock</span>
+                                            Prodotto della commessa: non modificabile.
+                                        </div>
+                                    }
                                 </RadzenStack>
                             </RadzenColumn>
                         }

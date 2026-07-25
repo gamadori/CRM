@@ -98,6 +98,11 @@ namespace CRM.Client.Pages.Tickets
         [SupplyParameterFromQuery]
         public int? IdCommessaFase { get; set; }
 
+        // Prodotto della commessa: precompilato e poi bloccato (vedi _lockProduct)
+        [Parameter]
+        [SupplyParameterFromQuery]
+        public int? IdProduct { get; set; }
+
         [Parameter]
         [SupplyParameterFromQuery]
         public int? IdType { get; set; }
@@ -144,6 +149,9 @@ namespace CRM.Client.Pages.Tickets
         private bool _lockCompany = false;
 
         private bool _lockArticle = false;
+
+        /// <summary>Prodotto non modificabile: il ticket nasce da una fase di commessa.</summary>
+        private bool _lockProduct = false;
 
         private string _header;
 
@@ -212,6 +220,9 @@ namespace CRM.Client.Pages.Tickets
                     if (IdCommessaFase != null)
                         _ticket.IdCommessaFase = IdCommessaFase.Value;
 
+                    if (IdProduct != null)
+                        _ticket.IdProduct = IdProduct.Value;
+
                     if (IdType != null)
                         _ticket.IdType = IdType.Value;
 
@@ -227,6 +238,10 @@ namespace CRM.Client.Pages.Tickets
 
                 _lockCompany = IdCompany != null && IdCompany != 0;
                 _lockArticle = IdArticle != null && IdArticle != 0;
+
+                // Un ticket legato a una fase di commessa produce quel prodotto e nessun altro:
+                // vale sia alla creazione sia riaprendo il ticket in modifica.
+                _lockProduct = _ticket?.IdCommessaFase != null;
 
                 await LoadArticles();
                 await LoadProducts();

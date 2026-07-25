@@ -307,6 +307,8 @@ else
         if (f.IdGroup != null) q.Add($"IdGroup={f.IdGroup}");
         if (_c.IdCompany != null) q.Add($"IdCompany={_c.IdCompany}");
         if (_c.IdArticle != null) q.Add($"IdArticle={_c.IdArticle}");
+        // Il prodotto e' quello della commessa: nel ticket arriva gia' scelto e non modificabile.
+        if (_c.IdProduct != null) q.Add($"IdProduct={_c.IdProduct}");
         var desc = string.IsNullOrWhiteSpace(f.Description) ? $"{_c.Code} — {f.Name}" : $"{_c.Code} — {f.Name}\n{f.Description}";
         q.Add($"Descr={Uri.EscapeDataString(desc)}");
         Nav.NavigateTo($"/Tickets/New?{string.Join("&", q)}");
