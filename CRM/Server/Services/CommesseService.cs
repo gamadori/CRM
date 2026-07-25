@@ -264,8 +264,8 @@ namespace CRM.Server.Services
                     _context.Commesse.Add(commessa);
                     await _context.SaveChangesAsync(); // per avere gli Id delle fasi
 
-                    // Ricostruisce le dipendenze tra le fasi appena create (map template->nuove per SortOrder)
-                    await CloneDependenciesAsync(template, commessa);
+                    // Ricostruisce dipendenze e gerarchia tra le fasi appena create (map template->nuove per SortOrder)
+                    await CloneStructureAsync(template, commessa);
                     created.Add(commessa.Id);
                 }
 
@@ -400,17 +400,23 @@ namespace CRM.Server.Services
             return (start, phases);
         }
 
-        /// <summary>Ricrea le dipendenze tra le fasi della commessa mappando dal template per SortOrder.</summary>
-        private async Task CloneDependenciesAsync(List<GanttPhase> template, Commessa commessa)
+        /// <summary>
+        /// Ricrea dipendenze e gerarchia WBS tra le fasi della commessa mappando dal template per SortOrder.
+        /// Va eseguito dopo il primo SaveChanges, quando le fasi hanno gia' un Id.
+        /// </summary>
+        private async Task CloneStructureAsync(List<GanttPhase> template, Commessa commessa)
         {
-            var newBySort = await _context.CommessaFasi
+            var newFasi = await _context.CommessaFasi
                 .Where(f => f.IdCommessa == commessa.Id)
-                .ToDictionaryAsync(f => f.SortOrder, f => f.Id);
+                .ToListAsync();
+            var newBySort = newFasi.ToDictionary(f => f.SortOrder, f => f.Id);
             var tmplById = template.ToDictionary(t => t.Id);
 
             foreach (var t in template)
             {
                 if (!newBySort.TryGetValue(t.SortOrder, out var newFaseId)) continue;
+
+                // Dipendenze (vincolo temporale)
                 foreach (var d in t.Dependencies)
                 {
                     if (!tmplById.TryGetValue(d.IdPredecessorPhase, out var predTmpl)) continue;
@@ -422,6 +428,16 @@ namespace CRM.Server.Services
                         LagDays = d.LagDays,
                         Type = d.Type
                     });
+                }
+
+                // Gerarchia WBS (raggruppamento, nessun effetto sulle date)
+                if (t.ParentId != null
+                    && tmplById.TryGetValue(t.ParentId.Value, out var parentTmpl)
+                    && newBySort.TryGetValue(parentTmpl.SortOrder, out var newParentId)
+                    && newParentId != newFaseId)
+                {
+                    var fase = newFasi.First(f => f.Id == newFaseId);
+                    fase.ParentId = newParentId;
                 }
             }
             await _context.SaveChangesAsync();

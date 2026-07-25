@@ -316,22 +316,25 @@ namespace CRM.Server.Services
             return idCompany != null && allowed.Contains(idCompany.Value);
         }
 
-        /// <summary>Avanzamento commessa = media pesata sui giorni delle fasi foglia (milestone escluse).</summary>
+        /// <summary>
+        /// Avanzamento commessa = media pesata sui giorni di tutte le fasi (milestone escluse).
+        /// Anche una fase che ha sotto-fasi conta: qui la gerarchia e' solo raggruppamento e ogni
+        /// fase e' lavoro reale 1:1 con un ticket, quindi deve pesare sulla percentuale.
+        /// </summary>
         private async Task RecomputeCommessaProgressAsync(int idCommessa)
         {
             var fasi = await _context.CommessaFasi
                 .Where(f => f.IdCommessa == idCommessa)
-                .Select(f => new { f.Id, f.ParentId, f.StartDate, f.EndDate, f.Progress, f.IsMilestone })
+                .Select(f => new { f.StartDate, f.EndDate, f.Progress, f.IsMilestone })
                 .ToListAsync();
 
-            var parentIds = fasi.Where(f => f.ParentId != null).Select(f => f.ParentId!.Value).ToHashSet();
-            var leaves = fasi.Where(f => !parentIds.Contains(f.Id) && !f.IsMilestone).ToList();
+            var counted = fasi.Where(f => !f.IsMilestone).ToList();
 
             int progress = 0;
-            if (leaves.Count > 0)
+            if (counted.Count > 0)
             {
                 double weightSum = 0, acc = 0;
-                foreach (var f in leaves)
+                foreach (var f in counted)
                 {
                     double w = Math.Max(1, (f.EndDate.Date - f.StartDate.Date).TotalDays + 1);
                     weightSum += w;
@@ -354,7 +357,7 @@ namespace CRM.Server.Services
             // Suspended/Testing restano manuali. Completed può retrocedere se un ticket viene riaperto.
             if (commessa.State is CommessaStates.Planned or CommessaStates.InProgress or CommessaStates.Completed)
             {
-                if (progress >= 100 && leaves.Count > 0)
+                if (progress >= 100 && counted.Count > 0)
                 {
                     commessa.State = CommessaStates.Completed;
                     commessa.EndDateActual ??= DateTime.Now;

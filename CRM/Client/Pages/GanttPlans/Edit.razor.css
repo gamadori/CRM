@@ -1,0 +1,5 @@
+/* .rz-dropdown e' inline-flex senza width: si dimensionerebbe sul contenuto, restando
+   piu' stretto degli altri campi. ::deep perche' il markup e' generato dal componente Radzen. */
+.plan-fields ::deep .rz-dropdown {
+    width: 100%;
+}

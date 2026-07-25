@@ -3,6 +3,7 @@
 @using CRM.Client.Helpers
 @using CRM.Client.Models
 @using CRM.Client.Services
+@using CRM.Client.Shared.Components
 @using CRM.Shared
 @using CRM.Shared.DTOs
 @using Radzen
@@ -10,9 +11,6 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IGanttPlanService GanttPlanService
-@inject IGanttPhaseService PhaseService
-@inject ITicketTypesService TicketTypeService
-@inject IAGRestClientService Rest
 @inject IHeaderService HeaderService
 @inject NavigationManager Nav
 @inject NotificationService Notification
@@ -28,32 +26,23 @@ else
     <EditForm Model="_plan" OnValidSubmit="Save">
         <DataAnnotationsValidator />
 
-        <div class="card border-0 shadow-sm mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">Dati template</h6>
+            </div>
             <div class="card-body">
-                <div class="row g-3">
+                <div class="row g-3 plan-fields">
                     <div class="col-md-8">
                         <label class="form-label">Nome</label>
                         <input class="form-control" @bind="_plan.Name" />
                         <ValidationMessage For="@(() => _plan.Name)" />
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Stato</label>
+                        @* .rz-dropdown e' inline-flex e si dimensiona sul contenuto: la label d-block lo
+                           manda a capo, la larghezza piena arriva dal CSS scoped (vedi .plan-fields). *@
+                        <label class="form-label d-block">Stato</label>
                         <RadzenDropDown TValue="GanttPlanStates" @bind-Value="_plan.State" Data="_states"
-                                        TextProperty="Text" ValueProperty="Value" Style="width:100%" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Inizio</label>
-                        <RadzenDatePicker TValue="DateTime?" @bind-Value="_plan.StartDate" DateFormat="dd/MM/yyyy"
-                                          AllowClear="true" Style="width:100%" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Fine</label>
-                        <RadzenDatePicker TValue="DateTime?" @bind-Value="_plan.EndDate" DateFormat="dd/MM/yyyy"
-                                          AllowClear="true" Style="width:100%" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Avanzamento</label>
-                        <RadzenNumeric TValue="int" @bind-Value="_plan.Progress" Min="0" Max="100" Style="width:100%" />
+                                        TextProperty="Text" ValueProperty="Value" />
                     </div>
                     <div class="col-12">
                         <label class="form-label">Descrizione</label>
@@ -63,117 +52,12 @@ else
             </div>
         </div>
 
-        <div class="d-flex gap-2 mt-3">
-            <RadzenButton ButtonType="ButtonType.Submit" Icon="save" Text="@(_saving ? "Salvataggio..." : "Salva")"
-                          ButtonStyle="ButtonStyle.Primary" Disabled="@_saving" />
-            <RadzenButton Icon="close" Text="Annulla" ButtonStyle="ButtonStyle.Light" Click="Cancel" />
-        </div>
+        <RedGDetailActions Class="mt-3">
+            <RedGButton RGButtonType="RGButtonType.Back" Text="Annulla" Click="Cancel" />
+            <RedGButton RGButtonType="RGButtonType.Save" ButtonType="ButtonType.Submit"
+                        Text="@(_saving ? "Salvataggio..." : "Salva")" Disabled="@_saving" />
+        </RedGDetailActions>
     </EditForm>
-
-    @if (_plan.Id > 0)
-    {
-        <div class="card border-0 shadow-sm mt-3">
-            <div class="card-header bg-white d-flex align-items-center justify-content-between">
-                <h6 class="mb-0">Fasi del template</h6>
-                <div class="d-flex gap-2">
-                    <RadzenButton Icon="add_task" Text="Fase" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@(() => NewPhase(false))" />
-                    <RadzenButton Icon="flag" Text="Milestone" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@(() => NewPhase(true))" />
-                </div>
-            </div>
-
-            @if (_editingPhase != null)
-            {
-                <div class="card-body border-bottom bg-light">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-4">
-                            <label class="form-label small mb-1">Nome fase</label>
-                            <input class="form-control form-control-sm" @bind="_editingPhase.Name" />
-                        </div>
-                        @if (!_editingPhase.IsMilestone)
-                        {
-                            <div class="col-md-2">
-                                <label class="form-label small mb-1">Durata (giorni)</label>
-                                <RadzenNumeric TValue="int" @bind-Value="_editingPhase.DurationDays" Min="1" Style="width:100%" />
-                            </div>
-                        }
-                        <div class="col-md-3">
-                            <label class="form-label small mb-1">Tipo ticket</label>
-                            <RadzenDropDown TValue="int?" @bind-Value="_editingPhase.IdTicketType" Data="_ticketTypes" TextProperty="Desc" ValueProperty="Id"
-                                            AllowClear="true" AllowFiltering="true" Placeholder="— (fase manuale)" Style="width:100%" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small mb-1">Gruppo abilitato</label>
-                            <RadzenDropDown TValue="int?" @bind-Value="_editingPhase.IdGroup" Data="_groups" TextProperty="Name" ValueProperty="Id"
-                                            AllowClear="true" AllowFiltering="true" Placeholder="—" Style="width:100%" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small mb-1">Fase padre</label>
-                            <RadzenDropDown TValue="int?" @bind-Value="_editingPhase.ParentId" Data="_parentOptions" TextProperty="Name" ValueProperty="Id"
-                                            AllowClear="true" Placeholder="—" Style="width:100%" />
-                        </div>
-                    </div>
-
-                    @if (_editingPhase.Id > 0)
-                    {
-                        <div class="mt-2">
-                            <label class="form-label small mb-1">Dipendenze (predecessori)</label>
-                            <div class="d-flex flex-wrap gap-2 align-items-center">
-                                @foreach (var dep in _editingPhase.Dependencies)
-                                {
-                                    <span class="badge bg-light text-dark border d-flex align-items-center gap-1">
-                                        @PhaseName(dep.IdPredecessorPhase)
-                                        <span class="material-icons" style="font-size:14px;cursor:pointer;" @onclick="@(() => RemoveDep(dep))">close</span>
-                                    </span>
-                                }
-                                <RadzenDropDown TValue="int?" @bind-Value="_newPredId" Data="_predOptions" TextProperty="Name" ValueProperty="Id"
-                                                AllowClear="true" AllowFiltering="true" Placeholder="Aggiungi predecessore" Style="width:220px" />
-                                <RadzenButton Text="Aggiungi" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="AddDep" Disabled="@(_newPredId == null)" />
-                            </div>
-                        </div>
-                    }
-
-                    <div class="d-flex gap-2 mt-2">
-                        <RadzenButton Icon="save" Text="Salva fase" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary" Click="SavePhase" />
-                        <RadzenButton Icon="close" Text="Annulla" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="@(() => _editingPhase = null)" />
-                        @if (_editingPhase.Id > 0)
-                        {
-                            <RadzenButton Icon="delete" Text="Elimina" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" Class="ms-auto" Click="DeletePhase" />
-                        }
-                    </div>
-                </div>
-            }
-
-            <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0">
-                    <thead class="table-light"><tr><th>Fase</th><th style="width:110px;">Durata</th><th>Tipo ticket</th><th>Gruppo</th><th>Dipende da</th><th style="width:60px;"></th></tr></thead>
-                    <tbody>
-                        @foreach (var p in _phases)
-                        {
-                            <tr class="@(p.Id == _editingPhase?.Id ? "table-active" : "")" style="cursor:pointer;" @onclick="@(() => EditPhase(p))">
-                                <td style="padding-left:@(PhaseDepth(p) * 16 + 8)px">
-                                    @if (p.IsMilestone) { <span class="material-icons align-middle" style="font-size:14px;color:#f59e0b;">flag</span> }
-                                    @p.Name
-                                </td>
-                                <td>@(p.IsMilestone ? "milestone" : $"{p.DurationDays} gg")</td>
-                                <td>@(TicketTypeName(p.IdTicketType))</td>
-                                <td>@(GroupName(p.IdGroup))</td>
-                                <td class="small text-muted">@string.Join(", ", p.Dependencies.Select(d => PhaseName(d.IdPredecessorPhase)))</td>
-                                <td class="text-center"><span class="material-icons" style="font-size:16px;">edit</span></td>
-                            </tr>
-                        }
-                        @if (!_phases.Any())
-                        {
-                            <tr><td colspan="6" class="text-center text-muted py-3">Nessuna fase. Aggiungi le fasi che compongono la produzione di questo prodotto.</td></tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="alert alert-info mt-3 mb-0"><span class="material-icons align-middle" style="font-size:18px;">info</span> Salva il template per poterne definire le fasi.</div>
-    }
 }
 
 @code {
@@ -182,14 +66,6 @@ else
     private PageHeaderModel? _pageHeader;
     private GanttPlanDTO? _plan;
     private bool _saving;
-
-    private List<GanttPhaseDTO> _phases = new();
-    private List<TicketType> _ticketTypes = new();
-    private List<CRM.Shared.Group> _groups = new();
-    private GanttPhaseDTO? _editingPhase;
-    private List<GanttPhaseDTO> _parentOptions = new();
-    private List<GanttPhaseDTO> _predOptions = new();
-    private int? _newPredId;
 
     private record StateOption(string Text, GanttPlanStates Value);
     private readonly List<StateOption> _states = new()
@@ -202,103 +78,16 @@ else
     protected override async Task OnInitializedAsync()
     {
         _pageHeader = await HeaderService.Create();
+
         _plan = Id > 0
             ? await GanttPlanService.GetItemAsync(Id)
-            : new GanttPlanDTO
-            {
-                State = GanttPlanStates.Draft,
-                StartDate = DateTime.Today,
-                EndDate = DateTime.Today.AddDays(30)
-            };
+            : new GanttPlanDTO { State = GanttPlanStates.Draft };
 
         if (_plan == null)
         {
             Notification.Notify(NotificationSeverity.Error, "Errore", "Template Gantt non trovato");
             Nav.NavigateTo("/Settings/GanttPlans");
-            return;
         }
-
-        if (Id > 0)
-        {
-            var tt = await TicketTypeService.GetList(new TicketTypeFilter { PageSize = 1000 });
-            _ticketTypes = tt?.Items ?? new();
-            _groups = await Rest.Get<CRM.Shared.Group>(ConstHelper.GroupsPath) ?? new();
-            await LoadPhases();
-        }
-    }
-
-    private async Task LoadPhases() => _phases = await PhaseService.GetTreeAsync(Id) ?? new();
-
-    private string TicketTypeName(int? id) => id == null ? "—" : _ticketTypes.FirstOrDefault(t => t.Id == id)?.Desc ?? "—";
-    private string GroupName(int? id) => id == null ? "—" : _groups.FirstOrDefault(g => g.Id == id)?.Name ?? "—";
-    private string PhaseName(int id) => _phases.FirstOrDefault(p => p.Id == id)?.Name ?? $"#{id}";
-
-    private int PhaseDepth(GanttPhaseDTO p)
-    {
-        int d = 0; var cur = p; int guard = 0;
-        while (cur?.ParentId != null && guard++ < 50) { d++; cur = _phases.FirstOrDefault(x => x.Id == cur.ParentId); }
-        return d;
-    }
-
-    private void NewPhase(bool milestone)
-    {
-        _editingPhase = new GanttPhaseDTO { IdGanttPlan = Id, DurationDays = milestone ? 0 : 1, IsMilestone = milestone };
-        BuildPhaseOptions();
-    }
-
-    private void EditPhase(GanttPhaseDTO p)
-    {
-        _editingPhase = new GanttPhaseDTO
-        {
-            Id = p.Id, IdGanttPlan = p.IdGanttPlan, ParentId = p.ParentId, Name = p.Name, Description = p.Description,
-            DurationDays = p.DurationDays, SortOrder = p.SortOrder, IsMilestone = p.IsMilestone,
-            IdTicketType = p.IdTicketType, IdGroup = p.IdGroup, Color = p.Color,
-            Dependencies = p.Dependencies.Select(d => new GanttPhaseDependencyDTO { Id = d.Id, IdPhase = d.IdPhase, IdPredecessorPhase = d.IdPredecessorPhase, LagDays = d.LagDays, Type = d.Type }).ToList()
-        };
-        BuildPhaseOptions();
-    }
-
-    private void BuildPhaseOptions()
-    {
-        _newPredId = null;
-        var self = _editingPhase?.Id ?? 0;
-        _parentOptions = _phases.Where(p => p.Id != self && !p.IsMilestone).ToList();
-        var existing = _editingPhase?.Dependencies.Select(d => d.IdPredecessorPhase).ToHashSet() ?? new HashSet<int>();
-        _predOptions = _phases.Where(p => p.Id != self && !existing.Contains(p.Id)).ToList();
-    }
-
-    private async Task SavePhase()
-    {
-        if (_editingPhase == null || string.IsNullOrWhiteSpace(_editingPhase.Name)) return;
-        var resp = await PhaseService.SaveAsync(_editingPhase);
-        if (resp.State) { _editingPhase = null; await LoadPhases(); }
-        else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
-    }
-
-    private async Task DeletePhase()
-    {
-        if (_editingPhase == null || _editingPhase.Id == 0) return;
-        if (await PhaseService.DeleteAsync(_editingPhase.Id)) { _editingPhase = null; await LoadPhases(); }
-    }
-
-    private async Task AddDep()
-    {
-        if (_editingPhase == null || _editingPhase.Id == 0 || _newPredId == null) return;
-        var resp = await PhaseService.AddDependencyAsync(new GanttPhaseDependencyDTO { IdPhase = _editingPhase.Id, IdPredecessorPhase = _newPredId.Value });
-        if (resp.State) { await LoadPhases(); RefreshEditingPhase(); }
-        else Notification.Notify(NotificationSeverity.Warning, "Attenzione", resp.Message ?? "Operazione fallita");
-    }
-
-    private async Task RemoveDep(GanttPhaseDependencyDTO dep)
-    {
-        if (await PhaseService.RemoveDependencyAsync(dep.Id)) { await LoadPhases(); RefreshEditingPhase(); }
-    }
-
-    private void RefreshEditingPhase()
-    {
-        if (_editingPhase == null) return;
-        var fresh = _phases.FirstOrDefault(p => p.Id == _editingPhase.Id);
-        if (fresh != null) EditPhase(fresh);
     }
 
     private async Task Save()
@@ -309,10 +98,15 @@ else
         try
         {
             var resp = await GanttPlanService.SaveAsync(_plan);
-            if (resp.State)
-                Nav.NavigateTo("/Settings/GanttPlans");
-            else
+            if (!resp.State)
+            {
                 Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
+                return;
+            }
+
+            // Dopo il salvataggio si torna al dettaglio, da cui si gestiscono le fasi.
+            var savedId = resp.Data?.Id ?? Id;
+            Nav.NavigateTo(savedId > 0 ? $"/Settings/GanttPlans/{savedId}/Details" : "/Settings/GanttPlans");
         }
         finally
         {
@@ -320,5 +114,6 @@ else
         }
     }
 
-    private void Cancel() => Nav.NavigateTo("/Settings/GanttPlans");
+    private void Cancel()
+        => Nav.NavigateTo(Id > 0 ? $"/Settings/GanttPlans/{Id}/Details" : "/Settings/GanttPlans");
 }

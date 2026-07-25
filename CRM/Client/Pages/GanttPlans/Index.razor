@@ -37,7 +37,7 @@
     <Columns>
         <RadzenDataGridColumn TItem="GanttPlanDTO" Property="Name" Title="Nome">
             <Template Context="p">
-                <a href="@($"/Settings/GanttPlans/{p.Id}/Edit")" class="text-decoration-none fw-semibold">@p.Name</a>
+                <a href="@($"/Settings/GanttPlans/{p.Id}/Details")" class="text-decoration-none fw-semibold">@p.Name</a>
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="GanttPlanDTO" Property="Description" Title="Descrizione" />
@@ -46,23 +46,11 @@
                 <span class="badge @StateBadge(p.State)">@StateText(p.State)</span>
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="GanttPlanDTO" Property="Progress" Title="Avanzamento" Width="160px">
-            <Template Context="p">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="progress flex-grow-1" style="height:8px;">
-                        <div class="progress-bar" role="progressbar" style="width:@(p.Progress)%"></div>
-                    </div>
-                    <small class="text-muted" style="width:34px;">@p.Progress%</small>
-                </div>
-            </Template>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn TItem="GanttPlanDTO" Property="StartDate" Title="Inizio" Width="120px" FormatString="{0:dd/MM/yyyy}" />
-        <RadzenDataGridColumn TItem="GanttPlanDTO" Property="EndDate" Title="Fine" Width="120px" FormatString="{0:dd/MM/yyyy}" />
         <RadzenDataGridColumn TItem="GanttPlanDTO" Context="p" Title="" Width="120px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
             <Template Context="p">
                 <div class="d-flex gap-2 justify-content-center">
-                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary"
-                                  Click="@(() => Nav.NavigateTo($"/Settings/GanttPlans/{p.Id}/Edit"))" />
+                    <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Primary"
+                                  Click="@(() => Nav.NavigateTo($"/Settings/GanttPlans/{p.Id}/Details"))" />
                     <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Click="@(() => Delete(p))" />
                 </div>
             </Template>

@@ -1,0 +1,344 @@
+@page "/Settings/GanttPlans/{PlanId:int}/Phases/New"
+@page "/Settings/GanttPlans/{PlanId:int}/Phases/{PhaseId:int}/Edit"
+@using CRM.Client.Helpers
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Client.Shared.Components
+@using CRM.Client.Shared.Components.Gantt
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IGanttPhaseService PhaseService
+@inject ITicketTypesService TicketTypeService
+@inject IAGRestClientService Rest
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+@inject DialogService DialogService
+@inject NotificationService Notification
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+@if (_phase == null)
+{
+    <Waiting></Waiting>
+}
+else
+{
+    <div class="row g-3">
+        <!-- Form della fase -->
+        <div class="col-xxl-7 col-xl-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        @if (_phase.IsMilestone)
+                        {
+                            <span class="material-icons align-middle" style="font-size:16px;color:#f59e0b;">flag</span>
+                        }
+                        @(_phase.Id > 0 ? "Modifica fase" : (_phase.IsMilestone ? "Nuova milestone" : "Nuova fase"))
+                    </h6>
+                </div>
+
+                <div class="card-body">
+                    <div class="row g-3 phase-fields">
+                        <div class="col-12">
+                            <label class="form-label small mb-1 d-block">Nome fase</label>
+                            <input class="form-control" @bind="_phase.Name" @bind:event="oninput" />
+                        </div>
+
+                        @if (!_phase.IsMilestone)
+                        {
+                            <div class="col-sm-6">
+                                <label class="form-label small mb-1 d-block">Durata (giorni)</label>
+                                <RadzenNumeric TValue="int" @bind-Value="_phase.DurationDays" Min="1" Style="width:100%" />
+                            </div>
+                        }
+
+                        <div class="col-sm-6">
+                            <label class="form-label small mb-1 d-block">Tipo ticket</label>
+                            <RadzenDropDown TValue="int?" @bind-Value="_phase.IdTicketType" Data="_ticketTypes" TextProperty="Desc" ValueProperty="Id"
+                                            AllowClear="true" AllowFiltering="true" Placeholder="— (fase manuale)" />
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label small mb-1 d-block">Gruppo abilitato</label>
+                            <RadzenDropDown TValue="int?" @bind-Value="_phase.IdGroup" Data="_groups" TextProperty="Name" ValueProperty="Id"
+                                            AllowClear="true" AllowFiltering="true" Placeholder="—" />
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="form-label small mb-1 d-block" title="Serve solo a raggruppare le fasi nell'elenco: NON vincola le date. Per far partire una fase dopo un'altra usa le Dipendenze.">
+                                Fase padre <span class="text-muted fw-normal">(solo raggruppamento)</span>
+                            </label>
+                            <RadzenDropDown TValue="int?" @bind-Value="_phase.ParentId" Data="_parentOptions" TextProperty="Name" ValueProperty="Id"
+                                            AllowClear="true" Placeholder="—" />
+                        </div>
+
+                    </div>
+
+                    @* Fuori da .phase-fields: qui il dropdown deve restare stretto, non a larghezza piena. *@
+                    <div class="mt-3">
+                        <label class="form-label small mb-1 d-block">
+                            Dipendenze (predecessori) <span class="text-muted fw-normal">— determinano quando inizia la fase</span>
+                        </label>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            @foreach (var dep in _phase.Dependencies)
+                            {
+                                <span class="badge bg-light text-dark border d-flex align-items-center gap-1">
+                                    @PhaseName(dep.IdPredecessorPhase)
+                                    <span class="material-icons" style="font-size:14px;cursor:pointer;" @onclick="@(() => RemoveDep(dep))">close</span>
+                                </span>
+                            }
+                            <RadzenDropDown TValue="int?" @bind-Value="_newPredId" Data="_predOptions" TextProperty="Name" ValueProperty="Id"
+                                            AllowClear="true" AllowFiltering="true" Placeholder="Aggiungi predecessore" Style="width:220px" />
+                            <RedGButton RGButtonType="RGButtonType.New" Text="Aggiungi" Size="ButtonSize.Small"
+                                        ButtonStyle="ButtonStyle.Light" Click="AddDep" Disabled="@(_newPredId == null)" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anteprima: riflette in tempo reale quello che stai modificando -->
+        <div class="col-xxl-5 col-xl-5">
+            <div class="card border-0 shadow-sm gantt-preview-sticky">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">Anteprima Gantt</h6>
+                </div>
+                <div class="card-body">
+                    <GanttTemplatePreview Phases="PreviewPhases()" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <RedGDetailActions Class="mt-3">
+        <RedGButton RGButtonType="RGButtonType.Back" Text="Annulla" Click="BackToDetails" />
+        <RedGButton RGButtonType="RGButtonType.Save" Text="@(_saving ? "Salvataggio..." : "Salva fase")" Disabled="@_saving" Click="Save" />
+        @if (_phase.Id > 0)
+        {
+            <RedGButton RGButtonType="RGButtonType.Delete" Text="Elimina" Class="ms-auto" Click="Delete" />
+        }
+    </RedGDetailActions>
+}
+
+@code {
+    [Parameter] public int PlanId { get; set; }
+    [Parameter] public int? PhaseId { get; set; }
+
+    /// <summary>Impostato dalla pagina Details quando si crea una milestone anziche' una fase.</summary>
+    [Parameter, SupplyParameterFromQuery(Name = "milestone")] public bool Milestone { get; set; }
+
+    private PageHeaderModel? _pageHeader;
+    private GanttPhaseDTO? _phase;
+    private List<GanttPhaseDTO> _phases = new();
+    private List<TicketType> _ticketTypes = new();
+    private List<CRM.Shared.Group> _groups = new();
+    private List<GanttPhaseDTO> _parentOptions = new();
+    private List<GanttPhaseDTO> _predOptions = new();
+    private int? _newPredId;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+
+        var tt = await TicketTypeService.GetList(new TicketTypeFilter { PageSize = 1000 });
+        _ticketTypes = tt?.Items ?? new();
+        _groups = await Rest.Get<CRM.Shared.Group>(ConstHelper.GroupsPath) ?? new();
+
+        await LoadPhasesAsync();
+
+        if (PhaseId is > 0)
+        {
+            var src = _phases.FirstOrDefault(p => p.Id == PhaseId);
+            if (src == null)
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", "Fase non trovata");
+                BackToDetails();
+                return;
+            }
+            _phase = Clone(src);
+        }
+        else
+        {
+            _phase = new GanttPhaseDTO
+            {
+                IdGanttPlan = PlanId,
+                IsMilestone = Milestone,
+                DurationDays = Milestone ? 0 : 1
+            };
+        }
+
+        BuildOptions();
+    }
+
+    private async Task LoadPhasesAsync() => _phases = await PhaseService.GetTreeAsync(PlanId) ?? new();
+
+    private static GanttPhaseDTO Clone(GanttPhaseDTO p) => new()
+    {
+        Id = p.Id,
+        IdGanttPlan = p.IdGanttPlan,
+        ParentId = p.ParentId,
+        Name = p.Name,
+        Description = p.Description,
+        DurationDays = p.DurationDays,
+        SortOrder = p.SortOrder,
+        IsMilestone = p.IsMilestone,
+        IdTicketType = p.IdTicketType,
+        IdGroup = p.IdGroup,
+        Color = p.Color,
+        Dependencies = p.Dependencies.Select(d => new GanttPhaseDependencyDTO
+        {
+            Id = d.Id, IdPhase = d.IdPhase, IdPredecessorPhase = d.IdPredecessorPhase, LagDays = d.LagDays, Type = d.Type
+        }).ToList()
+    };
+
+    /// <summary>Elenco fasi con dentro la versione in corso di modifica, per l'anteprima live.</summary>
+    private List<GanttPhaseDTO> PreviewPhases()
+    {
+        if (_phase == null) return _phases;
+
+        var list = _phases.Where(p => p.Id != _phase.Id || _phase.Id == 0).ToList();
+        var idx = _phases.FindIndex(p => p.Id == _phase.Id);
+
+        if (_phase.Id > 0 && idx >= 0)
+            list.Insert(idx, _phase);
+        else
+            list.Add(_phase);
+
+        return list;
+    }
+
+    private void BuildOptions()
+    {
+        _newPredId = null;
+        var self = _phase?.Id ?? 0;
+
+        // Esclude se stessa e i propri discendenti: altrimenti si crea un ciclo nella gerarchia.
+        var descendants = self > 0 ? Descendants(self) : new HashSet<int>();
+        descendants.Add(self);
+
+        _parentOptions = _phases.Where(p => !descendants.Contains(p.Id) && !p.IsMilestone).ToList();
+
+        var existing = _phase?.Dependencies.Select(d => d.IdPredecessorPhase).ToHashSet() ?? new HashSet<int>();
+        _predOptions = _phases.Where(p => !descendants.Contains(p.Id) && !existing.Contains(p.Id)).ToList();
+    }
+
+    private HashSet<int> Descendants(int id)
+    {
+        var result = new HashSet<int>();
+        var stack = new Stack<int>();
+        stack.Push(id);
+        while (stack.Count > 0)
+        {
+            var cur = stack.Pop();
+            foreach (var c in _phases.Where(p => p.ParentId == cur))
+                if (result.Add(c.Id))
+                    stack.Push(c.Id);
+        }
+        return result;
+    }
+
+    private string PhaseName(int id) => _phases.FirstOrDefault(p => p.Id == id)?.Name ?? $"#{id}";
+
+    /// <summary>
+    /// Su una fase gia' salvata la dipendenza va subito sul server; su una fase nuova resta
+    /// in locale (serve l'Id) e viene creata dopo il salvataggio.
+    /// </summary>
+    private async Task AddDep()
+    {
+        if (_phase == null || _newPredId == null) return;
+
+        if (_phase.Id > 0)
+        {
+            var resp = await PhaseService.AddDependencyAsync(new GanttPhaseDependencyDTO
+            {
+                IdPhase = _phase.Id,
+                IdPredecessorPhase = _newPredId.Value
+            });
+            if (!resp.State)
+            {
+                Notification.Notify(NotificationSeverity.Warning, "Attenzione", resp.Message ?? "Operazione fallita");
+                return;
+            }
+            await LoadPhasesAsync();
+            var fresh = _phases.FirstOrDefault(p => p.Id == _phase.Id);
+            if (fresh != null) _phase = Clone(fresh);
+        }
+        else
+        {
+            _phase.Dependencies.Add(new GanttPhaseDependencyDTO { IdPredecessorPhase = _newPredId.Value });
+        }
+
+        BuildOptions();
+    }
+
+    private async Task RemoveDep(GanttPhaseDependencyDTO dep)
+    {
+        if (_phase == null) return;
+
+        if (dep.Id > 0)
+        {
+            if (!await PhaseService.RemoveDependencyAsync(dep.Id)) return;
+            await LoadPhasesAsync();
+        }
+
+        _phase.Dependencies.Remove(dep);
+        BuildOptions();
+    }
+
+    private async Task Save()
+    {
+        if (_phase == null) return;
+
+        if (string.IsNullOrWhiteSpace(_phase.Name))
+        {
+            Notification.Notify(NotificationSeverity.Warning, "Attenzione", "Il nome della fase è obbligatorio");
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            var isNew = _phase.Id == 0;
+            var pendingDeps = isNew ? _phase.Dependencies.ToList() : new List<GanttPhaseDependencyDTO>();
+
+            var resp = await PhaseService.SaveAsync(_phase);
+            if (!resp.State)
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
+                return;
+            }
+
+            // Le dipendenze scelte prima del salvataggio hanno bisogno dell'Id appena creato.
+            var newId = resp.Data?.Id ?? 0;
+            if (isNew && newId > 0)
+            {
+                foreach (var d in pendingDeps)
+                    await PhaseService.AddDependencyAsync(new GanttPhaseDependencyDTO
+                    {
+                        IdPhase = newId,
+                        IdPredecessorPhase = d.IdPredecessorPhase
+                    });
+            }
+
+            BackToDetails();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task Delete()
+    {
+        if (_phase == null || _phase.Id == 0) return;
+        if (await DialogService.Confirm($"Eliminare la fase \"{_phase.Name}\"?", "Conferma") != true) return;
+        if (await PhaseService.DeleteAsync(_phase.Id)) BackToDetails();
+    }
+
+    private void BackToDetails() => Nav.NavigateTo($"/Settings/GanttPlans/{PlanId}/Details");
+}

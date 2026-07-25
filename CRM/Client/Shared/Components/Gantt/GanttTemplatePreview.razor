@@ -1,0 +1,219 @@
+@namespace CRM.Client.Shared.Components.Gantt
+@using System.Globalization
+@using CRM.Shared.DTOs
+
+@* Anteprima read-only del template: schedula le fasi con durate RELATIVE (giorno 1..N)
+   rispettando durate + dipendenze, con lo stesso algoritmo usato per istanziare le commesse.
+   Il layout e' in percentuale: le colonne-giorno si allargano per riempire lo spazio
+   disponibile (con min/max per giorno gestiti in CSS). *@
+
+<div class="tpl-gantt-wrap">
+    @if (Phases == null || !Phases.Any())
+    {
+        <div class="tpl-gantt-empty text-center text-muted p-4">
+            <span class="material-icons" style="font-size:36px;opacity:.4;">view_timeline</span>
+            <div class="mt-2 small">L'anteprima del Gantt appare qui man mano che aggiungi le fasi.</div>
+        </div>
+    }
+    else
+    {
+        <div class="tpl-gantt-head mb-2">
+            <div class="small text-muted">
+                Durata stimata: <strong>@_projectDays gg</strong> lavorativi
+                <span class="tpl-gantt-note">· date relative — quelle reali sono calcolate sulla commessa a partire dalla consegna</span>
+            </div>
+        </div>
+
+        <div class="tpl-gantt-grid">
+            <!-- Pannello nomi -->
+            <div class="tpl-gantt-left">
+                <div class="tpl-gantt-left-head" style="height:@(HeaderH)px">Fase</div>
+                @foreach (var r in _rows)
+                {
+                    <div class="tpl-gantt-left-row" style="height:@(RowH)px">
+                        <div class="tpl-gantt-name" style="padding-left:@(r.Depth * 14 + 8)px" title="@r.Phase.Name">
+                            @if (r.Phase.IsMilestone)
+                            {
+                                <span class="material-icons tpl-ms-ico">flag</span>
+                            }
+                            <span class="text-truncate">@r.Phase.Name</span>
+                        </div>
+                        <span class="tpl-gantt-dur">@(r.Phase.IsMilestone ? "◆" : $"{Math.Max(1, r.Phase.DurationDays)}g")</span>
+                    </div>
+                }
+            </div>
+
+            <!-- Timeline -->
+            <div class="tpl-gantt-right">
+                <div class="tpl-gantt-chart" style="min-width:@(_projectDays * MinDayPx)px;max-width:@(_projectDays * MaxDayPx)px">
+                    <div class="tpl-gantt-plot">
+                        <!-- Asse temporale (giorni relativi) -->
+                        <div class="tpl-gantt-axis" style="height:@(HeaderH)px">
+                            @for (int d = 0; d < _projectDays; d++)
+                            {
+                                <div class="tpl-gantt-axis-seg @(IsWeekBoundary(d) ? "wk" : "")"
+                                     style="left:@Pct(d);width:@Pct(1)">@(ShowLabel(d) ? (d + 1).ToString() : "")</div>
+                            }
+                        </div>
+
+                        <!-- Corpo -->
+                        <div class="tpl-gantt-body" style="height:@(_rows.Count * RowH)px">
+                            @for (int d = 0; d <= _projectDays; d++)
+                            {
+                                <div class="tpl-gantt-vline @(IsWeekBoundary(d) ? "wk" : "")" style="left:@Pct(d)"></div>
+                            }
+
+                            @for (int i = 0; i < _rows.Count; i++)
+                            {
+                                var r = _rows[i];
+                                var top = i * RowH;
+                                <div class="tpl-gantt-row-bg" style="top:@(top)px;height:@(RowH)px"></div>
+
+                                if (r.Phase.IsMilestone)
+                                {
+                                    <div class="tpl-gantt-ms" style="left:calc(@Pct(r.Start) - 7px);top:@(top + RowH / 2 - 7)px"
+                                         title="@r.Phase.Name (giorno @(r.Start + 1))"></div>
+                                }
+                                else
+                                {
+                                    <div class="tpl-gantt-bar" style="left:@Pct(r.Start);width:calc(@Pct(r.Days) - 3px);top:@(top + (RowH - BarH) / 2)px;@BarColor(r.Phase)"
+                                         title="@r.Phase.Name — giorni @(r.Start + 1)–@(r.Start + r.Days)">
+                                        <span class="tpl-gantt-bar-label">@r.Phase.Name</span>
+                                    </div>
+                                }
+                            }
+
+                            <!-- Frecce dipendenze (connettori a gomito, in percentuale) -->
+                            @foreach (var a in _arcs)
+                            {
+                                var yTop = Math.Min(a.Y1, a.Y2);
+                                var h = Math.Abs(a.Y2 - a.Y1);
+                                @* La salita verticale sta sempre appena prima del target: cosi' il connettore
+                                   resta corretto anche quando la fase inizia dove finisce la precedente. *@
+                                <div class="tpl-dep-seg" style="left:@Pct(a.FromDay);width:calc(@Pct(a.ToDay) - @Pct(a.FromDay) - @(Elbow)px);top:@(a.Y1)px"></div>
+                                <div class="tpl-dep-seg v" style="left:calc(@Pct(a.ToDay) - @(Elbow)px);top:@(yTop)px;height:@(h)px"></div>
+                                <div class="tpl-dep-seg" style="left:calc(@Pct(a.ToDay) - @(Elbow)px);width:@(Elbow - ArrowW)px;top:@(a.Y2)px"></div>
+                                <div class="tpl-dep-arrow" style="left:calc(@Pct(a.ToDay) - @(ArrowW)px);top:@(a.Y2 - 3)px"></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>Le fasi del template (con durate relative e dipendenze) da visualizzare.</summary>
+    [Parameter] public List<GanttPhaseDTO>? Phases { get; set; }
+
+    private const int RowH = 32;
+    private const int BarH = 20;
+    private const int HeaderH = 28;
+    private const int MinDayPx = 30;   // sotto questa soglia la timeline scorre orizzontalmente
+    private const int MaxDayPx = 120;  // sopra questa soglia i piani corti non si dilatano all'eccesso
+    private const int Elbow = 8;       // sporgenza orizzontale del connettore
+    private const int ArrowW = 5;      // larghezza della punta della freccia
+
+    private record Row(GanttPhaseDTO Phase, int Start, int Days, int Depth);
+    private record Arc(int FromDay, int ToDay, double Y1, double Y2);
+
+    private List<Row> _rows = new();
+    private List<Arc> _arcs = new();
+    private int _projectDays = 1;
+
+    protected override void OnParametersSet() => Build();
+
+    private void Build()
+    {
+        _rows = new();
+        _arcs = new();
+        _projectDays = 1;
+
+        var phases = Phases;
+        if (phases == null || phases.Count == 0) return;
+
+        var byId = phases.ToDictionary(p => p.Id);
+        // Predecessori (id, lag) per fase
+        var preds = phases.ToDictionary(
+            p => p.Id,
+            p => p.Dependencies.Select(d => (d.IdPredecessorPhase, d.LagDays))
+                               .Where(x => byId.ContainsKey(x.IdPredecessorPhase)).ToList());
+        var succIds = phases.ToDictionary(p => p.Id, _ => new List<int>());
+        foreach (var p in phases)
+            foreach (var (predId, _) in preds[p.Id])
+                succIds[predId].Add(p.Id);
+
+        // Forward pass: earliest-start (giorni) — stesso algoritmo della schedulazione commessa.
+        int Len(GanttPhaseDTO p) => Math.Max(p.IsMilestone ? 0 : 1, p.DurationDays);
+        var indeg = phases.ToDictionary(p => p.Id, p => preds[p.Id].Count);
+        var queue = new Queue<int>(indeg.Where(kv => kv.Value == 0).Select(kv => kv.Key));
+        var es = phases.ToDictionary(p => p.Id, _ => 0);
+        var visited = 0;
+        while (queue.Count > 0)
+        {
+            var id = queue.Dequeue(); visited++;
+            int ef = es[id] + Len(byId[id]);
+            foreach (var s in succIds[id])
+            {
+                var lag = preds[s].First(x => x.IdPredecessorPhase == id).LagDays;
+                es[s] = Math.Max(es[s], ef + lag);
+                if (--indeg[s] == 0) queue.Enqueue(s);
+            }
+        }
+        // Fallback in caso di ciclo: offset cumulativo per SortOrder.
+        if (visited != phases.Count)
+        {
+            int acc = 0;
+            foreach (var p in phases.OrderBy(p => p.SortOrder)) { es[p.Id] = acc; acc += Len(p); }
+        }
+
+        _projectDays = Math.Max(1, phases.Max(p => es[p.Id] + Len(p)));
+
+        // Righe nell'ordine ricevuto (coerente con la tabella sottostante).
+        foreach (var p in phases)
+            _rows.Add(new Row(p, es[p.Id], Len(p), Depth(p, byId)));
+
+        BuildArcs();
+    }
+
+    private static int Depth(GanttPhaseDTO p, Dictionary<int, GanttPhaseDTO> byId)
+    {
+        int d = 0, guard = 0; var cur = p;
+        while (cur?.ParentId != null && byId.TryGetValue(cur.ParentId.Value, out var parent) && guard++ < 50)
+        { d++; cur = parent; }
+        return d;
+    }
+
+    private void BuildArcs()
+    {
+        var rowIndex = _rows.Select((r, i) => (r.Phase.Id, i)).ToDictionary(x => x.Id, x => x.i);
+        foreach (var r in _rows)
+        {
+            foreach (var dep in r.Phase.Dependencies)
+            {
+                if (!rowIndex.TryGetValue(dep.IdPredecessorPhase, out var pi)) continue;
+                var pred = _rows[pi];
+                var ti = rowIndex[r.Phase.Id];
+
+                int fromDay = pred.Phase.IsMilestone ? pred.Start : pred.Start + pred.Days;
+                double y1 = pi * RowH + RowH / 2.0;
+                double y2 = ti * RowH + RowH / 2.0;
+
+                _arcs.Add(new Arc(fromDay, r.Start, y1, y2));
+            }
+        }
+    }
+
+    /// <summary>Posizione orizzontale in percentuale della larghezza totale del grafico.</summary>
+    private string Pct(int days)
+        => (100.0 * days / _projectDays).ToString("0.###", CultureInfo.InvariantCulture) + "%";
+
+    private static bool IsWeekBoundary(int day) => day % 5 == 0; // settimana lavorativa di 5 giorni
+
+    /// <summary>Con piani lunghi mostra solo i multipli di 5 per non affollare l'asse.</summary>
+    private bool ShowLabel(int day) => _projectDays <= 25 || day % 5 == 0;
+
+    private static string BarColor(GanttPhaseDTO p)
+        => string.IsNullOrWhiteSpace(p.Color) ? string.Empty : $"background:{p.Color};";
+}

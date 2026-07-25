@@ -1,0 +1,179 @@
+@page "/Settings/GanttPlans/{Id:int}/Details"
+@using CRM.Client.Helpers
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Client.Shared.Components
+@using CRM.Client.Shared.Components.Gantt
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IGanttPlanService GanttPlanService
+@inject IGanttPhaseService PhaseService
+@inject ITicketTypesService TicketTypeService
+@inject IAGRestClientService Rest
+@inject IHeaderService HeaderService
+@inject NavigationManager Nav
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+<RedGDetailPage IsLoading="@_loading" IsEmpty="@(!_loading && _plan == null)" EmptyText="Template Gantt non trovato" EmptyIcon="view_timeline">
+    <ChildContent>
+        @if (_plan != null)
+        {
+            <RedGDetailSection Title="Dati template" Icon="view_timeline">
+                <RedGDetailField Icon="badge" Label="Nome" Value="@_plan.Name" />
+
+                <RedGDetailField Icon="flag">
+                    <LabelContent>Stato</LabelContent>
+                    <ChildContent>
+                        <span class="badge @StateBadge(_plan.State)">@StateText(_plan.State)</span>
+                    </ChildContent>
+                </RedGDetailField>
+
+                <RedGDetailField Icon="notes">
+                    <LabelContent>Descrizione</LabelContent>
+                    <ChildContent>
+                        @if (!string.IsNullOrWhiteSpace(_plan.Description))
+                        {
+                            <p class="mb-0 text-dark">@_plan.Description</p>
+                        }
+                        else
+                        {
+                            <p class="mb-0 text-muted fst-italic">-</p>
+                        }
+                    </ChildContent>
+                </RedGDetailField>
+            </RedGDetailSection>
+
+            <RedGDetailSection Title="Fasi del template" Icon="checklist">
+                <HeaderContent>
+                    @* RadzenButton e non RedGButton: quest'ultimo sovrascrive Icon/ButtonStyle
+                       in OnInitialized, rendendo i due pulsanti indistinguibili. *@
+                    <div class="d-flex gap-2">
+                        <RadzenButton Icon="add_task" Text="Fase" Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Primary" Click="@(() => NewPhase(false))" />
+                        <RadzenButton Icon="flag" Text="Milestone" Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Secondary" Click="@(() => NewPhase(true))" />
+                    </div>
+                </HeaderContent>
+                <ChildContent>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Fase</th>
+                                    <th style="width:90px;">Durata</th>
+                                    <th>Tipo ticket</th>
+                                    <th>Gruppo</th>
+                                    <th>Dipende da</th>
+                                    <th style="width:50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in _phases)
+                                {
+                                    <tr style="cursor:pointer;" @onclick="@(() => EditPhase(p.Id))">
+                                        <td style="padding-left:@(PhaseDepth(p) * 16 + 8)px">
+                                            @if (p.IsMilestone)
+                                            {
+                                                <span class="material-icons align-middle" style="font-size:14px;color:#f59e0b;">flag</span>
+                                            }
+                                            @p.Name
+                                        </td>
+                                        <td>@(p.IsMilestone ? "milestone" : $"{p.DurationDays} gg")</td>
+                                        <td>@TicketTypeName(p.IdTicketType)</td>
+                                        <td>@GroupName(p.IdGroup)</td>
+                                        <td class="small text-muted">@string.Join(", ", p.Dependencies.Select(d => PhaseName(d.IdPredecessorPhase)))</td>
+                                        <td class="text-center"><span class="material-icons" style="font-size:16px;">edit</span></td>
+                                    </tr>
+                                }
+                                @if (!_phases.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-3">
+                                            Nessuna fase. Aggiungi le fasi che compongono la produzione di questo prodotto.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </ChildContent>
+            </RedGDetailSection>
+
+            <RedGDetailSection Title="Anteprima Gantt" Icon="ssid_chart">
+                <GanttTemplatePreview Phases="_phases" />
+            </RedGDetailSection>
+        }
+    </ChildContent>
+    <ActionsContent>
+        <RedGDetailActions>
+            <RedGButton RGButtonType="RGButtonType.Back" Text="Lista template" Click="@(() => Nav.NavigateTo("/Settings/GanttPlans"))" />
+            <RedGButton RGButtonType="RGButtonType.Edit" Text="Modifica dati" Click="EditPlan" />
+        </RedGDetailActions>
+    </ActionsContent>
+</RedGDetailPage>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PageHeaderModel? _pageHeader;
+    private GanttPlanDTO? _plan;
+    private List<GanttPhaseDTO> _phases = new();
+    private List<TicketType> _ticketTypes = new();
+    private List<CRM.Shared.Group> _groups = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+
+        _plan = await GanttPlanService.GetItemAsync(Id);
+        if (_plan != null)
+        {
+            var tt = await TicketTypeService.GetList(new TicketTypeFilter { PageSize = 1000 });
+            _ticketTypes = tt?.Items ?? new();
+            _groups = await Rest.Get<CRM.Shared.Group>(ConstHelper.GroupsPath) ?? new();
+            _phases = await PhaseService.GetTreeAsync(Id) ?? new();
+        }
+
+        _loading = false;
+    }
+
+    private void EditPlan() => Nav.NavigateTo($"/Settings/GanttPlans/{Id}/Edit");
+
+    private void EditPhase(int phaseId) => Nav.NavigateTo($"/Settings/GanttPlans/{Id}/Phases/{phaseId}/Edit");
+
+    private void NewPhase(bool milestone)
+        => Nav.NavigateTo($"/Settings/GanttPlans/{Id}/Phases/New{(milestone ? "?milestone=true" : string.Empty)}");
+
+    private string TicketTypeName(int? id) => id == null ? "—" : _ticketTypes.FirstOrDefault(t => t.Id == id)?.Desc ?? "—";
+    private string GroupName(int? id) => id == null ? "—" : _groups.FirstOrDefault(g => g.Id == id)?.Name ?? "—";
+    private string PhaseName(int id) => _phases.FirstOrDefault(p => p.Id == id)?.Name ?? $"#{id}";
+
+    private int PhaseDepth(GanttPhaseDTO p)
+    {
+        int d = 0; var cur = p; int guard = 0;
+        while (cur?.ParentId != null && guard++ < 50) { d++; cur = _phases.FirstOrDefault(x => x.Id == cur.ParentId); }
+        return d;
+    }
+
+    private static string StateText(GanttPlanStates s) => s switch
+    {
+        GanttPlanStates.Draft => "Bozza",
+        GanttPlanStates.Active => "Attivo",
+        GanttPlanStates.Archived => "Archiviato",
+        _ => s.ToString()
+    };
+
+    private static string StateBadge(GanttPlanStates s) => s switch
+    {
+        GanttPlanStates.Draft => "bg-secondary",
+        GanttPlanStates.Active => "bg-success",
+        GanttPlanStates.Archived => "bg-dark",
+        _ => "bg-secondary"
+    };
+}

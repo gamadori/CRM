@@ -1,0 +1,12 @@
+/* L'anteprima resta visibile mentre si compilano i campi della fase nella colonna a sinistra. */
+.gantt-preview-sticky {
+    position: sticky;
+    top: 1rem;
+}
+
+/* .rz-dropdown e' inline-flex senza width: si dimensionerebbe sul contenuto, restando
+   piu' stretto degli altri campi. ::deep perche' il markup e' generato dal componente Radzen.
+   Il dropdown "Aggiungi predecessore" ha uno Style inline esplicito e non viene toccato. */
+.phase-fields ::deep .rz-dropdown {
+    width: 100%;
+}
