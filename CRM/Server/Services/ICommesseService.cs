@@ -29,6 +29,8 @@ namespace CRM.Server.Services
         /// <summary>Conferma "pronto" una riga senza produzione (nessuna commessa).</summary>
         Task<APIResponseMessage<CommessaDTO>> ConfirmRowReadyAsync(int orderRowId);
 
-        Task<bool> DeleteAsync(int id);
+        /// <summary>Elimina la commessa e le sue fasi. Il Code distingue non trovata,
+        /// non accessibile ed errore, cosi' il controller puo' rispondere con lo stato giusto.</summary>
+        Task<APIResponseMessage<bool>> DeleteAsync(int id);
     }
 }

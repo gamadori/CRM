@@ -404,24 +404,54 @@ namespace CRM.Server.Services
         }
 
         [AuthorizeRole(ePolicy.StandardRole)]
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<APIResponseMessage<bool>> DeleteAsync(int id)
         {
             var c = await _context.Commesse.FirstOrDefaultAsync(x => x.Id == id);
-            if (c == null || !await CanAccessAsync(c.IdCompany))
-                return false;
+            if (c == null)
+                return FailDelete("Commessa non trovata", HttpStatusCode.NotFound);
+            if (!await CanAccessAsync(c.IdCompany))
+                return FailDelete("Commessa non accessibile", HttpStatusCode.Forbidden);
             try
             {
-                var tickets = await _context.Tickets.Where(t => t.CommessaFase!.IdCommessa == id).ToListAsync();
+                var fasi = await _context.CommessaFasi.Where(f => f.IdCommessa == id).ToListAsync();
+                var faseIds = fasi.Select(f => f.Id).ToList();
+
+                // I ticket sopravvivono alla commessa: perdono solo il legame con la fase.
+                var tickets = await _context.Tickets
+                    .Where(t => t.IdCommessaFase != null && faseIds.Contains(t.IdCommessaFase.Value))
+                    .ToListAsync();
                 foreach (var t in tickets) t.IdCommessaFase = null;
+
+                // Commessa -> Fasi e' Cascade, ma le FK che puntano alle fasi sono Restrict:
+                // vanno rimosse esplicitamente, altrimenti il cascade viola i vincoli.
+                var deps = await _context.CommessaFaseDependencies
+                    .Where(d => faseIds.Contains(d.IdFase) || faseIds.Contains(d.IdPredecessorFase))
+                    .ToListAsync();
+                _context.CommessaFaseDependencies.RemoveRange(deps);
+
+                // Anche l'auto-riferimento della gerarchia WBS e' Restrict: azzerato prima.
+                foreach (var f in fasi) f.ParentId = null;
+                await _context.SaveChangesAsync();
+
+                _context.CommessaFasi.RemoveRange(fasi);
+                await _context.SaveChangesAsync();
+
                 _context.Commesse.Remove(c);
                 await _context.SaveChangesAsync();
+
                 await SyncOrderRowStatusAsync(c.IdOrderRow);
-                return true;
+                return new APIResponseMessage<bool>
+                {
+                    State = true,
+                    Data = true,
+                    Message = "Commessa eliminata",
+                    Code = HttpStatusCode.OK
+                };
             }
             catch (Exception ex)
             {
                 await _logEventService.RegisterAsync(nameof(CommesseService), nameof(DeleteAsync), EventsTypes.Error, ex);
-                return false;
+                return FailDelete("Errore nell'eliminazione della commessa", HttpStatusCode.InternalServerError);
             }
         }
 
@@ -430,6 +460,7 @@ namespace CRM.Server.Services
         private static APIResponseMessage<CommessaDTO> Fail(string m, HttpStatusCode c) => new() { State = false, Message = m, Code = c };
         private static APIResponseMessage<CommessaDTO> Ok(CommessaDTO? d, string m) => new() { State = true, Data = d, Message = m, Code = HttpStatusCode.OK };
         private static APIResponseMessage<List<CommessaDTO>> FailList(string m, HttpStatusCode c) => new() { State = false, Message = m, Code = c };
+        private static APIResponseMessage<bool> FailDelete(string m, HttpStatusCode c) => new() { State = false, Message = m, Code = c };
 
         /// <summary>Costruisce le fasi con date assolute, schedulazione all'indietro dalla consegna.</summary>
         private static (DateTime start, List<CommessaFase> phases) BuildPhasesBackward(List<GanttPhase> template, DateTime delivery)

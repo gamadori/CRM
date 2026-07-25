@@ -72,6 +72,11 @@ namespace CRM.Server.Controllers
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
-            => await _service.DeleteAsync(id) ? NoContent() : StatusCode(StatusCodes.Status500InternalServerError);
+        {
+            // Lo stato HTTP segue l'esito reale: 404 se non esiste, 403 se fuori perimetro,
+            // 500 solo per un errore vero. Il client distingue via IsSuccessStatusCode.
+            var resp = await _service.DeleteAsync(id);
+            return resp.State ? NoContent() : StatusCode((int)resp.Code, resp);
+        }
     }
 }

@@ -14,6 +14,7 @@
 @inject IHeaderService HeaderService
 @inject NavigationManager Nav
 @inject DialogService DialogService
+@inject NotificationService Notification
 
 <PageHeader Model="_pageHeader"></PageHeader>
 
@@ -151,10 +152,13 @@
 
     private async Task Delete(CommessaDTO c)
     {
-        if (await DialogService.Confirm($"Eliminare la commessa {c.Code}?", "Conferma") == true)
-        {
-            await CommessaService.DeleteAsync(c.Id);
-            await Reload();
-        }
+        if (await DialogService.Confirm($"Eliminare la commessa {c.Code}?", "Conferma") != true) return;
+
+        if (await CommessaService.DeleteAsync(c.Id))
+            Notification.Notify(NotificationSeverity.Success, "Fatto", $"Commessa {c.Code} eliminata");
+        else
+            Notification.Notify(NotificationSeverity.Error, "Errore", $"Impossibile eliminare la commessa {c.Code}");
+
+        await Reload();
     }
 }
