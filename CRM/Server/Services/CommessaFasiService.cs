@@ -833,7 +833,7 @@ namespace CRM.Server.Services
                     : CommessaFaseStates.Pending;
         }
 
-        /// <summary>Media pesata sulla durata, milestone escluse (durata 0, peserebbero comunque 1).</summary>
+        /// <summary>Media pesata sulla durata lavorativa, milestone escluse (durata 0, peserebbero comunque 1).</summary>
         internal static int WeightedProgress(List<(DateTime Start, DateTime End, int Progress, bool IsMilestone)> items)
         {
             var counted = items.Where(i => !i.IsMilestone).ToList();
@@ -843,7 +843,7 @@ namespace CRM.Server.Services
             double weightSum = 0, acc = 0;
             foreach (var i in counted)
             {
-                double w = Math.Max(1, (i.End.Date - i.Start.Date).TotalDays + 1);
+                double w = Math.Max(1, i.Start.CountWorkdays(i.End));
                 weightSum += w;
                 acc += w * Math.Clamp(i.Progress, 0, 100);
             }
@@ -1025,7 +1025,7 @@ namespace CRM.Server.Services
             if (order.Count != fasi.Count)
                 return;
 
-            double Dur(CommessaFaseDTO f) => f.IsMilestone ? 0 : Math.Max(1, (f.EndDate.Date - f.StartDate.Date).TotalDays + 1);
+            double Dur(CommessaFaseDTO f) => f.IsMilestone ? 0 : Math.Max(1, f.StartDate.CountWorkdays(f.EndDate));
 
             var es = new Dictionary<int, double>();
             var ef = new Dictionary<int, double>();

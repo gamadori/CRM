@@ -395,8 +395,8 @@ public class PhaseServiceTests
 
         await ctx.Service.RecomputeFaseProgressAsync(2);
 
-        // (10 giorni * 100 + 2 giorni * 0) / 12 = 83
-        Assert.Equal(83, ctx.Rileggi(1).Progress);
+        // Le durate sono pesate sui giorni lavorativi: 8 giorni al 100% e 2 allo 0% = 80.
+        Assert.Equal(80, ctx.Rileggi(1).Progress);
         Assert.Equal(CommessaFaseStates.InProgress, ctx.Rileggi(1).State);
     }
 
@@ -411,7 +411,7 @@ public class PhaseServiceTests
 
         await ctx.Service.RecomputeFaseProgressAsync(2);
 
-        Assert.Equal(83, ctx.RileggiCommessa().Progress);
+        Assert.Equal(80, ctx.RileggiCommessa().Progress);
     }
 
     [Fact]

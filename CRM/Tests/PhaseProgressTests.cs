@@ -1,5 +1,6 @@
 using CRM.Server.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 
 namespace CRM.Tests;
 
@@ -235,7 +236,20 @@ public class PhaseProgressTests
             (new DateTime(2026, 3, 12), new DateTime(2026, 3, 12), 0, false)    // 1 giorno
         };
 
-        Assert.Equal(91, CommessaFasiService.WeightedProgress(items));
+        Assert.Equal(89, CommessaFasiService.WeightedProgress(items));
+    }
+
+    [Fact]
+    public void La_media_ignora_weekend_e_festivi()
+    {
+        var items = new List<(DateTime, DateTime, int, bool)>
+        {
+            // Gio 30 aprile e lun 4 maggio: il 1 maggio e il weekend non pesano.
+            (new DateTime(2026, 4, 30), new DateTime(2026, 5, 4), 100, false),
+            (new DateTime(2026, 5, 5), new DateTime(2026, 5, 5), 0, false)
+        };
+
+        Assert.Equal(67, CommessaFasiService.WeightedProgress(items));
     }
 
     [Fact]
@@ -254,5 +268,44 @@ public class PhaseProgressTests
     public void Senza_fasi_la_media_e_zero()
     {
         Assert.Equal(0, CommessaFasiService.WeightedProgress(new List<(DateTime, DateTime, int, bool)>()));
+    }
+
+    [Fact]
+    public void Il_percorso_critico_usa_durate_lavorative()
+    {
+        var lungaSoloDiCalendario = new CommessaFaseDTO
+        {
+            Id = 1,
+            Name = "Fase calendario lunga",
+            StartDate = new DateTime(2026, 4, 30),
+            EndDate = new DateTime(2026, 5, 4)
+        };
+        var lungaDiLavoro = new CommessaFaseDTO
+        {
+            Id = 2,
+            Name = "Fase lavoro lunga",
+            StartDate = new DateTime(2026, 5, 5),
+            EndDate = new DateTime(2026, 5, 7)
+        };
+        var finale = new CommessaFaseDTO
+        {
+            Id = 3,
+            Name = "Finale",
+            StartDate = new DateTime(2026, 5, 8),
+            EndDate = new DateTime(2026, 5, 8),
+            Dependencies =
+            {
+                new CommessaFaseDependencyDTO { IdFase = 3, IdPredecessorFase = 1 },
+                new CommessaFaseDependencyDTO { IdFase = 3, IdPredecessorFase = 2 }
+            }
+        };
+
+        var fasi = new List<CommessaFaseDTO> { lungaSoloDiCalendario, lungaDiLavoro, finale };
+
+        CommessaFasiService.ComputeCriticalPath(fasi);
+
+        Assert.False(lungaSoloDiCalendario.IsCriticalPath);
+        Assert.True(lungaDiLavoro.IsCriticalPath);
+        Assert.True(finale.IsCriticalPath);
     }
 }
