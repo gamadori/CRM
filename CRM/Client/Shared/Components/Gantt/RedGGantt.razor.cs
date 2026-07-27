@@ -1,17 +1,22 @@
 using CRM.Client.Services;
+using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 using Radzen;
+using Radzen.Blazor;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace CRM.Client.Shared.Components.Gantt
 {
-    public partial class RedGGantt : ComponentBase, IAsyncDisposable
+    /// <summary>
+    /// Pianificazione della commessa. Il grafico e' <see cref="RadzenGantt{TItem}"/>: geometria,
+    /// assi, frecce di dipendenza, percorso critico e drag&amp;drop sono suoi. Qui restano il
+    /// caricamento dati e l'editor della fase, che il componente non copre (dipendenze e ticket).
+    /// </summary>
+    public partial class RedGGantt : ComponentBase
     {
         [Parameter] public int CommessaId { get; set; }
 
@@ -19,43 +24,17 @@ namespace CRM.Client.Shared.Components.Gantt
         [Parameter] public EventCallback OnProgressChanged { get; set; }
 
         [Inject] private ICommessaFaseService TaskService { get; set; } = default!;
-        [Inject] private IJSRuntime JS { get; set; } = default!;
         [Inject] private DialogService DialogService { get; set; } = default!;
 
-        private enum Zoom { Day, Week, Month }
-
-        // Layout
-        private const int RowH = 34;
-        private const int HeaderH = 44;
-
-        /// <summary>
-        /// Il suffisso di versione aggira la cache del service worker: senza, il browser puo'
-        /// servire una copia vecchia del modulo. Va incrementato quando redg-gantt.js cambia.
-        /// </summary>
-        private const string ModulePath = "./js/redg-gantt.js?v=2";
+        private RadzenGantt<CommessaFaseDTO>? _gantt;
 
         private List<CommessaFaseDTO> _tasks = new();
+        private List<GanttDependency<CommessaFaseDTO>> _dependencies = new();
         private bool _loading = true;
-        private Zoom _zoom = Zoom.Week;
-        private double _pxPerDay = 10;
-        private DateTime _min = DateTime.Today;
-        private int _totalDays = 30;
-        private int _todayX = -1;
+        private GanttZoomLevel _zoom = GanttZoomLevel.Week;
 
-        /// <summary>Spazio orizzontale disponibile per la timeline, misurato via JS (0 = non ancora noto).</summary>
-        private double _availableWidth;
-
-        /// <summary>Oltre questa densita' le barre diventano enormi senza aggiungere informazione
-        /// (stesso tetto dell'anteprima template, per coerenza visiva tra i due Gantt).</summary>
-        private const double MaxDayPx = 120;
-
-        /// <summary>Limite di dilatazione rispetto allo zoom scelto, perche' resti significativo.</summary>
-        private const double MaxZoomFactor = 6;
-
-        private ElementReference _chartEl;
-        private IJSObjectReference? _module;
-        private IJSObjectReference? _interop;
-        private DotNetObjectReference<RedGGantt>? _dotNetRef;
+        /// <summary>Chiede un adattamento alla larghezza dopo il prossimo render con dati.</summary>
+        private bool _fitPending;
 
         // Editor
         private CommessaFaseDTO? _editing;
@@ -63,18 +42,14 @@ namespace CRM.Client.Shared.Components.Gantt
         private List<CommessaFaseDTO> _predecessorOptions = new();
         private int? _newPredecessorId;
 
-        // Derivati per il rendering
-        private record AxisSeg(double X, double W, string Label);
-        private record DayLine(double X, double W, bool Weekend);
-        private record DepArc(string Points, bool Critical);
-
-        private List<AxisSeg> _headerSegments = new();
-        private List<DayLine> _dayLines = new();
-        private List<DepArc> _depArcs = new();
-        private Dictionary<int, int> _rowIndex = new();
-        private Dictionary<int, int> _depthCache = new();
-
-        private double ChartWidth => _totalDays * _pxPerDay;
+        private record CompletionOption(string Text, CommessaFaseCompletionMode Value);
+        private readonly List<CompletionOption> _completionOptions = new()
+        {
+            new("Tutti i ticket chiusi", CommessaFaseCompletionMode.AllTicketsClosed),
+            new("Almeno un ticket chiuso", CommessaFaseCompletionMode.AnyTicketClosed),
+            new("Manuale", CommessaFaseCompletionMode.Manual),
+            new("Percentuale manuale", CommessaFaseCompletionMode.ProgressManual)
+        };
 
         protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -83,188 +58,69 @@ namespace CRM.Client.Shared.Components.Gantt
             _loading = true;
             _tasks = (await TaskService.GetTreeAsync(CommessaId)) ?? new();
             _tasks = _tasks.OrderBy(t => t.SortOrder).ThenBy(t => t.Id).ToList();
-            BuildLayout();
+            BuildDependencies();
             _loading = false;
+            _fitPending = true;
             StateHasChanged();
-        }
-
-        private static double PxFor(Zoom z) => z switch
-        {
-            Zoom.Day => 30,
-            Zoom.Week => 11,
-            Zoom.Month => 4.2,
-            _ => 11
-        };
-
-        private void SetZoom(Zoom z)
-        {
-            _zoom = z;
-            BuildLayout(); // la scala effettiva la ricalcola BuildLayout in base allo spazio
         }
 
         /// <summary>
-        /// Scala orizzontale: parte dalla densita' dello zoom e si allarga fino a riempire lo
-        /// spazio disponibile. Non scende mai sotto lo zoom scelto (sotto, la timeline scorre).
+        /// Le dipendenze passano a Radzen come riferimenti agli oggetti task: e' la forma
+        /// richiesta da ShowCriticalPath, che sulla variante per nomi di proprieta' non lavora.
         /// </summary>
-        private double ResponsivePxPerDay()
+        private void BuildDependencies()
         {
-            var basePx = PxFor(_zoom);
-            if (_availableWidth <= 0 || _totalDays <= 0)
-                return basePx;
+            var byId = _tasks.ToDictionary(t => t.Id);
+            _dependencies = new List<GanttDependency<CommessaFaseDTO>>();
 
-            var max = Math.Max(basePx, Math.Min(MaxDayPx, basePx * MaxZoomFactor));
-            var fill = _availableWidth / _totalDays;
-            return Math.Clamp(fill, basePx, max);
-        }
-
-        /// <summary>Applica la larghezza misurata e ricostruisce il layout se e' cambiata.</summary>
-        private void ApplyAvailableWidth(double width)
-        {
-            var usable = width - 16; // respiro a destra per l'ultima barra
-            if (usable <= 0 || Math.Abs(usable - _availableWidth) < 1) return;
-
-            _availableWidth = usable;
-            BuildLayout();
-            StateHasChanged();
-        }
-
-        [JSInvokable]
-        public void OnContainerResize(double width) => ApplyAvailableWidth(width);
-
-        private void BuildLayout()
-        {
-            _depthCache.Clear();
-            _rowIndex = _tasks.Select((t, i) => (t.Id, i)).ToDictionary(x => x.Id, x => x.i);
-
-            if (_tasks.Count == 0)
-            {
-                _headerSegments = new();
-                _dayLines = new();
-                _depArcs = new();
-                return;
-            }
-
-            var start = _tasks.Min(t => t.StartDate.Date);
-            var end = _tasks.Max(t => (t.IsMilestone ? t.StartDate : t.EndDate).Date);
-            _min = start.AddDays(-2);
-            end = end.AddDays(2);
-            _totalDays = Math.Max(7, (int)(end - _min).TotalDays + 1);
-
-            // Dipende da _totalDays, quindi va dopo il calcolo dell'intervallo.
-            _pxPerDay = ResponsivePxPerDay();
-
-            var today = DateTime.Today;
-            _todayX = (today >= _min && today <= _min.AddDays(_totalDays)) ? (int)((today - _min).TotalDays * _pxPerDay) : -1;
-
-            BuildHeader();
-            BuildDayLines();
-            BuildDepArcs();
-        }
-
-        private void BuildHeader()
-        {
-            var segs = new List<AxisSeg>();
-            if (_zoom == Zoom.Month)
-            {
-                var cur = new DateTime(_min.Year, _min.Month, 1);
-                var last = _min.AddDays(_totalDays);
-                while (cur <= last)
-                {
-                    var next = cur.AddMonths(1);
-                    var segStart = cur < _min ? _min : cur;
-                    var segEnd = next > last ? last : next;
-                    double x = (segStart - _min).TotalDays * _pxPerDay;
-                    double w = (segEnd - segStart).TotalDays * _pxPerDay;
-                    segs.Add(new AxisSeg(x, w, cur.ToString("MMM yy", CultureInfo.CurrentCulture)));
-                    cur = next;
-                }
-            }
-            else if (_zoom == Zoom.Week)
-            {
-                // Settimane a partire dal lunedi'
-                var cur = _min;
-                int shift = ((int)cur.DayOfWeek + 6) % 7; // lunedi'=0
-                cur = cur.AddDays(-shift);
-                var last = _min.AddDays(_totalDays);
-                while (cur <= last)
-                {
-                    double x = (cur - _min).TotalDays * _pxPerDay;
-                    double w = 7 * _pxPerDay;
-                    segs.Add(new AxisSeg(x, w, cur.ToString("dd/MM")));
-                    cur = cur.AddDays(7);
-                }
-            }
-            else // Day
-            {
-                for (int i = 0; i < _totalDays; i++)
-                {
-                    var d = _min.AddDays(i);
-                    segs.Add(new AxisSeg(i * _pxPerDay, _pxPerDay, d.Day.ToString()));
-                }
-            }
-            _headerSegments = segs;
-        }
-
-        private void BuildDayLines()
-        {
-            var lines = new List<DayLine>();
-            if (_zoom != Zoom.Month)
-            {
-                for (int i = 0; i < _totalDays; i++)
-                {
-                    var d = _min.AddDays(i);
-                    bool weekend = d.DayOfWeek == DayOfWeek.Saturday || d.DayOfWeek == DayOfWeek.Sunday;
-                    lines.Add(new DayLine(i * _pxPerDay, _pxPerDay, weekend));
-                }
-            }
-            else
-            {
-                var cur = new DateTime(_min.Year, _min.Month, 1).AddMonths(1);
-                var last = _min.AddDays(_totalDays);
-                while (cur <= last)
-                {
-                    lines.Add(new DayLine((cur - _min).TotalDays * _pxPerDay, 1, false));
-                    cur = cur.AddMonths(1);
-                }
-            }
-            _dayLines = lines;
-        }
-
-        private void BuildDepArcs()
-        {
-            var arcs = new List<DepArc>();
             foreach (var t in _tasks)
             {
-                if (!_rowIndex.TryGetValue(t.Id, out var ti)) continue;
-                foreach (var dep in t.Dependencies)
+                foreach (var d in t.Dependencies)
                 {
-                    var pred = _tasks.FirstOrDefault(x => x.Id == dep.IdPredecessorFase);
-                    if (pred == null || !_rowIndex.TryGetValue(pred.Id, out var pi)) continue;
-
-                    double x1 = pred.IsMilestone ? BarLeft(pred) + 4 : BarLeft(pred) + BarWidth(pred);
-                    double y1 = pi * RowH + RowH / 2.0;
-                    double x2 = BarLeft(t);
-                    double y2 = ti * RowH + RowH / 2.0;
-                    double mx = x1 + 10;
-
-                    string pts = $"{F(x1)},{F(y1)} {F(mx)},{F(y1)} {F(mx)},{F(y2)} {F(x2 - 2)},{F(y2)}";
-                    arcs.Add(new DepArc(pts, t.IsCriticalPath && pred.IsCriticalPath));
+                    if (!byId.TryGetValue(d.IdPredecessorFase, out var pred)) continue;
+                    _dependencies.Add(new GanttDependency<CommessaFaseDTO>
+                    {
+                        From = pred,
+                        To = t,
+                        Type = MapDependencyType(d.Type)
+                    });
                 }
             }
-            _depArcs = arcs;
         }
 
-        private static string F(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+        private static GanttDependencyType MapDependencyType(DependencyType type) => type switch
+        {
+            DependencyType.StartToStart => GanttDependencyType.StartToStart,
+            DependencyType.FinishToFinish => GanttDependencyType.FinishToFinish,
+            DependencyType.StartToFinish => GanttDependencyType.StartToFinish,
+            _ => GanttDependencyType.FinishToStart
+        };
 
-        // ─── Geometria barre ──────────────────────────────────────────────────
-        private double BarLeft(CommessaFaseDTO t) => (t.StartDate.Date - _min).TotalDays * _pxPerDay;
-        private double BarWidth(CommessaFaseDTO t) => Math.Max(_pxPerDay, Math.Max(1, t.DurationDays) * _pxPerDay);
+        private void SetZoom(GanttZoomLevel z) => _zoom = z;
 
-        private string BarColorStyle(CommessaFaseDTO t)
-            => (!t.IsCriticalPath && !t.ProgressFromTickets && !string.IsNullOrWhiteSpace(t.Color)) ? $"background:{t.Color};" : string.Empty;
+        /// <summary>
+        /// Adatta la scala alla larghezza disponibile: e' la funzione nativa che sostituisce
+        /// il calcolo px-per-giorno che facevamo a mano. Invocata anche al primo caricamento.
+        /// </summary>
+        private void FitToWidth() => _gantt?.ZoomToFit();
+
+        protected override void OnAfterRender(bool firstRender)
+        {
+            if (_fitPending && _gantt != null && _tasks.Any())
+            {
+                _fitPending = false;
+                _gantt.ZoomToFit();
+            }
+        }
+
+        // ─── Aspetto delle barre ──────────────────────────────────────────────
+        private static string BarColorStyle(CommessaFaseDTO t)
+            => (!t.ProgressFromTickets && !string.IsNullOrWhiteSpace(t.Color)) ? $"background:{t.Color};" : string.Empty;
 
         private static string BarStateClass(CommessaFaseDTO t)
         {
+            if (t.HasBlockingTickets)
+                return "blocked";
             if (t.Progress >= 100)
                 return "done";
             if (t.TicketCount > 0 && t.OpenTicketCount == 0)
@@ -277,7 +133,9 @@ namespace CRM.Client.Shared.Components.Gantt
         }
 
         private static string TicketTitle(CommessaFaseDTO t)
-            => $"{t.ClosedTicketCount} ticket chiusi, {t.OpenTicketCount} aperti";
+            => t.HasBlockingTickets
+                ? $"{t.BlockedTicketCount} ticket bloccati, {t.ClosedTicketCount} chiusi, {t.OpenTicketCount} aperti"
+                : $"{t.ClosedTicketCount} ticket chiusi, {t.OpenTicketCount} aperti";
 
         private static string ProgressTitle(CommessaFaseDTO t)
             => t.ProgressFromTickets
@@ -288,26 +146,35 @@ namespace CRM.Client.Shared.Components.Gantt
         {
             var source = t.ProgressFromTickets ? "da ticket" : "manuale";
             var tickets = t.TicketCount > 0 ? $" - ticket {t.ClosedTicketCount}/{t.TicketCount}" : string.Empty;
-            return $"{t.Name} ({t.Progress}%, {source}){tickets}";
-        }
-
-        private int Depth(CommessaFaseDTO t)
-        {
-            if (_depthCache.TryGetValue(t.Id, out var d)) return d;
-            int depth = 0;
-            var cur = t;
-            var guard = 0;
-            while (cur?.ParentId != null && guard++ < 50)
-            {
-                depth++;
-                cur = _tasks.FirstOrDefault(x => x.Id == cur.ParentId);
-                if (cur == null) break;
-            }
-            _depthCache[t.Id] = depth;
-            return depth;
+            var blocked = t.HasBlockingTickets ? $" - BLOCCATA ({t.BlockedTicketCount})" : string.Empty;
+            return $"{t.Name} ({t.Progress}%, {source}){tickets}{blocked}";
         }
 
         private string TaskName(int id) => _tasks.FirstOrDefault(t => t.Id == id)?.Name ?? $"#{id}";
+
+        // ─── Interazioni sul grafico ──────────────────────────────────────────
+        private void OnTaskClick(CommessaFaseDTO task)
+        {
+            if (task != null) EditTask(task);
+        }
+
+        private async Task OnTaskMove(GanttTaskMovedEventArgs<CommessaFaseDTO> args) => await PersistDatesAsync(args);
+
+        private async Task OnTaskResize(GanttTaskMovedEventArgs<CommessaFaseDTO> args) => await PersistDatesAsync(args);
+
+        /// <summary>Radzen calcola le nuove date, a noi tocca solo salvarle.</summary>
+        private async Task PersistDatesAsync(GanttTaskMovedEventArgs<CommessaFaseDTO> args)
+        {
+            var t = args.Data;
+            if (t == null) return;
+
+            t.StartDate = args.NewStart;
+            t.EndDate = t.IsMilestone ? args.NewStart : args.NewEnd;
+
+            await TaskService.BulkSaveAsync(new List<CommessaFaseDTO> { t });
+            await LoadAsync();
+            await OnProgressChanged.InvokeAsync();
+        }
 
         // ─── Editor task ──────────────────────────────────────────────────────
         private void NewTask(bool milestone)
@@ -319,7 +186,12 @@ namespace CRM.Client.Shared.Components.Gantt
                 StartDate = start,
                 EndDate = milestone ? start : start.AddDays(3),
                 Progress = 0,
-                IsMilestone = milestone
+                IsMilestone = milestone,
+                CompletionMode = CommessaFaseCompletionMode.AllTicketsClosed,
+                AutoCreateTicketOnTake = !milestone,
+                // Una fase creata a mano non ha un tipo ticket: pretendere un ticket per chiuderla
+                // la renderebbe incompletabile. Si attiva esplicitamente dalla casella.
+                RequiresTicket = false
             };
             BuildEditorOptions();
         }
@@ -339,6 +211,14 @@ namespace CRM.Client.Shared.Components.Gantt
                 SortOrder = t.SortOrder,
                 IsMilestone = t.IsMilestone,
                 Color = t.Color,
+                CompletionMode = t.CompletionMode,
+                AutoCreateTicketOnTake = t.AutoCreateTicketOnTake,
+                RequiresTicket = t.RequiresTicket,
+                // Stato, gruppo e tipo ticket non si modificano da qui, ma vanno ricopiati: un DTO
+                // parziale li riporterebbe ai valori di default (fase Pending, senza gruppo).
+                State = t.State,
+                IdGroup = t.IdGroup,
+                IdTicketType = t.IdTicketType,
                 Dependencies = t.Dependencies.Select(d => new CommessaFaseDependencyDTO
                 {
                     Id = d.Id, IdFase = d.IdFase, IdPredecessorFase = d.IdPredecessorFase, LagDays = d.LagDays, Type = d.Type
@@ -432,79 +312,6 @@ namespace CRM.Client.Shared.Components.Gantt
             if (_editing == null) return;
             var fresh = _tasks.FirstOrDefault(t => t.Id == _editing.Id);
             if (fresh != null) EditTask(fresh);
-        }
-
-        // ─── Drag (callback dal modulo JS) ────────────────────────────────────
-        [JSInvokable]
-        public async Task OnBarDragEnd(int taskId, string role, int dayDelta)
-        {
-            var t = _tasks.FirstOrDefault(x => x.Id == taskId);
-            if (t == null || dayDelta == 0) return;
-
-            if (t.IsMilestone || role == "move")
-            {
-                t.StartDate = t.StartDate.AddDays(dayDelta);
-                t.EndDate = t.EndDate.AddDays(dayDelta);
-            }
-            else if (role == "resize-start")
-            {
-                var ns = t.StartDate.AddDays(dayDelta);
-                if (ns <= t.EndDate) t.StartDate = ns;
-            }
-            else if (role == "resize-end")
-            {
-                var ne = t.EndDate.AddDays(dayDelta);
-                if (ne >= t.StartDate) t.EndDate = ne;
-            }
-
-            await TaskService.BulkSaveAsync(new List<CommessaFaseDTO> { t });
-            await LoadAsync();
-            await OnProgressChanged.InvokeAsync();
-        }
-
-        [JSInvokable]
-        public async Task OnLinkCreate(int fromTaskId, int toTaskId)
-        {
-            var resp = await TaskService.AddDependencyAsync(new CommessaFaseDependencyDTO
-            {
-                IdFase = toTaskId,
-                IdPredecessorFase = fromTaskId
-            });
-            if (resp.State)
-                await LoadAsync();
-        }
-
-        protected override async Task OnAfterRenderAsync(bool firstRender)
-        {
-            // Inizializza il modulo JS quando il grafico e' presente nel DOM.
-            if (_module == null && !_loading && _tasks.Any())
-            {
-                try
-                {
-                    _module = await JS.InvokeAsync<IJSObjectReference>("import", ModulePath);
-                    _dotNetRef = DotNetObjectReference.Create(this);
-                    _interop = await _module.InvokeAsync<IJSObjectReference>("init", _chartEl, _dotNetRef);
-                    // La prima misura arriva da sola: ResizeObserver notifica gia' all'observe().
-                }
-                catch (JSException)
-                {
-                    // Modulo assente o non aggiornato (es. copia vecchia nella cache del service
-                    // worker): il Gantt resta leggibile, senza drag&drop e senza scala adattiva.
-                    _module = null;
-                    _interop = null;
-                }
-            }
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            try
-            {
-                if (_interop != null) { await _interop.InvokeVoidAsync("dispose"); await _interop.DisposeAsync(); }
-                if (_module != null) await _module.DisposeAsync();
-            }
-            catch { /* circuito chiuso */ }
-            _dotNetRef?.Dispose();
         }
     }
 }

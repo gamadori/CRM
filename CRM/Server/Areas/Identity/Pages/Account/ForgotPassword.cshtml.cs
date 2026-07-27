@@ -3,18 +3,17 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Text.Encodings.Web;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
 using CRM.Shared;
 using Microsoft.Extensions.Localization;
 using CRM.Server.Services;
+using CRM.Server.Helpers;
 
 namespace CRM.Server.Areas.Identity.Pages.Account
 {
@@ -69,10 +68,19 @@ namespace CRM.Server.Areas.Identity.Pages.Account
                     values: new { area = "Identity", code },
                     protocol: Request.Scheme);
                 
+                var keyValues = new Dictionary<string, string>
+                {
+                    { EmailHelper.KeyWord(EmailHelper.KeyWords.Name), user.NameComplete ?? user.UserName ?? string.Empty },
+                    { EmailHelper.KeyWord(EmailHelper.KeyWords.Url), callbackUrl ?? string.Empty },
+                    { EmailHelper.KeyWord(EmailHelper.KeyWords.Date), DateTime.Now.ToString("g") }
+                };
+
                 await _emailSender.SendEmailAsync(
                     Input.Email,
-                    "Reset Password",
-                    $"Please reset your password by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
+                    EmailsTypes.PasswordReset,
+                    null,
+                    keyValues,
+                    culture: user.LanguageCode);
 
                 return RedirectToPage("./ForgotPasswordConfirmation");
             }

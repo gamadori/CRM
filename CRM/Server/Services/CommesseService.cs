@@ -1,7 +1,8 @@
-using CNM.Authorize;
+﻿using CNM.Authorize;
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Server.Data;
+using CRM.Server.Extensions;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +47,7 @@ namespace CRM.Server.Services
 
             var dto = item.ToDTO()!;
             dto.TicketCount = await _context.Tickets.CountAsync(t => t.CommessaFase!.IdCommessa == id);
+            dto.BlockedTicketCount = await _context.Tickets.CountAsync(t => t.CommessaFase!.IdCommessa == id && !t.Closed && t.IsBlocked);
             dto.Permits = await _permitsService.ObjectPermits(dto.IdCompany, dto.IdUserResponsible ?? string.Empty);
             return dto;
         }
@@ -80,6 +82,7 @@ namespace CRM.Server.Services
                         Priority = c.Priority,
                         StartDatePlanned = c.StartDatePlanned,
                         EndDatePlanned = c.EndDatePlanned,
+                        ExpectedEndDate = c.Phases.Any() ? c.Phases.Max(f => f.EndDate) : c.EndDatePlanned,
                         StartDateActual = c.StartDateActual,
                         EndDateActual = c.EndDateActual,
                         Progress = c.Progress,
@@ -87,7 +90,9 @@ namespace CRM.Server.Services
                         IdUserResponsible = c.IdUserResponsible,
                         ResponsibleName = c.UserResponsible != null ? c.UserResponsible.NameComplete : string.Empty,
                         CreatedAt = c.CreatedAt,
-                        PhaseCount = c.Phases.Count
+                        PhaseCount = c.Phases.Count,
+                        TicketCount = c.Phases.SelectMany(f => f.Tickets).Count(),
+                        BlockedTicketCount = c.Phases.SelectMany(f => f.Tickets).Count(t => !t.Closed && t.IsBlocked)
                     })
                     .ToListAsync();
 
@@ -114,7 +119,36 @@ namespace CRM.Server.Services
             {
                 var items = await FilterItems(args);
                 if (items == null) return new List<CommessaDTO>();
-                return await items.Select(c => c.ToDTO()!).ToListAsync();
+                return await items.Select(c => new CommessaDTO
+                {
+                    Id = c.Id,
+                    Code = c.Code,
+                    IdOrderRow = c.IdOrderRow,
+                    IdOrder = c.OrderRow != null ? c.OrderRow.IdOrder : (int?)null,
+                    OrderNumber = c.OrderRow != null && c.OrderRow.Order != null ? (c.OrderRow.Order.Number ?? string.Empty) : string.Empty,
+                    IdCompany = c.IdCompany,
+                    CompanyName = c.Company != null ? c.Company.RagioneSociale : string.Empty,
+                    IdProduct = c.IdProduct,
+                    ProductName = c.Product != null ? c.Product.Name : string.Empty,
+                    IdArticle = c.IdArticle,
+                    ArticleSerial = c.Article != null ? c.Article.SerialNumber : string.Empty,
+                    Name = c.Name,
+                    State = c.State,
+                    Priority = c.Priority,
+                    StartDatePlanned = c.StartDatePlanned,
+                    EndDatePlanned = c.EndDatePlanned,
+                    ExpectedEndDate = c.Phases.Any() ? c.Phases.Max(f => f.EndDate) : c.EndDatePlanned,
+                    StartDateActual = c.StartDateActual,
+                    EndDateActual = c.EndDateActual,
+                    Progress = c.Progress,
+                    BudgetHours = c.BudgetHours,
+                    IdUserResponsible = c.IdUserResponsible,
+                    ResponsibleName = c.UserResponsible != null ? c.UserResponsible.NameComplete : string.Empty,
+                    CreatedAt = c.CreatedAt,
+                    PhaseCount = c.Phases.Count,
+                    TicketCount = c.Phases.SelectMany(f => f.Tickets).Count(),
+                    BlockedTicketCount = c.Phases.SelectMany(f => f.Tickets).Count(t => !t.Closed && t.IsBlocked)
+                }).ToListAsync();
             }
             catch (Exception ex)
             {
@@ -128,6 +162,7 @@ namespace CRM.Server.Services
             var allowed = await _permitsService.GetVisibleCompanyIds();
             var q = _context.Commesse
                 .Include(c => c.Company).Include(c => c.Product).Include(c => c.Article)
+                .Include(c => c.Phases)
                 .Include(c => c.OrderRow).ThenInclude(r => r!.Order)
                 .Where(c => c.OrderRow != null && c.OrderRow.IdOrder == orderId);
             if (allowed != null)
@@ -142,12 +177,19 @@ namespace CRM.Server.Services
                 if (!await CanAccessAsync(item.IdCompany))
                     return Fail("Azienda non accessibile", HttpStatusCode.Forbidden);
 
+                // La transazione serve alla generazione del codice: e' il lock aperto qui che
+                // impedisce a due creazioni concorrenti di leggere lo stesso progressivo.
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
                 int savedId;
                 if (item.Id > 0)
                 {
                     var existing = await _context.Commesse.FirstOrDefaultAsync(c => c.Id == item.Id);
                     if (existing == null || !await CanAccessAsync(existing.IdCompany))
                         return Fail("Commessa non trovata", HttpStatusCode.NotFound);
+
+                    if (!string.IsNullOrWhiteSpace(item.IdUserResponsible) && !await IsValidResponsibleAsync(item.IdUserResponsible))
+                        return Fail("Il responsabile deve essere un utente della HeadCompany", HttpStatusCode.BadRequest);
 
                     existing.Name = item.Name;
                     existing.Description = item.Description;
@@ -164,12 +206,15 @@ namespace CRM.Server.Services
                 {
                     item.CreatedAt = DateTime.Now;
                     item.IdUserCreate = await _permitsService.IdUser();
+                    item.IdUserResponsible = await ResolveDefaultResponsibleAsync(item.IdProduct, item.IdUserResponsible, item.IdUserCreate);
                     item.Code = await GenerateCodeAsync(item.CreatedAt);
                     _context.Commesse.Add(item);
                     savedId = 0;
                 }
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
                 if (savedId == 0) savedId = item.Id;
                 return Ok(await GetItemAsync(savedId), "Commessa salvata");
             }
@@ -233,6 +278,7 @@ namespace CRM.Server.Services
 
                 var template = await _context.GanttPhases
                     .Include(p => p.Dependencies)
+                    .Include(p => p.TicketTemplates)
                     .Where(p => p.IdGanttPlan == product.IdGanttPlan.Value)
                     .OrderBy(p => p.SortOrder)
                     .AsNoTracking()
@@ -246,7 +292,12 @@ namespace CRM.Server.Services
                 int units = Math.Clamp(req.Quantity, 1, 100);
                 var now = DateTime.Now;
                 var currentUser = await _permitsService.IdUser();
+                var responsibleUserId = await ResolveDefaultResponsibleAsync(product.Id, req.IdUserResponsible, currentUser);
                 var created = new List<int>();
+
+                // Commessa, fasi, dipendenze e ticket iniziali sono un'unica unita': senza
+                // transazione un errore a meta' lascia commesse senza dipendenze, gia' visibili.
+                await using var transaction = await _context.Database.BeginTransactionAsync();
 
                 for (int u = 0; u < units; u++)
                 {
@@ -260,7 +311,7 @@ namespace CRM.Server.Services
                         Name = $"{product.Name} - Interna" + (units > 1 ? $" [{u + 1}/{units}]" : string.Empty),
                         Note = req.Note,
                         State = CommessaStates.Planned,
-                        IdUserResponsible = req.IdUserResponsible,
+                        IdUserResponsible = responsibleUserId,
                         IdUserCreate = currentUser,
                         CreatedAt = now,
                         Progress = 0
@@ -269,14 +320,17 @@ namespace CRM.Server.Services
                     var (startPlan, phases) = BuildPhasesBackward(template, target);
                     commessa.StartDatePlanned = startPlan;
                     commessa.EndDatePlanned = target;
-                    commessa.Phases = phases;
+                    commessa.Phases = phases.Select(p => p.Fase).ToList();
 
                     _context.Commesse.Add(commessa);
                     await _context.SaveChangesAsync(); // per avere gli Id delle fasi
 
-                    await CloneStructureAsync(template, commessa);
+                    await CloneStructureAsync(phases);
+                    await CreateCommessaStartTicketsAsync(commessa, currentUser);
                     created.Add(commessa.Id);
                 }
+
+                await transaction.CommitAsync();
 
                 // Nessuna cascata sulla riga d'ordine: qui non esiste.
                 var dtos = new List<CommessaDTO>();
@@ -322,16 +376,27 @@ namespace CRM.Server.Services
                 // Template + fasi
                 var template = await _context.GanttPhases
                     .Include(p => p.Dependencies)
+                    .Include(p => p.TicketTemplates)
                     .Where(p => p.IdGanttPlan == row.Product.IdGanttPlan.Value)
                     .OrderBy(p => p.SortOrder)
                     .AsNoTracking()
                     .ToListAsync();
 
+                // Stessa guardia della produzione interna: un template vuoto genererebbe commesse
+                // senza fasi, ferme a 0% per sempre.
+                if (template.Count == 0)
+                    return FailList("Il template di produzione non ha fasi", HttpStatusCode.BadRequest);
+
                 var delivery = (row.Order.DeliveryDate ?? DateTime.Today.AddDays(30)).Date;
                 int units = (int)Math.Max(1, Math.Ceiling(row.Quantity));
                 var now = DateTime.Now;
                 var currentUser = await _permitsService.IdUser();
+                var responsibleUserId = await ResolveDefaultResponsibleAsync(row.IdProduct, null, currentUser);
                 var created = new List<int>();
+
+                // Tutte le unita' + la riga d'ordine in un'unica transazione: o la produzione parte
+                // per intero, o non parte.
+                await using var transaction = await _context.Database.BeginTransactionAsync();
 
                 for (int u = 0; u < units; u++)
                 {
@@ -344,7 +409,7 @@ namespace CRM.Server.Services
                         IdGanttPlan = row.Product.IdGanttPlan,
                         Name = $"{row.Product.Name} - {(string.IsNullOrWhiteSpace(row.Order.Number) ? row.Order.Id.ToString() : row.Order.Number)}" + (units > 1 ? $" [{u + 1}/{units}]" : string.Empty),
                         State = CommessaStates.Planned,
-                        IdUserResponsible = row.Order.IdUser,
+                        IdUserResponsible = responsibleUserId,
                         IdUserCreate = currentUser,
                         CreatedAt = now,
                         Progress = 0
@@ -353,18 +418,20 @@ namespace CRM.Server.Services
                     var (startPlan, phases) = BuildPhasesBackward(template, delivery);
                     commessa.StartDatePlanned = startPlan;
                     commessa.EndDatePlanned = delivery;
-                    commessa.Phases = phases;
+                    commessa.Phases = phases.Select(p => p.Fase).ToList();
 
                     _context.Commesse.Add(commessa);
                     await _context.SaveChangesAsync(); // per avere gli Id delle fasi
 
-                    // Ricostruisce dipendenze e gerarchia tra le fasi appena create (map template->nuove per SortOrder)
-                    await CloneStructureAsync(template, commessa);
+                    // Ricostruisce dipendenze e gerarchia tra le fasi appena create.
+                    await CloneStructureAsync(phases);
+                    await CreateCommessaStartTicketsAsync(commessa, currentUser);
                     created.Add(commessa.Id);
                 }
 
                 row.ProductionStatus = RowProductionStatus.InProduction;
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 var dtos = new List<CommessaDTO>();
                 foreach (var id in created)
@@ -413,6 +480,10 @@ namespace CRM.Server.Services
                 return FailDelete("Commessa non accessibile", HttpStatusCode.Forbidden);
             try
             {
+                // Lo smontaggio e' in quattro passaggi vincolati fra loro: a meta' strada
+                // resterebbero ticket scollegati da una commessa ancora esistente.
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
                 var fasi = await _context.CommessaFasi.Where(f => f.IdCommessa == id).ToListAsync();
                 var faseIds = fasi.Select(f => f.Id).ToList();
 
@@ -440,6 +511,7 @@ namespace CRM.Server.Services
                 await _context.SaveChangesAsync();
 
                 await SyncOrderRowStatusAsync(c.IdOrderRow);
+                await transaction.CommitAsync();
                 return new APIResponseMessage<bool>
                 {
                     State = true,
@@ -462,11 +534,15 @@ namespace CRM.Server.Services
         private static APIResponseMessage<List<CommessaDTO>> FailList(string m, HttpStatusCode c) => new() { State = false, Message = m, Code = c };
         private static APIResponseMessage<bool> FailDelete(string m, HttpStatusCode c) => new() { State = false, Message = m, Code = c };
 
-        /// <summary>Costruisce le fasi con date assolute, schedulazione all'indietro dalla consegna.</summary>
-        private static (DateTime start, List<CommessaFase> phases) BuildPhasesBackward(List<GanttPhase> template, DateTime delivery)
+        /// <summary>
+        /// Costruisce le fasi con date assolute, schedulazione all'indietro dalla consegna.
+        /// Restituisce l'accoppiamento fase-modello → fase creata: e' quello che permette di
+        /// ricostruire dipendenze e gerarchia senza passare dal SortOrder, che non e' univoco.
+        /// </summary>
+        internal static (DateTime start, List<(GanttPhase Template, CommessaFase Fase)> phases) BuildPhasesBackward(List<GanttPhase> template, DateTime delivery)
         {
             if (template.Count == 0)
-                return (delivery, new List<CommessaFase>());
+                return (delivery, new List<(GanttPhase, CommessaFase)>());
 
             var byId = template.ToDictionary(t => t.Id);
             var preds = template.ToDictionary(t => t.Id, t => t.Dependencies.Select(d => (d.IdPredecessorPhase, d.LagDays)).ToList());
@@ -476,7 +552,7 @@ namespace CRM.Server.Services
                     if (succIds.ContainsKey(d.IdPredecessorPhase))
                         succIds[d.IdPredecessorPhase].Add(t.Id);
 
-            // forward pass: earliest-start offset (giorni)
+            // forward pass: earliest-start offset (giorni LAVORATIVI, come DurationDays del template)
             var indeg = template.ToDictionary(t => t.Id, t => preds[t.Id].Count);
             var queue = new Queue<int>(indeg.Where(kv => kv.Value == 0).Select(kv => kv.Key));
             var es = template.ToDictionary(t => t.Id, t => 0);
@@ -499,57 +575,95 @@ namespace CRM.Server.Services
                 foreach (var t in template) { es[t.Id] = acc; acc += Math.Max(1, t.DurationDays); }
             }
 
+            // Gli offset sono in giorni lavorativi: vanno convertiti in date con lo stesso calendario,
+            // altrimenti una fase di 5 giorni a cavallo del weekend scade di sabato e l'errore si
+            // accumula fase dopo fase fino a settimane sull'intera commessa.
             int projectDuration = template.Max(t => es[t.Id] + Math.Max(t.IsMilestone ? 0 : 1, t.DurationDays));
-            var start = delivery.AddDays(-projectDuration);
+            var start = delivery.SubtractWorkdays(projectDuration);
             if (start < DateTime.Today) start = DateTime.Today; // fallback in avanti se in ritardo
+            start = start.NextWorkday();
 
-            var phases = new List<CommessaFase>();
+            var phases = new List<(GanttPhase Template, CommessaFase Fase)>();
             foreach (var t in template.OrderBy(t => t.SortOrder))
             {
-                var s = start.AddDays(es[t.Id]);
-                phases.Add(new CommessaFase
+                var s = start.AddWorkdays(es[t.Id]);
+                var ticketTemplates = t.TicketTemplates?
+                    .OrderBy(x => x.SortOrder).ThenBy(x => x.Id)
+                    .ToList() ?? new List<GanttPhaseTicketTemplate>();
+                var hasTicketWork = t.IdTicketType != null || ticketTemplates.Count > 0;
+
+                var fase = new CommessaFase
                 {
                     Name = t.Name,
                     Description = t.Description,
                     StartDate = s,
-                    EndDate = t.IsMilestone ? s : s.AddDays(Math.Max(1, t.DurationDays) - 1),
+                    EndDate = t.IsMilestone ? s : s.AddWorkdays(Math.Max(1, t.DurationDays) - 1),
                     SortOrder = t.SortOrder,
                     IsMilestone = t.IsMilestone,
                     Color = t.Color,
                     IdTicketType = t.IdTicketType,
                     IdGroup = t.IdGroup,
+                    CompletionMode = hasTicketWork ? CommessaFaseCompletionMode.AllTicketsClosed : CommessaFaseCompletionMode.Manual,
+                    AutoCreateTicketOnTake = hasTicketWork,
+                    RequiresTicket = hasTicketWork,
                     State = CommessaFaseStates.Pending,
                     Progress = 0
-                });
+                };
+
+                if (ticketTemplates.Count > 0)
+                {
+                    foreach (var tt in ticketTemplates)
+                        fase.TicketPlans.Add(new CommessaFaseTicketPlan
+                        {
+                            IdGanttPhaseTicketTemplate = tt.Id,
+                            Title = tt.Title,
+                            Description = tt.Description,
+                            IdTicketType = tt.IdTicketType,
+                            IdGroupAssigned = tt.IdGroupAssigned,
+                            Required = tt.Required,
+                            AutoCreateMode = tt.AutoCreateMode,
+                            SortOrder = tt.SortOrder
+                        });
+                }
+                else if (t.IdTicketType != null)
+                {
+                    fase.TicketPlans.Add(new CommessaFaseTicketPlan
+                    {
+                        Title = t.Name,
+                        Description = t.Description,
+                        IdTicketType = t.IdTicketType.Value,
+                        IdGroupAssigned = t.IdGroup,
+                        Required = true,
+                        AutoCreateMode = ProductionTicketAutoCreateMode.OnPhaseStart,
+                        SortOrder = 1
+                    });
+                }
+
+                phases.Add((t, fase));
             }
             return (start, phases);
         }
 
         /// <summary>
-        /// Ricrea dipendenze e gerarchia WBS tra le fasi della commessa mappando dal template per SortOrder.
-        /// Va eseguito dopo il primo SaveChanges, quando le fasi hanno gia' un Id.
+        /// Ricrea dipendenze e gerarchia WBS tra le fasi della commessa. Va eseguito dopo il primo
+        /// SaveChanges, quando EF ha valorizzato gli Id delle fasi appena inserite.
+        /// La mappa e' indicizzata sull'Id della fase-modello (chiave primaria, univoca per
+        /// definizione): il SortOrder e' modificabile a mano e due fasi possono condividerlo.
         /// </summary>
-        private async Task CloneStructureAsync(List<GanttPhase> template, Commessa commessa)
+        private async Task CloneStructureAsync(List<(GanttPhase Template, CommessaFase Fase)> built)
         {
-            var newFasi = await _context.CommessaFasi
-                .Where(f => f.IdCommessa == commessa.Id)
-                .ToListAsync();
-            var newBySort = newFasi.ToDictionary(f => f.SortOrder, f => f.Id);
-            var tmplById = template.ToDictionary(t => t.Id);
+            var byTemplateId = built.ToDictionary(p => p.Template.Id, p => p.Fase);
 
-            foreach (var t in template)
+            foreach (var (t, fase) in built)
             {
-                if (!newBySort.TryGetValue(t.SortOrder, out var newFaseId)) continue;
-
                 // Dipendenze (vincolo temporale)
                 foreach (var d in t.Dependencies)
                 {
-                    if (!tmplById.TryGetValue(d.IdPredecessorPhase, out var predTmpl)) continue;
-                    if (!newBySort.TryGetValue(predTmpl.SortOrder, out var newPredId)) continue;
+                    if (!byTemplateId.TryGetValue(d.IdPredecessorPhase, out var pred)) continue;
                     _context.CommessaFaseDependencies.Add(new CommessaFaseDependency
                     {
-                        IdFase = newFaseId,
-                        IdPredecessorFase = newPredId,
+                        IdFase = fase.Id,
+                        IdPredecessorFase = pred.Id,
                         LagDays = d.LagDays,
                         Type = d.Type
                     });
@@ -557,15 +671,67 @@ namespace CRM.Server.Services
 
                 // Gerarchia WBS (raggruppamento, nessun effetto sulle date)
                 if (t.ParentId != null
-                    && tmplById.TryGetValue(t.ParentId.Value, out var parentTmpl)
-                    && newBySort.TryGetValue(parentTmpl.SortOrder, out var newParentId)
-                    && newParentId != newFaseId)
+                    && byTemplateId.TryGetValue(t.ParentId.Value, out var parent)
+                    && parent.Id != fase.Id)
                 {
-                    var fase = newFasi.First(f => f.Id == newFaseId);
-                    fase.ParentId = newParentId;
+                    fase.ParentId = parent.Id;
                 }
             }
             await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Crea subito i ticket pianificati con regola "a inizio commessa", lasciando pero'
+        /// le fasi in Pending: aprire il ticket non equivale a dichiarare iniziata la fase.
+        /// </summary>
+        private async Task CreateCommessaStartTicketsAsync(Commessa commessa, string currentUser)
+        {
+            var plans = await _context.CommessaFaseTicketPlans
+                .Include(p => p.CommessaFase)
+                .Where(p => p.CommessaFase != null
+                    && p.CommessaFase.IdCommessa == commessa.Id
+                    && p.AutoCreateMode == ProductionTicketAutoCreateMode.OnCommessaStart
+                    && p.IdTicket == null)
+                .OrderBy(p => p.CommessaFase!.SortOrder)
+                .ThenBy(p => p.SortOrder)
+                .ToListAsync();
+
+            foreach (var plan in plans)
+            {
+                var fase = plan.CommessaFase!;
+                var description = string.IsNullOrWhiteSpace(plan.Description)
+                    ? $"{commessa.Code} - {fase.Name} - {plan.Title}"
+                    : plan.Description;
+
+                var ticket = new Ticket
+                {
+                    IdType = plan.IdTicketType,
+                    IdCompany = commessa.IdCompany ?? 0,
+                    IdProduct = commessa.IdProduct,
+                    IdArticle = commessa.IdArticle,
+                    IdCommessaFase = fase.Id,
+                    IdGroupAssigned = plan.IdGroupAssigned,
+                    IdUserOpened = currentUser,
+                    DateOpened = DateTime.Now,
+                    Date = DateTime.Today,
+                    DateEnd = fase.EndDate,
+                    DateExpired = fase.EndDate,
+                    Description = description,
+                    Numero = string.Empty,
+                    CloseDescription = string.Empty,
+                    CloseNote = string.Empty,
+                    Priority = commessa.Priority,
+                    Support = (int)TypesSupport.Office,
+                    Payment = (int)Payments.Free
+                };
+
+                _context.Tickets.Add(ticket);
+                await _context.SaveChangesAsync();
+                plan.IdTicket = ticket.Id;
+            }
+
+            if (plans.Count > 0)
+                await _context.SaveChangesAsync();
         }
 
         /// <summary>Allinea lo stato produzione della riga d'ordine allo stato delle sue commesse.</summary>
@@ -586,13 +752,62 @@ namespace CRM.Server.Services
             await _context.SaveChangesAsync();
         }
 
+        private async Task<string?> ResolveDefaultResponsibleAsync(int? idProduct, string? requestedUserId, string? currentUserId)
+        {
+            if (await IsValidResponsibleAsync(requestedUserId))
+                return requestedUserId;
+
+            var productResponsibleId = idProduct == null
+                ? null
+                : await _context.Products
+                    .AsNoTracking()
+                    .Where(product => product.Id == idProduct)
+                    .Select(product => product.IdDefaultCommessaResponsible)
+                    .FirstOrDefaultAsync();
+
+            if (await IsValidResponsibleAsync(productResponsibleId))
+                return productResponsibleId;
+
+            if (await IsValidResponsibleAsync(currentUserId))
+                return currentUserId;
+
+            return null;
+        }
+
+        private async Task<bool> IsValidResponsibleAsync(string? idUser)
+        {
+            if (string.IsNullOrWhiteSpace(idUser))
+                return false;
+
+            var headCompanyId = await _context.GetHeadCompanyIdAsync();
+            if (headCompanyId == null)
+                return false;
+
+            return await _context.Users
+                .AsNoTracking()
+                .AnyAsync(user => user.Id == idUser && !user.IsDeleted && user.IdCompany == headCompanyId);
+        }
+
+        /// <summary>
+        /// Numerazione progressiva per anno. UPDLOCK+HOLDLOCK tiene il lock sull'intervallo dei
+        /// codici dell'anno fino alla fine della transazione: due generazioni concorrenti si
+        /// serializzano invece di leggere lo stesso massimo e produrre lo stesso codice.
+        /// Vale solo con una transazione aperta (altrimenti il lock cade subito), quindi tutti i
+        /// chiamanti ne aprono una. L'indice univoco IX_Commesse_Code resta la rete di sicurezza.
+        /// </summary>
         private async Task<string> GenerateCodeAsync(DateTime date)
         {
             string prefix = $"CM-{date.Year}-";
-            var numbers = await _context.Commesse.Where(c => c.Code != null && c.Code.StartsWith(prefix)).Select(c => c.Code!).ToListAsync();
+            var codes = await _context.Database
+                .SqlQueryRaw<string>(
+                    "SELECT Code AS Value FROM Commesse WITH (UPDLOCK, HOLDLOCK) WHERE Code LIKE {0}",
+                    prefix + "%")
+                .ToListAsync();
+
             int max = 0;
-            foreach (var n in numbers)
-                if (int.TryParse(n.Substring(prefix.Length), out var v) && v > max) max = v;
+            foreach (var n in codes)
+                if (n.Length > prefix.Length && int.TryParse(n.Substring(prefix.Length), out var v) && v > max)
+                    max = v;
             return prefix + (max + 1).ToString("D4");
         }
 
@@ -627,6 +842,14 @@ namespace CRM.Server.Services
                 if (args?.IdOrder != null) items = items.Where(c => c.OrderRow != null && c.OrderRow.IdOrder == args.IdOrder);
                 if (args?.IdUserResponsible != null) items = items.Where(c => c.IdUserResponsible == args.IdUserResponsible);
                 if (args?.State != null) items = items.Where(c => c.State == args.State);
+                if (args?.ExpectedLate == true)
+                {
+                    items = items.Where(c =>
+                        c.State != CommessaStates.Completed
+                        && c.State != CommessaStates.Delivered
+                        && c.State != CommessaStates.Cancelled
+                        && c.Phases.Any(f => f.EndDate > c.EndDatePlanned));
+                }
                 if (!string.IsNullOrWhiteSpace(args?.Search))
                 {
                     var s = args.Search.Trim();

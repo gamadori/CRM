@@ -38,6 +38,12 @@ namespace CRM.Shared.DTOs
 
         [Display(Name = "Template Gantt")]
         public string GanttPlanName { get; set; } = string.Empty;
+
+        [Display(Name = "Capo commessa predefinito")]
+        public string? IdDefaultCommessaResponsible { get; set; }
+
+        [Display(Name = "Capo commessa predefinito")]
+        public string DefaultCommessaResponsibleName { get; set; } = string.Empty;
         
         [Display(Name = nameof(Product.IdProductType), ResourceType = typeof(Resources.Models.Product))]
         public string ProductTypeName { get; set; }
@@ -68,6 +74,8 @@ namespace CRM.Shared.DTOs
                 ArchivedReason = product.ArchivedReason,
                 IdGanttPlan = product.IdGanttPlan,
                 GanttPlanName = product.GanttPlan != null ? product.GanttPlan.Name : string.Empty,
+                IdDefaultCommessaResponsible = product.IdDefaultCommessaResponsible,
+                DefaultCommessaResponsibleName = product.DefaultCommessaResponsible != null ? product.DefaultCommessaResponsible.NameComplete : string.Empty,
                 ProductTypeName = product.ProductType != null ? product.ProductType.Name : string.Empty,
                 CompanyName = product.Company != null ? product.Company.RagioneSociale : string.Empty,
                 IdCompany = product.IdCompany
@@ -89,6 +97,7 @@ namespace CRM.Shared.DTOs
                 ArchivedAt = dto.ArchivedAt,
                 ArchivedReason = dto.ArchivedReason,
                 IdGanttPlan = dto.IdGanttPlan,
+                IdDefaultCommessaResponsible = dto.IdDefaultCommessaResponsible,
                 IdCompany = dto.IdCompany
             };
         }

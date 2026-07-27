@@ -1,5 +1,7 @@
 @page "/Commesse/{Id:int}"
 @page "/Commesse/{Id:int}/Details"
+@* Destinazione della voce "Fase" nel breadcrumb dei ticket di produzione: apre le fasi operative *@
+@page "/Commesse/{Id:int}/Fasi/{FaseId:int}"
 @using CRM.Client.Helpers
 @using CRM.Client.Models
 @using CRM.Client.Services
@@ -35,6 +37,13 @@ else
                     <div class="d-flex align-items-center gap-2 mb-1">
                         <span class="badge bg-light text-dark border">@_c.Code</span>
                         <span class="badge @CommessaUi.StateBadgeClass(_c.State)">@CommessaUi.StateText(_c.State)</span>
+                        @if (_c.IsExpectedLate)
+                        {
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                <span class="material-icons align-middle" style="font-size:14px;">event_busy</span>
+                                Prevista oltre consegna
+                            </span>
+                        }
                     </div>
                     <h4 class="mb-1">@(string.IsNullOrWhiteSpace(_c.Name) ? _c.Code : _c.Name)</h4>
                     <div class="text-muted small d-flex flex-wrap gap-3">
@@ -80,6 +89,14 @@ else
             <div class="row g-3 small">
                 <div class="col-6 col-md-2"><div class="text-muted">Inizio piano</div><strong>@_c.StartDatePlanned.ToString("dd/MM/yyyy")</strong></div>
                 <div class="col-6 col-md-2"><div class="text-muted">Consegna</div><strong>@_c.EndDatePlanned.ToString("dd/MM/yyyy")</strong></div>
+                <div class="col-6 col-md-2">
+                    <div class="text-muted">Data prevista</div>
+                    <strong class="@(_c.IsExpectedLate ? "text-danger" : "")">@(_c.ExpectedEndDate?.ToString("dd/MM/yyyy") ?? "-")</strong>
+                    @if (_c.IsExpectedLate)
+                    {
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">+@_c.ExpectedDelayDays gg</span>
+                    }
+                </div>
                 <div class="col-6 col-md-2"><div class="text-muted">Inizio effettivo</div><strong>@(_c.StartDateActual?.ToString("dd/MM/yyyy") ?? "-")</strong></div>
                 <div class="col-6 col-md-2"><div class="text-muted">Fine effettiva</div><strong>@(_c.EndDateActual?.ToString("dd/MM/yyyy") ?? "-")</strong></div>
                 <div class="col-6 col-md-2"><div class="text-muted">Ore a budget</div><strong>@(_c.BudgetHours?.ToString() ?? "-")</strong></div>
@@ -87,6 +104,21 @@ else
                     <RadzenButton Icon="edit" Text="Modifica" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="ToggleEdit" />
                 </div>
             </div>
+
+            @if (_c.IsExpectedLate)
+            {
+                <div class="alert alert-danger border d-flex align-items-start gap-2 py-2 mt-3 mb-0">
+                    <span class="material-icons" style="font-size:20px;">warning</span>
+                    <div>
+                        <div class="fw-semibold">La previsione supera la data di consegna</div>
+                        <div class="small">
+                            Consegna @_c.EndDatePlanned.ToString("dd/MM/yyyy"),
+                            prevista @_c.ExpectedEndDate!.Value.ToString("dd/MM/yyyy")
+                            con @(_c.ExpectedDelayDays == 1 ? "1 giorno" : $"{_c.ExpectedDelayDays} giorni") di ritardo.
+                        </div>
+                    </div>
+                </div>
+            }
 
             @if (_edit != null)
             {
@@ -131,7 +163,9 @@ else
         </div>
     </div>
 
-    <RadzenSelectBar @bind-Value="_view" TValue="View" Style="margin-bottom:16px;" Size="ButtonSize.Small">
+    @* Cambiando tab a mano si torna a vedere tutti i ticket della commessa. *@
+    <RadzenSelectBar @bind-Value="_view" TValue="View" Style="margin-bottom:16px;" Size="ButtonSize.Small"
+                     Change="@(_ => _ticketsFaseFilter = null)">
         <Items>
             <RadzenSelectBarItem Text="Panoramica" Value="View.Overview" Icon="dashboard" />
             <RadzenSelectBarItem Text="Pianificazione" Value="View.Plan" Icon="view_timeline" />
@@ -172,46 +206,85 @@ else
             <div class="card border-0 shadow-sm"><div class="card-body">
                 <table class="table table-sm align-middle mb-0">
                     <thead class="table-light">
-                        <tr><th>Fase</th><th>Gruppo</th><th>Tipo ticket</th><th style="width:120px;">Stato</th><th style="width:90px;" class="text-center">Ticket</th><th style="width:180px;"></th></tr>
+                        <tr><th>Fase</th><th>Gruppo</th><th>Tipo ticket</th><th>Previsti</th><th>Regola</th><th style="width:120px;">Stato</th><th style="width:90px;" class="text-center">Ticket</th><th style="width:260px;"></th></tr>
                     </thead>
                     <tbody>
                         @foreach (var f in _fasi.Where(x => !x.IsMilestone))
                         {
-                            <tr>
+                            <tr class="@(f.HasBlockingTickets ? "table-danger" : "")">
                                 <td style="padding-left:@(Depth(f) * 16 + 8)px">@f.Name</td>
                                 <td>@(string.IsNullOrWhiteSpace(f.GroupName) ? "—" : f.GroupName)</td>
                                 <td>@(string.IsNullOrWhiteSpace(f.TicketTypeName) ? "—" : f.TicketTypeName)</td>
-                                <td><span class="badge @FaseBadge(f.State)">@CommessaUi.FaseStateText(f.State)</span></td>
+                                <td>
+                                    @if (f.TicketPlans.Any())
+                                    {
+                                        <span class="badge bg-light text-dark border">@GeneratedPlanCount(f)/@f.TicketPlans.Count</span>
+                                        <span class="small text-muted">@string.Join(", ", f.TicketPlans.OrderBy(p => p.SortOrder).Select(p => p.Title))</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td><span class="small text-muted">@CompletionModeText(f.CompletionMode)</span></td>
+                                <td>
+                                    <span class="badge @FaseBadge(f.State)">@CommessaUi.FaseStateText(f.State)</span>
+                                    @if (f.HasBlockingTickets)
+                                    {
+                                        <div class="small text-danger fw-semibold" title="@($"{f.BlockedTicketCount} ticket bloccati")">
+                                            <span class="material-icons align-middle" style="font-size:15px;">report_problem</span>
+                                            Bloccata
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(f.TakenByName))
+                                    {
+                                        <div class="small text-muted text-truncate" title="@($"Presa in carico da {f.TakenByName}{(f.TakenAt != null ? $" il {f.TakenAt:dd/MM/yyyy}" : "")}")">@f.TakenByName</div>
+                                    }
+                                </td>
                                 <td class="text-center">@(f.TicketCount > 0 ? $"{f.ClosedTicketCount}/{f.TicketCount}" : "—")</td>
                                 <td class="text-end">
                                     @if (f.State == CommessaFaseStates.Done)
                                     {
                                         <span class="text-success small"><span class="material-icons align-middle" style="font-size:16px;">check_circle</span> Fatto</span>
                                     }
-                                    else if (f.IdTicketType != null)
+                                    else if (f.PendingPlannedTicketCount > 0)
                                     {
-                                        @if (f.State == CommessaFaseStates.InProgress && f.TicketCount > 0)
+                                        <RadzenButton Icon="add_task" Text="Genera previsti" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                                      Disabled="@(!CanTake(f))" Click="@(() => GeneratePendingPlans(f))" />
+                                    }
+                                    else if ((f.IdTicketType != null || f.TicketPlans.Any()) && f.AutoCreateTicketOnTake)
+                                    {
+                                        @if (f.TicketCount > 0)
                                         {
                                             <RadzenButton Icon="confirmation_number" Text="Vedi ticket" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
-                                                          Click="@(() => _view = View.Tickets)" />
+                                                          Click="@(() => ShowPhaseTickets(f))" />
+                                            @if (f.IdTicketType != null)
+                                            {
+                                                <RadzenButton Icon="add" Text="Nuovo" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                                              Disabled="@(!CanTake(f))" Click="@(() => TakeInCharge(f))" />
+                                            }
                                         }
                                         else
                                         {
-                                            <RadzenButton Icon="play_arrow" Text="Prendi in carico" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
-                                                          Disabled="@(!CanTake(f))" Click="@(() => TakeInCharge(f))" />
+                                            <span title="@TakeBlockedReason(f)">
+                                                <RadzenButton Icon="play_arrow" Text="Prendi in carico" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                                              Disabled="@(!CanTake(f))" Click="@(() => TakeInCharge(f))" />
+                                            </span>
                                         }
                                     }
                                     else
                                     {
-                                        <RadzenButton Icon="check" Text="Completa" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success"
-                                                      Disabled="@(!CanTake(f))" Click="@(() => MarkDone(f))" />
+                                        <span title="@CompleteBlockedReason(f)">
+                                            <RadzenButton Icon="check" Text="Completa" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success"
+                                                          Disabled="@(!CanTake(f) || !CanComplete(f))" Click="@(() => MarkDone(f))" />
+                                        </span>
                                     }
                                 </td>
                             </tr>
                         }
                         @if (!_fasi.Any(x => !x.IsMilestone))
                         {
-                            <tr><td colspan="6" class="text-center text-muted py-3">Nessuna fase. Aggiungile dalla scheda Pianificazione.</td></tr>
+                            <tr><td colspan="8" class="text-center text-muted py-3">Nessuna fase. Aggiungile dalla scheda Pianificazione.</td></tr>
                         }
                     </tbody>
                 </table>
@@ -220,7 +293,21 @@ else
             break;
 
         case View.Tickets:
-            <CRM.Client.Pages.Tickets.Index IdCommessa="@Id"
+            @if (_ticketsFaseFilter != null)
+            {
+                <div class="alert alert-light border d-flex flex-wrap align-items-center gap-2 py-2 mb-3">
+                    <span class="material-icons" style="font-size:18px;">filter_alt</span>
+                    <span>Ticket della fase <strong>@FaseName(_ticketsFaseFilter.Value)</strong></span>
+                    <button class="btn btn-sm btn-link ms-auto p-0" @onclick="@(() => _ticketsFaseFilter = null)">
+                        Mostra tutti i ticket della commessa
+                    </button>
+                </div>
+            }
+
+            @* @key: cambiando filtro il componente viene ricreato, cosi' rilegge i ticket. *@
+            <CRM.Client.Pages.Tickets.Index @key="_ticketsFaseFilter"
+                                            IdCommessa="@Id"
+                                            IdCommessaFase="@_ticketsFaseFilter"
                                             PageMode="CRM.Client.Helpers.PageHelper.PageModality.Child"
                                             OnClickDetails="OpenTicket" OnClickEdit="EditTicket" />
             break;
@@ -230,6 +317,9 @@ else
 @code {
     [Parameter] public int Id { get; set; }
 
+    /// <summary>Presente quando si arriva dalla voce "Fase" del breadcrumb: apre le fasi operative.</summary>
+    [Parameter] public int? FaseId { get; set; }
+
     private enum View { Overview, Plan, Phases, Tickets }
 
     private PageHeaderModel? _pageHeader;
@@ -237,6 +327,9 @@ else
     private List<CommessaFaseDTO> _fasi = new();
     private List<ApplicationUser> _users = new();
     private View _view = View.Overview;
+
+    /// <summary>Fase di cui mostrare i soli ticket; null = tutti quelli della commessa.</summary>
+    private int? _ticketsFaseFilter;
     private Commessa? _edit;
 
     private record StateOption(string Text, CommessaStates Value);
@@ -254,6 +347,11 @@ else
     protected override async Task OnInitializedAsync()
     {
         _pageHeader = await HeaderService.Create();
+
+        // Arrivando da /Commesse/{id}/Fasi/{faseId} si apre direttamente l'elenco delle fasi.
+        if (FaseId != null)
+            _view = View.Phases;
+
         await LoadAsync();
     }
 
@@ -295,14 +393,57 @@ else
         _ => "bg-light text-dark"
     };
 
-    /// <summary>Fase avviabile se tutti i predecessori sono completati (dipendenze vincolanti).</summary>
+    private static string CompletionModeText(CommessaFaseCompletionMode mode) => mode switch
+    {
+        CommessaFaseCompletionMode.Manual => "Manuale",
+        CommessaFaseCompletionMode.AnyTicketClosed => "Un ticket chiuso",
+        CommessaFaseCompletionMode.ProgressManual => "Percentuale manuale",
+        _ => "Tutti i ticket chiusi"
+    };
+
+    /// <summary>
+    /// Fase avviabile se tutti i predecessori sono completati (dipendenze vincolanti) e se
+    /// l'utente e' abilitato: CanTake arriva dal server, che applica la regola sul gruppo.
+    /// </summary>
     private bool CanTake(CommessaFaseDTO f)
-        => f.Dependencies.All(d => _fasi.FirstOrDefault(x => x.Id == d.IdPredecessorFase)?.State == CommessaFaseStates.Done);
+        => f.CanTake && SequenceAllowsStart(f);
+
+    /// <summary>
+    /// Il vincolo di sequenza riguarda l'avvio: una fase già in lavorazione non si ricongela se un
+    /// predecessore torna aperto (es. ticket riaperto). Stessa regola del server, che la applica
+    /// davvero su ticket e completamento manuale.
+    /// </summary>
+    private bool SequenceAllowsStart(CommessaFaseDTO f)
+        => f.State != CommessaFaseStates.Pending
+            || f.Dependencies.All(d => _fasi.FirstOrDefault(x => x.Id == d.IdPredecessorFase)?.State == CommessaFaseStates.Done);
+
+    /// <summary>Motivo per cui il pulsante e' disabilitato, mostrato in tooltip.</summary>
+    private string TakeBlockedReason(CommessaFaseDTO f)
+    {
+        if (!f.CanTake)
+            return string.IsNullOrWhiteSpace(f.GroupName)
+                ? "Non sei abilitato a eseguire questa fase."
+                : $"Riservata al gruppo \"{f.GroupName}\", di cui non fai parte.";
+
+        return SequenceAllowsStart(f) ? string.Empty : "Ci sono fasi precedenti non ancora completate.";
+    }
+
+    /// <summary>Il flag "Richiede ticket" della fase: niente chiusura senza un ticket che la documenti.</summary>
+    private static bool CanComplete(CommessaFaseDTO f)
+        => !f.HasBlockingTickets && (!f.RequiresTicket || f.ClosedTicketCount > 0);
+
+    private string CompleteBlockedReason(CommessaFaseDTO f)
+        => f.HasBlockingTickets
+            ? "La fase contiene ticket bloccati: risolvi i blocchi prima di completarla."
+            : CanComplete(f)
+            ? TakeBlockedReason(f)
+            : "La fase richiede almeno un ticket chiuso per poter essere completata.";
 
     private void TakeInCharge(CommessaFaseDTO f)
     {
         if (_c == null) return;
-        var q = new List<string> { $"IdCommessaFase={f.Id}" };
+        // La fase viaggia nella rotta, non piu' in query: serve al breadcrumb Commessa > Fase > Ticket.
+        var q = new List<string>();
         if (f.IdTicketType != null) q.Add($"IdType={f.IdTicketType}");
         if (f.IdGroup != null) q.Add($"IdGroup={f.IdGroup}");
         if (_c.IdCompany != null) q.Add($"IdCompany={_c.IdCompany}");
@@ -311,7 +452,7 @@ else
         if (_c.IdProduct != null) q.Add($"IdProduct={_c.IdProduct}");
         var desc = string.IsNullOrWhiteSpace(f.Description) ? $"{_c.Code} — {f.Name}" : $"{_c.Code} — {f.Name}\n{f.Description}";
         q.Add($"Descr={Uri.EscapeDataString(desc)}");
-        Nav.NavigateTo($"/Tickets/New?{string.Join("&", q)}");
+        Nav.NavigateTo($"/Commesse/{Id}/Fasi/{f.Id}/Tickets/New?{string.Join("&", q)}");
     }
 
     private async Task MarkDone(CommessaFaseDTO f)
@@ -358,6 +499,45 @@ else
         else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
     }
 
-    private void OpenTicket(int id) => Nav.NavigateTo($"/Tickets/{id}/Info");
+    /// <summary>Apre la tab Ticket mostrando i soli ticket della fase indicata.</summary>
+    private void ShowPhaseTickets(CommessaFaseDTO f)
+    {
+        _ticketsFaseFilter = f.Id;
+        _view = View.Tickets;
+    }
+
+    private string FaseName(int idFase) => _fasi.FirstOrDefault(x => x.Id == idFase)?.Name ?? $"#{idFase}";
+
+    private static int GeneratedPlanCount(CommessaFaseDTO f)
+        => f.TicketPlans.Count(p => p.IdTicket != null);
+
+    private async Task GeneratePendingPlans(CommessaFaseDTO f)
+    {
+        var pending = f.TicketPlans
+            .Where(p => p.IdTicket == null)
+            .OrderBy(p => p.SortOrder)
+            .ToList();
+
+        if (!pending.Any())
+            return;
+
+        foreach (var plan in pending)
+        {
+            var resp = await FaseService.GenerateTicketFromPlanAsync(plan.Id);
+            if (!resp.State)
+            {
+                Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? $"Generazione ticket \"{plan.Title}\" fallita");
+                await ReloadHeaderAsync();
+                return;
+            }
+        }
+
+        Notification.Notify(NotificationSeverity.Success, "Fatto", $"{pending.Count} ticket generati");
+        await ReloadHeaderAsync();
+        ShowPhaseTickets(f);
+    }
+
+    // Rotta annidata sotto la commessa: il breadcrumb del ticket parte da qui, non da /Tickets.
+    private void OpenTicket(int id) => Nav.NavigateTo($"/Commesse/{Id}/Tickets/{id}");
     private void EditTicket(int? id) => Nav.NavigateTo(id == null ? "/Tickets/New" : $"/Tickets/{id}/Edit");
 }

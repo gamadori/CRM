@@ -19,7 +19,10 @@ namespace CRM.Server.Helpers
             Url,
             Company,
             Ticket,
-            Date
+            Date,
+            Reason,
+            Commessa,
+            Phase
         }
         public static MimeEntity CreateBody(string html, Logo? logo = null, List<string>? attachments = null)
         {

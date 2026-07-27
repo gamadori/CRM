@@ -81,6 +81,11 @@ namespace CRM.Client.Pages.Tickets
 
         [Parameter]
         public int? IdArticle { get; set; }
+
+        /// <summary>Valorizzato dalla rotta annidata sotto la commessa: guida breadcrumb e ritorno.</summary>
+        [Parameter]
+        public int? IdCommessa { get; set; }
+
         [Parameter]
         public int TypeSearch { get; set; } = (int)(TicketTypeSearch.All);
 
@@ -256,6 +261,11 @@ namespace CRM.Client.Pages.Tickets
             {
                 OnGotoIndex();
             }
+            else if (IdCommessa != null)
+            {
+                // Si e' arrivati dalla scheda commessa: "Lista tickets" ci riporta li'.
+                NavigationManager.NavigateTo($"/Commesse/{IdCommessa}");
+            }
             else if (IdCompany != null)
             {
                 NavigationManager.NavigateTo($"/Companies/{IdCompany}/{(int)CompanyViews.Ticket}");
@@ -347,19 +357,7 @@ namespace CRM.Client.Pages.Tickets
 
         private void InterventionDetails(int id)
         {
-            var uri = new Uri(NavigationManager.Uri);
-            var url = uri.GetLeftPart(UriPartial.Path);
-           
-            url = System.Text.RegularExpressions.Regex.Replace(url, "info", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            
-            url = url.TrimEnd('/');
-            if (!url.Contains("interventions"))
-            {
-                url += "/interventions";
-            }
-
-            NavigationManager.NavigateTo($"{url}/{id}");
-            
+            NavigationManager.NavigateTo($"/Tickets/{Id}/interventions/{id}");
         }
 
 

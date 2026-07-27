@@ -27,6 +27,20 @@ namespace CRM.Shared.DTOs
         public string? Color { get; set; }
 
         public List<GanttPhaseDependencyDTO> Dependencies { get; set; } = new();
+        public List<GanttPhaseTicketTemplateDTO> TicketTemplates { get; set; } = new();
+    }
+
+    public class GanttPhaseTicketTemplateDTO
+    {
+        public int Id { get; set; }
+        public int IdGanttPhase { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int IdTicketType { get; set; }
+        public int? IdGroupAssigned { get; set; }
+        public bool Required { get; set; } = true;
+        public ProductionTicketAutoCreateMode AutoCreateMode { get; set; } = ProductionTicketAutoCreateMode.OnPhaseStart;
+        public int SortOrder { get; set; }
     }
 
     public static class GanttPhaseMapper
@@ -44,7 +58,23 @@ namespace CRM.Shared.DTOs
             IdTicketType = p.IdTicketType,
             IdGroup = p.IdGroup,
             Color = p.Color,
-            Dependencies = p.Dependencies?.Select(d => d.ToDTO()).ToList() ?? new()
+            Dependencies = p.Dependencies?.Select(d => d.ToDTO()).ToList() ?? new(),
+            TicketTemplates = p.TicketTemplates?
+                .OrderBy(t => t.SortOrder).ThenBy(t => t.Id)
+                .Select(t => t.ToDTO()).ToList() ?? new()
+        };
+
+        public static GanttPhaseTicketTemplateDTO ToDTO(this GanttPhaseTicketTemplate t) => new()
+        {
+            Id = t.Id,
+            IdGanttPhase = t.IdGanttPhase,
+            Title = t.Title,
+            Description = t.Description,
+            IdTicketType = t.IdTicketType,
+            IdGroupAssigned = t.IdGroupAssigned,
+            Required = t.Required,
+            AutoCreateMode = t.AutoCreateMode,
+            SortOrder = t.SortOrder
         };
 
         public static GanttPhaseDependencyDTO ToDTO(this GanttPhaseDependency d) => new()
@@ -69,6 +99,19 @@ namespace CRM.Shared.DTOs
             IdTicketType = dto.IdTicketType,
             IdGroup = dto.IdGroup,
             Color = dto.Color
+        };
+
+        public static GanttPhaseTicketTemplate ToEntity(this GanttPhaseTicketTemplateDTO dto) => new()
+        {
+            Id = dto.Id,
+            IdGanttPhase = dto.IdGanttPhase,
+            Title = dto.Title,
+            Description = dto.Description,
+            IdTicketType = dto.IdTicketType,
+            IdGroupAssigned = dto.IdGroupAssigned,
+            Required = dto.Required,
+            AutoCreateMode = dto.AutoCreateMode,
+            SortOrder = dto.SortOrder
         };
     }
 }

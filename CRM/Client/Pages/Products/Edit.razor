@@ -82,6 +82,20 @@ else
                         </RadzenColumn>
                     </RadzenRow>
                     <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
+                                <RadzenLabel Text="Capo commessa predefinito" />
+                                <RadzenDropDown TItem="ApplicationUser" TValue="string" ValueProperty="Id" TextProperty="NameComplete"
+                                                @bind-Value="@_product.IdDefaultCommessaResponsible"
+                                                Data="_headCompanyUsers"
+                                                AllowFiltering="true"
+                                                AllowClear="true"
+                                                Placeholder="Seleziona un utente HeadCompany"
+                                                Style="width:100%" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
                         <RadzenColumn Size="8">
                             <RadzenStack>
                                 <RedGNumeric T="decimal" Format="c" @bind-Value="@_product.Price" For="@(() => _product.Price)" />

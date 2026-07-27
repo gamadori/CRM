@@ -61,6 +61,7 @@ namespace CRM.Client.Pages.TicketChats
         private IBrowserFile? _pendingFile;
         private int? _pendingAttachmentFileId;
         private bool _uploading;
+        private bool _markingAsRead;
 
         private async Task GetMessages()
         {
@@ -77,8 +78,26 @@ namespace CRM.Client.Pages.TicketChats
             if (paging != null)
                 ChatList = paging.Items;
 
+            await MarkTicketMessagesAsRead();
+
             StateHasChanged();
             await ScrollToBottom();
+        }
+
+        private async Task MarkTicketMessagesAsRead()
+        {
+            if (IdTicket <= 0 || _markingAsRead)
+                return;
+
+            _markingAsRead = true;
+            try
+            {
+                await Service.TicketRead(IdTicket);
+            }
+            finally
+            {
+                _markingAsRead = false;
+            }
         }
 
         protected override async Task OnInitializedAsync()

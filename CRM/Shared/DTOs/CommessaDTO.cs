@@ -24,6 +24,9 @@ namespace CRM.Shared.DTOs
         public int Priority { get; set; }
         public DateTime StartDatePlanned { get; set; }
         public DateTime EndDatePlanned { get; set; }
+        public DateTime? ExpectedEndDate { get; set; }
+        public bool IsExpectedLate => ExpectedEndDate.HasValue && ExpectedEndDate.Value.Date > EndDatePlanned.Date;
+        public int ExpectedDelayDays => IsExpectedLate ? (ExpectedEndDate!.Value.Date - EndDatePlanned.Date).Days : 0;
         public DateTime? StartDateActual { get; set; }
         public DateTime? EndDateActual { get; set; }
         public int Progress { get; set; }
@@ -34,6 +37,8 @@ namespace CRM.Shared.DTOs
 
         public int PhaseCount { get; set; }
         public int TicketCount { get; set; }
+        public int BlockedTicketCount { get; set; }
+        public bool HasBlockingTickets => BlockedTicketCount > 0;
         public int Permits { get; set; }
     }
 
@@ -91,6 +96,7 @@ namespace CRM.Shared.DTOs
                 Priority = c.Priority,
                 StartDatePlanned = c.StartDatePlanned,
                 EndDatePlanned = c.EndDatePlanned,
+                ExpectedEndDate = c.Phases != null && c.Phases.Count > 0 ? c.Phases.Max(f => f.EndDate) : c.EndDatePlanned,
                 StartDateActual = c.StartDateActual,
                 EndDateActual = c.EndDateActual,
                 Progress = c.Progress,
@@ -98,7 +104,9 @@ namespace CRM.Shared.DTOs
                 IdUserResponsible = c.IdUserResponsible,
                 ResponsibleName = c.UserResponsible != null ? c.UserResponsible.NameComplete : string.Empty,
                 CreatedAt = c.CreatedAt,
-                PhaseCount = c.Phases?.Count ?? 0
+                PhaseCount = c.Phases?.Count ?? 0,
+                TicketCount = c.Phases?.SelectMany(f => f.Tickets).Count() ?? 0,
+                BlockedTicketCount = c.Phases?.SelectMany(f => f.Tickets).Count(t => !t.Closed && t.IsBlocked) ?? 0
             };
         }
 

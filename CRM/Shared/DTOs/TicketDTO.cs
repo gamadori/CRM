@@ -73,6 +73,24 @@ namespace CRM.Shared.DTOs
 
         public string? OperationalSummaryUpdatedByName { get; set; }
 
+        public bool IsBlocked { get; set; }
+
+        public string? BlockReason { get; set; }
+
+        public DateTime? BlockedAt { get; set; }
+
+        public string? IdBlockedBy { get; set; }
+
+        public string? BlockedByName { get; set; }
+
+        public DateTime? BlockResolvedAt { get; set; }
+
+        public string? IdBlockResolvedBy { get; set; }
+
+        public string? BlockResolvedByName { get; set; }
+
+        public string? BlockResolutionNote { get; set; }
+
         [Display(Name = nameof(Ticket.MinuteWork), ResourceType = typeof(Resources.Models.Ticket))]
         public int MinuteWork { get; set; }
 
@@ -112,6 +130,14 @@ namespace CRM.Shared.DTOs
         [Display(Name = nameof(Ticket.IdGroupAssigned), ResourceType = typeof(Resources.Models.Ticket))]
         public string GroupAssigned { get; set; }
 
+        public int? IdGroupAssigned { get; set; }
+
+        public bool CanClaim { get; set; }
+
+        public bool IsAssignedToCurrentUser { get; set; }
+
+        public bool CanManageBlock { get; set; }
+
         public int Progress { get; set; }
 
         public string Numero { get; set; }
@@ -140,6 +166,12 @@ namespace CRM.Shared.DTOs
 
         [Display(Name = "Fase")]
         public string CommessaFaseName { get; set; } = string.Empty;
+
+        /// <summary>Commessa a cui appartiene la fase collegata (null se il ticket non e' di produzione).</summary>
+        public int? IdCommessa { get; set; }
+
+        [Display(Name = "Commessa")]
+        public string CommessaCode { get; set; } = string.Empty;
 
         public bool Invoiced { get; set; }
 

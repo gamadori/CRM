@@ -92,6 +92,8 @@ namespace CRM.Client.Pages.Tickets
         private bool _isProposingSummary = false;
         private bool _isSavingSummary = false;
         private bool _isEditingSummary = false;
+        private bool _isClaiming = false;
+        private bool _isChangingBlock = false;
 
         /// <summary>Email in arrivo da cui è nato (o a cui è agganciato) il ticket, se presente.</summary>
         private int? _idInboundEmail;
@@ -362,6 +364,84 @@ namespace CRM.Client.Pages.Tickets
                 NavigationManager.NavigateTo($"/Tickets/Close/{Id}");
         }
 
+        private async Task BlockTicket()
+        {
+            if (Id == null || _isChangingBlock)
+                return;
+
+            var reason = await DialogService.OpenAsync<TicketBlockDialog>(
+                "Segnala blocco",
+                new Dictionary<string, object>(),
+                new DialogOptions
+                {
+                    Width = "560px",
+                    CloseDialogOnEsc = true,
+                    CloseDialogOnOverlayClick = false,
+                    ShowClose = true
+                });
+
+            if (reason == null)
+                return;
+
+            await ChangeBlockStateAsync(
+                () => _service.BlockAsync(Id.Value, new TicketBlockRequest { Reason = reason.ToString() ?? string.Empty }),
+                "Blocco ticket");
+        }
+
+        private async Task UnblockTicket()
+        {
+            if (Id == null || _isChangingBlock)
+                return;
+
+            var note = await DialogService.OpenAsync<TicketBlockDialog>(
+                "Sblocca ticket",
+                new Dictionary<string, object>
+                {
+                    { "Resolve", true }
+                },
+                new DialogOptions
+                {
+                    Width = "560px",
+                    CloseDialogOnEsc = true,
+                    CloseDialogOnOverlayClick = false,
+                    ShowClose = true
+                });
+
+            if (note == null)
+                return;
+
+            await ChangeBlockStateAsync(
+                () => _service.UnblockAsync(Id.Value, new TicketUnblockRequest { ResolutionNote = note.ToString() }),
+                "Sblocco ticket");
+        }
+
+        private async Task ChangeBlockStateAsync(Func<Task<CRM.Client.Models.APIResponseMessage<TicketDTO>>> action, string title)
+        {
+            try
+            {
+                _isChangingBlock = true;
+                var response = await action();
+                if (!response.State)
+                {
+                    NotificationService?.Notify(NotificationSeverity.Error, title, response.Message ?? "Operazione non riuscita");
+                    return;
+                }
+
+                if (response.Data != null)
+                {
+                    _ticket = response.Data;
+                    _summaryDraft = _ticket.OperationalSummary ?? string.Empty;
+                }
+
+                NotificationService?.Notify(NotificationSeverity.Success, title, response.Message ?? "Operazione completata");
+            }
+            finally
+            {
+                _isChangingBlock = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
         private async void TicketPrint()
         {
             if (OnClickPrint.HasDelegate)
@@ -428,6 +508,37 @@ namespace CRM.Client.Pages.Tickets
             await LoadData();
             Console.WriteLine($"[Details] Utenti assegnati dopo reload: {_assignedUsers.Count}");
             await InvokeAsync(StateHasChanged);
+        }
+
+        private async Task ClaimTicket()
+        {
+            if (Id == null || _isClaiming)
+                return;
+
+            try
+            {
+                _isClaiming = true;
+                var response = await _service.ClaimAsync(Id.Value);
+                if (!response.State)
+                {
+                    NotificationService?.Notify(NotificationSeverity.Error, "Presa in carico", response.Message ?? "Operazione non riuscita");
+                    return;
+                }
+
+                if (response.Data != null)
+                {
+                    _ticket = response.Data;
+                    _summaryDraft = _ticket.OperationalSummary ?? string.Empty;
+                }
+
+                await LoadAssignedUsers();
+                NotificationService?.Notify(NotificationSeverity.Success, "Presa in carico", response.Message ?? "Ticket preso in carico");
+            }
+            finally
+            {
+                _isClaiming = false;
+                await InvokeAsync(StateHasChanged);
+            }
         }
 
         protected void SendInvitation() { }

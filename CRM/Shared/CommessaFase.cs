@@ -14,7 +14,26 @@ namespace CRM.Shared
         Done
     }
 
-    /// <summary>Tipo di legame di precedenza tra due fasi (standard project management).</summary>
+    /// <summary>Regola con cui una fase considera concluso il lavoro collegato ai ticket.</summary>
+    public enum CommessaFaseCompletionMode
+    {
+        /// <summary>La fase viene chiusa manualmente, i ticket sono solo tracciamento.</summary>
+        Manual,
+        /// <summary>La fase si completa quando tutti i ticket collegati sono chiusi.</summary>
+        AllTicketsClosed,
+        /// <summary>La fase si completa quando almeno un ticket collegato e' chiuso.</summary>
+        AnyTicketClosed,
+        /// <summary>La percentuale resta manuale anche se ci sono ticket collegati.</summary>
+        ProgressManual
+    }
+
+    /// <summary>
+    /// Tipo di legame di precedenza tra due fasi (standard project management).
+    /// ATTENZIONE: oggi solo <see cref="FinishToStart"/> e' realmente implementato. Nessuna UI
+    /// produce gli altri valori, e schedulazione, percorso critico, blocco all'avvio e propagazione
+    /// delle date trattano ogni legame come FS. Gli altri valori esistono per il disegno delle frecce
+    /// nel Gantt: prima di usarli vanno implementati nei quattro punti sopra.
+    /// </summary>
     public enum DependencyType
     {
         /// <summary>Finish-to-Start: il successore inizia quando il predecessore finisce (default).</summary>
@@ -75,6 +94,15 @@ namespace CRM.Shared
         [ForeignKey(nameof(TicketType))]
         public int? IdTicketType { get; set; }
 
+        /// <summary>Determina se e come i ticket aggiornano stato e avanzamento della fase.</summary>
+        public CommessaFaseCompletionMode CompletionMode { get; set; } = CommessaFaseCompletionMode.AllTicketsClosed;
+
+        /// <summary>Se true, la presa in carico propone/apre un ticket operativo per la fase.</summary>
+        public bool AutoCreateTicketOnTake { get; set; } = true;
+
+        /// <summary>Se true, la fase richiede almeno un ticket per essere completata automaticamente.</summary>
+        public bool RequiresTicket { get; set; } = true;
+
         /// <summary>Gruppo abilitato a eseguire la fase.</summary>
         [ForeignKey(nameof(Group))]
         public int? IdGroup { get; set; }
@@ -108,6 +136,50 @@ namespace CRM.Shared
         public virtual ICollection<CommessaFaseDependency> Dependencies { get; set; } = new List<CommessaFaseDependency>();
 
         public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+
+        public virtual ICollection<CommessaFaseTicketPlan> TicketPlans { get; set; } = new List<CommessaFaseTicketPlan>();
+    }
+
+    public class CommessaFaseTicketPlan
+    {
+        [Key]
+        public int Id { get; set; }
+
+        [ForeignKey(nameof(CommessaFase))]
+        public int IdCommessaFase { get; set; }
+
+        [ForeignKey(nameof(SourceTemplate))]
+        public int? IdGanttPhaseTicketTemplate { get; set; }
+
+        public string Title { get; set; } = string.Empty;
+
+        public string? Description { get; set; }
+
+        [ForeignKey(nameof(TicketType))]
+        public int IdTicketType { get; set; }
+
+        [ForeignKey(nameof(GroupAssigned))]
+        public int? IdGroupAssigned { get; set; }
+
+        public bool Required { get; set; } = true;
+
+        public ProductionTicketAutoCreateMode AutoCreateMode { get; set; } = ProductionTicketAutoCreateMode.OnPhaseStart;
+
+        public int SortOrder { get; set; }
+
+        [ForeignKey(nameof(Ticket))]
+        public int? IdTicket { get; set; }
+
+        [JsonIgnore]
+        public virtual CommessaFase? CommessaFase { get; set; }
+
+        public virtual GanttPhaseTicketTemplate? SourceTemplate { get; set; }
+
+        public virtual TicketType? TicketType { get; set; }
+
+        public virtual Group? GroupAssigned { get; set; }
+
+        public virtual Ticket? Ticket { get; set; }
     }
 
     /// <summary>Dipendenza di precedenza tra fasi operative di commessa (vincolante).</summary>

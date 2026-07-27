@@ -23,6 +23,8 @@ namespace CRM.Server.Services
         // Close / ReOpen
         Task<bool> CloseAsync(int id, TicketClose model);
         Task<bool> ReOpenAsync(int id);
+        Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> BlockAsync(int id, TicketBlockRequest request);
+        Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> UnblockAsync(int id, TicketUnblockRequest request);
 
         // State
         Task SetTicketStateAsync(TicketDTO ticket);
@@ -31,6 +33,7 @@ namespace CRM.Server.Services
         // Assignment
         Task<List<string>> GetAssignedUserIdsAsync(int idTicket);
         Task<AssignUsersResult> AssignUsersAsync(int idTicket, AssignUsersRequest request, string? currentUserId);
+        Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> ClaimAsync(int idTicket, string? currentUserId);
 
         // Helpers
         Task<bool> TicketChangeAssigned(int id, string? idAssigned);

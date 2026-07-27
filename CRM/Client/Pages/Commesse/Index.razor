@@ -29,6 +29,15 @@
                         TextProperty="Text" ValueProperty="Value" AllowClear="true"
                         Placeholder="Stato" Style="width: 200px;" Change="@(async _ => await Reload())" />
 
+        @if (ExpectedLate)
+        {
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle d-inline-flex align-items-center gap-1">
+                <span class="material-icons" style="font-size:14px;">event_busy</span>
+                Solo previste oltre consegna
+            </span>
+            <RadzenButton Icon="filter_alt_off" Text="Tutte" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="ClearExpectedLateFilter" />
+        }
+
         @* Le commesse da ordine nascono da "Avvia produzione" sulla riga d'ordine.
            Questa e' la produzione senza ordine: magazzino, prototipi, ricambi, rilavorazioni. *@
         <RadzenButton Icon="precision_manufacturing" Text="Produzione interna" Class="ms-auto"
@@ -38,15 +47,30 @@
 
 <RadzenDataGrid @ref="_grid" IsLoading="@_isLoading" Count="@_count" Data="@_items" LoadData="@LoadData"
                 AllowPaging="true" PageSize="15" PagerHorizontalAlign="HorizontalAlign.Center"
-                TItem="CommessaDTO" AllowSorting="true" EmptyText="Nessuna commessa">
+                TItem="CommessaDTO" AllowSorting="true" EmptyText="Nessuna commessa" RowRender="OnRowRender">
     <Columns>
         <RadzenDataGridColumn TItem="CommessaDTO" Property="Code" Title="Codice" Width="130px" />
         <RadzenDataGridColumn TItem="CommessaDTO" Property="Name" Title="Commessa">
             <Template Context="c">
                 <a href="@($"/Commesse/{c.Id}")" class="text-decoration-none fw-semibold">@(string.IsNullOrWhiteSpace(c.Name) ? c.Code : c.Name)</a>
+                @if (c.HasBlockingTickets)
+                {
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-2"
+                          title="@($"{c.BlockedTicketCount} ticket bloccati impediscono il completamento")">
+                        <span class="material-icons align-middle" style="font-size:13px;">report_problem</span>
+                        Bloccata
+                    </span>
+                }
                 @if (!string.IsNullOrWhiteSpace(c.ArticleSerial))
                 {
                     <div class="small text-muted"><span class="material-icons align-middle" style="font-size:13px;">qr_code_2</span> @c.ArticleSerial</div>
+                }
+                @if (c.IsExpectedLate)
+                {
+                    <div class="small text-danger fw-semibold mt-1">
+                        <span class="material-icons align-middle" style="font-size:13px;">event_busy</span>
+                        previsione oltre consegna di @c.ExpectedDelayDays gg
+                    </div>
                 }
             </Template>
         </RadzenDataGridColumn>
@@ -72,7 +96,18 @@
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="CommessaDTO" Property="State" Title="Stato" Width="140px" Sortable="false">
-            <Template Context="c"><span class="badge @CommessaUi.StateBadgeClass(c.State)">@CommessaUi.StateText(c.State)</span></Template>
+            <Template Context="c">
+                <div class="d-flex flex-column gap-1 align-items-start">
+                    <span class="badge @CommessaUi.StateBadgeClass(c.State)">@CommessaUi.StateText(c.State)</span>
+                    @if (c.HasBlockingTickets)
+                    {
+                        <span class="badge bg-danger text-white" title="@($"{c.BlockedTicketCount} ticket bloccati")">
+                            <span class="material-icons align-middle" style="font-size:12px;">lock</span>
+                            @c.BlockedTicketCount blocc.
+                        </span>
+                    }
+                </div>
+            </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="CommessaDTO" Property="Progress" Title="Avanzamento" Width="170px" Sortable="false">
             <Template Context="c">
@@ -85,6 +120,27 @@
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="CommessaDTO" Property="EndDatePlanned" Title="Consegna" Width="120px" FormatString="{0:dd/MM/yyyy}" />
+        <RadzenDataGridColumn TItem="CommessaDTO" Property="ExpectedEndDate" Title="Prevista" Width="145px" Sortable="false">
+            <Template Context="c">
+                @if (c.ExpectedEndDate.HasValue)
+                {
+                    <div class="d-flex flex-column align-items-start gap-1">
+                        <span class="@(c.IsExpectedLate ? "text-danger fw-semibold" : "")">@c.ExpectedEndDate.Value.ToString("dd/MM/yyyy")</span>
+                        @if (c.IsExpectedLate)
+                        {
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle" title="Fine prevista oltre la data di consegna">
+                                <span class="material-icons align-middle" style="font-size:12px;">warning</span>
+                                +@c.ExpectedDelayDays gg
+                            </span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <span>-</span>
+                }
+            </Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="CommessaDTO" Context="c" Title="" Width="130px" Sortable="false" Filterable="false" TextAlign="TextAlign.Center">
             <Template Context="c">
                 <div class="d-flex gap-2 justify-content-center">
@@ -107,6 +163,9 @@
     private CommessaStates? _stateFilter;
     private int _count;
     private bool _isLoading;
+
+    [Parameter, SupplyParameterFromQuery]
+    public bool ExpectedLate { get; set; }
 
     private record StateOption(string Text, CommessaStates? Value);
     private readonly List<StateOption> _stateOptions = new()
@@ -140,6 +199,7 @@
             _filter.Top = args.Top;
             _filter.OrderBy = args.OrderBy;
             _filter.State = _stateFilter;
+            _filter.ExpectedLate = ExpectedLate ? true : null;
             var resp = await CommessaService.GetSummaryAsync(_filter);
             _items = resp?.Items ?? new List<CommessaDTO>();
             _count = resp?.MetaData?.TotalCount ?? 0;
@@ -149,6 +209,22 @@
 
     private async Task Reload() { if (_grid != null) await _grid.Reload(); }
     private async Task OnSearchKey(KeyboardEventArgs e) { if (e.Key == "Enter") await Reload(); }
+    private void ClearExpectedLateFilter() => Nav.NavigateTo("/Commesse");
+
+    private void OnRowRender(RowRenderEventArgs<CommessaDTO> args)
+    {
+        if (args.Data == null)
+            return;
+
+        if (args.Data.HasBlockingTickets)
+        {
+            args.Attributes["style"] = "box-shadow: inset 4px 0 0 #dc3545; background-color: #fff8f8;";
+        }
+        else if (args.Data.IsExpectedLate)
+        {
+            args.Attributes["style"] = "box-shadow: inset 4px 0 0 #f97316; background-color: #fff7ed;";
+        }
+    }
 
     private async Task Delete(CommessaDTO c)
     {

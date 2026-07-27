@@ -835,4 +835,7 @@
   <data name="EmailInboxes" xml:space="preserve">
     <value>Buzones de entrada</value>
   </data>
+  <data name="Workshop" xml:space="preserve">
+    <value>Taller</value>
+  </data>
 </root>

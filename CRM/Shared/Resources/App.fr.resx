@@ -850,4 +850,7 @@
   <data name="EmailInboxes" xml:space="preserve">
     <value>Boîtes de réception</value>
   </data>
+  <data name="Workshop" xml:space="preserve">
+    <value>Atelier</value>
+  </data>
 </root>

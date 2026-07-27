@@ -49,6 +49,10 @@ namespace CRM.Shared
         [ForeignKey(nameof(GanttPlan))]
         public int? IdGanttPlan { get; set; }
 
+        [Display(Name = "Capo commessa predefinito")]
+        [ForeignKey(nameof(DefaultCommessaResponsible))]
+        public string? IdDefaultCommessaResponsible { get; set; }
+
         [Display(Name = nameof(Product.ProductType), ResourceType = typeof(Resources.Models.Product))]
         public ProductType ProductType { get; set; }
 
@@ -62,6 +66,7 @@ namespace CRM.Shared
         public ICollection<Product> Childs { get; set; }
         public Company? Company { get; set; }
         public GanttPlan? GanttPlan { get; set; }
+        public ApplicationUser? DefaultCommessaResponsible { get; set; }
 
     }
 

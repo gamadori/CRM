@@ -22,6 +22,24 @@ namespace CRM.Client.Services
             _http = http;
         }
 
+        public async Task<CommessaFaseDTO?> GetItemAsync(int faseId)
+        {
+            try
+            {
+                return await _http.GetFromJsonAsync<CommessaFaseDTO>($"{_path}/{faseId}");
+            }
+            catch (AccessTokenNotAvailableException exception)
+            {
+                exception.Redirect();
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+        }
+
         public async Task<List<CommessaFaseDTO>> GetTreeAsync(int idCommessa)
         {
             try
@@ -124,6 +142,31 @@ namespace CRM.Client.Services
                 return resp.IsSuccessStatusCode;
             }
             catch { return false; }
+        }
+
+        public async Task<APIResponseMessage<CommessaFaseTicketPlanDTO>> GenerateTicketFromPlanAsync(int ticketPlanId)
+        {
+            try
+            {
+                var resp = await _http.PostAsync($"{_path}/ticket-plans/{ticketPlanId}/generate-ticket", null);
+                if (resp.IsSuccessStatusCode)
+                {
+                    return JsonSerializer.Deserialize<APIResponseMessage<CommessaFaseTicketPlanDTO>>(
+                        await resp.Content.ReadAsStringAsync(), _json)
+                        ?? new APIResponseMessage<CommessaFaseTicketPlanDTO> { State = false, Message = "null" };
+                }
+
+                return new APIResponseMessage<CommessaFaseTicketPlanDTO>
+                {
+                    State = false,
+                    Code = resp.StatusCode,
+                    Message = await resp.Content.ReadAsStringAsync()
+                };
+            }
+            catch (Exception ex)
+            {
+                return new APIResponseMessage<CommessaFaseTicketPlanDTO> { State = false, Message = ex.Message };
+            }
         }
     }
 }

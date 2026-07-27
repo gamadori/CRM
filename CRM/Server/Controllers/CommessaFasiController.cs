@@ -21,6 +21,13 @@ namespace CRM.Server.Controllers
         public async Task<ActionResult<IEnumerable<CommessaFaseDTO>>> GetTree(int idCommessa)
             => Ok(await _service.GetTreeAsync(idCommessa) ?? new List<CommessaFaseDTO>());
 
+        [HttpGet("{id}")]
+        public async Task<ActionResult<CommessaFaseDTO>> GetItem(int id)
+        {
+            var dto = await _service.GetItemAsync(id);
+            return dto == null ? NotFound() : Ok(dto);
+        }
+
         [HttpPost]
         public async Task<ActionResult<APIResponseMessage<CommessaFaseDTO>>> Save(CommessaFaseDTO dto)
             => Ok(await _service.SaveAsync(dto));
@@ -47,5 +54,9 @@ namespace CRM.Server.Controllers
         [HttpDelete("dependency/{id}")]
         public async Task<IActionResult> RemoveDependency(int id)
             => await _service.RemoveDependencyAsync(id) ? NoContent() : BadRequest();
+
+        [HttpPost("ticket-plans/{id}/generate-ticket")]
+        public async Task<ActionResult<APIResponseMessage<CommessaFaseTicketPlanDTO>>> GenerateTicketFromPlan(int id)
+            => Ok(await _service.GenerateTicketFromPlanAsync(id));
     }
 }

@@ -5,6 +5,13 @@ using System.Text.Json.Serialization;
 
 namespace CRM.Shared
 {
+    public enum ProductionTicketAutoCreateMode
+    {
+        Manual,
+        OnPhaseStart,
+        OnCommessaStart
+    }
+
     /// <summary>
     /// Fase-modello di un <see cref="GanttPlan"/> template. Usa durate RELATIVE (giorni): le date
     /// assolute vengono calcolate quando il template viene istanziato in una <see cref="Commessa"/>.
@@ -60,6 +67,41 @@ namespace CRM.Shared
 
         /// <summary>Dipendenze in cui questa fase è il successore.</summary>
         public virtual ICollection<GanttPhaseDependency> Dependencies { get; set; } = new List<GanttPhaseDependency>();
+
+        public virtual ICollection<GanttPhaseTicketTemplate> TicketTemplates { get; set; } = new List<GanttPhaseTicketTemplate>();
+    }
+
+    public class GanttPhaseTicketTemplate
+    {
+        [Key]
+        public int Id { get; set; }
+
+        [ForeignKey(nameof(GanttPhase))]
+        public int IdGanttPhase { get; set; }
+
+        [Required]
+        public string Title { get; set; } = string.Empty;
+
+        public string? Description { get; set; }
+
+        [ForeignKey(nameof(TicketType))]
+        public int IdTicketType { get; set; }
+
+        [ForeignKey(nameof(GroupAssigned))]
+        public int? IdGroupAssigned { get; set; }
+
+        public bool Required { get; set; } = true;
+
+        public ProductionTicketAutoCreateMode AutoCreateMode { get; set; } = ProductionTicketAutoCreateMode.OnPhaseStart;
+
+        public int SortOrder { get; set; }
+
+        [JsonIgnore]
+        public virtual GanttPhase? GanttPhase { get; set; }
+
+        public virtual TicketType? TicketType { get; set; }
+
+        public virtual Group? GroupAssigned { get; set; }
     }
 
     /// <summary>Dipendenza di precedenza tra fasi-modello del template.</summary>

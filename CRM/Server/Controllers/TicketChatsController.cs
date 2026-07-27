@@ -12,14 +12,10 @@ using CRM.Shared;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authorization;
 using CRM.Server.Services;
-using CRM.Shared.Helper;
 using CRM.Server.Helpers;
+using CRM.Shared.Helper;
 using Microsoft.Extensions.Primitives;
 using CRM.Client.Helpers;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Client;
-using MimeKit;
-using Microsoft.AspNetCore.Identity;
 using CRM.Client.Services;
 
 namespace CRM.Server.Controllers
@@ -32,26 +28,20 @@ namespace CRM.Server.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IPermitsService _permitsService;
         private readonly ILogEventService _logEventService;
-        private readonly IEmailSenderPlus _emailSenderPlus;
-        private readonly ILanguagesService _languageService;
-        private readonly TelegramCommandsService _telegramService;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ITicketChatNotificationService _ticketChatNotificationService;
         private readonly IArchiveService _archiveService;
 
-        IHubContext<SignalRHub> _hubContext;
-
-        public TicketChatsController(ApplicationDbContext context, IPermitsService permitsService, ILogEventService logEventService, IHubContext<SignalRHub> hubContext,
-            IEmailSenderPlus emailSenderPlus, ILanguagesService languagesService, TelegramCommandsService telegramService, UserManager<ApplicationUser> userManager,
+        public TicketChatsController(
+            ApplicationDbContext context,
+            IPermitsService permitsService,
+            ILogEventService logEventService,
+            ITicketChatNotificationService ticketChatNotificationService,
             IArchiveService archiveService)
         {
             _context = context;
             _permitsService = permitsService;
             _logEventService = logEventService;
-            _hubContext = hubContext;
-            _emailSenderPlus = emailSenderPlus;
-            _languageService = languagesService;
-            _telegramService = telegramService;
-            _userManager = userManager;
+            _ticketChatNotificationService = ticketChatNotificationService;
             _archiveService = archiveService;
             _archiveService.TypeArchive = ArchiveTypes.Attachments;
         }
@@ -403,7 +393,7 @@ namespace CRM.Server.Controllers
                         }
                     }
 
-                    await SendAlertNewMessage(ticketChat);
+                    await _ticketChatNotificationService.NotifyNewMessageAsync(ticketChat.Id);
 
                     return CreatedAtAction("GetTicketChat", new { id = ticketChat.Id }, ticketChat);
                 }
@@ -524,17 +514,51 @@ namespace CRM.Server.Controllers
             }
         }
 
+        [HttpPut("TicketRead/{idTicket}")]
+        public async Task<IActionResult> TicketRead(int idTicket)
+        {
+            try
+            {
+                if (!await _permitsService.CanGetTicket(idTicket))
+                {
+                    await _logEventService.RegisterAsync(nameof(TicketChatsController), nameof(TicketRead), LogEvent.EventsTypes.Error, GlobalMessages.PermitsErrors);
+                    return Forbid();
+                }
+
+                var idUser = await _permitsService.IdUser();
+                var unreadMessages = await _context.TicketChatReads
+                    .Where(x => x.IdUser == idUser
+                        && x.Displayed == false
+                        && x.TicketChat.IdTicket == idTicket)
+                    .ToListAsync();
+
+                if (unreadMessages.Count == 0)
+                    return NoContent();
+
+                var readDate = DateTime.Now;
+                foreach (var unreadMessage in unreadMessages)
+                {
+                    unreadMessage.DateRead = readDate;
+                    unreadMessage.Displayed = true;
+                }
+
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketChatsController), nameof(TicketRead), LogEvent.EventsTypes.Error, ex);
+                return NoContent();
+            }
+        }
+
         [HttpGet("HasNewMessage/{id}")]
-        public async Task<bool> HasNewMessage(int IdTicket)
+        public async Task<bool> HasNewMessage(int id)
         {
             var idUser = await _permitsService.IdUser();
 
-            if (await _context.TicketChatReads.Where(x => x.IdUser == idUser && x.TicketChat.Ticket.Id == IdTicket && x.Displayed == false).AnyAsync())
-            {
-                return true;
-            }
-            else
-                return false;
+            return await _context.TicketChatReads
+                .AnyAsync(x => x.IdUser == idUser && x.TicketChat.Ticket.Id == id && x.Displayed == false);
         }
 
         private bool TicketChatExists(int id)
@@ -550,129 +574,6 @@ namespace CRM.Server.Controllers
                 return new TicketChatViewModel() { Date = ticket.DateOpened, Message = ticket.Description, TypeMessage = TypeMessage.TicketMsg, UserName = "Ticket" };
             else
                 return null;
-        }
-        
-
-        private async Task SendUsersNewMessage(TicketChat ticketChat, string userId, string? sender)
-        {
-            var connections = SignalRHub.Connections;
-
-            var user = await _context.Users.FindAsync(userId);
-
-            if (user != null && connections.ContainsKey(user.UserName))
-            {
-                
-                var id = connections[user.UserName];
-                await _hubContext.Clients.Client(id).SendAsync("Notification", new MsgNotify() { Id = ticketChat.Id, Sender = sender });
-                //await _hubContext.Clients.All.SendAsync("Notification", new MsgNotify() { Id = ticketChat.Id, Sender = userId });
-            }
-           
-
-            //await _hubContext.Clients.All.SendAsync("ReceiveMessage", new HubMessage() { IdUserTo = ticketChat.IdUser, IdObject = ticketChat.Id }); // ticketChat.IdUser, ticketChat.IdTicket, ticketChat.Id);
-        }
-
-        private async Task SendAlertNewMessage(TicketChat ticketChat)
-        {
-            var users = await _permitsService.GetUserSendTicketChatAlert(ticketChat.Id);
-
-            var sender = await _context.Users.FindAsync(ticketChat.IdUser);
-            if (users != null)
-            {
-                foreach (var user in users)
-                {
-                    if (user != sender?.Id)
-                    {
-                        var chatRead = await _context.TicketChatReads.Where(x => x.IdTicketChat == ticketChat.Id && x.IdUser == user).FirstOrDefaultAsync();
-
-                        if (chatRead == null)
-                        {
-                            chatRead = new TicketChatRead();
-                            chatRead.IdUser = user;
-                            chatRead.IdTicketChat = ticketChat.Id;
-                            _context.TicketChatReads.Add(chatRead);
-                        }
-                        chatRead.Displayed = false;
-
-                        await SendUsersNewMessage(ticketChat, user, sender?.NameComplete);
-                    }
-                    
-                }
-                await _context.SaveChangesAsync();
-                await SendEmail(ticketChat, sender, users);
-            }
-        }
-
-        private async Task<bool> SendEmail(TicketChat ticketChat, ApplicationUser? sender, List<string> idUsers)
-        {
-            try
-            {
-                MimeMessage? msg = null;
-
-                List<ApplicationUser> users = new List<ApplicationUser>();
-
-                
-
-
-                var ticket = await _context.Tickets.FindAsync(ticketChat.IdTicket);
-
-                if (ticket != null)
-                {
-                        
-                    foreach (var idUser in idUsers)
-                    {
-                        if (idUser != sender?.Id)
-                        {
-                            var user = await _userManager.FindByIdAsync(idUser);
-                            if (user != null)
-                            {
-                                users.Add(user);
-                            }
-                        }
-                    }
-
-
-                    if (users.Any())
-                    {
-                        var keyValues = new Dictionary<string, string>();
-                        keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Date), DateTime.Now.ToString("g"));
-
-                        keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Ticket), ticket.Id.ToString());
-
-                        if (sender != null)
-                            keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Name), sender.NameComplete);
-
-                        var callbackUrl = HttpContext.AbsoluteUrl($"/Tickets/info/chat/{ticket.Id}/{ticketChat.Id}");
-
-                        if (callbackUrl != null)
-                            keyValues.Add(EmailHelper.KeyWord(EmailHelper.KeyWords.Url), callbackUrl);
-
-                        List<string> emails = users.Select(x=>x.Email).ToList();
-
-                        if (emails != null && emails.Any())
-                            msg = await _emailSenderPlus.SendEmailAsync(emails, EmailsTypes.NoticeNewChatMessage, null, keyValues);
-
-                        if (msg != null)
-                        {
-                            var phones = users.Where(x => x.PhoneNumber != null).Select(x => x.PhoneNumber).ToList();
-
-                            foreach (var phone in phones)
-                            {
-                                if (phone != null)
-                                    await _telegramService.SendMessage(phone, msg.TextBody);
-                            }
-                        }
-                            return true;
-                        
-                    }
-
-                }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                await _logEventService.RegisterAsync(nameof(TicketChat), nameof(SendEmail), LogEvent.EventsTypes.Error, ex);
-                return false;
-            }
         }
     }
 }

@@ -1,0 +1,55 @@
+@using Microsoft.AspNetCore.Components
+@using Radzen
+@inject DialogService DialogService
+
+<div class="ticket-block-dialog">
+    <div class="block-dialog-icon @(Resolve ? "resolve" : "block")">
+        <span class="material-icons">@(Resolve ? "lock_open" : "report_problem")</span>
+    </div>
+    <div class="block-dialog-copy">
+        <h5>@(Resolve ? "Sblocca ticket" : "Segnala blocco")</h5>
+        <p>@(Resolve ? "Indica come e' stato risolto il problema." : "Descrivi cosa impedisce il completamento.")</p>
+    </div>
+
+    <RadzenTextArea @bind-Value="_note"
+                    Rows="6"
+                    Style="width:100%;"
+                    Placeholder="Esempio: materiale mancante, attesa conferma cliente, dipendenza esterna..." />
+
+    @if (_showRequired)
+    {
+        <div class="block-dialog-error">Il motivo del blocco e' obbligatorio.</div>
+    }
+
+    <div class="block-dialog-actions">
+        <RadzenButton Text="Annulla" Icon="close" ButtonStyle="ButtonStyle.Light" Click="@(() => DialogService.Close(null))" />
+        <RadzenButton Text="@(Resolve ? "Sblocca" : "Blocca")"
+                      Icon="@(Resolve ? "lock_open" : "report_problem")"
+                      ButtonStyle="@(Resolve ? ButtonStyle.Success : ButtonStyle.Danger)"
+                      Click="Confirm" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool Resolve { get; set; }
+    [Parameter] public string? InitialNote { get; set; }
+
+    private string _note = string.Empty;
+    private bool _showRequired;
+
+    protected override void OnParametersSet()
+    {
+        _note = InitialNote ?? string.Empty;
+    }
+
+    private void Confirm()
+    {
+        if (!Resolve && string.IsNullOrWhiteSpace(_note))
+        {
+            _showRequired = true;
+            return;
+        }
+
+        DialogService.Close(_note.Trim());
+    }
+}

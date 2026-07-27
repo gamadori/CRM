@@ -754,6 +754,16 @@ REGOLE:
         /// Tool "knowledge": ticket chiusi simili + knowledge base. I ticket non accessibili
         /// all'utente restano casi anonimi (problema/soluzione senza cliente né link).
         /// </summary>
+        /// <summary>
+        /// Aziende su cui l'assistente puo' cercare dati: null = azienda madre, nessun limite.
+        /// Per gli altri e' la propria azienda piu' le figlie ricorsivamente, se rivenditore.
+        /// Non usare CanAccessOtherCompany: e' true anche per i rivenditori e aprirebbe loro i
+        /// dati di tutte le aziende. Vale per la ricerca DATI; la ricerca di SOLUZIONI lavora
+        /// invece su tutti i ticket e limita solo i riferimenti citati (vedi TicketKnowledgeService).
+        /// </summary>
+        private async Task<HashSet<int>?> PerimeterAsync()
+            => (await _permits.GetVisibleCompanyIds())?.ToHashSet();
+
         private async Task<string> SearchSolutionsAsync(IReadOnlyDictionary<string, JsonElement> input, TurnContext turn, CancellationToken ct)
         {
             var problem = GetString(input, "problem");
@@ -1171,11 +1181,9 @@ REGOLE:
             if (assignedTo != null)
                 q = q.Where(t => t.IdUserAssigned == assignedTo || t.AssignedUsers.Any(a => a.IdUser == assignedTo));
 
-            if (!await _permits.CanAccessOtherCompany())
-            {
-                var allowed = (await _permits.GetIdCompanies()).ToHashSet();
-                q = q.Where(t => allowed.Contains(t.IdCompany));
-            }
+            var perimeter = await PerimeterAsync();
+            if (perimeter != null)
+                q = q.Where(t => perimeter.Contains(t.IdCompany));
 
             if (companyId != null)
                 q = q.Where(t => t.IdCompany == companyId);
@@ -1351,11 +1359,9 @@ REGOLE:
 
             var q = _context.Tickets.AsNoTracking().AsQueryable();
 
-            if (!await _permits.CanAccessOtherCompany())
-            {
-                var allowed = (await _permits.GetIdCompanies()).ToHashSet();
-                q = q.Where(t => allowed.Contains(t.IdCompany));
-            }
+            var perimeter = await PerimeterAsync();
+            if (perimeter != null)
+                q = q.Where(t => perimeter.Contains(t.IdCompany));
 
             if (companyId != null)
                 q = q.Where(t => t.IdCompany == companyId);
@@ -1403,9 +1409,13 @@ REGOLE:
                 return JsonSerializer.Serialize(new { error = "Descrizione del ticket mancante." });
 
             // ----- Cliente: rispetto del perimetro aziende dell'utente -----
+            // Si puo' aprire un ticket per la propria azienda o, se rivenditore, per una figlia.
             int? companyId;
-            if (await _permits.CanAccessOtherCompany())
+            var perimeter = await PerimeterAsync();
+
+            if (perimeter == null)
             {
+                // Azienda madre: nessun limite.
                 companyId = await ResolveCompanyIdAsync(input);
                 if (companyId == null)
                     return NotFoundCustomer();
@@ -1413,18 +1423,14 @@ REGOLE:
             else
             {
                 var own = await _permits.GetIdCompany();
-                if (own == null)
-                    return JsonSerializer.Serialize(new { error = "Impossibile aprire un ticket: all'utente non è assegnata nessuna azienda." });
-
                 var requested = await ResolveCompanyIdAsync(input);
-                if (requested != null && requested != own)
-                {
-                    var allowed = await _permits.GetIdCompanies();
-                    if (!allowed.Contains(requested.Value))
-                        return JsonSerializer.Serialize(new { error = "Non puoi aprire ticket per altre aziende: il ticket può essere aperto solo per la tua azienda." });
-                }
+
+                if (requested != null && !perimeter.Contains(requested.Value))
+                    return JsonSerializer.Serialize(new { error = "Non puoi aprire ticket per aziende fuori dal tuo perimetro: sono ammesse la tua azienda e, se sei un rivenditore, quelle a te collegate." });
 
                 companyId = requested ?? own;
+                if (companyId == null)
+                    return JsonSerializer.Serialize(new { error = "Impossibile aprire un ticket: all'utente non è assegnata nessuna azienda." });
             }
 
             if (!await _permits.CanGetObject(companyId))

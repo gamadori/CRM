@@ -129,7 +129,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker-1.0.js', { scope: '/' })
+                navigator.serviceWorker.register('/service-worker-1.0.js', { scope: '/', updateViaCache: 'none' })
                     .then(registration => {
                         console.log('✅ Service Worker registrato con successo:', registration.scope);
 

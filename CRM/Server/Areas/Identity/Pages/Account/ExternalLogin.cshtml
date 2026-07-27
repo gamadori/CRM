@@ -1,33 +1,43 @@
-﻿@page
+@page
 @model ExternalLoginModel
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Accesso esterno";
+    Layout = "_LayoutIdentity";
 }
 
-<h1>@ViewData["Title"]</h1>
-<h4 id="external-login-title">Associate your @Model.ProviderDisplayName account.</h4>
-<hr />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
 
-<p id="external-login-description" class="text-info">
-    You've successfully authenticated with <strong>@Model.ProviderDisplayName</strong>.
-    Please enter an email address for this site below and click the Register button to finish
-    logging in.
-</p>
+@section Styles {
+    <link rel="stylesheet" href="~/css/identity-login.css" asp-append-version="true" />
+}
 
-<div class="row">
-    <div class="col-md-4">
-        <form asp-page-handler="Confirmation" asp-route-returnUrl="@Model.ReturnUrl" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="mb-3">
-                <label asp-for="Input.Email"></label>
-                <input asp-for="Input.Email" class="form-control" />
-                <span asp-validation-for="Input.Email" class="text-danger"></span>
+@* Questa pagina si vede solo quando l'accesso NON va a buon fine: quando riesce si viene
+   rimandati direttamente all'applicazione. *@
+<div class="login-wrapper">
+    <div class="login-card login-card-narrow">
+        <div class="login-form-pane">
+            <div class="login-header">
+                <div class="login-logo">
+                    <img src="/img/CRMLogin.png" alt="CRM Logo" />
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Register</button>
-        </form>
+
+            <div class="login-body">
+                <div class="outcome-box">
+                    <span class="material-symbols-outlined outcome-icon">info</span>
+                    <h1 class="outcome-title">@Model.OutcomeTitle</h1>
+                    <p class="outcome-detail">@Model.OutcomeDetail</p>
+                </div>
+
+                <a class="btn-login btn-login-secondary" asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    <span>Torna al login</span>
+                </a>
+
+                <div class="footer-text">
+                    © 2025 CRM System
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}

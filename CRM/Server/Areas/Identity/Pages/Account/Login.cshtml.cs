@@ -47,6 +47,12 @@ namespace CRM.Server.Areas.Identity.Pages.Account
         [TempData]
         public string ErrorMessage { get; set; }
 
+        /// <summary>
+        /// Provider di login esterni attivi. Vuoto se non ne è configurato nessuno: in quel caso
+        /// la pagina resta esattamente quella di prima, senza sezione aggiuntiva.
+        /// </summary>
+        public IList<AuthenticationScheme> ExternalLogins { get; set; } = new List<AuthenticationScheme>();
+
         public class InputModel
         {
             [Required]
@@ -77,7 +83,7 @@ namespace CRM.Server.Areas.Identity.Pages.Account
             // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-           
+            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
             ReturnUrl = returnUrl;
             return Page();
@@ -86,6 +92,9 @@ namespace CRM.Server.Areas.Identity.Pages.Account
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
             returnUrl ??= Url.Content("~/");
+
+            // Servono anche in POST: se il form torna con un errore, i pulsanti devono restare.
+            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 
             if (Input == null)
             {

@@ -7,29 +7,20 @@ using static CRM.Shared.LogEvent;
 namespace CRM.Server.Services
 {
     /// <summary>
-    /// Motore dei preavvisi dei ticket. Periodicamente cerca i ticket il cui preavviso è maturo
-    /// e notifica gli assegnatari via push (fallback email). Sono gestiti due preavvisi indipendenti:
-    ///  1) sull'appuntamento (Date + Time), con anticipo <see cref="GlobalSetting.TicketAppointmentReminderMinutes"/>;
-    ///  2) sulla scadenza (DateExpired) se il ticket non è ancora chiuso, con anticipo
-    ///     <see cref="GlobalSetting.TicketExpiryReminderMinutes"/>.
-    /// I tempi di preavviso sono configurabili in GlobalSettings; l'intero motore è disattivabile
-    /// con <see cref="GlobalSetting.TicketReminderEnabled"/>.
-    /// Ogni preavviso ha uno stato di consegna esplicito (Pending → Sent | Failed) con retry e backoff.
+    /// Scheduler dei preavvisi ticket. Cerca periodicamente i ticket maturi e delega
+    /// destinatari/canali a <see cref="ITicketReminderNotificationService"/>.
     /// </summary>
     public class TicketReminderBackgroundService : BackgroundService
     {
-        private readonly IServiceScopeFactory _scopeFactory;
-        private readonly ILogger<TicketReminderBackgroundService> _logger;
         private static readonly TimeSpan Interval = TimeSpan.FromMinutes(1);
-
-        /// <summary>Numero massimo di tentativi di consegna prima di rinunciare.</summary>
-        private const int MaxRetries = 5;
-
-        /// <summary>Attesa minima tra due tentativi sullo stesso preavviso (backoff).</summary>
         private static readonly TimeSpan RetryDelay = TimeSpan.FromMinutes(5);
 
-        /// <summary>Lunghezza massima del messaggio d'errore salvato per diagnostica.</summary>
+        private const int MaxRetries = 5;
         private const int MaxErrorLength = 1000;
+        private const int MaxBatchSize = 100;
+
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly ILogger<TicketReminderBackgroundService> _logger;
 
         public TicketReminderBackgroundService(IServiceScopeFactory scopeFactory, ILogger<TicketReminderBackgroundService> logger)
         {
@@ -39,8 +30,8 @@ namespace CRM.Server.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            // Attende l'avvio completo dell'app prima del primo giro.
-            try { await Task.Delay(TimeSpan.FromSeconds(25), stoppingToken); } catch (TaskCanceledException) { return; }
+            try { await Task.Delay(TimeSpan.FromSeconds(25), stoppingToken); }
+            catch (TaskCanceledException) { return; }
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -53,7 +44,8 @@ namespace CRM.Server.Services
                     _logger.LogError(ex, "TicketReminderBackgroundService: errore nel ciclo");
                 }
 
-                try { await Task.Delay(Interval, stoppingToken); } catch (TaskCanceledException) { break; }
+                try { await Task.Delay(Interval, stoppingToken); }
+                catch (TaskCanceledException) { break; }
             }
         }
 
@@ -67,83 +59,102 @@ namespace CRM.Server.Services
             if (!settings.TicketReminderEnabled)
                 return;
 
-            var push = sp.GetRequiredService<IPushNotificationService>();
-            var email = sp.GetRequiredService<IEmailSenderPlus>();
+            var notifier = sp.GetRequiredService<ITicketReminderNotificationService>();
             var log = sp.GetRequiredService<ILogEventService>();
 
-            // Override per Tipo Ticket: se valorizzati sostituiscono il default globale.
-            var apptOverrides = await db.TicketTypes
-                .Where(tt => tt.AppointmentReminderMinutes != null)
-                .ToDictionaryAsync(tt => tt.Id, tt => tt.AppointmentReminderMinutes!.Value, ct);
+            var appointmentOverrides = await db.TicketTypes
+                .Where(x => x.AppointmentReminderMinutes != null)
+                .ToDictionaryAsync(x => x.Id, x => x.AppointmentReminderMinutes!.Value, ct);
+
             var expiryOverrides = await db.TicketTypes
-                .Where(tt => tt.ExpiryReminderMinutes != null)
-                .ToDictionaryAsync(tt => tt.Id, tt => tt.ExpiryReminderMinutes!.Value, ct);
+                .Where(x => x.ExpiryReminderMinutes != null)
+                .ToDictionaryAsync(x => x.Id, x => x.ExpiryReminderMinutes!.Value, ct);
 
-            var globalApptMin = Math.Max(0, settings.TicketAppointmentReminderMinutes);
-            var globalExpiryMin = Math.Max(0, settings.TicketExpiryReminderMinutes);
+            await ProcessAppointmentRemindersAsync(
+                db,
+                notifier,
+                log,
+                Math.Max(0, settings.TicketAppointmentReminderMinutes),
+                appointmentOverrides,
+                ct);
 
-            await ProcessAppointmentRemindersAsync(db, push, email, log, globalApptMin, apptOverrides, ct);
-            await ProcessExpiryRemindersAsync(db, push, email, log, globalExpiryMin, expiryOverrides, ct);
+            await ProcessExpiryRemindersAsync(
+                db,
+                notifier,
+                log,
+                Math.Max(0, settings.TicketExpiryReminderMinutes),
+                expiryOverrides,
+                ct);
         }
 
-        /// <summary>Anticipo effettivo (minuti) per un ticket: override del tipo se presente, altrimenti globale.</summary>
-        private static int EffectiveMinutes(int idType, int globalMinutes, IReadOnlyDictionary<int, int> overrides)
-            => overrides.TryGetValue(idType, out var m) ? Math.Max(0, m) : globalMinutes;
-
-        // ─── Preavviso appuntamento (Date + Time) ────────────────────────────────
         private async Task ProcessAppointmentRemindersAsync(
-            ApplicationDbContext db, IPushNotificationService push, IEmailSenderPlus email,
-            ILogEventService log, int globalMinutes, IReadOnlyDictionary<int, int> overrides, CancellationToken ct)
+            ApplicationDbContext db,
+            ITicketReminderNotificationService notifier,
+            ILogEventService log,
+            int globalMinutes,
+            IReadOnlyDictionary<int, int> overrides,
+            CancellationToken ct)
         {
             var now = DateTime.Now;
             var retryThreshold = now - RetryDelay;
-            // Limite grossolano sulla data col massimo anticipo possibile (globale o override);
-            // il filtro preciso su Date+Time e sull'anticipo del singolo tipo è in memoria.
-            var maxMinutes = overrides.Count > 0 ? Math.Max(globalMinutes, overrides.Values.Max()) : globalMinutes;
+            var maxMinutes = MaxReminderLead(globalMinutes, overrides);
             var upperDate = now.AddMinutes(maxMinutes);
 
             var candidates = await db.Tickets
-                .Include(t => t.Company)
-                .Include(t => t.AssignedUsers)
-                .Where(t => !t.Closed && t.Date != null && t.Time != null && t.Date <= upperDate
-                         && (t.ReminderApptStatus == ReminderStatus.Pending
-                             || (t.ReminderApptStatus == ReminderStatus.Failed
-                                 && t.ReminderApptRetryCount < MaxRetries
-                                 && (t.ReminderApptLastAttemptAt == null || t.ReminderApptLastAttemptAt <= retryThreshold))))
-                .OrderBy(t => t.Date).ThenBy(t => t.Time)
-                .Take(100)
+                .Include(x => x.Company)
+                .Where(x => !x.Closed
+                         && x.Date != null
+                         && x.Time != null
+                         && x.Date <= upperDate
+                         && (x.ReminderApptStatus == ReminderStatus.Pending
+                             || (x.ReminderApptStatus == ReminderStatus.Failed
+                                 && x.ReminderApptRetryCount < MaxRetries
+                                 && (x.ReminderApptLastAttemptAt == null || x.ReminderApptLastAttemptAt <= retryThreshold))))
+                .OrderBy(x => x.Date)
+                .ThenBy(x => x.Time)
+                .Take(MaxBatchSize)
                 .ToListAsync(ct);
 
             foreach (var ticket in candidates)
             {
-                var lead = TimeSpan.FromMinutes(EffectiveMinutes(ticket.IdType, globalMinutes, overrides));
-                var apptDt = ticket.Date!.Value.Date + ticket.Time!.Value.ToTimeSpan();
-                var reminderMoment = apptDt - lead;
+                var appointmentAt = ticket.Date!.Value.Date + ticket.Time!.Value.ToTimeSpan();
+                var reminderAt = appointmentAt - TimeSpan.FromMinutes(EffectiveMinutes(ticket.IdType, globalMinutes, overrides));
 
-                if (reminderMoment > now)
-                    continue; // preavviso non ancora dovuto
+                if (reminderAt > now)
+                    continue;
 
-                if (apptDt < now)
+                if (appointmentAt < now)
                 {
-                    // Appuntamento già passato (es. app spenta nel frattempo): nessun preavviso utile.
                     ticket.ReminderApptStatus = ReminderStatus.Sent;
+                    ticket.ReminderLastError = null;
                     await db.SaveChangesAsync(ct);
                     continue;
                 }
-
-                var recipients = Recipients(ticket);
-                if (recipients.Count == 0)
-                    continue; // nessun assegnatario: riprova al prossimo giro (in attesa di assegnazione)
 
                 ticket.ReminderApptRetryCount++;
                 ticket.ReminderApptLastAttemptAt = DateTime.Now;
 
                 var title = "Promemoria appuntamento ticket";
-                var body = BuildBody($"Appuntamento {apptDt:dd/MM/yyyy HH:mm}", ticket);
+                var body = BuildBody($"Appuntamento {appointmentAt:dd/MM/yyyy HH:mm}", ticket);
 
                 try
                 {
-                    await NotifyAsync(db, push, email, recipients, title, body, $"/Tickets/{ticket.Id}/Details", ct);
+                    var result = await notifier.NotifyAsync(new TicketReminderNotification
+                    {
+                        IdTicket = ticket.Id,
+                        Kind = TicketReminderKind.Appointment,
+                        Title = title,
+                        Body = body,
+                        Url = $"/Tickets/{ticket.Id}/Info"
+                    }, ct);
+
+                    if (!result.HasRecipients)
+                    {
+                        ResetAppointmentAttempt(ticket);
+                        await db.SaveChangesAsync(ct);
+                        continue;
+                    }
+
                     ticket.ReminderApptStatus = ReminderStatus.Sent;
                     ticket.ReminderLastError = null;
                 }
@@ -158,51 +169,66 @@ namespace CRM.Server.Services
             }
         }
 
-        // ─── Preavviso scadenza (DateExpired, solo se non chiuso) ─────────────────
         private async Task ProcessExpiryRemindersAsync(
-            ApplicationDbContext db, IPushNotificationService push, IEmailSenderPlus email,
-            ILogEventService log, int globalMinutes, IReadOnlyDictionary<int, int> overrides, CancellationToken ct)
+            ApplicationDbContext db,
+            ITicketReminderNotificationService notifier,
+            ILogEventService log,
+            int globalMinutes,
+            IReadOnlyDictionary<int, int> overrides,
+            CancellationToken ct)
         {
             var now = DateTime.Now;
             var retryThreshold = now - RetryDelay;
-            var maxMinutes = overrides.Count > 0 ? Math.Max(globalMinutes, overrides.Values.Max()) : globalMinutes;
-            var upperBound = now.AddMinutes(maxMinutes);
+            var upperBound = now.AddMinutes(MaxReminderLead(globalMinutes, overrides));
 
             var candidates = await db.Tickets
-                .Include(t => t.Company)
-                .Include(t => t.AssignedUsers)
-                .Where(t => !t.Closed && t.DateExpired != null && t.DateExpired <= upperBound
-                         && (t.ReminderExpiryStatus == ReminderStatus.Pending
-                             || (t.ReminderExpiryStatus == ReminderStatus.Failed
-                                 && t.ReminderExpiryRetryCount < MaxRetries
-                                 && (t.ReminderExpiryLastAttemptAt == null || t.ReminderExpiryLastAttemptAt <= retryThreshold))))
-                .OrderBy(t => t.DateExpired)
-                .Take(100)
+                .Include(x => x.Company)
+                .Where(x => !x.Closed
+                         && x.DateExpired != null
+                         && x.DateExpired <= upperBound
+                         && (x.ReminderExpiryStatus == ReminderStatus.Pending
+                             || (x.ReminderExpiryStatus == ReminderStatus.Failed
+                                 && x.ReminderExpiryRetryCount < MaxRetries
+                                 && (x.ReminderExpiryLastAttemptAt == null || x.ReminderExpiryLastAttemptAt <= retryThreshold))))
+                .OrderBy(x => x.DateExpired)
+                .Take(MaxBatchSize)
                 .ToListAsync(ct);
 
             foreach (var ticket in candidates)
             {
-                // Anticipo effettivo del tipo: un ticket ripescato dal bound massimo potrebbe
-                // non essere ancora "maturo" per il suo anticipo specifico → si salta.
-                var lead = TimeSpan.FromMinutes(EffectiveMinutes(ticket.IdType, globalMinutes, overrides));
-                if (ticket.DateExpired!.Value - lead > now)
+                var reminderAt = ticket.DateExpired!.Value - TimeSpan.FromMinutes(EffectiveMinutes(ticket.IdType, globalMinutes, overrides));
+                if (reminderAt > now)
                     continue;
-
-                var recipients = Recipients(ticket);
-                if (recipients.Count == 0)
-                    continue; // nessun assegnatario: riprova al prossimo giro
 
                 ticket.ReminderExpiryRetryCount++;
                 ticket.ReminderExpiryLastAttemptAt = DateTime.Now;
 
-                var expired = ticket.DateExpired!.Value < now;
+                var expired = ticket.DateExpired.Value < now;
                 var title = expired ? "Ticket scaduto non chiuso" : "Ticket in scadenza";
-                var when = expired ? $"Scaduto il {ticket.DateExpired:dd/MM/yyyy HH:mm}" : $"Scadenza {ticket.DateExpired:dd/MM/yyyy HH:mm}";
+                var when = expired
+                    ? $"Scaduto il {ticket.DateExpired:dd/MM/yyyy HH:mm}"
+                    : $"Scadenza {ticket.DateExpired:dd/MM/yyyy HH:mm}";
                 var body = BuildBody(when, ticket);
 
                 try
                 {
-                    await NotifyAsync(db, push, email, recipients, title, body, $"/Tickets/{ticket.Id}/Details", ct);
+                    var result = await notifier.NotifyAsync(new TicketReminderNotification
+                    {
+                        IdTicket = ticket.Id,
+                        Kind = TicketReminderKind.Expiry,
+                        Title = title,
+                        Body = body,
+                        Url = $"/Tickets/{ticket.Id}/Info",
+                        TicketIsExpired = expired
+                    }, ct);
+
+                    if (!result.HasRecipients)
+                    {
+                        ResetExpiryAttempt(ticket);
+                        await db.SaveChangesAsync(ct);
+                        continue;
+                    }
+
                     ticket.ReminderExpiryStatus = ReminderStatus.Sent;
                     ticket.ReminderLastError = null;
                 }
@@ -217,39 +243,22 @@ namespace CRM.Server.Services
             }
         }
 
-        /// <summary>Utenti assegnati al ticket (collezione multipla + campo legacy), distinti.</summary>
-        private static List<string> Recipients(Ticket ticket)
+        private static int EffectiveMinutes(int idType, int globalMinutes, IReadOnlyDictionary<int, int> overrides)
+            => overrides.TryGetValue(idType, out var minutes) ? Math.Max(0, minutes) : globalMinutes;
+
+        private static int MaxReminderLead(int globalMinutes, IReadOnlyDictionary<int, int> overrides)
+            => overrides.Count == 0 ? globalMinutes : Math.Max(globalMinutes, overrides.Values.Max());
+
+        private static void ResetAppointmentAttempt(Ticket ticket)
         {
-            var ids = ticket.AssignedUsers?
-                .Select(a => a.IdUser)
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .ToList() ?? new List<string>();
-
-            if (!string.IsNullOrWhiteSpace(ticket.IdUserAssigned) && !ids.Contains(ticket.IdUserAssigned))
-                ids.Add(ticket.IdUserAssigned);
-
-            return ids.Distinct().ToList();
+            ticket.ReminderApptRetryCount = Math.Max(0, ticket.ReminderApptRetryCount - 1);
+            ticket.ReminderApptLastAttemptAt = null;
         }
 
-        /// <summary>Invia la notifica push a ciascun destinatario, con fallback email se la push non arriva.</summary>
-        private static async Task NotifyAsync(
-            ApplicationDbContext db, IPushNotificationService push, IEmailSenderPlus email,
-            List<string> userIds, string title, string body, string url, CancellationToken ct)
+        private static void ResetExpiryAttempt(Ticket ticket)
         {
-            foreach (var userId in userIds)
-            {
-                var sent = await push.SendToUserAsync(userId, new { title, body, url });
-
-                if (sent <= 0)
-                {
-                    var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
-                    if (user != null && !string.IsNullOrWhiteSpace(user.Email))
-                    {
-                        await email.SendEmailAsync(new List<string> { user.Email }, EmailsTypes.NoticeReminder,
-                            null, title, body, null);
-                    }
-                }
-            }
+            ticket.ReminderExpiryRetryCount = Math.Max(0, ticket.ReminderExpiryRetryCount - 1);
+            ticket.ReminderExpiryLastAttemptAt = null;
         }
 
         private static string BuildBody(string when, Ticket ticket)
@@ -257,14 +266,15 @@ namespace CRM.Server.Services
             var company = ticket.Company?.RagioneSociale;
             var head = string.IsNullOrWhiteSpace(ticket.Numero) ? $"Ticket #{ticket.Id}" : $"Ticket {ticket.Numero}";
             return string.IsNullOrWhiteSpace(company)
-                ? $"{head} — {when}"
-                : $"{head} ({company}) — {when}";
+                ? $"{head} - {when}"
+                : $"{head} ({company}) - {when}";
         }
 
         private static string Truncate(string? value, int maxLength)
         {
             if (string.IsNullOrEmpty(value))
                 return string.Empty;
+
             return value.Length <= maxLength ? value : value.Substring(0, maxLength);
         }
     }

@@ -20,11 +20,13 @@ namespace CRM.Server.Services
         private readonly ILogEventService _logEventService;
         private readonly ILanguagesService _languagesService;
         private readonly ICommessaFasiService _commessaFasiService;
+        private readonly ITicketBlockNotificationService _ticketBlockNotifications;
         
         public TicketsService(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor,
             IPermitsService permitsService, UserManager<ApplicationUser> userManager,
             ILogEventService logEventService, ILanguagesService languagesService,
-            ICommessaFasiService projectTasksService)
+            ICommessaFasiService projectTasksService,
+            ITicketBlockNotificationService ticketBlockNotifications)
         {
             _context = context;
             _httpContextAccessor = httpContextAccessor;
@@ -33,6 +35,7 @@ namespace CRM.Server.Services
             _logEventService = logEventService;
             _languagesService = languagesService;
             _commessaFasiService = projectTasksService;
+            _ticketBlockNotifications = ticketBlockNotifications;
         }
 
         #region Existing methods
@@ -145,8 +148,10 @@ namespace CRM.Server.Services
         {
             try
             {
-                var ticket = await _context.Tickets.Include(x => x.Company).Include(x => x.TicketType)
-                    .Include(x => x.Article).ThenInclude(x => x.Product).Where(x => x.Id == id).FirstOrDefaultAsync();
+                var query = _context.Tickets.Include(x => x.Company).Include(x => x.TicketType)
+                    .Include(x => x.Article).ThenInclude(x => x.Product).Where(x => x.Id == id);
+
+                var ticket = await (await ApplyVisibilityScopeAsync(query)).FirstOrDefaultAsync();
 
                 if (ticket != null)
                 {
@@ -170,6 +175,7 @@ namespace CRM.Server.Services
                 
 
                 var tickets = _context.Tickets.Where(x => x.Id == id).Include(x => x.UserOpened).AsQueryable();
+                tickets = await ApplyVisibilityScopeAsync(tickets);
 
                 var ticketModel = await tickets.Select(x => new TicketDTO()
                 {
@@ -186,7 +192,11 @@ namespace CRM.Server.Services
                     DealName = x.Deal != null ? x.Deal.Name : "",
                     IdCommessaFase = x.IdCommessaFase,
                     CommessaFaseName = x.CommessaFase != null ? x.CommessaFase.Name : "",
+                    IdCommessa = x.CommessaFase != null ? x.CommessaFase.IdCommessa : (int?)null,
+                    CommessaCode = x.CommessaFase != null && x.CommessaFase.Commessa != null ? (x.CommessaFase.Commessa.Code ?? "") : "",
                     IdUserAssigned = x.IdUserAssigned,
+                    IdGroupAssigned = x.IdGroupAssigned,
+                    GroupAssigned = x.GroupAssigned != null ? x.GroupAssigned.Name : "",
                     IdCompany = x.IdCompany,
                     IdState = x.IdState,
                     IdUserOpened = x.IdUserOpened,
@@ -199,6 +209,15 @@ namespace CRM.Server.Services
                     OperationalSummaryUpdatedAt = x.OperationalSummaryUpdatedAt,
                     OperationalSummaryUpdatedBy = x.OperationalSummaryUpdatedBy,
                     OperationalSummaryUpdatedByName = x.OperationalSummaryUpdatedByUser != null ? x.OperationalSummaryUpdatedByUser.NameComplete : "",
+                    IsBlocked = x.IsBlocked,
+                    BlockReason = x.BlockReason,
+                    BlockedAt = x.BlockedAt,
+                    IdBlockedBy = x.IdBlockedBy,
+                    BlockedByName = x.BlockedByUser != null ? x.BlockedByUser.NameComplete : "",
+                    BlockResolvedAt = x.BlockResolvedAt,
+                    IdBlockResolvedBy = x.IdBlockResolvedBy,
+                    BlockResolvedByName = x.BlockResolvedByUser != null ? x.BlockResolvedByUser.NameComplete : "",
+                    BlockResolutionNote = x.BlockResolutionNote,
                     IdType = x.IdType,
                     DescType = (x.TicketType.Languages.Where(l => l.IdLanguage == idLanguage).Any()) ? x.TicketType.Languages.Where(l => l.IdLanguage == idLanguage).FirstOrDefault().Name : "",
                     TicketType = x.TicketType,
@@ -239,11 +258,9 @@ namespace CRM.Server.Services
                     tickets = tickets.OrderByDescending(x => x.Date);
                 }
 
-                if (!await _permitsService.CanAccessOtherCompany())
-                {
-                    var idCompany = await _permitsService.GetIdCompany();
-                    tickets = tickets.Where(x => x.IdCompany == idCompany);
-                }
+                // Sostituisce il vecchio filtro su CanAccessOtherCompany: quello non scattava per i
+                // rivenditori, che si ritrovavano a vedere i ticket di tutte le aziende.
+                tickets = await ApplyVisibilityScopeAsync(tickets);
 
                 if (args.DateFrom != null)
                 {
@@ -315,6 +332,11 @@ namespace CRM.Server.Services
                     tickets = tickets.Where(x => x.CommessaFase != null && x.CommessaFase.IdCommessa == args.IdCommessa);
                 }
 
+                if (args.IsBlocked != null)
+                {
+                    tickets = tickets.Where(x => x.IsBlocked == args.IsBlocked);
+                }
+
                 tickets = FilterByType(tickets, (TicketTypeSearch)args.TypeSearch, idUser);
 
                 if (args.Filter != null && args.Filter.Length > 0)
@@ -349,7 +371,11 @@ namespace CRM.Server.Services
                     DealName = x.Deal != null ? x.Deal.Name : "",
                     IdCommessaFase = x.IdCommessaFase,
                     CommessaFaseName = x.CommessaFase != null ? x.CommessaFase.Name : "",
+                    IdCommessa = x.CommessaFase != null ? x.CommessaFase.IdCommessa : (int?)null,
+                    CommessaCode = x.CommessaFase != null && x.CommessaFase.Commessa != null ? (x.CommessaFase.Commessa.Code ?? "") : "",
                     IdUserAssigned = x.IdUserAssigned,
+                    IdGroupAssigned = x.IdGroupAssigned,
+                    GroupAssigned = x.GroupAssigned != null ? x.GroupAssigned.Name : "",
                     IdCompany = x.IdCompany,
                     IdState = x.IdState,
                     IdUserOpened = x.IdUserOpened,
@@ -366,6 +392,15 @@ namespace CRM.Server.Services
                     OperationalSummaryUpdatedAt = x.OperationalSummaryUpdatedAt,
                     OperationalSummaryUpdatedBy = x.OperationalSummaryUpdatedBy,
                     OperationalSummaryUpdatedByName = x.OperationalSummaryUpdatedByUser != null ? x.OperationalSummaryUpdatedByUser.NameComplete : "",
+                    IsBlocked = x.IsBlocked,
+                    BlockReason = x.BlockReason,
+                    BlockedAt = x.BlockedAt,
+                    IdBlockedBy = x.IdBlockedBy,
+                    BlockedByName = x.BlockedByUser != null ? x.BlockedByUser.NameComplete : "",
+                    BlockResolvedAt = x.BlockResolvedAt,
+                    IdBlockResolvedBy = x.IdBlockResolvedBy,
+                    BlockResolvedByName = x.BlockResolvedByUser != null ? x.BlockResolvedByUser.NameComplete : "",
+                    BlockResolutionNote = x.BlockResolutionNote,
                     ContactName = x.Contact != null ? x.Contact.NameComplete : "",
                     Time = x.Time,
                     Closed = x.Closed,
@@ -511,6 +546,7 @@ namespace CRM.Server.Services
 
                 Ticket? ticket = await _context.Tickets.FindAsync(id);
                 if (ticket == null) return false;
+                if (ticket.IsBlocked) return false;
 
                 ticket.DateClosed = DateTime.Now;
                 ticket.CloseDescription = model.Description;
@@ -550,6 +586,74 @@ namespace CRM.Server.Services
             }
         }
 
+        public async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> BlockAsync(int id, TicketBlockRequest request)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.Reason))
+                    return FailTicket("Indica il motivo del blocco.", System.Net.HttpStatusCode.BadRequest);
+
+                var ticket = await _context.Tickets.FindAsync(id);
+                if (ticket == null)
+                    return FailTicket("Ticket non trovato.", System.Net.HttpStatusCode.NotFound);
+
+                if (ticket.Closed)
+                    return FailTicket("Un ticket chiuso non puo' essere bloccato.", System.Net.HttpStatusCode.Conflict);
+
+                var currentUserId = await _permitsService.IdUser();
+                ticket.IsBlocked = true;
+                ticket.BlockReason = request.Reason.Trim();
+                ticket.BlockedAt = DateTime.Now;
+                ticket.IdBlockedBy = currentUserId;
+                ticket.BlockResolvedAt = null;
+                ticket.IdBlockResolvedBy = null;
+                ticket.BlockResolutionNote = null;
+
+                await _context.SaveChangesAsync();
+                await _commessaFasiService.RecomputeFaseProgressAsync(ticket.IdCommessaFase);
+                await _ticketBlockNotifications.NotifyBlockedAsync(ticket.Id);
+
+                return await ReloadTicketResponseAsync(ticket.Id, "Blocco segnalato.");
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsService), nameof(BlockAsync), EventsTypes.Error, ex);
+                return FailTicket("Errore durante il blocco del ticket.", System.Net.HttpStatusCode.InternalServerError);
+            }
+        }
+
+        public async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> UnblockAsync(int id, TicketUnblockRequest request)
+        {
+            try
+            {
+                var ticket = await _context.Tickets.FindAsync(id);
+                if (ticket == null)
+                    return FailTicket("Ticket non trovato.", System.Net.HttpStatusCode.NotFound);
+
+                if (!ticket.IsBlocked)
+                    return await ReloadTicketResponseAsync(ticket.Id, "Il ticket non risulta bloccato.");
+
+                var currentUserId = await _permitsService.IdUser();
+                ticket.IsBlocked = false;
+                ticket.BlockResolvedAt = DateTime.Now;
+                ticket.IdBlockResolvedBy = currentUserId;
+                ticket.BlockResolutionNote = string.IsNullOrWhiteSpace(request?.ResolutionNote)
+                    ? null
+                    : request.ResolutionNote.Trim();
+
+                await _context.SaveChangesAsync();
+                await _commessaFasiService.RecomputeFaseProgressAsync(ticket.IdCommessaFase);
+                await _ticketBlockNotifications.NotifyUnblockedAsync(ticket.Id);
+
+                return await ReloadTicketResponseAsync(ticket.Id, "Ticket sbloccato.");
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsService), nameof(UnblockAsync), EventsTypes.Error, ex);
+                return FailTicket("Errore durante lo sblocco del ticket.", System.Net.HttpStatusCode.InternalServerError);
+            }
+        }
+
         #endregion
 
         #region State
@@ -562,6 +666,9 @@ namespace CRM.Server.Services
             ticket.StateColor = ticketState?.Color;
 
             ticket.Permits = await _permitsService.TicketPermits(ticket.Id, ticket.IdCompany, ticket.IdUserAssigned);
+            ticket.IsAssignedToCurrentUser = await _permitsService.IsAssignedToTicket(ticket.Id);
+            ticket.CanClaim = await CanCurrentUserClaimTicketAsync(ticket.Id);
+            ticket.CanManageBlock = await CanCurrentUserManageBlockAsync(ticket.Id);
 
             if (!await _permitsService.CanViewInternalData())
                 ticket.CloseNote = "";
@@ -656,6 +763,31 @@ namespace CRM.Server.Services
                 || await _context.TicketUserAssignments.AnyAsync(a => a.IdTicket == ticketId);
         }
 
+        private async Task<bool> CanCurrentUserManageBlockAsync(int idTicket)
+        {
+            if (!await _permitsService.CanGetTicket(idTicket))
+                return false;
+
+            if (await _permitsService.IsAdmin() || await _permitsService.IsSuperUser())
+                return true;
+
+            if (!await _permitsService.BelongsToHeadCompany())
+                return false;
+
+            var currentUserId = await _permitsService.IdUser();
+            if (string.IsNullOrWhiteSpace(currentUserId))
+                return false;
+
+            return await _context.Tickets
+                .AsNoTracking()
+                .AnyAsync(t => t.Id == idTicket
+                    && (t.IdUserAssigned == currentUserId
+                        || t.AssignedUsers.Any(a => a.IdUser == currentUserId)
+                        || (t.CommessaFase != null
+                            && t.CommessaFase.Commessa != null
+                            && t.CommessaFase.Commessa.IdUserResponsible == currentUserId)));
+        }
+
         private async Task NormalizeCommessaFaseLinkAsync(Ticket ticket)
         {
             if (ticket.IdCommessaFase == null)
@@ -666,7 +798,23 @@ namespace CRM.Server.Services
                 .AnyAsync(t => t.Id == ticket.IdCommessaFase);
 
             if (!exists)
+            {
                 ticket.IdCommessaFase = null;
+                return;
+            }
+
+            // Collegare un ticket a una fase equivale a prenderla in carico: Standard e Client
+            // possono farlo solo sul gruppo a cui appartengono.
+            if (!await _commessaFasiService.CanTakeFaseAsync(ticket.IdCommessaFase.Value))
+                throw new UnauthorizedAccessException(
+                    "Non appartieni al gruppo abilitato a eseguire questa fase di commessa.");
+
+            // ...e la fase non e' avviabile finche' i predecessori non sono completati: le
+            // dipendenze sono vincolanti, non un suggerimento grafico.
+            var blockers = await _commessaFasiService.GetStartBlockersAsync(ticket.IdCommessaFase.Value);
+            if (blockers.Count > 0)
+                throw new ProductionSequenceException(
+                    $"La fase non e' avviabile: fasi precedenti non completate ({string.Join(", ", blockers)}).");
         }
 
         #endregion
@@ -736,6 +884,26 @@ namespace CRM.Server.Services
             return day;
         }
 
+        /// <summary>
+        /// Perimetro di visibilita' dei ticket, per azienda.
+        /// Chi appartiene all'azienda madre vede tutti i ticket, qualunque sia il ruolo: per lui
+        /// il ruolo limita le AZIONI (service, chat, chiusura, auto-assegnazione), non la vista.
+        /// Chi non vi appartiene vede solo la propria azienda; se e' un rivenditore, anche quelle
+        /// figlie ricorsivamente. Entrambi i casi sono gia' risolti da GetVisibleCompanyIds:
+        /// restituisce null per l'azienda madre e l'albero delle aziende per il rivenditore.
+        /// Da non sostituire con CanAccessOtherCompany, che e' true anche per i rivenditori e
+        /// lascerebbe loro vedere i ticket di tutte le aziende.
+        /// </summary>
+        private async Task<IQueryable<Ticket>> ApplyVisibilityScopeAsync(IQueryable<Ticket> tickets)
+        {
+            var allowed = await _permitsService.GetVisibleCompanyIds();
+
+            if (allowed == null)
+                return tickets;
+
+            return tickets.Where(x => allowed.Contains(x.IdCompany));
+        }
+
         private IQueryable<Ticket> FilterByType(IQueryable<Ticket> tickets, TicketTypeSearch filter, string idUser)
         {
             switch (filter)
@@ -771,9 +939,34 @@ namespace CRM.Server.Services
                 case TicketTypeSearch.Closed:
                     tickets = tickets.Where(x => x.Closed);
                     break;
+
+                case TicketTypeSearch.Blocked:
+                    tickets = tickets.Where(x => !x.Closed && x.IsBlocked);
+                    break;
             }
 
             return tickets;
+        }
+
+        private async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> ReloadTicketResponseAsync(int idTicket, string message)
+        {
+            return new CRM.Client.Models.APIResponseMessage<TicketDTO>
+            {
+                State = true,
+                Code = System.Net.HttpStatusCode.OK,
+                Message = message,
+                Data = await GetDetailsAsync(idTicket)
+            };
+        }
+
+        private static CRM.Client.Models.APIResponseMessage<TicketDTO> FailTicket(string message, System.Net.HttpStatusCode code)
+        {
+            return new CRM.Client.Models.APIResponseMessage<TicketDTO>
+            {
+                State = false,
+                Code = code,
+                Message = message
+            };
         }
 
         #endregion
@@ -791,8 +984,16 @@ namespace CRM.Server.Services
                 if (ticket == null)
                     return new List<string>();
 
-                return ticket.AssignedUsers
+                var userIds = ticket.AssignedUsers
                     .Select(au => au.IdUser)
+                    .Where(idUser => !string.IsNullOrWhiteSpace(idUser))
+                    .ToList();
+
+                if (!string.IsNullOrWhiteSpace(ticket.IdUserAssigned))
+                    userIds.Add(ticket.IdUserAssigned);
+
+                return userIds
+                    .Distinct()
                     .ToList();
             }
             catch (Exception ex)
@@ -877,6 +1078,108 @@ namespace CRM.Server.Services
                 await _logEventService.RegisterAsync(nameof(TicketsService), nameof(AssignUsersAsync), EventsTypes.Error, ex);
                 return new AssignUsersResult { Success = false, ErrorMessage = ex.Message };
             }
+        }
+
+        public async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> ClaimAsync(int idTicket, string? currentUserId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(currentUserId))
+                    return FailClaim("Utente non autenticato", System.Net.HttpStatusCode.Unauthorized);
+
+                var ticket = await _context.Tickets
+                    .Include(t => t.AssignedUsers)
+                    .Include(t => t.GroupAssigned)
+                    .FirstOrDefaultAsync(t => t.Id == idTicket);
+
+                if (ticket == null)
+                    return FailClaim("Ticket non trovato", System.Net.HttpStatusCode.NotFound);
+
+                if (!await _permitsService.CanGetObject(ticket.IdCompany))
+                    return FailClaim("Ticket non accessibile", System.Net.HttpStatusCode.Forbidden);
+
+                if (ticket.Closed)
+                    return FailClaim("Un ticket chiuso non puo' essere preso in carico", System.Net.HttpStatusCode.BadRequest);
+
+                if (ticket.AssignedUsers.Any(a => a.IdUser == currentUserId) || ticket.IdUserAssigned == currentUserId)
+                    return await OkClaim(idTicket, "Ticket gia' in carico a te");
+
+                if (!await CanCurrentUserClaimTicketAsync(ticket, currentUserId))
+                    return FailClaim("Non appartieni al gruppo assegnato a questo ticket", System.Net.HttpStatusCode.Forbidden);
+
+                _context.TicketUserAssignments.Add(new TicketUserAssignment
+                {
+                    IdTicket = ticket.Id,
+                    IdUser = currentUserId,
+                    AssignedDate = DateTime.Now,
+                    AssignedBy = currentUserId
+                });
+
+                ticket.IdUserAssigned ??= currentUserId;
+                ticket.IdState = await _context.TicketStates
+                    .Where(s => s.State == (int)eTicketStates.Processing)
+                    .Select(s => (int?)s.Id)
+                    .FirstOrDefaultAsync() ?? ticket.IdState;
+
+                await _context.SaveChangesAsync();
+                return await OkClaim(idTicket, "Ticket preso in carico");
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsService), nameof(ClaimAsync), EventsTypes.Error, ex);
+                return FailClaim("Errore nella presa in carico del ticket", System.Net.HttpStatusCode.InternalServerError);
+            }
+        }
+
+        private async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> OkClaim(int idTicket, string message)
+            => new()
+            {
+                State = true,
+                Code = System.Net.HttpStatusCode.OK,
+                Message = message,
+                Data = await GetDetailsAsync(idTicket)
+            };
+
+        private static CRM.Client.Models.APIResponseMessage<TicketDTO> FailClaim(string message, System.Net.HttpStatusCode code)
+            => new() { State = false, Code = code, Message = message };
+
+        private async Task<bool> CanCurrentUserClaimTicketAsync(int idTicket)
+        {
+            var currentUserId = await _permitsService.IdUser();
+            if (string.IsNullOrWhiteSpace(currentUserId))
+                return false;
+
+            var ticket = await _context.Tickets
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.Id == idTicket);
+
+            return ticket != null && await CanCurrentUserClaimTicketAsync(ticket, currentUserId);
+        }
+
+        private async Task<bool> CanCurrentUserClaimTicketAsync(Ticket ticket, string currentUserId)
+        {
+            if (ticket.Closed)
+                return false;
+
+            if (ticket.IdUserAssigned == currentUserId
+                || await _context.TicketUserAssignments.AnyAsync(a => a.IdTicket == ticket.Id && a.IdUser == currentUserId))
+                return false;
+
+            if (await _permitsService.IsAdmin() || await _permitsService.IsSuperUser())
+                return true;
+
+            if (!await _permitsService.BelongsToHeadCompany())
+                return false;
+
+            if (ticket.IdGroupAssigned != null)
+            {
+                return await _context.Groups
+                    .AsNoTracking()
+                    .AnyAsync(g => g.Id == ticket.IdGroupAssigned.Value && g.Users.Any(u => u.Id == currentUserId));
+            }
+
+            var candidates = await GetUsersCanAssignTicketAsync(ticket.Id);
+            return candidates.Any(u => u.Id == currentUserId);
         }
 
         #endregion

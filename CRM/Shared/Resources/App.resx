@@ -868,4 +868,7 @@
   <data name="EmailInboxes" xml:space="preserve">
     <value>Email Inboxes</value>
   </data>
+  <data name="Workshop" xml:space="preserve">
+    <value>Workshop</value>
+  </data>
 </root>

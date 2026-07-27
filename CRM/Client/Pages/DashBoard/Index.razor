@@ -163,6 +163,17 @@ else
                 </div>
             }
 
+            @if (_model.LateExpectedCommesse > 0)
+            {
+                <div class="metric-tile tile-danger clickable" @onclick="LateExpectedCommesse">
+                    <div class="metric-icon"><span class="material-icons">event_busy</span></div>
+                    <div class="metric-text">
+                        <div class="metric-value">@_model.LateExpectedCommesse</div>
+                        <div class="metric-label">Commesse in ritardo</div>
+                    </div>
+                </div>
+            }
+
             @if (_model.UsersNeedConfirm > 0)
             {
                 <div class="metric-tile tile-violet" @onclick="UsersNeedConfirm">

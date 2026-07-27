@@ -203,6 +203,64 @@
     border: 1px solid color-mix(in srgb, #e11d48 30%, transparent);
 }
 
+.ticket-block-banner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid #fecaca;
+    border-left: 5px solid #dc2626;
+    border-radius: 8px;
+    background: #fff7f7;
+    box-shadow: var(--crm-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
+}
+
+.ticket-block-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #b91c1c;
+    background: #fee2e2;
+}
+
+.ticket-block-title {
+    font-weight: 700;
+    color: #991b1b;
+}
+
+.ticket-block-reason {
+    color: #4b1d1d;
+    white-space: pre-wrap;
+    line-height: 1.45;
+}
+
+.ticket-block-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-top: .35rem;
+    font-size: .82rem;
+    color: #7f1d1d;
+}
+
+.ticket-block-resolved {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: 1.5rem;
+    padding: .65rem .85rem;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    background: #f0fdf4;
+    color: #166534;
+    font-size: .9rem;
+}
+
 @media (max-width: 640px) {
     .summary-read-row {
         align-items: flex-start;
@@ -294,6 +352,23 @@
     font-weight: 500;
     text-align: right;
     word-break: break-word;
+    /* Senza questi il valore non puo' restringersi nel flex e i contenuti lunghi
+       (es. il nome della fase di commessa) escono dalla card e vengono tagliati. */
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow-wrap: anywhere;
+}
+
+/* Un badge dentro info-value va a capo invece di sforare la card. */
+.info-value .badge {
+    white-space: normal;
+    text-align: right;
+}
+
+/* La riga della commessa e' un link con icona: teniamoli sulla stessa riga, allineati. */
+.info-value a .material-icons {
+    vertical-align: middle;
+    margin-right: 2px;
 }
 
 .company-name {
@@ -324,6 +399,65 @@
     margin-top: 0.75rem;
     padding-top: 0.75rem;
     border-top: 1px solid var(--crm-border, #f1f5f9);
+}
+
+.claim-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.85rem;
+    padding: 0.8rem 0.9rem;
+    background: var(--crm-surface-muted, #f8fafc);
+    border: 1px solid var(--crm-border, #e2e8f0);
+    border-radius: 8px;
+}
+
+.claim-copy {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+}
+
+.claim-copy > .material-icons {
+    flex: 0 0 auto;
+    color: var(--crm-text-muted, #64748b);
+    font-size: 1.25rem;
+}
+
+.claim-title {
+    color: var(--crm-text, #1e293b);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.claim-subtitle {
+    color: var(--crm-text-muted, #64748b);
+    font-size: 0.78rem;
+    line-height: 1.25;
+}
+
+.claim-owned {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex: 0 0 auto;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    background: color-mix(in srgb, #16a34a 12%, var(--crm-surface-raised, #ffffff));
+    color: #15803d;
+    border: 1px solid color-mix(in srgb, #16a34a 28%, var(--crm-border, #e2e8f0));
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.claim-owned .material-icons {
+    font-size: 1rem;
 }
 
 .assigned-header {
@@ -498,6 +632,15 @@
 
     .assigned-user-item {
         padding: 0.5rem 0.75rem;
+    }
+
+    .claim-panel {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .claim-title {
+        white-space: normal;
     }
 
     .user-avatar {

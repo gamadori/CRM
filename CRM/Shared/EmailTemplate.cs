@@ -47,6 +47,15 @@ namespace CRM.Shared
         [Display(Name = "Promemoria Attività")]
         NoticeReminder,
 
+        [Display(Name = "Ticket bloccato")]
+        TicketBlocked,
+
+        [Display(Name = "Ticket sbloccato")]
+        TicketUnblocked,
+
+        [Display(Name = "Reset Password")]
+        PasswordReset,
+
     }
 
     [Table("EmailTemplates")]

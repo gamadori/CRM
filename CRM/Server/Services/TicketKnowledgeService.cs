@@ -124,11 +124,12 @@ namespace CRM.Server.Services
                 })
                 .ToListAsync();
 
-            // Insieme delle aziende accessibili all'utente (null = accesso a tutte)
-            var canAccessAll = await _permits.CanAccessOtherCompany();
-            HashSet<int>? allowedCompanies = canAccessAll
-                ? null
-                : (await _permits.GetIdCompanies()).ToHashSet();
+            // Insieme delle aziende citabili dall'utente (null = azienda madre, cita qualunque
+            // ticket). La soluzione si cerca ovunque, ma il riferimento si mostra solo se il
+            // ticket e' nel perimetro: propria azienda piu' le figlie, se rivenditore.
+            // Non usare CanAccessOtherCompany: e' true anche per i rivenditori e farebbe citare
+            // per esteso ticket di aziende estranee al loro albero.
+            HashSet<int>? allowedCompanies = (await _permits.GetVisibleCompanyIds())?.ToHashSet();
 
             foreach (var ticket in closedTickets)
             {

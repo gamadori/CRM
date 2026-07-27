@@ -58,6 +58,9 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         IHeaderService HeaderService { get; set; }
 
+        [Inject]
+        NotificationService NotificationService { get; set; }
+
         [Parameter]
         public int? IdCompany { get; set; }
 
@@ -134,6 +137,8 @@ namespace CRM.Client.Pages.Tickets
 
         private PageHeaderModel? _pageHeader = null;
 
+        private int? _claimingTicketId = null;
+
         protected async override Task OnInitializedAsync()
         {
            
@@ -148,7 +153,12 @@ namespace CRM.Client.Pages.Tickets
             await LoadUsers();
             await LoadCompanies();
 
-            if (IdUser != null)
+            if (TypeSearch == (int)TicketTypeSearch.Blocked)
+            {
+                IdUser = null;
+                _idUser = null;
+            }
+            else if (IdUser != null)
             {
                 _filterState = true;
                 _idUser = IdUser;
@@ -388,6 +398,32 @@ namespace CRM.Client.Pages.Tickets
                 }
             }
         }
+
+        private async Task ClaimTicket(TicketDTO ticket)
+        {
+            if (ticket == null || _claimingTicketId != null)
+                return;
+
+            try
+            {
+                _claimingTicketId = ticket.Id;
+                var response = await _service.ClaimAsync(ticket.Id);
+                if (!response.State)
+                {
+                    NotificationService?.Notify(NotificationSeverity.Error, "Presa in carico", response.Message ?? "Operazione non riuscita");
+                    return;
+                }
+
+                NotificationService?.Notify(NotificationSeverity.Success, "Presa in carico", response.Message ?? "Ticket preso in carico");
+                await LoadData();
+            }
+            finally
+            {
+                _claimingTicketId = null;
+                StateHasChanged();
+            }
+        }
+
         private void NewTicket()
         {
             if (OnClickEdit != null)
@@ -418,6 +454,9 @@ namespace CRM.Client.Pages.Tickets
 
                 case TicketTypeSearch.Closed:
                     return Localize["Tickets Chiusi"];
+
+                case TicketTypeSearch.Blocked:
+                    return "Ticket bloccati";
 
             }
             return "Tickets";

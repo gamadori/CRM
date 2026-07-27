@@ -43,6 +43,51 @@ else
                 </div>
             </div>
 
+            @if (_ticket.IsBlocked)
+            {
+                <div class="ticket-block-banner">
+                    <div class="ticket-block-icon">
+                        <span class="material-icons">report_problem</span>
+                    </div>
+                    <div class="ticket-block-content">
+                        <div class="ticket-block-title">Ticket bloccato</div>
+                        <div class="ticket-block-reason">@_ticket.BlockReason</div>
+                        <div class="ticket-block-meta">
+                            @if (_ticket.BlockedAt.HasValue)
+                            {
+                                <span>@_ticket.BlockedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_ticket.BlockedByName))
+                            {
+                                <span>da @_ticket.BlockedByName</span>
+                            }
+                        </div>
+                    </div>
+                    @if (_ticket.CanManageBlock)
+                    {
+                        <RadzenButton Icon="@(_isChangingBlock ? "hourglass_top" : "lock_open")"
+                                      Text="@(_isChangingBlock ? "Sblocco..." : "Sblocca")"
+                                      ButtonStyle="ButtonStyle.Success"
+                                      Size="ButtonSize.Small"
+                                      Disabled="@_isChangingBlock"
+                                      Click="UnblockTicket" />
+                    }
+                </div>
+            }
+            else if (_ticket.BlockResolvedAt.HasValue)
+            {
+                <div class="ticket-block-resolved">
+                    <span class="material-icons">lock_open</span>
+                    <span>
+                        Ultimo blocco risolto @_ticket.BlockResolvedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                        @if (!string.IsNullOrWhiteSpace(_ticket.BlockResolvedByName))
+                        {
+                            <text> da @_ticket.BlockResolvedByName</text>
+                        }
+                    </span>
+                </div>
+            }
+
             <div class="description-card operational-summary-card">
                 <div class="card-header-modern summary-header">
                     <div class="summary-title">
@@ -253,15 +298,27 @@ else
                             </div>
                         }
 
+                        @if (_ticket.IdCommessa != null)
+                        {
+                            <div class="info-row">
+                                <span class="info-key"><DisplayName For="@(() => _ticket.CommessaCode)" /></span>
+                                <span class="info-value">
+                                    <a href="@($"/Commesse/{_ticket.IdCommessa}")" class="text-decoration-none">
+                                        <span class="material-icons align-middle" style="font-size:14px;">precision_manufacturing</span>
+                                        @(string.IsNullOrWhiteSpace(_ticket.CommessaCode) ? $"#{_ticket.IdCommessa}" : _ticket.CommessaCode)
+                                    </a>
+                                </span>
+                            </div>
+                        }
+
                         @if (_ticket.IdCommessaFase != null)
                         {
                             <div class="info-row">
                                 <span class="info-key"><DisplayName For="@(() => _ticket.CommessaFaseName)" /></span>
+                                @* Testo semplice come "Prodotto": il badge con icona su piu' righe
+                                   risultava stretto e illeggibile per i nomi di fase lunghi. *@
                                 <span class="info-value">
-                                    <span class="badge bg-light text-dark border">
-                                        <span class="material-icons align-middle" style="font-size:14px;">view_timeline</span>
-                                        @(string.IsNullOrWhiteSpace(_ticket.CommessaFaseName) ? _ticket.IdCommessaFase.Value.ToString() : _ticket.CommessaFaseName)
-                                    </span>
+                                    @(string.IsNullOrWhiteSpace(_ticket.CommessaFaseName) ? _ticket.IdCommessaFase.Value.ToString() : _ticket.CommessaFaseName)
                                 </span>
                             </div>
                         }
@@ -279,6 +336,51 @@ else
                             <span class="info-key"><DisplayName For="@(() => _ticket.IdUserOpened)" /></span>
                             <span class="info-value">@_ticket.UserOpened</span>
                         </div>
+
+                        @if (_ticket.IdGroupAssigned != null || _ticket.CanClaim || _ticket.IsAssignedToCurrentUser)
+                        {
+                            <div class="claim-panel">
+                                <div class="claim-copy">
+                                    <span class="material-icons">groups</span>
+                                    <div>
+                                        <div class="claim-title">
+                                            @(string.IsNullOrWhiteSpace(_ticket.GroupAssigned) ? "Coda operativa" : _ticket.GroupAssigned)
+                                        </div>
+                                        <div class="claim-subtitle">
+                                            @if (_ticket.IsAssignedToCurrentUser)
+                                            {
+                                                <text>Il ticket e' gia' in carico a te.</text>
+                                            }
+                                            else if (_ticket.CanClaim)
+                                            {
+                                                <text>Disponibile per il tuo gruppo.</text>
+                                            }
+                                            else
+                                            {
+                                                <text>In attesa di assegnazione utente.</text>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (!_ticket.Closed && _ticket.CanClaim)
+                                {
+                                    <RadzenButton Icon="@(_isClaiming ? "hourglass_top" : "front_hand")"
+                                                  Text="@(_isClaiming ? "Presa..." : "Prendi in carico")"
+                                                  Size="ButtonSize.Small"
+                                                  ButtonStyle="ButtonStyle.Primary"
+                                                  Disabled="@_isClaiming"
+                                                  Click="ClaimTicket" />
+                                }
+                                else if (_ticket.IsAssignedToCurrentUser)
+                                {
+                                    <span class="claim-owned">
+                                        <span class="material-icons">check_circle</span>
+                                        Tuo
+                                    </span>
+                                }
+                            </div>
+                        }
 
                         <div class="assigned-users-section">
                             <div class="assigned-header">
@@ -406,7 +508,31 @@ else
 
                         @if (!_ticket.Closed && _ticket.Permits.Close())
                         {
-                            <RedGButton RGButtonType="RGButtonType.CloseTicket" Click="TicketClose" Text=@Localize["Chiudi Ticket"] />
+                            @if (_ticket.IsBlocked)
+                            {
+                                <span title="Risolvi il blocco prima di chiudere il ticket">
+                                    <RadzenButton Icon="lock"
+                                                  Text="Chiusura bloccata"
+                                                  ButtonStyle="ButtonStyle.Danger"
+                                                  Disabled="true" />
+                                </span>
+                            }
+                            else
+                            {
+                                <RedGButton RGButtonType="RGButtonType.CloseTicket" Click="TicketClose" Text=@Localize["Chiudi Ticket"] />
+                            }
+                        }
+
+                        @if (!_ticket.Closed && _ticket.CanManageBlock)
+                        {
+                            @if (!_ticket.IsBlocked)
+                            {
+                                <RadzenButton Icon="@(_isChangingBlock ? "hourglass_top" : "report_problem")"
+                                              Text="@(_isChangingBlock ? "Salvataggio..." : "Segnala blocco")"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Disabled="@_isChangingBlock"
+                                              Click="BlockTicket" />
+                            }
                         }
 
                         <RedGButton RGButtonType="RGButtonType.Download" Text="@Localize["Download PDF"]" Click="DownloadPdf" Disabled="_isDownloadingPdf"></RedGButton>

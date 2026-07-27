@@ -222,5 +222,89 @@ namespace CRM.Client.Services
 
             }
         }
+
+        public async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> ClaimAsync(int idTicket)
+        {
+            try
+            {
+                var response = await _http.PostAsync($"{_pathService}/{idTicket}/claim", null);
+                var payload = await response.Content.ReadAsStringAsync();
+
+                var result = JsonSerializer.Deserialize<CRM.Client.Models.APIResponseMessage<TicketDTO>>(
+                    payload,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (result != null)
+                    return result;
+
+                return new CRM.Client.Models.APIResponseMessage<TicketDTO>
+                {
+                    State = false,
+                    Code = response.StatusCode,
+                    Message = response.IsSuccessStatusCode ? "Risposta vuota dal server" : payload
+                };
+            }
+            catch (Exception ex)
+            {
+                return new CRM.Client.Models.APIResponseMessage<TicketDTO>
+                {
+                    State = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> BlockAsync(int idTicket, TicketBlockRequest request)
+        {
+            try
+            {
+                var response = await _http.PostAsJsonAsync($"{_pathService}/{idTicket}/block", request);
+                return await ReadTicketResponseAsync(response, "Blocco non riuscito");
+            }
+            catch (Exception ex)
+            {
+                return new CRM.Client.Models.APIResponseMessage<TicketDTO>
+                {
+                    State = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> UnblockAsync(int idTicket, TicketUnblockRequest request)
+        {
+            try
+            {
+                var response = await _http.PostAsJsonAsync($"{_pathService}/{idTicket}/unblock", request);
+                return await ReadTicketResponseAsync(response, "Sblocco non riuscito");
+            }
+            catch (Exception ex)
+            {
+                return new CRM.Client.Models.APIResponseMessage<TicketDTO>
+                {
+                    State = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        private static async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> ReadTicketResponseAsync(HttpResponseMessage response, string fallback)
+        {
+            var payload = await response.Content.ReadAsStringAsync();
+
+            var result = JsonSerializer.Deserialize<CRM.Client.Models.APIResponseMessage<TicketDTO>>(
+                payload,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (result != null)
+                return result;
+
+            return new CRM.Client.Models.APIResponseMessage<TicketDTO>
+            {
+                State = false,
+                Code = response.StatusCode,
+                Message = string.IsNullOrWhiteSpace(payload) ? fallback : payload
+            };
+        }
     }
 }

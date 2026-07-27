@@ -68,7 +68,12 @@ namespace CRM.Client.Services
 
             var (domainSegment, actionSegment, domainId) = ParseSegments(segments);
             var title = GetTitle(domainSegment);
-            var name = await GetDomainNameAsync(domainSegment, domainId);
+
+            // Su "new" il nome non viene usato nel sottotitolo. Evitarne la risoluzione non e' solo
+            // un risparmio: su rotte annidate (es. /Commesse/3/Fasi/7/Tickets/New) l'id ereditato
+            // dal segmento precedente appartiene a un'altra entita' e darebbe un nome sbagliato.
+            var isNew = actionSegment is "new" or "create";
+            var name = isNew ? null : await GetDomainNameAsync(domainSegment, domainId);
             var subtitle = GetSubtitle(domainSegment, actionSegment, name);
             var breadcrumbItems = await GetBreadCrumbFromUrlAsync(url);
 
@@ -411,7 +416,13 @@ namespace CRM.Client.Services
                         : GetLocalizedString(segment);
 
                     cumulative += "/" + segment;
-                    items.Add(new BreadcrumbItem { Text = text, Url = cumulative });
+
+                    // Un nome di risorsa preceduto da un id e' una collezione annidata
+                    // (es. /Commesse/3/Fasi, /Companies/5/Tickets): non esiste una pagina a
+                    // quell'indirizzo, quindi la voce resta come contesto ma non e' cliccabile.
+                    var nestedCollection = i > 0 && IsIdSegment(segments[i - 1], out _, out _);
+
+                    items.Add(new BreadcrumbItem { Text = text, Url = nestedCollection ? null : cumulative });
                 }
             }
 
@@ -475,6 +486,9 @@ namespace CRM.Client.Services
 
                     "groups" or "group" when isNumeric =>
                         (await _restClient.GetItem<CRM.Shared.Group, int>(int.Parse(segment), ConstHelper.GroupsPath))?.Name ?? segment,
+
+                    "fasi" or "fase" when isNumeric =>
+                        (await _restClient.GetItem<CRM.Shared.DTOs.CommessaFaseDTO, int>(int.Parse(segment), ConstHelper.CommessaFasiPath))?.Name ?? segment,
 
                     _ => segment
                 };

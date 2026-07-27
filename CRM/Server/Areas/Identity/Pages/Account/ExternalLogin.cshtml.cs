@@ -1,70 +1,64 @@
-﻿#nullable disable
+#nullable disable
 
 using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
-using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+using CRM.Server.Authentication;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CRM.Server.Areas.Identity.Pages.Account
 {
+    /// <summary>
+    /// Ritorno dal provider esterno. Il CRM non crea utenti da qui: un <see cref="ApplicationUser"/>
+    /// ha azienda, ruolo e gruppi che governano permessi e fasi di commessa, e un'identità
+    /// Microsoft o Google non ne porta nessuno. Chi non è già censito viene respinto con un
+    /// messaggio chiaro, non registrato al volo in uno stato indefinito.
+    /// </summary>
     [AllowAnonymous]
     public class ExternalLoginModel : PageModel
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IEmailSender _emailSender;
         private readonly ILogger<ExternalLoginModel> _logger;
+        private readonly ExternalAuthenticationOptions _externalOptions;
 
         public ExternalLoginModel(
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
             ILogger<ExternalLoginModel> logger,
-            IEmailSender emailSender)
+            IOptions<ExternalAuthenticationOptions> externalOptions)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _logger = logger;
-            _emailSender = emailSender;
-         
+            _externalOptions = externalOptions.Value;
         }
-
-        [BindProperty]
-        public InputModel Input { get; set; }
 
         public string ProviderDisplayName { get; set; }
 
         public string ReturnUrl { get; set; }
 
+        /// <summary>Titolo del riquadro mostrato quando l'accesso non va a buon fine.</summary>
+        public string OutcomeTitle { get; set; }
+
+        /// <summary>Spiegazione per l'utente: cosa è successo e cosa può fare.</summary>
+        public string OutcomeDetail { get; set; }
+
         [TempData]
         public string ErrorMessage { get; set; }
 
-        public class InputModel
-        {
-            [Required]
-            [EmailAddress]
-            public string Email { get; set; }
-        }
+        public IActionResult OnGetAsync() => RedirectToPage("./Login");
 
-        public IActionResult OnGetAsync()
-        {
-            return RedirectToPage("./Login");
-        }
-
+        /// <summary>Avvia il giro verso il provider.</summary>
         public IActionResult OnPost(string provider, string returnUrl = null)
         {
-            // Request a redirect to the external login provider.
             var redirectUrl = Url.Page("./ExternalLogin", pageHandler: "Callback", values: new { returnUrl });
             var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
             return new ChallengeResult(provider, properties);
@@ -72,100 +66,150 @@ namespace CRM.Server.Areas.Identity.Pages.Account
 
         public async Task<IActionResult> OnGetCallbackAsync(string returnUrl = null, string remoteError = null)
         {
-            returnUrl = returnUrl ?? Url.Content("~/");
+            returnUrl ??= Url.Content("~/");
+            ReturnUrl = returnUrl;
+
             if (remoteError != null)
             {
-                ErrorMessage = $"Error from external provider: {remoteError}";
-                return RedirectToPage("./Login", new {ReturnUrl = returnUrl });
-            }
-            var info = await _signInManager.GetExternalLoginInfoAsync();
-            if (info == null)
-            {
-                ErrorMessage = "Error loading external login information.";
+                ErrorMessage = $"Errore dal provider esterno: {remoteError}";
                 return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
             }
 
-            // Sign in the user with this external login provider if the user already has a login.
-            var result = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor : true);
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+            {
+                ErrorMessage = "Non è stato possibile leggere le informazioni di accesso dal provider esterno.";
+                return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
+            }
+
+            ProviderDisplayName = info.ProviderDisplayName ?? info.LoginProvider;
+
+            // Identità già collegata a un utente: è il caso normale, dal secondo accesso in poi.
+            var result = await _signInManager.ExternalLoginSignInAsync(
+                info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+
             if (result.Succeeded)
             {
-                _logger.LogInformation("{Name} logged in with {LoginProvider} provider.", info.Principal.Identity.Name, info.LoginProvider);
+                _logger.LogInformation("Accesso con provider {Provider} riuscito.", info.LoginProvider);
                 return LocalRedirect(returnUrl);
             }
+
             if (result.IsLockedOut)
-            {
                 return RedirectToPage("./Lockout");
-            }
-            else
+
+            if (result.IsNotAllowed)
+                return Blocked(
+                    "Account non abilitato all'accesso",
+                    "L'identità è collegata a un utente del CRM che non è ancora abilitato ad accedere. Contatta l'amministratore.");
+
+            return await HandleUnlinkedIdentityAsync(info, returnUrl);
+        }
+
+        /// <summary>
+        /// Primo accesso con questa identità: si applica la politica di aggancio configurata
+        /// per il provider. Vedi <see cref="ExternalLoginPolicy"/>.
+        /// </summary>
+        private async Task<IActionResult> HandleUnlinkedIdentityAsync(ExternalLoginInfo info, string returnUrl)
+        {
+            var provider = _externalOptions.Providers
+                .FirstOrDefault(p => string.Equals(p.Scheme, info.LoginProvider, StringComparison.OrdinalIgnoreCase));
+
+            var linking = provider?.EmailLinking ?? ExternalEmailLinking.Disabled;
+            var email = ReadEmail(info);
+            var user = string.IsNullOrWhiteSpace(email) ? null : await _userManager.FindByEmailAsync(email);
+
+            var decision = ExternalLoginPolicy.Decide(
+                linking,
+                providerVerifiedEmail: HasVerifiedEmail(info),
+                crmUserExists: user != null);
+
+            switch (decision)
             {
-                // If the user does not have an account, then ask the user to create an account.
-                ReturnUrl = returnUrl;
-                ProviderDisplayName = info.ProviderDisplayName;
-                if (info.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
-                {
-                    Input = new InputModel
-                    {
-                        Email = info.Principal.FindFirstValue(ClaimTypes.Email)
-                    };
-                }
-                return Page();
+                case ExternalLoginDecision.Link:
+                    return await LinkAndSignInAsync(user, info, returnUrl);
+
+                case ExternalLoginDecision.RequireManualLink:
+                    return Blocked(
+                        "Collegamento non ancora effettuato",
+                        $"Esiste un utente del CRM con questo indirizzo, ma non è ancora collegato a {ProviderDisplayName}. " +
+                        "Accedi una volta con le tue credenziali e collega l'account dalla tua area personale: " +
+                        "dalla volta successiva entrerai con un clic.");
+
+                case ExternalLoginDecision.EmailNotVerified:
+                    return Blocked(
+                        "Indirizzo email non verificato",
+                        $"{ProviderDisplayName} non garantisce che l'indirizzo appartenga davvero a te, quindi il " +
+                        "collegamento automatico non è consentito. Accedi con le tue credenziali e collega l'account " +
+                        "dalla tua area personale.");
+
+                default:
+                    _logger.LogWarning(
+                        "Accesso esterno rifiutato: nessun utente CRM per l'identità {Provider} ricevuta.",
+                        info.LoginProvider);
+                    return Blocked(
+                        "Utente non presente nel CRM",
+                        "Il tuo account è stato riconosciuto, ma non risulta un utente corrispondente in questo CRM. " +
+                        "L'accesso va abilitato da un amministratore.");
             }
         }
 
-        public async Task<IActionResult> OnPostConfirmationAsync(string returnUrl = null)
+        private async Task<IActionResult> LinkAndSignInAsync(ApplicationUser user, ExternalLoginInfo info, string returnUrl)
         {
-            returnUrl = returnUrl ?? Url.Content("~/");
-            // Get the information about the user from the external login provider
-            var info = await _signInManager.GetExternalLoginInfoAsync();
-            if (info == null)
+            var addLogin = await _userManager.AddLoginAsync(user, info);
+            if (!addLogin.Succeeded)
             {
-                ErrorMessage = "Error loading external login information during confirmation.";
-                return RedirectToPage("./Login", new { ReturnUrl = returnUrl });
+                _logger.LogError("Collegamento dell'identità {Provider} fallito: {Errori}",
+                    info.LoginProvider, string.Join("; ", addLogin.Errors.Select(e => e.Description)));
+
+                return Blocked(
+                    "Collegamento non riuscito",
+                    "Non è stato possibile collegare l'account esterno all'utente del CRM. Riprova o contatta l'amministratore.");
             }
 
-            if (ModelState.IsValid)
+            // L'organizzazione ha già verificato l'identità: senza questo, un utente con email non
+            // confermata resterebbe fuori per sempre, perché l'installazione richiede la conferma
+            // e da un login esterno non passa nessuna email di verifica.
+            if (!user.EmailConfirmed)
             {
-                var user = new ApplicationUser { UserName = Input.Email, Email = Input.Email };
-
-                var result = await _userManager.CreateAsync(user);
-                if (result.Succeeded)
-                {
-                    result = await _userManager.AddLoginAsync(user, info);
-                    if (result.Succeeded)
-                    {
-                        _logger.LogInformation("User created an account using {Name} provider.", info.LoginProvider);
-
-                        var userId = await _userManager.GetUserIdAsync(user);
-                        var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                        var callbackUrl = Url.Page(
-                            "/Account/ConfirmEmail",
-                            pageHandler: null,
-                            values: new { area = "Identity", userId = userId, code = code },
-                            protocol: Request.Scheme);
-
-                        await _emailSender.SendEmailAsync(Input.Email, "Confirm your email",
-                            $"Please confirm your account by <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clicking here</a>.");
-
-                        // If account confirmation is required, we need to show the link if we don't have a real email sender
-                        if (_userManager.Options.SignIn.RequireConfirmedAccount)
-                        {
-                            return RedirectToPage("./RegisterConfirmation", new { Email = Input.Email });
-                        }
-
-                        await _signInManager.SignInAsync(user, isPersistent: false, info.LoginProvider);
-
-                        return LocalRedirect(returnUrl);
-                    }
-                }
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
+                user.EmailConfirmed = true;
+                await _userManager.UpdateAsync(user);
             }
 
-            ProviderDisplayName = info.ProviderDisplayName;
-            ReturnUrl = returnUrl;
+            // Si rientra dal percorso standard, così valgono comunque blocchi e requisiti dell'account.
+            var result = await _signInManager.ExternalLoginSignInAsync(
+                info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("Identità {Provider} collegata all'utente {UserId} e accesso effettuato.",
+                    info.LoginProvider, user.Id);
+                return LocalRedirect(returnUrl);
+            }
+
+            if (result.IsLockedOut)
+                return RedirectToPage("./Lockout");
+
+            return Blocked(
+                "Account non abilitato all'accesso",
+                "L'identità è stata collegata, ma l'utente del CRM non è abilitato ad accedere. Contatta l'amministratore.");
+        }
+
+        /// <summary>
+        /// Email dichiarata dal provider. Entra ID può esporla come <c>email</c> oppure, per gli
+        /// account di lavoro, solo come <c>preferred_username</c>.
+        /// </summary>
+        private static string ReadEmail(ExternalLoginInfo info)
+            => info.Principal.FindFirstValue(ClaimTypes.Email)
+               ?? info.Principal.FindFirstValue("email")
+               ?? info.Principal.FindFirstValue("preferred_username");
+
+        private static bool HasVerifiedEmail(ExternalLoginInfo info)
+            => string.Equals(info.Principal.FindFirstValue("email_verified"), "true", StringComparison.OrdinalIgnoreCase);
+
+        private PageResult Blocked(string titolo, string dettaglio)
+        {
+            OutcomeTitle = titolo;
+            OutcomeDetail = dettaglio;
             return Page();
         }
     }

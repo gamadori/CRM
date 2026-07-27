@@ -95,6 +95,16 @@ namespace CRM.Server.Services
 
         Task<bool> CanCloseTicket(int idTicket);
 
+        /// <summary>True se il ticket e' assegnato all'utente corrente (assegnazione singola o multipla).</summary>
+        Task<bool> IsAssignedToTicket(int idTicket);
+
+        /// <summary>True se l'utente puo' registrare interventi sul ticket: assegnatario, Admin o SuperUser.</summary>
+        Task<bool> CanAddTicketIntervention(int idTicket);
+
+        /// <summary>True se la richiesta di assegnazione e' consentita: Admin e SuperUser sempre,
+        /// gli altri solo per assegnare o togliere se stessi, e solo su ticket a loro assegnabili.</summary>
+        Task<bool> CanAssignTicketUsers(int idTicket, IEnumerable<string>? userIds);
+
         Task<bool> CanInsertTicketChat(int idTicket);
 
         Task<bool> CanEditTicketChat(int id);

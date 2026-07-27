@@ -56,12 +56,25 @@
                 <div class="selected-users-container">
                     @foreach (var userId in _selectedUserIds.ToList())
                     {
-                        var user = _users.FirstOrDefault(u => u.Id == userId);
+                        var user = GetSelectedUser(userId);
                         if (user != null)
                         {
                             <div class="selected-user-chip">
                                 <span class="chip-avatar">@GetInitials(user.NameComplete)</span>
                                 <span class="chip-name">@user.NameComplete</span>
+                                <button type="button" 
+                                        class="chip-remove" 
+                                        @onclick="() => RemoveUser(userId)"
+                                        title="@Localize["Remove"]">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="selected-user-chip unresolved">
+                                <span class="chip-avatar">?</span>
+                                <span class="chip-name">@Localize["User not available"]</span>
                                 <button type="button" 
                                         class="chip-remove" 
                                         @onclick="() => RemoveUser(userId)"
@@ -274,6 +287,11 @@ else
 
     .chip-remove i {
         font-size: 0.75rem;
+    }
+
+    .selected-user-chip.unresolved {
+        background: #6b7280;
+        box-shadow: 0 2px 4px rgba(107, 114, 128, 0.25);
     }
 
     /* Clear-all button */

@@ -46,6 +46,7 @@ namespace CRM.Server.Services
                 .Include(x => x.ProductType)
                 .Include(x => x.Company)
                 .Include(x => x.GanttPlan)
+                .Include(x => x.DefaultCommessaResponsible)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == id);
             return item.ToDTO();
@@ -59,6 +60,7 @@ namespace CRM.Server.Services
                 .Include(x => x.ProductType)
                 .Include(x => x.Company)
                 .Include(x => x.GanttPlan)
+                .Include(x => x.DefaultCommessaResponsible)
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
             return item.ToDTO();
@@ -175,6 +177,15 @@ namespace CRM.Server.Services
         {
             try
             {
+                if (!await IsValidDefaultCommessaResponsibleAsync(item.IdDefaultCommessaResponsible))
+                {
+                    return new APIResponseMessage<ProductDTO>
+                    {
+                        State = false,
+                        Message = "Il capo commessa predefinito deve essere un utente della HeadCompany",
+                        Code = System.Net.HttpStatusCode.BadRequest
+                    };
+                }
 
                 if (item.Id > 0)
                 {
@@ -214,6 +225,20 @@ namespace CRM.Server.Services
                     Code = System.Net.HttpStatusCode.InternalServerError
                 };
             }
+        }
+
+        private async Task<bool> IsValidDefaultCommessaResponsibleAsync(string? idUser)
+        {
+            if (string.IsNullOrWhiteSpace(idUser))
+                return true;
+
+            var headCompanyId = await _context.GetHeadCompanyIdAsync();
+            if (headCompanyId == null)
+                return false;
+
+            return await _context.Users
+                .AsNoTracking()
+                .AnyAsync(user => user.Id == idUser && !user.IsDeleted && user.IdCompany == headCompanyId);
         }
 
         [AuthorizeRole(ePolicy.StandardRole)]
@@ -274,7 +299,12 @@ namespace CRM.Server.Services
         {
             try
             {
-                var items = _context.Products.Include(x=>x.ProductType).Include(x=>x.Company).Include(x => x.GanttPlan).AsQueryable();
+                var items = _context.Products
+                    .Include(x => x.ProductType)
+                    .Include(x => x.Company)
+                    .Include(x => x.GanttPlan)
+                    .Include(x => x.DefaultCommessaResponsible)
+                    .AsQueryable();
 
                 if (args?.IncludeArchived != true)
                 {
@@ -321,7 +351,8 @@ namespace CRM.Server.Services
                     var filter = args.Filter
                         .Replace("ProductTypeName", "ProductType.Name")
                         .Replace("CompanyName", "Company.RagioneSociale")
-                        .Replace("GanttPlanName", "GanttPlan.Name");
+                        .Replace("GanttPlanName", "GanttPlan.Name")
+                        .Replace("DefaultCommessaResponsibleName", "DefaultCommessaResponsible.Contact.Name");
                     items = items.Where(filter);
                 }
 

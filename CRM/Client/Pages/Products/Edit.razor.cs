@@ -39,6 +39,9 @@ namespace CRM.Client.Pages.Products
         ICompaniesService ServiceCompanies { get; set; }
 
         [Inject]
+        private IBaseRestService<ApplicationUser, UsersFilterModel, string> UsersService { get; set; }
+
+        [Inject]
         IGanttPlanService GanttPlanService { get; set; }
 
         [Inject]
@@ -70,6 +73,8 @@ namespace CRM.Client.Pages.Products
 
         private List<GanttPlanDTO> _ganttPlans = new();
 
+        private List<ApplicationUser> _headCompanyUsers = new();
+
         private string _messageState = "";
 
         private PageHeaderModel? _pageHeader = null;
@@ -82,6 +87,7 @@ namespace CRM.Client.Pages.Products
                 await GetProductTypes();
                 await GetCompanies();
                 await GetGanttPlans();
+                await GetHeadCompanyUsers();
 
                 if (Id != null)
                 {
@@ -150,6 +156,25 @@ namespace CRM.Client.Pages.Products
         private async Task GetGanttPlans()
         {
             _ganttPlans = await GanttPlanService.GetListAsync(new GanttPlanFilter());
+        }
+
+        private async Task GetHeadCompanyUsers()
+        {
+            var headCompany = await ServiceCompanies.GetHeadCompanyAsync();
+            if (headCompany?.Id == null)
+            {
+                _headCompanyUsers = new List<ApplicationUser>();
+                return;
+            }
+
+            var response = await UsersService.Get(new UsersFilterModel
+            {
+                IdCompany = headCompany.Id,
+                PageSize = 0
+            });
+
+            _headCompanyUsers = response?.Items?.OrderBy(user => user.NameComplete).ToList()
+                ?? new List<ApplicationUser>();
         }
 
         private async Task CreateGanttTemplate()

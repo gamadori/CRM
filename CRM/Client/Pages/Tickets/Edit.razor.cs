@@ -42,6 +42,9 @@ namespace CRM.Client.Pages.Tickets
         IProductsService ProductsService { get; set; }
 
         [Inject]
+        ICommessaFaseService CommessaFaseService { get; set; }
+
+        [Inject]
         IArticlesService ArticlesService { get; set; }
 
         [Inject]
@@ -103,6 +106,12 @@ namespace CRM.Client.Pages.Tickets
         [SupplyParameterFromQuery]
         public int? IdProduct { get; set; }
 
+        // Rotta annidata /Commesse/{CommessaId}/Fasi/{FaseId}/Tickets/New: da' il breadcrumb
+        // Commessa > Fase > Ticket e il ritorno alla commessa dopo il salvataggio.
+        [Parameter] public int? CommessaId { get; set; }
+
+        [Parameter] public int? FaseId { get; set; }
+
         [Parameter]
         [SupplyParameterFromQuery]
         public int? IdType { get; set; }
@@ -152,6 +161,9 @@ namespace CRM.Client.Pages.Tickets
 
         /// <summary>Prodotto non modificabile: il ticket nasce da una fase di commessa.</summary>
         private bool _lockProduct = false;
+
+        /// <summary>Fase di commessa collegata, per mostrare commessa e fase nel form.</summary>
+        private CommessaFaseDTO? _commessaFase;
 
         private string _header;
 
@@ -217,7 +229,10 @@ namespace CRM.Client.Pages.Tickets
                     if (IdDeal != null)
                         _ticket.IdDeal = IdDeal.Value;
 
-                    if (IdCommessaFase != null)
+                    // La fase puo' arrivare dalla rotta annidata o, per retrocompatibilita', dal query string.
+                    if (FaseId != null)
+                        _ticket.IdCommessaFase = FaseId.Value;
+                    else if (IdCommessaFase != null)
                         _ticket.IdCommessaFase = IdCommessaFase.Value;
 
                     if (IdProduct != null)
@@ -242,6 +257,10 @@ namespace CRM.Client.Pages.Tickets
                 // Un ticket legato a una fase di commessa produce quel prodotto e nessun altro:
                 // vale sia alla creazione sia riaprendo il ticket in modifica.
                 _lockProduct = _ticket?.IdCommessaFase != null;
+
+                // Commessa e fase vanno mostrate sia in creazione sia in modifica.
+                if (_ticket?.IdCommessaFase != null)
+                    _commessaFase = await CommessaFaseService.GetItemAsync(_ticket.IdCommessaFase.Value);
 
                 await LoadArticles();
                 await LoadProducts();
@@ -519,6 +538,19 @@ namespace CRM.Client.Pages.Tickets
                     return; // Blocca il salvataggio se l'orario non è valido
                 }
 
+                // Un ticket di fase commessa e' lavoro assegnato: senza esecutore non ha senso.
+                if (_commessaFase != null && !_selectedUserIds.Any() && string.IsNullOrEmpty(_ticket?.IdUserAssigned))
+                {
+                    NotificationService.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Warning,
+                        Summary = Localize["Attenzione"],
+                        Detail = "Assegna il ticket a un utente: una fase di commessa non puo' restare senza esecutore.",
+                        Duration = 5000
+                    });
+                    return;
+                }
+
                 _isLoading = true;
                 Waiting();
                 if (Id == null)
@@ -758,7 +790,15 @@ namespace CRM.Client.Pages.Tickets
 
         private void BackToUrl()
         {
-           
+            // Ticket nato dalla presa in carico di una fase: si torna alla commessa, non alla
+            // lista ticket, perche' il flusso di lavoro riparte da li'.
+            var idCommessa = CommessaId ?? _commessaFase?.IdCommessa;
+            if (idCommessa != null)
+            {
+                NavigationManager.NavigateTo($"/Commesse/{idCommessa}");
+                return;
+            }
+
             if (BackUrl != null && BackUrl.Any())
                 BackUrl = BackUrl.Replace("-", "/");
 

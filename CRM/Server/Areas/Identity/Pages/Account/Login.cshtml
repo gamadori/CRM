@@ -96,6 +96,30 @@
                         </button>
                     </form>
 
+                    @* Provider esterni: la sezione compare solo se ne è configurato almeno uno. *@
+                    @if (Model.ExternalLogins.Count > 0)
+                    {
+                        <div class="divider">
+                            <span>@_localize["or"]</span>
+                        </div>
+
+                        <div class="external-providers">
+                            @foreach (var provider in Model.ExternalLogins)
+                            {
+                                <form asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                                    <button type="submit"
+                                            class="btn-provider"
+                                            name="provider"
+                                            value="@provider.Name"
+                                            title="@_localize["Sign in with"] @provider.DisplayName">
+                                        <span class="material-symbols-outlined">account_circle</span>
+                                        <span>@_localize["Sign in with"] @provider.DisplayName</span>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    }
+
                     <div class="divider">
                         <span>@_localize["or"]</span>
                     </div>

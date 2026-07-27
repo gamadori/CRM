@@ -119,6 +119,9 @@ namespace CRM.Client.Pages.TicketInterventions
                     };
                     _ticket = await TicketService.Get(IdTicket);
                     _ticketIntervention.IdTicket = IdTicket;
+                    _ticketIntervention.SupportType = _ticket.IdCommessaFase.HasValue
+                        ? (int)TypesSupport.Workshop
+                        : (int)TypesSupport.Phone;
 
                     if (!string.IsNullOrEmpty(_ticket.IdUserAssigned))
                     {

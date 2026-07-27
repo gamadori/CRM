@@ -29,6 +29,19 @@ namespace CRM.Client.Services
             }
         }
 
+        public async Task<bool> TicketRead(int idTicket)
+        {
+            try
+            {
+                var resp = await _http.PutAsync($"{_pathService}/TicketRead/{idTicket}", null);
+                return resp.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public async Task<bool> HasNewMessage(int idTicket)
         {
             try

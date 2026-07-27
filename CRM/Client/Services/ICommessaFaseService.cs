@@ -9,6 +9,9 @@ namespace CRM.Client.Services
     {
         Task<List<CommessaFaseDTO>> GetTreeAsync(int idCommessa);
 
+        /// <summary>Singola fase con il codice della commessa, per mostrarla nel ticket.</summary>
+        Task<CommessaFaseDTO?> GetItemAsync(int faseId);
+
         Task<APIResponseMessage<CommessaFaseDTO>> SaveAsync(CommessaFaseDTO dto);
 
         Task<bool> BulkSaveAsync(List<CommessaFaseDTO> dtos);
@@ -18,5 +21,7 @@ namespace CRM.Client.Services
         Task<APIResponseMessage<CommessaFaseDependencyDTO>> AddDependencyAsync(CommessaFaseDependencyDTO dto);
 
         Task<bool> RemoveDependencyAsync(int dependencyId);
+
+        Task<APIResponseMessage<CommessaFaseTicketPlanDTO>> GenerateTicketFromPlanAsync(int ticketPlanId);
     }
 }

@@ -206,6 +206,7 @@ namespace CRM.Server.Services
         /// <summary>True se l'utente loggato appartiene all'azienda madre.</summary>
         public async Task<bool> BelongsToHeadCompany()
         {
+            
             return await BelongsToHeadCompany(await GetUser());
         }
 
@@ -222,7 +223,7 @@ namespace CRM.Server.Services
         public async Task<bool> BelongsToHeadCompany(string? idUser)
         {
             if (string.IsNullOrEmpty(idUser))
-                return false;
+                return await BelongsToHeadCompany();
 
             return await BelongsToHeadCompany(await _userManager.FindByIdAsync(idUser));
         }
@@ -422,6 +423,79 @@ namespace CRM.Server.Services
             return permits;
         }
 
+        /// <summary>
+        /// True se il ticket e' assegnato all'utente corrente. Considera sia l'assegnazione
+        /// singola storica (IdUserAssigned) sia quelle multiple, che sono la fonte di verita'
+        /// attuale: guardare solo la prima escluderebbe chi e' stato assegnato dal dialog.
+        /// </summary>
+        public async Task<bool> IsAssignedToTicket(int idTicket)
+        {
+            var idUser = await IdUser();
+            if (string.IsNullOrEmpty(idUser))
+                return false;
+
+            return await _context.Tickets.AsNoTracking()
+                .AnyAsync(t => t.Id == idTicket
+                            && (t.IdUserAssigned == idUser || t.AssignedUsers.Any(a => a.IdUser == idUser)));
+        }
+
+        /// <summary>
+        /// Un operatore interno puo' registrare interventi (service) su un ticket solo se gli e'
+        /// assegnato; Admin e SuperUser sempre. Non e' un'operazione per l'azienda cliente.
+        /// </summary>
+        public async Task<bool> CanAddTicketIntervention(int idTicket)
+        {
+            if (await IsSuperUser())
+                return true;
+
+            if (!await BelongsToHeadCompany())
+                return false;
+
+            return await IsAssignedToTicket(idTicket);
+        }
+
+        /// <summary>
+        /// Verifica una richiesta di assegnazione. Admin e SuperUser assegnano liberamente.
+        /// Un utente Standard puo' toccare soltanto la PROPRIA assegnazione, e puo' assegnarsi
+        /// il ticket solo se rientra tra quelli a cui il ticket puo' essere assegnato (tipo
+        /// ticket collegato a lui o a un suo gruppo). Confronta la richiesta con lo stato attuale
+        /// invece della sola lista, altrimenti aggiungersi a un ticket gia' assegnato ad altri
+        /// verrebbe letto come una modifica delle assegnazioni altrui.
+        /// </summary>
+        public async Task<bool> CanAssignTicketUsers(int idTicket, IEnumerable<string>? userIds)
+        {
+            if (await IsSuperUser())
+                return true;
+
+            if (!await BelongsToHeadCompany())
+                return false;
+
+            var idUser = await IdUser();
+            if (string.IsNullOrEmpty(idUser))
+                return false;
+
+            var requested = (userIds ?? Enumerable.Empty<string>()).Where(x => !string.IsNullOrEmpty(x)).ToHashSet();
+
+            var current = (await _context.TicketUserAssignments.AsNoTracking()
+                .Where(a => a.IdTicket == idTicket)
+                .Select(a => a.IdUser)
+                .ToListAsync()).ToHashSet();
+
+            // Chi cambia: se compare qualcuno diverso da se stessi, l'operazione non e' consentita.
+            var touched = current.Except(requested).Union(requested.Except(current)).ToList();
+            if (touched.Any(u => u != idUser))
+                return false;
+
+            // Assegnarsi il ticket richiede di essere tra i destinatari possibili.
+            if (requested.Contains(idUser) && !current.Contains(idUser))
+            {
+                var candidates = await GetUsersCanAssignTicket(idTicket);
+                return candidates != null && candidates.Any(u => u.Id == idUser);
+            }
+
+            return true;
+        }
+
         public async Task<bool> CanGetTicket(int idTicket)
         {
             var ticket = await _context.Tickets.FindAsync(idTicket);
@@ -463,7 +537,9 @@ namespace CRM.Server.Services
 
             if (ticket != null)
             {
-                return await IsSuperUser() || ticket.IdUserAssigned == user.Id;
+                // Admin e SuperUser sempre; gli altri solo se il ticket e' assegnato a loro,
+                // comprese le assegnazioni multiple.
+                return await IsSuperUser() || await IsAssignedToTicket(IdTicket);
 
             }
             else
@@ -665,7 +741,17 @@ namespace CRM.Server.Services
 
             if (ticket != null)
             {
-                return (await IsStandardUser() && await BelongsToHeadCompany()) || ticket.IdCompany == await GetIdCompany() || ticket.IdUserOpened == idUser || ticket.IdUserAssigned == idUser;
+                // Admin e SuperUser: sempre.
+                if (await IsSuperUser())
+                    return true;
+
+                // Conversazione col cliente: chi ha aperto il ticket e chi appartiene all'azienda
+                // del ticket deve poter rispondere, altrimenti il dialogo si interrompe.
+                if (ticket.IdUserOpened == idUser || ticket.IdCompany == await GetIdCompany())
+                    return true;
+
+                // Operatore interno: solo se il ticket e' assegnato a lui.
+                return await IsAssignedToTicket(idTicket);
             }
             else
                 return false;

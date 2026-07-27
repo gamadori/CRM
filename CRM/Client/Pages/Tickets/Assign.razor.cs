@@ -78,6 +78,7 @@ namespace CRM.Client.Pages.Tickets
 
         private List<ApplicationUser> _users = new List<ApplicationUser>();
         private List<ApplicationUser> _filteredUsers = new List<ApplicationUser>();
+        private List<ApplicationUser> _selectedUsers = new List<ApplicationUser>();
         private List<ApplicationUser> _ticketAssignedUsers = new List<ApplicationUser>(); // ✅ Utenti assegnati al ticket
 
         private HashSet<string> _selectedUserIds = new HashSet<string>();
@@ -103,6 +104,7 @@ namespace CRM.Client.Pages.Tickets
                 await LoadAssignedUsers();
 
             await LoadUserAsync();
+            await ResolveSelectedUsersAsync();
             
             _filteredUsers = _users.Where(u => !_selectedUserIds.Contains(u.Id)).ToList();
             
@@ -144,7 +146,7 @@ namespace CRM.Client.Pages.Tickets
             };
 
             var response = await UsersService.Get(request);
-            _users = response.Items.ToList();
+            _users = response?.Items?.ToList() ?? new List<ApplicationUser>();
         }
 
         private async Task LoadUserTicketAssigned()
@@ -156,7 +158,7 @@ namespace CRM.Client.Pages.Tickets
             };
 
             var response = await UsersService.Get(request);
-            _users = response.Items.ToList();
+            _users = response?.Items?.ToList() ?? new List<ApplicationUser>();
         }
 
 
@@ -175,11 +177,47 @@ namespace CRM.Client.Pages.Tickets
                 {
                     _selectedUserIds = await TicketService.LoadAssignedUsers(Id);
                 }
+
+                _selectedUserIds ??= new HashSet<string>();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Errore caricamento utenti assegnati: {ex.Message}");
+                _selectedUserIds = new HashSet<string>();
             }
+        }
+
+        private async Task ResolveSelectedUsersAsync()
+        {
+            _selectedUsers = _users
+                .Where(user => _selectedUserIds.Contains(user.Id))
+                .ToList();
+
+            var missingUserIds = _selectedUserIds
+                .Where(userId => !_selectedUsers.Any(user => user.Id == userId))
+                .ToList();
+
+            foreach (var userId in missingUserIds)
+            {
+                try
+                {
+                    var user = await UsersService.Get(userId);
+                    if (user != null && !_selectedUsers.Any(existing => existing.Id == user.Id))
+                    {
+                        _selectedUsers.Add(user);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Errore caricamento utente selezionato {userId}: {ex.Message}");
+                }
+            }
+        }
+
+        private ApplicationUser? GetSelectedUser(string userId)
+        {
+            return _selectedUsers.FirstOrDefault(user => user.Id == userId)
+                ?? _users.FirstOrDefault(user => user.Id == userId);
         }
 
         /// <summary>
@@ -301,10 +339,14 @@ namespace CRM.Client.Pages.Tickets
             if (_selectedUserIds.Contains(userId))
             {
                 _selectedUserIds.Remove(userId);
+                _selectedUsers.RemoveAll(user => user.Id == userId);
             }
             else
             {
                 _selectedUserIds.Add(userId);
+                var user = _users.FirstOrDefault(user => user.Id == userId);
+                if (user != null && !_selectedUsers.Any(selectedUser => selectedUser.Id == userId))
+                    _selectedUsers.Add(user);
             }
 
             // ✅ FIX: Aggiorna la lista filtrata per rimuovere/aggiungere l'utente
@@ -317,6 +359,7 @@ namespace CRM.Client.Pages.Tickets
         private void RemoveUser(string userId)
         {
             _selectedUserIds.Remove(userId);
+            _selectedUsers.RemoveAll(user => user.Id == userId);
 
             // ✅ FIX: Aggiorna la lista filtrata per mostrare di nuovo l'utente rimosso
             OnSearchChanged(_searchQuery);
@@ -331,6 +374,7 @@ namespace CRM.Client.Pages.Tickets
                 return;
 
             _selectedUserIds.Clear();
+            _selectedUsers.Clear();
             OnSearchChanged(_searchQuery);
         }
 

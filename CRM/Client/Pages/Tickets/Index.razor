@@ -70,7 +70,36 @@
 
             <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.IdUserAssigned)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdUserAssigned), typeof(Ticket))" FilterProperty="@nameof(TicketDTO.IdUserAssigned)" FilterValue="@_userFilter" FilterOperator="FilterOperator.Equals">
                 <Template Context="item">
-                    <UserData IdUser="@item.IdUserAssigned"></UserData>
+                    @if (!string.IsNullOrWhiteSpace(item.IdUserAssigned))
+                    {
+                        <UserData IdUser="@item.IdUserAssigned"></UserData>
+                    }
+                    else
+                    {
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            @if (!string.IsNullOrWhiteSpace(item.GroupAssigned))
+                            {
+                                <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1">
+                                    <span class="material-icons" style="font-size:14px;">groups</span>
+                                    @item.GroupAssigned
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Non assegnato</span>
+                            }
+
+                            @if (item.CanClaim)
+                            {
+                                <RadzenButton Icon="@(_claimingTicketId == item.Id ? "hourglass_top" : "front_hand")"
+                                              Text="@(_claimingTicketId == item.Id ? "..." : "Prendi")"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Primary"
+                                              Disabled="@(_claimingTicketId != null)"
+                                              Click="@(() => ClaimTicket(item))" />
+                            }
+                        </div>
+                    }
                 </Template>
                 <FilterTemplate>
 
@@ -84,6 +113,13 @@
                     <span class="ticket-state-text" style="@GetStateTextStyle(item?.StateColor)">
                         @Localize[item?.State ?? eTicketStates.Created.ToString()]
                     </span>
+                    @if (item?.IsBlocked == true)
+                    {
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" title="@item.BlockReason">
+                            <span class="material-icons align-middle" style="font-size:13px;">report_problem</span>
+                            Bloccato
+                        </span>
+                    }
                 </Template>
 
             </RadzenDataGridColumn>

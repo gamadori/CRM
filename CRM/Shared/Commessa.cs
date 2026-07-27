@@ -29,8 +29,9 @@ namespace CRM.Shared
         [Key]
         public int Id { get; set; }
 
-        /// <summary>Codice progressivo, es. CM-2026-0001. Generato lato server.</summary>
+        /// <summary>Codice progressivo, es. CM-2026-0001. Generato lato server, univoco (indice filtrato).</summary>
         [Display(Name = "Codice")]
+        [MaxLength(30)]
         public string? Code { get; set; }
 
         /// <summary>Riga d'ordine di origine (null = produzione interna/stock, senza ordine).</summary>
@@ -119,5 +120,6 @@ namespace CRM.Shared
         public int? IdOrder { get; set; }
         public string? IdUserResponsible { get; set; }
         public CommessaStates? State { get; set; }
+        public bool? ExpectedLate { get; set; }
     }
 }

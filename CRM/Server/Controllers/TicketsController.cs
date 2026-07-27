@@ -423,7 +423,23 @@ namespace CRM.Server.Controllers
                 return Forbid();
             }
 
-            var result = await _ticketsService.PutAsync(id, ticket);
+            bool result;
+            try
+            {
+                result = await _ticketsService.PutAsync(id, ticket);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                // Es. collegamento a una fase il cui gruppo abilitato non e' dell'utente.
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(PutTicket), LogEvent.EventsTypes.Error, ex.Message);
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+            }
+            catch (ProductionSequenceException ex)
+            {
+                // Fase avviata prima dei suoi predecessori: non e' un permesso mancante, e' un "non ancora".
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(PutTicket), LogEvent.EventsTypes.Error, ex.Message);
+                return Conflict(ex.Message);
+            }
 
             if (!result)
             {
@@ -515,6 +531,37 @@ namespace CRM.Server.Controllers
             }
         }
 
+        [AuthorizeRole(ePolicy.StandardRole)]
+        [HttpPost("{id}/claim")]
+        public async Task<ActionResult<CRM.Client.Models.APIResponseMessage<TicketDTO>>> Claim(int id)
+        {
+            try
+            {
+                var currentUserId = await _permits.IdUser();
+                var wasAssigned = !string.IsNullOrWhiteSpace(currentUserId)
+                    && await _context.Tickets.AnyAsync(t => t.Id == id
+                        && (t.IdUserAssigned == currentUserId || t.AssignedUsers.Any(a => a.IdUser == currentUserId)));
+
+                var response = await _ticketsService.ClaimAsync(id, currentUserId);
+                if (!response.State)
+                    return StatusCode((int)response.Code, response);
+
+                if (!wasAssigned && !string.IsNullOrWhiteSpace(currentUserId))
+                {
+                    var ticket = await _context.Tickets.Include(t => t.Company).FirstOrDefaultAsync(t => t.Id == id);
+                    if (ticket != null)
+                        await SendAssignmentNotifications(ticket, new List<string> { currentUserId }, isAssignment: true);
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(Claim), LogEvent.EventsTypes.Error, ex);
+                return Problem(ex.Message);
+            }
+        }
+
        
         // POST: api/Tickets
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
@@ -529,6 +576,18 @@ namespace CRM.Server.Controllers
 
 
                 return CreatedAtAction("GetTicket", new { id = savedTicket.Id }, savedTicket);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                // Es. presa in carico di una fase il cui gruppo abilitato non e' dell'utente.
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(PostTicket), LogEvent.EventsTypes.Error, ex.Message);
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+            }
+            catch (ProductionSequenceException ex)
+            {
+                // Fase avviata prima dei suoi predecessori: non e' un permesso mancante, e' un "non ancora".
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(PostTicket), LogEvent.EventsTypes.Error, ex.Message);
+                return Conflict(ex.Message);
             }
             catch (DbUpdateConcurrencyException ex)
             {
@@ -595,6 +654,15 @@ namespace CRM.Server.Controllers
                 }
                 else if (await _permits.CanCloseTicket(id))
                 {
+                    var blocked = await _context.Tickets
+                        .AsNoTracking()
+                        .Where(x => x.Id == id)
+                        .Select(x => x.IsBlocked)
+                        .FirstOrDefaultAsync();
+
+                    if (blocked)
+                        return Conflict("Il ticket e' bloccato. Risolvi il blocco prima di chiuderlo.");
+
                     var result = await _ticketsService.CloseAsync(id, model);
 
                     if (!result)
@@ -625,6 +693,50 @@ namespace CRM.Server.Controllers
             catch (Exception ex)
             {
                 await _logEventService.RegisterAsync(nameof(TicketsController), nameof(TicketClose), LogEvent.EventsTypes.Error, ex.Message);
+                return Problem(ex.Message);
+            }
+        }
+
+        [AuthorizeRole(ePolicy.StandardRole)]
+        [HttpPost("{id}/block")]
+        public async Task<ActionResult<CRM.Client.Models.APIResponseMessage<TicketDTO>>> Block(int id, TicketBlockRequest request)
+        {
+            try
+            {
+                if (!await CanChangeBlockStateAsync(id))
+                    return Forbid();
+
+                var response = await _ticketsService.BlockAsync(id, request);
+                if (!response.State)
+                    return StatusCode((int)response.Code, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(Block), LogEvent.EventsTypes.Error, ex);
+                return Problem(ex.Message);
+            }
+        }
+
+        [AuthorizeRole(ePolicy.StandardRole)]
+        [HttpPost("{id}/unblock")]
+        public async Task<ActionResult<CRM.Client.Models.APIResponseMessage<TicketDTO>>> Unblock(int id, TicketUnblockRequest request)
+        {
+            try
+            {
+                if (!await CanChangeBlockStateAsync(id))
+                    return Forbid();
+
+                var response = await _ticketsService.UnblockAsync(id, request ?? new TicketUnblockRequest());
+                if (!response.State)
+                    return StatusCode((int)response.Code, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(Unblock), LogEvent.EventsTypes.Error, ex);
                 return Problem(ex.Message);
             }
         }
@@ -1234,6 +1346,31 @@ namespace CRM.Server.Controllers
             }
         }
 
+        private async Task<bool> CanChangeBlockStateAsync(int idTicket)
+        {
+            if (!await _permits.CanGetTicket(idTicket))
+                return false;
+
+            if (await _permits.IsAdmin() || await _permits.IsSuperUser())
+                return true;
+
+            if (!await _permits.BelongsToHeadCompany())
+                return false;
+
+            var currentUserId = await _permits.IdUser();
+            if (string.IsNullOrWhiteSpace(currentUserId))
+                return false;
+
+            return await _context.Tickets
+                .AsNoTracking()
+                .AnyAsync(t => t.Id == idTicket
+                    && (t.IdUserAssigned == currentUserId
+                        || t.AssignedUsers.Any(a => a.IdUser == currentUserId)
+                        || (t.CommessaFase != null
+                            && t.CommessaFase.Commessa != null
+                            && t.CommessaFase.Commessa.IdUserResponsible == currentUserId)));
+        }
+
 
         private async Task<string?> CreatePdf(int id, int? idLanguage)
         {
@@ -1498,6 +1635,11 @@ namespace CRM.Server.Controllers
         {
             try
             {
+                // Finora l'endpoint non verificava nulla: chiunque poteva assegnare chiunque.
+                if (!await _permits.CanAssignTicketUsers(id, request?.UserIds))
+                    return StatusCode(StatusCodes.Status403Forbidden,
+                        "Puoi modificare solo la tua assegnazione, e solo sui ticket che possono esserti assegnati.");
+
                 var currentUser = await _userManager.GetUserAsync(User);
                 var currentUserId = currentUser?.Id;
 

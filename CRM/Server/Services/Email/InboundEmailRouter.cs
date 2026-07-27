@@ -17,10 +17,18 @@ namespace CRM.Server.Services.Email
         private readonly IHubContext<SignalRHub> _hub;
         private readonly IInboundEmailAiService _ai;
         private readonly IArchiveService _archiveService;
+        private readonly ITicketChatNotificationService _ticketChatNotificationService;
 
         private const int MaxBodyLength = 8000;
 
-        public InboundEmailRouter(ApplicationDbContext context, ILogEventService logEventService, IEmailSenderPlus emailSender, IHubContext<SignalRHub> hub, IInboundEmailAiService ai, IArchiveService archiveService)
+        public InboundEmailRouter(
+            ApplicationDbContext context,
+            ILogEventService logEventService,
+            IEmailSenderPlus emailSender,
+            IHubContext<SignalRHub> hub,
+            IInboundEmailAiService ai,
+            IArchiveService archiveService,
+            ITicketChatNotificationService ticketChatNotificationService)
         {
             _context = context;
             _logEventService = logEventService;
@@ -28,6 +36,7 @@ namespace CRM.Server.Services.Email
             _hub = hub;
             _ai = ai;
             _archiveService = archiveService;
+            _ticketChatNotificationService = ticketChatNotificationService;
         }
 
         public async Task<bool> IngestAsync(InboundMessage message, CancellationToken ct = default)
@@ -60,6 +69,7 @@ namespace CRM.Server.Services.Email
 
                 int? idTicket = null;
                 string activitySubject = subject;
+                var chatMessagesToNotify = new List<TicketChat>();
 
                 var ticketRef = ExtractTicketToken(subject);
 
@@ -80,7 +90,9 @@ namespace CRM.Server.Services.Email
                         activitySubject = $"Risposta ticket #{ticket.Id}: {subject}";
 
                         // La risposta del cliente entra nella conversazione del ticket, con i suoi allegati.
-                        AddInboundChatMessage(ticket.Id, message.FromAddress, body, message.ReceivedAt);
+                        var chatMessage = AddInboundChatMessage(ticket.Id, message.FromAddress, body, message.ReceivedAt);
+                        if (chatMessage != null)
+                            chatMessagesToNotify.Add(chatMessage);
                         await AttachToTicketAsync(ticket.Id, subject, message.Attachments, inbox?.IdDefaultOwner, ct);
                     }
                 }
@@ -99,7 +111,9 @@ namespace CRM.Server.Services.Email
 
                         // Il testo originale dell'email diventa il primo messaggio della conversazione:
                         // la Description resta il riassunto, la chat conserva il testo integrale del cliente.
-                        AddInboundChatMessage(ticket.Id, message.FromAddress, body, message.ReceivedAt);
+                        var chatMessage = AddInboundChatMessage(ticket.Id, message.FromAddress, body, message.ReceivedAt);
+                        if (chatMessage != null)
+                            chatMessagesToNotify.Add(chatMessage);
                         await AttachToTicketAsync(ticket.Id, subject, message.Attachments, inbox.IdDefaultOwner, ct);
 
                         await SendAcknowledgementAsync(message.FromAddress, ticket.Id, subject, triage?.Language);
@@ -149,6 +163,9 @@ namespace CRM.Server.Services.Email
                 _context.InboundEmails.Add(inbound);
 
                 await _context.SaveChangesAsync(ct);
+
+                foreach (var chatMessage in chatMessagesToNotify)
+                    await _ticketChatNotificationService.NotifyNewMessageAsync(chatMessage.Id, ct);
 
                 // Allegati (contenuto già scaricato dalla sorgente).
                 foreach (var att in message.Attachments)
@@ -234,12 +251,12 @@ namespace CRM.Server.Services.Email
         /// nessun utente interno (IdUser null) e mittente conservato in ExternalSender, così la chat lo
         /// mostra come "ricevuto" senza attribuirlo a un operatore.
         /// </summary>
-        private void AddInboundChatMessage(int idTicket, string? fromAddress, string? body, DateTime date)
+        private TicketChat? AddInboundChatMessage(int idTicket, string? fromAddress, string? body, DateTime date)
         {
             if (string.IsNullOrWhiteSpace(body))
-                return;
+                return null;
 
-            _context.TicketChats.Add(new TicketChat
+            var chatMessage = new TicketChat
             {
                 IdTicket = idTicket,
                 IdUser = null!,
@@ -247,7 +264,10 @@ namespace CRM.Server.Services.Email
                 Date = date,
                 Message = body,
                 Deleted = false
-            });
+            };
+
+            _context.TicketChats.Add(chatMessage);
+            return chatMessage;
         }
 
         /// <summary>Crea un ticket dai default della casella; null se i default (tipo/apritore) non sono configurati.</summary>

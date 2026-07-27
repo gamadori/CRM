@@ -97,6 +97,75 @@ else
                                         ButtonStyle="ButtonStyle.Light" Click="AddDep" Disabled="@(_newPredId == null)" />
                         </div>
                     </div>
+
+                    @if (!_phase.IsMilestone)
+                    {
+                        <div class="mt-4">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <label class="form-label small mb-0 d-block">Ticket previsti</label>
+                                <RadzenButton Icon="add" Text="Ticket" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                                              Click="AddTicketTemplate" />
+                            </div>
+
+                            @if (_phase.TicketTemplates.Any())
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Titolo</th>
+                                                <th style="width:190px;">Tipo</th>
+                                                <th style="width:190px;">Gruppo</th>
+                                                <th style="width:150px;">Creazione</th>
+                                                <th style="width:90px;">Obbl.</th>
+                                                <th style="width:42px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var t in _phase.TicketTemplates.OrderBy(x => x.SortOrder))
+                                            {
+                                                <tr>
+                                                    <td><input class="form-control form-control-sm" @bind="t.Title" @bind:event="oninput" /></td>
+                                                    <td>
+                                                        <RadzenDropDown TValue="int" @bind-Value="t.IdTicketType" Data="_ticketTypes"
+                                                                        TextProperty="Desc" ValueProperty="Id" AllowFiltering="true"
+                                                                        Style="width:100%" />
+                                                    </td>
+                                                    <td>
+                                                        <RadzenDropDown TValue="int?" @bind-Value="t.IdGroupAssigned" Data="_groups"
+                                                                        TextProperty="Name" ValueProperty="Id" AllowClear="true"
+                                                                        AllowFiltering="true" Style="width:100%" />
+                                                    </td>
+                                                    <td>
+                                                        <RadzenDropDown TValue="ProductionTicketAutoCreateMode" @bind-Value="t.AutoCreateMode"
+                                                                        Data="_autoCreateOptions" TextProperty="Text" ValueProperty="Value"
+                                                                        Style="width:100%" />
+                                                    </td>
+                                                    <td><RadzenCheckBox TValue="bool" @bind-Value="t.Required" /></td>
+                                                    <td class="text-center">
+                                                        <span class="material-icons text-danger" style="font-size:18px;cursor:pointer;"
+                                                              @onclick="@(() => RemoveTicketTemplate(t))">delete</span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td colspan="6">
+                                                        <textarea class="form-control form-control-sm" rows="2" placeholder="Descrizione operativa"
+                                                                  @bind="t.Description" @bind:event="oninput"></textarea>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-muted small border rounded p-2">
+                                    Nessun ticket previsto. La fase potra' restare manuale o generare un ticket singolo dal tipo fase legacy.
+                                </div>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -140,6 +209,14 @@ else
     private List<GanttPhaseDTO> _predOptions = new();
     private int? _newPredId;
     private bool _saving;
+
+    private record AutoCreateOption(string Text, ProductionTicketAutoCreateMode Value);
+    private readonly List<AutoCreateOption> _autoCreateOptions = new()
+    {
+        new("Manuale", ProductionTicketAutoCreateMode.Manual),
+        new("A inizio fase", ProductionTicketAutoCreateMode.OnPhaseStart),
+        new("A inizio commessa", ProductionTicketAutoCreateMode.OnCommessaStart)
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -190,6 +267,18 @@ else
         IdTicketType = p.IdTicketType,
         IdGroup = p.IdGroup,
         Color = p.Color,
+        TicketTemplates = p.TicketTemplates.Select(t => new GanttPhaseTicketTemplateDTO
+        {
+            Id = t.Id,
+            IdGanttPhase = t.IdGanttPhase,
+            Title = t.Title,
+            Description = t.Description,
+            IdTicketType = t.IdTicketType,
+            IdGroupAssigned = t.IdGroupAssigned,
+            Required = t.Required,
+            AutoCreateMode = t.AutoCreateMode,
+            SortOrder = t.SortOrder
+        }).ToList(),
         Dependencies = p.Dependencies.Select(d => new GanttPhaseDependencyDTO
         {
             Id = d.Id, IdPhase = d.IdPhase, IdPredecessorPhase = d.IdPredecessorPhase, LagDays = d.LagDays, Type = d.Type
@@ -290,6 +379,30 @@ else
         BuildOptions();
     }
 
+    private void AddTicketTemplate()
+    {
+        if (_phase == null) return;
+        var order = (_phase.TicketTemplates.Select(t => (int?)t.SortOrder).Max() ?? 0) + 1;
+        _phase.TicketTemplates.Add(new GanttPhaseTicketTemplateDTO
+        {
+            Title = string.IsNullOrWhiteSpace(_phase.Name) ? $"Ticket {order}" : _phase.Name,
+            IdTicketType = _phase.IdTicketType ?? _ticketTypes.FirstOrDefault()?.Id ?? 0,
+            IdGroupAssigned = _phase.IdGroup,
+            Required = true,
+            AutoCreateMode = ProductionTicketAutoCreateMode.OnPhaseStart,
+            SortOrder = order
+        });
+    }
+
+    private void RemoveTicketTemplate(GanttPhaseTicketTemplateDTO item)
+    {
+        if (_phase == null) return;
+        _phase.TicketTemplates.Remove(item);
+        var order = 1;
+        foreach (var t in _phase.TicketTemplates.OrderBy(t => t.SortOrder))
+            t.SortOrder = order++;
+    }
+
     private async Task Save()
     {
         if (_phase == null) return;
@@ -297,6 +410,12 @@ else
         if (string.IsNullOrWhiteSpace(_phase.Name))
         {
             Notification.Notify(NotificationSeverity.Warning, "Attenzione", "Il nome della fase è obbligatorio");
+            return;
+        }
+
+        if (_phase.TicketTemplates.Any(t => t.IdTicketType <= 0))
+        {
+            Notification.Notify(NotificationSeverity.Warning, "Attenzione", "Ogni ticket previsto deve avere un tipo ticket");
             return;
         }
 

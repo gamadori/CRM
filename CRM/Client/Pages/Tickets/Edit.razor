@@ -1,4 +1,6 @@
 ﻿@page "/Tickets/New"
+@* Rotta annidata per la presa in carico: da' il breadcrumb Commessa > Fase > Ticket *@
+@page "/Commesse/{CommessaId:int}/Fasi/{FaseId:int}/Tickets/New"
 @page "/Tickets/{Id:int}/Edit"
 @page "/Tickets/{Id:int}/Edit/{BackUrl}"
 
@@ -44,7 +46,9 @@ else
                        
                     </RadzenRow>
                     <RadzenRow>
-                        @if (_ticket?.IdCompany != null && _ticket.IdCompany > 0)
+                        @* Su un ticket di fase commessa il richiedente non esiste: il lavoro nasce
+                           dalla produzione, non da una segnalazione di un contatto. *@
+                        @if (_commessaFase == null && _ticket?.IdCompany != null && _ticket.IdCompany > 0)
                         {
                             <RadzenColumn Size="12" SizeSM="6">
                                 <RadzenStack>
@@ -173,6 +177,25 @@ else
                                 </RadzenStack>
                             </RadzenColumn>
                         </RadzenRow>
+                    }
+
+                    @* Ticket di produzione: commessa e fase di appartenenza, in sola lettura. *@
+                    @if (_commessaFase != null)
+                    {
+                        <div class="alert alert-light border d-flex flex-wrap align-items-center gap-3 py-2 mb-3">
+                            <span class="d-flex align-items-center gap-1">
+                                <span class="material-icons" style="font-size:18px;">precision_manufacturing</span>
+                                <span class="text-muted small">Commessa</span>
+                                <a href="@($"/Commesse/{_commessaFase.IdCommessa}")" class="fw-semibold text-decoration-none">
+                                    @(string.IsNullOrWhiteSpace(_commessaFase.CommessaCode) ? $"#{_commessaFase.IdCommessa}" : _commessaFase.CommessaCode)
+                                </a>
+                            </span>
+                            <span class="d-flex align-items-center gap-1">
+                                <span class="material-icons" style="font-size:18px;">view_timeline</span>
+                                <span class="text-muted small">Fase</span>
+                                <span class="fw-semibold">@_commessaFase.Name</span>
+                            </span>
+                        </div>
                     }
 
                     <!-- Product and Article -->

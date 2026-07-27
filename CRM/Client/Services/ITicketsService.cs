@@ -32,5 +32,11 @@ namespace CRM.Client.Services
         Task<HashSet<string>?> LoadAssignedUsers(int IdTicket);
 
         Task<HttpResponseMessage> AssignUsers(int idTicket, AssignUsersRequest Users);
+
+        Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> ClaimAsync(int idTicket);
+
+        Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> BlockAsync(int idTicket, TicketBlockRequest request);
+
+        Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> UnblockAsync(int idTicket, TicketUnblockRequest request);
     }
 }

@@ -129,12 +129,7 @@
 
                     <NavLink class="nav-link submenu-link" href="Tickets/Schedule" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">event_note</span>
-                        <span class="nav-text">Pianificazione Ticket</span>
-                    </NavLink>
-
-                    <NavLink class="nav-link submenu-link" href="Commesse" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">precision_manufacturing</span>
-                        <span class="nav-text">Commesse</span>
+                        <span class="nav-text">Pianificazione</span>
                     </NavLink>
 
                     <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
@@ -149,6 +144,14 @@
                     </AuthorizeView>
                 </div>
             }
+        </div>
+
+        <!-- Production Section -->
+        <div class="nav-section">
+            <NavLink class="nav-link" href="Commesse" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                <span class="material-icons nav-icon">precision_manufacturing</span>
+                <span class="nav-text">Commesse</span>
+            </NavLink>
         </div>
 
         <!-- Catalog Section -->

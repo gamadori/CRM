@@ -20,6 +20,9 @@ namespace CRM.Shared
             new("$TICKET", "Numero del ticket"),
             new("$URL", "Link / URL"),
             new("$DATE", "Data e ora"),
+            new("$REASON", "Motivo o nota operativa"),
+            new("$COMMESSA", "Codice commessa"),
+            new("$PHASE", "Fase della commessa"),
         };
 
         public static readonly IReadOnlySet<string> Tokens = All.Select(p => p.Token).ToHashSet();

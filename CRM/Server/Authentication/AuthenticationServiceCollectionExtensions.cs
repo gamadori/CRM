@@ -16,6 +16,10 @@ namespace CRM.Server.Authentication
         {
             var certificate = FindCertificate(configuration["OpenIddict:CertificateSubject"]);
 
+            // Serve alla pagina di login esterna per conoscere la politica di aggancio del provider.
+            services.Configure<ExternalAuthenticationOptions>(
+                configuration.GetSection(ExternalAuthenticationOptions.SectionName));
+
             services.AddOpenIddict()
                 .AddCore(options =>
                 {
@@ -77,7 +81,10 @@ namespace CRM.Server.Authentication
             .AddPolicyScheme(
                 OpenIddictConfiguration.AuthenticationScheme,
                 null,
-                options => options.ForwardDefaultSelector = SelectAuthenticationScheme);
+                options => options.ForwardDefaultSelector = SelectAuthenticationScheme)
+            // Provider di login esterni da configurazione: se non ne è abilitato nessuno,
+            // non viene registrato alcuno schema e il login resta quello locale.
+            .AddExternalProviders(configuration);
 
             return services;
         }

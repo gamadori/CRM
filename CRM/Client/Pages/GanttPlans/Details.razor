@@ -68,6 +68,7 @@
                                     <th style="width:90px;">Durata</th>
                                     <th>Tipo ticket</th>
                                     <th>Gruppo</th>
+                                    <th>Ticket previsti</th>
                                     <th>Dipende da</th>
                                     <th style="width:50px;"></th>
                                 </tr>
@@ -86,6 +87,17 @@
                                         <td>@(p.IsMilestone ? "milestone" : $"{p.DurationDays} gg")</td>
                                         <td>@TicketTypeName(p.IdTicketType)</td>
                                         <td>@GroupName(p.IdGroup)</td>
+                                        <td class="small">
+                                            @if (p.TicketTemplates.Any())
+                                            {
+                                                <span class="badge bg-light text-dark border">@p.TicketTemplates.Count</span>
+                                                <span class="text-muted">@string.Join(", ", p.TicketTemplates.OrderBy(t => t.SortOrder).Select(t => t.Title))</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
                                         <td class="small text-muted">@string.Join(", ", p.Dependencies.Select(d => PhaseName(d.IdPredecessorPhase)))</td>
                                         <td class="text-center"><span class="material-icons" style="font-size:16px;">edit</span></td>
                                     </tr>
@@ -93,7 +105,7 @@
                                 @if (!_phases.Any())
                                 {
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted py-3">
+                                        <td colspan="7" class="text-center text-muted py-3">
                                             Nessuna fase. Aggiungi le fasi che compongono la produzione di questo prodotto.
                                         </td>
                                     </tr>

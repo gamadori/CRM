@@ -79,6 +79,8 @@ namespace CRM.Client.Pages.DashBoard
                     + (_model.TicketsNotAssigned > 0 ? 1 : 0)
                     + (_model.InboundEmailsToHandle > 0 ? 1 : 0)
                     + (_model.ChatMessageToRead > 0 ? 1 : 0)
+                    + (_model.BlockedTickets > 0 ? 1 : 0)
+                    + (_model.LateExpectedCommesse > 0 ? 1 : 0)
                     + (_model.InterventionsPendingSignature > 0 ? 1 : 0)
                     + (_model.UsersNeedConfirm > 0 ? 1 : 0);
 
@@ -190,6 +192,16 @@ namespace CRM.Client.Pages.DashBoard
         protected void TicketsNewMessage()
         {
             NavigationManager.NavigateTo(Url($"/Tickets/Index/{(int)TicketTypeSearch.NewMessage}"));
+        }
+
+        protected void TicketsBlocked()
+        {
+            NavigationManager.NavigateTo($"/Tickets/Index/{(int)TicketTypeSearch.Blocked}");
+        }
+
+        protected void LateExpectedCommesse()
+        {
+            NavigationManager.NavigateTo("/Commesse?ExpectedLate=true");
         }
 
         protected void InboundEmailsToHandle()
@@ -389,11 +401,17 @@ namespace CRM.Client.Pages.DashBoard
             if (_model.ChatMessageToRead > 0)
                 items.Add(new("Messaggi ticket", "Conversazioni non lette", _model.ChatMessageToRead, "chat", "ops-primary", TicketsNewMessage, 4));
 
+            if (_model.BlockedTickets > 0)
+                items.Add(new("Ticket bloccati", "Completamento impedito", _model.BlockedTickets, "report_problem", "ops-danger", TicketsBlocked, 5));
+
+            if (_model.LateExpectedCommesse > 0)
+                items.Add(new("Commesse in ritardo", "Previsione oltre consegna", _model.LateExpectedCommesse, "event_busy", "ops-danger", LateExpectedCommesse, 6));
+
             if (_model.InterventionsPendingSignature > 0)
-                items.Add(new("Firme pending", "Interventi da chiudere", _model.InterventionsPendingSignature, "draw", "ops-orange", InterventionsPendingSignature, 5));
+                items.Add(new("Firme pending", "Interventi da chiudere", _model.InterventionsPendingSignature, "draw", "ops-orange", InterventionsPendingSignature, 7));
 
             if (_model.UsersNeedConfirm > 0)
-                items.Add(new("Utenti da confermare", "Nuovi accessi in attesa", _model.UsersNeedConfirm, "person_add", "ops-violet", UsersNeedConfirm, 6));
+                items.Add(new("Utenti da confermare", "Nuovi accessi in attesa", _model.UsersNeedConfirm, "person_add", "ops-violet", UsersNeedConfirm, 8));
 
             return items
                 .OrderBy(x => x.Priority)

@@ -1,22 +1,60 @@
-// ? Service Worker per Push Notifications CRM
-// Versione: 2.28 - User profile layout and theme
+// Service Worker per Push Notifications CRM
+// Versione: 2.30 - Production-safe cache strategy
 
-const CACHE_NAME = 'crm-cache-v2.28';
+const SERVICE_WORKER_VERSION = '2.30';
+const CACHE_NAME = `crm-cache-v${SERVICE_WORKER_VERSION}`;
 
 const urlsToCache = [
-    '/',
-    '/index.html',
     '/css/app.css',
     '/css/ticket-interventions.css',
     '/css/ticket-preview.css',
     '/favicon.ico'
 ];
 
+const neverCachePathPrefixes = [
+    '/_framework/',
+    '/api/',
+    '/localApi/',
+    '/authentication/',
+    '/connect/',
+    '/Identity/',
+    '/.well-known/'
+];
+
+function isHttpRequest(requestUrl) {
+    return requestUrl.protocol === 'http:' || requestUrl.protocol === 'https:';
+}
+
+function isNavigationRequest(event) {
+    return event.request.mode === 'navigate'
+        || event.request.destination === 'document'
+        || event.request.headers.get('accept')?.includes('text/html') === true;
+}
+
+function shouldBypassCache(event, requestUrl) {
+    return neverCachePathPrefixes.some(prefix => requestUrl.pathname.startsWith(prefix))
+        || event.request.destination === 'audio'
+        || event.request.destination === 'video';
+}
+
+async function putInCache(request, response) {
+    if (response.status !== 200 || response.type === 'opaque') {
+        return;
+    }
+
+    try {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(request, response.clone());
+    } catch (error) {
+        console.warn('[Service Worker] Cache put skipped:', request.url, error);
+    }
+}
+
 // ==========================================
 // INSTALLAZIONE: Precache risorse critiche
 // ==========================================
 self.addEventListener('install', event => {
-    console.log('[Service Worker] Installing...', event);
+    console.log('[Service Worker] Installing...', SERVICE_WORKER_VERSION, event);
     
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -32,7 +70,7 @@ self.addEventListener('install', event => {
 // ATTIVAZIONE: Pulizia cache vecchie
 // ==========================================
 self.addEventListener('activate', event => {
-    console.log('[Service Worker] Activating...', event);
+    console.log('[Service Worker] Activating...', SERVICE_WORKER_VERSION, event);
     
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -57,34 +95,30 @@ self.addEventListener('fetch', event => {
     
     const requestUrl = new URL(event.request.url);
 
-    // I flussi di autenticazione e le API non devono mai passare dalla cache.
-    const shouldSkip = requestUrl.pathname.includes('/_framework/') ||
-                      requestUrl.pathname.startsWith('/api/') ||
-                      requestUrl.pathname.startsWith('/localApi/') ||
-                      requestUrl.pathname.startsWith('/authentication/') ||
-                      requestUrl.pathname.startsWith('/connect/') ||
-                      requestUrl.pathname.startsWith('/Identity/') ||
-                      requestUrl.pathname.startsWith('/.well-known/') ||
-                      event.request.destination === 'audio' ||
-                      event.request.destination === 'video';
-    
-    if (shouldSkip) {
+    // La Cache API supporta solo richieste HTTP/HTTPS. Estensioni browser e altri schemi
+    // devono restare fuori dal service worker, altrimenti cache.put genera eccezioni.
+    if (!isHttpRequest(requestUrl)) {
+        return;
+    }
+
+    // App shell e manifest Blazor devono arrivare sempre dal server: se si cacheano,
+    // dopo un deploy possono puntare a file _framework non piu' validi.
+    if (isNavigationRequest(event)) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
+    // I flussi di autenticazione, le API e gli asset Blazor non devono mai passare dalla cache.
+    if (shouldBypassCache(event, requestUrl)) {
         return; // Lascia che il browser gestisca normalmente la richiesta
     }
 
     event.respondWith(
         fetch(event.request)
             .then(response => {
-                // ? Caccia solo risposte complete (status 200)
+                // Cacha solo risposte complete (status 200)
                 // La Cache API non supporta risposte parziali (206)
-                if (response.status === 200) {
-                    const responseClone = response.clone();
-                    
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(event.request, responseClone);
-                    });
-                }
-                
+                putInCache(event.request, response);
                 return response;
             })
             .catch(async () => {
@@ -240,4 +274,4 @@ self.addEventListener('message', event => {
     }
 });
 
-console.log('[Service Worker] Loaded successfully - Version 2.28 - User profile layout and theme');
+console.log(`[Service Worker] Loaded successfully - Version ${SERVICE_WORKER_VERSION} - Production-safe cache strategy`);

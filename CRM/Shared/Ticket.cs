@@ -28,7 +28,9 @@ namespace CRM.Shared
         [Display(Name = "Ufficio")]
         Office = 3,
         [Display(Name = "Da Remoto")]
-        Remote = 4
+        Remote = 4,
+        [Display(Name = "Workshop")]
+        Workshop = 5
     }
 
    public enum TicketTypeSearch
@@ -40,7 +42,8 @@ namespace CRM.Shared
         Closed,
         Working,
         NewMessage,
-        ToBeInvoiced
+        ToBeInvoiced,
+        Blocked
     }
 
    
@@ -138,6 +141,24 @@ namespace CRM.Shared
 
         [ForeignKey(nameof(OperationalSummaryUpdatedByUser))]
         public string? OperationalSummaryUpdatedBy { get; set; }
+
+        public bool IsBlocked { get; set; }
+
+        [MaxLength(2000)]
+        public string? BlockReason { get; set; }
+
+        public DateTime? BlockedAt { get; set; }
+
+        [ForeignKey(nameof(BlockedByUser))]
+        public string? IdBlockedBy { get; set; }
+
+        public DateTime? BlockResolvedAt { get; set; }
+
+        [ForeignKey(nameof(BlockResolvedByUser))]
+        public string? IdBlockResolvedBy { get; set; }
+
+        [MaxLength(2000)]
+        public string? BlockResolutionNote { get; set; }
 
         [Display(Name = nameof(Ticket.MinuteWork), ResourceType = typeof(Resources.Models.Ticket))]
         public int MinuteWork { get; set; }
@@ -279,6 +300,12 @@ namespace CRM.Shared
         [JsonIgnore]
         public virtual ApplicationUser? OperationalSummaryUpdatedByUser { get; set; }
 
+        [JsonIgnore]
+        public virtual ApplicationUser? BlockedByUser { get; set; }
+
+        [JsonIgnore]
+        public virtual ApplicationUser? BlockResolvedByUser { get; set; }
+
 
         [JsonIgnore]
         public virtual Contact? Contact { get; set; }
@@ -339,6 +366,8 @@ namespace CRM.Shared
 
         public bool? NewChatMessage { get; set; }
 
+        public bool? IsBlocked { get; set; }
+
         public int TypeSearch { get; set; } = (int)TicketTypeSearch.All;
     }
 
@@ -378,5 +407,18 @@ namespace CRM.Shared
         public int Support { get; set; }
         [Required]
         public DateTime Date { get; set; }
+    }
+
+    public class TicketBlockRequest
+    {
+        [Required]
+        [MaxLength(2000)]
+        public string Reason { get; set; } = string.Empty;
+    }
+
+    public class TicketUnblockRequest
+    {
+        [MaxLength(2000)]
+        public string? ResolutionNote { get; set; }
     }
 }

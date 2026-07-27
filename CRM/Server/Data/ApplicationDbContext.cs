@@ -49,6 +49,13 @@ namespace CRM.Server.Data
                 .HasForeignKey(t => t.IdCommessaFase)
                 .OnDelete(DeleteBehavior.NoAction);
 
+            // Codice commessa: chiave naturale univoca. Il filtro serve perché in un indice univoco
+            // SQL Server considera due NULL uguali, e il codice è nullable (commesse senza codice).
+            modelBuilder.Entity<Commessa>()
+                .HasIndex(c => c.Code)
+                .IsUnique()
+                .HasFilter("[Code] IS NOT NULL");
+
             // Commessa -> riga d'ordine (una commessa per unità). Scollegare la riga non la cancella.
             modelBuilder.Entity<Commessa>()
                 .HasOne(c => c.OrderRow)
@@ -82,6 +89,36 @@ namespace CRM.Server.Data
                 .HasForeignKey(d => d.IdPredecessorFase)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            modelBuilder.Entity<CommessaFaseTicketPlan>()
+                .HasOne(p => p.CommessaFase)
+                .WithMany(f => f.TicketPlans)
+                .HasForeignKey(p => p.IdCommessaFase)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CommessaFaseTicketPlan>()
+                .HasOne(p => p.Ticket)
+                .WithMany()
+                .HasForeignKey(p => p.IdTicket)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<CommessaFaseTicketPlan>()
+                .HasOne(p => p.SourceTemplate)
+                .WithMany()
+                .HasForeignKey(p => p.IdGanttPhaseTicketTemplate)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<CommessaFaseTicketPlan>()
+                .HasOne(p => p.TicketType)
+                .WithMany()
+                .HasForeignKey(p => p.IdTicketType)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<CommessaFaseTicketPlan>()
+                .HasOne(p => p.GroupAssigned)
+                .WithMany()
+                .HasForeignKey(p => p.IdGroupAssigned)
+                .OnDelete(DeleteBehavior.NoAction);
+
             // ─── Template: GanttPlan -> GanttPhase ───────────────────────────────
             modelBuilder.Entity<GanttPhase>()
                 .HasOne(p => p.GanttPlan)
@@ -106,6 +143,24 @@ namespace CRM.Server.Data
                 .WithMany()
                 .HasForeignKey(d => d.IdPredecessorPhase)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GanttPhaseTicketTemplate>()
+                .HasOne(t => t.GanttPhase)
+                .WithMany(p => p.TicketTemplates)
+                .HasForeignKey(t => t.IdGanttPhase)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GanttPhaseTicketTemplate>()
+                .HasOne(t => t.TicketType)
+                .WithMany()
+                .HasForeignKey(t => t.IdTicketType)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<GanttPhaseTicketTemplate>()
+                .HasOne(t => t.GroupAssigned)
+                .WithMany()
+                .HasForeignKey(t => t.IdGroupAssigned)
+                .OnDelete(DeleteBehavior.NoAction);
 
 
             // ⚠️ LEGACY: Relazione 1-to-many tradizionale (mantenuta per compatibilità)
@@ -767,6 +822,27 @@ namespace CRM.Server.Data
                 .WithMany(g => g.Products)
                 .HasForeignKey(p => p.IdGanttPlan)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.DefaultCommessaResponsible)
+                .WithMany()
+                .HasForeignKey(p => p.IdDefaultCommessaResponsible)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Ticket>()
+                .HasOne(t => t.BlockedByUser)
+                .WithMany()
+                .HasForeignKey(t => t.IdBlockedBy)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Ticket>()
+                .HasOne(t => t.BlockResolvedByUser)
+                .WithMany()
+                .HasForeignKey(t => t.IdBlockResolvedBy)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Ticket>()
+                .HasIndex(t => t.IsBlocked);
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -813,8 +889,10 @@ namespace CRM.Server.Data
         public DbSet<CRM.Shared.Commessa> Commesse => Set<Commessa>();
         public DbSet<CRM.Shared.CommessaFase> CommessaFasi => Set<CommessaFase>();
         public DbSet<CRM.Shared.CommessaFaseDependency> CommessaFaseDependencies => Set<CommessaFaseDependency>();
+        public DbSet<CRM.Shared.CommessaFaseTicketPlan> CommessaFaseTicketPlans => Set<CommessaFaseTicketPlan>();
         public DbSet<CRM.Shared.GanttPhase> GanttPhases => Set<GanttPhase>();
         public DbSet<CRM.Shared.GanttPhaseDependency> GanttPhaseDependencies => Set<GanttPhaseDependency>();
+        public DbSet<CRM.Shared.GanttPhaseTicketTemplate> GanttPhaseTicketTemplates => Set<GanttPhaseTicketTemplate>();
         public DbSet<CRM.Shared.TicketInterventionUser> TicketInterventionUser => Set<TicketInterventionUser>();
 
         public DbSet<InterventionType> InterventionTypes => Set<InterventionType>();

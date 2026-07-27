@@ -30,6 +30,7 @@ namespace CRM.Server.Services
             {
                 var phases = await _context.GanttPhases
                     .Include(p => p.Dependencies)
+                    .Include(p => p.TicketTemplates)
                     .Where(p => p.IdGanttPlan == idGanttPlan)
                     .OrderBy(p => p.SortOrder).ThenBy(p => p.Id)
                     .AsNoTracking()
@@ -52,10 +53,16 @@ namespace CRM.Server.Services
                 if (string.IsNullOrWhiteSpace(dto.Name))
                     return Fail("Nome fase obbligatorio", HttpStatusCode.BadRequest);
 
+                NormalizeTicketTemplates(dto);
+                if (dto.TicketTemplates.Any(t => t.IdTicketType <= 0))
+                    return Fail("Ogni ticket previsto deve avere un tipo ticket", HttpStatusCode.BadRequest);
+
                 GanttPhase entity;
                 if (dto.Id > 0)
                 {
-                    entity = await _context.GanttPhases.FirstOrDefaultAsync(p => p.Id == dto.Id);
+                    entity = await _context.GanttPhases
+                        .Include(p => p.TicketTemplates)
+                        .FirstOrDefaultAsync(p => p.Id == dto.Id);
                     if (entity == null)
                         return Fail("Fase non trovata", HttpStatusCode.NotFound);
 
@@ -68,6 +75,7 @@ namespace CRM.Server.Services
                     entity.IdTicketType = dto.IdTicketType;
                     entity.IdGroup = dto.IdGroup;
                     entity.Color = dto.Color;
+                    SyncTicketTemplates(entity, dto.TicketTemplates);
                 }
                 else
                 {
@@ -75,6 +83,8 @@ namespace CRM.Server.Services
                     if (entity.SortOrder == 0)
                         entity.SortOrder = (await _context.GanttPhases.Where(p => p.IdGanttPlan == dto.IdGanttPlan)
                             .Select(p => (int?)p.SortOrder).MaxAsync() ?? 0) + 1;
+                    foreach (var t in dto.TicketTemplates)
+                        entity.TicketTemplates.Add(t.ToEntity());
                     _context.GanttPhases.Add(entity);
                 }
 
@@ -125,6 +135,11 @@ namespace CRM.Server.Services
                     .Where(d => d.IdPhase == phaseId || d.IdPredecessorPhase == phaseId)
                     .ToListAsync();
                 _context.GanttPhaseDependencies.RemoveRange(deps);
+
+                var ticketTemplates = await _context.GanttPhaseTicketTemplates
+                    .Where(t => t.IdGanttPhase == phaseId)
+                    .ToListAsync();
+                _context.GanttPhaseTicketTemplates.RemoveRange(ticketTemplates);
 
                 var children = await _context.GanttPhases.Where(p => p.ParentId == phaseId).ToListAsync();
                 foreach (var c in children)
@@ -190,5 +205,50 @@ namespace CRM.Server.Services
 
         private static APIResponseMessage<GanttPhaseDTO> Fail(string msg, HttpStatusCode code)
             => new() { State = false, Message = msg, Code = code };
+
+        private static void NormalizeTicketTemplates(GanttPhaseDTO dto)
+        {
+            dto.TicketTemplates ??= new List<GanttPhaseTicketTemplateDTO>();
+            var order = 1;
+            foreach (var t in dto.TicketTemplates)
+            {
+                t.Title = (t.Title ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(t.Title))
+                    t.Title = dto.Name;
+                t.IdGanttPhase = dto.Id;
+                t.SortOrder = t.SortOrder <= 0 ? order++ : t.SortOrder;
+            }
+        }
+
+        private static void SyncTicketTemplates(GanttPhase entity, List<GanttPhaseTicketTemplateDTO> dtos)
+        {
+            var dtoIds = dtos.Where(d => d.Id > 0).Select(d => d.Id).ToHashSet();
+            var removed = entity.TicketTemplates.Where(t => !dtoIds.Contains(t.Id)).ToList();
+            foreach (var r in removed)
+                entity.TicketTemplates.Remove(r);
+
+            foreach (var dto in dtos.OrderBy(d => d.SortOrder))
+            {
+                var item = dto.Id > 0
+                    ? entity.TicketTemplates.FirstOrDefault(t => t.Id == dto.Id)
+                    : null;
+
+                if (item == null)
+                {
+                    item = dto.ToEntity();
+                    item.IdGanttPhase = entity.Id;
+                    entity.TicketTemplates.Add(item);
+                    continue;
+                }
+
+                item.Title = dto.Title;
+                item.Description = dto.Description;
+                item.IdTicketType = dto.IdTicketType;
+                item.IdGroupAssigned = dto.IdGroupAssigned;
+                item.Required = dto.Required;
+                item.AutoCreateMode = dto.AutoCreateMode;
+                item.SortOrder = dto.SortOrder;
+            }
+        }
     }
 }

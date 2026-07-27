@@ -63,6 +63,8 @@ namespace CRM.Server.Controllers
                 filter.IdUser = idUser;
             }
 
+            var visibleTickets = tickets;
+
             if (filter?.IdUser != null)
             {
                 tickets = tickets.Where(x=>x.AssignedUsers.Where(u=>u.IdUser == filter.IdUser).Any() || x.IdUserAssigned == filter.IdUser || 
@@ -88,7 +90,7 @@ namespace CRM.Server.Controllers
             /* Ricerca dei Ticket che possono essere assegnati dall'utente */
             if (await _permitsService.CanAssignTicket())
             {
-                model.TicketsNotAssigned = await tickets.Where(x => !x.Closed && x.IdUserAssigned == null).CountAsync();
+                model.TicketsNotAssigned = await tickets.Where(x => !x.Closed && x.IdUserAssigned == null && x.IdGroupAssigned == null).CountAsync();
             }
             else
                 model.TicketsNotAssigned = 0;
@@ -102,11 +104,59 @@ namespace CRM.Server.Controllers
             else
                 model.UsersNeedConfirm = 0;
 
-            model.ChatMessageToRead = await _context.TicketChatReads.Where(x => x.IdUser == idUser && x.Displayed == false).CountAsync();
+            model.ChatMessageToRead = await SafeCountAsync(
+                "messaggi chat ticket non letti",
+                _context.TicketChatReads.Where(x => x.IdUser == idUser && x.Displayed == false));
+
+            try
+            {
+                var blockedTickets = visibleTickets.Where(x => !x.Closed && x.IsBlocked);
+                var blockedUserId = await ResolveBlockedTicketUserFilterAsync(filter, idUser, model.IsClient);
+
+                if (!string.IsNullOrWhiteSpace(blockedUserId))
+                {
+                    blockedTickets = blockedTickets.Where(x =>
+                        x.IdUserAssigned == blockedUserId
+                        || x.AssignedUsers.Any(u => u.IdUser == blockedUserId)
+                        || _context.Commesse.Any(c =>
+                            x.CommessaFase != null
+                            && c.Id == x.CommessaFase.IdCommessa
+                            && c.IdUserResponsible == blockedUserId));
+                }
+
+                model.BlockedTickets = await blockedTickets.CountAsync();
+            }
+            catch (Exception ex)
+            {
+                model.BlockedTickets = 0;
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsDashboardController),
+                    nameof(Get),
+                    LogEvent.EventsTypes.Error,
+                    $"Conteggio ticket bloccati non disponibile: {ex.Message}");
+            }
+
+            var lateCommesse = _context.Commesse.Where(c =>
+                c.State != CommessaStates.Completed
+                && c.State != CommessaStates.Delivered
+                && c.State != CommessaStates.Cancelled
+                && c.Phases.Any(f => f.EndDate > c.EndDatePlanned));
+
+            if (idCompany.HasValue)
+                lateCommesse = lateCommesse.Where(c => c.IdCompany == idCompany.Value);
+
+            if (filter?.IdUser != null)
+                lateCommesse = lateCommesse.Where(c => c.IdUserResponsible == filter.IdUser);
+
+            model.LateExpectedCommesse = await SafeCountAsync("commesse con previsione oltre consegna", lateCommesse);
 
             // Email in ingresso non ancora prese in carico (avviso operatori).
             if (!model.IsClient)
-                model.InboundEmailsToHandle = await _context.InboundEmails.Where(x => !x.Handled).CountAsync();
+            {
+                model.InboundEmailsToHandle = await SafeCountAsync(
+                    "email in ingresso da gestire",
+                    _context.InboundEmails.Where(x => !x.Handled));
+            }
 
             // Conta interventi con firma in attesa di conferma (Pending)
             var interventionsQuery = _context.TicketsInterventions.AsQueryable();
@@ -123,10 +173,10 @@ namespace CRM.Server.Controllers
                 interventionsQuery = interventionsQuery.Where(x => x.AssignedUsers.Where(u => u.IdUser == filter.IdUser).Any());
             }
 
-            model.InterventionsPendingSignature = await interventionsQuery
-                .Where(x => x.SignatureStatus == CRM.Shared.SignatureStatus.Pending && 
-                           !string.IsNullOrEmpty(x.CustomerSignature))
-                .CountAsync();
+            model.InterventionsPendingSignature = await SafeCountAsync(
+                "interventi con firma in attesa",
+                interventionsQuery.Where(x => x.SignatureStatus == CRM.Shared.SignatureStatus.Pending
+                                            && !string.IsNullOrEmpty(x.CustomerSignature)));
 
             // ✅ Carica feedback non letti (solo per admin/superuser)
             if (!model.IsClient)
@@ -143,25 +193,8 @@ namespace CRM.Server.Controllers
                     feedbacksQuery = feedbacksQuery.Where(f => f.Ticket.IdCompany == idCompany);
                 }
 
-                model.UnreadFeedbacksCount = await feedbacksQuery.CountAsync();
-
-                // Carica gli ultimi 10 feedback non letti
-                model.RecentFeedbacks = await feedbacksQuery
-                    .OrderByDescending(f => f.CreatedAt)
-                    .Take(10)
-                    .Select(f => new FeedbackSummary
-                    {
-                        Id = f.Id,
-                        TicketId = f.IdTicket,
-                        TicketDescription = f.Ticket.Description ?? "",
-                        CompanyName = f.Ticket.Company.RagioneSociale,
-                        UserName = f.User.Name + " " + f.User.Surname,
-                        Rating = f.Rating,
-                        Comment = f.Comment,
-                        CreatedAt = f.CreatedAt,
-                        IsRead = f.IsRead
-                    })
-                    .ToListAsync();
+                model.UnreadFeedbacksCount = await SafeCountAsync("feedback non letti", feedbacksQuery);
+                model.RecentFeedbacks = await LoadRecentUnreadFeedbacksAsync(feedbacksQuery);
             }
 
             return model;
@@ -237,6 +270,75 @@ namespace CRM.Server.Controllers
                 await _logEventService.RegisterAsync(nameof(TicketsDashboardController), nameof(GetClient), LogEvent.EventsTypes.Error, ex.Message);
                 return BadRequest(Problem(ex.Message, ex.StackTrace, ErrorsHelper.ErrorGeneric));
             }
+        }
+
+
+        private async Task<int> SafeCountAsync<T>(string counterName, IQueryable<T> query)
+        {
+            try
+            {
+                return await query.CountAsync();
+            }
+            catch (Exception ex)
+            {
+                await LogDashboardCounterErrorAsync(counterName, ex);
+                return 0;
+            }
+        }
+
+        private async Task<List<FeedbackSummary>> LoadRecentUnreadFeedbacksAsync(IQueryable<TicketFeedback> feedbacksQuery)
+        {
+            try
+            {
+                return await feedbacksQuery
+                    .OrderByDescending(f => f.CreatedAt)
+                    .Take(10)
+                    .Select(f => new FeedbackSummary
+                    {
+                        Id = f.Id,
+                        TicketId = f.IdTicket,
+                        TicketDescription = f.Ticket.Description ?? "",
+                        CompanyName = f.Ticket.Company != null ? f.Ticket.Company.RagioneSociale : "",
+                        UserName = ((f.User.Name ?? "") + " " + (f.User.Surname ?? "")).Trim(),
+                        Rating = f.Rating,
+                        Comment = f.Comment,
+                        CreatedAt = f.CreatedAt,
+                        IsRead = f.IsRead
+                    })
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                await LogDashboardCounterErrorAsync("elenco feedback recenti", ex);
+                return new List<FeedbackSummary>();
+            }
+        }
+
+        private async Task LogDashboardCounterErrorAsync(string counterName, Exception ex)
+        {
+            await _logEventService.RegisterAsync(
+                nameof(TicketsDashboardController),
+                nameof(Get),
+                LogEvent.EventsTypes.Error,
+                $"Dashboard: conteggio '{counterName}' non disponibile. {ex.Message}");
+        }
+
+
+        private async Task<string?> ResolveBlockedTicketUserFilterAsync(TicketDashBoardModelFilter? filter, string currentUserId, bool isClient)
+        {
+            if (isClient)
+                return currentUserId;
+
+            if (filter?.IdUser == null)
+                return null;
+
+            if (filter.IdUser == currentUserId)
+                return null;
+
+            if (await _permitsService.IsAdmin() || await _permitsService.IsSuperUser())
+                return filter.IdUser;
+
+            return currentUserId;
         }
 
 

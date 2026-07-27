@@ -11,9 +11,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using QuestPDF.Infrastructure;
 
 
@@ -102,6 +104,9 @@ builder.Services.AddScoped<ILangSelectorService, LangSelectorService>();
 builder.Services.AddScoped<CRM.Server.Services.ITicketsService, TicketsService>();
 builder.Services.AddScoped<ITicketSummaryService, TicketSummaryService>();
 builder.Services.AddScoped<ITicketNotificationService, TicketNotificationService>();
+builder.Services.AddScoped<ITicketChatNotificationService, TicketChatNotificationService>();
+builder.Services.AddScoped<ITicketReminderNotificationService, TicketReminderNotificationService>();
+builder.Services.AddScoped<ITicketBlockNotificationService, TicketBlockNotificationService>();
 
 builder.Services.AddScoped<TranslateService>();
 
@@ -318,6 +323,39 @@ app.UseHttpsRedirection();
 
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
+
+if (app.Environment.IsDevelopment())
+{
+    var targetFramework = $"net{Environment.Version.Major}.0";
+    var clientFrameworkPath = new[]
+    {
+        Path.Combine(app.Environment.ContentRootPath, "..", "Client", "bin", "Debug", targetFramework, "wwwroot", "_framework"),
+        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Client", "bin", "Debug", targetFramework, "wwwroot", "_framework"),
+        Path.Combine(Directory.GetCurrentDirectory(), "..", "Client", "bin", "Debug", targetFramework, "wwwroot", "_framework")
+    }
+    .Select(Path.GetFullPath)
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .FirstOrDefault(Directory.Exists);
+
+    if (!string.IsNullOrWhiteSpace(clientFrameworkPath))
+    {
+        var frameworkContentTypes = new FileExtensionContentTypeProvider();
+        frameworkContentTypes.Mappings[".wasm"] = "application/wasm";
+        frameworkContentTypes.Mappings[".pdb"] = "application/octet-stream";
+        frameworkContentTypes.Mappings[".dat"] = "application/octet-stream";
+
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(clientFrameworkPath),
+            RequestPath = "/_framework",
+            ContentTypeProvider = frameworkContentTypes,
+            ServeUnknownFileTypes = true,
+            DefaultContentType = "application/octet-stream"
+        });
+    }
+}
+
+app.MapStaticAssets();
 
 // Culture from the HttpRequest
 

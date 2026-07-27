@@ -251,6 +251,10 @@ namespace CRM.Server.Controllers
         {
             try
             {
+                // I service si registrano solo sui ticket assegnati a se stessi (Admin e SuperUser
+                // esclusi dal vincolo). Finora l'endpoint non faceva alcun controllo.
+                if (!await _permitsService.CanAddTicketIntervention(ticketIntervention.IdTicket))
+                    return StatusCode(StatusCodes.Status403Forbidden, "Puoi registrare interventi solo sui ticket assegnati a te.");
 
                 ticketIntervention.IdUser = await _permitsService.IdUser();
 

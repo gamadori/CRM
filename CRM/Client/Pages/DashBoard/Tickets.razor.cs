@@ -46,6 +46,10 @@ namespace CRM.Client.Pages.DashBoard
                     _header = "Tickect Scaduti";
                     break;
 
+                case TicketTypeSearch.Blocked:
+                    _header = "Ticket bloccati";
+                    break;
+
             }
         }
         protected void AddTicket()
