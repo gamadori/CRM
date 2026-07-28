@@ -108,6 +108,11 @@ builder.Services.AddScoped<ITicketChatNotificationService, TicketChatNotificatio
 builder.Services.AddScoped<ITicketReminderNotificationService, TicketReminderNotificationService>();
 builder.Services.AddScoped<ITicketBlockNotificationService, TicketBlockNotificationService>();
 
+// Smistamento automatico dei ticket verso i gruppi: il client AI e' separato dalle regole,
+// cosi' soglia, candidati e ripiego restano verificabili senza chiamare il modello.
+builder.Services.AddScoped<CRM.Server.Services.TicketRouting.ITicketRoutingAiClient, CRM.Server.Services.TicketRouting.TicketRoutingAiClient>();
+builder.Services.AddScoped<CRM.Server.Services.TicketRouting.ITicketRoutingService, CRM.Server.Services.TicketRouting.TicketRoutingService>();
+
 builder.Services.AddScoped<TranslateService>();
 
 builder.Services.AddScoped<TelegramCommandsService>();

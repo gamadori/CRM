@@ -797,7 +797,9 @@ namespace CRM.Server.Data
             modelBuilder.Entity<WorkflowAutomation>(entity =>
             {
                 entity.Property(w => w.MinAmount).HasColumnType("Money");
+                entity.Property(w => w.IdAssignee).HasMaxLength(450);
                 entity.HasIndex(w => new { w.IsActive, w.Trigger });
+                entity.HasIndex(w => w.IdAssignee);
             });
 
             modelBuilder.Entity<WorkflowAutomationExecution>(entity =>
@@ -843,6 +845,25 @@ namespace CRM.Server.Data
 
             modelBuilder.Entity<Ticket>()
                 .HasIndex(t => t.IsBlocked);
+
+            // Smistamento AI: il gruppo suggerito e' un secondo riferimento a Groups, indipendente
+            // da quello assegnato. Nessuna cascata: cancellare un gruppo non deve toccare i ticket.
+            modelBuilder.Entity<Ticket>()
+                .HasOne(t => t.AiSuggestedGroup)
+                .WithMany()
+                .HasForeignKey(t => t.AiSuggestedGroupId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Riga unica di configurazione: la chiave e' assegnata dal codice (Id = 1), non dal database.
+            modelBuilder.Entity<TicketRoutingSetting>()
+                .Property(s => s.Id)
+                .ValueGeneratedNever();
+
+            modelBuilder.Entity<TicketRoutingSetting>()
+                .HasOne(s => s.FallbackGroup)
+                .WithMany()
+                .HasForeignKey(s => s.IdFallbackGroup)
+                .OnDelete(DeleteBehavior.NoAction);
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -862,6 +883,7 @@ namespace CRM.Server.Data
         public DbSet<TelegramAppConfig> TelegramAppConfigs => Set<TelegramAppConfig>();
         
         public DbSet<GlobalSetting> GlobalSettings => Set<GlobalSetting>();
+        public DbSet<TicketRoutingSetting> TicketRoutingSettings => Set<TicketRoutingSetting>();
         public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
         public DbSet<CRM.Shared.Logo> Logos => Set<Logo>();
         public DbSet<CRM.Shared.Group> Groups => Set<Group>();

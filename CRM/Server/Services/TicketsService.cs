@@ -197,6 +197,13 @@ namespace CRM.Server.Services
                     IdUserAssigned = x.IdUserAssigned,
                     IdGroupAssigned = x.IdGroupAssigned,
                     GroupAssigned = x.GroupAssigned != null ? x.GroupAssigned.Name : "",
+                    AiSuggestedGroupId = x.AiSuggestedGroupId,
+                    AiSuggestedGroup = x.AiSuggestedGroup != null ? x.AiSuggestedGroup.Name : null,
+                    AiRoutingConfidence = x.AiRoutingConfidence,
+                    AiRoutingReason = x.AiRoutingReason,
+                    AiRoutedAt = x.AiRoutedAt,
+                    AiRoutingApplied = x.AiRoutingApplied,
+                    AiRoutingOutcome = x.AiRoutingOutcome,
                     IdCompany = x.IdCompany,
                     IdState = x.IdState,
                     IdUserOpened = x.IdUserOpened,
@@ -376,6 +383,11 @@ namespace CRM.Server.Services
                     IdUserAssigned = x.IdUserAssigned,
                     IdGroupAssigned = x.IdGroupAssigned,
                     GroupAssigned = x.GroupAssigned != null ? x.GroupAssigned.Name : "",
+                    AiSuggestedGroupId = x.AiSuggestedGroupId,
+                    AiSuggestedGroup = x.AiSuggestedGroup != null ? x.AiSuggestedGroup.Name : null,
+                    AiRoutingConfidence = x.AiRoutingConfidence,
+                    AiRoutingApplied = x.AiRoutingApplied,
+                    AiRoutingOutcome = x.AiRoutingOutcome,
                     IdCompany = x.IdCompany,
                     IdState = x.IdState,
                     IdUserOpened = x.IdUserOpened,
@@ -468,18 +480,24 @@ namespace CRM.Server.Services
         {
             try
             {
-                var currentSummary = await _context.Tickets
+                var current = await _context.Tickets
                     .AsNoTracking()
                     .Where(x => x.Id == id)
                     .Select(x => new
                     {
                         x.OperationalSummary,
                         x.OperationalSummaryUpdatedAt,
-                        x.OperationalSummaryUpdatedBy
+                        x.OperationalSummaryUpdatedBy,
+                        x.AiSuggestedGroupId,
+                        x.AiRoutingConfidence,
+                        x.AiRoutingReason,
+                        x.AiRoutedAt,
+                        x.AiRoutingApplied,
+                        x.AiRoutingOutcome
                     })
                     .FirstOrDefaultAsync();
 
-                if (currentSummary == null)
+                if (current == null)
                     return false;
 
                 var previousTaskId = await _context.Tickets
@@ -488,9 +506,21 @@ namespace CRM.Server.Services
                     .Select(x => x.IdCommessaFase)
                     .FirstOrDefaultAsync();
 
-                ticket.OperationalSummary = currentSummary.OperationalSummary;
-                ticket.OperationalSummaryUpdatedAt = currentSummary.OperationalSummaryUpdatedAt;
-                ticket.OperationalSummaryUpdatedBy = currentSummary.OperationalSummaryUpdatedBy;
+                ticket.OperationalSummary = current.OperationalSummary;
+                ticket.OperationalSummaryUpdatedAt = current.OperationalSummaryUpdatedAt;
+                ticket.OperationalSummaryUpdatedBy = current.OperationalSummaryUpdatedBy;
+
+                // Lo storico dello smistamento AI e' di competenza del server: il client non lo
+                // rimanda indietro e non deve poterlo sovrascrivere. Cambia solo l'esito, che qui
+                // registra se il gruppo scelto dall'AI e' stato confermato o corretto a mano.
+                ticket.AiSuggestedGroupId = current.AiSuggestedGroupId;
+                ticket.AiRoutingConfidence = current.AiRoutingConfidence;
+                ticket.AiRoutingReason = current.AiRoutingReason;
+                ticket.AiRoutedAt = current.AiRoutedAt;
+                ticket.AiRoutingApplied = current.AiRoutingApplied;
+                ticket.AiRoutingOutcome = TicketRouting.TicketRoutingOutcomes.AfterGroupChange(
+                    current.AiRoutingOutcome, current.AiSuggestedGroupId, ticket.IdGroupAssigned);
+
                 await NormalizeCommessaFaseLinkAsync(ticket);
 
                 ticket.IdCompanyAssigned =

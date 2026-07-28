@@ -16,9 +16,11 @@ namespace CRM.Client.Pages.WorkflowAutomations
         [Inject] private IEnumService EnumService { get; set; } = default!;
         [Inject] private DialogService DialogService { get; set; } = default!;
         [Inject] private IHeaderService HeaderService { get; set; } = default!;
+        [Inject] private IBaseRestService<ApplicationUser, UsersFilterModel, string> UsersService { get; set; } = default!;
 
         private PageHeaderModel? _pageHeader;
         private List<WorkflowAutomation> _rules = new();
+        private List<ApplicationUser> _users = new();
         private WorkflowAutomation? _selected;
         private bool _loading;
         private bool _saving;
@@ -39,10 +41,15 @@ namespace CRM.Client.Pages.WorkflowAutomations
             }
         }
 
+        private bool IsLeadRule => _selected != null && IsLeadTrigger(_selected.Trigger);
+        private bool IsDealRule => _selected != null && IsDealTrigger(_selected.Trigger);
+        private LeadStatus? ImpliedLeadStatus => _selected == null ? null : ImpliedLeadStatusFor(_selected.Trigger);
+        private DealStates? ImpliedDealState => _selected == null ? null : ImpliedDealStateFor(_selected.Trigger);
+
         protected override async Task OnInitializedAsync()
         {
             _pageHeader = await HeaderService.Create();
-            await LoadRules();
+            await Task.WhenAll(LoadRules(), LoadUsers());
             NewRule();
         }
 
@@ -59,6 +66,15 @@ namespace CRM.Client.Pages.WorkflowAutomations
             }
         }
 
+        private async Task LoadUsers()
+        {
+            var response = await UsersService.Get(new UsersFilterModel { PageSize = 0 });
+            _users = response?.Items?
+                .Where(x => !x.IsDeleted)
+                .OrderBy(x => x.NameComplete)
+                .ToList() ?? new List<ApplicationUser>();
+        }
+
         private void NewRule()
         {
             _message = null;
@@ -70,8 +86,10 @@ namespace CRM.Client.Pages.WorkflowAutomations
                 ActivityKind = ActivityKind.Task,
                 ActivitySubject = "Follow-up {LeadName}{DealName}",
                 DueDays = 1,
-                AssignToOwner = true
+                AssignToOwner = true,
+                IdAssignee = null
             };
+            NormalizeSelectedRule();
         }
 
         private void EditRule(WorkflowAutomation rule)
@@ -94,11 +112,18 @@ namespace CRM.Client.Pages.WorkflowAutomations
                 ActivityDescription = rule.ActivityDescription,
                 DueDays = rule.DueDays,
                 AssignToOwner = rule.AssignToOwner,
+                IdAssignee = rule.IdAssignee,
                 CreatedAt = rule.CreatedAt,
                 UpdatedAt = rule.UpdatedAt,
                 LastRunAt = rule.LastRunAt,
                 ExecutionCount = rule.ExecutionCount
             };
+            NormalizeSelectedRule();
+        }
+
+        private void OnTriggerChanged()
+        {
+            NormalizeSelectedRule();
         }
 
         private async Task Save()
@@ -109,6 +134,12 @@ namespace CRM.Client.Pages.WorkflowAutomations
             _message = null;
             try
             {
+                NormalizeSelectedRule();
+                if (!ValidateSelectedRule())
+                {
+                    return;
+                }
+
                 var response = await WorkflowService.PostAsync(_selected);
                 if (!response.State)
                 {
@@ -167,5 +198,64 @@ namespace CRM.Client.Pages.WorkflowAutomations
         private string DealStateText(DealStates value) => EnumService.Get(typeof(DealStates), value);
         private string DealPhaseText(DealPhases value) => EnumService.Get(typeof(DealPhases), value);
         private string ActivityKindText(ActivityKind value) => EnumService.Get(typeof(ActivityKind), value);
+
+        private bool ValidateSelectedRule()
+        {
+            if (_selected == null) return false;
+
+            if (!_selected.AssignToOwner && string.IsNullOrWhiteSpace(_selected.IdAssignee))
+            {
+                _message = "Seleziona l'utente a cui assegnare l'attivita oppure scegli l'owner del record.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private void NormalizeSelectedRule()
+        {
+            if (_selected == null) return;
+
+            if (_selected.AssignToOwner)
+            {
+                _selected.IdAssignee = null;
+            }
+
+            if (IsLeadTrigger(_selected.Trigger))
+            {
+                _selected.LeadStatus = ImpliedLeadStatusFor(_selected.Trigger);
+                _selected.DealState = null;
+                _selected.DealPhase = null;
+                return;
+            }
+
+            _selected.LeadSource = null;
+            _selected.LeadStatus = null;
+            _selected.DealState = ImpliedDealStateFor(_selected.Trigger);
+        }
+
+        private static bool IsLeadTrigger(WorkflowTrigger trigger)
+            => trigger is WorkflowTrigger.LeadCreated or WorkflowTrigger.LeadQualified or WorkflowTrigger.LeadConverted;
+
+        private static bool IsDealTrigger(WorkflowTrigger trigger)
+            => trigger is WorkflowTrigger.DealCreated or WorkflowTrigger.DealWon or WorkflowTrigger.DealLost;
+
+        private static LeadStatus? ImpliedLeadStatusFor(WorkflowTrigger trigger)
+            => trigger switch
+            {
+                WorkflowTrigger.LeadCreated => LeadStatus.New,
+                WorkflowTrigger.LeadQualified => LeadStatus.Qualified,
+                WorkflowTrigger.LeadConverted => LeadStatus.Converted,
+                _ => null
+            };
+
+        private static DealStates? ImpliedDealStateFor(WorkflowTrigger trigger)
+            => trigger switch
+            {
+                WorkflowTrigger.DealCreated => DealStates.Open,
+                WorkflowTrigger.DealWon => DealStates.CloseWon,
+                WorkflowTrigger.DealLost => DealStates.CloseLost,
+                _ => null
+            };
     }
 }

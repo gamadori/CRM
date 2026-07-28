@@ -126,14 +126,32 @@ namespace CRM.Client.Pages.Leads
 
         private string SourceText(LeadSource source) => EnumService.Get(typeof(LeadSource), source);
 
-        private static string LeadStateClass(LeadStatus status)
-            => status switch
+        private string LeadStateClass(string statusText)
+        {
+            if (IsLeadStatusText(statusText, LeadStatus.New))
             {
-                LeadStatus.New => "state-new",
-                LeadStatus.Contacted or LeadStatus.Qualified => "state-active",
-                LeadStatus.Converted => "state-won",
-                LeadStatus.Lost or LeadStatus.Disqualified => "state-lost",
-                _ => "state-new"
-            };
+                return "state-new";
+            }
+
+            if (IsLeadStatusText(statusText, LeadStatus.Contacted) || IsLeadStatusText(statusText, LeadStatus.Qualified))
+            {
+                return "state-active";
+            }
+
+            if (IsLeadStatusText(statusText, LeadStatus.Converted))
+            {
+                return "state-won";
+            }
+
+            if (IsLeadStatusText(statusText, LeadStatus.Lost) || IsLeadStatusText(statusText, LeadStatus.Disqualified))
+            {
+                return "state-lost";
+            }
+
+            return "state-new";
+        }
+
+        private bool IsLeadStatusText(string statusText, LeadStatus status)
+            => string.Equals(statusText, StatusText(status), StringComparison.CurrentCultureIgnoreCase);
     }
 }

@@ -94,6 +94,7 @@ namespace CRM.Client.Pages.Tickets
         private bool _isEditingSummary = false;
         private bool _isClaiming = false;
         private bool _isChangingBlock = false;
+        private bool _isHandlingAiRouting = false;
 
         /// <summary>Email in arrivo da cui è nato (o a cui è agganciato) il ticket, se presente.</summary>
         private int? _idInboundEmail;
@@ -537,6 +538,43 @@ namespace CRM.Client.Pages.Tickets
             finally
             {
                 _isClaiming = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        /// <summary>
+        /// Accetta o scarta il gruppo proposto dallo smistamento AI. Il ticket ricaricato dal
+        /// server e' la sola fonte di verita': stato, gruppo ed esito cambiano insieme.
+        /// </summary>
+        private async Task HandleAiRouting(bool accept)
+        {
+            if (Id == null || _isHandlingAiRouting)
+                return;
+
+            try
+            {
+                _isHandlingAiRouting = true;
+
+                var response = accept
+                    ? await _service.AcceptAiRoutingAsync(Id.Value)
+                    : await _service.DismissAiRoutingAsync(Id.Value);
+
+                var title = accept ? "Assegnazione al gruppo" : "Suggerimento";
+
+                if (!response.State)
+                {
+                    NotificationService?.Notify(NotificationSeverity.Error, title, response.Message ?? "Operazione non riuscita");
+                    return;
+                }
+
+                if (response.Data != null)
+                    _ticket = response.Data;
+
+                NotificationService?.Notify(NotificationSeverity.Success, title, response.Message ?? "Operazione completata");
+            }
+            finally
+            {
+                _isHandlingAiRouting = false;
                 await InvokeAsync(StateHasChanged);
             }
         }

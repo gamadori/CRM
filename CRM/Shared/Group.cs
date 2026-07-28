@@ -21,6 +21,15 @@ namespace CRM.Shared
         [Display(Name = "Descrizione")]
         public string Description { get; set; }
 
+        /// <summary>
+        /// Competenze del gruppo raccontate all'AI che smista i ticket: cosa tratta, cosa NON tratta,
+        /// prodotti e parole chiave tipiche. E' l'unica fonte su cui il modello sceglie il gruppo,
+        /// quindi vale la pena curarla: senza, il gruppo resta un candidato "muto".
+        /// </summary>
+        [Display(Name = "Competenze per lo smistamento AI")]
+        [MaxLength(2000)]
+        public string? AiRoutingHints { get; set; }
+
         public virtual ICollection<ApplicationUser> Users { get; set; }
 
         public virtual ICollection<TicketType> TicketTypes { get; set; }

@@ -145,7 +145,7 @@
                     <div class="two-cols">
                         <label class="field">
                             <span>Evento</span>
-                            <InputSelect class="form-input" @bind-Value="_selected.Trigger">
+                            <InputSelect class="form-input" @bind-Value="_selected.Trigger" @bind-Value:after="OnTriggerChanged">
                                 @foreach (var trigger in Enum.GetValues<WorkflowTrigger>())
                                 {
                                     <option value="@trigger">@TriggerText(trigger)</option>
@@ -158,51 +158,45 @@
                         </label>
                     </div>
 
-                    <div class="two-cols">
-                        <label class="field">
-                            <span>Fonte lead</span>
-                            <InputSelect class="form-input" @bind-Value="_selected.LeadSource">
-                                <option value="">Qualsiasi</option>
-                                @foreach (var source in Enum.GetValues<LeadSource>())
-                                {
-                                    <option value="@source">@SourceText(source)</option>
-                                }
-                            </InputSelect>
-                        </label>
-                        <label class="field">
-                            <span>Stato lead</span>
-                            <InputSelect class="form-input" @bind-Value="_selected.LeadStatus">
-                                <option value="">Qualsiasi</option>
-                                @foreach (var status in Enum.GetValues<LeadStatus>())
-                                {
-                                    <option value="@status">@LeadStatusText(status)</option>
-                                }
-                            </InputSelect>
-                        </label>
-                    </div>
+                    @if (IsLeadRule)
+                    {
+                        <div class="two-cols">
+                            <label class="field">
+                                <span>Fonte lead</span>
+                                <InputSelect class="form-input" @bind-Value="_selected.LeadSource">
+                                    <option value="">Qualsiasi</option>
+                                    @foreach (var source in Enum.GetValues<LeadSource>())
+                                    {
+                                        <option value="@source">@SourceText(source)</option>
+                                    }
+                                </InputSelect>
+                            </label>
+                            <label class="field">
+                                <span>Stato lead</span>
+                                <div class="readonly-value">@LeadStatusText(ImpliedLeadStatus ?? LeadStatus.New)</div>
+                            </label>
+                        </div>
+                    }
 
-                    <div class="two-cols">
-                        <label class="field">
-                            <span>Stato deal</span>
-                            <InputSelect class="form-input" @bind-Value="_selected.DealState">
-                                <option value="">Qualsiasi</option>
-                                @foreach (var state in Enum.GetValues<DealStates>())
-                                {
-                                    <option value="@state">@DealStateText(state)</option>
-                                }
-                            </InputSelect>
-                        </label>
-                        <label class="field">
-                            <span>Fase deal</span>
-                            <InputSelect class="form-input" @bind-Value="_selected.DealPhase">
-                                <option value="">Qualsiasi</option>
-                                @foreach (var phase in Enum.GetValues<DealPhases>())
-                                {
-                                    <option value="@phase">@DealPhaseText(phase)</option>
-                                }
-                            </InputSelect>
-                        </label>
-                    </div>
+                    @if (IsDealRule)
+                    {
+                        <div class="two-cols">
+                            <label class="field">
+                                <span>Stato deal</span>
+                                <div class="readonly-value">@DealStateText(ImpliedDealState ?? DealStates.Open)</div>
+                            </label>
+                            <label class="field">
+                                <span>Fase deal</span>
+                                <InputSelect class="form-input" @bind-Value="_selected.DealPhase">
+                                    <option value="">Qualsiasi</option>
+                                    @foreach (var phase in Enum.GetValues<DealPhases>())
+                                    {
+                                        <option value="@phase">@DealPhaseText(phase)</option>
+                                    }
+                                </InputSelect>
+                            </label>
+                        </div>
+                    }
 
                     <div class="two-cols">
                         <label class="field">
@@ -230,10 +224,28 @@
                         <span>Descrizione</span>
                         <InputTextArea class="form-input notes" @bind-Value="_selected.ActivityDescription" />
                     </label>
-                    <label class="switch-line">
-                        <InputCheckbox @bind-Value="_selected.AssignToOwner" />
-                        <span>Assegna all'owner del record</span>
-                    </label>
+                    <div class="two-cols">
+                        <label class="field">
+                            <span>Assegna attivita a</span>
+                            <InputSelect class="form-input" @bind-Value="_selected.AssignToOwner">
+                                <option value="true">Owner del record</option>
+                                <option value="false">Utente specifico</option>
+                            </InputSelect>
+                        </label>
+                        @if (!_selected.AssignToOwner)
+                        {
+                            <label class="field">
+                                <span>Utente assegnatario</span>
+                                <InputSelect class="form-input" @bind-Value="_selected.IdAssignee">
+                                    <option value="">Seleziona utente</option>
+                                    @foreach (var user in _users)
+                                    {
+                                        <option value="@user.Id">@user.NameComplete</option>
+                                    }
+                                </InputSelect>
+                            </label>
+                        }
+                    </div>
 
                     <section class="form-footer">
                         <button type="button" class="secondary-action" @onclick="NewRule" disabled="@_saving">
@@ -287,6 +299,7 @@
     .field { display: grid; gap: .35rem; margin-bottom: .8rem; min-width: 0; }
     .field span, .switch-line span { color: #526174; font-size: .82rem; font-weight: 800; }
     .form-input { width: 100%; min-height: 40px; border: 1px solid #d7e0ec; border-radius: 8px; background: #fff; padding: .48rem .6rem; }
+    .readonly-value { display: flex; align-items: center; min-height: 40px; border: 1px solid #d7e0ec; border-radius: 8px; background: #f8fafc; padding: .48rem .6rem; color: #526174; font-weight: 800; }
     .notes { min-height: 110px; resize: vertical; }
     .switch-line { display: flex; align-items: center; gap: .5rem; margin-bottom: .8rem; }
     .form-footer { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }

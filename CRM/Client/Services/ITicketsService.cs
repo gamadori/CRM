@@ -38,5 +38,11 @@ namespace CRM.Client.Services
         Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> BlockAsync(int idTicket, TicketBlockRequest request);
 
         Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> UnblockAsync(int idTicket, TicketUnblockRequest request);
+
+        /// <summary>Assegna il gruppo proposto dallo smistamento AI.</summary>
+        Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> AcceptAiRoutingAsync(int idTicket);
+
+        /// <summary>Scarta il suggerimento dello smistamento AI.</summary>
+        Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> DismissAiRoutingAsync(int idTicket);
     }
 }

@@ -31,6 +31,18 @@ else
                             </RadzenStack>
                         </RadzenColumn>
                     </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack Gap="0.25rem">
+                                <RedGTextArea @bind-Value="@_group.AiRoutingHints" For="@(() => _group.AiRoutingHints)" Rows="4"
+                                              Placeholder="Es. Assistenza elettrica sulle linee di taglio: quadri, sensori, azionamenti. Non tratta software gestionale ne' ricambi meccanici." />
+                                <span style="font-size:0.75rem; color:var(--crm-text-muted, #64748b);">
+                                    Testo su cui l'AI sceglie il gruppo quando smista un ticket: indica cosa tratta e
+                                    cosa non tratta. Si modifica anche da Impostazioni &rsaquo; Smistamento ticket.
+                                </span>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
                 </RadzenStack>
             </RadzenColumn>
         </RadzenRow>

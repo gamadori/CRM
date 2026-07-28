@@ -18,6 +18,7 @@ namespace CRM.Server.Services.Email
         private readonly IInboundEmailAiService _ai;
         private readonly IArchiveService _archiveService;
         private readonly ITicketChatNotificationService _ticketChatNotificationService;
+        private readonly TicketRouting.ITicketRoutingService _ticketRouting;
 
         private const int MaxBodyLength = 8000;
 
@@ -28,7 +29,8 @@ namespace CRM.Server.Services.Email
             IHubContext<SignalRHub> hub,
             IInboundEmailAiService ai,
             IArchiveService archiveService,
-            ITicketChatNotificationService ticketChatNotificationService)
+            ITicketChatNotificationService ticketChatNotificationService,
+            TicketRouting.ITicketRoutingService ticketRouting)
         {
             _context = context;
             _logEventService = logEventService;
@@ -37,6 +39,7 @@ namespace CRM.Server.Services.Email
             _ai = ai;
             _archiveService = archiveService;
             _ticketChatNotificationService = ticketChatNotificationService;
+            _ticketRouting = ticketRouting;
         }
 
         public async Task<bool> IngestAsync(InboundMessage message, CancellationToken ct = default)
@@ -108,6 +111,10 @@ namespace CRM.Server.Services.Email
                     {
                         idTicket = ticket.Id;
                         activitySubject = $"Nuovo ticket #{ticket.Id}: {subject}";
+
+                        // Smistamento AI verso il gruppo competente: la descrizione e' gia' quella
+                        // pulita dal triage, quindi il modello lavora sul testo migliore disponibile.
+                        await _ticketRouting.RouteAsync(ticket.Id, TicketRouting.TicketRoutingSource.InboundEmail, ct);
 
                         // Il testo originale dell'email diventa il primo messaggio della conversazione:
                         // la Description resta il riassunto, la chat conserva il testo integrale del cliente.

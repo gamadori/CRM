@@ -132,6 +132,26 @@ namespace CRM.Shared.DTOs
 
         public int? IdGroupAssigned { get; set; }
 
+        // ─── Smistamento AI ─────────────────────────────────────────────────────
+        public int? AiSuggestedGroupId { get; set; }
+
+        public string? AiSuggestedGroup { get; set; }
+
+        public double? AiRoutingConfidence { get; set; }
+
+        public string? AiRoutingReason { get; set; }
+
+        public DateTime? AiRoutedAt { get; set; }
+
+        /// <summary>Il gruppo e' stato assegnato in automatico dall'AI (confidenza sopra soglia).</summary>
+        public bool AiRoutingApplied { get; set; }
+
+        public AiRoutingOutcome AiRoutingOutcome { get; set; }
+
+        /// <summary>C'e' un suggerimento in attesa di decisione: il ticket e' ancora senza gruppo.</summary>
+        public bool HasPendingAiSuggestion =>
+            AiRoutingOutcome == AiRoutingOutcome.Pending && AiSuggestedGroupId != null && IdGroupAssigned == null;
+
         public bool CanClaim { get; set; }
 
         public bool IsAssignedToCurrentUser { get; set; }

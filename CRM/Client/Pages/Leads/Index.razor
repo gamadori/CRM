@@ -104,7 +104,7 @@
                                 <small>@(string.IsNullOrWhiteSpace(lead.Email) ? lead.Phone : lead.Email)</small>
                             </td>
                             <td>@(string.IsNullOrWhiteSpace(lead.ProductSummary) ? "-" : lead.ProductSummary)</td>
-                            <td><span class="state-chip @LeadStateClass(lead.Status)">@StatusText(lead.Status)</span></td>
+                            <td><span class="state-chip @LeadStateClass(StatusText(lead.Status))">@StatusText(lead.Status)</span></td>
                             <td>@SourceText(lead.Source)</td>
                             <td>
                                 <div class="score-bar">

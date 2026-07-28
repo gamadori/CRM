@@ -111,6 +111,13 @@ namespace CRM.Server.Services
         {
             try
             {
+                NormalizeRule(item);
+                var validationError = await ValidateRuleAsync(item);
+                if (validationError != null)
+                {
+                    return Fail(validationError, System.Net.HttpStatusCode.BadRequest);
+                }
+
                 if (item.Id > 0)
                 {
                     var existing = await _context.WorkflowAutomations.FirstOrDefaultAsync(x => x.Id == item.Id);
@@ -133,6 +140,7 @@ namespace CRM.Server.Services
                     existing.ActivityDescription = item.ActivityDescription;
                     existing.DueDays = item.DueDays;
                     existing.AssignToOwner = item.AssignToOwner;
+                    existing.IdAssignee = item.IdAssignee;
                     existing.UpdatedAt = DateTime.Now;
                 }
                 else
@@ -149,6 +157,25 @@ namespace CRM.Server.Services
                 await _logEventService.RegisterAsync(nameof(WorkflowAutomationService), nameof(PostAsync), EventsTypes.Error, ex);
                 return Fail("Errore nel salvataggio dell'automazione", System.Net.HttpStatusCode.InternalServerError);
             }
+        }
+
+        private async Task<string?> ValidateRuleAsync(WorkflowAutomation item)
+        {
+            if (!item.AssignToOwner)
+            {
+                if (string.IsNullOrWhiteSpace(item.IdAssignee))
+                {
+                    return "Se non assegni all'owner del record devi selezionare un utente assegnatario.";
+                }
+
+                var exists = await _context.Users.AnyAsync(x => x.Id == item.IdAssignee && !x.IsDeleted);
+                if (!exists)
+                {
+                    return "L'utente assegnatario selezionato non e' valido o e' disattivato.";
+                }
+            }
+
+            return null;
         }
 
         public async Task<bool> DeleteAsync(int id)
@@ -292,9 +319,7 @@ namespace CRM.Server.Services
 
         private async Task<Activity?> CreateActivityAsync(WorkflowAutomation rule, Lead? lead, Deal? deal)
         {
-            var idUser = rule.AssignToOwner
-                ? (lead?.IdUser ?? deal?.IdUser ?? await SafeCurrentUserAsync())
-                : await SafeCurrentUserAsync();
+            var idUser = await ResolveActivityAssigneeAsync(rule, lead, deal);
 
             var activity = new Activity
             {
@@ -318,6 +343,33 @@ namespace CRM.Server.Services
             }
 
             return null;
+        }
+
+        private async Task<string> ResolveActivityAssigneeAsync(WorkflowAutomation rule, Lead? lead, Deal? deal)
+        {
+            if (rule.AssignToOwner)
+            {
+                var ownerId = lead?.IdUser ?? deal?.IdUser;
+                if (string.IsNullOrWhiteSpace(ownerId))
+                {
+                    throw new InvalidOperationException("Owner del record non valorizzato: impossibile assegnare l'attivita'.");
+                }
+
+                return ownerId;
+            }
+
+            if (string.IsNullOrWhiteSpace(rule.IdAssignee))
+            {
+                throw new InvalidOperationException("Utente assegnatario non configurato nella regola workflow.");
+            }
+
+            var exists = await _context.Users.AnyAsync(x => x.Id == rule.IdAssignee && !x.IsDeleted);
+            if (!exists)
+            {
+                throw new InvalidOperationException("Utente assegnatario della regola workflow non valido o disattivato.");
+            }
+
+            return rule.IdAssignee;
         }
 
         private async Task<List<AutomationCandidate>> LoadPendingCandidatesAsync(WorkflowAutomation rule, CancellationToken cancellationToken)
@@ -450,6 +502,47 @@ namespace CRM.Server.Services
 
             return true;
         }
+
+        private static void NormalizeRule(WorkflowAutomation rule)
+        {
+            if (rule.AssignToOwner)
+            {
+                rule.IdAssignee = null;
+            }
+
+            if (IsLeadTrigger(rule.Trigger))
+            {
+                rule.LeadStatus = ImpliedLeadStatusFor(rule.Trigger);
+                rule.DealState = null;
+                rule.DealPhase = null;
+                return;
+            }
+
+            rule.LeadSource = null;
+            rule.LeadStatus = null;
+            rule.DealState = ImpliedDealStateFor(rule.Trigger);
+        }
+
+        private static bool IsLeadTrigger(WorkflowTrigger trigger)
+            => trigger is WorkflowTrigger.LeadCreated or WorkflowTrigger.LeadQualified or WorkflowTrigger.LeadConverted;
+
+        private static LeadStatus? ImpliedLeadStatusFor(WorkflowTrigger trigger)
+            => trigger switch
+            {
+                WorkflowTrigger.LeadCreated => LeadStatus.New,
+                WorkflowTrigger.LeadQualified => LeadStatus.Qualified,
+                WorkflowTrigger.LeadConverted => LeadStatus.Converted,
+                _ => null
+            };
+
+        private static DealStates? ImpliedDealStateFor(WorkflowTrigger trigger)
+            => trigger switch
+            {
+                WorkflowTrigger.DealCreated => DealStates.Open,
+                WorkflowTrigger.DealWon => DealStates.CloseWon,
+                WorkflowTrigger.DealLost => DealStates.CloseLost,
+                _ => null
+            };
 
         private IQueryable<WorkflowAutomation> FilterItems(WorkflowAutomationFilter? args)
         {

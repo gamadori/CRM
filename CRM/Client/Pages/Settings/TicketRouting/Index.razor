@@ -1,0 +1,401 @@
+@page "/Settings/TicketRouting"
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Client.Models
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "SuperUserRole")]
+
+<PageHeader Model="_pageHeader" />
+
+@if (_loading || _settings == null)
+{
+    <Waiting />
+}
+else
+{
+    <div class="routing-page">
+
+        <!-- Stato e interruttore generale -->
+        <section class="routing-hero @(_settings.Enabled ? "is-on" : "is-off")">
+            <div class="hero-icon">
+                <span class="material-icons">alt_route</span>
+            </div>
+            <div class="hero-copy">
+                <h2>Smistamento automatico</h2>
+                <p>
+                    Alla creazione di un ticket l'AI legge tipo e descrizione e sceglie il gruppo competente.
+                    Sopra la soglia di confidenza il gruppo viene assegnato da solo; sotto, il ticket resta in
+                    coda con il suggerimento in evidenza sulla scheda.
+                </p>
+                <div class="hero-badges">
+                    @if (_status?.AiAvailable == true)
+                    {
+                        <span class="badge-chip ok">
+                            <span class="material-icons">check_circle</span>
+                            AI operativa
+                        </span>
+                        <span class="badge-chip neutral">
+                            <span class="material-icons">memory</span>
+                            @_status.Model
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge-chip danger">
+                            <span class="material-icons">key_off</span>
+                            Chiave API non configurata
+                        </span>
+                    }
+                </div>
+            </div>
+            <div class="hero-switch">
+                <RadzenSwitch @bind-Value="_settings.Enabled" />
+                <span>@(_settings.Enabled ? "Attivo" : "Disattivo")</span>
+            </div>
+        </section>
+
+        <!-- Avvisi di configurazione -->
+        @if (_status != null && (!_status.AiAvailable || _status.GroupsWithHints < _status.GroupsTotal || _status.TicketTypesWithoutGroups > 0))
+        {
+            <section class="routing-warnings">
+                @if (!_status.AiAvailable)
+                {
+                    <div class="warning-row danger">
+                        <span class="material-icons">error_outline</span>
+                        <div>
+                            <strong>Chiave API assente.</strong>
+                            Senza <code>Anthropic:ApiKey</code> lo smistamento resta inerte: i ticket vengono
+                            comunque creati e finiscono nella coda generale.
+                        </div>
+                    </div>
+                }
+
+                @if (_status.GroupsWithHints < _status.GroupsTotal)
+                {
+                    <div class="warning-row warn">
+                        <span class="material-icons">edit_note</span>
+                        <div>
+                            <strong>@(_status.GroupsTotal - _status.GroupsWithHints) gruppi su @_status.GroupsTotal senza competenze dichiarate.</strong>
+                            L'AI sceglie solo in base a quello che legge qui sotto: un gruppo senza descrizione
+                            e' un candidato muto.
+                        </div>
+                    </div>
+                }
+
+                @if (_status.TicketTypesWithoutGroups > 0 && _settings.RestrictToTicketTypeGroups)
+                {
+                    <div class="warning-row warn">
+                        <span class="material-icons">link_off</span>
+                        <div>
+                            <strong>@_status.TicketTypesWithoutGroups tipi di ticket senza gruppi collegati.</strong>
+                            Con il filtro per tipo attivo quei ticket non hanno candidati e restano in coda.
+                        </div>
+                    </div>
+                }
+            </section>
+        }
+
+        <!-- Parametri -->
+        <section class="routing-card">
+            <header class="card-head">
+                <span class="material-icons">tune</span>
+                <div>
+                    <h3>Parametri</h3>
+                    <span class="card-sub">Quanto deve essere sicura l'AI per decidere da sola</span>
+                </div>
+            </header>
+
+            <div class="card-body">
+                <div class="field threshold-field">
+                    <label>Soglia di assegnazione automatica</label>
+                    <div class="threshold-row">
+                        <RadzenSlider @bind-Value="_settings.AutoAssignThreshold" TValue="double"
+                                      Min="0.5m" Max="1m" Step="0.05m" Style="flex:1;" />
+                        <span class="threshold-value">@Percent(_settings.AutoAssignThreshold)</span>
+                    </div>
+                    <span class="field-help">
+                        Sopra questo valore il gruppo viene assegnato senza conferma. Sotto, il ticket resta
+                        nella coda generale con il suggerimento visibile: un errore dell'AI non nasconde mai un ticket.
+                    </span>
+                </div>
+
+                <div class="field">
+                    <label>Gruppo di ripiego</label>
+                    <RadzenDropDown @bind-Value="_settings.IdFallbackGroup"
+                                    Data="_groups"
+                                    TextProperty="Name"
+                                    ValueProperty="Id"
+                                    AllowClear="true"
+                                    Placeholder="Nessuno: il ticket resta in coda"
+                                    Style="width:100%" />
+                    <span class="field-help">
+                        Usato quando l'AI non individua un gruppo competente o non e' disponibile.
+                    </span>
+                </div>
+
+                <div class="field">
+                    <label>Modello</label>
+                    <RadzenTextBox @bind-Value="_settings.Model" Placeholder="@(_status?.Model ?? "modello predefinito")" Style="width:100%" />
+                    <span class="field-help">Vuoto = lo stesso modello usato dal resto dell'applicazione.</span>
+                </div>
+
+                <div class="switch-list">
+                    <label class="switch-row">
+                        <RadzenSwitch @bind-Value="_settings.RestrictToTicketTypeGroups" />
+                        <div>
+                            <span class="switch-title">Considera solo i gruppi abilitati al tipo di ticket</span>
+                            <span class="switch-help">
+                                Usa la mappa Tipi ticket &rsaquo; Gruppi come pre-filtro: meno candidati, meno errori.
+                            </span>
+                        </div>
+                    </label>
+
+                    <label class="switch-row">
+                        <RadzenSwitch @bind-Value="_settings.ApplyToEmailTickets" />
+                        <div>
+                            <span class="switch-title">Smista anche i ticket aperti dalle email in arrivo</span>
+                            <span class="switch-help">
+                                Vale per i ticket creati automaticamente dalle caselle in ingresso.
+                            </span>
+                        </div>
+                    </label>
+
+                    <label class="switch-row">
+                        <RadzenSwitch @bind-Value="_settings.NotifyGroupOnAssign" />
+                        <div>
+                            <span class="switch-title">Avvisa il gruppo assegnato</span>
+                            <span class="switch-help">
+                                L'email di ticket da assegnare va al solo gruppo scelto, invece che a tutti i gruppi del tipo.
+                            </span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <footer class="card-foot">
+                @if (_settings.UpdatedAt != null)
+                {
+                    <span class="foot-note">Ultima modifica: @_settings.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                }
+                <RadzenButton Text="@(_saving ? "Salvataggio..." : "Salva configurazione")"
+                              Icon="save"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Disabled="_saving"
+                              Click="SaveSettingsAsync" />
+            </footer>
+        </section>
+
+        <!-- Andamento -->
+        @if (_status != null)
+        {
+            <section class="routing-card">
+                <header class="card-head">
+                    <span class="material-icons">insights</span>
+                    <div>
+                        <h3>Ultimi 30 giorni</h3>
+                        <span class="card-sub">Se le correzioni crescono, e' ora di rivedere le competenze dei gruppi</span>
+                    </div>
+                </header>
+
+                <div class="stats-grid">
+                    <div class="stat">
+                        <span class="stat-value">@_status.RoutedLast30Days</span>
+                        <span class="stat-label">Ticket smistati</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">@_status.AutoAssignedLast30Days</span>
+                        <span class="stat-label">Assegnati in automatico</span>
+                    </div>
+                    <div class="stat ok">
+                        <span class="stat-value">@_status.AcceptedLast30Days</span>
+                        <span class="stat-label">Confermati</span>
+                    </div>
+                    <div class="stat warn">
+                        <span class="stat-value">@_status.CorrectedLast30Days</span>
+                        <span class="stat-label">Corretti a mano</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">@_status.PendingLast30Days</span>
+                        <span class="stat-label">Suggerimenti in attesa</span>
+                    </div>
+                    <div class="stat accent">
+                        <span class="stat-value">@Percent(_status.AccuracyLast30Days)</span>
+                        <span class="stat-label">Scelte corrette</span>
+                    </div>
+                </div>
+            </section>
+        }
+
+        <!-- Competenze dei gruppi -->
+        <section class="routing-card">
+            <header class="card-head">
+                <span class="material-icons">groups</span>
+                <div>
+                    <h3>Competenze dei gruppi</h3>
+                    <span class="card-sub">E' l'unica cosa che l'AI legge per scegliere: descrivi cosa tratta e cosa non tratta ogni gruppo</span>
+                </div>
+            </header>
+
+            <div class="groups-list">
+                @if (!_groups.Any())
+                {
+                    <div class="empty-row">
+                        <span class="material-icons">group_off</span>
+                        Nessun gruppo configurato.
+                    </div>
+                }
+
+                @foreach (var group in _groups)
+                {
+                    <div class="group-row">
+                        <div class="group-head">
+                            <div class="group-title">
+                                <span class="group-name">@group.Name</span>
+                                @if (string.IsNullOrWhiteSpace(group.AiRoutingHints))
+                                {
+                                    <span class="badge-chip warn small">
+                                        <span class="material-icons">priority_high</span>
+                                        competenze mancanti
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge-chip ok small">
+                                        <span class="material-icons">check</span>
+                                        compilate
+                                    </span>
+                                }
+                            </div>
+                            <div class="group-meta">
+                                <span class="meta-item">
+                                    <span class="material-icons">person</span>
+                                    @group.UsersCount
+                                </span>
+                                @if (group.TicketTypes.Any())
+                                {
+                                    <span class="meta-item types" title="@string.Join(", ", group.TicketTypes)">
+                                        <span class="material-icons">class</span>
+                                        @string.Join(", ", group.TicketTypes.Take(3))@(group.TicketTypes.Count > 3 ? $" +{group.TicketTypes.Count - 3}" : "")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="meta-item muted">
+                                        <span class="material-icons">link_off</span>
+                                        nessun tipo collegato
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <RadzenTextArea Value="@(_hintsDraft.GetValueOrDefault(group.Id))"
+                                        ValueChanged="@(v => _hintsDraft[group.Id] = v)"
+                                        Rows="3"
+                                        Placeholder="Es. Assistenza elettrica sulle linee di taglio: quadri, sensori, azionamenti. Non tratta software gestionale ne' ricambi meccanici."
+                                        Style="width:100%" />
+
+                        <div class="group-actions">
+                            <RadzenButton Text="@(_savingHintsGroupId == group.Id ? "Salvataggio..." : "Salva competenze")"
+                                          Icon="save"
+                                          Size="ButtonSize.Small"
+                                          ButtonStyle="ButtonStyle.Secondary"
+                                          Disabled="@(_savingHintsGroupId != null || !HintsChanged(group))"
+                                          Click="@(() => SaveHintsAsync(group))" />
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <!-- Prova di smistamento -->
+        <section class="routing-card">
+            <header class="card-head">
+                <span class="material-icons">science</span>
+                <div>
+                    <h3>Prova lo smistamento</h3>
+                    <span class="card-sub">Scrivi una richiesta come la manderebbe un cliente: non crea nulla</span>
+                </div>
+            </header>
+
+            <div class="card-body">
+                <div class="field">
+                    <label>Tipo di ticket</label>
+                    <RadzenDropDown @bind-Value="_previewTypeId"
+                                    Data="_ticketTypes"
+                                    TextProperty="Desc"
+                                    ValueProperty="Id"
+                                    Placeholder="Scegli un tipo"
+                                    Style="width:100%" />
+                </div>
+
+                <div class="field">
+                    <label>Richiesta del cliente</label>
+                    <RadzenTextArea @bind-Value="_previewText"
+                                    Rows="4"
+                                    Placeholder="Es. La macchina si ferma con allarme E12 sul quadro e non riparte dopo il reset."
+                                    Style="width:100%" />
+                </div>
+
+                <div class="preview-actions">
+                    <RadzenButton Text="@(_previewRunning ? "Analisi in corso..." : "Prova")"
+                                  Icon="play_arrow"
+                                  ButtonStyle="ButtonStyle.Primary"
+                                  Disabled="@(_previewRunning || _previewTypeId == null || string.IsNullOrWhiteSpace(_previewText))"
+                                  Click="RunPreviewAsync" />
+                </div>
+
+                @if (_previewResult != null)
+                {
+                    <div class="preview-result @(_previewResult.Error != null ? "error" : _previewResult.WouldAutoAssign ? "auto" : "manual")">
+                        @if (_previewResult.Error != null)
+                        {
+                            <div class="preview-head">
+                                <span class="material-icons">report_problem</span>
+                                <span>@_previewResult.Error</span>
+                            </div>
+                        }
+                        else if (_previewResult.IdGroup == null)
+                        {
+                            <div class="preview-head">
+                                <span class="material-icons">help_outline</span>
+                                <span>Nessun gruppo individuato: il ticket resterebbe in coda@(_settings.IdFallbackGroup != null ? " sul gruppo di ripiego" : "").</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="preview-head">
+                                <span class="material-icons">@(_previewResult.WouldAutoAssign ? "task_alt" : "pending_actions")</span>
+                                <span>
+                                    <strong>@_previewResult.GroupName</strong>
+                                    @(_previewResult.WouldAutoAssign
+                                        ? " — verrebbe assegnato automaticamente"
+                                        : " — resterebbe come suggerimento, sotto la soglia")
+                                </span>
+                            </div>
+
+                            <div class="confidence">
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width:@(Math.Round((_previewResult.Confidence ?? 0) * 100))%"></div>
+                                    <div class="confidence-threshold" style="left:@(Math.Round(_settings.AutoAssignThreshold * 100))%"></div>
+                                </div>
+                                <span class="confidence-value">@Percent(_previewResult.Confidence)</span>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(_previewResult.Reason))
+                        {
+                            <div class="preview-reason">&ldquo;@_previewResult.Reason&rdquo;</div>
+                        }
+
+                        @if (_previewResult.Candidates.Any())
+                        {
+                            <div class="preview-candidates">
+                                <span class="candidates-label">Gruppi valutati:</span>
+                                @string.Join(" · ", _previewResult.Candidates)
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    </div>
+}

@@ -4059,6 +4059,10 @@ namespace CRM.Server.Migrations
                     b.Property<int>("ExecutionCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("IdAssignee")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -4087,6 +4091,8 @@ namespace CRM.Server.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("IsActive", "Trigger");
+
+                    b.HasIndex("IdAssignee");
 
                     b.ToTable("WorkflowAutomations");
                 });

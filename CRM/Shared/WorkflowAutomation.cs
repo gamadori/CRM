@@ -61,6 +61,8 @@ namespace CRM.Shared
 
         public bool AssignToOwner { get; set; } = true;
 
+        public string? IdAssignee { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public DateTime? UpdatedAt { get; set; }

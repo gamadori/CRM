@@ -52,6 +52,7 @@ namespace CRM.Server.Controllers
         private readonly Services.ITicketsService _ticketsService;
         private readonly ITicketSummaryService _ticketSummaryService;
         private readonly ITicketNotificationService _ticketNotifications;
+        private readonly Services.TicketRouting.ITicketRoutingService _ticketRouting;
 
         // ✅ NUOVO: Aggiungi IConfiguration
         private readonly IConfiguration _configuration;
@@ -71,7 +72,8 @@ namespace CRM.Server.Controllers
             IConfiguration configuration,
             Services.ITicketsService ticketsService,
             ITicketSummaryService ticketSummaryService,
-            ITicketNotificationService ticketNotifications) // ✅ AGGIUNTO
+            ITicketNotificationService ticketNotifications,
+            Services.TicketRouting.ITicketRoutingService ticketRouting) // ✅ AGGIUNTO
         {
             _context = context;
             _userManager = userManager;
@@ -89,6 +91,7 @@ namespace CRM.Server.Controllers
             _ticketsService = ticketsService;
             _ticketSummaryService = ticketSummaryService;
             _ticketNotifications = ticketNotifications;
+            _ticketRouting = ticketRouting;
         }
 
         [HttpGet("search")]
@@ -562,7 +565,46 @@ namespace CRM.Server.Controllers
             }
         }
 
-       
+        /// <summary>Assegna al ticket il gruppo proposto dall'AI (suggerimento sotto soglia).</summary>
+        [AuthorizeRole(ePolicy.StandardRole)]
+        [HttpPost("{id}/ai-routing/accept")]
+        public async Task<ActionResult<CRM.Client.Models.APIResponseMessage<TicketDTO>>> AcceptAiRouting(int id)
+        {
+            try
+            {
+                var response = await _ticketRouting.AcceptSuggestionAsync(id, HttpContext.RequestAborted);
+                if (!response.State)
+                    return StatusCode((int)response.Code, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(AcceptAiRouting), LogEvent.EventsTypes.Error, ex);
+                return Problem(ex.Message);
+            }
+        }
+
+        /// <summary>Scarta il suggerimento dell'AI: il ticket resta nella coda generale.</summary>
+        [AuthorizeRole(ePolicy.StandardRole)]
+        [HttpPost("{id}/ai-routing/dismiss")]
+        public async Task<ActionResult<CRM.Client.Models.APIResponseMessage<TicketDTO>>> DismissAiRouting(int id)
+        {
+            try
+            {
+                var response = await _ticketRouting.DismissSuggestionAsync(id, HttpContext.RequestAborted);
+                if (!response.State)
+                    return StatusCode((int)response.Code, response);
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(DismissAiRouting), LogEvent.EventsTypes.Error, ex);
+                return Problem(ex.Message);
+            }
+        }
+
         // POST: api/Tickets
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
@@ -571,6 +613,10 @@ namespace CRM.Server.Controllers
             try
             {
                 var savedTicket = await _ticketsService.PostAsync(ticket);
+
+                // Smistamento AI prima delle notifiche: se il gruppo viene assegnato ora,
+                // l'avviso parte direttamente a chi dovra' lavorare il ticket.
+                await _ticketRouting.RouteAsync(savedTicket.Id, Services.TicketRouting.TicketRoutingSource.Application, HttpContext.RequestAborted);
 
                 await _ticketNotifications.NotifyNewTicketAsync(savedTicket);
 

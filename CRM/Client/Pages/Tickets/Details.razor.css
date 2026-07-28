@@ -460,6 +460,84 @@
     font-size: 1rem;
 }
 
+/* ─── Smistamento AI ─────────────────────────────────────────────────────── */
+
+/* Suggerimento in attesa: si distingue dal pannello del gruppo perche' e' una proposta,
+   non uno stato del ticket. */
+.ai-routing-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin-top: 0.85rem;
+    padding: 0.8rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid color-mix(in srgb, #7c3aed 32%, var(--crm-border, #e2e8f0));
+    background: color-mix(in srgb, #7c3aed 8%, var(--crm-surface-raised, #ffffff));
+}
+
+.ai-routing-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+}
+
+.ai-routing-head > .material-icons {
+    font-size: 1.15rem;
+    color: #7c3aed;
+}
+
+.ai-routing-copy {
+    min-width: 0;
+}
+
+.ai-routing-title {
+    color: var(--crm-text, #1e293b);
+    font-size: 0.88rem;
+    line-height: 1.25;
+}
+
+.ai-routing-sub {
+    color: var(--crm-text-muted, #64748b);
+    font-size: 0.76rem;
+    line-height: 1.35;
+}
+
+.ai-routing-reason {
+    color: var(--crm-text-muted, #64748b);
+    font-size: 0.78rem;
+    font-style: italic;
+    line-height: 1.4;
+    padding-left: 1.7rem;
+}
+
+.ai-routing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding-left: 1.7rem;
+}
+
+/* Gruppo scelto dall'AI: marchio discreto accanto al nome, il dettaglio sta nel tooltip. */
+.ai-assigned-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: 0.4rem;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, #7c3aed 14%, transparent);
+    color: color-mix(in srgb, #7c3aed 80%, var(--crm-text, #1e293b));
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+    cursor: help;
+}
+
+.ai-assigned-badge .material-icons {
+    font-size: 0.8rem;
+}
+
 .assigned-header {
     margin-bottom: 0.75rem;
 }

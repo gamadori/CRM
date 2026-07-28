@@ -117,7 +117,15 @@ namespace CRM.Server.Services
 
                 List<string> to = new List<string>();
 
-                var users = _context.Users.Where(x => x.Groups.Where(x => x.TicketTypes.Where(y => y.Id == ticket.IdType).Any() || x.TicketTypes.Where(y => y.Id == ticket.IdType).Any()).Any());
+                // Quando il ticket ha gia' un gruppo (assegnato dallo smistamento AI o a mano)
+                // l'avviso va a quel gruppo soltanto: mandarlo a tutti i gruppi del tipo
+                // riporterebbe il ticket nella coda indistinta da cui lo smistamento lo ha tolto.
+                var routingSettings = await _context.TicketRoutingSettings.AsNoTracking().FirstOrDefaultAsync();
+                var notifyGroupOnly = ticket.IdGroupAssigned != null && (routingSettings?.NotifyGroupOnAssign ?? true);
+
+                var users = notifyGroupOnly
+                    ? _context.Users.Where(x => x.Groups.Any(g => g.Id == ticket.IdGroupAssigned!.Value))
+                    : _context.Users.Where(x => x.Groups.Where(x => x.TicketTypes.Where(y => y.Id == ticket.IdType).Any() || x.TicketTypes.Where(y => y.Id == ticket.IdType).Any()).Any());
 
                 foreach (var user in users)
                 {

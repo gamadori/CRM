@@ -288,6 +288,40 @@ namespace CRM.Client.Services
             }
         }
 
+        public async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> AcceptAiRoutingAsync(int idTicket)
+        {
+            try
+            {
+                var response = await _http.PostAsync($"{_pathService}/{idTicket}/ai-routing/accept", null);
+                return await ReadTicketResponseAsync(response, "Assegnazione non riuscita");
+            }
+            catch (Exception ex)
+            {
+                return new CRM.Client.Models.APIResponseMessage<TicketDTO>
+                {
+                    State = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
+        public async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> DismissAiRoutingAsync(int idTicket)
+        {
+            try
+            {
+                var response = await _http.PostAsync($"{_pathService}/{idTicket}/ai-routing/dismiss", null);
+                return await ReadTicketResponseAsync(response, "Operazione non riuscita");
+            }
+            catch (Exception ex)
+            {
+                return new CRM.Client.Models.APIResponseMessage<TicketDTO>
+                {
+                    State = false,
+                    Message = ex.Message
+                };
+            }
+        }
+
         private static async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> ReadTicketResponseAsync(HttpResponseMessage response, string fallback)
         {
             var payload = await response.Content.ReadAsStringAsync();

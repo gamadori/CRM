@@ -77,6 +77,33 @@ namespace CRM.Shared
         ForAFee
     }
 
+    /// <summary>
+    /// Esito del suggerimento di gruppo prodotto dall'AI. Distinguere accettato da corretto e'
+    /// l'unico modo per sapere, a distanza di mesi, se lo smistamento automatico funziona.
+    /// </summary>
+    public enum AiRoutingOutcome
+    {
+        /// <summary>Smistamento AI mai eseguito su questo ticket.</summary>
+        [Display(Name = "Non elaborato")]
+        None = 0,
+
+        /// <summary>Suggerimento sotto soglia, in attesa di una decisione dell'operatore.</summary>
+        [Display(Name = "In attesa")]
+        Pending = 1,
+
+        /// <summary>Gruppo suggerito confermato: assegnato in automatico o accettato dall'operatore.</summary>
+        [Display(Name = "Accettato")]
+        Accepted = 2,
+
+        /// <summary>L'operatore ha scelto un gruppo diverso da quello suggerito.</summary>
+        [Display(Name = "Corretto")]
+        Corrected = 3,
+
+        /// <summary>Suggerimento scartato senza assegnare il gruppo proposto.</summary>
+        [Display(Name = "Ignorato")]
+        Dismissed = 4
+    }
+
     public class Ticket
     {
         public Ticket()
@@ -186,6 +213,27 @@ namespace CRM.Shared
         [Display(Name = nameof(Ticket.IdCompanyAssigned), ResourceType = typeof(Resources.Models.Ticket))]
         public int? IdCompanyAssigned { get; set; }
 
+        // ─── Smistamento AI verso il gruppo ─────────────────────────────────────
+        /// <summary>Gruppo proposto dall'AI alla creazione del ticket (null se non ha saputo decidere).</summary>
+        [ForeignKey(nameof(AiSuggestedGroup))]
+        public int? AiSuggestedGroupId { get; set; }
+
+        /// <summary>Confidenza del suggerimento, tra 0 e 1: sopra la soglia configurata il gruppo viene assegnato da solo.</summary>
+        public double? AiRoutingConfidence { get; set; }
+
+        /// <summary>Motivazione sintetica del modello, mostrata all'operatore accanto al suggerimento.</summary>
+        [MaxLength(2000)]
+        public string? AiRoutingReason { get; set; }
+
+        /// <summary>Istante dello smistamento AI; null se non e' mai stato eseguito su questo ticket.</summary>
+        public DateTime? AiRoutedAt { get; set; }
+
+        /// <summary>True se il gruppo e' stato assegnato automaticamente dall'AI (confidenza sopra soglia).</summary>
+        public bool AiRoutingApplied { get; set; }
+
+        /// <summary>Esito del suggerimento: serve a misurare l'accuratezza dello smistamento nel tempo.</summary>
+        public AiRoutingOutcome AiRoutingOutcome { get; set; } = AiRoutingOutcome.None;
+
         public int Progress { get; set; }
 
 
@@ -272,6 +320,9 @@ namespace CRM.Shared
         public virtual Product? Product { get; set; }
 
         public virtual Group? GroupAssigned { get; set; }
+
+        [JsonIgnore]
+        public virtual Group? AiSuggestedGroup { get; set; }
 
         
         public virtual TicketState State { get; set; }

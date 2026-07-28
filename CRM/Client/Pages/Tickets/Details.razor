@@ -337,6 +337,48 @@ else
                             <span class="info-value">@_ticket.UserOpened</span>
                         </div>
 
+                        @if (_ticket.HasPendingAiSuggestion)
+                        {
+                            <!-- Suggerimento sotto soglia: la scelta resta all'operatore -->
+                            <div class="ai-routing-panel">
+                                <div class="ai-routing-head">
+                                    <span class="material-icons">auto_awesome</span>
+                                    <div class="ai-routing-copy">
+                                        <div class="ai-routing-title">
+                                            Gruppo suggerito: <strong>@_ticket.AiSuggestedGroup</strong>
+                                        </div>
+                                        <div class="ai-routing-sub">
+                                            Confidenza @(Math.Round((_ticket.AiRoutingConfidence ?? 0) * 100))% — sotto la soglia
+                                            di assegnazione automatica, serve una conferma.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(_ticket.AiRoutingReason))
+                                {
+                                    <div class="ai-routing-reason">&ldquo;@_ticket.AiRoutingReason&rdquo;</div>
+                                }
+
+                                @if (!_ticket.Closed)
+                                {
+                                    <div class="ai-routing-actions">
+                                        <RadzenButton Icon="check"
+                                                      Text="@($"Assegna a {_ticket.AiSuggestedGroup}")"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Primary"
+                                                      Disabled="_isHandlingAiRouting"
+                                                      Click="@(() => HandleAiRouting(true))" />
+                                        <RadzenButton Icon="close"
+                                                      Text="Ignora"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Light"
+                                                      Disabled="_isHandlingAiRouting"
+                                                      Click="@(() => HandleAiRouting(false))" />
+                                    </div>
+                                }
+                            </div>
+                        }
+
                         @if (_ticket.IdGroupAssigned != null || _ticket.CanClaim || _ticket.IsAssignedToCurrentUser)
                         {
                             <div class="claim-panel">
@@ -345,6 +387,14 @@ else
                                     <div>
                                         <div class="claim-title">
                                             @(string.IsNullOrWhiteSpace(_ticket.GroupAssigned) ? "Coda operativa" : _ticket.GroupAssigned)
+                                            @if (_ticket.AiRoutingApplied && _ticket.IdGroupAssigned != null)
+                                            {
+                                                <span class="ai-assigned-badge"
+                                                      title="@($"Assegnato dallo smistamento AI con confidenza {Math.Round((_ticket.AiRoutingConfidence ?? 0) * 100)}%. {_ticket.AiRoutingReason}")">
+                                                    <span class="material-icons">auto_awesome</span>
+                                                    AI
+                                                </span>
+                                            }
                                         </div>
                                         <div class="claim-subtitle">
                                             @if (_ticket.IsAssignedToCurrentUser)
