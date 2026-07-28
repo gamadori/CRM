@@ -20,6 +20,7 @@
 @inject NavigationManager Nav
 @inject DialogService DialogService
 @inject NotificationService Notification
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 <PageHeader Model="_pageHeader"></PageHeader>
 
@@ -41,7 +42,7 @@ else
                         {
                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
                                 <span class="material-icons align-middle" style="font-size:14px;">event_busy</span>
-                                Prevista oltre consegna
+                                @Localize["Prevista oltre consegna"]
                             </span>
                         }
                     </div>
@@ -65,7 +66,7 @@ else
                         }
                         else
                         {
-                            <span class="badge bg-light text-dark border" title="Produzione senza ordine">Interna</span>
+                            <span class="badge bg-light text-dark border" title="@Localize["Produzione senza ordine"]">@Localize["Interna"]</span>
                         }
                         @if (!string.IsNullOrWhiteSpace(_c.ResponsibleName))
                         {
@@ -87,30 +88,70 @@ else
 
             <hr class="my-3" />
             <div class="row g-3 small">
-                <div class="col-6 col-md-2"><div class="text-muted">Inizio piano</div><strong>@_c.StartDatePlanned.ToString("dd/MM/yyyy")</strong></div>
-                <div class="col-6 col-md-2"><div class="text-muted">Consegna</div><strong>@_c.EndDatePlanned.ToString("dd/MM/yyyy")</strong></div>
+                <div class="col-6 col-md-2"><div class="text-muted">@Localize["Inizio piano"]</div><strong>@_c.StartDatePlanned.ToString("dd/MM/yyyy")</strong></div>
+                <div class="col-6 col-md-2"><div class="text-muted">@Localize["Consegna"]</div><strong>@_c.EndDatePlanned.ToString("dd/MM/yyyy")</strong></div>
                 <div class="col-6 col-md-2">
-                    <div class="text-muted">Data prevista</div>
+                    <div class="text-muted">@Localize["Data prevista"]</div>
                     <strong class="@(_c.IsExpectedLate ? "text-danger" : "")">@(_c.ExpectedEndDate?.ToString("dd/MM/yyyy") ?? "-")</strong>
                     @if (_c.IsExpectedLate)
                     {
                         <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">+@_c.ExpectedDelayDays gg</span>
                     }
                 </div>
-                <div class="col-6 col-md-2"><div class="text-muted">Inizio effettivo</div><strong>@(_c.StartDateActual?.ToString("dd/MM/yyyy") ?? "-")</strong></div>
-                <div class="col-6 col-md-2"><div class="text-muted">Fine effettiva</div><strong>@(_c.EndDateActual?.ToString("dd/MM/yyyy") ?? "-")</strong></div>
-                <div class="col-6 col-md-2"><div class="text-muted">Ore a budget</div><strong>@(_c.BudgetHours?.ToString() ?? "-")</strong></div>
-                <div class="col-6 col-md-2 text-md-end">
-                    <RadzenButton Icon="edit" Text="Modifica" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="ToggleEdit" />
+                <div class="col-6 col-md-2"><div class="text-muted">@Localize["Inizio effettivo"]</div><strong>@(_c.StartDateActual?.ToString("dd/MM/yyyy") ?? "-")</strong></div>
+                <div class="col-6 col-md-2"><div class="text-muted">@Localize["Fine effettiva"]</div><strong>@(_c.EndDateActual?.ToString("dd/MM/yyyy") ?? "-")</strong></div>
+                <div class="col-6 col-md-2"><div class="text-muted">@Localize["Ore a budget"]</div><strong>@(_c.BudgetHours?.ToString() ?? "-")</strong></div>
+                <div class="col-6 col-md-2 text-md-end d-flex gap-2 justify-content-md-end">
+                    <RadzenButton Icon="event_repeat" Text="@Localize["Riprogramma"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                  Click="OpenReschedule" Disabled="@(_c.State is CommessaStates.Delivered or CommessaStates.Cancelled)" />
+                    <RadzenButton Icon="edit" Text="@Localize["Modifica"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="ToggleEdit" />
                 </div>
             </div>
+
+            @if (_reschedule != null)
+            {
+                <div class="border rounded p-3 mt-3">
+                    <div class="fw-semibold mb-2 d-flex align-items-center gap-2">
+                        <span class="material-icons" style="font-size:20px;">event_repeat</span>
+                        @Localize["Sposta il piano su una nuova consegna"]
+                    </div>
+
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">@Localize["Consegna attuale"]</label>
+                            <div class="form-control form-control-sm bg-body-secondary">@_c.EndDatePlanned.ToString("dd/MM/yyyy")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">@Localize["Nuova consegna"]</label>
+                            <RadzenDatePicker TValue="DateTime" @bind-Value="_reschedule.Delivery" DateFormat="dd/MM/yyyy" Style="width:100%" />
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-muted">@ReschedulePreview()</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mt-3 align-items-center">
+                        <RadzenButton Icon="event_repeat" Text="@Localize["Sposta il piano"]" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                      Click="ApplyReschedule" Disabled="@(_rescheduleBusy || _reschedule.Delivery.Date == _c.EndDatePlanned.Date)" />
+                        <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                      Click="@(() => _reschedule = null)" Disabled="@_rescheduleBusy" />
+
+                        @* Azione distinta e distruttiva: rifà le fasi dal modello del prodotto. *@
+                        <RadzenButton Icon="restart_alt" Text="@Localize["Ripristina dal modello"]" ButtonStyle="ButtonStyle.Danger" ButtonType="ButtonType.Button"
+                                      Size="ButtonSize.Small" Class="ms-auto" Click="ApplyRebuild" Disabled="@_rescheduleBusy" />
+                    </div>
+                    <div class="small text-muted mt-2">
+                        @Localize["\"Ripristina dal modello\" ricostruisce le fasi dal template del prodotto sulla nuova consegna: scarta durate, dipendenze e fasi modificate a mano. Consentito solo se nessuna fase è stata avviata."]
+                    </div>
+                </div>
+            }
 
             @if (_c.IsExpectedLate)
             {
                 <div class="alert alert-danger border d-flex align-items-start gap-2 py-2 mt-3 mb-0">
                     <span class="material-icons" style="font-size:20px;">warning</span>
                     <div>
-                        <div class="fw-semibold">La previsione supera la data di consegna</div>
+                        <div class="fw-semibold">@Localize["La previsione supera la data di consegna"]</div>
                         <div class="small">
                             Consegna @_c.EndDatePlanned.ToString("dd/MM/yyyy"),
                             prevista @_c.ExpectedEndDate!.Value.ToString("dd/MM/yyyy")
@@ -125,38 +166,40 @@ else
                 <div class="border rounded p-3 mt-3 bg-light">
                     <div class="row g-2 align-items-end">
                         <div class="col-md-4">
-                            <label class="form-label small mb-1">Nome</label>
+                            <label class="form-label small mb-1">@Localize["Nome"]</label>
                             <input class="form-control form-control-sm" @bind="_edit.Name" />
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label small mb-1">Responsabile</label>
+                            <label class="form-label small mb-1">@Localize["Responsabile"]</label>
                             <RadzenDropDown TValue="string" @bind-Value="_edit.IdUserResponsible" Data="_users" TextProperty="NameComplete" ValueProperty="Id"
                                             AllowFiltering="true" AllowClear="true" Style="width:100%" />
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label small mb-1">Priorità</label>
+                            <label class="form-label small mb-1">@Localize["Priorità"]</label>
                             <RadzenNumeric TValue="int" @bind-Value="_edit.Priority" Style="width:100%" />
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label small mb-1">Ore a budget</label>
+                            <label class="form-label small mb-1">@Localize["Ore a budget"]</label>
                             <RadzenNumeric TValue="int?" @bind-Value="_edit.BudgetHours" Min="0" Style="width:100%" />
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label small mb-1">Inizio pianificato</label>
-                            <RadzenDatePicker TValue="DateTime" @bind-Value="_edit.StartDatePlanned" DateFormat="dd/MM/yyyy" Style="width:100%" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small mb-1">Consegna</label>
-                            <RadzenDatePicker TValue="DateTime" @bind-Value="_edit.EndDatePlanned" DateFormat="dd/MM/yyyy" Style="width:100%" />
+                        <div class="col-md-6">
+                            @* Le date non si toccano da qui: sposterebbero l'intestazione lasciando
+                               le fasi dov'erano. Ci pensa Riprogramma, che trasla anche il piano. *@
+                            <label class="form-label small mb-1">@Localize["Date pianificate"]</label>
+                            <div class="form-control form-control-sm d-flex align-items-center justify-content-between bg-body-secondary">
+                                <span>@_c.StartDatePlanned.ToString("dd/MM/yyyy") &rarr; @_c.EndDatePlanned.ToString("dd/MM/yyyy")</span>
+                                <RadzenButton Icon="event_repeat" Text="@Localize["Riprogramma"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall"
+                                              Click="@(() => { _edit = null; OpenReschedule(); })" />
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small mb-1">Note</label>
+                            <label class="form-label small mb-1">@Localize["Note"]</label>
                             <input class="form-control form-control-sm" @bind="_edit.Note" />
                         </div>
                     </div>
                     <div class="d-flex gap-2 mt-2">
-                        <RadzenButton Icon="save" Text="Salva" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="SaveEdit" />
-                        <RadzenButton Icon="close" Text="Annulla" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@(() => _edit = null)" />
+                        <RadzenButton Icon="save" Text="@Localize["Salva"]" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="SaveEdit" />
+                        <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@(() => _edit = null)" />
                     </div>
                 </div>
             }
@@ -167,10 +210,10 @@ else
     <RadzenSelectBar @bind-Value="_view" TValue="View" Style="margin-bottom:16px;" Size="ButtonSize.Small"
                      Change="@(_ => _ticketsFaseFilter = null)">
         <Items>
-            <RadzenSelectBarItem Text="Panoramica" Value="View.Overview" Icon="dashboard" />
-            <RadzenSelectBarItem Text="Pianificazione" Value="View.Plan" Icon="view_timeline" />
-            <RadzenSelectBarItem Text="Fasi operative" Value="View.Phases" Icon="checklist" />
-            <RadzenSelectBarItem Text="Ticket" Value="View.Tickets" Icon="confirmation_number" />
+            <RadzenSelectBarItem Text="@Localize["Panoramica"]" Value="View.Overview" Icon="dashboard" />
+            <RadzenSelectBarItem Text="@Localize["Pianificazione"]" Value="View.Plan" Icon="view_timeline" />
+            <RadzenSelectBarItem Text="@Localize["Fasi operative"]" Value="View.Phases" Icon="checklist" />
+            <RadzenSelectBarItem Text="@Localize["Ticket"]" Value="View.Tickets" Icon="confirmation_number" />
         </Items>
     </RadzenSelectBar>
 
@@ -179,18 +222,18 @@ else
         case View.Overview:
             <div class="row g-3">
                 <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
-                    <div class="text-muted small">Fasi</div><div class="fs-3 fw-bold">@_c.PhaseCount</div></div></div></div>
+                    <div class="text-muted small">@Localize["Fasi"]</div><div class="fs-3 fw-bold">@_c.PhaseCount</div></div></div></div>
                 <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
-                    <div class="text-muted small">Ticket</div><div class="fs-3 fw-bold">@_c.TicketCount</div></div></div></div>
+                    <div class="text-muted small">@Localize["Ticket"]</div><div class="fs-3 fw-bold">@_c.TicketCount</div></div></div></div>
                 <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
-                    <div class="text-muted small">Fasi completate</div><div class="fs-3 fw-bold">@_fasi.Count(f => f.State == CommessaFaseStates.Done)/@_fasi.Count</div></div></div></div>
+                    <div class="text-muted small">@Localize["Fasi completate"]</div><div class="fs-3 fw-bold">@_fasi.Count(f => f.State == CommessaFaseStates.Done)/@_fasi.Count</div></div></div></div>
                 <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
-                    <div class="text-muted small">Giorni alla consegna</div><div class="fs-3 fw-bold @( (_c.EndDatePlanned.Date - DateTime.Today).Days < 0 ? "text-danger" : "")">@((_c.EndDatePlanned.Date - DateTime.Today).Days)</div></div></div></div>
+                    <div class="text-muted small">@Localize["Giorni alla consegna"]</div><div class="fs-3 fw-bold @( (_c.EndDatePlanned.Date - DateTime.Today).Days < 0 ? "text-danger" : "")">@((_c.EndDatePlanned.Date - DateTime.Today).Days)</div></div></div></div>
                 @if (!string.IsNullOrWhiteSpace(_c.Description) || !string.IsNullOrWhiteSpace(_c.Note))
                 {
                     <div class="col-12"><div class="card border-0 shadow-sm"><div class="card-body">
-                        @if (!string.IsNullOrWhiteSpace(_c.Description)) { <div class="text-muted small mb-1">Descrizione</div><p class="mb-2" style="white-space:pre-wrap;">@_c.Description</p> }
-                        @if (!string.IsNullOrWhiteSpace(_c.Note)) { <div class="text-muted small mb-1">Note</div><p class="mb-0" style="white-space:pre-wrap;">@_c.Note</p> }
+                        @if (!string.IsNullOrWhiteSpace(_c.Description)) { <div class="text-muted small mb-1">@Localize["Descrizione"]</div><p class="mb-2" style="white-space:pre-wrap;">@_c.Description</p> }
+                        @if (!string.IsNullOrWhiteSpace(_c.Note)) { <div class="text-muted small mb-1">@Localize["Note"]</div><p class="mb-0" style="white-space:pre-wrap;">@_c.Note</p> }
                     </div></div></div>
                 }
             </div>
@@ -198,7 +241,7 @@ else
 
         case View.Plan:
             <div class="card border-0 shadow-sm"><div class="card-body">
-                <RedGGantt CommessaId="@Id" OnProgressChanged="ReloadHeaderAsync" />
+                <RedGGantt @ref="_gantt" CommessaId="@Id" OnProgressChanged="ReloadHeaderAsync" />
             </div></div>
             break;
 
@@ -206,7 +249,7 @@ else
             <div class="card border-0 shadow-sm"><div class="card-body">
                 <table class="table table-sm align-middle mb-0">
                     <thead class="table-light">
-                        <tr><th>Fase</th><th>Gruppo</th><th>Tipo ticket</th><th>Previsti</th><th>Regola</th><th style="width:120px;">Stato</th><th style="width:90px;" class="text-center">Ticket</th><th style="width:260px;"></th></tr>
+                        <tr><th>@Localize["Fase"]</th><th>@Localize["Gruppo"]</th><th>@Localize["Tipo ticket"]</th><th>@Localize["Previsti"]</th><th>@Localize["Regola"]</th><th style="width:120px;">@Localize["Stato"]</th><th style="width:90px;" class="text-center">@Localize["Ticket"]</th><th style="width:260px;"></th></tr>
                     </thead>
                     <tbody>
                         @foreach (var f in _fasi.Where(x => !x.IsMilestone))
@@ -231,9 +274,9 @@ else
                                     <span class="badge @FaseBadge(f.State)">@CommessaUi.FaseStateText(f.State)</span>
                                     @if (f.HasBlockingTickets)
                                     {
-                                        <div class="small text-danger fw-semibold" title="@($"{f.BlockedTicketCount} ticket bloccati")">
+                                        <div class="small text-danger fw-semibold" title="@string.Format(Localize["{0} ticket bloccati"], f.BlockedTicketCount)">
                                             <span class="material-icons align-middle" style="font-size:15px;">report_problem</span>
-                                            Bloccata
+                                            @Localize["Bloccata"]
                                         </div>
                                     }
                                     @if (!string.IsNullOrWhiteSpace(f.TakenByName))
@@ -245,29 +288,29 @@ else
                                 <td class="text-end">
                                     @if (f.State == CommessaFaseStates.Done)
                                     {
-                                        <span class="text-success small"><span class="material-icons align-middle" style="font-size:16px;">check_circle</span> Fatto</span>
+                                        <span class="text-success small"><span class="material-icons align-middle" style="font-size:16px;">check_circle</span> @Localize["Fatto"]</span>
                                     }
                                     else if (f.PendingPlannedTicketCount > 0)
                                     {
-                                        <RadzenButton Icon="add_task" Text="Genera previsti" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                        <RadzenButton Icon="add_task" Text="@Localize["Genera previsti"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
                                                       Disabled="@(!CanTake(f))" Click="@(() => GeneratePendingPlans(f))" />
                                     }
                                     else if ((f.IdTicketType != null || f.TicketPlans.Any()) && f.AutoCreateTicketOnTake)
                                     {
                                         @if (f.TicketCount > 0)
                                         {
-                                            <RadzenButton Icon="confirmation_number" Text="Vedi ticket" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                                            <RadzenButton Icon="confirmation_number" Text="@Localize["Vedi ticket"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
                                                           Click="@(() => ShowPhaseTickets(f))" />
                                             @if (f.IdTicketType != null)
                                             {
-                                                <RadzenButton Icon="add" Text="Nuovo" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                                <RadzenButton Icon="add" Text="@Localize["Nuovo"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
                                                               Disabled="@(!CanTake(f))" Click="@(() => TakeInCharge(f))" />
                                             }
                                         }
                                         else
                                         {
                                             <span title="@TakeBlockedReason(f)">
-                                                <RadzenButton Icon="play_arrow" Text="Prendi in carico" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                                <RadzenButton Icon="play_arrow" Text="@Localize["Prendi in carico"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
                                                               Disabled="@(!CanTake(f))" Click="@(() => TakeInCharge(f))" />
                                             </span>
                                         }
@@ -275,7 +318,7 @@ else
                                     else
                                     {
                                         <span title="@CompleteBlockedReason(f)">
-                                            <RadzenButton Icon="check" Text="Completa" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success"
+                                            <RadzenButton Icon="check" Text="@Localize["Completa"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success"
                                                           Disabled="@(!CanTake(f) || !CanComplete(f))" Click="@(() => MarkDone(f))" />
                                         </span>
                                     }
@@ -284,11 +327,11 @@ else
                         }
                         @if (!_fasi.Any(x => !x.IsMilestone))
                         {
-                            <tr><td colspan="8" class="text-center text-muted py-3">Nessuna fase. Aggiungile dalla scheda Pianificazione.</td></tr>
+                            <tr><td colspan="8" class="text-center text-muted py-3">@Localize["Nessuna fase. Aggiungile dalla scheda Pianificazione."]</td></tr>
                         }
                     </tbody>
                 </table>
-                <div class="small text-muted mt-2"><span class="material-icons align-middle" style="font-size:14px;">info</span> Una fase con dipendenze aperte non è avviabile finché i predecessori non sono completati.</div>
+                <div class="small text-muted mt-2"><span class="material-icons align-middle" style="font-size:14px;">info</span> @Localize["Una fase con dipendenze aperte non è avviabile finché i predecessori non sono completati."]</div>
             </div></div>
             break;
 
@@ -297,9 +340,9 @@ else
             {
                 <div class="alert alert-light border d-flex flex-wrap align-items-center gap-2 py-2 mb-3">
                     <span class="material-icons" style="font-size:18px;">filter_alt</span>
-                    <span>Ticket della fase <strong>@FaseName(_ticketsFaseFilter.Value)</strong></span>
+                    <span>@Localize["Ticket della fase"] <strong>@FaseName(_ticketsFaseFilter.Value)</strong></span>
                     <button class="btn btn-sm btn-link ms-auto p-0" @onclick="@(() => _ticketsFaseFilter = null)">
-                        Mostra tutti i ticket della commessa
+                        @Localize["Mostra tutti i ticket della commessa"]
                     </button>
                 </div>
             }
@@ -333,15 +376,15 @@ else
     private Commessa? _edit;
 
     private record StateOption(string Text, CommessaStates Value);
-    private readonly List<StateOption> _stateOptions = new()
+    private List<StateOption> _stateOptions => new()
     {
-        new("Pianificata", CommessaStates.Planned),
-        new("In lavorazione", CommessaStates.InProgress),
-        new("Sospesa", CommessaStates.Suspended),
-        new("Collaudo", CommessaStates.Testing),
-        new("Completata", CommessaStates.Completed),
-        new("Consegnata", CommessaStates.Delivered),
-        new("Annullata", CommessaStates.Cancelled),
+        new(Localize["Pianificata"], CommessaStates.Planned),
+        new(Localize["In lavorazione"], CommessaStates.InProgress),
+        new(Localize["Sospesa"], CommessaStates.Suspended),
+        new(Localize["Collaudo"], CommessaStates.Testing),
+        new(Localize["Completata"], CommessaStates.Completed),
+        new(Localize["Consegnata"], CommessaStates.Delivered),
+        new(Localize["Annullata"], CommessaStates.Cancelled),
     };
 
     protected override async Task OnInitializedAsync()
@@ -393,12 +436,12 @@ else
         _ => "bg-light text-dark"
     };
 
-    private static string CompletionModeText(CommessaFaseCompletionMode mode) => mode switch
+    private string CompletionModeText(CommessaFaseCompletionMode mode) => mode switch
     {
-        CommessaFaseCompletionMode.Manual => "Manuale",
-        CommessaFaseCompletionMode.AnyTicketClosed => "Un ticket chiuso",
-        CommessaFaseCompletionMode.ProgressManual => "Percentuale manuale",
-        _ => "Tutti i ticket chiusi"
+        CommessaFaseCompletionMode.Manual => Localize["Manuale"],
+        CommessaFaseCompletionMode.AnyTicketClosed => Localize["Un ticket chiuso"],
+        CommessaFaseCompletionMode.ProgressManual => Localize["Percentuale manuale"],
+        _ => Localize["Tutti i ticket chiusi"]
     };
 
     /// <summary>
@@ -422,10 +465,10 @@ else
     {
         if (!f.CanTake)
             return string.IsNullOrWhiteSpace(f.GroupName)
-                ? "Non sei abilitato a eseguire questa fase."
-                : $"Riservata al gruppo \"{f.GroupName}\", di cui non fai parte.";
+                ? Localize["Non sei abilitato a eseguire questa fase."]
+                : string.Format(Localize["Riservata al gruppo \"{0}\", di cui non fai parte."], f.GroupName);
 
-        return SequenceAllowsStart(f) ? string.Empty : "Ci sono fasi precedenti non ancora completate.";
+        return SequenceAllowsStart(f) ? string.Empty : Localize["Ci sono fasi precedenti non ancora completate."];
     }
 
     /// <summary>Il flag "Richiede ticket" della fase: niente chiusura senza un ticket che la documenti.</summary>
@@ -434,10 +477,10 @@ else
 
     private string CompleteBlockedReason(CommessaFaseDTO f)
         => f.HasBlockingTickets
-            ? "La fase contiene ticket bloccati: risolvi i blocchi prima di completarla."
+            ? Localize["La fase contiene ticket bloccati: risolvi i blocchi prima di completarla."]
             : CanComplete(f)
             ? TakeBlockedReason(f)
-            : "La fase richiede almeno un ticket chiuso per poter essere completata.";
+            : Localize["La fase richiede almeno un ticket chiuso per poter essere completata."];
 
     private void TakeInCharge(CommessaFaseDTO f)
     {
@@ -461,15 +504,15 @@ else
         f.Progress = 100;
         var resp = await FaseService.SaveAsync(f);
         if (resp.State) await ReloadHeaderAsync();
-        else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+        else Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Operazione fallita"]);
     }
 
     private async Task OnChangeState(CommessaStates state)
     {
         if (_c == null || state == _c.State) return;
         var resp = await CommessaService.ChangeStateAsync(Id, state);
-        if (resp.State && resp.Data != null) { _c = resp.Data; Notification.Notify(NotificationSeverity.Success, "Fatto", "Stato aggiornato"); }
-        else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+        if (resp.State && resp.Data != null) { _c = resp.Data; Notification.Notify(NotificationSeverity.Success, Localize["Fatto"], Localize["Stato aggiornato"]); }
+        else Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Operazione fallita"]);
     }
 
     private void ToggleEdit()
@@ -495,8 +538,100 @@ else
     {
         if (_edit == null) return;
         var resp = await CommessaService.PostAsync(_edit);
-        if (resp.State) { _edit = null; await ReloadHeaderAsync(); Notification.Notify(NotificationSeverity.Success, "Fatto", "Commessa aggiornata"); }
-        else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
+        if (resp.State) { _edit = null; await ReloadHeaderAsync(); Notification.Notify(NotificationSeverity.Success, Localize["Fatto"], Localize["Commessa aggiornata"]); }
+        else Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Salvataggio fallito"]);
+    }
+
+    private sealed class RescheduleModel
+    {
+        public DateTime Delivery { get; set; }
+    }
+
+    private RescheduleModel? _reschedule;
+    private bool _rescheduleBusy;
+
+    /// <summary>
+    /// Valorizzato solo mentre la tab Pianificazione è aperta: il Gantt carica le fasi
+    /// all'inizializzazione, quindi dopo una riprogrammazione va ricaricato a mano. Se la tab è
+    /// chiusa il riferimento è null e non serve: il componente si inizializza quando la si apre.
+    /// </summary>
+    private RedGGantt? _gantt;
+
+    private async Task RefreshPlanAsync()
+    {
+        await LoadAsync();
+        await ReloadHeaderAsync();
+        if (_gantt != null)
+            await _gantt.ReloadAsync();
+    }
+
+    private void OpenReschedule()
+    {
+        if (_c == null) return;
+        _reschedule = new RescheduleModel { Delivery = _c.EndDatePlanned.Date };
+    }
+
+    /// <summary>
+    /// Anticipa a parole la regola del server: in avanti le fasi avviate restano ferme, indietro
+    /// si spostano anche loro. Il conteggio dei giorni resta al server, che ha il calendario festivo.
+    /// </summary>
+    private string ReschedulePreview()
+    {
+        if (_c == null || _reschedule == null) return string.Empty;
+
+        var giorni = (_reschedule.Delivery.Date - _c.EndDatePlanned.Date).Days;
+        if (giorni == 0) return Localize["Scegli una data diversa da quella attuale."];
+
+        var avviate = _fasi.Count(f => f.State != CommessaFaseStates.Pending);
+        var verso = giorni > 0 ? Localize["posticipa"] : Localize["anticipa"];
+        var testa = $"{verso} di {Math.Abs(giorni)} giorni solari ({_fasi.Count} fasi).";
+
+        if (avviate == 0)
+            return $"{testa} {Localize["Nessuna fase avviata: si sposta tutto."]}";
+
+        return giorni > 0
+            ? $"{testa} {avviate} {Localize["fasi già avviate restano dove sono."]}"
+            : $"{testa} {Localize["Anche le"]} {avviate} {Localize["fasi già avviate si spostano, per non sovrapporsi a quelle da fare."]}";
+    }
+
+    private async Task ApplyReschedule()
+    {
+        if (_c == null || _reschedule == null) return;
+        _rescheduleBusy = true;
+        var resp = await CommessaService.RescheduleAsync(Id, _reschedule.Delivery);
+        _rescheduleBusy = false;
+
+        if (resp.State)
+        {
+            _reschedule = null;
+            await RefreshPlanAsync();
+            Notification.Notify(NotificationSeverity.Success, Localize["Piano spostato"], resp.Message ?? string.Empty, 8000);
+        }
+        else Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Operazione fallita"], 8000);
+    }
+
+    private async Task ApplyRebuild()
+    {
+        if (_c == null || _reschedule == null) return;
+
+        var conferma = await DialogService.Confirm(
+            Localize["Le fasi verranno ricostruite dal template del prodotto: durate, dipendenze e fasi modificate a mano andranno perse. I ticket già creati restano, ma senza fase collegata."],
+            Localize["Ripristinare il piano dal modello?"],
+            new ConfirmOptions { OkButtonText = Localize["Ripristina"], CancelButtonText = Localize["Annulla"] });
+
+        if (conferma != true) return;
+
+        _rescheduleBusy = true;
+        var resp = await CommessaService.RebuildPlanFromTemplateAsync(Id, _reschedule.Delivery);
+        _rescheduleBusy = false;
+
+        if (resp.State)
+        {
+            _reschedule = null;
+            await RefreshPlanAsync();
+            Notification.Notify(NotificationSeverity.Success, Localize["Piano ricostruito"], resp.Message ?? string.Empty, 8000);
+        }
+        else Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Operazione fallita"], 8000);
     }
 
     /// <summary>Apre la tab Ticket mostrando i soli ticket della fase indicata.</summary>
@@ -526,13 +661,13 @@ else
             var resp = await FaseService.GenerateTicketFromPlanAsync(plan.Id);
             if (!resp.State)
             {
-                Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? $"Generazione ticket \"{plan.Title}\" fallita");
+                Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? string.Format(Localize["Generazione ticket \"{0}\" fallita"], plan.Title));
                 await ReloadHeaderAsync();
                 return;
             }
         }
 
-        Notification.Notify(NotificationSeverity.Success, "Fatto", $"{pending.Count} ticket generati");
+        Notification.Notify(NotificationSeverity.Success, Localize["Fatto"], string.Format(Localize["{0} ticket generati"], pending.Count));
         await ReloadHeaderAsync();
         ShowPhaseTickets(f);
     }

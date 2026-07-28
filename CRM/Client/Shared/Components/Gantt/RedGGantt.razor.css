@@ -1,160 +1,601 @@
-/* Geometria, assi, griglia e frecce sono di RadzenGantt: qui resta solo il contenuto
-   delle barre (template), la toolbar e l'editor della fase. */
+/* Gantt commessa: scala a giorni lavorativi, larghezza colonna calcolata a runtime
+   (--rg-day) e colori derivati dal tema CRM cosi' da reggere chiaro e scuro. */
 .redg-gantt-wrap {
-    --g-bar: var(--crm-link, #3b82f6);
-    --g-bar-fill: color-mix(in srgb, var(--g-bar) 82%, #000 18%);
-    --g-milestone: #f59e0b;
-    --g-border: var(--crm-border, #e5e7eb);
-    --g-text: var(--crm-text, #1f2937);
-    --g-textmuted: var(--crm-text-muted, #6b7280);
-    color: var(--g-text);
+    --rg-accent: var(--crm-link, #0f4a8a);
+    --rg-milestone: #f59e0b;
+    --rg-surface: var(--crm-surface, #fff);
+    --rg-surface-muted: var(--crm-surface-muted, #f8fafc);
+    --rg-border: var(--crm-border, #dfe7f1);
+    --rg-line: color-mix(in srgb, var(--rg-border) 70%, transparent);
+    --rg-line-soft: color-mix(in srgb, var(--rg-border) 40%, transparent);
+    --rg-text: var(--crm-text, #1f2937);
+    --rg-muted: var(--crm-text-muted, #64748b);
+    --rg-row: 34px;
+    color: var(--rg-text);
 }
 
-.gantt-toolbar {
+/* Le altezze di righe e teste sono calcolate in C#: senza border-box i bordi le
+   sfalserebbero e le due colonne non resterebbero allineate. */
+.redg-gantt-wrap,
+.redg-gantt-wrap * {
+    box-sizing: border-box;
+}
+
+.gantt-empty {
+    border: 1px dashed var(--rg-border);
+    border-radius: 10px;
+}
+
+/* ─── Toolbar ─────────────────────────────────────────────────────────── */
+.rg-toolbar {
     display: flex;
     align-items: center;
     gap: .5rem;
     margin-bottom: .5rem;
 }
 
-.gantt-empty {
-    border: 1px dashed var(--g-border);
-    border-radius: 10px;
+.rg-zoom {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--rg-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--rg-surface);
 }
 
-/* ─── Contenuto della barra (TaskTemplate) ─────────────────────────────── */
-.gantt-bar-inner {
-    position: relative;
+.rg-zoom-btn,
+.rg-zoom-label,
+.rg-tool-btn {
+    border: 0;
+    background: transparent;
+    color: var(--rg-text);
+    font-size: .74rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.rg-zoom-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 .4rem;
+}
+
+.rg-zoom-btn .material-icons {
+    font-size: 16px;
+}
+
+.rg-zoom-btn:disabled {
+    opacity: .35;
+    cursor: default;
+}
+
+.rg-zoom-label {
+    min-width: 62px;
+    padding: .35rem .3rem;
+    border-left: 1px solid var(--rg-border);
+    border-right: 1px solid var(--rg-border);
+    color: var(--rg-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.rg-zoom-label.fit {
+    color: var(--rg-accent);
+    font-weight: 600;
+}
+
+.rg-zoom-btn:hover:not(:disabled),
+.rg-zoom-label:hover,
+.rg-tool-btn:hover {
+    background: var(--crm-surface-hover, #f1f5f9);
+}
+
+.rg-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    padding: .35rem .55rem;
+    border: 1px solid var(--rg-border);
+    border-radius: 8px;
+    background: var(--rg-surface);
+}
+
+.rg-tool-btn .material-icons {
+    font-size: 15px;
+}
+
+.rg-legend {
     display: flex;
     align-items: center;
+    gap: .65rem;
+    margin-left: auto;
+    color: var(--rg-muted);
+    font-size: .68rem;
+}
+
+.rg-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    white-space: nowrap;
+}
+
+.rg-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+}
+
+.rg-dot.planned { background: color-mix(in srgb, var(--rg-accent) 45%, transparent); }
+.rg-dot.active { background: var(--rg-accent); }
+.rg-dot.done { background: #16a34a; }
+.rg-dot.late { background: #e11d48; }
+.rg-dot.blocked { background: #b91c1c; }
+
+@media (max-width: 991px) {
+    .rg-legend {
+        display: none;
+    }
+}
+
+/* ─── Griglia: un solo contenitore scrollabile, colonna sinistra congelata ── */
+.rg-grid {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    max-height: min(70vh, 760px);
+    overflow: auto;
+    border: 1px solid var(--rg-border);
+    border-radius: 10px;
+    background: var(--rg-surface);
+    overscroll-behavior-x: contain;
+}
+
+.rg-left {
+    position: sticky;
+    left: 0;
+    z-index: 6;
+    flex: 0 0 clamp(190px, 26%, 330px);
+    width: clamp(190px, 26%, 330px);
+    background: var(--rg-surface-muted);
+    border-right: 1px solid var(--rg-border);
+    box-shadow: 1px 0 0 var(--rg-border);
+}
+
+.rg-left-head,
+.rg-left-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     gap: .35rem;
-    width: 100%;
-    height: 100%;
-    padding: 0 6px;
-    border-radius: 5px;
-    background: var(--g-bar);
+    padding-right: 8px;
+}
+
+.rg-left-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding-left: 10px;
+    background: var(--rg-surface-muted);
+    border-bottom: 1px solid var(--rg-border);
+    color: var(--rg-muted);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+
+.rg-left-row {
+    border-bottom: 1px solid var(--rg-line);
+    cursor: pointer;
+}
+
+.rg-left-row.hover {
+    background: var(--crm-surface-hover, #f1f5f9);
+}
+
+.rg-left-row.summary .rg-name-text {
+    font-weight: 600;
+}
+
+.rg-name {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 4px;
+    font-size: .76rem;
+}
+
+.rg-name-text {
+    min-width: 0;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.gantt-bar-inner.done {
-    background: #16a34a;
+.rg-metrics {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    flex: 0 0 auto;
 }
 
-.gantt-bar-inner.late {
-    background: #e11d48;
+/* ─── Canvas temporale ────────────────────────────────────────────────── */
+.rg-canvas {
+    position: relative;
+    flex: 0 0 auto;
+    user-select: none;
+    touch-action: pan-x pan-y;
 }
 
-.gantt-bar-inner.blocked {
+.rg-head {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--rg-surface-muted);
+    border-bottom: 1px solid var(--rg-border);
+}
+
+.rg-months {
+    position: relative;
+    height: 20px;
+    border-bottom: 1px solid var(--rg-line);
+}
+
+.rg-month {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-left: 1px solid var(--rg-border);
+    color: var(--rg-muted);
+    font-size: .66rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.rg-month:first-child {
+    border-left: 0;
+}
+
+.rg-days {
+    position: relative;
+    height: 28px;
+}
+
+.rg-day {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    overflow: hidden;
+    color: var(--rg-muted);
+    font-size: .66rem;
+}
+
+.rg-day.week-start {
+    box-shadow: inset 1px 0 0 var(--rg-border);
+}
+
+/* Giunzione dove weekend/festivi sono stati compressi */
+.rg-day.gap {
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--rg-milestone) 55%, transparent);
+}
+
+.rg-day.today {
+    background: color-mix(in srgb, #ef4444 12%, transparent);
+}
+
+.rg-day-num {
+    color: var(--rg-text);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.rg-day.today .rg-day-num {
+    color: #ef4444;
+}
+
+.rg-day-name {
+    font-size: .6rem;
+    text-transform: uppercase;
+    opacity: .8;
+}
+
+/* ─── Corpo: reticolo disegnato in CSS, non un div per giorno ─────────── */
+.rg-body {
+    position: relative;
+    background-image:
+        repeating-linear-gradient(to bottom, transparent 0 calc(var(--rg-row) - 1px), var(--rg-line) calc(var(--rg-row) - 1px) var(--rg-row)),
+        repeating-linear-gradient(to right, var(--rg-line-soft) 0 1px, transparent 1px var(--rg-day));
+}
+
+.rg-row-hover {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: color-mix(in srgb, var(--rg-accent) 7%, transparent);
+    pointer-events: none;
+}
+
+.rg-week-line,
+.rg-gap-line,
+.rg-today {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+}
+
+.rg-week-line {
+    width: 1px;
+    background: var(--rg-border);
+}
+
+.rg-gap-line {
+    width: 3px;
+    margin-left: -1px;
+    background: repeating-linear-gradient(to bottom,
+        color-mix(in srgb, var(--rg-milestone) 55%, transparent) 0 4px,
+        transparent 4px 8px);
+}
+
+.rg-today {
+    width: 2px;
+    background: #ef4444;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.rg-deps {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 2;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.rg-deps path {
+    fill: none;
+    stroke: var(--rg-muted);
+    stroke-width: 1.3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: .6;
+}
+
+.rg-deps marker path {
+    fill: var(--rg-muted);
+    stroke: none;
+    opacity: .8;
+}
+
+/* ─── Barre ───────────────────────────────────────────────────────────── */
+.rg-bar {
+    position: absolute;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+    padding: 0 7px;
+    border-radius: 5px;
+    background: var(--rg-accent);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .18);
+    cursor: grab;
+    transition: box-shadow 120ms ease, filter 120ms ease;
+}
+
+.rg-bar:active {
+    cursor: grabbing;
+}
+
+.rg-bar.hover {
+    filter: brightness(1.06);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, .26);
+}
+
+.rg-bar.planned { background: color-mix(in srgb, var(--rg-accent) 45%, var(--rg-surface)); }
+.rg-bar.active { background: var(--rg-accent); }
+.rg-bar.done { background: #16a34a; }
+.rg-bar.late { background: #e11d48; }
+
+.rg-bar.blocked {
     background: #b91c1c;
-    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .4), 0 1px 2px rgba(15, 23, 42, .2);
 }
 
-.gantt-bar-inner.active {
-    background: var(--g-bar);
+/* Riga di riepilogo: barra sottile con testate, come nei Gantt classici */
+.rg-bar.summary {
+    padding: 0;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--rg-text) 62%, transparent);
+    box-shadow: none;
+    cursor: pointer;
 }
 
-.gantt-bar-inner.planned {
-    background: color-mix(in srgb, var(--g-bar) 65%, #fff 35%);
+.rg-bar.summary::before,
+.rg-bar.summary::after {
+    content: "";
+    position: absolute;
+    bottom: -4px;
+    width: 0;
+    height: 0;
+    border-top: 5px solid color-mix(in srgb, var(--rg-text) 62%, transparent);
 }
 
-/* Riempimento proporzionale all'avanzamento, sotto al testo */
-.gantt-bar-progress {
+.rg-bar.summary::before {
+    left: 0;
+    border-right: 5px solid transparent;
+}
+
+.rg-bar.summary::after {
+    right: 0;
+    border-left: 5px solid transparent;
+}
+
+.rg-bar.summary .rg-bar-progress,
+.rg-bar.summary .rg-handle {
+    display: none;
+}
+
+.rg-bar-progress {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
     background: rgba(0, 0, 0, .22);
+    border-radius: inherit;
     pointer-events: none;
 }
 
-.gantt-bar-label {
+.rg-bar-label {
     position: relative;
-    font-size: .72rem;
+    min-width: 0;
+    z-index: 1;
+    font-size: .71rem;
     line-height: 1;
     color: #fff;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, .25);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, .28);
 }
 
-.gantt-bar-ticket-count {
+/* Barra troppo corta per il testo: l'etichetta esce di fianco */
+.rg-bar-label.outside {
+    position: absolute;
+    left: calc(100% + 6px);
+    max-width: 220px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--rg-surface) 90%, transparent);
+    color: var(--rg-text);
+    text-shadow: none;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .14);
+    pointer-events: none;
+}
+
+/* Vicino al bordo destro l'etichetta si ribalta a sinistra */
+.rg-bar-label.outside.flip {
+    left: auto;
+    right: calc(100% + 6px);
+}
+
+.rg-bar-badge,
+.rg-bar-blocked {
     position: relative;
-    margin-left: auto;
+    z-index: 1;
     flex: 0 0 auto;
-    font-size: .65rem;
+    font-size: .64rem;
     line-height: 1;
-    padding: 1px 4px;
     border-radius: 6px;
-    background: rgba(255, 255, 255, .28);
+    font-variant-numeric: tabular-nums;
+}
+
+.rg-bar-badge {
+    margin-left: auto;
+    padding: 1px 4px;
+    background: rgba(255, 255, 255, .26);
     color: #fff;
 }
 
-.gantt-bar-blocked {
-    position: relative;
-    flex: 0 0 auto;
+.rg-bar-blocked {
     display: inline-flex;
     align-items: center;
     gap: 2px;
-    margin-left: 2px;
-    font-size: .65rem;
-    line-height: 1;
     padding: 1px 5px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, .9);
+    background: rgba(255, 255, 255, .92);
     color: #991b1b;
     font-weight: 700;
 }
 
-.gantt-bar-blocked .material-icons {
+.rg-bar-blocked .material-icons {
     font-size: 12px;
 }
 
-/* Milestone: rombo al posto della barra */
-.gantt-ms-diamond {
-    width: 14px;
-    height: 14px;
-    margin: auto;
-    background: var(--g-milestone);
-    transform: rotate(45deg);
-    border-radius: 2px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, .18);
+.rg-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    width: 9px;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: ew-resize;
 }
 
+.rg-handle.start { left: 0; border-radius: 5px 0 0 5px; }
+.rg-handle.end { right: 0; border-radius: 0 5px 5px 0; }
+
+.rg-handle:hover {
+    background: rgba(255, 255, 255, .3);
+}
+
+.rg-milestone {
+    position: absolute;
+    z-index: 4;
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    border: 0;
+    border-radius: 2px;
+    background: var(--rg-milestone);
+    transform: rotate(45deg);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .22);
+    cursor: grab;
+}
+
+.rg-milestone:active {
+    cursor: grabbing;
+}
+
+.rg-milestone.hover {
+    filter: brightness(1.1);
+}
+
+/* ─── Pillole e icone della colonna attivita' ─────────────────────────── */
 .gantt-ms-ico {
-    color: var(--g-milestone);
+    color: var(--rg-milestone);
     vertical-align: middle;
 }
 
 .gantt-blocked-ico {
     color: #dc2626;
     vertical-align: middle;
-    margin-right: 2px;
 }
 
-/* ─── Pannello sinistro ────────────────────────────────────────────────── */
 .gantt-progress-pill {
     display: inline-block;
-    font-size: .68rem;
+    font-size: .67rem;
     padding: 1px 6px;
     border-radius: 8px;
-    background: var(--g-border);
-    color: var(--g-text);
+    background: color-mix(in srgb, var(--rg-border) 70%, transparent);
+    color: var(--rg-text);
     font-variant-numeric: tabular-nums;
 }
 
 .gantt-progress-pill.auto {
-    background: color-mix(in srgb, var(--g-bar) 20%, transparent);
-    color: var(--g-bar-fill);
+    background: color-mix(in srgb, var(--rg-accent) 18%, transparent);
+    color: var(--rg-accent);
 }
 
 .gantt-ticket-pill {
     display: inline-block;
-    font-size: .65rem;
+    font-size: .64rem;
     padding: 1px 5px;
     border-radius: 8px;
-    border: 1px solid var(--g-border);
-    color: var(--g-textmuted);
+    border: 1px solid var(--rg-border);
+    color: var(--rg-muted);
     font-variant-numeric: tabular-nums;
 }
 
@@ -165,9 +606,8 @@
     font-weight: 700;
 }
 
-/* ─── Editor ───────────────────────────────────────────────────────────── */
 .gantt-editor {
-    background: var(--crm-surface-muted, #f8fafc);
+    background: var(--rg-surface-muted);
 }
 
 .gantt-dep-remove:hover {

@@ -8,7 +8,7 @@
     {
         @if (!_notFound)
         {
-            <NotFound Text="Allegato non trovato. Probabilmente è stato eliminato"></NotFound>
+            <NotFound Text="@Localize["Allegato non trovato. Probabilmente è stato eliminato"]"></NotFound>
         }
         else
         {
@@ -43,7 +43,7 @@
                         }
                         else
                         {
-                            <p class="mb-0 text-muted fst-italic">Nessuna descrizione disponibile</p>
+                            <p class="mb-0 text-muted fst-italic">@Localize["Nessuna descrizione disponibile"]</p>
                         }
                     </div>
                 </div>
@@ -52,14 +52,14 @@
                 <div class="mt-4">
                     @if (_attachment.Files == null || !_attachment.Files.Any())
                     {
-                        <div class="text-muted fst-italic">Nessun File</div>
+                        <div class="text-muted fst-italic">@Localize["Nessun File"]</div>
                     }
                     else
                     {
                         @if (AnySelected())
                         {
                             <div class="mb-3 d-flex gap-2">
-                                <BlazorButton Template="TemplateButton.Delete" Text="Elimina Allegati" OnClick="PrepareDelete" />
+                                <BlazorButton Template="TemplateButton.Delete" Text="@Localize["Elimina Allegati"]" OnClick="PrepareDelete" />
                                 <BlazorButton Template="TemplateButton.Download" Label="true" OnClick="PrepareDownload" />
                             </div>
                         }

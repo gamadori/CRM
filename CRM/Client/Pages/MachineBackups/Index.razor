@@ -27,7 +27,9 @@
                     IsLoading="_loading" EmptyText="Nessun backup disponibile" class="backup-grid">
         <Columns>
             <RadzenDataGridColumn TItem="MachineBackupDTO" Property="Version" Title="Versione" Width="100px">
-                <Template Context="item"><span class="version-badge">v@item.Version</span></Template>
+                @* Parentesi obbligatorie: senza, la lettera attaccata alla chiocciola fa
+                   sembrare l'espressione un indirizzo email e Razor la stampa alla lettera. *@
+                <Template Context="item"><span class="version-badge">v@(item.Version)</span></Template>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn TItem="MachineBackupDTO" Property="FileName" Title="File">
                 <Template Context="item">
@@ -42,6 +44,18 @@
             </RadzenDataGridColumn>
             <RadzenDataGridColumn TItem="MachineBackupDTO" Property="Source" Title="Origine" Width="120px">
                 <Template Context="item">@(item.Source == MachineBackupSource.MachineApi ? "API macchina" : "Manuale")</Template>
+            </RadzenDataGridColumn>
+            <RadzenDataGridColumn TItem="MachineBackupDTO" Property="ExternalReference" Title="Riferimento esterno" Width="190px">
+                <Template Context="item">
+                    @if (string.IsNullOrWhiteSpace(item.ExternalReference))
+                    {
+                        <span class="cell-empty">&mdash;</span>
+                    }
+                    else
+                    {
+                        <span class="external-ref" title="@item.ExternalReference">@item.ExternalReference</span>
+                    }
+                </Template>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn TItem="MachineBackupDTO" Property="Description" Title="Descrizione" />
             <RadzenDataGridColumn TItem="MachineBackupDTO" Filterable="false" Sortable="false" Width="110px" TextAlign="TextAlign.Right">

@@ -10,6 +10,7 @@
 @inject IBaseRestService<ApplicationUser, UsersFilterModel, string> UsersService
 @inject DialogService DialogService
 @inject NotificationService Notification
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 @* Produzione senza ordine: magazzino, prototipi, ricambi, rilavorazioni.
    Sono selezionabili solo i prodotti che hanno un template di produzione, perche'
@@ -31,10 +32,10 @@
     {
         <div class="row g-3">
             <div class="col-12">
-                <label class="form-label small mb-1 d-block">Prodotto</label>
+                <label class="form-label small mb-1 d-block">@Localize["Prodotto"]</label>
                 <RadzenDropDown TValue="int?" @bind-Value="_req.IdProductNullable" Data="_products"
                                 TextProperty="Name" ValueProperty="Id" AllowFiltering="true"
-                                Placeholder="Seleziona il prodotto da produrre" />
+                                Placeholder="@Localize["Seleziona il prodotto da produrre"]" />
                 @if (SelectedProduct != null)
                 {
                     <div class="form-text">
@@ -45,10 +46,10 @@
             </div>
 
             <div class="col-sm-6">
-                <label class="form-label small mb-1 d-block">Data obiettivo</label>
+                <label class="form-label small mb-1 d-block">@Localize["Data obiettivo"]</label>
                 <RadzenDatePicker TValue="DateTime?" @bind-Value="_targetDate" DateFormat="dd/MM/yyyy"
                                   Style="width:100%" />
-                <div class="form-text">Le fasi vengono schedulate all'indietro da questa data.</div>
+                <div class="form-text">@Localize["Le fasi vengono schedulate all'indietro da questa data."]</div>
             </div>
 
             <div class="col-sm-6">
@@ -58,26 +59,26 @@
             </div>
 
             <div class="col-12">
-                <label class="form-label small mb-1 d-block">Note</label>
+                <label class="form-label small mb-1 d-block">@Localize["Note"]</label>
                 <textarea class="form-control" rows="2" @bind="_req.Note"
-                          placeholder="Es. lotto a magazzino, prototipo fiera, ricambio…"></textarea>
+                          placeholder="@Localize["Es. lotto a magazzino, prototipo fiera, ricambio..."]"></textarea>
             </div>
 
             <div class="col-12">
-                <label class="form-label small mb-1 d-block">Capo commessa</label>
+                <label class="form-label small mb-1 d-block">@Localize["Capo commessa"]</label>
                 <RadzenDropDown TValue="string" @bind-Value="_req.IdUserResponsible" Data="_headCompanyUsers"
                                 TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true"
-                                AllowClear="true" Placeholder="Default del prodotto"
+                                AllowClear="true" Placeholder="@Localize["Default del prodotto"]"
                                 Style="width:100%" />
-                <div class="form-text">Se non indicato, viene usato il capo commessa predefinito del prodotto.</div>
+                <div class="form-text">@Localize["Se non indicato, viene usato il capo commessa predefinito del prodotto."]</div>
             </div>
         </div>
 
         <div class="d-flex gap-2 mt-4">
-            <RadzenButton Icon="precision_manufacturing" Text="@(_saving ? "Creazione..." : "Crea commesse")"
+            <RadzenButton Icon="precision_manufacturing" Text="@(_saving ? Localize["Creazione..."] : Localize["Crea commesse"])"
                           ButtonStyle="ButtonStyle.Primary" Disabled="@(_saving || _req.IdProductNullable == null)"
                           Click="Create" />
-            <RadzenButton Icon="close" Text="Annulla" ButtonStyle="ButtonStyle.Light"
+            <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light"
                           Click="@(() => DialogService.Close(false))" />
         </div>
     }

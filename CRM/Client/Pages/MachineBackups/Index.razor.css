@@ -8,6 +8,9 @@
 .version-badge { display: inline-flex; min-width: 42px; justify-content: center; padding: .2rem .45rem; background: var(--rz-primary-lighter); color: var(--rz-primary-dark); border-radius: 4px; font-weight: 700; }
 .file-cell { display: flex; align-items: center; gap: .6rem; min-width: 0; }
 .file-cell > .material-symbols-outlined { color: var(--rz-text-secondary-color); }
+/* Riferimento a un sistema esterno: puo' essere lungo, quindi si tronca e resta per intero nel title. */
+.external-ref { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cell-empty { color: var(--rz-text-secondary-color); }
 .backup-action { width: 34px; height: 34px; border: 0; background: transparent; color: var(--rz-primary); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; }
 .backup-action.danger { color: var(--rz-danger); }
 .backup-action:hover { background: var(--rz-base-200); }

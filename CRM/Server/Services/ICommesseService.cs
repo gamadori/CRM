@@ -29,6 +29,21 @@ namespace CRM.Server.Services
         /// <summary>Conferma "pronto" una riga senza produzione (nessuna commessa).</summary>
         Task<APIResponseMessage<CommessaDTO>> ConfirmRowReadyAsync(int orderRowId);
 
+        /// <summary>
+        /// Sposta l'intero piano su una nuova consegna traslando le fasi dello stesso numero di
+        /// giorni lavorativi: durate, dipendenze e personalizzazioni restano intatte.
+        /// Se la consegna slitta in avanti le fasi gia' avviate o concluse non si toccano; se slitta
+        /// indietro si spostano anche quelle, altrimenti le fasi da fare finirebbero sopra di esse.
+        /// </summary>
+        Task<APIResponseMessage<CommessaDTO>> RescheduleAsync(int id, DateTime newDelivery);
+
+        /// <summary>
+        /// Ricostruisce le fasi dal template del prodotto, ripianificate all'indietro dalla consegna
+        /// indicata: butta via ogni modifica fatta sul piano della commessa. Consentito solo se
+        /// nessuna fase e' stata avviata; i ticket gia' creati restano ma perdono la fase collegata.
+        /// </summary>
+        Task<APIResponseMessage<CommessaDTO>> RebuildPlanFromTemplateAsync(int id, DateTime? newDelivery);
+
         /// <summary>Elimina la commessa e le sue fasi. Il Code distingue non trovata,
         /// non accessibile ed errore, cosi' il controller puo' rispondere con lo stato giusto.</summary>
         Task<APIResponseMessage<bool>> DeleteAsync(int id);

@@ -1,6 +1,7 @@
 using CRM.Client.Models;
 using CRM.Shared;
 using CRM.Shared.DTOs;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -17,6 +18,13 @@ namespace CRM.Client.Services
         Task<APIResponseMessage<List<CommessaDTO>>> StartInternalProductionAsync(InternalProductionRequestDTO req);
 
         Task<APIResponseMessage<CommessaDTO>> ConfirmRowReadyAsync(int orderRowId);
+
+        /// <summary>Sposta il piano su una nuova consegna: le fasi traslano dello stesso numero di
+        /// giorni lavorativi, quelle già avviate solo se la consegna anticipa.</summary>
+        Task<APIResponseMessage<CommessaDTO>> RescheduleAsync(int id, DateTime delivery);
+
+        /// <summary>Ricostruisce le fasi dal template del prodotto: scarta le modifiche al piano.</summary>
+        Task<APIResponseMessage<CommessaDTO>> RebuildPlanFromTemplateAsync(int id, DateTime delivery);
 
         Task<List<CommessaDTO>> GetByOrderAsync(int orderId);
     }

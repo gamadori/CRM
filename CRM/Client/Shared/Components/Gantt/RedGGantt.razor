@@ -5,27 +5,6 @@
 @using Radzen.Blazor
 
 <div class="redg-gantt-wrap">
-
-    <!-- Toolbar -->
-    @* <div class="gantt-toolbar">
-        <div class="btn-group btn-group-sm" role="group">
-            <button class="btn @(_zoom == GanttZoomLevel.Day ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetZoom(GanttZoomLevel.Day))">Giorno</button>
-            <button class="btn @(_zoom == GanttZoomLevel.Week ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetZoom(GanttZoomLevel.Week))">Settimana</button>
-            <button class="btn @(_zoom == GanttZoomLevel.Month ? "btn-primary" : "btn-outline-secondary")" @onclick="@(() => SetZoom(GanttZoomLevel.Month))">Mese</button>
-        </div>
-        <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" @onclick="FitToWidth" title="Adatta la scala alla larghezza disponibile">
-            <span class="material-icons" style="font-size:16px;">fit_screen</span> Adatta
-        </button>
-        <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" @onclick="@(() => NewTask(false))">
-                <span class="material-icons" style="font-size:16px;">add_task</span> Task
-            </button>
-            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" @onclick="@(() => NewTask(true))">
-                <span class="material-icons" style="font-size:16px;">flag</span> Milestone
-            </button>
-        </div>
-    </div>
- *@
     @if (_editing != null)
     {
         <div class="gantt-editor card border-0 shadow-sm mb-2">
@@ -53,7 +32,7 @@
                     <div class="col-md-2">
                         <label class="form-label small mb-1 d-block">Padre</label>
                         <RadzenDropDown TValue="int?" @bind-Value="_editing.ParentId" Data="_parentOptions" TextProperty="Name" ValueProperty="Id"
-                                        AllowClear="true" Placeholder="—" Style="width:100%" />
+                                        AllowClear="true" Placeholder="-" Style="width:100%" />
                     </div>
                 </div>
 
@@ -110,7 +89,7 @@
 
     @if (_loading)
     {
-        <div class="text-muted p-4 text-center">Caricamento pianificazione…</div>
+        <div class="text-muted p-4 text-center">Caricamento pianificazione...</div>
     }
     else if (!_tasks.Any())
     {
@@ -121,65 +100,193 @@
     }
     else
     {
-        <RadzenGantt @ref="_gantt" TItem="CommessaFaseDTO" Data="@_tasks"
-                     IdProperty="@nameof(CommessaFaseDTO.Id)"
-                     ParentIdProperty="@nameof(CommessaFaseDTO.ParentId)"
-                     TextProperty="@nameof(CommessaFaseDTO.Name)"
-                     StartProperty="@nameof(CommessaFaseDTO.StartDate)"
-                     EndProperty="@nameof(CommessaFaseDTO.EndDate)"
-                     ProgressProperty="@nameof(CommessaFaseDTO.Progress)"
-                     Dependencies="@_dependencies"
-                     ShowCriticalPath="true" ShowTodayLine="true" ShowWeekends="true"
-                     ZoomLevel="@_zoom" RowHeightPx="34" LeftPaneWidth="320px"
-                     TaskClick="@OnTaskClick" TaskMove="@OnTaskMove" TaskResize="@OnTaskResize">
-            <Columns>
-                <RadzenDataGridColumn TItem="CommessaFaseDTO" Property="@nameof(CommessaFaseDTO.Name)" Title="Attività">
-                    <Template Context="t">
-                        @if (t.IsMilestone)
-                        {
-                            <span class="material-icons gantt-ms-ico" style="font-size:14px;">flag</span>
-                        }
-                        @if (t.HasBlockingTickets)
-                        {
-                            <span class="material-icons gantt-blocked-ico" title="@TicketTitle(t)" style="font-size:15px;">report_problem</span>
-                        }
-                        <span title="@t.Name">@t.Name</span>
-                    </Template>
-                </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="CommessaFaseDTO" Property="@nameof(CommessaFaseDTO.Progress)" Title="%" Width="110px" Sortable="false">
-                    <Template Context="t">
-                        <span class="gantt-progress-pill @(t.ProgressFromTickets ? "auto" : "")" title="@ProgressTitle(t)">@t.Progress%</span>
-                        @if (t.TicketCount > 0)
-                        {
-                            <span class="gantt-ticket-pill ms-1 @(t.HasBlockingTickets ? "blocked" : "")" title="@TicketTitle(t)">@t.ClosedTicketCount/@t.TicketCount</span>
-                        }
-                    </Template>
-                </RadzenDataGridColumn>
-            </Columns>
-            <TaskTemplate Context="t">
-                @if (t.IsMilestone)
+        <div class="rg-toolbar">
+            <div class="rg-zoom" role="group" aria-label="Scala temporale">
+                <button type="button" class="rg-zoom-btn" title="Riduci la scala" @onclick="@(() => Zoom(-1))" disabled="@IsMinZoom">
+                    <span class="material-icons">remove</span>
+                </button>
+                <button type="button" class="rg-zoom-label @(IsFitZoom ? "fit" : "")" title="Adatta la scala alla larghezza disponibile" @onclick="ResetZoom">
+                    @ZoomLabel
+                </button>
+                <button type="button" class="rg-zoom-btn" title="Aumenta la scala" @onclick="@(() => Zoom(1))" disabled="@IsMaxZoom">
+                    <span class="material-icons">add</span>
+                </button>
+            </div>
+
+            @if (TodayOffsetPx is not null)
+            {
+                <button type="button" class="rg-tool-btn" title="Vai a oggi" @onclick="ScrollToToday">
+                    <span class="material-icons">today</span> Oggi
+                </button>
+            }
+
+            <div class="rg-legend">
+                <span class="rg-legend-item"><i class="rg-dot planned"></i>Pianificata</span>
+                <span class="rg-legend-item"><i class="rg-dot active"></i>In corso</span>
+                <span class="rg-legend-item"><i class="rg-dot done"></i>Completata</span>
+                <span class="rg-legend-item"><i class="rg-dot late"></i>In ritardo</span>
+                <span class="rg-legend-item"><i class="rg-dot blocked"></i>Bloccata</span>
+            </div>
+        </div>
+
+        <div class="rg-grid" @ref="_gridEl" @onpointermove="OnChartPointerMove" @onpointerup="OnChartPointerUp">
+            <div class="rg-left">
+                <div class="rg-left-head" style="@HeaderStyle">
+                    <span>Attivita</span>
+                    <span>Avanz.</span>
+                </div>
+                @for (var i = 0; i < _rows.Count; i++)
                 {
-                    <div class="gantt-ms-diamond" title="@t.Name"></div>
-                }
-                else
-                {
-                    <div class="gantt-bar-inner @BarStateClass(t)" style="@BarColorStyle(t)" title="@BarTitle(t)">
-                        <div class="gantt-bar-progress" style="width:@(t.Progress)%"></div>
-                        <span class="gantt-bar-label">@t.Name</span>
-                        @if (t.TicketCount > 0)
-                        {
-                            <span class="gantt-bar-ticket-count">@t.ClosedTicketCount/@t.TicketCount</span>
-                        }
-                        @if (t.HasBlockingTickets)
-                        {
-                            <span class="gantt-bar-blocked" title="@TicketTitle(t)">
-                                <span class="material-icons">report_problem</span>
-                                @t.BlockedTicketCount
-                            </span>
-                        }
+                    var index = i;
+                    var row = _rows[index];
+                    var t = row.Task;
+                    <div class="rg-left-row @(index == _hoverRow ? "hover" : "") @(row.IsSummary ? "summary" : "")"
+                         style="@RowHeightStyle"
+                         @onmouseenter="@(() => OnRowEnter(index))"
+                         @onmouseleave="OnRowLeave"
+                         @onclick="@(() => EditTask(t))">
+                        <div class="rg-name" style="padding-left:@(10 + row.Depth * 14)px" title="@t.Name">
+                            @if (t.IsMilestone)
+                            {
+                                <span class="material-icons gantt-ms-ico" style="font-size:14px;">flag</span>
+                            }
+                            @if (t.HasBlockingTickets)
+                            {
+                                <span class="material-icons gantt-blocked-ico" title="@TicketTitle(t)" style="font-size:15px;">report_problem</span>
+                            }
+                            <span class="rg-name-text">@t.Name</span>
+                        </div>
+                        <div class="rg-metrics">
+                            <span class="gantt-progress-pill @(t.ProgressFromTickets ? "auto" : "")" title="@ProgressTitle(t)">@t.Progress%</span>
+                            @if (t.TicketCount > 0)
+                            {
+                                <span class="gantt-ticket-pill @(t.HasBlockingTickets ? "blocked" : "")" title="@TicketTitle(t)">@t.ClosedTicketCount/@t.TicketCount</span>
+                            }
+                        </div>
                     </div>
                 }
-            </TaskTemplate>
-        </RadzenGantt>
+            </div>
+
+            <div class="rg-canvas" style="@CanvasStyle">
+                <div class="rg-head">
+                    <div class="rg-months">
+                        @foreach (var band in _months)
+                        {
+                            <div class="rg-month" style="@MonthBandStyle(band)" title="@band.Label">
+                                <span>@MonthBandLabel(band)</span>
+                            </div>
+                        }
+                    </div>
+                    <div class="rg-days">
+                        @for (var i = 0; i < _workdays.Count; i++)
+                        {
+                            var index = i;
+                            var date = _workdays[index];
+                            var skipped = SkippedBefore(index);
+                            var dayTitle = skipped > 0 ? $"{FullDate(date)} - {GapTitle(index)}" : FullDate(date);
+                            <div class="rg-day @(IsWeekStart(index) ? "week-start" : "") @(skipped > 0 ? "gap" : "") @(date == DateTime.Today ? "today" : "")"
+                                 style="@DayStyle(index)"
+                                 title="@dayTitle">
+                                @if (ShowDayNumber(index))
+                                {
+                                    <span class="rg-day-num">@date.Day</span>
+                                    @if (ShowWeekdayName)
+                                    {
+                                        <span class="rg-day-name">@ShortWeekday(date)</span>
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="rg-body" style="@BodyStyle">
+                    @if (_hoverRow >= 0 && _hoverRow < _rows.Count)
+                    {
+                        <div class="rg-row-hover" style="@HoverStyle(_hoverRow)"></div>
+                    }
+
+                    @for (var i = 1; i < _workdays.Count; i++)
+                    {
+                        var index = i;
+                        @if (SkippedBefore(index) > 0)
+                        {
+                            <div class="rg-gap-line" style="@LineStyle(index)" title="@GapTitle(index)"></div>
+                        }
+                        else if (IsWeekStart(index))
+                        {
+                            <div class="rg-week-line" style="@LineStyle(index)"></div>
+                        }
+                    }
+
+                    @if (TodayOffsetPx is double todayOffset)
+                    {
+                        <div class="rg-today" style="@TodayLineStyle(todayOffset)"></div>
+                    }
+
+                    <svg class="rg-deps" width="@TimelineWidthPx" height="@TimelineHeightPx" aria-hidden="true">
+                        <defs>
+                            <marker id="rg-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+                                <path d="M0,0 L7,3.5 L0,7 Z"></path>
+                            </marker>
+                        </defs>
+                        @foreach (var arc in _arcs)
+                        {
+                            <path d="@DependencyPath(arc)" marker-end="url(#rg-arrow)"></path>
+                        }
+                    </svg>
+
+                    @for (var i = 0; i < _rows.Count; i++)
+                    {
+                        var index = i;
+                        var row = _rows[index];
+                        var t = row.Task;
+                        @if (t.IsMilestone)
+                        {
+                            <button type="button"
+                                    class="rg-milestone @(index == _hoverRow ? "hover" : "")"
+                                    style="@MilestoneStyle(row)"
+                                    title="@BarTitle(row)"
+                                    @onmouseenter="@(() => OnRowEnter(index))"
+                                    @onpointerdown="@((args) => OnTaskPointerDown(args, row, DragMode.Move))"
+                                    @onpointerdown:stopPropagation="true"></button>
+                        }
+                        else
+                        {
+                            <div class="rg-bar @BarStateClass(t) @(row.IsSummary ? "summary" : "") @(index == _hoverRow ? "hover" : "")"
+                                 style="@BarStyle(row)"
+                                 title="@BarTitle(row)"
+                                 @onmouseenter="@(() => OnRowEnter(index))"
+                                 @onpointerdown="@((args) => OnTaskPointerDown(args, row, DragMode.Move))"
+                                 @onpointerdown:stopPropagation="true">
+                                <button type="button"
+                                        class="rg-handle start"
+                                        title="Ridimensiona inizio"
+                                        @onpointerdown="@((args) => OnTaskPointerDown(args, row, DragMode.ResizeStart))"
+                                        @onpointerdown:stopPropagation="true"></button>
+                                <div class="rg-bar-progress" style="width:@(t.Progress)%"></div>
+                                <span class="rg-bar-label @BarLabelClass(row)">@t.Name</span>
+                                @if (t.TicketCount > 0 && !row.IsSummary)
+                                {
+                                    <span class="rg-bar-badge">@t.ClosedTicketCount/@t.TicketCount</span>
+                                }
+                                @if (t.HasBlockingTickets && !row.IsSummary)
+                                {
+                                    <span class="rg-bar-blocked" title="@TicketTitle(t)">
+                                        <span class="material-icons">report_problem</span>
+                                        @t.BlockedTicketCount
+                                    </span>
+                                }
+                                <button type="button"
+                                        class="rg-handle end"
+                                        title="Ridimensiona fine"
+                                        @onpointerdown="@((args) => OnTaskPointerDown(args, row, DragMode.ResizeEnd))"
+                                        @onpointerdown:stopPropagation="true"></button>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
     }
 </div>

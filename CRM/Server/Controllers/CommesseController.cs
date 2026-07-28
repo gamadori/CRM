@@ -66,6 +66,16 @@ namespace CRM.Server.Controllers
         public async Task<ActionResult<APIResponseMessage<List<CommessaDTO>>>> StartInternalProduction(InternalProductionRequestDTO req)
             => Ok(await _service.StartInternalProductionAsync(req));
 
+        /// <summary>Sposta il piano su una nuova consegna traslando le fasi (vedi RescheduleAsync).</summary>
+        [HttpPost("{id}/reschedule")]
+        public async Task<ActionResult<APIResponseMessage<CommessaDTO>>> Reschedule(int id, [FromQuery] DateTime delivery)
+            => Ok(await _service.RescheduleAsync(id, delivery));
+
+        /// <summary>Ricostruisce le fasi dal template del prodotto, scartando le modifiche al piano.</summary>
+        [HttpPost("{id}/rebuild-plan")]
+        public async Task<ActionResult<APIResponseMessage<CommessaDTO>>> RebuildPlan(int id, [FromQuery] DateTime? delivery = null)
+            => Ok(await _service.RebuildPlanFromTemplateAsync(id, delivery));
+
         [HttpPost("orderrow/{orderRowId}/ready")]
         public async Task<ActionResult<APIResponseMessage<CommessaDTO>>> ConfirmRowReady(int orderRowId)
             => Ok(await _service.ConfirmRowReadyAsync(orderRowId));

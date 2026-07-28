@@ -1,14 +1,15 @@
 @page "/Catalog"
 @page "/Catalog/Index"
 @using CRM.Client.Pages.Catalog.Components
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 <div class="catalog-page">
     <PageHeader Model="_pageHeader">
         <Actions>
             <div class="catalog-search">
                 <span class="material-icons">search</span>
-                <input @bind="_searchText" @bind:event="oninput" @onkeydown="SearchKeyDown" placeholder="Cerca prodotto, codice o descrizione" />
-                <button type="button" @onclick="ApplySearch">Cerca</button>
+                <input @bind="_searchText" @bind:event="oninput" @onkeydown="SearchKeyDown" placeholder="@Localize["Cerca prodotto, codice o descrizione"]" />
+                <button type="button" @onclick="ApplySearch">@Localize["Cerca"]</button>
             </div>
         </Actions>
     </PageHeader>
@@ -21,8 +22,8 @@
     {
         <div class="catalog-empty">
             <span class="material-icons">category</span>
-            <strong>Nessun prodotto a catalogo</strong>
-            <p>Carica immagini o DXF nella tab Catalogo dei prodotti per visualizzarli qui.</p>
+            <strong>@Localize["Nessun prodotto a catalogo"]</strong>
+            <p>@Localize["Carica immagini o DXF nella tab Catalogo dei prodotti per visualizzarli qui."]</p>
         </div>
     }
     else
@@ -30,7 +31,7 @@
         <div class="catalog-layout">
             <aside class="catalog-sidebar">
                 <button class="@TypeButtonClass(null)" @onclick="@(() => SelectType(null))">
-                    <span>Tutti</span>
+                    <span>@Localize["Tutti"]</span>
                     <small>@_page.ProductTypes.Sum(x => x.Count)</small>
                 </button>
                 @foreach (var type in _page.ProductTypes)

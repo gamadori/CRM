@@ -9,39 +9,40 @@
 @inject IBaseRestService<ApplicationUser, UsersFilterModel, string> UserService
 @inject DialogService DialogService
 @inject NotificationService Notification
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 <div class="card border-0 shadow-sm mb-3">
     <div class="card-body">
         <div class="row g-2 align-items-end">
             <div class="col-md-2">
-                <label class="form-label mb-1 small">Tipo</label>
-                <RadzenDropDown TValue="ActivityKind" @bind-Value="_new.Kind" Data="_kinds"
+                <label class="form-label mb-1 small">@Localize["Tipo"]</label>
+                <RadzenDropDown TValue="ActivityKind" @bind-Value="_new.Kind" Data="Kinds"
                                 TextProperty="Text" ValueProperty="Value" Style="width:100%" />
             </div>
             <div class="col-md-4">
-                <label class="form-label mb-1 small">Oggetto</label>
-                <input class="form-control form-control-sm" @bind="_new.Subject" placeholder="Es. Chiamata di follow-up" />
+                <label class="form-label mb-1 small">@Localize["Oggetto"]</label>
+                <input class="form-control form-control-sm" @bind="_new.Subject" placeholder="@Localize["Es. Chiamata di follow-up"]" />
             </div>
             <div class="col-md-3">
-                <label class="form-label mb-1 small">Assegna a</label>
+                <label class="form-label mb-1 small">@Localize["Assegna a"]</label>
                 <RadzenDropDown TValue="string" @bind-Value="_new.IdAssignee" Data="_users"
                                 TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
-                                Placeholder="Me stesso" Style="width:100%" />
+                                Placeholder="@Localize["Me stesso"]" Style="width:100%" />
             </div>
             <div class="col-md-2">
-                <label class="form-label mb-1 small">Scadenza (opz.)</label>
+                <label class="form-label mb-1 small">@Localize["Scadenza (opz.)"]</label>
                 <RadzenDatePicker TValue="DateTime?" @bind-Value="_new.DueDate" ShowTime="true" DateFormat="dd/MM/yyyy HH:mm" Style="width:100%" />
             </div>
             <div class="col-md-2">
-                <label class="form-label mb-1 small">Promemoria</label>
-                <RadzenDropDown TValue="int" @bind-Value="_reminderMinutes" Data="_reminderOptions"
+                <label class="form-label mb-1 small">@Localize["Promemoria"]</label>
+                <RadzenDropDown TValue="int" @bind-Value="_reminderMinutes" Data="ReminderOptions"
                                 TextProperty="Text" ValueProperty="Value" Style="width:100%" Disabled="@(_new.DueDate == null)" />
             </div>
             <div class="col-md-8">
-                <input class="form-control form-control-sm" @bind="_new.Description" placeholder="Note (facoltative)" />
+                <input class="form-control form-control-sm" @bind="_new.Description" placeholder="@Localize["Note (facoltative)"]" />
             </div>
             <div class="col-md-4">
-                <RadzenButton class="w-100" Icon="add" Text="Aggiungi" ButtonStyle="ButtonStyle.Primary"
+                <RadzenButton class="w-100" Icon="add" Text="@Localize["Aggiungi"]" ButtonStyle="ButtonStyle.Primary"
                               Size="ButtonSize.Small" Disabled="@(_saving || string.IsNullOrWhiteSpace(_new.Subject))" Click="Add" />
             </div>
         </div>
@@ -54,7 +55,7 @@
 }
 else if (!_items.Any())
 {
-    <div class="text-muted text-center py-4">Nessuna attività registrata.</div>
+    <div class="text-muted text-center py-4">@Localize["Nessuna attività registrata."]</div>
 }
 else
 {
@@ -79,27 +80,27 @@ else
                         {
                             @if (a.Kind == ActivityKind.Email && a.IdInboundEmail != null)
                             {
-                                <span class="badge bg-info ms-2">Ricevuta</span>
+                                <span class="badge bg-info ms-2">@Localize["Ricevuta"]</span>
                             }
                             else if (a.Kind == ActivityKind.Email && a.IdEmailSent != null)
                             {
-                                <span class="badge bg-success ms-2">Inviata</span>
+                                <span class="badge bg-success ms-2">@Localize["Inviata"]</span>
                             }
                             else
                             {
-                                <span class="badge bg-success ms-2">Fatta</span>
+                                <span class="badge bg-success ms-2">@Localize["Fatta"]</span>
                             }
                         }
                         <div class="ms-auto">
                             @if (a.State == ActivityState.Planned && a.Permits.Edit())
                             {
                                 <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.ExtraSmall"
-                                              Click="@(() => Complete(a))" title="Completa" />
+                                              Click="@(() => Complete(a))" title="@Localize["Completa"]" />
                             }
                             @if (a.Permits.Delete())
                             {
                                 <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall"
-                                              Click="@(() => Delete(a))" title="Elimina" />
+                                              Click="@(() => Delete(a))" title="@Localize["Elimina"]" />
                             }
                         </div>
                     </div>
@@ -111,7 +112,7 @@ else
                     {
                         <div class="small mt-1 text-primary">
                             <span class="material-icons align-middle" style="font-size:14px">groups</span>
-                            Partecipanti: @string.Join(", ", a.ParticipantNames)
+                            @Localize["Partecipanti"]: @string.Join(", ", a.ParticipantNames)
                         </div>
                     }
                     @if (a.State == ActivityState.Done && HasCompletionDetails(a))
@@ -119,20 +120,20 @@ else
                         <div class="activity-completion mt-2">
                             @if (!string.IsNullOrWhiteSpace(a.Outcome))
                             {
-                                <div><strong>Esito:</strong> @a.Outcome</div>
+                                <div><strong>@Localize["Esito"]:</strong> @a.Outcome</div>
                             }
                             @if (!string.IsNullOrWhiteSpace(a.CompletionNotes))
                             {
-                                <div><strong>Relazione:</strong> @a.CompletionNotes</div>
+                                <div><strong>@Localize["Relazione"]:</strong> @a.CompletionNotes</div>
                             }
                             @if (!string.IsNullOrWhiteSpace(a.NextStep))
                             {
-                                <div><strong>Prossima azione:</strong> @a.NextStep</div>
+                                <div><strong>@Localize["Prossima azione"]:</strong> @a.NextStep</div>
                             }
                             @if (a.DoneDate != null || !string.IsNullOrWhiteSpace(a.CompletedByName))
                             {
                                 <div class="text-muted">
-                                    Chiusura
+                                    @Localize["Chiusura"]
                                     @if (a.DoneDate != null)
                                     {
                                         <span> @a.DoneDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
@@ -149,7 +150,7 @@ else
                     {
                         <div class="small mt-1">
                             <a href="@($"/InboundEmails/{a.IdInboundEmail}")" class="link-primary text-decoration-none">
-                                <span class="material-icons align-middle" style="font-size:14px">mail</span> Apri email ricevuta
+                                <span class="material-icons align-middle" style="font-size:14px">mail</span> @Localize["Apri email ricevuta"]
                             </a>
                         </div>
                     }
@@ -157,7 +158,7 @@ else
                     {
                         <div class="small mt-1 d-flex align-items-center flex-wrap gap-2">
                             <a href="@($"/EmailSent/{a.IdEmailSent}")" class="link-primary text-decoration-none">
-                                <span class="material-icons align-middle" style="font-size:14px">mail</span> Apri email
+                                <span class="material-icons align-middle" style="font-size:14px">mail</span> @Localize["Apri email"]
                             </a>
                             @if (a.EmailEngagement != null)
                             {
@@ -167,7 +168,7 @@ else
                                 </span>
                                 @if (a.EmailOpenCount > 0)
                                 {
-                                    <span class="text-muted" style="font-size:0.75rem">@a.EmailOpenCount aperture</span>
+                                    <span class="text-muted" style="font-size:0.75rem">@a.EmailOpenCount @Localize["aperture"]</span>
                                 }
                                 @if (a.EmailClickCount > 0)
                                 {
@@ -201,22 +202,22 @@ else
     private bool _saving;
 
     private record ReminderOption(string Text, int Value);
-    private readonly List<ReminderOption> _reminderOptions = new()
+    private List<ReminderOption> ReminderOptions => new()
     {
-        new("Nessuno", 0),
-        new("15 min prima", 15),
-        new("1 ora prima", 60),
-        new("1 giorno prima", 1440),
+        new(Localize["Nessuno"], 0),
+        new(Localize["15 min prima"], 15),
+        new(Localize["1 ora prima"], 60),
+        new(Localize["1 giorno prima"], 1440),
     };
 
     private record KindOption(string Text, ActivityKind Value);
-    private readonly List<KindOption> _kinds = new()
+    private List<KindOption> Kinds => new()
     {
-        new("Nota", ActivityKind.Note),
-        new("Chiamata", ActivityKind.Call),
-        new("Email", ActivityKind.Email),
-        new("Meeting", ActivityKind.Meeting),
-        new("Task", ActivityKind.Task),
+        new(Localize["Nota"], ActivityKind.Note),
+        new(Localize["Chiamata"], ActivityKind.Call),
+        new(Localize["Email"], ActivityKind.Email),
+        new(Localize["Meeting"], ActivityKind.Meeting),
+        new(Localize["Task"], ActivityKind.Task),
     };
 
     protected override async Task OnInitializedAsync()
@@ -252,7 +253,7 @@ else
             }
             else
             {
-                Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
+                Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Salvataggio fallito"]);
             }
         }
         finally { _saving = false; }
@@ -264,7 +265,7 @@ else
         if (RequiresCompletionDetails(a.Kind))
         {
             completion = await DialogService.OpenAsync<ActivityCompleteDialog>(
-                "Completa attivita",
+                Localize["Completa attività"],
                 new Dictionary<string, object?>
                 {
                     ["Kind"] = a.Kind,
@@ -285,12 +286,12 @@ else
 
         var resp = await ActivityService.CompleteAsync(a.Id, completion);
         if (resp.State) await Load();
-        else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+        else Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Operazione fallita"]);
     }
 
     private async Task Delete(ActivityDTO a)
     {
-        if (await DialogService.Confirm($"Eliminare l'attività \"{a.Subject}\"?", "Conferma") != true) return;
+        if (await DialogService.Confirm(string.Format(Localize["Eliminare l'attività \"{0}\"?"], a.Subject), Localize["Conferma"]) != true) return;
         if (await ActivityService.DeleteAsync(a.Id)) await Load();
     }
 

@@ -1,12 +1,14 @@
 using CRM.Client.Models;
 using CRM.Server.Services;
 using CRM.Shared;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CRM.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class WorkflowAutomationsController : ControllerBase
     {
         private readonly IWorkflowAutomationService _service;
@@ -45,6 +47,12 @@ namespace CRM.Server.Controllers
         public async Task<ActionResult<APIResponseMessage<WorkflowAutomation>>> Post(WorkflowAutomation item)
         {
             return Ok(await _service.PostAsync(item));
+        }
+
+        [HttpPost("run")]
+        public async Task<ActionResult<int>> Run([FromQuery] int maxItems = 50)
+        {
+            return Ok(await _service.ExecutePendingAsync(maxItems));
         }
 
         [HttpPut("{id:int}")]

@@ -67,6 +67,35 @@ namespace CRM.Server.Extensions
             return d;
         }
 
+        /// <summary>
+        /// Ultimo giorno lavorativo &lt;= data. Per una consegna che cade di sabato la produzione
+        /// deve chiudere il venerdi': arrotondare in avanti sposterebbe la scadenza.
+        /// </summary>
+        public static DateTime PreviousWorkday(this DateTime date)
+        {
+            var d = date.Date;
+            while (!IsWorkday(d))
+                d = d.AddDays(-1);
+            return d;
+        }
+
+        /// <summary>
+        /// Giorni lavorativi di scarto tra due date, con segno: N tale che
+        /// <c>from.ShiftWorkdays(N) == to</c>. Positivo se <paramref name="to"/> e' successiva.
+        /// </summary>
+        public static int WorkdayDelta(this DateTime from, DateTime to)
+        {
+            var a = from.Date;
+            var b = to.Date;
+            if (b > a) return a.AddDays(1).CountWorkdays(b);
+            if (b < a) return -b.AddDays(1).CountWorkdays(a);
+            return 0;
+        }
+
+        /// <summary>Sposta di N giorni lavorativi, in avanti o indietro secondo il segno.</summary>
+        public static DateTime ShiftWorkdays(this DateTime date, int workDays)
+            => workDays >= 0 ? date.AddWorkdays(workDays) : date.SubtractWorkdays(-workDays);
+
         //public static bool IsHoliday(this DateTime originalDate)
         //{
         //    originalDate.IsHoliday()

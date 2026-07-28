@@ -90,20 +90,59 @@ namespace CRM.Client.Pages.Tickets
         private bool _backDisabled = true;
 
         private PageHeaderModel? _pageHeader = null;
+
+        // ─── Avanzamento della procedura ─────────────────────────────────────
+
+        private sealed record StepInfo(TicketCreateSteps Step, string Label, string Title, string Icon);
+
         /// <summary>
-        /// Da Eliminare quando verranno inserite le traduzioni
+        /// I passi effettivamente previsti per questo utente e per questo tipo di ticket: le stesse
+        /// condizioni con cui NextStep salta i passi non pertinenti. Prima che il tipo sia scelto
+        /// prodotto e data non sono ancora noti, quindi l'elenco si completa strada facendo.
         /// </summary>
-        private static string[] _headerBuff = new string[] 
+        private List<StepInfo> _steps => BuildSteps();
+
+        private List<StepInfo> BuildSteps()
         {
-            "Scelta della ditta",
-            "Scelta del Tipo di ticket",
-            "Scelta del prodotto",
-            "Data e Ora",
-            "Descrizione del Ticket", 
-            "Data di Scadenza",
-            "Assegna il ticked a un Utente",
-            "Conferma Dati"
-        };
+            var steps = new List<StepInfo>();
+
+            if (_user.CanManageOtherCompany)
+                steps.Add(new(TicketCreateSteps.CompanyTicket, Localize["Ditta"], Localize["Scelta della ditta"], "business"));
+
+            steps.Add(new(TicketCreateSteps.TypeTicket, Localize["Tipo"], Localize["Scelta del tipo di ticket"], "category"));
+
+            if (_ticketType != null && PropertyVisible(_ticketType.IdArticolo))
+                steps.Add(new(TicketCreateSteps.ProductTicket, Localize["Prodotto"], Localize["Scelta del prodotto"], "inventory_2"));
+
+            if (_ticketType != null && PropertyVisible(_ticketType.Date))
+                steps.Add(new(TicketCreateSteps.DateTicket, Localize["Data"], Localize["Data e ora"], "event"));
+
+            steps.Add(new(TicketCreateSteps.DescriptionTicket, Localize["Descrizione"], Localize["Descrizione del ticket"], "notes"));
+
+            if (_user.CanTicketAssign)
+                steps.Add(new(TicketCreateSteps.Assign, Localize["Assegnazione"], Localize["Assegna il ticket a un utente"], "person_add"));
+
+            steps.Add(new(TicketCreateSteps.DataConfirm, Localize["Conferma"], Localize["Conferma dati"], "task_alt"));
+
+            return steps;
+        }
+
+        /// <summary>Passi della procedura veri e propri: fuori restano esito e allegati.</summary>
+        private bool IsWizardStep => _stepTicket <= TicketCreateSteps.DataConfirm;
+
+        private int CurrentStepIndex => _steps.FindIndex(s => s.Step == _stepTicket);
+
+        private StepInfo? CurrentStep => _steps.FirstOrDefault(s => s.Step == _stepTicket);
+
+        private string CurrentStepTitle => CurrentStep?.Title ?? string.Empty;
+
+        private string CurrentStepIcon => CurrentStep?.Icon ?? "edit";
+
+        /// <summary>Il riepilogo compare da quando c'e' almeno un dato scelto.</summary>
+        private bool HasRecap
+            => _stepTicket > TicketCreateSteps.CompanyTicket
+               && _stepTicket != TicketCreateSteps.Result
+               && _stepTicket != TicketCreateSteps.Attachment;
         protected override async Task OnInitializedAsync()
         {
             try

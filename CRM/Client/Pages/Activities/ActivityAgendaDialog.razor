@@ -13,6 +13,7 @@
 @inject ITicketsService TicketsService
 @inject DialogService DialogService
 @inject NotificationService Notification
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 @if (_loading)
 {
@@ -26,21 +27,21 @@ else
         <div class="activity-dialog">
             <div class="activity-dialog-grid">
                 <div class="activity-field">
-                    <label>Tipo</label>
-                    <RadzenDropDown TValue="ActivityKind" @bind-Value="_activity.Kind" Data="_kindOptions"
+                    <label>@Localize["Tipo"]</label>
+                    <RadzenDropDown TValue="ActivityKind" @bind-Value="_activity.Kind" Data="KindOptions"
                                     TextProperty="Text" ValueProperty="Value" Style="width:100%"
                                     Change="@(_ => ApplyReminderDefault())" />
                 </div>
 
                 <div class="activity-field activity-field-wide">
-                    <label>Oggetto</label>
+                    <label>@Localize["Oggetto"]</label>
                     <input class="form-control" @bind="_activity.Subject" />
                     <ValidationMessage For="@(() => _activity.Subject)" />
                 </div>
 
                 <div class="activity-field">
-                    <label>Collega a</label>
-                    <RadzenDropDown TValue="ActivityEntityType" Value="_activity.EntityType" Data="_entityTypeOptions"
+                    <label>@Localize["Collega a"]</label>
+                    <RadzenDropDown TValue="ActivityEntityType" Value="_activity.EntityType" Data="EntityTypeOptions"
                                     TextProperty="Text" ValueProperty="Value" Style="width:100%"
                                     Change="@OnEntityTypeChanged" />
                 </div>
@@ -77,73 +78,73 @@ else
                 </div>
 
                 <div class="activity-field">
-                    <label>Assegnata a</label>
+                    <label>@Localize["Assegnata a"]</label>
                     <RadzenDropDown TValue="string" @bind-Value="_activity.IdAssignee" Data="_users"
                                     TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true"
                                     FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                    AllowClear="true" Placeholder="Creatore" Style="width:100%" />
+                                    AllowClear="true" Placeholder="@Localize["Creatore"]" Style="width:100%" />
                 </div>
 
                 @if (_activity.Kind == ActivityKind.Meeting)
                 {
                     <div class="activity-field activity-field-wide">
-                        <label>Partecipanti</label>
+                        <label>@Localize["Partecipanti"]</label>
                         <RadzenDropDown TValue="List<string>" @bind-Value="_participantIds" Data="_users"
                                         TextProperty="NameComplete" ValueProperty="Id" Multiple="true"
                                         AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                        AllowClear="true" Chips="true" Placeholder="Seleziona utenti coinvolti"
+                                        AllowClear="true" Chips="true" Placeholder="@Localize["Seleziona utenti coinvolti"]"
                                         Style="width:100%" />
                     </div>
                 }
 
                 <div class="activity-field">
-                    <label>Scadenza</label>
+                    <label>@Localize["Scadenza"]</label>
                     <RadzenDatePicker TValue="DateTime?" @bind-Value="_activity.DueDate" ShowTime="true"
                                       DateFormat="dd/MM/yyyy HH:mm" Style="width:100%"
                                       Change="@(_ => ApplyReminderDefault())" />
                 </div>
 
                 <div class="activity-field">
-                    <label>Promemoria</label>
+                    <label>@Localize["Promemoria"]</label>
                     <RadzenDatePicker TValue="DateTime?" @bind-Value="_activity.ReminderAt" ShowTime="true"
                                       DateFormat="dd/MM/yyyy HH:mm" AllowClear="true" Style="width:100%"
                                       Change="@(_ => _reminderTouched = true)" />
                 </div>
 
                 <div class="activity-field">
-                    <label>Stato</label>
-                    <RadzenDropDown TValue="ActivityState" @bind-Value="_activity.State" Data="_stateOptions"
+                    <label>@Localize["Stato"]</label>
+                    <RadzenDropDown TValue="ActivityState" @bind-Value="_activity.State" Data="StateOptions"
                                     TextProperty="Text" ValueProperty="Value" Style="width:100%" />
                 </div>
 
                 <div class="activity-field activity-field-full">
-                    <label>Descrizione</label>
+                    <label>@Localize["Descrizione"]</label>
                     <textarea class="form-control" rows="4" @bind="_activity.Description"></textarea>
                 </div>
 
                 @if (_activity.State == ActivityState.Done)
                 {
                     <div class="activity-field">
-                        <label>Esito</label>
+                        <label>@Localize["Esito"]</label>
                         <input class="form-control" @bind="_activity.Outcome" />
                     </div>
 
                     <div class="activity-field activity-field-wide">
-                        <label>Prossima azione</label>
+                        <label>@Localize["Prossima azione"]</label>
                         <input class="form-control" @bind="_activity.NextStep" />
                     </div>
 
                     <div class="activity-field activity-field-full">
-                        <label>Relazione di chiusura</label>
+                        <label>@Localize["Relazione di chiusura"]</label>
                         <textarea class="form-control" rows="4" @bind="_activity.CompletionNotes"></textarea>
                     </div>
                 }
             </div>
 
             <div class="activity-dialog-actions">
-                <RadzenButton Icon="close" Text="Annulla" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
+                <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
                               Click="@Cancel" Disabled="@_saving" />
-                <RadzenButton Icon="save" Text="Salva" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat"
+                <RadzenButton Icon="save" Text="@Localize["Salva"]" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat"
                               ButtonType="ButtonType.Submit" Disabled="@_saving" />
             </div>
         </div>
@@ -235,37 +236,37 @@ else
     private record Option<T>(string Text, T Value);
     private record TicketOption(int Id, string DisplayName);
 
-    private readonly List<Option<ActivityKind>> _kindOptions = new()
+    private List<Option<ActivityKind>> KindOptions => new()
     {
-        new("Chiamata", ActivityKind.Call),
-        new("Email", ActivityKind.Email),
-        new("Meeting", ActivityKind.Meeting),
-        new("Nota", ActivityKind.Note),
-        new("Task", ActivityKind.Task)
+        new(Localize["Chiamata"], ActivityKind.Call),
+        new(Localize["Email"], ActivityKind.Email),
+        new(Localize["Meeting"], ActivityKind.Meeting),
+        new(Localize["Nota"], ActivityKind.Note),
+        new(Localize["Task"], ActivityKind.Task)
     };
 
-    private readonly List<Option<ActivityEntityType>> _entityTypeOptions = new()
+    private List<Option<ActivityEntityType>> EntityTypeOptions => new()
     {
-        new("Azienda", ActivityEntityType.Company),
-        new("Ticket", ActivityEntityType.Ticket),
-        new("Lead", ActivityEntityType.Lead),
-        new("Deal", ActivityEntityType.Deal)
+        new(Localize["Azienda"], ActivityEntityType.Company),
+        new(Localize["Ticket"], ActivityEntityType.Ticket),
+        new(Localize["Lead"], ActivityEntityType.Lead),
+        new(Localize["Deal"], ActivityEntityType.Deal)
     };
 
-    private readonly List<Option<ActivityState>> _stateOptions = new()
+    private List<Option<ActivityState>> StateOptions => new()
     {
-        new("Pianificata", ActivityState.Planned),
-        new("Completata", ActivityState.Done),
-        new("Annullata", ActivityState.Cancelled)
+        new(Localize["Pianificata"], ActivityState.Planned),
+        new(Localize["Completata"], ActivityState.Done),
+        new(Localize["Annullata"], ActivityState.Cancelled)
     };
 
     private string EntityLabel => _activity.EntityType switch
     {
-        ActivityEntityType.Company => "Azienda",
-        ActivityEntityType.Ticket => "Ticket",
-        ActivityEntityType.Lead => "Lead",
-        ActivityEntityType.Deal => "Deal",
-        _ => "Collegamento"
+        ActivityEntityType.Company => Localize["Azienda"],
+        ActivityEntityType.Ticket => Localize["Ticket"],
+        ActivityEntityType.Lead => Localize["Lead"],
+        ActivityEntityType.Deal => Localize["Deal"],
+        _ => Localize["Collegamento"]
     };
 
     protected override async Task OnInitializedAsync()
@@ -377,25 +378,25 @@ else
     {
         if (string.IsNullOrWhiteSpace(_activity.Subject))
         {
-            Notification.Notify(NotificationSeverity.Warning, "Attivita", "Inserisci un oggetto");
+            Notification.Notify(NotificationSeverity.Warning, Localize["Attività"], Localize["Inserisci un oggetto"]);
             return;
         }
 
         if (_activity.EntityId <= 0)
         {
-            Notification.Notify(NotificationSeverity.Warning, "Attivita", "Seleziona un collegamento valido");
+            Notification.Notify(NotificationSeverity.Warning, Localize["Attività"], Localize["Seleziona un collegamento valido"]);
             return;
         }
 
         if (_activity.DueDate == null)
         {
-            Notification.Notify(NotificationSeverity.Warning, "Attivita", "Inserisci una scadenza per visualizzarla in Agenda");
+            Notification.Notify(NotificationSeverity.Warning, Localize["Attività"], Localize["Inserisci una scadenza per visualizzarla in Agenda"]);
             return;
         }
 
         if (_activity.ReminderAt.HasValue && _activity.ReminderAt.Value > _activity.DueDate.Value)
         {
-            Notification.Notify(NotificationSeverity.Warning, "Promemoria", "Il promemoria non puo essere successivo alla scadenza");
+            Notification.Notify(NotificationSeverity.Warning, Localize["Promemoria"], Localize["Il promemoria non può essere successivo alla scadenza"]);
             return;
         }
 
@@ -414,7 +415,7 @@ else
         if (response.State)
             DialogService.Close(true);
         else
-            Notification.Notify(NotificationSeverity.Error, "Errore", response.Message ?? "Salvataggio fallito");
+            Notification.Notify(NotificationSeverity.Error, Localize["Errore"], response.Message ?? Localize["Salvataggio fallito"]);
     }
 
     private void Cancel()

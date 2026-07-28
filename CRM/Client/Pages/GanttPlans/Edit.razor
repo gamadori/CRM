@@ -14,6 +14,7 @@
 @inject IHeaderService HeaderService
 @inject NavigationManager Nav
 @inject NotificationService Notification
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 <PageHeader Model="_pageHeader"></PageHeader>
 
@@ -28,24 +29,24 @@ else
 
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white">
-                <h6 class="mb-0">Dati template</h6>
+                <h6 class="mb-0">@Localize["Dati template"]</h6>
             </div>
             <div class="card-body">
                 <div class="row g-3 plan-fields">
                     <div class="col-md-8">
-                        <label class="form-label">Nome</label>
+                        <label class="form-label">@Localize["Nome"]</label>
                         <input class="form-control" @bind="_plan.Name" />
                         <ValidationMessage For="@(() => _plan.Name)" />
                     </div>
                     <div class="col-md-4">
                         @* .rz-dropdown e' inline-flex e si dimensiona sul contenuto: la label d-block lo
                            manda a capo, la larghezza piena arriva dal CSS scoped (vedi .plan-fields). *@
-                        <label class="form-label d-block">Stato</label>
-                        <RadzenDropDown TValue="GanttPlanStates" @bind-Value="_plan.State" Data="_states"
+                        <label class="form-label d-block">@Localize["Stato"]</label>
+                        <RadzenDropDown TValue="GanttPlanStates" @bind-Value="_plan.State" Data="StateOptions"
                                         TextProperty="Text" ValueProperty="Value" />
                     </div>
                     <div class="col-12">
-                        <label class="form-label">Descrizione</label>
+                        <label class="form-label">@Localize["Descrizione"]</label>
                         <textarea class="form-control" rows="3" @bind="_plan.Description"></textarea>
                     </div>
                 </div>
@@ -53,9 +54,9 @@ else
         </div>
 
         <RedGDetailActions Class="mt-3">
-            <RedGButton RGButtonType="RGButtonType.Back" Text="Annulla" Click="Cancel" />
+            <RedGButton RGButtonType="RGButtonType.Back" Text="@Localize["Annulla"]" Click="Cancel" />
             <RedGButton RGButtonType="RGButtonType.Save" ButtonType="ButtonType.Submit"
-                        Text="@(_saving ? "Salvataggio..." : "Salva")" Disabled="@_saving" />
+                        Text="@(_saving ? Localize["Salvataggio..."] : Localize["Salva"])" Disabled="@_saving" />
         </RedGDetailActions>
     </EditForm>
 }
@@ -68,11 +69,11 @@ else
     private bool _saving;
 
     private record StateOption(string Text, GanttPlanStates Value);
-    private readonly List<StateOption> _states = new()
+    private List<StateOption> StateOptions => new()
     {
-        new("Bozza", GanttPlanStates.Draft),
-        new("Attivo", GanttPlanStates.Active),
-        new("Archiviato", GanttPlanStates.Archived),
+        new(Localize["Bozza"], GanttPlanStates.Draft),
+        new(Localize["Attivo"], GanttPlanStates.Active),
+        new(Localize["Archiviato"], GanttPlanStates.Archived),
     };
 
     protected override async Task OnInitializedAsync()
@@ -85,7 +86,7 @@ else
 
         if (_plan == null)
         {
-            Notification.Notify(NotificationSeverity.Error, "Errore", "Template Gantt non trovato");
+            Notification.Notify(NotificationSeverity.Error, Localize["Errore"], Localize["Template Gantt non trovato"]);
             Nav.NavigateTo("/Settings/GanttPlans");
         }
     }
@@ -100,7 +101,7 @@ else
             var resp = await GanttPlanService.SaveAsync(_plan);
             if (!resp.State)
             {
-                Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Salvataggio fallito");
+                Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Salvataggio fallito"]);
                 return;
             }
 

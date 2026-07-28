@@ -1,0 +1,363 @@
+/* ========================================
+   TICKET CREATE - stesso linguaggio visivo
+   di Close.razor.css e Details.razor.css
+   ======================================== */
+
+.ticket-create-page {
+    background: var(--crm-page-bg, #fafbfc);
+    padding-bottom: 2rem;
+}
+
+.modern-preview-container {
+    max-width: 1200px;
+    margin: 0;
+    padding: 1.5rem;
+}
+
+/* Header. E' il contenitore di riferimento dello stepper: la pagina sta dentro un
+   layout con barra laterale, quindi la larghezza utile non è quella del viewport. */
+.preview-header-card {
+    container-type: inline-size;
+    background: var(--crm-surface-raised, #ffffff);
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--crm-border, #e8ecf1);
+    box-shadow: var(--crm-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.ticket-number {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ticket-number .material-icons {
+    font-size: 1.75rem;
+    color: var(--crm-link, #0f4a8a);
+    opacity: 0.9;
+}
+
+.ticket-number h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--crm-text, #2d3748);
+    letter-spacing: -0.02em;
+}
+
+.step-counter {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.9rem;
+    border-radius: 50px;
+    background: color-mix(in srgb, var(--crm-link, #0f4a8a) 12%, transparent);
+    color: var(--crm-link, #0f4a8a);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+/* ─── Stepper ─────────────────────────────────────────────────────────── */
+.wizard-steps {
+    display: flex;
+    align-items: flex-start;
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+}
+
+.wizard-step {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    text-align: center;
+}
+
+/* Linea di collegamento: parte dal centro del pallino precedente */
+.wizard-step::before {
+    content: "";
+    position: absolute;
+    top: 15px;
+    right: 50%;
+    left: -50%;
+    height: 2px;
+    background: var(--crm-border, #e8ecf1);
+}
+
+.wizard-step:first-child::before {
+    display: none;
+}
+
+.wizard-step.done::before,
+.wizard-step.current::before {
+    background: var(--crm-link, #0f4a8a);
+}
+
+.wizard-dot {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--crm-border, #e8ecf1);
+    background: var(--crm-surface-raised, #ffffff);
+    color: var(--crm-text-muted, #94a3b8);
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.wizard-dot .material-icons {
+    font-size: 17px;
+}
+
+.wizard-step.done .wizard-dot {
+    background: var(--crm-link, #0f4a8a);
+    border-color: var(--crm-link, #0f4a8a);
+    color: #fff;
+}
+
+.wizard-step.current .wizard-dot {
+    border-color: var(--crm-link, #0f4a8a);
+    color: var(--crm-link, #0f4a8a);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--crm-link, #0f4a8a) 14%, transparent);
+}
+
+.wizard-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.76rem;
+    color: var(--crm-text-muted, #94a3b8);
+}
+
+.wizard-step.current .wizard-label {
+    color: var(--crm-text, #2d3748);
+    font-weight: 600;
+}
+
+.wizard-step.done .wizard-label {
+    color: var(--crm-text, #475569);
+}
+
+/* Quando lo spazio si stringe restano i pallini: le etichette non ci stanno.
+   La media query è il ripiego per i browser senza container query. */
+@container (max-width: 700px) {
+    .wizard-label {
+        display: none;
+    }
+
+    .wizard-steps {
+        margin-top: 1.25rem;
+    }
+}
+
+@media (max-width: 700px) {
+    .wizard-label {
+        display: none;
+    }
+}
+
+/* ─── Card di sezione ─────────────────────────────────────────────────── */
+.description-card {
+    background: var(--crm-surface-raised, #ffffff);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--crm-border, #e8ecf1);
+    box-shadow: var(--crm-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
+    overflow: hidden;
+}
+
+.card-header-modern {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: var(--crm-surface-muted, #f8f9fb);
+    border-bottom: 1px solid var(--crm-border, #e8ecf1);
+}
+
+.card-header-modern .material-icons {
+    font-size: 1.25rem;
+    color: var(--crm-text-muted, #64748b);
+}
+
+.card-header-modern h5 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--crm-text, #475569);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.card-body-modern {
+    padding: 1.5rem;
+}
+
+/* ─── Campi ───────────────────────────────────────────────────────────── */
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.field ::deep .label-floating,
+.field ::deep label {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--crm-text-muted, #64748b);
+}
+
+/* L'ordine visivo è etichetta sopra, campo sotto, anche dove il markup
+   del componente mette la label dopo il controllo. */
+.field ::deep .label-floating {
+    order: -1;
+}
+
+.field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+}
+
+.card-body-modern ::deep .validation-message {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.8rem;
+    color: #dc2626;
+}
+
+.card-body-modern ::deep .validation-errors {
+    margin: 0 0 1rem;
+    padding: 0.75rem 1rem 0.75rem 2rem;
+    border: 1px solid color-mix(in srgb, #dc2626 35%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, #dc2626 8%, transparent);
+    color: #dc2626;
+    font-size: 0.85rem;
+}
+
+/* ─── Riepilogo ───────────────────────────────────────────────────────── */
+.recap-list {
+    display: grid;
+    grid-template-columns: minmax(140px, max-content) 1fr;
+    gap: 0.6rem 1.5rem;
+    margin: 0;
+    align-items: baseline;
+}
+
+.recap-list dt {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--crm-text-muted, #64748b);
+}
+
+.recap-list dt ::deep .label-floating {
+    margin: 0;
+    font: inherit;
+    color: inherit;
+}
+
+.recap-list dd {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--crm-text, #374151);
+}
+
+.recap-text {
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+    .recap-list {
+        grid-template-columns: 1fr;
+        gap: 0.15rem;
+    }
+
+    .recap-list dd {
+        margin-bottom: 0.6rem;
+    }
+}
+
+/* ─── Esito ───────────────────────────────────────────────────────────── */
+.result-card {
+    border-color: color-mix(in srgb, #16a34a 40%, var(--crm-border, #e8ecf1));
+}
+
+.result-body {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.result-icon {
+    font-size: 2.25rem;
+    color: #16a34a;
+}
+
+.result-text {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.result-text h5 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--crm-text, #2d3748);
+}
+
+.result-meta {
+    font-size: 0.85rem;
+    color: var(--crm-text-muted, #94a3b8);
+    font-variant-numeric: tabular-nums;
+}
+
+.result-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+/* ─── Azioni della procedura ──────────────────────────────────────────── */
+.wizard-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    background: var(--crm-surface-raised, #ffffff);
+    border: 1px solid var(--crm-border, #e8ecf1);
+    box-shadow: var(--crm-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
+}
+
+.wizard-actions-end {
+    margin-left: auto;
+    display: flex;
+    gap: 0.5rem;
+}

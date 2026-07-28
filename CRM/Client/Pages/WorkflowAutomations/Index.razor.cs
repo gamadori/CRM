@@ -22,6 +22,7 @@ namespace CRM.Client.Pages.WorkflowAutomations
         private WorkflowAutomation? _selected;
         private bool _loading;
         private bool _saving;
+        private bool _running;
         private string? _message;
 
         private int ActiveRules => _rules.Count(x => x.IsActive);
@@ -124,6 +125,24 @@ namespace CRM.Client.Pages.WorkflowAutomations
             finally
             {
                 _saving = false;
+            }
+        }
+
+        private async Task RunNow()
+        {
+            _running = true;
+            _message = null;
+            try
+            {
+                var executed = await WorkflowService.RunAsync();
+                _message = executed == 0
+                    ? "Nessuna automazione da eseguire."
+                    : $"Automazioni eseguite: {executed}.";
+                await LoadRules();
+            }
+            finally
+            {
+                _running = false;
             }
         }
 

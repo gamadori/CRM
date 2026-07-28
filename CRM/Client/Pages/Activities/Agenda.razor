@@ -14,24 +14,25 @@
 @inject NavigationManager Nav
 @inject NotificationService Notification
 @inject DialogService DialogService
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 <PageHeader Model="_pageHeader">
     <Actions>
         <div class="agenda-toolbar">
             <div class="agenda-actions">
-                <RadzenButton Icon="add_task" Text="Nuova attività" ButtonStyle="ButtonStyle.Primary"
+                <RadzenButton Icon="add_task" Text="@Localize["Nuova attività"]" ButtonStyle="ButtonStyle.Primary"
                               Variant="Variant.Flat" Click="@NewActivity" />
                 <RadzenButton Icon="@(_includeActivities ? "event_available" : "event_busy")"
-                                Text="Attivita"
+                                Text="@Localize["Attività"]"
                                 ButtonStyle="@(_includeActivities ? ButtonStyle.Primary : ButtonStyle.Light)"
                                 Variant="Variant.Flat"
                                 Click="@ToggleActivities" />
                 <RadzenButton Icon="@(_includeTickets ? "confirmation_number" : "confirmation_number")"
-                                Text="Ticket"
+                                Text="@Localize["Ticket"]"
                                 ButtonStyle="@(_includeTickets ? ButtonStyle.Primary : ButtonStyle.Light)"
                                 Variant="Variant.Flat"
                                 Click="@ToggleTickets" />
-                <RadzenButton Icon="support_agent" Text="Pianificazione Ticket" ButtonStyle="ButtonStyle.Light"
+                <RadzenButton Icon="support_agent" Text="@Localize["Pianificazione Ticket"]" ButtonStyle="ButtonStyle.Light"
                                 Variant="Variant.Flat" Click="@GoToTicketPlanning" />
             </div>
         </div>
@@ -43,66 +44,66 @@
         @if (_canViewTeam)
         {
             <div class="agenda-filter-field agenda-filter-scope">
-                <label>Vista</label>
+                <label>@Localize["Vista"]</label>
                 <RadzenSelectBar TValue="CalendarScope" Value="_scope" Change="@ScopeChanged">
                     <Items>
-                        <RadzenSelectBarItem Text="La mia agenda" Icon="person" Value="CalendarScope.Mine" />
-                        <RadzenSelectBarItem Text="Agenda team" Icon="groups" Value="CalendarScope.Team" />
+                        <RadzenSelectBarItem Text="@Localize["La mia agenda"]" Icon="person" Value="CalendarScope.Mine" />
+                        <RadzenSelectBarItem Text="@Localize["Agenda team"]" Icon="groups" Value="CalendarScope.Team" />
                     </Items>
                 </RadzenSelectBar>
             </div>
         }
         <div class="agenda-filter-field">
-            <label>Da</label>
+            <label>@Localize["Da"]</label>
             <RadzenDatePicker TValue="DateTime?" @bind-Value="_dateFrom" DateFormat="dd/MM/yyyy" Style="width:100%" />
         </div>
         <div class="agenda-filter-field">
-            <label>A</label>
+            <label>@Localize["A"]</label>
             <RadzenDatePicker TValue="DateTime?" @bind-Value="_dateTo" DateFormat="dd/MM/yyyy" Style="width:100%" />
         </div>
         @if (_canViewTeam && _scope == CalendarScope.Team)
         {
             <div class="agenda-filter-field agenda-filter-user">
-                <label>Responsabile</label>
+                <label>@Localize["Responsabile"]</label>
                 <RadzenDropDown TValue="string" @bind-Value="_idUser" Data="_users"
                                 TextProperty="Name" ValueProperty="Id" AllowClear="true"
                                 AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                Placeholder="Tutto il team" Style="width:100%" />
+                                Placeholder="@Localize["Tutto il team"]" Style="width:100%" />
             </div>
         }
         <div class="agenda-filter-field">
-            <label>Tipo</label>
-            <RadzenDropDown TValue="CalendarSourceFilter" @bind-Value="_sourceFilter" Data="_sourceOptions"
+            <label>@Localize["Tipo"]</label>
+            <RadzenDropDown TValue="CalendarSourceFilter" @bind-Value="_sourceFilter" Data="SourceOptions"
                             TextProperty="Text" ValueProperty="Value" Style="width:100%" />
         </div>
         <div class="agenda-filter-field">
-            <label>Stato</label>
-            <RadzenDropDown TValue="CalendarStateFilter" @bind-Value="_stateFilter" Data="_stateOptions"
+            <label>@Localize["Stato"]</label>
+            <RadzenDropDown TValue="CalendarStateFilter" @bind-Value="_stateFilter" Data="StateOptions"
                             TextProperty="Text" ValueProperty="Value" Style="width:100%" />
         </div>
         <div class="agenda-filter-field agenda-filter-search">
-            <label>Cerca</label>
-            <input class="form-control" @bind="_searchText" @bind:event="oninput" placeholder="Titolo, cliente, assegnatario" />
+            <label>@Localize["Cerca"]</label>
+            <input class="form-control" @bind="_searchText" @bind:event="oninput" placeholder="@Localize["Titolo, cliente, assegnatario"]" />
         </div>
         <div class="agenda-filter-actions">
-            <RadzenButton Icon="search" Text="Applica" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat"
+            <RadzenButton Icon="search" Text="@Localize["Applica"]" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat"
                           Disabled="@_loading" Click="@ApplyFilters" />
-            <RadzenButton Icon="restart_alt" Text="Reset" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
+            <RadzenButton Icon="restart_alt" Text="@Localize["Reset"]" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
                           Disabled="@_loading" Click="@ResetFilters" />
         </div>
     </section>
 
     <div class="agenda-metrics">
         <div class="agenda-metric agenda-metric-danger">
-            <span>Scadute</span>
+            <span>@Localize["Scadute"]</span>
             <strong>@_summary.Overdue</strong>
         </div>
         <div class="agenda-metric agenda-metric-primary">
-            <span>Oggi</span>
+            <span>@Localize["Oggi"]</span>
             <strong>@_summary.Today</strong>
         </div>
         <div class="agenda-metric">
-            <span>Prossimi 7 giorni</span>
+            <span>@Localize["Prossimi 7 giorni"]</span>
             <strong>@_summary.NextSevenDays</strong>
         </div>
     </div>
@@ -116,7 +117,7 @@
             }
             else if (!_filteredItems.Any())
             {
-                <div class="agenda-empty">Nessuna scadenza trovata con i filtri selezionati.</div>
+                <div class="agenda-empty">@Localize["Nessuna scadenza trovata con i filtri selezionati."]</div>
             }
             else
             {
@@ -147,14 +148,14 @@
                                     @if (item.CanComplete)
                                     {
                                         <RadzenButton Icon="edit_calendar" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall"
-                                                      Click="@(() => EditActivity(item))" title="Modifica" />
+                                                      Click="@(() => EditActivity(item))" title="@Localize["Modifica"]" />
                                         <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.ExtraSmall"
-                                                      Click="@(() => Complete(item))" title="Completa" />
+                                                      Click="@(() => Complete(item))" title="@Localize["Completa"]" />
                                     }
                                     else if (item.Source == CalendarItemSource.Ticket)
                                     {
                                         <RadzenButton Icon="more_vert" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall"
-                                                      Click="@(() => OpenTicketActions(item))" title="Azioni rapide" />
+                                                      Click="@(() => OpenTicketActions(item))" title="@Localize["Azioni rapide"]" />
                                     }
                                 </div>
                             }
@@ -166,9 +167,9 @@
 
         <section class="agenda-calendar">
             <div class="agenda-legend">
-                <span><i style="background:#1976d2"></i> Attivita</span>
-                <span><i style="background:#c62828"></i> Scadute</span>
-                <span><i style="background:#455a64"></i> Ticket</span>
+                <span><i style="background:#1976d2"></i> @Localize["Attività"]</span>
+                <span><i style="background:#c62828"></i> @Localize["Scadute"]</span>
+                <span><i style="background:#455a64"></i> @Localize["Ticket"]</span>
             </div>
             <RadzenScheduler @ref="_scheduler" TItem="CalendarItemDTO" Data="_filteredItems" class="agenda-scheduler"
                              StartProperty="Start" EndProperty="End" TextProperty="Title" SelectedIndex="0"
@@ -470,24 +471,24 @@
 
     private record FilterOption<T>(string Text, T Value);
 
-    private readonly List<FilterOption<CalendarSourceFilter>> _sourceOptions = new()
+    private List<FilterOption<CalendarSourceFilter>> SourceOptions => new()
     {
-        new("Tutto", CalendarSourceFilter.All),
-        new("Attivita", CalendarSourceFilter.Activities),
-        new("Ticket", CalendarSourceFilter.Tickets)
+        new(Localize["Tutto"], CalendarSourceFilter.All),
+        new(Localize["Attività"], CalendarSourceFilter.Activities),
+        new(Localize["Ticket"], CalendarSourceFilter.Tickets)
     };
 
-    private readonly List<FilterOption<CalendarStateFilter>> _stateOptions = new()
+    private List<FilterOption<CalendarStateFilter>> StateOptions => new()
     {
-        new("Aperte", CalendarStateFilter.Open),
-        new("Scadute", CalendarStateFilter.Overdue),
-        new("Completate", CalendarStateFilter.Completed),
-        new("Tutte", CalendarStateFilter.All)
+        new(Localize["Aperte"], CalendarStateFilter.Open),
+        new(Localize["Scadute"], CalendarStateFilter.Overdue),
+        new(Localize["Completate"], CalendarStateFilter.Completed),
+        new(Localize["Tutte"], CalendarStateFilter.All)
     };
 
     private string ListTitle => _scope == CalendarScope.Mine
-        ? "Le mie scadenze"
-        : _idUser == null ? "Scadenze del team" : "Scadenze del responsabile";
+        ? Localize["Le mie scadenze"]
+        : _idUser == null ? Localize["Scadenze del team"] : Localize["Scadenze del responsabile"];
 
     protected override async Task OnInitializedAsync()
     {
@@ -520,7 +521,7 @@
             _groups = new List<Group>();
             _summary = new CalendarSummaryDTO();
             _loading = false;
-            Notification.Notify(NotificationSeverity.Error, "Agenda", agenda.ErrorMessage);
+            Notification.Notify(NotificationSeverity.Error, Localize["Agenda"], agenda.ErrorMessage);
             return;
         }
 
@@ -578,10 +579,10 @@
 
         _groups = new List<Group>
         {
-            new("Scadute", "text-danger", _filteredItems.Where(i => !i.IsCompleted && i.Start < now).OrderBy(i => i.Start).ToList()),
-            new("Oggi", "text-primary", _filteredItems.Where(i => !i.IsCompleted && i.Start >= now && i.Start < todayEnd).OrderBy(i => i.Start).ToList()),
-            new("Prossimi giorni", "text-body", _filteredItems.Where(i => !i.IsCompleted && i.Start >= todayEnd).OrderBy(i => i.Start).ToList()),
-            new("Completate", "text-success", _filteredItems.Where(i => i.IsCompleted).OrderByDescending(i => i.Start).ToList()),
+            new(Localize["Scadute"], "text-danger", _filteredItems.Where(i => !i.IsCompleted && i.Start < now).OrderBy(i => i.Start).ToList()),
+            new(Localize["Oggi"], "text-primary", _filteredItems.Where(i => !i.IsCompleted && i.Start >= now && i.Start < todayEnd).OrderBy(i => i.Start).ToList()),
+            new(Localize["Prossimi giorni"], "text-body", _filteredItems.Where(i => !i.IsCompleted && i.Start >= todayEnd).OrderBy(i => i.Start).ToList()),
+            new(Localize["Completate"], "text-success", _filteredItems.Where(i => i.IsCompleted).OrderByDescending(i => i.Start).ToList()),
         };
     }
 
@@ -638,7 +639,7 @@
         if (item.ActivityKind.HasValue && RequiresCompletionDetails(item.ActivityKind.Value))
         {
             completion = await DialogService.OpenAsync<ActivityCompleteDialog>(
-                "Completa attivita",
+                Localize["Completa attività"],
                 new Dictionary<string, object?>
                 {
                     ["Kind"] = item.ActivityKind.Value,
@@ -661,13 +662,13 @@
         if (resp.State)
             await Load();
         else
-            Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
+            Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Operazione fallita"]);
     }
 
     private async Task NewActivity()
     {
         var saved = await DialogService.OpenAsync<ActivityAgendaDialog>(
-            "Nuova attività",
+            Localize["Nuova attività"],
             new Dictionary<string, object?>
             {
                 ["DefaultDueDate"] = DateTime.Now.AddHours(1),
@@ -685,7 +686,7 @@
             return;
 
         var saved = await DialogService.OpenAsync<ActivityAgendaDialog>(
-            "Modifica attività",
+            Localize["Modifica attività"],
             new Dictionary<string, object?>
             {
                 ["ActivityId"] = item.SourceId
@@ -729,7 +730,7 @@
     {
         if (_dateFrom.HasValue && _dateTo.HasValue && _dateFrom.Value.Date > _dateTo.Value.Date)
         {
-            Notification.Notify(NotificationSeverity.Warning, "Filtri", "La data iniziale non puo essere successiva alla data finale");
+            Notification.Notify(NotificationSeverity.Warning, Localize["Filtri"], Localize["La data iniziale non può essere successiva alla data finale"]);
             return;
         }
 

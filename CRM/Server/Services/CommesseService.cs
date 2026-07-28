@@ -177,6 +177,24 @@ namespace CRM.Server.Services
                 if (!await CanAccessAsync(item.IdCompany))
                     return Fail("Azienda non accessibile", HttpStatusCode.Forbidden);
 
+                // Spostare le date pianificate da qui lascerebbe le fasi dov'erano: l'intestazione
+                // direbbe una cosa e il Gantt un'altra, senza che nulla lo segnali. Le date di un
+                // piano gia' popolato si cambiano solo da RescheduleAsync, che sposta anche le fasi.
+                // Validato prima della transazione: non ha senso aprire un lock per poi rifiutare.
+                if (item.Id > 0)
+                {
+                    var attuale = await _context.Commesse.AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.Id == item.Id);
+
+                    if (attuale != null
+                        && (item.EndDatePlanned.Date != attuale.EndDatePlanned.Date
+                            || item.StartDatePlanned.Date != attuale.StartDatePlanned.Date)
+                        && await _context.CommessaFasi.AnyAsync(f => f.IdCommessa == item.Id))
+                    {
+                        return Fail("Le date di una commessa con fasi si cambiano da Riprogramma, che sposta anche il piano", HttpStatusCode.BadRequest);
+                    }
+                }
+
                 // La transazione serve alla generazione del codice: e' il lock aperto qui che
                 // impedisce a due creazioni concorrenti di leggere lo stesso progressivo.
                 await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -524,6 +542,154 @@ namespace CRM.Server.Services
             {
                 await _logEventService.RegisterAsync(nameof(CommesseService), nameof(DeleteAsync), EventsTypes.Error, ex);
                 return FailDelete("Errore nell'eliminazione della commessa", HttpStatusCode.InternalServerError);
+            }
+        }
+
+        public async Task<APIResponseMessage<CommessaDTO>> RescheduleAsync(int id, DateTime newDelivery)
+        {
+            try
+            {
+                var commessa = await _context.Commesse
+                    .Include(c => c.Phases)
+                    .FirstOrDefaultAsync(c => c.Id == id);
+
+                if (commessa == null || !await CanAccessAsync(commessa.IdCompany))
+                    return Fail("Commessa non trovata", HttpStatusCode.NotFound);
+
+                if (commessa.State is CommessaStates.Delivered or CommessaStates.Cancelled)
+                    return Fail("Una commessa consegnata o annullata non si riprogramma", HttpStatusCode.BadRequest);
+
+                // La consegna si arrotonda all'indietro: se cade di sabato, la produzione
+                // deve comunque essere chiusa entro il venerdi'.
+                var target = newDelivery.Date.PreviousWorkday();
+                var delta = commessa.EndDatePlanned.Date.PreviousWorkday().WorkdayDelta(target);
+                if (delta == 0)
+                    return Fail("La nuova consegna coincide con quella attuale", HttpStatusCode.BadRequest);
+
+                var phases = commessa.Phases.ToList();
+                var started = phases.Where(f => f.State != CommessaFaseStates.Pending).ToList();
+
+                // Slittamento in avanti: le fasi gia' avviate hanno date storiche e restano dove
+                // sono. All'indietro invece devono seguire, o le fasi ancora da fare verrebbero
+                // trascinate sopra di esse.
+                var frozen = delta > 0 ? started : new List<CommessaFase>();
+                var moving = phases.Where(f => !frozen.Contains(f)).ToList();
+
+                foreach (var f in moving)
+                {
+                    f.StartDate = f.StartDate.ShiftWorkdays(delta);
+                    f.EndDate = f.IsMilestone ? f.StartDate : f.EndDate.ShiftWorkdays(delta);
+                }
+
+                commessa.EndDatePlanned = target;
+                commessa.StartDatePlanned = phases.Count > 0
+                    ? phases.Min(f => f.StartDate).Date
+                    : commessa.StartDatePlanned.ShiftWorkdays(delta);
+
+                await _context.SaveChangesAsync();
+
+                var verso = delta > 0 ? "in avanti" : "indietro";
+                var giorni = Math.Abs(delta) == 1 ? "1 giorno lavorativo" : $"{Math.Abs(delta)} giorni lavorativi";
+                var note = new List<string>();
+
+                if (frozen.Count > 0)
+                    note.Add($"{frozen.Count} gia' avviate restano alle date attuali");
+                if (delta < 0 && started.Count > 0)
+                    note.Add($"{started.Count} gia' avviate sono state spostate per non sovrapporsi");
+
+                var nelPassato = moving.Count(f => f.StartDate.Date < DateTime.Today);
+                if (nelPassato > 0)
+                    note.Add($"attenzione: {nelPassato} fasi ora iniziano prima di oggi");
+
+                var message = $"Piano spostato di {giorni} {verso}: {moving.Count} fasi riprogrammate"
+                    + (note.Count > 0 ? $" ({string.Join("; ", note)})" : string.Empty);
+
+                return Ok(await GetItemAsync(id), message);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(CommesseService), nameof(RescheduleAsync), EventsTypes.Error, ex);
+                return Fail("Errore nella riprogrammazione della commessa", HttpStatusCode.InternalServerError);
+            }
+        }
+
+        public async Task<APIResponseMessage<CommessaDTO>> RebuildPlanFromTemplateAsync(int id, DateTime? newDelivery)
+        {
+            try
+            {
+                var commessa = await _context.Commesse
+                    .Include(c => c.Phases)
+                    .FirstOrDefaultAsync(c => c.Id == id);
+
+                if (commessa == null || !await CanAccessAsync(commessa.IdCompany))
+                    return Fail("Commessa non trovata", HttpStatusCode.NotFound);
+
+                if (commessa.State is CommessaStates.Delivered or CommessaStates.Cancelled)
+                    return Fail("Una commessa consegnata o annullata non si ripianifica", HttpStatusCode.BadRequest);
+
+                // Il ripristino cancella le fasi: su lavoro gia' avviato distruggerebbe lo storico,
+                // e per quel caso esiste la riprogrammazione, che le date le sposta e basta.
+                var avviate = commessa.Phases.Count(f => f.State != CommessaFaseStates.Pending);
+                if (avviate > 0)
+                    return Fail($"Ci sono {avviate} fasi gia' avviate o concluse: usa Riprogramma, il ripristino e' consentito solo su un piano intatto", HttpStatusCode.BadRequest);
+
+                if (commessa.IdGanttPlan == null)
+                    return Fail("La commessa non ha un template di produzione da cui ripartire", HttpStatusCode.BadRequest);
+
+                var template = await _context.GanttPhases
+                    .Include(p => p.Dependencies)
+                    .Include(p => p.TicketTemplates)
+                    .Where(p => p.IdGanttPlan == commessa.IdGanttPlan.Value)
+                    .OrderBy(p => p.SortOrder)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                if (template.Count == 0)
+                    return Fail("Il template di produzione non ha fasi", HttpStatusCode.BadRequest);
+
+                var target = (newDelivery ?? commessa.EndDatePlanned).Date.PreviousWorkday();
+                var vecchie = commessa.Phases.ToList();
+                var faseIds = vecchie.Select(f => f.Id).ToList();
+
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
+                // Stessa politica della cancellazione di una fase: i ticket sopravvivono, perdono
+                // solo il legame. Cancellarli butterebbe via lavoro tracciato fuori dal piano.
+                var tickets = await _context.Tickets
+                    .Where(t => t.IdCommessaFase != null && faseIds.Contains(t.IdCommessaFase.Value))
+                    .ToListAsync();
+                foreach (var t in tickets) t.IdCommessaFase = null;
+
+                // Le FK verso le fasi sono Restrict: dipendenze e gerarchia vanno sciolte prima.
+                var deps = await _context.CommessaFaseDependencies
+                    .Where(d => faseIds.Contains(d.IdFase) || faseIds.Contains(d.IdPredecessorFase))
+                    .ToListAsync();
+                _context.CommessaFaseDependencies.RemoveRange(deps);
+                foreach (var f in vecchie) f.ParentId = null;
+                await _context.SaveChangesAsync();
+
+                _context.CommessaFasi.RemoveRange(vecchie);
+                await _context.SaveChangesAsync();
+
+                var (startPlan, phases) = BuildPhasesBackward(template, target);
+                commessa.StartDatePlanned = startPlan;
+                commessa.EndDatePlanned = target;
+                commessa.Phases = phases.Select(p => p.Fase).ToList();
+                await _context.SaveChangesAsync(); // per avere gli Id delle fasi
+
+                await CloneStructureAsync(phases);
+                await transaction.CommitAsync();
+
+                var note = tickets.Count > 0
+                    ? $" ({tickets.Count} ticket restano senza fase collegata)"
+                    : string.Empty;
+
+                return Ok(await GetItemAsync(id), $"Piano ricostruito dal modello: {phases.Count} fasi{note}");
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(CommesseService), nameof(RebuildPlanFromTemplateAsync), EventsTypes.Error, ex);
+                return Fail("Errore nella ricostruzione del piano", HttpStatusCode.InternalServerError);
             }
         }
 

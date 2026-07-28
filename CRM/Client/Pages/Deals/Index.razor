@@ -38,7 +38,7 @@
                             ValueProperty="Id"
                             AllowClear="true"
                             AllowFiltering="true"
-                            Placeholder="Owner"
+                            Placeholder="@Localize["Owner"]"
                             Style="width: 190px"
                             Change="@(_ => ReloadGrid())" />
 
@@ -48,7 +48,7 @@
                             TextProperty="Text"
                             ValueProperty="Value"
                             AllowClear="true"
-                            Placeholder="Stato"
+                            Placeholder="@Localize["Stato"]"
                             Style="width: 150px"
                             Change="@(_ => ReloadGrid())" />
 
@@ -58,7 +58,7 @@
                             TextProperty="Text"
                             ValueProperty="Value"
                             AllowClear="true"
-                            Placeholder="Fase"
+                            Placeholder="@Localize["Fase"]"
                             Style="width: 190px"
                             Change="@(_ => ReloadGrid())" />
 
@@ -66,15 +66,15 @@
                           ButtonStyle="ButtonStyle.Light"
                           Size="ButtonSize.Small"
                           Click="@ClearFilters"
-                          title="Azzera filtri" />
+                          title="@Localize["Azzera filtri"]" />
 
             <span class="text-muted ms-auto">
-                Pipeline: <strong>@_deals.Total.ToString("C")</strong>
+                @Localize["Pipeline"]: <strong>@_deals.Total.ToString("C")</strong>
             </span>
         </div>
     </HeaderTemplate>
     <Columns>
-        <RadzenDataGridColumn Context="deal" TItem="DealDTO" Title="Opportunita" Property="@nameof(DealDTO.Name)">
+        <RadzenDataGridColumn Context="deal" TItem="DealDTO" Title="@Localize["Opportunità"]" Property="@nameof(DealDTO.Name)">
             <Template Context="deal">
                 <a href="#" class="link-primary" @onclick:preventDefault @onclick="@(() => Details(deal.Id))">@deal.Name</a>
                 <div class="small text-muted">@deal.Date.ToString("dd/MM/yyyy")</div>

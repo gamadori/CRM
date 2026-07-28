@@ -6,6 +6,7 @@
 @inject DialogService DialogService
 @inject NotificationService Notification
 @inject IBaseRestService<ApplicationUser, UsersFilterModel, string> UserService
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 <div class="activity-complete-dialog">
     <div class="activity-complete-summary">
@@ -18,55 +19,55 @@
 
     <div class="activity-complete-grid">
         <div class="activity-complete-field">
-            <label>Esito</label>
+            <label>@Localize["Esito"]</label>
             <RadzenDropDown TValue="string" @bind-Value="_completion.Outcome" Data="_outcomes"
-                            Style="width:100%" AllowClear="true" Placeholder="Seleziona esito" />
+                            Style="width:100%" AllowClear="true" Placeholder="@Localize["Seleziona esito"]" />
         </div>
 
         <div class="activity-complete-field activity-complete-field-full">
-            <label>Relazione</label>
+            <label>@Localize["Relazione"]</label>
             <textarea class="form-control" rows="5" @bind="_completion.CompletionNotes"
                       placeholder="@NotesPlaceholder"></textarea>
         </div>
 
         <div class="activity-complete-field activity-complete-field-full">
-            <label>Prossima azione</label>
+            <label>@Localize["Prossima azione"]</label>
             <textarea class="form-control" rows="2" @bind="_completion.NextStep"
-                      placeholder="Es. inviare offerta, fissare follow-up, attendere documenti"></textarea>
+                      placeholder="@Localize["Es. inviare offerta, fissare follow-up, attendere documenti"]"></textarea>
         </div>
 
         <div class="activity-followup">
             <label class="activity-followup-toggle">
                 <input type="checkbox" class="form-check-input" @bind="_completion.CreateFollowUp" @bind:after="PrepareFollowUp" />
-                <span>Crea attività di follow-up</span>
+                <span>@Localize["Crea attività di follow-up"]</span>
             </label>
 
             @if (_completion.CreateFollowUp)
             {
                 <div class="activity-followup-grid">
                     <div class="activity-complete-field">
-                        <label>Tipo</label>
-                        <RadzenDropDown TValue="ActivityKind" @bind-Value="_completion.FollowUpKind" Data="_kindOptions"
+                        <label>@Localize["Tipo"]</label>
+                        <RadzenDropDown TValue="ActivityKind" @bind-Value="_completion.FollowUpKind" Data="KindOptions"
                                         TextProperty="Text" ValueProperty="Value" Style="width:100%" />
                     </div>
 
                     <div class="activity-complete-field">
-                        <label>Scadenza</label>
+                        <label>@Localize["Scadenza"]</label>
                         <RadzenDatePicker TValue="DateTime?" @bind-Value="_completion.FollowUpDueDate" ShowTime="true"
                                           DateFormat="dd/MM/yyyy HH:mm" Style="width:100%" />
                     </div>
 
                     <div class="activity-complete-field activity-complete-field-full">
-                        <label>Oggetto</label>
+                        <label>@Localize["Oggetto"]</label>
                         <input class="form-control" @bind="_completion.FollowUpSubject" />
                     </div>
 
                     <div class="activity-complete-field activity-complete-field-full">
-                        <label>Assegna a</label>
+                        <label>@Localize["Assegna a"]</label>
                         <RadzenDropDown TValue="string" @bind-Value="_completion.FollowUpAssigneeId" Data="_users"
                                         TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true"
                                         FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                        AllowClear="true" Placeholder="Stesso assegnatario" Style="width:100%" />
+                                        AllowClear="true" Placeholder="@Localize["Stesso assegnatario"]" Style="width:100%" />
                     </div>
                 </div>
             }
@@ -74,9 +75,9 @@
     </div>
 
     <div class="activity-complete-actions">
-        <RadzenButton Icon="close" Text="Annulla" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
+        <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
                       Click="@Cancel" />
-        <RadzenButton Icon="check" Text="Completa" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat"
+        <RadzenButton Icon="check" Text="@Localize["Completa"]" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat"
                       Click="@Complete" />
     </div>
 </div>
@@ -177,30 +178,30 @@
     private List<ApplicationUser> _users = new();
 
     private record KindOption(string Text, ActivityKind Value);
-    private readonly List<KindOption> _kindOptions = new()
+    private List<KindOption> KindOptions => new()
     {
-        new("Chiamata", ActivityKind.Call),
-        new("Email", ActivityKind.Email),
-        new("Meeting", ActivityKind.Meeting),
-        new("Task", ActivityKind.Task)
+        new(Localize["Chiamata"], ActivityKind.Call),
+        new(Localize["Email"], ActivityKind.Email),
+        new(Localize["Meeting"], ActivityKind.Meeting),
+        new(Localize["Task"], ActivityKind.Task)
     };
 
     private List<string> _outcomes => Kind switch
     {
-        ActivityKind.Meeting => new() { "Positivo", "Da approfondire", "Non interessato", "Rinviato" },
-        ActivityKind.Call => new() { "Risposto", "Non risposto", "Richiamare", "Non interessato" },
-        ActivityKind.Task => new() { "Completato", "Parzialmente completato", "Bloccato" },
-        _ => new() { "Completato" }
+        ActivityKind.Meeting => new() { Localize["Positivo"], Localize["Da approfondire"], Localize["Non interessato"], Localize["Rinviato"] },
+        ActivityKind.Call => new() { Localize["Risposto"], Localize["Non risposto"], Localize["Richiamare"], Localize["Non interessato"] },
+        ActivityKind.Task => new() { Localize["Completato"], Localize["Parzialmente completato"], Localize["Bloccato"] },
+        _ => new() { Localize["Completato"] }
     };
 
     private string KindText => Kind switch
     {
-        ActivityKind.Call => "Chiamata",
-        ActivityKind.Email => "Email",
-        ActivityKind.Meeting => "Meeting",
-        ActivityKind.Note => "Nota",
-        ActivityKind.Task => "Task",
-        _ => "Attivita"
+        ActivityKind.Call => Localize["Chiamata"],
+        ActivityKind.Email => Localize["Email"],
+        ActivityKind.Meeting => Localize["Meeting"],
+        ActivityKind.Note => Localize["Nota"],
+        ActivityKind.Task => Localize["Task"],
+        _ => Localize["Attività"]
     };
 
     private string Icon => Kind switch
@@ -213,8 +214,8 @@
     };
 
     private string NotesPlaceholder => Kind == ActivityKind.Meeting
-        ? "Sintesi del meeting, decisioni prese, punti aperti"
-        : "Sintesi dell'esito e informazioni utili per la timeline";
+        ? Localize["Sintesi del meeting, decisioni prese, punti aperti"]
+        : Localize["Sintesi dell'esito e informazioni utili per la timeline"];
 
     protected override async Task OnInitializedAsync()
     {
@@ -234,7 +235,7 @@
         _completion.FollowUpAssigneeId ??= DefaultAssigneeId;
         _completion.FollowUpDueDate ??= DateTime.Now.AddDays(1);
         _completion.FollowUpSubject = string.IsNullOrWhiteSpace(_completion.NextStep)
-            ? $"Follow-up: {Subject}"
+            ? $"{Localize["Follow-up"]}: {Subject}"
             : _completion.NextStep.Trim();
     }
 
@@ -244,13 +245,13 @@
         {
             if (string.IsNullOrWhiteSpace(_completion.FollowUpSubject))
             {
-                Notification.Notify(NotificationSeverity.Warning, "Follow-up", "Inserisci l'oggetto del follow-up");
+                Notification.Notify(NotificationSeverity.Warning, Localize["Follow-up"], Localize["Inserisci l'oggetto del follow-up"]);
                 return;
             }
 
             if (_completion.FollowUpDueDate == null)
             {
-                Notification.Notify(NotificationSeverity.Warning, "Follow-up", "Inserisci la scadenza del follow-up");
+                Notification.Notify(NotificationSeverity.Warning, Localize["Follow-up"], Localize["Inserisci la scadenza del follow-up"]);
                 return;
             }
         }

@@ -1,331 +1,291 @@
-﻿@page "/Tickets/Create"
+@page "/Tickets/Create"
 @using Radzen
 @using Radzen.Blazor
+@using CRM.Shared
 
+<PageHeader Model="@_pageHeader"></PageHeader>
 
-<PageHeader Model="@_pageHeader">
-</PageHeader>
+<div class="ticket-create-page">
+    <div class="modern-preview-container">
 
-@if (_stepTicket > TicketCreateSteps.CompanyTicket)
-{
-    <div class="alert alert-success containerleft" role="alert">
-        @if (_stepTicket == TicketCreateSteps.DataConfirm)
-        {
-            <h4>@Localize["Conferma dati Nuovo Ticket"]</h4>
-            <hr />
-        }
-    <dl>
-
-        @if (_stepTicket > TicketCreateSteps.CompanyTicket)
-        {
-            <dt class="col-sm-3">
-                <DisplayName For="@(() => _ticket.Company)" />
-            </dt>
-            <dd class="col-sm-9">
-                <span>@_ragionaSociale</span>
-            </dd>
-        }
-        @if (_stepTicket > TicketCreateSteps.TypeTicket)
-        {
-            <dt class="col-sm-3">
-                <DisplayName For="@(() => _ticket.IdType)" />
-            </dt>
-
-            <dd class="col-sm-9">
-                <span>@_ticketType?.Desc</span>
-            </dd>
-        }
-        @if (_stepTicket > TicketCreateSteps.ProductTicket)
-        {
-            if (PropertyVisible((PropertyStates)_ticketType.IdProdotto))
-            {
-                if (_product != null && _ticket.IdProduct != null)
+        <!-- Intestazione + avanzamento della procedura -->
+        <div class="preview-header-card">
+            <div class="header-content">
+                <div class="ticket-number">
+                    <span class="material-icons">confirmation_number</span>
+                    <h3>@Localize["Nuovo ticket"]</h3>
+                </div>
+                @if (IsWizardStep && CurrentStepIndex >= 0)
                 {
-                     <dt class="col-sm-3">
-                        <DisplayName For="@(() => _ticket.IdProduct)" />
-                    </dt>
-                    <dd class="col-sm-9">
-                        <span>@_product.Name</span>
-                    </dd>
+                    <span class="step-counter">
+                        @Localize["Passo"] @(CurrentStepIndex + 1) @Localize["di"] @_steps.Count
+                    </span>
                 }
+            </div>
 
-            }
-            @if (PropertyVisible((PropertyStates)_ticketType.IdArticolo))
+            @if (IsWizardStep && CurrentStepIndex >= 0)
             {
-                if (_article != null)
-                {
-
-                    <dt class="col-sm-3">
-                        <DisplayName For="@(() => _ticket.IdArticle)" />
-                    </dt>
-                    <dd class="col-sm-9">
-                        <span>@_article.CompleteName</span>
-                    </dd>
-                }
+                // catturato una volta sola: l'elenco si ricostruisce a ogni accesso
+                var steps = _steps;
+                var corrente = CurrentStepIndex;
+                <ol class="wizard-steps">
+                    @for (var i = 0; i < steps.Count; i++)
+                    {
+                        var s = steps[i];
+                        var stato = i < corrente ? "done" : (i == corrente ? "current" : "todo");
+                        <li class="wizard-step @stato" title="@s.Label">
+                            <span class="wizard-dot">
+                                @if (i < CurrentStepIndex)
+                                {
+                                    <span class="material-icons">check</span>
+                                }
+                                else
+                                {
+                                    <span class="material-icons">@s.Icon</span>
+                                }
+                            </span>
+                            <span class="wizard-label">@s.Label</span>
+                        </li>
+                    }
+                </ol>
             }
-        }
-        @if (_stepTicket > TicketCreateSteps.DateTicket)
-        {
-            @if (PropertyVisible((PropertyStates)_ticketType.Date) && _ticket.Date != null)
-            {
-                <dt class="col-sm-3">
-                    <DisplayName For="@(() => _ticket.Date)" />
-                </dt>
-                <dd class="col-sm-9">
-                    <span>@_ticket.Date?.ToString("d")</span>
-                </dd>
-               
-                <dt class="col-sm-3">
-                    <DisplayName For="@(() => _ticket.Time)" />
-                </dt>
-                <dd class="col-sm-9">
-                    <span>@_ticket.Time?.ToString("t")</span>
-                </dd>
-                
-            }
+        </div>
 
-            @if (PropertyVisible((PropertyStates)_ticketType.DateEnd) && _ticket.DateEnd != null)
-                {
-                    <dt class="col-sm-3">
-                        <DisplayName For="@(() => _ticket.DateEnd)" />
-                    </dt>
-                    <dd class="col-sm-9">
-                        <span>@_ticket.DateEnd?.ToString("d")</span>
-                    </dd>
-                }
-            }
-        @if (_stepTicket > TicketCreateSteps.DescriptionTicket)
+        <!-- Riepilogo di quanto già scelto: cresce passo dopo passo -->
+        @if (HasRecap)
         {
-            <dt class="col-sm-3">
-                <DisplayName For="@(() => _ticket.Description)" />
-            </dt>
-            <dd class="col-sm-9">
-                <RadzenTextArea class="form-control" @bind-value="@_ticket.Description" ReadOnly="true" Rows="4" />
-            </dd>
+            <div class="description-card">
+                <div class="card-header-modern">
+                    <span class="material-icons">@(_stepTicket == TicketCreateSteps.DataConfirm ? "fact_check" : "summarize")</span>
+                    <h5>@(_stepTicket == TicketCreateSteps.DataConfirm ? Localize["Conferma i dati del ticket"] : Localize["Riepilogo"])</h5>
+                </div>
+                <div class="card-body-modern">
+                    <dl class="recap-list">
+                        @if (_stepTicket > TicketCreateSteps.CompanyTicket && !string.IsNullOrWhiteSpace(_ragionaSociale))
+                        {
+                            <dt><DisplayName For="@(() => _ticket.Company)" /></dt>
+                            <dd>@_ragionaSociale</dd>
+                        }
+                        @if (_stepTicket > TicketCreateSteps.TypeTicket && _ticketType != null)
+                        {
+                            <dt><DisplayName For="@(() => _ticket.IdType)" /></dt>
+                            <dd>@_ticketType.Desc</dd>
+                        }
+                        @if (_stepTicket > TicketCreateSteps.ProductTicket && _ticketType != null)
+                        {
+                            @if (PropertyVisible(_ticketType.IdProdotto) && _product != null && _ticket.IdProduct != null)
+                            {
+                                <dt><DisplayName For="@(() => _ticket.IdProduct)" /></dt>
+                                <dd>@_product.Name</dd>
+                            }
+                            @if (PropertyVisible(_ticketType.IdArticolo) && _article != null)
+                            {
+                                <dt><DisplayName For="@(() => _ticket.IdArticle)" /></dt>
+                                <dd>@_article.CompleteName</dd>
+                            }
+                        }
+                        @if (_stepTicket > TicketCreateSteps.DateTicket && _ticketType != null)
+                        {
+                            @if (PropertyVisible(_ticketType.Date) && _ticket.Date != null)
+                            {
+                                <dt><DisplayName For="@(() => _ticket.Date)" /></dt>
+                                <dd>@_ticket.Date?.ToString("d")</dd>
+
+                                <dt><DisplayName For="@(() => _ticket.Time)" /></dt>
+                                <dd>@_ticket.Time?.ToString("t")</dd>
+                            }
+                            @if (PropertyVisible(_ticketType.DateEnd) && _ticket.DateEnd != null)
+                            {
+                                <dt><DisplayName For="@(() => _ticket.DateEnd)" /></dt>
+                                <dd>@_ticket.DateEnd?.ToString("d")</dd>
+                            }
+                        }
+                        @if (_stepTicket > TicketCreateSteps.Expired && _ticketType != null && PropertyVisible(_ticketType.ExpiredDate))
+                        {
+                            <dt><DisplayName For="@(() => _ticket.DateExpired)" /></dt>
+                            <dd>@_ticket.DateExpired</dd>
+                        }
+                        @if (_stepTicket > TicketCreateSteps.Assign && _user.CanTicketAssign && !string.IsNullOrWhiteSpace(_userAssigned?.NameComplete))
+                        {
+                            <dt><DisplayName For="@(() => _ticket.IdUserAssigned)" /></dt>
+                            <dd>@_userAssigned.NameComplete</dd>
+                        }
+                        @if (_stepTicket > TicketCreateSteps.DescriptionTicket && !string.IsNullOrWhiteSpace(_ticket.Description))
+                        {
+                            <dt><DisplayName For="@(() => _ticket.Description)" /></dt>
+                            <dd class="recap-text">@_ticket.Description</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
         }
 
-        @if (_stepTicket > TicketCreateSteps.Expired)
-        {
-            if (PropertyVisible((PropertyStates)_ticketType?.ExpiredDate))
-            {
-                <dt class="col-sm-3">
-                    <DisplayName For="@(() => _ticket.DateExpired)" />
-                </dt>
-                <dd class="col-sm-9">
-                    <span>@_ticket.DateExpired</span>
-                </dd>
-            }
-        }
-
-        @if (_stepTicket > TicketCreateSteps.Assign && _user.CanTicketAssign)
-        {
-            <dt class="col-sm-3">
-                <DisplayName For="@(() => _ticket.IdUserAssigned)" />
-            </dt>
-            <dd class="col-sm-9">
-                <span>@_userAssigned.NameComplete</span>
-            </dd>
-        }
-
+        <!-- Esito -->
         @if (_stepTicket == TicketCreateSteps.Result)
         {
-            <div class="alert alert-info ms-auto col-auto" role="alert">
-            
-                <h4 class="alert-heading" style="color: inherit;">@Localize["Il Ticket è stato Creato."]</h4>
-                
-                <hr>
-                <RadzenButton Click=@(args => OpenAttachmentPage()) Text="@Localize["Allega Documento"]" Icon="attach_file" ButtonStyle="ButtonStyle.Secondary" />
-                    <RadzenButton Click="ListaTickets" Text="@Localize["Lista Ticket"]" Icon="" ButtonStyle="ButtonStyle.Primary"></RadzenButton>
-             </div>
-
-           
+            <div class="description-card result-card">
+                <div class="card-body-modern result-body">
+                    <span class="material-icons result-icon">check_circle</span>
+                    <div class="result-text">
+                        <h5>@Localize["Il Ticket è stato Creato."]</h5>
+                        @if (_ticket.Id > 0)
+                        {
+                            <span class="result-meta">#@_ticket.Id</span>
+                        }
+                    </div>
+                    <div class="result-actions">
+                        <RadzenButton Click="@(args => OpenAttachmentPage())" Text="@Localize["Allega Documento"]" Icon="attach_file"
+                                      ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+                        <RadzenButton Click="ListaTickets" Text="@Localize["Lista Ticket"]" Icon="list"
+                                      ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
+                    </div>
+                </div>
+            </div>
         }
 
         @if (_stepTicket == TicketCreateSteps.Attachment)
         {
-            <CRM.Client.Pages.Attachments.Edit IdParent="@_ticket.Id" AttachmentType=AttachmentTypes.Ticket OnClickClose="OpenTicket" ></CRM.Client.Pages.Attachments.Edit>
+            <div class="description-card">
+                <div class="card-header-modern">
+                    <span class="material-icons">attach_file</span>
+                    <h5>@Localize["Allega Documento"]</h5>
+                </div>
+                <div class="card-body-modern">
+                    <CRM.Client.Pages.Attachments.Edit IdParent="@_ticket.Id" AttachmentType="AttachmentTypes.Ticket" OnClickClose="OpenTicket" />
+                </div>
+            </div>
         }
-        </dl>
 
-        @if (_stepTicket == TicketCreateSteps.DataConfirm)
+        <!-- Passo corrente -->
+        @if (IsWizardStep)
         {
-            <hr />
-            <div class="mb-3">
-                <div class="btn-group float-end" role="group" aria-label="Basic example">
-                    <button type="button" class="btn btn-light" @onclick="PreviousStep" disabled="@_backDisabled">
-                        <i class="material-icons middle text-secondary">arrow_back_ios</i>
-                        <span class="pl-2 text-secondary">Indietro</span>
+            <EditForm Model="_ticket" OnValidSubmit="NextStep">
+                <BlazoringComponents.Validators.FluentValidationValidator ValidatorType="typeof(Validators.TicketValidator)" />
 
-                        
+                @if (_stepTicket != TicketCreateSteps.DataConfirm)
+                {
+                    <div class="description-card">
+                        <div class="card-header-modern">
+                            <span class="material-icons">@CurrentStepIcon</span>
+                            <h5>@CurrentStepTitle</h5>
+                        </div>
+                        <div class="card-body-modern">
+                            <ValidationSummary />
 
-                    </button>
-                    <button type="button" class="btn btn-light" @onclick="PrepareCancel">
-                       
-                        <i class="material-icons middle text-secondary">&#xe5c9</i>
+                            @if (_stepTicket == TicketCreateSteps.CompanyTicket)
+                            {
+                                <div class="field">
+                                    <DisplayName For="@(() => _ticket.IdCompany)" />
+                                    <RadzenDropDownDataGrid @bind-value="@_ticket.IdCompany" TValue="int" AllowFiltering="true" ShowPagingSummary="true"
+                                                            AllowClear="true" PageSize="@_pageSize" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                            LoadData="LoadCompanies" Data="@_companies" Count="@_companyCount"
+                                                            TextProperty="RagioneSociale" ValueProperty="Id" Change="(arg => OnChangeCompany(arg))"
+                                                            Style="width:100%" />
+                                </div>
+                            }
+                            else if (_stepTicket == TicketCreateSteps.TypeTicket)
+                            {
+                                <div class="field">
+                                    <DisplayName For="@(() => _ticket.IdType)" />
+                                    <RadzenDropDown @bind-Value="@_ticket.IdType" AllowClear="true" TValue="int" Change="OnChangeTicketType"
+                                                    AllowFiltering="true" PageSize="@_pageSize" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                    Data="@_ticketTypes" TextProperty="Language" ValueProperty="Id" Style="width:100%" />
+                                </div>
+                            }
+                            else if (_stepTicket == TicketCreateSteps.ProductTicket)
+                            {
+                                <div class="field-grid">
+                                    <div class="field">
+                                        <DisplayName For="@(() => _ticket.IdProduct)" />
+                                        <RadzenDropDown @bind-Value="@_ticket.IdProduct" AllowClear="true" AllowFiltering="true" Change="OnChangeIdProduct"
+                                                        Data="@_products" Count="@_products.Count()" TextProperty="Name" ValueProperty="Id"
+                                                        Style="width:100%" />
+                                    </div>
+                                    <div class="field">
+                                        <DisplayName For="@(() => _ticket.IdArticle)" />
+                                        <RadzenDropDownDataGrid @bind-value="@_ticket.IdArticle" TValue="int?" AllowFiltering="true"
+                                                                AllowClear="true" Change="OnChangeIdArticle" PageSize="10"
+                                                                Data="@_articles" Count="@_articles.Count()" TextProperty="SerialNumber" ValueProperty="Id"
+                                                                Style="width:100%">
+                                            <Columns>
+                                                <RadzenDropDownDataGridColumn Property="Product.Name" Title="@Localize["Tipo Prodotto"]" Width="200px" />
+                                                <RadzenDropDownDataGridColumn Property="SerialNumber" Title="@Localize["Numero Seriale"]" Width="200px" />
+                                            </Columns>
+                                        </RadzenDropDownDataGrid>
+                                    </div>
+                                </div>
+                            }
+                            else if (_stepTicket == TicketCreateSteps.DateTicket)
+                            {
+                                <div class="field-grid">
+                                    <div class="field">
+                                        <RedGDateTimePicker @bind-Value="_ticket.Date" For="@(() => _ticket.Date)" />
+                                    </div>
+                                    @if (PropertyVisible(_ticketType.Time))
+                                    {
+                                        <div class="field">
+                                            <RedGDateTimePicker @bind-Value="_ticket.Time" ShowTime="true" For="@(() => _ticket.Time)" DateFormat="HH:mm" TodayButton="false" />
+                                        </div>
+                                    }
+                                    @if (PropertyVisible(_ticketType.DateEnd))
+                                    {
+                                        <div class="field">
+                                            <RedGDateTimePicker @bind-Value="_ticket.DateEnd" For="@(() => _ticket.DateEnd)" />
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else if (_stepTicket == TicketCreateSteps.DescriptionTicket)
+                            {
+                                <div class="field">
+                                    <DisplayName For="@(() => _ticket.Description)" />
+                                    <RadzenTextArea @bind-value="@_ticket.Description" Rows="8" Style="width:100%"
+                                                    Placeholder="@Localize["Descrivi il problema o la richiesta."]" />
+                                </div>
+                            }
+                            else if (_stepTicket == TicketCreateSteps.Expired)
+                            {
+                                <div class="field">
+                                    <DisplayName For="@(() => _ticket.DateExpired)" />
+                                    <InputDate class="form-control" @bind-Value="@_ticket.DateExpired" />
+                                </div>
+                            }
+                            else if (_stepTicket == TicketCreateSteps.Assign)
+                            {
+                                <div class="field">
+                                    <DisplayName For="@(() => _ticket.IdUserAssigned)" />
+                                    <RadzenDropDownDataGrid @bind-value="@_ticket.IdUserAssigned" TValue="string" LoadData="@LoadUsers" AllowFiltering="true"
+                                                            AllowClear="true" Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id"
+                                                            Change="@OnChangeIdUser" Style="width:100%" />
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
 
-                        
-                        <span class="pl-2">@Localize["Cancel"]</span>
+                <div class="wizard-actions">
+                    <RadzenButton ButtonType="ButtonType.Button" Click="PreviousStep" Disabled="@_backDisabled"
+                                  Text="@Localize["Indietro"]" Icon="arrow_back" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+                    <RadzenButton ButtonType="ButtonType.Button" Click="PrepareCancel"
+                                  Text="@Localize["Cancel"]" Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
 
-                    </button>
-                    @if (_stepTicket != TicketCreateSteps.CompanyTicket)
-                    {
-                        <button type="button" class="btn btn-success" @onclick="Submit">
-                            
-                            <i class="material-icons middle">arrow_forward_ios</i>
-                            <span class="pl-2">@Localize["Conferma"]</span>
-                        </button>
-                    }
+                    <div class="wizard-actions-end">
+                        @if (_stepTicket == TicketCreateSteps.DataConfirm)
+                        {
+                            <RadzenButton ButtonType="ButtonType.Button" Click="Submit" Text="@Localize["Conferma"]" Icon="check"
+                                          ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" />
+                        }
+                        else
+                        {
+                            <RadzenButton ButtonType="ButtonType.Submit" Text="@Localize["Prosegui"]" Icon="arrow_forward"
+                                          ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
+                        }
+                    </div>
                 </div>
-
-            </div>
+            </EditForm>
         }
     </div>
-}
-@if (_stepTicket < TicketCreateSteps.DataConfirm)
-{
-    <h4>@Localize[_headerBuff[(int)_stepTicket]]</h4>
-    <hr />
-}
-<div class="containerleft">
-<EditForm Model="_ticket" OnValidSubmit="NextStep">
-    <BlazoringComponents.Validators.FluentValidationValidator ValidatorType="typeof(Validators.TicketValidator)"  />
-    <ValidationSummary />
-    
-    <div class="row">
-        <div class="col">
-            @if (_stepTicket == TicketCreateSteps.CompanyTicket)
-            {
-                <div class="mb-3 form-floating">
-                    
-                   @* <RadzenDropDownDataGrid class="form-control" @bind-value="@_ticket.IdCompany" TValue="int" LoadData="@LoadCompany" AllowFiltering="true"
-                                            AllowClear="true" Change="(arg => OnChangeCompany(arg))"
-                                            Data="@_companies" Count="@_companies.Count()" TextProperty="RagioneSociale" ValueProperty="Id" />*@
-
-                    <RadzenDropDownDataGrid class="form-control" @bind-value="@_ticket.IdCompany" TValue="int"  AllowFiltering="true" ShowPagingSummary=true 
-                        AllowClear="true" PageSize="@_pageSize" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" LoadData="LoadCompanies"
-                        Data="@_companies" Count="@_companyCount" TextProperty="RagioneSociale" ValueProperty="Id"  Change="(arg => OnChangeCompany(arg))"/>
-
-                    <DisplayName For="@(() => _ticket.IdCompany)" />
-         
-                </div>
-            }
-            else if (_stepTicket == TicketCreateSteps.TypeTicket)
-            {
-                <div class="mb-3 form-floating">
-
-                    <RadzenDropDown class="form-control" @bind-Value="@_ticket.IdType" AllowClear="true" TValue="int" Change="OnChangeTicketType"
-                                    AllowFiltering="true" PageSize="@_pageSize" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                    Data=@_ticketTypes TextProperty="Language" ValueProperty="Id" />
-                    <DisplayName For="@(()=>_ticket.IdType)" />
-                </div>
-            }
-            else if (_stepTicket == TicketCreateSteps.DateTicket)
-            {   
-                <RadzenFieldset Text="@Localize["Seleziona Data e Ora"]">
-                    <div class="mb-3 form-floating">
-                        
-                        <RedGDateTimePicker @bind-Value="_ticket.Date" For="@(() => _ticket.Date)" />
-                   </div>
-                    @if (PropertyVisible(_ticketType.Time))
-                    {
-                        <div class="mb-3 form-floating">                       
-                            
-                            <RedGDateTimePicker @bind-Value="_ticket.Time" ShowTime=true For="@(() => _ticket.Time)" DateFormat="HH:mm" TodayButton=false />
-                        </div>
-                    }
-                    @if (PropertyVisible(_ticketType.DateEnd))
-                    {
-                        <div class="mb-3 form-floating">
-                                <RedGDateTimePicker @bind-Value="_ticket.DateEnd" For="@(() => _ticket.DateEnd)" />
-
-                        </div>
-                    }
-                </RadzenFieldset>
-            }
-            else if (_stepTicket == TicketCreateSteps.ProductTicket)
-            {
-                <div class="mb-3 form-floating">
-                    <RadzenDropDown class="form-control" @bind-Value="@_ticket.IdProduct" AllowClear="true" AllowFiltering="true" Change="OnChangeIdProduct" Data="@_products"
-                                Count="@_products.Count()" TextProperty="Name" ValueProperty="Id">
-
-                    </RadzenDropDown>
-                    
-                    <DisplayName For="@(() => _ticket.IdProduct)" />
-
-
-                </div>
-
-                <div class="mb-3 form-floating">
-                    <RadzenDropDownDataGrid class="form-control" @bind-value="@_ticket.IdArticle" TValue="int?" AllowFiltering="true"
-                                            AllowClear="true" Change="OnChangeIdArticle" PageSize="10"
-                                            Data="@_articles" Count="@_articles.Count()" TextProperty="SerialNumber" ValueProperty="Id">
-                        <Columns>
-                            <RadzenDropDownDataGridColumn Property="Product.Name" Title="Tipo Prodotto" Width="200px" />
-                            <RadzenDropDownDataGridColumn Property="SerialNumber" Title="Numero Seriale" Width="200px" />
-
-                        </Columns>
-                    </RadzenDropDownDataGrid>
-                    <DisplayName For="@(() => _ticket.IdArticle)" />
-
-
-                </div>
-            }
-            else if (_stepTicket == TicketCreateSteps.DescriptionTicket)
-            {
-                <div class="mb-3">
-                    <DisplayName For="@(()=>_ticket.Description)" />
-                    <RadzenTextArea class="form-control" @bind-value="@_ticket.Description" Rows="8" />
-
-                </div>
-            }
-            else if (_stepTicket == TicketCreateSteps.Expired)
-            {
-                <div class="mb-3 form-floating">
-                    <InputDate @bind-Value="@_ticket.DateExpired"></InputDate>
-                    <DisplayName For="@(()=>_ticket.DateExpired)" />
-
-                </div>
-            }
-            else if (_stepTicket == TicketCreateSteps.Assign)
-            {
-                <div class="mb-3 form-floating">
-                    <RadzenDropDownDataGrid class="form-control" @bind-value="@_ticket.IdUserAssigned" TValue="string" LoadData="@LoadUsers" AllowFiltering="true" AllowClear="true"
-                                            Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id" Change="@OnChangeIdUser"  />
-
-                    <DisplayName For="@(()=>_ticket.IdUserAssigned)" />
-                </div>
-            }
-
-
-        </div>
-    </div>
-
-    @if ((int)_stepTicket < (int)TicketCreateSteps.DataConfirm)
-    {
-        <hr />
-        <div class="row mb-3">
-            <div class="col-4">
-                <div class="btn-group" role="group" aria-label="Basic example">
-                    <button type="button" class="btn btn-light" @onclick="PreviousStep" disabled="@_backDisabled">
-                        <i class="material-icons middle text-secondary">arrow_back_ios</i>
-                        <span class="pl-2 text-secondary">@Localize["Indietro"]</span>
-                    </button>
-                    <button type="button" class="btn btn-light" @onclick="PrepareCancel">
-                        <i class="material-icons middle  text-secondary">cancel</i>
-                        <span class="pl-2 text-secondary">@Localize["Cancel"]</span>
-                    </button>
-
-                    <button type="submit" class="btn btn-light">
-                        
-                        <i class="material-icons middle  text-secondary">arrow_forward_ios</i>
-                        <span class="pl-2 text-secondary">@Localize["Prosegui"]</span>
-                    </button>
-
-                </div>
-            </div>
-        </div>
-    }
-</EditForm>
 </div>
+
 <MsgBoxConfirm Id="dlgCancel" LabelBtnNo="No" LabelBtnYes="Yes" Header="Annulla Inserimento Ticket" Message="@_messageCancel" OnClick="Cancel"></MsgBoxConfirm>
 <MsgBoxConfirm Id="dlgError" LabelBtnNo="" LabelBtnYes="OK" Header="Errore durante Inserimento Ticket" Message="@_messageError" OnClick="Close"></MsgBoxConfirm>

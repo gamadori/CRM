@@ -211,6 +211,69 @@ public class SchedulingTests
         Assert.Equal(fa.EndDate.AddWorkdays(4), fb.StartDate);   // 1 giorno + 3 di lag
     }
 
+    // ─── Spostamento del piano su una nuova consegna ─────────────────────────
+
+    /// <summary>
+    /// E' l'invariante su cui poggia la traslazione: lo scarto calcolato fra due date, riapplicato,
+    /// deve riportare esattamente sulla seconda. Se qui si sfasa di un giorno, si sfasa tutto il piano.
+    /// </summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(5)]
+    [InlineData(23)]
+    [InlineData(-1)]
+    [InlineData(-5)]
+    [InlineData(-23)]
+    public void Lo_scarto_in_giorni_lavorativi_e_reversibile(int giorni)
+    {
+        var da = Consegna;
+        var a = da.ShiftWorkdays(giorni);
+
+        var delta = da.WorkdayDelta(a);
+
+        Assert.Equal(giorni, delta);
+        Assert.Equal(a, da.ShiftWorkdays(delta));
+    }
+
+    [Fact]
+    public void Traslare_il_piano_conserva_durate_e_distanze_fra_le_fasi()
+    {
+        var (_, phases) = CommesseService.BuildPhasesBackward(TemplateAB(), Consegna);
+        var a = phases.Single(p => p.Template.Name == "A").Fase;
+        var b = phases.Single(p => p.Template.Name == "B").Fase;
+
+        var durataA = a.StartDate.CountWorkdays(a.EndDate);
+        var distanzaAB = a.EndDate.WorkdayDelta(b.StartDate);
+
+        // stesso delta su tutte le fasi: e' quello che fa RescheduleAsync
+        const int delta = 10;
+        foreach (var (_, f) in phases)
+        {
+            f.StartDate = f.StartDate.ShiftWorkdays(delta);
+            f.EndDate = f.EndDate.ShiftWorkdays(delta);
+        }
+
+        Assert.Equal(durataA, a.StartDate.CountWorkdays(a.EndDate));
+        Assert.Equal(distanzaAB, a.EndDate.WorkdayDelta(b.StartDate));
+    }
+
+    /// <summary>
+    /// Una consegna nel weekend arrotonda all'indietro: spostare in avanti al lunedi' regalerebbe
+    /// due giorni di produzione che il cliente non ha concesso.
+    /// </summary>
+    [Fact]
+    public void Una_consegna_nel_weekend_arrotonda_al_venerdi()
+    {
+        var sabato = DateTime.Today.AddDays(60);
+        while (sabato.DayOfWeek != DayOfWeek.Saturday)
+            sabato = sabato.AddDays(1);
+
+        var consegna = sabato.PreviousWorkday();
+
+        Assert.True(consegna < sabato);
+        Assert.Equal(consegna, consegna.PreviousWorkday()); // idempotente su un giorno lavorativo
+    }
+
     /// <summary>
     /// Assegna gli Id che in produzione arriverebbero da EF dopo il primo SaveChanges e traduce
     /// le dipendenze del template in dipendenze fra fasi.

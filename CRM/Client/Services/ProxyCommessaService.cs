@@ -58,6 +58,14 @@ namespace CRM.Client.Services
         public Task<APIResponseMessage<CommessaDTO>> ConfirmRowReadyAsync(int orderRowId)
             => PostAction<CommessaDTO>($"{_pathService}/orderrow/{orderRowId}/ready");
 
+        // Data in formato invariante: sul querystring il formato locale del browser arriverebbe
+        // ambiguo al binding del controller (03/04 giorno o mese?).
+        public Task<APIResponseMessage<CommessaDTO>> RescheduleAsync(int id, DateTime delivery)
+            => PostAction<CommessaDTO>($"{_pathService}/{id}/reschedule?delivery={delivery:yyyy-MM-dd}");
+
+        public Task<APIResponseMessage<CommessaDTO>> RebuildPlanFromTemplateAsync(int id, DateTime delivery)
+            => PostAction<CommessaDTO>($"{_pathService}/{id}/rebuild-plan?delivery={delivery:yyyy-MM-dd}");
+
         public async Task<List<CommessaDTO>> GetByOrderAsync(int orderId)
         {
             try
