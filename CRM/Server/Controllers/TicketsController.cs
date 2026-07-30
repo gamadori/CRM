@@ -1519,28 +1519,19 @@ namespace CRM.Server.Controllers
         {
             try
             {
-                // Recupera il ticket con tutte le relazioni necessarie
-                var ticket = await _context.Tickets
-                    .Include(x => x.Company)
-                    .Include(x => x.TicketType)
-                    .Include(x => x.Article)
-                        .ThenInclude(x => x!.Product)
-                    .Include(x => x.Product)
-                    .Include(x => x.Contact)
-                    .Include(x => x.UserAssigned)
-                    .Include(x => x.UserOpened)
-                    .Include(x => x.UserClosed)
-                    .Include(x => x.State)
+                // Qui serve solo il perimetro: i dati del documento li carica il generatore.
+                var idCompany = await _context.Tickets
                     .Where(x => x.Id == id)
+                    .Select(x => (int?)x.IdCompany)
                     .FirstOrDefaultAsync();
 
-                if (ticket == null)
+                if (idCompany == null)
                 {
                     return NotFound($"Ticket #{id} non trovato");
                 }
 
                 // Verifica permessi
-                if (!await _permits.CanGetObject(ticket.IdCompany))
+                if (!await _permits.CanGetObject(idCompany))
                 {
                     await _logEventService.RegisterAsync(
                         nameof(TicketsController), 
@@ -1551,7 +1542,7 @@ namespace CRM.Server.Controllers
                 }
 
                 // Genera il PDF
-                var pdfBytes = _pdfGenerator.GenerateTicketPdf(ticket);
+                var pdfBytes = await _pdfGenerator.GenerateTicketPdfAsync(id);
 
                 // Restituisce il file
                 var fileName = $"Ticket_{id}_{DateTime.Now:yyyyMMdd}.pdf";

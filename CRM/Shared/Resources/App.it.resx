@@ -270,6 +270,21 @@
   <data name="NotAssigned" xml:space="preserve">
     <value>Da Assegnare</value>
   </data>
+  <data name="All" xml:space="preserve">
+    <value>Tutti</value>
+  </data>
+  <data name="NewMessage" xml:space="preserve">
+    <value>Nuovi Messaggi</value>
+  </data>
+  <data name="Blocked" xml:space="preserve">
+    <value>Bloccati</value>
+  </data>
+  <data name="ToClaim" xml:space="preserve">
+    <value>Da Prendere in Carico</value>
+  </data>
+  <data name="Ticket da prendere in carico" xml:space="preserve">
+    <value>Ticket da prendere in carico</value>
+  </data>
   <data name="Nuovo Ticket" xml:space="preserve">
     <value>Nuovo Ticket</value>
   </data>
@@ -431,6 +446,15 @@
   </data>
   <data name="ListSubTitle" xml:space="preserve">
     <value>Elenco {0}</value>
+  </data>
+  <data name="Messages" xml:space="preserve">
+    <value>Messaggi</value>
+  </data>
+  <data name="Tutti gli utenti" xml:space="preserve">
+    <value>Tutti gli utenti</value>
+  </data>
+  <data name="MessagesListSubTitle" xml:space="preserve">
+    <value>Conversazioni con messaggi da leggere</value>
   </data>
   <data name="DetailsSubTitle" xml:space="preserve">
     <value>Dettagli {0}:</value>
@@ -869,5 +893,14 @@
   </data>
   <data name="Workshop" xml:space="preserve">
     <value>Officina</value>
+  </data>
+  <data name="Lavoro" xml:space="preserve">
+    <value>Lavoro</value>
+  </data>
+  <data name="Viaggio" xml:space="preserve">
+    <value>Viaggio</value>
+  </data>
+  <data name="Pausa" xml:space="preserve">
+    <value>Pausa</value>
   </data>
 </root>

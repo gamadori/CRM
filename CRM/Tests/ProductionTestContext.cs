@@ -21,6 +21,11 @@ public sealed class ProductionTestContext : IDisposable
 
     public const string Utente = "utente-corrente";
 
+    /// <summary>Primo lunedi' da oggi in poi: ancora stabile per i test che pesano i giorni
+    /// lavorativi, che altrimenti darebbero un risultato diverso a seconda del giorno in cui girano.</summary>
+    public static DateTime ProssimoLunedi
+        => DateTime.Today.AddDays(((int)DayOfWeek.Monday - (int)DateTime.Today.DayOfWeek + 7) % 7);
+
     private ProductionTestContext(bool admin, int? gruppoUtente, List<int>? aziendeVisibili)
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -93,8 +98,13 @@ public sealed class ProductionTestContext : IDisposable
         CommessaFaseCompletionMode mode = CommessaFaseCompletionMode.AllTicketsClosed,
         bool requiresTicket = false,
         int progress = 0,
-        int giorniDurata = 5)
+        int giorniDurata = 5,
+        DateTime? inizio = null)
     {
+        // La durata e' in giorni di calendario ma i pesi si contano in giorni lavorativi: i test
+        // che verificano una percentuale devono ancorare l'inizio, o il risultato cambia col
+        // giorno della settimana in cui girano.
+        var start = (inizio ?? DateTime.Today).Date;
         var f = new CommessaFase
         {
             Id = id,
@@ -108,8 +118,8 @@ public sealed class ProductionTestContext : IDisposable
             RequiresTicket = requiresTicket,
             Progress = progress,
             SortOrder = id,
-            StartDate = DateTime.Today,
-            EndDate = DateTime.Today.AddDays(giorniDurata - 1)
+            StartDate = start,
+            EndDate = start.AddDays(giorniDurata - 1)
         };
         Db.CommessaFasi.Add(f);
         Db.SaveChanges();

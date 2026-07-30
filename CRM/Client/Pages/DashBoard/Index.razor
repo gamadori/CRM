@@ -23,29 +23,33 @@ else
         </div>
 
         <!-- Toolbar: utente + azioni -->
-        @if (!_model.IsClient && _users != null)
-        {
-            <div class="dash-toolbar">
+        <div class="dash-toolbar">
+            @* Solo Admin e SuperUser possono guardare la dashboard di un altro utente:
+               agli altri ruoli il combo non serve, il server restituisce comunque i loro dati. *@
+            @if (_isSupervisor && _users != null)
+            {
                 <div class="toolbar-user">
-                    <RedGDropDownGrid Label="@Localize["User"]" TItem="ApplicationUser" @bind-value="@_userId" TValue="string" Data="@_users" Change="OnChangeIdUser" TextProperty="NameComplete" ValueProperty="Id">
+                    <RedGDropDownGrid Label="@Localize["User"]" TItem="ApplicationUser" @bind-value="@_userId" TValue="string" Data="@_users" Change="OnChangeIdUser"
+                                      TextProperty="NameComplete" ValueProperty="Id" Placeholder="@Localize["Tutti gli utenti"]">
                         <ChildColumns>
                             <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
                             <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
                         </ChildColumns>
                     </RedGDropDownGrid>
                 </div>
-                <div class="toolbar-actions">
-                    <RedGButton Icon="add_box" Text="@Localize["Nuovo Ticket"]" Click="AddTicket" ButtonStyle="ButtonStyle.Primary" class="tb-btn tb-primary" />
-                    <RedGButton Icon="calendar_month" Text="Agenda" Click="GoToAgenda" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
-                    <RedGButton Icon="list" Text="@Localize["Storico TICKETS"]" Click="TicketAll" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
-                    <RedGButton Icon="event_note" Text="Pianificazione Ticket" Click="Schedule" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
-                    <RedGButton Icon="manage_search" Text=@Localize["Ricerca Ticket"] Click="TicketsSearch" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
-                    <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
-                        <RedGButton Icon="money" Text="@Localize["Ticket da Fatturare"]" Click="TicketsToInvoice" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
-                    </AuthorizeView>
-                </div>
+            }
+            <div class="toolbar-actions">
+                <RedGButton Icon="add_box" Text="@Localize["Nuovo Ticket"]" Click="AddTicket" ButtonStyle="ButtonStyle.Primary" class="tb-btn tb-primary" />
+                <RedGButton Icon="calendar_month" Text="Agenda" Click="GoToAgenda" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
+                <RedGButton Icon="list" Text="@Localize["Storico TICKETS"]" Click="TicketAll" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
+                <RedGButton Icon="event_note" Text="Pianificazione Ticket" Click="Schedule" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
+                <RedGButton Icon="manage_search" Text=@Localize["Ricerca Ticket"] Click="TicketsSearch" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
+                @if (_isSupervisor)
+                {
+                    <RedGButton Icon="money" Text="@Localize["Ticket da Fatturare"]" Click="TicketsToInvoice" ButtonStyle="ButtonStyle.Light" class="tb-btn" />
+                }
             </div>
-        }
+        </div>
 
         <!-- Priorita operative -->
         @if (!_model.IsClient)
@@ -116,6 +120,17 @@ else
                     <div class="metric-label">Non assegnati</div>
                 </div>
             </div>
+
+            @if (_model.TicketsToClaim > 0)
+            {
+                <div class="metric-tile tile-orange" @onclick="TicketsToClaim">
+                    <div class="metric-icon"><span class="material-icons">front_hand</span></div>
+                    <div class="metric-text">
+                        <div class="metric-value">@_model.TicketsToClaim</div>
+                        <div class="metric-label">Da prendere in carico</div>
+                    </div>
+                </div>
+            }
 
             <div class="metric-tile tile-success" @onclick="TicketWorking">
                 <div class="metric-icon"><span class="material-icons">engineering</span></div>

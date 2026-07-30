@@ -1,5 +1,6 @@
 ﻿using CRM.Shared;
 using Microsoft.AspNetCore.Components.Forms;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace CRM.Client.Services
@@ -10,5 +11,8 @@ namespace CRM.Client.Services
         Task<bool> TicketRead(int idTicket);
         Task<bool> HasNewMessage(int idTicket);
         Task<ChatFileUploadResult?> UploadFile(int idTicket, IBrowserFile file);
+
+        /// <summary>Conversazioni con messaggi da leggere, una per ticket, ordinate dalla piu' recente.</summary>
+        Task<List<UnreadChatModel>> GetUnread();
     }
 }

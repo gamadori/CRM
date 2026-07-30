@@ -49,8 +49,6 @@ namespace CRM.Client.Helpers
         public static string ArticlesPath = "api/Articles";
 
 
-        public static string InterventionTime = "api/TicketInterventionTimes";
-
         public static string ProductParentChild = "api/ProductParenChild";
 
         public static string ProductAccTypesPath = "api/ProductAccessoryTypes";

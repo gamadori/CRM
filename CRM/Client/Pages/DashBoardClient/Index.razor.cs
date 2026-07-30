@@ -154,9 +154,13 @@ namespace CRM.Client.Pages.DashBoardClient
             NavigationManager.NavigateTo($"/Articles");
         }
 
+        /// <summary>
+        /// Porta alla posta in arrivo delle chat invece che all'elenco dei ticket filtrato:
+        /// l'anteprima dei messaggi dice subito cosa e' stato scritto e da chi.
+        /// </summary>
         private void TicketsNewMessage()
         {
-            NavigationManager.NavigateTo($"/DashBoard/Tickets/{(int)TicketTypeSearch.NewMessage}");
+            NavigationManager.NavigateTo("/Tickets/Messages");
         }
 
         public void Dispose()

@@ -195,6 +195,13 @@ else
                                 <span class="text-muted small">Fase</span>
                                 <span class="fw-semibold">@_commessaFase.Name</span>
                             </span>
+                            @* Fine e scadenza non sono modificabili qui: seguono la fase, e
+                               riprogrammare la commessa le sposta insieme al piano. *@
+                            <span class="d-flex align-items-center gap-1" title="@Localize["Fine e scadenza del ticket seguono quelle della fase: si aggiornano quando il piano viene riprogrammato."]">
+                                <span class="material-icons" style="font-size:18px;">event_busy</span>
+                                <span class="text-muted small">@Localize["Scadenza fase"]</span>
+                                <span class="fw-semibold">@_commessaFase.EndDate.ToShortDateString()</span>
+                            </span>
                         </div>
                     }
 

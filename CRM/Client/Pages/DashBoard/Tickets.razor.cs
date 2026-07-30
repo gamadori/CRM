@@ -50,6 +50,10 @@ namespace CRM.Client.Pages.DashBoard
                     _header = "Ticket bloccati";
                     break;
 
+                case TicketTypeSearch.ToClaim:
+                    _header = "Ticket da prendere in carico";
+                    break;
+
             }
         }
         protected void AddTicket()

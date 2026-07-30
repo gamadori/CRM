@@ -10,7 +10,14 @@ namespace CRM.Shared
     {
         public bool IsClient { get; set; }
 
+        /// <summary>Ticket senza utente E senza gruppo: lavoro ancora da smistare.</summary>
         public int TicketsNotAssigned { get; set; }
+
+        /// <summary>
+        /// Ticket smistati a un gruppo ma non ancora presi in carico da nessuno. Non sono
+        /// "da assegnare": hanno gia' un destinatario, gli manca il responsabile.
+        /// </summary>
+        public int TicketsToClaim { get; set; }
 
         public int TicketsWorking { get; set; }
 

@@ -1,6 +1,7 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Shared;
 using Microsoft.AspNetCore.Components.Forms;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
@@ -52,6 +53,19 @@ namespace CRM.Client.Services
             catch
             {
                 return false;
+            }
+        }
+
+        public async Task<List<UnreadChatModel>> GetUnread()
+        {
+            try
+            {
+                var resp = await _http.GetFromJsonAsync<List<UnreadChatModel>>($"{_pathService}/Unread");
+                return resp ?? new List<UnreadChatModel>();
+            }
+            catch
+            {
+                return new List<UnreadChatModel>();
             }
         }
 

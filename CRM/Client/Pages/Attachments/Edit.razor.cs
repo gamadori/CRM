@@ -39,7 +39,7 @@ namespace CRM.Client.Pages.Attachments
         private IJSRuntime JSRuntime { get; set; }
 
         [Inject]
-        IRestService<ApplicationUser> UserService { get; set; }
+        ICurrentUserService UserService { get; set; }
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }

@@ -37,7 +37,7 @@ namespace CRM.Client.Pages.ContractTypeTicketTypes
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
-        IRestService<ApplicationUser> UserSignedService { get; set; }
+        ICurrentUserService UserSignedService { get; set; }
 
         [Inject]
         DialogService DialogService { get; set; }

@@ -204,11 +204,16 @@
                                     <div class="field">
                                         <DisplayName For="@(() => _ticket.IdArticle)" />
                                         <RadzenDropDownDataGrid @bind-value="@_ticket.IdArticle" TValue="int?" AllowFiltering="true"
+                                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                                                 AllowClear="true" Change="OnChangeIdArticle" PageSize="10"
                                                                 Data="@_articles" Count="@_articles.Count()" TextProperty="SerialNumber" ValueProperty="Id"
                                                                 Style="width:100%">
                                             <Columns>
-                                                <RadzenDropDownDataGridColumn Property="Product.Name" Title="@Localize["Tipo Prodotto"]" Width="200px" />
+                                                @* ArticleDTO e' piatto: il nome del prodotto sta in ProductName, non in una
+                                                   navigazione Product. Qui il binding e' lato client sull'item, quindi il
+                                                   percorso deve essere quello del DTO (diverso dalle colonne della lista
+                                                   ticket, dove Filter/Sort viaggiano al server sull'entita' Ticket). *@
+                                                <RadzenDropDownDataGridColumn Property="ProductName" Title="@Localize["Tipo Prodotto"]" Width="200px" />
                                                 <RadzenDropDownDataGridColumn Property="SerialNumber" Title="@Localize["Numero Seriale"]" Width="200px" />
                                             </Columns>
                                         </RadzenDropDownDataGrid>

@@ -389,9 +389,12 @@ public class PhaseServiceTests
     {
         using var ctx = ProductionTestContext.ComeAdmin();
         ctx.CreaCommessa();
-        ctx.CreaFase(1, nome: "Assemblaggio", giorniDurata: 12);
-        ctx.CreaFase(2, parentId: 1, mode: CommessaFaseCompletionMode.Manual, progress: 100, giorniDurata: 10);
-        ctx.CreaFase(3, parentId: 1, mode: CommessaFaseCompletionMode.Manual, progress: 0, giorniDurata: 2);
+        // Partenza di lunedi': le durate sono in giorni di calendario ma i pesi in giorni
+        // lavorativi, quindi senza ancora il risultato dipende dal giorno in cui gira il test.
+        var lunedi = ProductionTestContext.ProssimoLunedi;
+        ctx.CreaFase(1, nome: "Assemblaggio", giorniDurata: 12, inizio: lunedi);
+        ctx.CreaFase(2, parentId: 1, mode: CommessaFaseCompletionMode.Manual, progress: 100, giorniDurata: 10, inizio: lunedi);
+        ctx.CreaFase(3, parentId: 1, mode: CommessaFaseCompletionMode.Manual, progress: 0, giorniDurata: 2, inizio: lunedi);
 
         await ctx.Service.RecomputeFaseProgressAsync(2);
 
@@ -405,9 +408,10 @@ public class PhaseServiceTests
     {
         using var ctx = ProductionTestContext.ComeAdmin();
         ctx.CreaCommessa();
-        ctx.CreaFase(1, nome: "Assemblaggio", giorniDurata: 12);
-        ctx.CreaFase(2, parentId: 1, mode: CommessaFaseCompletionMode.Manual, progress: 100, giorniDurata: 10);
-        ctx.CreaFase(3, parentId: 1, mode: CommessaFaseCompletionMode.Manual, progress: 0, giorniDurata: 2);
+        var lunedi = ProductionTestContext.ProssimoLunedi;
+        ctx.CreaFase(1, nome: "Assemblaggio", giorniDurata: 12, inizio: lunedi);
+        ctx.CreaFase(2, parentId: 1, mode: CommessaFaseCompletionMode.Manual, progress: 100, giorniDurata: 10, inizio: lunedi);
+        ctx.CreaFase(3, parentId: 1, mode: CommessaFaseCompletionMode.Manual, progress: 0, giorniDurata: 2, inizio: lunedi);
 
         await ctx.Service.RecomputeFaseProgressAsync(2);
 

@@ -130,9 +130,11 @@
             @* <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
                 <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Invoiced)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Invoiced), typeof(Ticket))" Type="typeof(string)" />
             </AuthorizeView> *@
-            <RadzenDataGridColumn TItem="TicketDTO" Context="item" Title="@TranslateHelper.GetDisplayName(nameof(TicketDTO.MinuteWorkFormatted), typeof(TicketDTO))">
+            @* Ore fatturabili: stessa definizione della scheda ticket (lavoro + viaggio fatturabili),
+               col dettaglio per tipo nel tooltip. *@
+            <RadzenDataGridColumn TItem="TicketDTO" Context="item" Title="@TranslateHelper.GetDisplayName(nameof(TicketDTO.MinuteBillableFormatted), typeof(TicketDTO))">
                 <Template>
-                <span>@DateTimeHelper.MinuteFormat(item?.MinuteWork)</span>
+                <span title="@BillableDetail(item)">@DateTimeHelper.MinuteFormat(item?.MinuteBillable)</span>
                 </Template>
                 <FooterTemplate>
                         <b> @_ticketView?.Total</b>

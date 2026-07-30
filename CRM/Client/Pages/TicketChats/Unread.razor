@@ -1,0 +1,114 @@
+@page "/Tickets/Messages"
+@using Radzen
+@using Radzen.Blazor
+
+<PageHeader Model="@_pageHeader"></PageHeader>
+
+<div class="chat-inbox">
+
+    <div class="inbox-toolbar">
+        <div class="inbox-summary">
+            <span class="material-icons">forum</span>
+            <div class="inbox-summary-text">
+                <span class="inbox-count">@Localize["Messaggi da leggere"]</span>
+                <span class="inbox-meta">@SummaryText</span>
+            </div>
+        </div>
+
+        <RadzenButton ButtonType="ButtonType.Button" Click="Refresh" Text="@Localize["Aggiorna"]" Icon="refresh"
+                      ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Disabled="@_loading" />
+    </div>
+
+    @if (_loading)
+    {
+        <Waiting></Waiting>
+    }
+    else if (_conversations.Count == 0)
+    {
+        <div class="inbox-empty">
+            <span class="material-icons">mark_email_read</span>
+            <h5>@Localize["Nessun messaggio da leggere"]</h5>
+            <p>@Localize["Le nuove risposte sui ticket compariranno qui."]</p>
+            <RadzenButton ButtonType="ButtonType.Button" Click="GotoTickets" Text="@Localize["Lista Ticket"]" Icon="list"
+                          ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+        </div>
+    }
+    else
+    {
+        <div class="inbox-list">
+            @foreach (var item in _conversations)
+            {
+                var conversation = item;
+                <div class="inbox-item" role="button" tabindex="0"
+                     @onclick="@(() => OpenChat(conversation))"
+                     @onkeypress="@(args => OnItemKeyPress(args, conversation))">
+
+                    <div class="inbox-avatar" title="@conversation.SenderName">@Initials(conversation.SenderName)</div>
+
+                    <div class="inbox-body">
+                        <div class="inbox-line-top">
+                            <span class="inbox-sender">@(string.IsNullOrWhiteSpace(conversation.SenderName) ? Localize["Mittente sconosciuto"] : conversation.SenderName)</span>
+                            <span class="inbox-date" title="@conversation.Date.ToString("f")">@RelativeDate(conversation.Date)</span>
+                        </div>
+
+                        <div class="inbox-line-ticket">
+                            <span class="inbox-ticket-number">
+                                <span class="material-icons">confirmation_number</span>
+                                @TicketLabel(conversation)
+                            </span>
+                            @if (!string.IsNullOrWhiteSpace(conversation.CompanyName))
+                            {
+                                <span class="inbox-company">@conversation.CompanyName</span>
+                            }
+                            @if (conversation.TicketClosed)
+                            {
+                                <span class="inbox-chip chip-closed">@Localize["Chiuso"]</span>
+                            }
+                            @if (conversation.TicketBlocked)
+                            {
+                                <span class="inbox-chip chip-blocked">@Localize["Bloccato"]</span>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(conversation.TicketDescription))
+                        {
+                            <div class="inbox-subject">@conversation.TicketDescription</div>
+                        }
+
+                        <div class="inbox-preview">
+                            @if (conversation.Deleted)
+                            {
+                                <span class="preview-deleted">
+                                    <span class="material-icons">do_not_disturb</span>
+                                    @Localize["Questo messaggio è stato eliminato"]
+                                </span>
+                            }
+                            else
+                            {
+                                @if (!string.IsNullOrWhiteSpace(conversation.Preview))
+                                {
+                                    <span>@conversation.Preview</span>
+                                }
+                                @if (conversation.HasAttachment)
+                                {
+                                    <span class="preview-attachment">
+                                        <span class="material-icons">attach_file</span>
+                                        @(conversation.AttachmentFileName ?? Localize["Allegato"])
+                                    </span>
+                                }
+                            }
+                        </div>
+                    </div>
+
+                    <div class="inbox-side">
+                        @if (conversation.UnreadCount > 0)
+                        {
+                            <span class="inbox-badge" title="@Localize["Messaggi da leggere"]">@conversation.UnreadCount</span>
+                        }
+                        <span class="material-icons inbox-go">chevron_right</span>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

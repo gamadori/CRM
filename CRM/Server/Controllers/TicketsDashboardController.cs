@@ -46,8 +46,8 @@ namespace CRM.Server.Controllers
             TicketDashBoardModel model = new TicketDashBoardModel();
             DateTime date = DateTime.Now.Date;
 
-            model.IsClient = !( await _permitsService.IsAdmin() || await _permitsService.IsSuperUser());
-
+            model.IsClient = await _permitsService.IsClient(); //!( await _permitsService.IsAdmin() || await _permitsService.IsSuperUser());
+            
             var tickets = _context.Tickets.AsQueryable();
 
             
@@ -107,6 +107,20 @@ namespace CRM.Server.Controllers
             model.ChatMessageToRead = await SafeCountAsync(
                 "messaggi chat ticket non letti",
                 _context.TicketChatReads.Where(x => x.IdUser == idUser && x.Displayed == false));
+
+            // Ticket gia' smistati a un gruppo ma senza responsabile: non vanno assegnati da un
+            // dispatcher, vanno presi in carico da un membro del gruppo. Si parte da
+            // visibleTickets perche' il filtro per utente assegnato li escluderebbe tutti.
+            var toClaim = visibleTickets.Where(x => !x.Closed && x.IdUserAssigned == null && x.IdGroupAssigned != null);
+
+            // Chi non e' Admin/SuperUser vede solo la propria coda; il supervisore vede tutto,
+            // oppure la coda dell'utente scelto dal combo della dashboard.
+            var idUserToClaim = model.IsClient ? idUser : filter?.IdUser;
+
+            if (!string.IsNullOrWhiteSpace(idUserToClaim))
+                toClaim = toClaim.Where(x => x.GroupAssigned.Users.Any(u => u.Id == idUserToClaim));
+
+            model.TicketsToClaim = await SafeCountAsync("ticket da prendere in carico", toClaim);
 
             try
             {

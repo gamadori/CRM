@@ -201,18 +201,38 @@ namespace CRM.Server.Services
         }
 
 
+        /// <summary>
+        /// Lingua con cui risolvere le traduzioni. Se l'utente non ne ha una (il campo non e'
+        /// obbligatorio nella scheda utente) o il suo codice non e' fra le lingue configurate,
+        /// ripiega su una lingua esistente invece di restituire null: con null nessuna riga di
+        /// traduzione corrisponde e i nomi tradotti spariscono ovunque, in silenzio.
+        /// </summary>
         public async Task<int?> GetIdLanguage()
         {
             var user = await _permitsService.GetUser();
-            if (user != null)
-            {
-                var language = _context.Languages.FirstOrDefault(x => x.LanguageCode == user.LanguageCode);
 
-                return language?.Id;
+            if (user != null && !string.IsNullOrWhiteSpace(user.LanguageCode))
+            {
+                var language = await _context.Languages
+                    .FirstOrDefaultAsync(x => x.LanguageCode == user.LanguageCode);
+
+                if (language != null)
+                    return language.Id;
             }
-            else
-                return null;
+
+            return await GetDefaultIdLanguageAsync();
         }
+
+        /// <summary>Lingua di ripiego: l'italiano se configurato, altrimenti la prima disponibile
+        /// (null solo su un database senza nemmeno una lingua).</summary>
+        private async Task<int?> GetDefaultIdLanguageAsync()
+            => await _context.Languages
+                .OrderBy(x => x.LanguageCode == DefaultLanguageCode ? 0 : 1)
+                .ThenBy(x => x.Id)
+                .Select(x => (int?)x.Id)
+                .FirstOrDefaultAsync();
+
+        private const string DefaultLanguageCode = "it-IT";
 
         public async Task<string?> GetCodeLanguage()
         {

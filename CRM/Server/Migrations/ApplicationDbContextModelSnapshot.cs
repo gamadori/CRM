@@ -3815,7 +3815,9 @@ namespace CRM.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IdTicketIntervention");
+                    b.HasIndex("IdTicketIntervention", "IsBillable");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("IdTicketIntervention", "IsBillable"), new[] { "TimeType", "StartDateTime", "EndDateTime" });
 
                     b.ToTable("TicketInterventionTimes");
                 });

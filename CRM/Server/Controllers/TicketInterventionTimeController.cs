@@ -1,4 +1,5 @@
 using CRM.Server.Data;
+using CRM.Server.Services;
 using CRM.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -216,23 +217,12 @@ namespace CRM.Server.Controllers
         }
 
         /// <summary>
-        /// Aggiorna il campo Minute del TicketIntervention con il totale dei tempi fatturabili
+        /// Aggiorna il campo Minute del TicketIntervention con il totale dei tempi fatturabili.
+        /// Il calcolo sta in <see cref="TicketBillableMinutes"/> insieme a quello per ticket:
+        /// erano due formule separate ed e' cosi' che i totali si mettono a divergere.
         /// </summary>
-        private async Task UpdateInterventionTotalMinutes(int interventionId)
-        {
-            var intervention = await _context.TicketsInterventions.FindAsync(interventionId);
-            if (intervention == null) return;
-
-            var times = await _context.TicketInterventionTimes
-                .Where(t => t.IdTicketIntervention == interventionId)
-                .ToListAsync();
-
-            // Calcola il totale dei minuti fatturabili
-            intervention.Minute = times.TotalBillableMinutes();
-
-            _context.Entry(intervention).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-        }
+        private Task UpdateInterventionTotalMinutes(int interventionId)
+            => TicketBillableMinutes.RecalculateInterventionAsync(_context, interventionId);
 
         private async Task<bool> TimeExists(int id)
         {

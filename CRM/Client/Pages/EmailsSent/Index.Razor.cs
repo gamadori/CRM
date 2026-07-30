@@ -35,7 +35,7 @@ namespace CRM.Client.Pages.EmailsSent
         IBaseRestService<EmailSent, EmailSentFilterModel, int> _serviceEmail { get; set; }
 
         [Inject]
-        IRestService<ApplicationUser> userSigned { get; set; }
+        ICurrentUserService userSigned { get; set; }
 
         [Parameter]
         public EventCallback<int> OnDetails { get; set; }

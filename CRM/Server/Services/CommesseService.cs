@@ -505,11 +505,12 @@ namespace CRM.Server.Services
                 var fasi = await _context.CommessaFasi.Where(f => f.IdCommessa == id).ToListAsync();
                 var faseIds = fasi.Select(f => f.Id).ToList();
 
-                // I ticket sopravvivono alla commessa: perdono solo il legame con la fase.
+                // I ticket generati dalla commessa non hanno senso senza la commessa: vengono
+                // eliminati insieme ai dati operativi collegati.
                 var tickets = await _context.Tickets
                     .Where(t => t.IdCommessaFase != null && faseIds.Contains(t.IdCommessaFase.Value))
                     .ToListAsync();
-                foreach (var t in tickets) t.IdCommessaFase = null;
+                await DeleteCommessaTicketsAsync(tickets);
 
                 // Commessa -> Fasi e' Cascade, ma le FK che puntano alle fasi sono Restrict:
                 // vanno rimosse esplicitamente, altrimenti il cascade viola i vincoli.
@@ -543,6 +544,75 @@ namespace CRM.Server.Services
                 await _logEventService.RegisterAsync(nameof(CommesseService), nameof(DeleteAsync), EventsTypes.Error, ex);
                 return FailDelete("Errore nell'eliminazione della commessa", HttpStatusCode.InternalServerError);
             }
+        }
+
+        private async Task DeleteCommessaTicketsAsync(List<Ticket> tickets)
+        {
+            if (tickets.Count == 0)
+                return;
+
+            var ticketIds = tickets.Select(t => t.Id).ToList();
+
+            var ticketPlans = await _context.CommessaFaseTicketPlans
+                .Where(p => p.IdTicket != null && ticketIds.Contains(p.IdTicket.Value))
+                .ToListAsync();
+            foreach (var plan in ticketPlans)
+                plan.IdTicket = null;
+
+            var inboundEmails = await _context.InboundEmails
+                .Where(e => e.IdTicket != null && ticketIds.Contains(e.IdTicket.Value))
+                .ToListAsync();
+            foreach (var email in inboundEmails)
+                email.IdTicket = null;
+
+            var assistantLogs = await _context.AssistantChatLogs
+                .Where(l => l.IdTicket != null && ticketIds.Contains(l.IdTicket.Value))
+                .ToListAsync();
+            foreach (var log in assistantLogs)
+                log.IdTicket = null;
+
+            var chats = await _context.TicketChats
+                .Where(c => ticketIds.Contains(c.IdTicket))
+                .ToListAsync();
+            var chatIds = chats.Select(c => c.Id).ToList();
+            if (chatIds.Count > 0)
+            {
+                var reads = await _context.TicketChatReads
+                    .Where(r => chatIds.Contains(r.IdTicketChat))
+                    .ToListAsync();
+                _context.TicketChatReads.RemoveRange(reads);
+            }
+            _context.TicketChats.RemoveRange(chats);
+
+            var interventions = await _context.TicketsInterventions
+                .Where(i => ticketIds.Contains(i.IdTicket))
+                .ToListAsync();
+            var interventionIds = interventions.Select(i => i.Id).ToList();
+            if (interventionIds.Count > 0)
+            {
+                var receipts = await _context.ExpenseReceipts
+                    .Where(r => interventionIds.Contains(r.TicketInterventionId))
+                    .ToListAsync();
+                _context.ExpenseReceipts.RemoveRange(receipts);
+
+                var users = await _context.TicketInterventionUser
+                    .Where(u => interventionIds.Contains(u.IdIntervention))
+                    .ToListAsync();
+                _context.TicketInterventionUser.RemoveRange(users);
+
+                var articles = await _context.TicketInterventionArticles
+                    .Where(a => interventionIds.Contains(a.IdTicketIntervention))
+                    .ToListAsync();
+                _context.TicketInterventionArticles.RemoveRange(articles);
+
+                var times = await _context.TicketInterventionTimes
+                    .Where(t => interventionIds.Contains(t.IdTicketIntervention))
+                    .ToListAsync();
+                _context.TicketInterventionTimes.RemoveRange(times);
+            }
+            _context.TicketsInterventions.RemoveRange(interventions);
+
+            _context.Tickets.RemoveRange(tickets);
         }
 
         public async Task<APIResponseMessage<CommessaDTO>> RescheduleAsync(int id, DateTime newDelivery)
@@ -588,9 +658,18 @@ namespace CRM.Server.Services
 
                 await _context.SaveChangesAsync();
 
+                // Le fasi si sono spostate: i ticket aperti che le eseguono devono seguirle,
+                // altrimenti la riprogrammazione lascia in giro scadenze della vecchia consegna.
+                var ticketSpostati = await ProductionTicketDeadlines.SyncCommessaAsync(_context, commessa.Id);
+
                 var verso = delta > 0 ? "in avanti" : "indietro";
                 var giorni = Math.Abs(delta) == 1 ? "1 giorno lavorativo" : $"{Math.Abs(delta)} giorni lavorativi";
                 var note = new List<string>();
+
+                if (ticketSpostati > 0)
+                    note.Add(ticketSpostati == 1
+                        ? "1 ticket aperto ha seguito le date della sua fase"
+                        : $"{ticketSpostati} ticket aperti hanno seguito le date della loro fase");
 
                 if (frozen.Count > 0)
                     note.Add($"{frozen.Count} gia' avviate restano alle date attuali");
@@ -880,8 +959,9 @@ namespace CRM.Server.Services
                     IdUserOpened = currentUser,
                     DateOpened = DateTime.Now,
                     Date = DateTime.Today,
-                    DateEnd = fase.EndDate,
-                    DateExpired = fase.EndDate,
+                    // Fine e scadenza sono quelle della fase, non il calcolo SLA per tipo ticket.
+                    DateEnd = fase.EndDate.Date,
+                    DateExpired = fase.EndDate.Date,
                     Description = description,
                     Numero = string.Empty,
                     CloseDescription = string.Empty,

@@ -120,4 +120,7 @@
   <data name="MinuteWorkFormatted" xml:space="preserve">
     <value>Ore di lavoro (hh:mm)</value>
   </data>
+  <data name="MinuteBillableFormatted" xml:space="preserve">
+    <value>Ore fatturabili (hh:mm)</value>
+  </data>
 </root>

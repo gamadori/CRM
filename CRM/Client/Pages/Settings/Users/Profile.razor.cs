@@ -21,9 +21,6 @@ namespace CRM.Client.Pages.Settings.Users
     public partial class Profile: ComponentBase
     {
         [Inject]
-        private IRestService<ApplicationUser> userService { get; set; }
-
-        [Inject]
         private NavigationManager NavigationManager { get; set; }
 
         [Inject]

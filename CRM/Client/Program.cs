@@ -173,10 +173,10 @@ namespace CRM.Client
                 return new ManyToManyService<TicketTypeGroup>(sp.GetRequiredService<HttpClient>(), ConstHelper.TicketTypesGroupsPath);
             });
 
-            builder.Services.AddTransient<IRestService<ApplicationUser>>(sp =>
-            {
-                return new RestGetClientService<ApplicationUser>(sp.GetRequiredService<HttpClient>(), ConstHelper.UserSignedPath);
-            });
+            // Snapshot dei permessi dell'utente collegato (api/UserSigned): Scoped e con cache,
+            // perche' cambia solo al login. Sostituisce la vecchia registrazione Transient di
+            // IRestService<ApplicationUser>, che rifaceva la chiamata a ogni pagina.
+            builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
             builder.Services.AddTransient<IReportService<TicketDashBoardModel, TicketDashBoardModelFilter>>(sp =>
             {

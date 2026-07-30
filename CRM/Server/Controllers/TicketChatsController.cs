@@ -561,6 +561,86 @@ namespace CRM.Server.Controllers
                 .AnyAsync(x => x.IdUser == idUser && x.TicketChat.Ticket.Id == id && x.Displayed == false);
         }
 
+        /// <summary>
+        /// Le conversazioni con messaggi da leggere per l'utente corrente, una per ticket,
+        /// con l'anteprima dell'ultimo messaggio. Alimenta la pagina /Tickets/Messages.
+        /// Non serve filtrare per azienda: TicketChatReads contiene solo le righe destinate
+        /// a questo utente, quindi la visibilita' e' gia' garantita dal destinatario.
+        /// </summary>
+        [HttpGet("Unread")]
+        public async Task<List<UnreadChatModel>> GetUnread()
+        {
+            try
+            {
+                var idUser = await _permitsService.IdUser();
+
+                if (string.IsNullOrWhiteSpace(idUser))
+                    return new List<UnreadChatModel>();
+
+                // Un raggruppamento per ticket: quanti messaggi restano da leggere e qual e'
+                // l'ultimo. L'id e' un'identity, quindi il massimo e' il messaggio piu' recente
+                // ed evita un OrderBy dentro il gruppo, che non tutti i provider traducono.
+                var grouped = await _context.TicketChatReads
+                    .Where(x => x.IdUser == idUser && !x.Displayed)
+                    .GroupBy(x => x.TicketChat.IdTicket)
+                    .Select(g => new { IdTicket = g.Key, UnreadCount = g.Count(), IdLastChat = g.Max(x => x.IdTicketChat) })
+                    .ToListAsync();
+
+                if (grouped.Count == 0)
+                    return new List<UnreadChatModel>();
+
+                var idLastChats = grouped.Select(x => x.IdLastChat).ToList();
+
+                var messages = await _context.TicketChats
+                    .Where(x => idLastChats.Contains(x.Id))
+                    .Select(x => new UnreadChatModel
+                    {
+                        IdChat = x.Id,
+                        IdTicket = x.IdTicket,
+                        TicketNumber = x.Ticket.Numero,
+                        TicketDescription = x.Ticket.Description,
+                        CompanyName = x.Ticket.Company != null ? x.Ticket.Company.RagioneSociale : null,
+                        IdSender = x.IdUser,
+                        // NameComplete e' calcolata in memoria: qui va composta dalle colonne.
+                        SenderName = x.User != null
+                            ? (x.User.Contact != null ? x.User.Contact.Surname + " " + x.User.Contact.Name : x.User.UserName)
+                            : x.ExternalSender,
+                        Date = x.Date,
+                        Preview = x.Deleted ? null : x.Message,
+                        Deleted = x.Deleted,
+                        HasAttachment = !x.Deleted && x.IdAttachmentFile != null,
+                        AttachmentFileName = !x.Deleted && x.AttachmentFile != null ? x.AttachmentFile.Name : null,
+                        TicketClosed = x.Ticket.Closed,
+                        TicketBlocked = x.Ticket.IsBlocked
+                    })
+                    .ToListAsync();
+
+                foreach (var message in messages)
+                {
+                    message.UnreadCount = grouped.First(g => g.IdLastChat == message.IdChat).UnreadCount;
+                    message.Preview = Truncate(message.Preview, 220);
+                }
+
+                return messages.OrderByDescending(x => x.Date).ToList();
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketChatsController), nameof(GetUnread), LogEvent.EventsTypes.Error, ex);
+                return new List<UnreadChatModel>();
+            }
+        }
+
+        /// <summary>Anteprima su una riga: gli a capo diventano spazi, il resto viene tagliato.</summary>
+        private static string? Truncate(string? text, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return text;
+
+            var singleLine = text.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ').Trim();
+
+            return singleLine.Length <= maxLength ? singleLine : singleLine.Substring(0, maxLength) + "…";
+        }
+
         private bool TicketChatExists(int id)
         {
             return _context.TicketChats.Any(e => e.Id == id);

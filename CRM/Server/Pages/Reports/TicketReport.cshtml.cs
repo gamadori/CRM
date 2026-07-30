@@ -99,15 +99,21 @@ namespace CRM.Server.Pages.Reports
                 UserOpened = (x.UserOpened != null) ? x.UserOpened.NameComplete : "",
                 UserAssigned = (x.UserAssigned != null) ? x.UserAssigned.NameComplete : "",
                 UserClosed = (x.UserClosed != null) ? x.UserClosed.NameComplete : "",
-                MinuteWork = x.TicketInterventions.Sum(y => y.Minute),
                 Description = x.Description,
-                DescType = (x.TicketType.Languages.Where(x => x.IdLanguage == IdLanguage).Any()) ? x.TicketType.Languages.Where(x => x.IdLanguage == IdLanguage).FirstOrDefault().Name : "",
+                // Stesso ripiego della scheda: senza traduzione resta la descrizione base del tipo.
+                DescType = x.TicketType.Languages
+                    .Where(l => l.IdLanguage == IdLanguage)
+                    .Select(l => l.Name)
+                    .FirstOrDefault() ?? x.TicketType.Desc,
                 TicketType = x.TicketType,
                 ContactName = x.Contact != null ? x.Contact.NameComplete : "",
                 CloseDescription = x.CloseDescription
 
             }).FirstOrDefaultAsync();
 
+            // Stessa definizione di ore usata da lista e scheda: la stampa non puo' dire un terzo numero.
+            if (ticketModel != null)
+                TicketBillableMinutes.ApplyTo(ticketModel, await TicketBillableMinutes.ForTicketAsync(_context, id));
 
             return ticketModel;
         }

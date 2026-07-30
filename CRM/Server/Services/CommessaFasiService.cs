@@ -178,6 +178,9 @@ namespace CRM.Server.Services
                     await GenerateStartTicketsForSuccessorsAsync(entity.Id);
 
                 await CascadeSuccessorDatesAsync(entity.IdCommessa, new List<int> { entity.Id });
+                // Dopo la cascata: la fase salvata e i successori trascinati hanno date nuove e
+                // i loro ticket aperti devono scadere con la fase, non alla data di ieri.
+                await ProductionTicketDeadlines.SyncCommessaAsync(_context, entity.IdCommessa);
                 await RecomputeRollupFromAsync(entity.Id);
                 await RecomputeCommessaProgressAsync(dto.IdCommessa);
 
@@ -244,6 +247,7 @@ namespace CRM.Server.Services
 
                 await _context.SaveChangesAsync();
                 await CascadeSuccessorDatesAsync(idCommessa, entities.Select(e => e.Id).ToList());
+                await ProductionTicketDeadlines.SyncCommessaAsync(_context, idCommessa);
                 foreach (var e in entities)
                     await RecomputeRollupFromAsync(e.Id);
                 await RecomputeCommessaProgressAsync(idCommessa);
@@ -523,8 +527,9 @@ namespace CRM.Server.Services
                 IdUserOpened = idUserOpened,
                 DateOpened = DateTime.Now,
                 Date = DateTime.Today,
-                DateEnd = fase.EndDate,
-                DateExpired = fase.EndDate,
+                // Fine e scadenza sono quelle della fase, non il calcolo SLA per tipo ticket.
+                DateEnd = fase.EndDate.Date,
+                DateExpired = fase.EndDate.Date,
                 Description = description,
                 Numero = string.Empty,
                 CloseDescription = string.Empty,

@@ -103,6 +103,51 @@ namespace CRM.Shared
         public bool CanDelete { get; set; }
     }
 
+    /// <summary>
+    /// Una conversazione con messaggi da leggere, vista dall'utente corrente: anteprima
+    /// dell'ultimo messaggio piu' il contesto del ticket a cui appartiene.
+    /// Raggruppa per ticket e non per messaggio perche' aprire la chat segna letti tutti i
+    /// messaggi di quel ticket: una riga per messaggio sparirebbe a gruppi, in modo poco leggibile.
+    /// </summary>
+    public class UnreadChatModel
+    {
+        /// <summary>Ultimo messaggio non letto: la chat viene aperta posizionandosi su di lui.</summary>
+        public int IdChat { get; set; }
+
+        public int IdTicket { get; set; }
+
+        public string? TicketNumber { get; set; }
+
+        /// <summary>Oggetto del ticket, per capire di cosa si parla senza aprirlo.</summary>
+        public string? TicketDescription { get; set; }
+
+        public string? CompanyName { get; set; }
+
+        /// <summary>Autore del messaggio: utente interno, contatto del cliente o mittente email.</summary>
+        public string? SenderName { get; set; }
+
+        /// <summary>Id dell'autore quando e' un utente: serve all'avatar.</summary>
+        public string? IdSender { get; set; }
+
+        public DateTime Date { get; set; }
+
+        /// <summary>Anteprima del testo, gia' troncata dal server.</summary>
+        public string? Preview { get; set; }
+
+        public bool Deleted { get; set; }
+
+        public bool HasAttachment { get; set; }
+
+        public string? AttachmentFileName { get; set; }
+
+        /// <summary>Messaggi ancora da leggere su questo ticket.</summary>
+        public int UnreadCount { get; set; }
+
+        public bool TicketClosed { get; set; }
+
+        public bool TicketBlocked { get; set; }
+    }
+
     public class ChatFileUploadResult
     {
         public int Id { get; set; }

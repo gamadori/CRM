@@ -321,6 +321,7 @@ namespace CRM.Client.Services
                 "settings" => "settings",
                 "users" => "manage_accounts",
                 "tickets" => "confirmation_number",
+                "messages" or "message" => "forum",
                 "products" => "inventory_2",
                 "deals" => "handshake",
                 "quotes" or "quote" => "request_quote",

@@ -210,7 +210,6 @@ namespace CRM.Server.Services
                     UserOpened = (x.UserOpened != null) ? x.UserOpened.NameComplete : "",
                     UserAssigned = (x.UserAssigned != null) ? x.UserAssigned.NameComplete : "",
                     UserClosed = (x.UserClosed != null) ? x.UserClosed.NameComplete : "",
-                    MinuteWork = x.TicketInterventions.Sum(y => y.Minute),
                     Description = x.Description,
                     OperationalSummary = x.OperationalSummary,
                     OperationalSummaryUpdatedAt = x.OperationalSummaryUpdatedAt,
@@ -226,7 +225,13 @@ namespace CRM.Server.Services
                     BlockResolvedByName = x.BlockResolvedByUser != null ? x.BlockResolvedByUser.NameComplete : "",
                     BlockResolutionNote = x.BlockResolutionNote,
                     IdType = x.IdType,
-                    DescType = (x.TicketType.Languages.Where(l => l.IdLanguage == idLanguage).Any()) ? x.TicketType.Languages.Where(l => l.IdLanguage == idLanguage).FirstOrDefault().Name : "",
+                    // Traduzione se c'e', altrimenti la descrizione base del tipo: prima il ripiego
+                    // era la stringa vuota, e con TicketTypesLanguages non popolata (o l'utente
+                    // senza LanguageCode) il tipo ticket spariva del tutto dalla scheda.
+                    DescType = x.TicketType.Languages
+                        .Where(l => l.IdLanguage == idLanguage)
+                        .Select(l => l.Name)
+                        .FirstOrDefault() ?? x.TicketType.Desc,
                     TicketType = x.TicketType,
                     ContactName = x.Contact != null ? x.Contact.NameComplete : "",
                     CloseDescription = x.CloseDescription,
@@ -235,6 +240,9 @@ namespace CRM.Server.Services
 
                 if (ticketModel != null)
                 {
+                    // Ore fatturabili e ripartizione per tipo: stessa fonte della lista, cosi' i
+                    // due numeri coincidono sempre.
+                    TicketBillableMinutes.ApplyTo(ticketModel, await TicketBillableMinutes.ForTicketAsync(_context, id));
                     await SetTicketStateAsync(ticketModel);
                 }
 
@@ -315,7 +323,13 @@ namespace CRM.Server.Services
                     tickets = tickets.Where(x => x.IdUserOpened == args.IdUserOpened);
                 }
 
-                if (args.IdUserAssigned != null && args.TypeSearch != (int)TicketTypeSearch.NotAssigned && args.TypeSearch != (int)TicketTypeSearch.NewMessage)
+                // NotAssigned e ToClaim selezionano per definizione ticket senza assegnatario:
+                // applicarci sopra il filtro per utente li azzererebbe. NewMessage e' gia'
+                // ristretto ai messaggi non letti dall'utente corrente.
+                if (args.IdUserAssigned != null
+                    && args.TypeSearch != (int)TicketTypeSearch.NotAssigned
+                    && args.TypeSearch != (int)TicketTypeSearch.ToClaim
+                    && args.TypeSearch != (int)TicketTypeSearch.NewMessage)
                 {
                     if (args.ViewNotAssigned)
                         tickets = tickets.Where(x => (x.IdUserAssigned == args.IdUserAssigned || x.IdUserAssigned == null));
@@ -351,11 +365,7 @@ namespace CRM.Server.Services
                     tickets = tickets.Where(args.Filter);
                 }
 
-                var totalWork = _context.TicketsInterventions
-                    .Where(x => tickets.Contains(x.Ticket))
-                    .SelectMany(y => y.TicketInterventionTime)
-                    .Where(x => x.TimeType == InterventionTimeType.Work)
-                    .Sum(z => (int)EF.Functions.DateDiffMinute(z.StartDateTime, z.EndDateTime));
+                var totalWork = await TicketBillableMinutes.TotalAsync(_context, tickets);
 
                 int count = tickets != null ? tickets.Count() : 0;
 
@@ -392,12 +402,6 @@ namespace CRM.Server.Services
                     IdState = x.IdState,
                     IdUserOpened = x.IdUserOpened,
                     UserAssigned = (x.UserAssigned != null) ? x.UserAssigned.NameComplete : "",
-                    MinuteWork = x.TicketInterventions
-                         .SelectMany(y => y.TicketInterventionTime.Where(z => z.TimeType == InterventionTimeType.Work))
-                            .Sum(z => (int)EF.Functions.DateDiffMinute(z.StartDateTime, z.EndDateTime)),
-                    MinuteTravel = x.TicketInterventions
-                        .SelectMany(y => y.TicketInterventionTime.Where(z => z.TimeType == InterventionTimeType.Travel))
-                            .Sum(z => (int)EF.Functions.DateDiffMinute(z.StartDateTime, z.EndDateTime)),
                     Invoiced = x.Invoiced,
                     Description = x.Description,
                     OperationalSummary = x.OperationalSummary,
@@ -420,9 +424,14 @@ namespace CRM.Server.Services
 
                 var items = ticketModel.ToList();
 
+                // Una query sola per tutta la pagina, non una per riga.
+                var minutiPerTicket = await TicketBillableMinutes.ByTicketAsync(_context, items.Select(t => t.Id).ToList());
+
                 foreach (var t in items)
                 {
-                    t.MinuteWorkFormatted = DateTimeHelper.MinuteFormat(t.MinuteWork);
+                    TicketBillableMinutes.ApplyTo(t, minutiPerTicket.TryGetValue(t.Id, out var b)
+                        ? b
+                        : new TicketBillableMinutes.Breakdown());
                     await SetTicketStateAsync(t);
                 }
 
@@ -461,6 +470,7 @@ namespace CRM.Server.Services
 
                 ticket.IdUserOpened = idUserOpened;
                 ticket.DateExpired = ticket.Date?.AddWorkdays(day);
+                await SetRequesterFromOpenerAsync(ticket, idUserOpened);
                 await NormalizeCommessaFaseLinkAsync(ticket);
 
                 _context.Tickets.Add(ticket);
@@ -818,16 +828,48 @@ namespace CRM.Server.Services
                             && t.CommessaFase.Commessa.IdUserResponsible == currentUserId)));
         }
 
+        /// <summary>
+        /// Se il richiedente non e' stato indicato, lo ricava dall'utente che sta aprendo il ticket.
+        /// La procedura di /Tickets/Create non chiede il contatto, quindi senza questo il ticket
+        /// resta senza richiedente: oltre a non vedersi in scheda, gli avvisi di chat finiscono a
+        /// tutti gli utenti della ditta invece che a chi ha aperto.
+        /// Il contatto viene accettato solo se appartiene alla ditta del ticket: un operatore interno
+        /// che apre un ticket per un cliente non deve diventarne il richiedente.
+        /// </summary>
+        private async Task SetRequesterFromOpenerAsync(Ticket ticket, string idUserOpened)
+        {
+            if (ticket.IdContact != null || string.IsNullOrWhiteSpace(idUserOpened))
+                return;
+
+            var idContact = await _context.Users
+                .AsNoTracking()
+                .Where(x => x.Id == idUserOpened)
+                .Select(x => x.IdContact)
+                .FirstOrDefaultAsync();
+
+            if (idContact == null)
+                return;
+
+            var belongsToTicketCompany = await _context.Contacts
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == idContact.Value && x.IdCompany == ticket.IdCompany);
+
+            if (belongsToTicketCompany)
+                ticket.IdContact = idContact;
+        }
+
         private async Task NormalizeCommessaFaseLinkAsync(Ticket ticket)
         {
             if (ticket.IdCommessaFase == null)
                 return;
 
-            var exists = await _context.CommessaFasi
+            var fase = await _context.CommessaFasi
                 .AsNoTracking()
-                .AnyAsync(t => t.Id == ticket.IdCommessaFase);
+                .Where(t => t.Id == ticket.IdCommessaFase)
+                .Select(t => new { t.EndDate })
+                .FirstOrDefaultAsync();
 
-            if (!exists)
+            if (fase == null)
             {
                 ticket.IdCommessaFase = null;
                 return;
@@ -845,6 +887,12 @@ namespace CRM.Server.Services
             if (blockers.Count > 0)
                 throw new ProductionSequenceException(
                     $"La fase non e' avviabile: fasi precedenti non completate ({string.Join(", ", blockers)}).");
+
+            // Un ticket di produzione finisce e scade con la sua fase: il calcolo SLA per tipo
+            // ticket (giorni dall'apertura) non conosce il piano e darebbe date scollegate.
+            // Su un ticket gia' chiuso le date sono storia e non si riscrivono.
+            if (!ticket.Closed)
+                ProductionTicketDeadlines.Apply(ticket, fase.EndDate);
         }
 
         #endregion
@@ -938,14 +986,21 @@ namespace CRM.Server.Services
         {
             switch (filter)
             {
+                // Un gruppo assegnato e' un'assegnazione a tutti gli effetti: stesso criterio
+                // dello stato del ticket (SetTicketStateAsync) e del contatore della dashboard.
+                // Cio' che manca a un ticket di gruppo e' il responsabile: vedi ToClaim.
                 case TicketTypeSearch.Assigned:
                     tickets = tickets.Where(x => !x.Closed);
-                    tickets = tickets.Where(x => x.IdUserAssigned != null);
+                    tickets = tickets.Where(x => x.IdUserAssigned != null || x.IdGroupAssigned != null);
                     break;
 
                 case TicketTypeSearch.NotAssigned:
                     tickets = tickets.Where(x => !x.Closed);
-                    tickets = tickets.Where(x => x.IdUserAssigned == null);
+                    tickets = tickets.Where(x => x.IdUserAssigned == null && x.IdGroupAssigned == null);
+                    break;
+
+                case TicketTypeSearch.ToClaim:
+                    tickets = tickets.Where(x => !x.Closed && x.IdUserAssigned == null && x.IdGroupAssigned != null);
                     break;
 
                 case TicketTypeSearch.Expired:

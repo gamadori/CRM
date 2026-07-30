@@ -34,7 +34,7 @@ namespace CRM.Client.Pages.Tickets
 
         [Inject]
        
-        private IRestService<ApplicationUser> _userService { get; set; }
+        private ICurrentUserService _userService { get; set; }
 
        
         [Inject]

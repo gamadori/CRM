@@ -3,6 +3,7 @@ using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
+using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -50,7 +51,7 @@ namespace CRM.Client.Pages.Tickets
         DialogService DialogService { get; set; }
 
         [Inject]
-        IRestService<ApplicationUser> _userService { get; set; }
+        ICurrentUserService _userService { get; set; }
 
         [Inject]
         IJSRuntime JsRuntime { get; set; }
@@ -139,19 +140,59 @@ namespace CRM.Client.Pages.Tickets
 
         private int? _claimingTicketId = null;
 
+        /// <summary>Filtri di rotta con cui la griglia e' stata caricata l'ultima volta.</summary>
+        private int? _loadedTypeSearch = null;
+
+        private string _loadedIdUser = null;
+
         protected async override Task OnInitializedAsync()
         {
-           
+
             await FindResponsiveness();
             _user = await _userService.Get();
-           
+
             if (IdCompany == null)
             {
                 _header = Localize["Tickets"];
             }
-            
+
             await LoadUsers();
             await LoadCompanies();
+
+            await ApplyRouteFiltersAsync();
+        }
+
+        /// <summary>
+        /// Quando cambiano solo i parametri di rotta (per esempio da /Tickets/Index/1 a
+        /// /Tickets/Index/9) Blazor riusa la stessa istanza e OnInitializedAsync non viene
+        /// rieseguito: senza ricaricare qui, la griglia resterebbe con le righe del filtro
+        /// precedente mentre l'intestazione mostra gia' quello nuovo.
+        /// </summary>
+        protected override async Task OnParametersSetAsync()
+        {
+            // Al primo render questo metodo gira dopo OnInitializedAsync, che ha gia' caricato:
+            // il confronto con i filtri gia' applicati evita di rifare subito la stessa richiesta.
+            if (_loadedTypeSearch == TypeSearch && _loadedIdUser == IdUser)
+                return;
+
+            // Prima del primo caricamento non c'e' ancora niente da aggiornare: ci pensa
+            // OnInitializedAsync, che deve prima procurarsi utenti e aziende per i filtri.
+            if (_loadedTypeSearch == null)
+                return;
+
+            await ApplyRouteFiltersAsync();
+        }
+
+        /// <summary>
+        /// Traduce i parametri di rotta nei filtri della griglia, ricarica i dati e riallinea
+        /// titolo e sottotitolo. Unico punto da cui passano sia il primo caricamento sia i
+        /// successivi cambi di filtro.
+        /// </summary>
+        private async Task ApplyRouteFiltersAsync()
+        {
+            // Memorizzati prima di toccare IdUser: servono a riconoscere il prossimo cambio.
+            _loadedTypeSearch = TypeSearch;
+            _loadedIdUser = IdUser;
 
             if (TypeSearch == (int)TicketTypeSearch.Blocked)
             {
@@ -163,9 +204,9 @@ namespace CRM.Client.Pages.Tickets
                 _filterState = true;
                 _idUser = IdUser;
             }
+
             await LoadData();
 
-           
             _pageHeader = await HeaderService.Create(PageMode);
             ApplyHeaderFilters();
             StateHasChanged();
@@ -404,6 +445,8 @@ namespace CRM.Client.Pages.Tickets
             if (ticket == null || _claimingTicketId != null)
                 return;
 
+            var claimed = false;
+
             try
             {
                 _claimingTicketId = ticket.Id;
@@ -415,13 +458,21 @@ namespace CRM.Client.Pages.Tickets
                 }
 
                 NotificationService?.Notify(NotificationSeverity.Success, "Presa in carico", response.Message ?? "Ticket preso in carico");
-                await LoadData();
+                claimed = true;
             }
             finally
             {
                 _claimingTicketId = null;
-                StateHasChanged();
+
+                // Se la presa in carico e' riuscita si lascia la lista: ridisegnarla sarebbe inutile.
+                if (!claimed)
+                    StateHasChanged();
             }
+
+            // Chi prende in carico un ticket ci deve lavorare: si apre la sua scheda invece di
+            // ricaricare la lista. Si passa da Details per rispettare le stesse rotte del
+            // pulsante di visualizzazione (contesto azienda, filtro, lista dentro un'altra pagina).
+            Details(ticket.Id);
         }
 
         private void NewTicket()
@@ -457,6 +508,9 @@ namespace CRM.Client.Pages.Tickets
 
                 case TicketTypeSearch.Blocked:
                     return "Ticket bloccati";
+
+                case TicketTypeSearch.ToClaim:
+                    return Localize["Ticket da prendere in carico"];
 
             }
             return "Tickets";
@@ -559,6 +613,23 @@ namespace CRM.Client.Pages.Tickets
         private bool ColVisible()
         {
             return !_isMobile || _isResponsable;
+        }
+
+        /// <summary>Dettaglio delle ore fatturabili per tipo, come tooltip della colonna ore.</summary>
+        private string BillableDetail(TicketDTO? item)
+        {
+            if (item == null || item.MinuteBillable == 0)
+                return string.Empty;
+
+            var voci = new List<string>();
+            if (item.MinuteWork > 0)
+                voci.Add($"{Localize["Lavoro"]}: {DateTimeHelper.MinuteFormat(item.MinuteWork)}");
+            if (item.MinuteTravel > 0)
+                voci.Add($"{Localize["Viaggio"]}: {DateTimeHelper.MinuteFormat(item.MinuteTravel)}");
+            if (item.MinuteBreak > 0)
+                voci.Add($"{Localize["Pausa"]}: {DateTimeHelper.MinuteFormat(item.MinuteBreak)}");
+
+            return string.Join(" · ", voci);
         }
     }
 }

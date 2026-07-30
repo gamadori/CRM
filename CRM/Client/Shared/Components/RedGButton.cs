@@ -1,12 +1,13 @@
-﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Radzen.Blazor;
+using System.Threading.Tasks;
 
 namespace RedG.Client.Components
 {
     public enum RGButtonType
     {
-  
+
         New,
         Edit,
         Delete,
@@ -23,6 +24,16 @@ namespace RedG.Client.Components
         AssignTicket,
         CloseTicket
     }
+
+    /// <summary>
+    /// RadzenButton con dei preset di icona e stile per i comandi ricorrenti del CRM.
+    /// <para>
+    /// Il preset vale solo come valore predefinito: quello che il chiamante passa
+    /// esplicitamente vince sempre. Serve perche' <see cref="RGButtonType"/> vale Save quando
+    /// non specificato, e un preset applicato incondizionatamente sovrascriveva Icon e
+    /// ButtonStyle di ogni pulsante che non lo dichiarava.
+    /// </para>
+    /// </summary>
     public class RedGButton: RadzenButton
     {
         [Inject]
@@ -34,90 +45,124 @@ namespace RedG.Client.Components
         [Parameter]
         public bool AutoLabel { get; set; } = false;
 
-       
-        
+        // Quali parametri ha indicato il chiamante: si legge dalla ParameterView perche' le
+        // proprieta' hanno comunque un valore predefinito e a posteriori non si distingue
+        // "non passato" da "passato uguale al default".
+        private bool _iconProvided;
+
+        private bool _buttonStyleProvided;
+
+        private bool _textProvided;
+
+        public override Task SetParametersAsync(ParameterView parameters)
+        {
+            _iconProvided = parameters.TryGetValue<string>(nameof(Icon), out _);
+            _buttonStyleProvided = parameters.TryGetValue<Radzen.ButtonStyle>(nameof(ButtonStyle), out _);
+            _textProvided = parameters.TryGetValue<string>(nameof(Text), out _);
+
+            return base.SetParametersAsync(parameters);
+        }
+
         protected override void OnInitialized()
         {
             base.OnInitialized();
-            
+
             switch (RGButtonType)
             {
                 case RGButtonType.New:
-                    Icon = "add_circle";
-                    ButtonStyle = Radzen.ButtonStyle.Primary;
+                    ApplyIcon("add_circle");
+                    ApplyStyle(Radzen.ButtonStyle.Primary);
                     break;
                 case RGButtonType.Edit:
-                    Icon = "edit";
+                    ApplyIcon("edit");
                     if (AutoLabel)
-                        Text = Localize["Edit"];
-                    ButtonStyle = Radzen.ButtonStyle.Secondary;
+                        ApplyText(Localize["Edit"]);
+                    ApplyStyle(Radzen.ButtonStyle.Secondary);
                     break;
                 case RGButtonType.Delete:
-                    Icon = "delete";
-                    ButtonStyle = Radzen.ButtonStyle.Danger;
+                    ApplyIcon("delete");
+                    ApplyStyle(Radzen.ButtonStyle.Danger);
                     break;
                 case RGButtonType.Save:
-                    Icon = "save";
-                    ButtonStyle = Radzen.ButtonStyle.Success;
+                    ApplyIcon("save");
+                    ApplyStyle(Radzen.ButtonStyle.Success);
                     break;
                 case RGButtonType.Submit:
-                    Text = Localize["Save"];
-                    Icon = "save";
-                    ButtonStyle = Radzen.ButtonStyle.Success;
+                    ApplyText(Localize["Save"]);
+                    ApplyIcon("save");
+                    ApplyStyle(Radzen.ButtonStyle.Success);
                     ButtonType = Radzen.ButtonType.Submit;
                     break;
 
                 case RGButtonType.Cancel:
                     if (AutoLabel)
-                        Text = Localize["Cancel"];
-                    Icon = "cancel";
-                    ButtonStyle = Radzen.ButtonStyle.Light;
+                        ApplyText(Localize["Cancel"]);
+                    ApplyIcon("cancel");
+                    ApplyStyle(Radzen.ButtonStyle.Light);
                     break;
 
                 case RGButtonType.Back:
-                    Icon = "arrow_back_ios_new";
-                    ButtonStyle = Radzen.ButtonStyle.Light;
+                    ApplyIcon("arrow_back_ios_new");
+                    ApplyStyle(Radzen.ButtonStyle.Light);
                     break;
                 case RGButtonType.Download:
-                    Icon= "download";
-                    ButtonStyle = Radzen.ButtonStyle.Warning;
+                    ApplyIcon("download");
+                    ApplyStyle(Radzen.ButtonStyle.Warning);
                     break;
 
                 case RGButtonType.DownloadPdf:
-                    Icon = "picture_as_pdf";
-                    ButtonStyle = Radzen.ButtonStyle.Warning;
+                    ApplyIcon("picture_as_pdf");
+                    ApplyStyle(Radzen.ButtonStyle.Warning);
                     break;
 
 
                 case RGButtonType.View:
 
-                    Icon = "visibility";
-                    ButtonStyle = Radzen.ButtonStyle.Info;
+                    ApplyIcon("visibility");
+                    ApplyStyle(Radzen.ButtonStyle.Info);
                     break;
                 case RGButtonType.Close:
-                    Icon = "close";
-                    ButtonStyle = Radzen.ButtonStyle.Light;
+                    ApplyIcon("close");
+                    ApplyStyle(Radzen.ButtonStyle.Light);
                     break;
 
                 case RGButtonType.Confirm:
-                    Icon = "check_circle";
-                    ButtonStyle = Radzen.ButtonStyle.Info;
+                    ApplyIcon("check_circle");
+                    ApplyStyle(Radzen.ButtonStyle.Info);
                     break;
 
                 case RGButtonType.Translate:
-                    Icon = "translate";
-                    ButtonStyle = Radzen.ButtonStyle.Warning;
+                    ApplyIcon("translate");
+                    ApplyStyle(Radzen.ButtonStyle.Warning);
                     break;
                 case RGButtonType.AssignTicket:
-                    Icon= "assignment_ind";
-                    ButtonStyle = Radzen.ButtonStyle.Info;
+                    ApplyIcon("assignment_ind");
+                    ApplyStyle(Radzen.ButtonStyle.Info);
                     break;
                 case RGButtonType.CloseTicket:
-                    Icon = "assignment_turned_in";
-                    ButtonStyle = Radzen.ButtonStyle.Success;
+                    ApplyIcon("assignment_turned_in");
+                    ApplyStyle(Radzen.ButtonStyle.Success);
                     break;
 
             }
+        }
+
+        private void ApplyIcon(string icon)
+        {
+            if (!_iconProvided)
+                Icon = icon;
+        }
+
+        private void ApplyStyle(Radzen.ButtonStyle buttonStyle)
+        {
+            if (!_buttonStyleProvided)
+                ButtonStyle = buttonStyle;
+        }
+
+        private void ApplyText(string text)
+        {
+            if (!_textProvided)
+                Text = text;
         }
     }
 }

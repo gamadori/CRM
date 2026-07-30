@@ -449,6 +449,14 @@ namespace CRM.Server.Data
                 .HasIndex(d => new { d.Key, d.IdProductType, d.IdProduct })
                 .IsUnique();
 
+            // I tempi degli interventi si leggono sempre nello stesso modo: per intervento e
+            // filtrando i fatturabili, poi si sommano le durate per tipo (vedi TicketBillableMinutes).
+            // L'indice coprente serve quel piano senza key lookup: sostituisce quello convenzionale
+            // sulla sola FK, che ne e' il prefisso e diventerebbe un doppione da mantenere in scrittura.
+            modelBuilder.Entity<TicketInterventionTime>()
+                .HasIndex(t => new { t.IdTicketIntervention, t.IsBillable })
+                .IncludeProperties(t => new { t.TimeType, t.StartDateTime, t.EndDateTime });
+
             // ---- Preventivi / Offerte ----
             modelBuilder.Entity<Quote>(entity =>
             {

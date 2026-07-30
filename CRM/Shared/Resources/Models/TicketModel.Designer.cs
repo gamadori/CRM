@@ -68,5 +68,14 @@ namespace CRM.Shared.Resources.Models {
                 return ResourceManager.GetString("MinuteWorkFormatted", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Cerca una stringa localizzata simile a Billable hours (hh:mm).
+        /// </summary>
+        internal static string MinuteBillableFormatted {
+            get {
+                return ResourceManager.GetString("MinuteBillableFormatted", resourceCulture);
+            }
+        }
     }
 }

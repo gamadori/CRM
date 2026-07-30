@@ -51,9 +51,21 @@ namespace CRM.Client.Pages.DashBoard
         [Inject]
         AuthenticationStateProvider AuthenticationStateProvider { get; set; }
 
+        [Inject]
+        IAuthorizationService AuthorizationService { get; set; }
+
         private TicketDashBoardModel _model = null;
         private string _currentUserId = null;
 
+        /// <summary>
+        /// Admin o SuperUser: sono gli unici che vedono la situazione globale e che possono
+        /// spostarsi sulla dashboard di un altro utente. Va deciso dai ruoli e non da
+        /// <see cref="TicketDashBoardModel.IsClient"/>, che arriva solo dopo la prima
+        /// chiamata al server mentre qui serve prima, per sapere che cosa chiedere.
+        /// </summary>
+        private bool _isSupervisor;
+
+        /// <summary>Utente di cui si sta guardando la dashboard. Null = situazione globale.</summary>
         private string _userId;
 
         private List<ApplicationUser> _users;
@@ -97,9 +109,32 @@ namespace CRM.Client.Pages.DashBoard
             DynamicNotificationHandlers.Register(this);
 
             await GetCurrentUser();
-            _userId = _currentUserId;
-            await LoadUsers();
+
+            _isSupervisor = await IsSupervisorAsync();
+
+            // Admin e SuperUser aprono sulla situazione globale e poi scelgono l'utente dal
+            // combo. Per gli altri ruoli il filtro personale e' l'unica vista possibile: il
+            // server la impone comunque, qui serve solo perche' agenda e link alle liste
+            // seguano lo stesso utente.
+            _userId = _isSupervisor ? null : _currentUserId;
+
+            // L'elenco utenti alimenta solo il combo: senza combo e' una chiamata sprecata.
+            if (_isSupervisor)
+                await LoadUsers();
+
             await LoadData();
+        }
+
+        /// <summary>
+        /// La policy SuperUserRole raccoglie Admin e SuperUser: i ruoli sono gia' nei claim,
+        /// quindi la verifica e' locale e non costa una chiamata al server.
+        /// </summary>
+        private async Task<bool> IsSupervisorAsync()
+        {
+            var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var result = await AuthorizationService.AuthorizeAsync(state.User, ePolicy.SuperUserRole.ToString());
+
+            return result.Succeeded;
         }
 
         public async Task Handle(MsgNotify notification, System.Threading.CancellationToken cancellationToken)
@@ -141,7 +176,10 @@ namespace CRM.Client.Pages.DashBoard
                 {
                     DateFrom = DateTime.Today,
                     DateTo = DateTime.Today.AddDays(60),
-                    IdUser = _userId,
+                    // Nella vista globale non esiste un'agenda "di tutti" che abbia senso qui:
+                    // si mostrano gli appuntamenti di chi sta guardando, e quelli dell'utente
+                    // scelto non appena ne viene selezionato uno dal combo.
+                    IdUser = _userId ?? _currentUserId,
                     Scope = CalendarScope.User,
                     IncludeActivities = true,
                     IncludeTickets = false
@@ -189,9 +227,22 @@ namespace CRM.Client.Pages.DashBoard
             NavigationManager.NavigateTo($"/Tickets/Index/{(int)TicketTypeSearch.NotAssigned}");
         }
 
+        /// <summary>
+        /// Ticket assegnati a un gruppo e ancora senza responsabile: il filtro non passa da
+        /// <see cref="Url"/> perche' questi ticket non hanno un assegnatario su cui filtrare.
+        /// </summary>
+        protected void TicketsToClaim()
+        {
+            NavigationManager.NavigateTo($"/Tickets/Index/{(int)TicketTypeSearch.ToClaim}");
+        }
+
+        /// <summary>
+        /// Porta alla posta in arrivo delle chat invece che all'elenco dei ticket filtrato:
+        /// l'anteprima dei messaggi dice subito cosa e' stato scritto e da chi.
+        /// </summary>
         protected void TicketsNewMessage()
         {
-            NavigationManager.NavigateTo(Url($"/Tickets/Index/{(int)TicketTypeSearch.NewMessage}"));
+            NavigationManager.NavigateTo("/Tickets/Messages");
         }
 
         protected void TicketsBlocked()
@@ -352,7 +403,11 @@ namespace CRM.Client.Pages.DashBoard
             return _users;
         }
 
-        protected async void OnChangeIdUser()
+        /// <summary>
+        /// Cambio utente dal combo. Svuotando la selezione <c>_userId</c> torna null e la
+        /// dashboard riprende la situazione globale.
+        /// </summary>
+        protected async Task OnChangeIdUser()
         {
             await LoadData();
         }

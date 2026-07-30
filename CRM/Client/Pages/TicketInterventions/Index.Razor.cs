@@ -30,7 +30,7 @@ namespace CRM.Client.Pages.TicketInterventions
         ITicketInterventionsService ServiceInterventions { get; set; }
 
         [Inject]
-        IRestService<ApplicationUser> userSigned { get; set; }
+        ICurrentUserService userSigned { get; set; }
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }

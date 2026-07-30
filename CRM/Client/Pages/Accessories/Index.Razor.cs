@@ -31,7 +31,7 @@ namespace CRM.Client.Pages.Accessories
         private IAccessoriesService AccessoriesService { get; set; }
 
         [Inject]
-        IRestService<ApplicationUser> _userSigned { get; set; }
+        ICurrentUserService _userSigned { get; set; }
 
         [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }

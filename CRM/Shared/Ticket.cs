@@ -33,17 +33,55 @@ namespace CRM.Shared
         Workshop = 5
     }
 
-   public enum TicketTypeSearch
+    /// <summary>
+    /// Filtri della lista ticket. I valori viaggiano come interi nelle rotte
+    /// (/Tickets/Index/{TypeSearch:int}): aggiungere sempre in coda, mai in mezzo.
+    /// <para>
+    /// Sull'assegnazione valgono due concetti distinti, da non confondere:
+    /// <see cref="NotAssigned"/> e' il lavoro non ancora smistato (nessun utente E nessun
+    /// gruppo), mentre <see cref="ToClaim"/> e' gia' smistato a un gruppo ma senza un
+    /// responsabile individuale. Un gruppo assegnato conta come assegnazione, coerentemente
+    /// con lo stato del ticket e con il contatore della dashboard.
+    /// </para>
+    /// </summary>
+    /// <remarks>
+    /// Ogni voce porta un <see cref="DisplayAttribute"/> con il proprio nome: senza,
+    /// RedGSelectEnum ripiega su Humanizer e cerca la stringa decamelizzata ("To be invoiced")
+    /// invece della chiave nei resx ("ToBeInvoiced"), mostrando l'inglese in mezzo all'italiano.
+    /// I nomi qui sotto devono corrispondere alle chiavi in Resources/App*.resx.
+    /// </remarks>
+    public enum TicketTypeSearch
     {
+        [Display(Name = "All")]
         All,
+
+        [Display(Name = "NotAssigned")]
         NotAssigned,
+
+        [Display(Name = "Assigned")]
         Assigned,
+
+        [Display(Name = "Expired")]
         Expired,
+
+        [Display(Name = "Closed")]
         Closed,
+
+        [Display(Name = "Working")]
         Working,
+
+        [Display(Name = "NewMessage")]
         NewMessage,
+
+        [Display(Name = "ToBeInvoiced")]
         ToBeInvoiced,
-        Blocked
+
+        [Display(Name = "Blocked")]
+        Blocked,
+
+        /// <summary>Assegnati a un gruppo e non ancora presi in carico: la coda del tecnico.</summary>
+        [Display(Name = "ToClaim")]
+        ToClaim
     }
 
    

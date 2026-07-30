@@ -40,7 +40,7 @@ namespace CRM.Client.Pages.Companies
         ICompaniesService Service { get; set; }
 
         [Inject]
-        IRestService<ApplicationUser> userSigned { get; set; }
+        ICurrentUserService userSigned { get; set; }
 
         [Inject]
         DialogService dialogService { get; set; }

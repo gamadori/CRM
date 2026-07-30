@@ -495,9 +495,32 @@ else
                         <span class="info-label">Lavoro</span>
                     </div>
                     <div class="info-card-body">
+                        @* Ore fatturabili per tipo + totale: e' la stessa somma mostrata nella
+                           lista ticket, spezzata per far vedere da dove arriva. *@
+                        @if (_ticket.MinuteWork > 0)
+                        {
+                            <div class="info-row">
+                                <span class="info-key">@Localize["Lavoro"]</span>
+                                <span class="info-value">@DateTimeHelper.MinuteFormat(_ticket.MinuteWork)</span>
+                            </div>
+                        }
+                        @if (_ticket.MinuteTravel > 0)
+                        {
+                            <div class="info-row">
+                                <span class="info-key">@Localize["Viaggio"]</span>
+                                <span class="info-value">@DateTimeHelper.MinuteFormat(_ticket.MinuteTravel)</span>
+                            </div>
+                        }
+                        @if (_ticket.MinuteBreak > 0)
+                        {
+                            <div class="info-row">
+                                <span class="info-key">@Localize["Pausa"]</span>
+                                <span class="info-value">@DateTimeHelper.MinuteFormat(_ticket.MinuteBreak)</span>
+                            </div>
+                        }
                         <div class="info-row">
-                            <span class="info-key"><DisplayName For="@(() => _ticket.MinuteWorkFormatted)" /></span>
-                            <span class="info-value">@DateTimeHelper.MinuteFormat(_ticket.MinuteWork)</span>
+                            <span class="info-key"><DisplayName For="@(() => _ticket.MinuteBillableFormatted)" /></span>
+                            <span class="info-value"><b>@DateTimeHelper.MinuteFormat(_ticket.MinuteBillable)</b></span>
                         </div>
 
                         @if (_ticket.Closed)

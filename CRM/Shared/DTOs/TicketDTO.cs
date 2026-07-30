@@ -97,6 +97,16 @@ namespace CRM.Shared.DTOs
         [Display(Name = nameof(TicketDTO.MinuteTravel), ResourceType = typeof(Resources.Models.TicketModel))]
         public int MinuteTravel { get; set; }
 
+        /// <summary>Minuti di pausa fatturabili: normalmente zero, le pause nascono non fatturabili.</summary>
+        public int MinuteBreak { get; set; }
+
+        /// <summary>
+        /// Ore del ticket: somma dei minuti fatturabili degli interventi (lavoro + viaggio + le
+        /// eventuali pause marcate fatturabili). E' l'unico totale mostrato in lista e in scheda.
+        /// </summary>
+        [Display(Name = nameof(TicketDTO.MinuteBillableFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
+        public int MinuteBillable { get; set; }
+
         [Display(Name = nameof(TicketDTO.MinuteWorkFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
         public string MinuteWorkFormatted { get; set; }
 
@@ -105,6 +115,9 @@ namespace CRM.Shared.DTOs
 
         [Display(Name = nameof(TicketDTO.MinuteTotalFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
         public string MinuteTotalFormatted { get; set; }
+
+        [Display(Name = nameof(TicketDTO.MinuteBillableFormatted), ResourceType = typeof(Resources.Models.TicketModel))]
+        public string MinuteBillableFormatted { get; set; }
 
 
         [Display(Name = nameof(Ticket.IdUserOpened), ResourceType = typeof(Resources.Models.Ticket))]
