@@ -75,6 +75,13 @@ namespace CRM.Client.Pages.Tickets
         }
         private async Task LoadData()
         {
+            // Lo stato del ticket precedente va azzerato PRIMA di caricare. Questo componente e'
+            // riusato: nello scheduler l'offcanvas dei dettagli sta sempre nel DOM e cambia solo il
+            // parametro IdTicket, quindi Blazor mantiene la stessa istanza e OnInitializedAsync non
+            // riparte. Senza reset, un ticket che non ha utenti assegnati non sovrascrive nulla e
+            // continuava a mostrare gli assegnatari del ticket aperto prima.
+            ResetState();
+
             try
             {
 
@@ -82,10 +89,10 @@ namespace CRM.Client.Pages.Tickets
                 {
 
                     _ticket = await _service.Get(Id.Value);
-                    _userOpened = await _serviceUsers.Get(_ticket.IdUserOpened);
-                    
+                    _userOpened = await GetUserOrNull(_ticket.IdUserOpened);
+
                     // ⚠️ LEGACY: Mantieni per retrocompatibilità
-                    _userAssigned = await _serviceUsers.Get(_ticket.IdUserAssigned);
+                    _userAssigned = await GetUserOrNull(_ticket.IdUserAssigned);
 
                     // ✅ NUOVO: Carica tutti gli utenti assegnati
                     await LoadAssignedUsers();
@@ -101,6 +108,22 @@ namespace CRM.Client.Pages.Tickets
             }
         }
 
+        /// <summary>Azzera tutto cio' che appartiene al ticket mostrato finora.</summary>
+        private void ResetState()
+        {
+            _ticket = null;
+            _userOpened = null;
+            _userAssigned = null;
+            _assignedUsers.Clear();
+        }
+
+        /// <summary>
+        /// Un id utente vuoto non deve diventare una chiamata: fallirebbe, e l'eccezione
+        /// interromperebbe il caricamento lasciando a video i dati del ticket precedente.
+        /// </summary>
+        private async Task<ApplicationUser> GetUserOrNull(string idUser)
+            => string.IsNullOrWhiteSpace(idUser) ? null : await _serviceUsers.Get(idUser);
+
         /// <summary>
         /// ✅ NUOVO: Carica tutti gli utenti assegnati al ticket dalla tabella TicketUserAssignments
         /// </summary>
@@ -111,41 +134,36 @@ namespace CRM.Client.Pages.Tickets
                 if (_ticket == null || _ticket.Id == 0)
                     return;
 
-                // Chiamata API per ottenere ID utenti assegnati
+                // La lista arriva gia' vuota da ResetState: qui si riempie e basta. I Clear() che
+                // c'erano stavano dentro i rami che TROVAVANO qualcosa, quindi il caso "nessun
+                // utente assegnato" non ripuliva niente ed e' esattamente quello che lasciava a
+                // video gli assegnatari del ticket precedente.
                 var userIds = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{_ticket.Id}/assigned-users");
 
                 if (userIds != null && userIds.Any())
                 {
-                    // Carica dettagli utenti
-                    _assignedUsers.Clear();
                     foreach (var userId in userIds)
                     {
-                        var user = await _serviceUsers.Get(userId);
+                        var user = await GetUserOrNull(userId);
                         if (user != null)
                         {
                             _assignedUsers.Add(user);
                         }
                     }
                 }
-                else
+                else if (_userAssigned != null)
                 {
-                    // ✅ FIX: Fallback SOLO se la tabella TicketUserAssignments è vuota
-                    // E solo se IdUserAssigned legacy esiste
-                    if (!string.IsNullOrEmpty(_ticket.IdUserAssigned) && _userAssigned != null)
-                    {
-                        _assignedUsers.Clear();
-                        _assignedUsers.Add(_userAssigned);
-                    }
+                    // Fallback sul campo legacy solo se la tabella delle assegnazioni e' vuota.
+                    _assignedUsers.Add(_userAssigned);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Errore caricamento utenti assegnati: {ex.Message}");
-                
-                // ✅ FIX: Fallback in caso di errore SOLO se lista è vuota
-                if (!_assignedUsers.Any() && _userAssigned != null && !string.IsNullOrEmpty(_ticket.IdUserAssigned))
+
+                // Fallback in caso di errore, senza reintrodurre dati di un altro ticket.
+                if (!_assignedUsers.Any() && _userAssigned != null)
                 {
-                    _assignedUsers.Clear();
                     _assignedUsers.Add(_userAssigned);
                 }
             }

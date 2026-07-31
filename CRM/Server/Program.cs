@@ -158,9 +158,15 @@ builder.Services.AddScoped<IAttachmentsService, AttachmentsService>();
 builder.Services.AddScoped<CRM.Server.Services.IProductCatalogAssetsService, ProductCatalogAssetsService>();
 builder.Services.AddScoped<CRM.Server.Services.IProductCatalogService, ProductCatalogService>();
 
+builder.Services.AddScoped<IReceiptAnalyzer, AzureReceiptAnalyzer>();
 builder.Services.AddScoped<IReceiptProcessorService, ReceiptProcessorService>();
 
 builder.Services.AddScoped<IExpenseReceiptService, ExpenseReceiptService>();
+
+// Cambi BCE per le spese sostenute all'estero. HttpClient tipizzato: il servizio ne configura
+// il timeout, cosi' un cambio lento non rallenta il salvataggio di una nota spese.
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<IExchangeRateService, ExchangeRateService>();
 
 builder.Services.AddSingleton<WTelegramService>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<WTelegramService>());
@@ -326,8 +332,25 @@ else
 
 app.UseHttpsRedirection();
 
+// Nessun file servito da UseStaticFiles ha l'hash nel nome (index.html, il bundle degli scoped
+// CSS CRM.Client.styles.css, css/*.css, il service worker): senza Cache-Control il browser calcola
+// una freschezza euristica dal Last-Modified, considera valida la copia in cache e la richiesta non
+// arriva nemmeno al server. Risultato: modifiche a un .razor.css invisibili anche dopo aver
+// svuotato le cache del service worker, che e' network-first e quindi innocente — il suo fetch
+// passa comunque dalla cache HTTP.
+//
+// "no-cache" NON disattiva la cache: impone la rivalidazione. Con l'ETag gia' presente la risposta
+// e' un 304 da poche centinaia di byte. index.html e' il file per cui conta di piu', perche'
+// contiene i ?nocache=N degli altri asset: se e' stantio, nessun altro aggiornamento propaga.
+//
+// _framework/* non passa da qui: UseBlazorFrameworkFiles() gli mette gia' no-cache da solo.
+var revalidateAlways = new StaticFileOptions
+{
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache"
+};
+
 app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(revalidateAlways);
 
 if (app.Environment.IsDevelopment())
 {
@@ -355,12 +378,24 @@ if (app.Environment.IsDevelopment())
             RequestPath = "/_framework",
             ContentTypeProvider = frameworkContentTypes,
             ServeUnknownFileTypes = true,
-            DefaultContentType = "application/octet-stream"
+            DefaultContentType = "application/octet-stream",
+            // In sviluppo questi file cambiano a ogni build: senza rivalidazione si ricade
+            // nelle rogne di asset Blazor stantii.
+            OnPrepareResponse = revalidateAlways.OnPrepareResponse
         });
     }
 }
 
-app.MapStaticAssets();
+// Qui c'era app.MapStaticAssets(), rimossa perche' non veniva MAI raggiunta: mappa endpoint, e gli
+// endpoint sono valutati dal routing (piu' sotto), mentre UseStaticFiles e' middleware e serve il
+// file prima. Restava una riga che sembrava governare la cache degli asset senza governare niente.
+//
+// Non e' stata "riparata" spostando la pipeline perche' i suoi due vantaggi qui non si incassano:
+//  - le varianti precompresse: la compressione e' gia' attiva con UseResponseCompression (sopra),
+//    quindi i byte sul filo sono gia' compressi e si risparmierebbe solo CPU;
+//  - le URL con fingerprint e cache immutable: richiedono @Assets["..."] da una pagina Razor, e
+//    qui index.html e' un file statico servito com'e', quindi non e' possibile referenziarle.
+// Con no-cache + ETag la correttezza e' garantita e il costo e' un 304 vuoto per file.
 
 // Culture from the HttpRequest
 
@@ -392,7 +427,9 @@ app.MapRazorPages();
 // e l'hub SignalR restano com'erano.
 app.MapControllers().RequireAuthorization();
 
-app.MapFallbackToFile("index.html");
+// index.html arriva da qui, non da UseStaticFiles: e' un endpoint, quindi le opzioni vanno passate
+// anche a questa chiamata perche' riceva il no-cache.
+app.MapFallbackToFile("index.html", revalidateAlways);
 
 
 app.MapHub<SignalRHub>("/signalRHub");

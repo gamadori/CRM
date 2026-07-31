@@ -232,19 +232,40 @@ namespace CRM.Client
             // Build dell'app una sola volta
             var app = builder.Build();
 
-            // Imposta la cultura usando l'app già costruita
+            // Imposta la cultura usando l'app già costruita.
+            // La lettura è in try/catch perché un'interop che fallisce qui abortirebbe Main e
+            // lascerebbe l'app sulla schermata di caricamento: la lingua è una preferenza, non
+            // una precondizione per avviarsi. Con un valore non valido si riparte da it-IT.
             CultureInfo cultureInfo;
             var jsInterop = app.Services.GetRequiredService<IJSRuntime>();
-            var appLanguage = await jsInterop.InvokeAsync<string>("appCulture.get");
-            if (appLanguage != null && appLanguage != "null")
+            string? appLanguage = null;
+
+            try
             {
-                cultureInfo = new CultureInfo(appLanguage);
+                appLanguage = await jsInterop.InvokeAsync<string>("appCulture.get");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lettura della lingua non riuscita, si usa il default: {ex.Message}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(appLanguage) && appLanguage != "null")
+            {
+                try
+                {
+                    cultureInfo = new CultureInfo(appLanguage);
+                }
+                catch (CultureNotFoundException)
+                {
+                    Console.WriteLine($"Lingua '{appLanguage}' non riconosciuta, si usa it-IT.");
+                    cultureInfo = new CultureInfo("it-IT");
+                }
             }
             else
             {
-                cultureInfo = new CultureInfo("en-US");
-                await jsInterop.InvokeVoidAsync("appCulture.set", "en-US");
+                cultureInfo = new CultureInfo("it-IT");
             }
+
             CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
             CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 

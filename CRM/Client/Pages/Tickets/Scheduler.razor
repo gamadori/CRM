@@ -2,20 +2,21 @@
 @using Models
 @using Radzen
 @using Radzen.Blazor
-
+<PageHeader Model="_pageHeader">
+    <Actions>
+        <div class="ticket-planning-actions">
+            <RadzenButton Click="@GoToAgenda" Icon="event" ButtonStyle="ButtonStyle.Light"
+                          Variant="Variant.Flat" Size="ButtonSize.Medium"
+                          Text="@Localize["Agenda"]" />
+            <RadzenButton Click="@SwitchToTimeline" Icon="view_timeline" ButtonStyle="ButtonStyle.Primary"
+                          Variant="Variant.Flat" Size="ButtonSize.Medium"
+                          Text="Timeline giorno" />
+        </div>
+    </Actions>
+</PageHeader>
 <div class="ticket-planning-page">
-    <PageHeader Model="_pageHeader">
-        <Actions>
-            <div class="ticket-planning-actions">
-                <RadzenButton Click="@GoToAgenda" Icon="event" ButtonStyle="ButtonStyle.Light"
-                              Variant="Variant.Flat" Size="ButtonSize.Medium"
-                              Text="@Localize["Agenda"]" />
-                <RadzenButton Click="@SwitchToTimeline" Icon="view_timeline" ButtonStyle="ButtonStyle.Primary"
-                              Variant="Variant.Flat" Size="ButtonSize.Medium"
-                              Text="Timeline giorno" />
-            </div>
-        </Actions>
-    </PageHeader>
+    
+        
 
     <div class="ticket-planning-surface">
         <CascadingValue Value="_maxNumMonthlyTicket" TValue="int" Name="MaxNumDaylyTicket">
@@ -36,18 +37,40 @@
                                                        ViewMode="@ViewMode"
                                                        Loading="@_loading">
                 <Filter>
-                    <div class="ticket-planning-filter">
-                        <RadzenDropDownDataGrid class="form-control" @bind-value="@IdUserAssigned" TValue="string"
-                                                AllowFiltering="true" AllowClear="true" Change="OnChangeIdUser"
-                                                FilterCaseSensitivity="@FilterCaseSensitivity.CaseInsensitive"
-                                                Data="@_users" Count="@_users.Count"
-                                                TextProperty="NameComplete" ValueProperty="Id">
-                            <Columns>
-                                <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
-                                <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
-                            </Columns>
-                        </RadzenDropDownDataGrid>
-                        <label>@Localize["User"]</label>
+                    <div class="ticket-planning-filters">
+                        <div class="ticket-planning-filter">
+                            <RadzenDropDownDataGrid class="form-control" @bind-value="@IdUserAssigned" TValue="string"
+                                                    AllowFiltering="true" AllowClear="true" Change="OnChangeIdUser"
+                                                    FilterCaseSensitivity="@FilterCaseSensitivity.CaseInsensitive"
+                                                    Data="@_users" Count="@_users.Count"
+                                                    TextProperty="NameComplete" ValueProperty="Id">
+                                <Columns>
+                                    <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Surname)" Title="@Localize[nameof(ApplicationUser.Surname)]" Width="auto" />
+                                    <RadzenDropDownDataGridColumn Property="@nameof(ApplicationUser.Name)" Title="@Localize[nameof(ApplicationUser.Name)]" Width="auto" />
+                                </Columns>
+                            </RadzenDropDownDataGrid>
+                            <label>@Localize["User"]</label>
+                        </div>
+
+                        @* Natura del lavoro. Il filtro va al server (TicketFilter.HasCommessa): con
+                           mesi carichi filtrare in memoria significherebbe scaricare tutto per
+                           mostrarne una parte. *@
+                        <div class="work-kind-filter" role="group" aria-label="Natura del lavoro">
+                            <button type="button" class="kind-btn @(_hasCommessa == null ? "active" : "")"
+                                    @onclick="@(() => SetCommessaFilter(null))">
+                                Tutti
+                            </button>
+                            <button type="button" class="kind-btn kind-assistenza @(_hasCommessa == false ? "active" : "")"
+                                    title="Ticket non legati ad alcuna commessa"
+                                    @onclick="@(() => SetCommessaFilter(false))">
+                                <span class="kind-dot"></span>Assistenza
+                            </button>
+                            <button type="button" class="kind-btn kind-commessa @(_hasCommessa == true ? "active" : "")"
+                                    title="Ticket legati a una fase di commessa"
+                                    @onclick="@(() => SetCommessaFilter(true))">
+                                <span class="kind-dot"></span>Commessa
+                            </button>
+                        </div>
                     </div>
                 </Filter>
                 <Details>
@@ -60,7 +83,7 @@
 
 <style>
     .ticket-planning-page {
-        padding: 1.25rem;
+        padding: 1rem;
     }
 
     .ticket-planning-actions {
@@ -77,9 +100,70 @@
         padding: 1rem;
     }
 
+    .ticket-planning-filters {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: .75rem;
+        width: 100%;
+    }
+
     .ticket-planning-filter {
-        min-width: min(360px, 100%);
+        min-width: min(240px, 100%);
         position: relative;
+    }
+
+    /* Natura del lavoro: segmented control */
+    .work-kind-filter {
+        display: inline-flex;
+        border: 1px solid var(--crm-border, #e5e7eb);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--crm-surface, #fff);
+    }
+
+    .kind-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        border: none;
+        background: transparent;
+        padding: .3rem .6rem;
+        font-size: .78rem;
+        font-weight: 600;
+        color: var(--crm-text-muted, #64748b);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background-color .15s ease, color .15s ease;
+    }
+
+    .kind-btn + .kind-btn {
+        border-left: 1px solid var(--crm-border, #e5e7eb);
+    }
+
+    .kind-btn:hover {
+        background: var(--crm-surface-hover, #f1f5f9);
+    }
+
+    .kind-btn.active {
+        background: color-mix(in srgb, #6366f1 12%, var(--crm-surface, #fff));
+        color: var(--crm-text, #1f2937);
+    }
+
+    /* Gli stessi due toni della fascia sulla card: il filtro e la legenda coincidono */
+    .kind-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .kind-assistenza .kind-dot {
+        background: #0ea5e9;
+    }
+
+    .kind-commessa .kind-dot {
+        background: #6366f1;
     }
 
     @@media (max-width: 768px) {

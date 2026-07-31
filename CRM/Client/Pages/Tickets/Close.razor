@@ -84,18 +84,21 @@ else
                     </div>
                 </div>
 
-                <!-- Info grid: modalità intervento + note interne -->
-                <div class="info-grid">
-                    <div class="description-card">
-                        <div class="card-header-modern">
-                            <span class="material-icons">support_agent</span>
-                            <h5>Modalità di intervento</h5>
+                <!-- Info grid: modalità intervento (solo dove nessun intervento la porta) + note interne -->
+                <div class="info-grid @(_showSupportField ? "" : "info-grid-single")">
+                    @if (_showSupportField)
+                    {
+                        <div class="description-card">
+                            <div class="card-header-modern">
+                                <span class="material-icons">support_agent</span>
+                                <h5>Modalità di intervento</h5>
+                            </div>
+                            <div class="card-body-modern">
+                                <RedGSelectEnum TEnum="TypesSupport" TValue="TypesSupport" @bind-Value="@_ticketClose.Support"
+                                                For="@(() => _ticketClose.Support)" AllowClear="false" Style="width: 100%;" />
+                            </div>
                         </div>
-                        <div class="card-body-modern">
-                            <RedGSelectEnum TEnum="TypesSupport" TValue="TypesSupport" @bind-Value="@_ticketClose.Support"
-                                            For="@(() => _ticketClose.Support)" AllowClear="false" Style="width: 100%;" />
-                        </div>
-                    </div>
+                    }
 
                     <div class="description-card">
                         <button type="button" class="card-header-modern note-toggle @(_showNotes ? "" : "collapsed")" @onclick="ToggleNotes">
@@ -122,8 +125,28 @@ else
                 <!-- Azioni -->
                 @if (!_ticket.Closed && _ticket.Permits.Close())
                 {
+                    @* L'ostacolo si dichiara prima del pulsante: scoprire il vincolo dopo aver
+                       scritto la soluzione e premuto Chiudi e' lavoro buttato. *@
+                    @if (_closeBlocked)
+                    {
+                        <div class="close-blocked">
+                            <span class="material-icons">block</span>
+                            <div>
+                                <div class="close-blocked-title">Chiusura non disponibile</div>
+                                <div class="close-blocked-text">@_precondition!.BlockReason</div>
+                                @if (_precondition.RequiresIntervention && _precondition.InterventionCount == 0 && !_precondition.IsBlocked)
+                                {
+                                    <a class="close-blocked-link" href="@($"/Tickets/{Id}")">
+                                        <span class="material-icons">build</span>Vai al ticket e registra l'intervento
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+
                     <div class="close-actions-card">
-                        <BlazorButton Type="BtnType.Submit" Style="BtnStyle.Success" Text="Chiudi ticket" Icon="task_alt"></BlazorButton>
+                        <BlazorButton Type="BtnType.Submit" Style="@(_closeBlocked ? BtnStyle.Secondary : BtnStyle.Success)"
+                                      Text="Chiudi ticket" Icon="task_alt"></BlazorButton>
                         <BlazorButton Style="BtnStyle.Light" Text="Annulla" Icon="close" OnClick="Cancel"></BlazorButton>
                     </div>
                 }

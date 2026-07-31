@@ -93,7 +93,7 @@ self.addEventListener('notificationclick', (event) => {
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then((windowClients) => {
-                // Cerca una finestra già aperta con lo stesso origin
+                // Cerca una finestra giÃ  aperta con lo stesso origin
                 for (let client of windowClients) {
                     if (client.url.startsWith(self.location.origin) && 'focus' in client) {
                         // Naviga alla URL della notifica
@@ -105,7 +105,7 @@ self.addEventListener('notificationclick', (event) => {
                     }
                 }
 
-                // Se nessuna finestra è aperta, aprine una nuova
+                // Se nessuna finestra Ã¨ aperta, aprine una nuova
                 if (clients.openWindow) {
                     return clients.openWindow(urlToOpen);
                 }

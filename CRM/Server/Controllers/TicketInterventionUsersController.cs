@@ -1,8 +1,10 @@
 ﻿using CRM.Server.Data;
 using CRM.Server.Models;
+using CRM.Server.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -17,10 +19,17 @@ namespace CRM.Server.Controllers
     public class TicketInterventionUsersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ITicketsService _ticketsService;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public TicketInterventionUsersController(ApplicationDbContext context)
+        public TicketInterventionUsersController(
+            ApplicationDbContext context,
+            ITicketsService ticketsService,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _ticketsService = ticketsService;
+            _userManager = userManager;
         }
 
         // GET: api/TicketInterventionUsers
@@ -142,7 +151,12 @@ namespace CRM.Server.Controllers
 
         
         // ✅ NUOVO: POST /api/TicketInterventionUsers/intervention/{id}/assign-users
-        // Assegna multipli utenti a un intervento (sostituisce assegnazioni esistenti)
+        // Assegna multipli utenti a un intervento (sostituisce assegnazioni esistenti).
+        //
+        // Registrare un intervento E' la presa in carico: chi non ha ancora un'assegnazione
+        // individuale sul ticket la ottiene qui, purche' sia legittimato (gruppo assegnato o
+        // utenti abilitati sul tipo di ticket). Prima l'endpoint rifiutava questi utenti,
+        // e un ticket smistato solo a un gruppo non permetteva di registrare nulla.
         [HttpPost("intervention/{id}/assign-users")]
         public async Task<IActionResult> AssignUsersToIntervention(int id, [FromBody] AssignUsersRequest assignUsers)
         {
@@ -150,8 +164,6 @@ namespace CRM.Server.Controllers
             {
                 var intervention = await _context.TicketsInterventions
                     .Include(i => i.AssignedUsers)
-                    .Include(i => i.Ticket)
-                        .ThenInclude(t => t.AssignedUsers) // ✅ Include utenti assegnati al ticket
                     .FirstOrDefaultAsync(i => i.Id == id);
 
                 if (intervention == null)
@@ -159,37 +171,36 @@ namespace CRM.Server.Controllers
                     return NotFound($"Intervention con ID {id} non trovato");
                 }
 
-                // ✅ VALIDAZIONE: Verifica che gli utenti selezionati siano tra quelli assegnati al ticket
-                var ticketUserIds = intervention.Ticket.AssignedUsers
-                    .Select(au => au.IdUser)
-                    .ToHashSet();
-
-                // Se il ticket non ha utenti multipli, usa IdUserAssigned come fallback
-                if (!ticketUserIds.Any() && !string.IsNullOrEmpty(intervention.Ticket.IdUserAssigned))
-                {
-                    ticketUserIds.Add(intervention.Ticket.IdUserAssigned);
-                }
-
-                // Verifica che ci sia almeno un utente da assegnare
+                // Un intervento senza persone non e' registrabile: ore, rapportini e fatturazione
+                // sono atti di individui, non di gruppi.
                 if (assignUsers.UserIds == null || !assignUsers.UserIds.Any())
                 {
                     return BadRequest("Almeno un utente deve essere assegnato all'intervento");
                 }
 
-                foreach (var userId in assignUsers.UserIds)
+                var currentUserId = (await _userManager.GetUserAsync(User))?.Id;
+
+                var claim = await _ticketsService.EnsureUsersAssignedAsync(
+                    intervention.IdTicket,
+                    assignUsers.UserIds,
+                    currentUserId);
+
+                if (!claim.Success)
                 {
-                    if (!ticketUserIds.Contains(userId))
+                    return claim.Error switch
                     {
-                        var user = await _context.Users.FindAsync(userId);
-                        return BadRequest($"Utente {user?.NameComplete ?? userId} non è assegnato al ticket #{intervention.IdTicket}. Solo utenti del ticket possono essere assegnati all'intervento.");
-                    }
+                        EnsureAssignedError.TicketNotFound => NotFound(claim.ErrorMessage),
+                        EnsureAssignedError.Forbidden => StatusCode(StatusCodes.Status403Forbidden, claim.ErrorMessage),
+                        EnsureAssignedError.UserNotEligible => BadRequest(claim.ErrorMessage),
+                        _ => StatusCode(StatusCodes.Status500InternalServerError, claim.ErrorMessage)
+                    };
                 }
 
                 // Rimuovi tutte le assegnazioni esistenti
                 _context.TicketInterventionUser.RemoveRange(intervention.AssignedUsers);
 
                 // Aggiungi le nuove assegnazioni
-                foreach (var userId in assignUsers.UserIds)
+                foreach (var userId in assignUsers.UserIds.Distinct())
                 {
                     var assignment = new TicketInterventionUser
                     {
@@ -202,9 +213,11 @@ namespace CRM.Server.Controllers
 
                 await _context.SaveChangesAsync();
 
-                return Ok(new { 
-                    message = "Utenti assegnati con successo all'intervento", 
-                    assignedCount = assignUsers.UserIds.Count
+                return Ok(new {
+                    message = "Utenti assegnati con successo all'intervento",
+                    assignedCount = assignUsers.UserIds.Count,
+                    claimedCount = claim.ClaimedUserIds.Count,
+                    claimedUsers = claim.ClaimedUserNames
                 });
             }
             catch (Exception ex)

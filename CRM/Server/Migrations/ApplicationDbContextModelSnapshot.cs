@@ -1624,6 +1624,9 @@ namespace CRM.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal?>("AmountBase")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int?>("AttachmentFileId")
                         .HasColumnType("int");
 
@@ -1644,11 +1647,20 @@ namespace CRM.Server.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasColumnType("decimal(18,6)");
+
                     b.Property<string>("ExtractedFieldsJson")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<float?>("ExtractionConfidence")
                         .HasColumnType("real");
+
+                    b.Property<int?>("IdActivity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdUserSpender")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<bool>("IsConfirmed")
                         .HasColumnType("bit");
@@ -1670,7 +1682,7 @@ namespace CRM.Server.Migrations
                     b.Property<decimal?>("TaxAmount")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("TicketInterventionId")
+                    b.Property<int?>("TicketInterventionId")
                         .HasColumnType("int");
 
                     b.Property<decimal?>("TotalAmount")
@@ -1683,9 +1695,53 @@ namespace CRM.Server.Migrations
 
                     b.HasIndex("AttachmentFileId");
 
+                    b.HasIndex("IdActivity");
+
+                    b.HasIndex("IdUserSpender");
+
                     b.HasIndex("TicketInterventionId");
 
                     b.ToTable("ExpenseReceipts");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ExpenseReceiptDocument", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Currency").HasMaxLength(10).HasColumnType("nvarchar(10)");
+                    b.Property<string>("DocumentType").HasMaxLength(100).HasColumnType("nvarchar(100)");
+                    b.Property<decimal?>("AmountBase").HasColumnType("decimal(18,2)");
+                    b.Property<decimal?>("ExchangeRate").HasColumnType("decimal(18,6)");
+                    b.Property<int>("ExpenseReceiptId").HasColumnType("int");
+                    b.Property<float?>("ExtractionConfidence").HasColumnType("real");
+                    b.Property<string>("MerchantName").HasMaxLength(200).HasColumnType("nvarchar(200)");
+                    b.Property<int?>("PageFrom").HasColumnType("int");
+                    b.Property<int?>("PageTo").HasColumnType("int");
+                    b.Property<int>("SortOrder").HasColumnType("int");
+                    b.Property<decimal?>("SubtotalAmount").HasColumnType("decimal(18,2)");
+                    b.Property<decimal?>("TaxAmount").HasColumnType("decimal(18,2)");
+                    b.Property<decimal?>("TaxAmountBase").HasColumnType("decimal(18,2)");
+                    b.Property<decimal?>("TotalAmount").HasColumnType("decimal(18,2)");
+                    b.Property<DateTime?>("TransactionDate").HasColumnType("datetime2");
+                    b.HasKey("Id");
+                    b.HasIndex("ExpenseReceiptId");
+                    b.ToTable("ExpenseReceiptDocuments");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ExpenseReceiptDocumentLine", b =>
+                {
+                    b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Description").HasMaxLength(500).HasColumnType("nvarchar(500)");
+                    b.Property<int>("ExpenseReceiptDocumentId").HasColumnType("int");
+                    b.Property<float?>("ExtractionConfidence").HasColumnType("real");
+                    b.Property<decimal?>("Quantity").HasColumnType("decimal(18,3)");
+                    b.Property<int>("SortOrder").HasColumnType("int");
+                    b.Property<decimal?>("TotalPrice").HasColumnType("decimal(18,2)");
+                    b.Property<decimal?>("UnitPrice").HasColumnType("decimal(18,2)");
+                    b.HasKey("Id");
+                    b.HasIndex("ExpenseReceiptDocumentId");
+                    b.ToTable("ExpenseReceiptDocumentLines");
                 });
 
             modelBuilder.Entity("CRM.Shared.ExternalTicketApiKey", b =>
@@ -1806,6 +1862,11 @@ namespace CRM.Server.Migrations
 
                     b.Property<int?>("ActivityReminderMinutesTask")
                         .HasColumnType("int");
+
+                    b.Property<string>("BaseCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
 
                     b.Property<decimal>("DefaultVatRate")
                         .HasPrecision(5, 2)
@@ -3912,6 +3973,9 @@ namespace CRM.Server.Migrations
                     b.Property<int>("Project")
                         .HasColumnType("int");
 
+                    b.Property<bool>("RequiresIntervention")
+                        .HasColumnType("bit");
+
                     b.Property<int>("Time")
                         .HasColumnType("int");
 
@@ -5040,15 +5104,48 @@ namespace CRM.Server.Migrations
                         .HasForeignKey("AttachmentFileId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("CRM.Shared.Activity", "Activity")
+                        .WithMany()
+                        .HasForeignKey("IdActivity")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("CRM.Shared.TicketIntervention", "TicketIntervention")
                         .WithMany("ExpenseReceipts")
                         .HasForeignKey("TicketInterventionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CRM.Shared.ApplicationUser", "UserSpender")
+                        .WithMany()
+                        .HasForeignKey("IdUserSpender")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Activity");
 
                     b.Navigation("AttachmentFile");
 
                     b.Navigation("TicketIntervention");
+
+                    b.Navigation("UserSpender");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ExpenseReceiptDocument", b =>
+                {
+                    b.HasOne("CRM.Shared.ExpenseReceipt", "ExpenseReceipt")
+                        .WithMany("Documents")
+                        .HasForeignKey("ExpenseReceiptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                    b.Navigation("ExpenseReceipt");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ExpenseReceiptDocumentLine", b =>
+                {
+                    b.HasOne("CRM.Shared.ExpenseReceiptDocument", "ExpenseReceiptDocument")
+                        .WithMany("Lines")
+                        .HasForeignKey("ExpenseReceiptDocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                    b.Navigation("ExpenseReceiptDocument");
                 });
 
             modelBuilder.Entity("CRM.Shared.ExternalTicketApiKey", b =>
@@ -5349,6 +5446,16 @@ namespace CRM.Server.Migrations
                     b.Navigation("GanttPlan");
 
                     b.Navigation("ProductType");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ExpenseReceipt", b =>
+                {
+                    b.Navigation("Documents");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ExpenseReceiptDocument", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("CRM.Shared.GanttPlan", b =>

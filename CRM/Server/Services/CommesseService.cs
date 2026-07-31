@@ -590,8 +590,12 @@ namespace CRM.Server.Services
             var interventionIds = interventions.Select(i => i.Id).ToList();
             if (interventionIds.Count > 0)
             {
+                // Solo le note spese legate a QUESTI interventi: da quando il collegamento e'
+                // facoltativo esistono spese senza intervento (trasferte pre-vendita, costi
+                // generali) che non c'entrano nulla con la commessa che si sta cancellando.
                 var receipts = await _context.ExpenseReceipts
-                    .Where(r => interventionIds.Contains(r.TicketInterventionId))
+                    .Where(r => r.TicketInterventionId != null
+                             && interventionIds.Contains(r.TicketInterventionId.Value))
                     .ToListAsync();
                 _context.ExpenseReceipts.RemoveRange(receipts);
 

@@ -62,9 +62,6 @@ namespace CRM.Client.Pages.Tickets
         public Action OnClickTicketClose { get; set; }
 
         [Parameter]
-        public EventCallback OnClickPrint { get; set; }
-
-        [Parameter]
         public bool ViewCommands { get; set; } = true;
 
         [Parameter]
@@ -441,14 +438,6 @@ namespace CRM.Client.Pages.Tickets
                 _isChangingBlock = false;
                 await InvokeAsync(StateHasChanged);
             }
-        }
-
-        private async void TicketPrint()
-        {
-            if (OnClickPrint.HasDelegate)
-                await OnClickPrint.InvokeAsync();
-            else
-                NavigationManager.NavigateTo($"/Tickets/Report/{Id}");
         }
 
         private async Task DownloadPdf()

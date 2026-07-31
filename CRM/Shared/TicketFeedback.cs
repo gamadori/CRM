@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -41,13 +41,13 @@ namespace CRM.Shared
         public string IdUser { get; set; }
 
         /// <summary>
-        /// Data e ora in cui è stato lasciato il feedback
+        /// Data e ora in cui Ã¨ stato lasciato il feedback
         /// </summary>
         [Display(Name = "Data Feedback")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         /// <summary>
-        /// Indica se il feedback è stato letto/visualizzato dall'admin
+        /// Indica se il feedback Ã¨ stato letto/visualizzato dall'admin
         /// </summary>
         public bool IsRead { get; set; } = false;
 

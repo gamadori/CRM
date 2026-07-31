@@ -727,7 +727,7 @@
     <value>Chilometri totali</value>
   </data>
   <data name="OnlyUsersAssigned" xml:space="preserve">
-    <value>Solo utenti assegnati al ticket possono essere selezionati. Il primo utente è considerato il principale.</value>
+    <value>Puoi selezionare gli utenti assegnati al ticket e i membri del gruppo assegnato: registrare l'intervento vale come presa in carico. Il primo utente e' considerato il principale.</value>
   </data>
   <data name="AddTimePeriod" xml:space="preserve">
     <value>Aggiungi periodo di tempo</value>
@@ -902,5 +902,341 @@
   </data>
   <data name="Pausa" xml:space="preserve">
     <value>Pausa</value>
+  </data>
+  <data name="Ticket assigned to group" xml:space="preserve">
+    <value>Ticket assegnato al gruppo</value>
+  </data>
+  <data name="Saving will also take the ticket in charge for" xml:space="preserve">
+    <value>Salvando, il ticket verra' preso in carico anche da</value>
+  </data>
+  <data name="Group members can be selected: recording the intervention takes the ticket in charge" xml:space="preserve">
+    <value>Puoi selezionare i membri del gruppo: registrare l'intervento vale come presa in carico</value>
+  </data>
+  <data name="Will be taken in charge on save" xml:space="preserve">
+    <value>Prendera' in carico il ticket al salvataggio</value>
+  </data>
+  <data name="Already assigned to the ticket" xml:space="preserve">
+    <value>Gia' assegnato al ticket</value>
+  </data>
+  <data name="Candidate from the assigned group: selecting them takes the ticket in charge" xml:space="preserve">
+    <value>Candidato dal gruppo assegnato: selezionandolo prendera' in carico il ticket</value>
+  </data>
+  <data name="In charge" xml:space="preserve">
+    <value>In carico</value>
+  </data>
+  <data name="No candidate users for this ticket" xml:space="preserve">
+    <value>Nessun utente candidato per questo ticket</value>
+  </data>
+  <data name="Assign the ticket to a user or to a group to be able to record an intervention" xml:space="preserve">
+    <value>Assegna il ticket a un utente o a un gruppo per poter registrare un intervento</value>
+  </data>
+  <data name="Ticket taken in charge by" xml:space="preserve">
+    <value>Ticket preso in carico da</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Attenzione</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Errore</value>
+  </data>
+  <data name="Success" xml:space="preserve">
+    <value>Operazione completata</value>
+  </data>
+  <data name="Failed to assign users" xml:space="preserve">
+    <value>Assegnazione utenti non riuscita</value>
+  </data>
+  <data name="Select at least one user for the intervention" xml:space="preserve">
+    <value>Seleziona almeno un utente per l'intervento</value>
+  </data>
+  <data name="Chiudere il Ticket?" xml:space="preserve">
+    <value>Chiudere il ticket?</value>
+  </data>
+  <data name="Chiusura Ticket" xml:space="preserve">
+    <value>Chiusura ticket</value>
+  </data>
+  <data name="Ticket non chiuso" xml:space="preserve">
+    <value>Ticket non chiuso</value>
+  </data>
+  <data name="Chiusura non riuscita." xml:space="preserve">
+    <value>Chiusura non riuscita.</value>
+  </data>
+  <data name="AcceptedReceiptFiles" xml:space="preserve">
+    <value>JPG, PNG o PDF - Massimo 10 MB</value>
+  </data>
+  <data name="AddLine" xml:space="preserve">
+    <value>Aggiungi riga</value>
+  </data>
+  <data name="Amount" xml:space="preserve">
+    <value>Importo</value>
+  </data>
+  <data name="AttachedDocument" xml:space="preserve">
+    <value>Documento allegato</value>
+  </data>
+  <data name="AzureAnalyzingDocument" xml:space="preserve">
+    <value>Azure AI sta analizzando il documento</value>
+  </data>
+  <data name="AzureUploadHint" xml:space="preserve">
+    <value>Carica un PDF o un'immagine dello scontrino per estrarre automaticamente i dati tramite Azure AI.</value>
+  </data>
+  <data name="BusinessVisits" xml:space="preserve">
+    <value>Visite commerciali e di cortesia</value>
+  </data>
+  <data name="ByCurrency" xml:space="preserve">
+    <value>Per valuta</value>
+  </data>
+  <data name="ByPerson" xml:space="preserve">
+    <value>Per persona</value>
+  </data>
+  <data name="ChangePeriodOrFilter" xml:space="preserve">
+    <value>Cambia periodo o filtro per vedere altre spese.</value>
+  </data>
+  <data name="CombinedTotal" xml:space="preserve">
+    <value>Totale aggregato</value>
+  </data>
+  <data name="ConfirmDataImmediately" xml:space="preserve">
+    <value>Conferma immediatamente i dati</value>
+  </data>
+  <data name="Confirmed" xml:space="preserve">
+    <value>Confermata</value>
+  </data>
+  <data name="Context" xml:space="preserve">
+    <value>Contesto</value>
+  </data>
+  <data name="Currency" xml:space="preserve">
+    <value>Valuta</value>
+  </data>
+  <data name="DeleteLine" xml:space="preserve">
+    <value>Elimina riga</value>
+  </data>
+  <data name="Description" xml:space="preserve">
+    <value>Descrizione</value>
+  </data>
+  <data name="Document" xml:space="preserve">
+    <value>Documento</value>
+  </data>
+  <data name="DocumentTotal" xml:space="preserve">
+    <value>Totale documento</value>
+  </data>
+  <data name="DownloadPdf" xml:space="preserve">
+    <value>Scarica PDF</value>
+  </data>
+  <data name="EcbRateHint" xml:space="preserve">
+    <value>Proposto dai cambi di riferimento BCE alla data della spesa.</value>
+  </data>
+  <data name="EditExpenseReceipt" xml:space="preserve">
+    <value>Modifica nota spese</value>
+  </data>
+  <data name="EditExpenseReceiptData" xml:space="preserve">
+    <value>Modifica dati nota spese</value>
+  </data>
+  <data name="EnterManuallyWithoutDocument" xml:space="preserve">
+    <value>Inserisci manualmente senza documento</value>
+  </data>
+  <data name="Everyone" xml:space="preserve">
+    <value>Tutti</value>
+  </data>
+  <data name="ExchangeRateTo" xml:space="preserve">
+    <value>Cambio verso {0}</value>
+  </data>
+  <data name="ExcludedFromTotalMissingCurrency" xml:space="preserve">
+    <value>Non comprese nel totale: manca la valuta o il cambio.</value>
+  </data>
+  <data name="ExpenseReceiptCount" xml:space="preserve">
+    <value>{0} note spese</value>
+  </data>
+  <data name="ExpenseReceiptDetails" xml:space="preserve">
+    <value>Dettaglio nota spese</value>
+  </data>
+  <data name="ExpenseReceiptNotFound" xml:space="preserve">
+    <value>Nota spese non trovata.</value>
+  </data>
+  <data name="ExpensesWithoutExchangeRate" xml:space="preserve">
+    <value>{0} spese senza cambio</value>
+  </data>
+  <data name="ExtractedData" xml:space="preserve">
+    <value>Dati estratti</value>
+  </data>
+  <data name="ExtractionCompleted" xml:space="preserve">
+    <value>Estrazione completata con successo!</value>
+  </data>
+  <data name="ExtractionConfidence" xml:space="preserve">
+    <value>Affidabilità estrazione</value>
+  </data>
+  <data name="ExtractionFailedEnterManually" xml:space="preserve">
+    <value>Estrazione non riuscita. Inserisci i dati manualmente.</value>
+  </data>
+  <data name="FiscalDocument" xml:space="preserve">
+    <value>Documento fiscale</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>Generali</value>
+  </data>
+  <data name="GeneralExpensesHint" xml:space="preserve">
+    <value>Spese senza un lavoro di riferimento</value>
+  </data>
+  <data name="GrandTotal" xml:space="preserve">
+    <value>Totale complessivo</value>
+  </data>
+  <data name="InCurrency" xml:space="preserve">
+    <value>In {0}</value>
+  </data>
+  <data name="InterventionExpenses" xml:space="preserve">
+    <value>Spese sostenute durante un intervento</value>
+  </data>
+  <data name="InterventionNumber" xml:space="preserve">
+    <value>Intervento #{0}</value>
+  </data>
+  <data name="Items" xml:space="preserve">
+    <value>Voci</value>
+  </data>
+  <data name="LineCount" xml:space="preserve">
+    <value>{0} righe</value>
+  </data>
+  <data name="Lines" xml:space="preserve">
+    <value>Righe</value>
+  </data>
+  <data name="Merchant" xml:space="preserve">
+    <value>Esercente</value>
+  </data>
+  <data name="MerchantNotDetected" xml:space="preserve">
+    <value>Esercente non rilevato</value>
+  </data>
+  <data name="MissingCurrencyOrRate" xml:space="preserve">
+    <value>Manca la valuta o il cambio: non entra nei totali</value>
+  </data>
+  <data name="MultiDocumentPdfDetected" xml:space="preserve">
+    <value>PDF multi-documento: {0} documenti fiscali rilevati</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Nuova</value>
+  </data>
+  <data name="NewExpenseReceipt" xml:space="preserve">
+    <value>Nuova nota spese</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Successiva</value>
+  </data>
+  <data name="NoExpenseReceiptsInPeriod" xml:space="preserve">
+    <value>Nessuna nota spese nel periodo</value>
+  </data>
+  <data name="NoLinesDetected" xml:space="preserve">
+    <value>Nessuna riga rilevata.</value>
+  </data>
+  <data name="NotDetected" xml:space="preserve">
+    <value>Non rilevata</value>
+  </data>
+  <data name="Notes" xml:space="preserve">
+    <value>Note</value>
+  </data>
+  <data name="OnlyMine" xml:space="preserve">
+    <value>Solo le mie</value>
+  </data>
+  <data name="OpenItem" xml:space="preserve">
+    <value>Apri {0}</value>
+  </data>
+  <data name="Or" xml:space="preserve">
+    <value>oppure</value>
+  </data>
+  <data name="PageOfTotal" xml:space="preserve">
+    <value>Pagina {0} di {1} - {2} in tutto</value>
+  </data>
+  <data name="PageShort" xml:space="preserve">
+    <value>pag.</value>
+  </data>
+  <data name="PendingConfirmation" xml:space="preserve">
+    <value>Da confermare</value>
+  </data>
+  <data name="Period" xml:space="preserve">
+    <value>Periodo</value>
+  </data>
+  <data name="Person" xml:space="preserve">
+    <value>Chi</value>
+  </data>
+  <data name="Previous" xml:space="preserve">
+    <value>Precedente</value>
+  </data>
+  <data name="PreviousMonth" xml:space="preserve">
+    <value>Mese scorso</value>
+  </data>
+  <data name="Price" xml:space="preserve">
+    <value>Prezzo</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>Elaborazione in corso...</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>Quantità</value>
+  </data>
+  <data name="QuantityShort" xml:space="preserve">
+    <value>Q.tà</value>
+  </data>
+  <data name="ReceiptNumber" xml:space="preserve">
+    <value>Scontrino {0}</value>
+  </data>
+  <data name="ReceiptsInDocument" xml:space="preserve">
+    <value>Scontrini nel documento</value>
+  </data>
+  <data name="SaveExpenseReceipt" xml:space="preserve">
+    <value>Salva nota spese</value>
+  </data>
+  <data name="SelectPerson" xml:space="preserve">
+    <value>Seleziona la persona</value>
+  </data>
+  <data name="SelectReceiptOrInvoice" xml:space="preserve">
+    <value>Clicca per selezionare scontrino o fattura</value>
+  </data>
+  <data name="SeparateExpenseReceiptsWillBeCreated" xml:space="preserve">
+    <value>Verrà creata una nota spese separata per ogni documento fiscale, tutte collegate a questo file.</value>
+  </data>
+  <data name="ShowAll" xml:space="preserve">
+    <value>Mostra tutte</value>
+  </data>
+  <data name="ShowOnlyThese" xml:space="preserve">
+    <value>Vedi solo queste</value>
+  </data>
+  <data name="Spender" xml:space="preserve">
+    <value>Chi ha speso</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Stato</value>
+  </data>
+  <data name="Suggest" xml:space="preserve">
+    <value>Proponi</value>
+  </data>
+  <data name="Tax" xml:space="preserve">
+    <value>IVA/Tasse</value>
+  </data>
+  <data name="ThisMonth" xml:space="preserve">
+    <value>Questo mese</value>
+  </data>
+  <data name="Tip" xml:space="preserve">
+    <value>Suggerimento</value>
+  </data>
+  <data name="ToConvert" xml:space="preserve">
+    <value>da convertire</value>
+  </data>
+  <data name="Total" xml:space="preserve">
+    <value>Totale</value>
+  </data>
+  <data name="TotalAmount" xml:space="preserve">
+    <value>Importo totale</value>
+  </data>
+  <data name="TransactionDate" xml:space="preserve">
+    <value>Data transazione</value>
+  </data>
+  <data name="UploadAnother" xml:space="preserve">
+    <value>Ricarica altro</value>
+  </data>
+  <data name="UploadedDocument" xml:space="preserve">
+    <value>Documento caricato</value>
+  </data>
+  <data name="UploadReceiptOrInvoice" xml:space="preserve">
+    <value>Carica scontrino o fattura</value>
+  </data>
+  <data name="Visits" xml:space="preserve">
+    <value>Visite</value>
+  </data>
+  <data name="Year" xml:space="preserve">
+    <value>Anno</value>
   </data>
 </root>

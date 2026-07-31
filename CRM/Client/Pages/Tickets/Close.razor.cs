@@ -1,6 +1,7 @@
 ﻿using CRM.Client.Pages.Groups;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using Microsoft.Extensions.Localization;
@@ -31,6 +32,9 @@ namespace CRM.Client.Pages.Tickets
         DialogService DialogService { get; set; }
 
         [Inject]
+        NotificationService NotificationService { get; set; }
+
+        [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
 
@@ -54,6 +58,19 @@ namespace CRM.Client.Pages.Tickets
         /// <summary>True se il ticket ha un riepilogo operativo riutilizzabile come soluzione.</summary>
         private bool _hasOperationalSummary => !string.IsNullOrWhiteSpace(_ticket?.OperationalSummary);
 
+        /// <summary>Precondizioni calcolate dal server: cosa impedisce la chiusura e cosa mostrare.</summary>
+        private TicketClosePreconditionDTO? _precondition;
+
+        /// <summary>
+        /// La modalita' di intervento si chiede solo sui tipi che possono chiudere senza interventi:
+        /// altrove il dato sta sull'intervento. Finche' le precondizioni non sono arrivate il campo
+        /// resta nascosto, cosi' non lampeggia per poi sparire.
+        /// </summary>
+        private bool _showSupportField => _precondition?.ShowSupportField == true;
+
+        /// <summary>True quando il server rifiuterebbe la chiusura: il motivo e' in BlockReason.</summary>
+        private bool _closeBlocked => _precondition != null && !_precondition.CanClose;
+
 
         protected override void OnParametersSet()
         {
@@ -66,6 +83,7 @@ namespace CRM.Client.Pages.Tickets
         protected override async Task OnInitializedAsync()
         {
             _ticket = await _service.Get(Id);
+            _precondition = await _service.GetClosePreconditionAsync(Id);
 
             _ticketClose.Description = _ticket.CloseDescription;
             _ticketClose.Note = _ticket.CloseNote;
@@ -104,35 +122,51 @@ namespace CRM.Client.Pages.Tickets
         
         protected async Task HandleValidSubmit()
         {
-
-            bool resp;
-
             try
             {
-                if (await DialogService.Confirm(Localize["Chiudere il Ticket?"], Localize["Chiusura Ticket"]) == true)
+                // Le precondizioni vengono rilette adesso: fra l'apertura della pagina e il
+                // salvataggio qualcuno puo' aver registrato l'intervento (o bloccato il ticket).
+                _precondition = await _service.GetClosePreconditionAsync(Id);
+
+                if (_closeBlocked)
                 {
-                    Ticket ticket = await _service.Get(Id);
-
-                    if (ticket != null)
-                    {
-
-
-                        resp = await _service.CloseTicket(Id, _ticketClose);
-
-                        if (resp)
-                        {
-                            if (OnClickSave != null)
-                                OnClickSave();
-                            else
-                                NavigationManager.NavigateTo($"/Tickets/{Id}");
-                        }
-                    }
+                    NotifyCloseRefused(_precondition!.BlockReason);
+                    return;
                 }
+
+                if (await DialogService.Confirm(Localize["Chiudere il Ticket?"], Localize["Chiusura Ticket"]) != true)
+                    return;
+
+                var resp = await _service.CloseTicket(Id, _ticketClose);
+
+                if (!resp.Success)
+                {
+                    // Il server ha l'ultima parola: se rifiuta, l'operatore deve leggere perche'.
+                    NotifyCloseRefused(resp.ErrorMessage);
+                    _precondition = await _service.GetClosePreconditionAsync(Id);
+                    return;
+                }
+
+                if (OnClickSave != null)
+                    OnClickSave();
+                else
+                    NavigationManager.NavigateTo($"/Tickets/{Id}");
             }
             catch (AccessTokenNotAvailableException exception)
             {
                 exception.Redirect();
             }
+        }
+
+        private void NotifyCloseRefused(string? reason)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = Localize["Ticket non chiuso"],
+                Detail = string.IsNullOrWhiteSpace(reason) ? Localize["Chiusura non riuscita."] : reason,
+                Duration = 8000
+            });
         }
 
         protected void Cancel()

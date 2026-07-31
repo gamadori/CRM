@@ -78,6 +78,19 @@ namespace CRM.Shared
         [Display(Name = "Preavviso scadenza (minuti, vuoto = globale)")]
         public int? ExpiryReminderMinutes { get; set; }
 
+        /// <summary>
+        /// Se true il ticket non si chiude senza almeno un intervento registrato: ore, trasferte,
+        /// parti montate e rapportino vivono solo negli interventi, quindi chiudere senza
+        /// significa perdere il lavoro fatto.
+        /// <para>
+        /// Default true, da spegnere sui tipi che si chiudono legittimamente senza lavoro
+        /// (duplicati, richieste informazioni): su quei tipi la modalita' di intervento resta
+        /// chiesta in chiusura su <see cref="Ticket.Support"/>, perche' nessun intervento la porta.
+        /// </para>
+        /// </summary>
+        [Display(Name = "Richiede almeno un intervento per la chiusura")]
+        public bool RequiresIntervention { get; set; } = true;
+
         [NotMapped]
         public string Language { get; set; }
         public ICollection<ApplicationUser> Users { get; set; }

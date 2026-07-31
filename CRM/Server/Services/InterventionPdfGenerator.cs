@@ -81,6 +81,14 @@ namespace CRM.Server.Services
                     .Include(x => x.TicketInterventionArticles)
                         .ThenInclude(a => a.Article)
                     .Include(x=>x.TicketInterventionTime)
+                    .Include(x => x.ExpenseReceipts)
+                        .ThenInclude(er => er.AttachmentFile)
+                    .Include(x => x.ExpenseReceipts)
+                        .ThenInclude(er => er.Documents)
+                            .ThenInclude(document => document.Lines)
+                    .Include(x => x.ExpenseReceipts)
+                        .ThenInclude(er => er.UserSpender)
+                            .ThenInclude(u => u.Contact)
               
                     .FirstOrDefaultAsync(x => x.Id == interventionId);
 
@@ -122,6 +130,12 @@ namespace CRM.Server.Services
                             if (!string.IsNullOrWhiteSpace(intervention.Activities))
                             {
                                 col.Item().PaddingTop(10).Element(c => ActivitiesBlock(c, intervention.Activities, labels));
+                            }
+
+                            if (intervention.ExpenseReceipts != null && intervention.ExpenseReceipts.Any())
+                            {
+                                var baseCurrency = settings?.BaseCurrency ?? "EUR";
+                                col.Item().PaddingTop(10).Element(c => ExpenseReceiptsBlock(c, intervention.ExpenseReceipts.ToList(), baseCurrency));
                             }
 
                             col.Item().PaddingTop(10).Element(c => CustomerDeclarationBlock(c, labels));
@@ -492,6 +506,149 @@ namespace CRM.Server.Services
                     .Text(activities);
             });
         }
+
+        private static void ExpenseReceiptsBlock(IContainer container, List<ExpenseReceipt> receipts, string baseCurrency)
+        {
+            var orderedReceipts = receipts
+                .OrderBy(r => r.TransactionDate ?? r.CreatedDate)
+                .ThenBy(r => r.Id)
+                .ToList();
+
+            container.Border(1).BorderColor(Colors.Grey.Lighten2).Padding(10).Column(col =>
+            {
+                col.Item().Text("Note spese").SemiBold();
+
+                var attachmentGroups = orderedReceipts
+                    .GroupBy(receipt => receipt.AttachmentFileId.HasValue
+                        ? $"attachment:{receipt.AttachmentFileId.Value}"
+                        : $"receipt:{receipt.Id}");
+
+                foreach (var attachmentGroup in attachmentGroups)
+                {
+                    var firstReceipt = attachmentGroup.First();
+                    var attachmentName = firstReceipt.AttachmentFile?.Name
+                        ?? $"Allegato #{firstReceipt.AttachmentFileId}";
+                    var spender = firstReceipt.UserSpender?.NameComplete;
+
+                    col.Item().PaddingTop(6).Background(Colors.Grey.Lighten4).Padding(5).Column(header =>
+                    {
+                        header.Item().Text(text =>
+                        {
+                            text.Span(attachmentName).SemiBold().FontSize(8);
+                            if (!string.IsNullOrWhiteSpace(spender))
+                                text.Span($" - {spender}").FontSize(8);
+                        });
+
+                        header.Item().Text(text =>
+                        {
+                            text.Span("Note collegate al documento: ")
+                                .FontSize(7)
+                                .FontColor(Colors.Grey.Darken1);
+                            text.Span(string.Join(", ", attachmentGroup.Select(receipt => $"#{receipt.Id}")))
+                                .SemiBold()
+                                .FontSize(7)
+                                .FontColor(Colors.Grey.Darken1);
+                        });
+                    });
+
+                    foreach (var receipt in attachmentGroup)
+                    {
+                        var sections = GetReceiptDocumentSections(receipt);
+                        for (var i = 0; i < sections.Count; i++)
+                        {
+                            var section = sections[i];
+                            var pageLabel = section.PageFrom.HasValue
+                                ? section.PageTo > section.PageFrom
+                                    ? $" - pagine {section.PageFrom}-{section.PageTo}"
+                                    : $" - pagina {section.PageFrom}"
+                                : string.Empty;
+                            var title = $"Nota #{receipt.Id}{pageLabel}";
+
+                            col.Item().PaddingTop(4).Table(t =>
+                            {
+                                t.ColumnsDefinition(cols =>
+                                {
+                                    cols.RelativeColumn(1.4f);
+                                    cols.RelativeColumn(2.2f);
+                                    cols.RelativeColumn(1.2f);
+                                    cols.RelativeColumn(1.2f);
+                                    cols.RelativeColumn(1.1f);
+                                });
+
+                                t.Cell().Element(HeaderCell).Text(title);
+                                t.Cell().Element(HeaderCell).Text("Esercente");
+                                t.Cell().Element(HeaderCell).Text("Data");
+                                t.Cell().Element(HeaderCell).Text("Totale");
+                                t.Cell().Element(HeaderCell).Text("IVA");
+
+                                t.Cell().Element(ValueCell).Text(section.DocumentType ?? "-").FontSize(8);
+                                t.Cell().Element(ValueCell).Text(section.MerchantName ?? "-").FontSize(8);
+                                t.Cell().Element(ValueCell).Text(section.TransactionDate?.ToString("dd/MM/yyyy") ?? "-").FontSize(8);
+                                t.Cell().Element(ValueCell).Text(FormatReceiptAmount(section.TotalAmount, section.Currency)).FontSize(8);
+                                t.Cell().Element(ValueCell).Text(FormatReceiptAmount(section.TaxAmount, section.Currency)).FontSize(8);
+                            });
+
+                            if (section.Lines != null && section.Lines.Any())
+                            {
+                                col.Item().PaddingLeft(8).PaddingTop(2).Text(
+                                    $"Righe: {section.Lines.Count}")
+                                    .FontSize(7)
+                                    .FontColor(Colors.Grey.Darken1);
+                            }
+                        }
+                    }
+                }
+
+                col.Item().PaddingTop(8).Background(Colors.Grey.Lighten4).Padding(6).Row(row =>
+                {
+                    var converted = orderedReceipts.Where(r => r.AmountBase.HasValue).Sum(r => r.AmountBase.Value);
+                    var needsConversion = orderedReceipts.Count(r => r.TotalAmount.HasValue && !r.AmountBase.HasValue);
+
+                    row.RelativeItem().Text(text =>
+                    {
+                        text.Span("Totale note spese: ").SemiBold().FontSize(8);
+                        text.Span($"{FormatNumber(converted)} {baseCurrency}").FontSize(8);
+
+                        if (needsConversion > 0)
+                        {
+                            text.Span($"  |  Da convertire: {needsConversion}").FontSize(8).FontColor(Colors.Orange.Darken2);
+                        }
+                    });
+                });
+            });
+        }
+
+        private static List<ExpenseReceiptDocument> GetReceiptDocumentSections(ExpenseReceipt receipt)
+        {
+            if (receipt.Documents != null && receipt.Documents.Any())
+                return receipt.Documents.OrderBy(document => document.SortOrder).ToList();
+
+            return new List<ExpenseReceiptDocument>
+            {
+                new()
+                {
+                    DocumentType = "Nota spesa",
+                    MerchantName = receipt.MerchantName,
+                    TransactionDate = receipt.TransactionDate,
+                    TotalAmount = receipt.TotalAmount,
+                    TaxAmount = receipt.TaxAmount,
+                    Currency = receipt.Currency,
+                    ExtractionConfidence = receipt.ExtractionConfidence
+                }
+            };
+        }
+
+        private static string FormatReceiptAmount(decimal? amount, string? currency)
+        {
+            if (!amount.HasValue)
+                return "-";
+
+            var value = FormatNumber(amount.Value);
+            return string.IsNullOrWhiteSpace(currency) ? value : $"{value} {currency}";
+        }
+
+        private static string FormatNumber(decimal amount) =>
+            amount.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("it-IT"));
 
         private static void CustomerDeclarationBlock(IContainer container, InterventionReportLabels labels)
         {

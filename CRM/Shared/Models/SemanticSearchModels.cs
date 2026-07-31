@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace CRM.Shared.Models
 {
@@ -18,7 +18,7 @@ namespace CRM.Shared.Models
         public int TopResults { get; set; } = 10;
 
         /// <summary>
-        /// Soglia minima di similarit� (0-100)
+        /// Soglia minima di similarità (0-100)
         /// </summary>
         public double MinSimilarityThreshold { get; set; } = 60.0;
 

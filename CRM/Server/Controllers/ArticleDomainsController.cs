@@ -1,4 +1,4 @@
-using CRM.Server.Data;
+﻿using CRM.Server.Data;
 using CRM.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +29,7 @@ public class ArticleDomainsController : ControllerBase
         int id, 
         [FromQuery] int? currentStateId)
     {
-        // Se c'� uno stato corrente, filtra gli eventi disponibili in base alle transizioni
+        // Se c'è uno stato corrente, filtra gli eventi disponibili in base alle transizioni
         if (currentStateId.HasValue)
         {
             var availableEventIds = await _context.ArticleStateTransitions

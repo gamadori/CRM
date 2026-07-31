@@ -75,7 +75,7 @@
                     {
                         <small class="form-text text-muted">
                             <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
-                            Ricerca contatti disponibile solo se l'azienda � specificata
+                            Ricerca contatti disponibile solo se l'azienda è specificata
                         </small>
                     }
                 </div>
@@ -101,7 +101,7 @@
                     {
                         <small class="form-text text-muted">
                             <i class="material-icons" style="font-size: 14px; vertical-align: middle;">info</i>
-                            Riceverai un'email per confermare la firma. La firma sar� valida solo dopo la conferma.
+                            Riceverai un'email per confermare la firma. La firma sarà valida solo dopo la conferma.
                         </small>
                     }
                 </div>
@@ -522,7 +522,7 @@
 
             if (string.IsNullOrWhiteSpace(SignerName))
             {
-                _errorName = "Il nome e cognome del firmatario � obbligatorio";
+                _errorName = "Il nome e cognome del firmatario è obbligatorio";
                 hasErrors = true;
             }
 
@@ -543,7 +543,7 @@
             var isEmpty = await JS.InvokeAsync<bool>("signaturePad.isEmpty");
             if (isEmpty)
             {
-                _errorSignature = "La firma � vuota. Firma nel riquadro bianco prima di confermare.";
+                _errorSignature = "La firma è vuota. Firma nel riquadro bianco prima di confermare.";
                 hasErrors = true;
             }
 

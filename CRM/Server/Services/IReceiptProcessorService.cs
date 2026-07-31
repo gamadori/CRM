@@ -1,4 +1,4 @@
-using CRM.Shared.DTOs;
+﻿using CRM.Shared.DTOs;
 using System.Threading.Tasks;
 
 namespace CRM.Server.Services
@@ -28,7 +28,7 @@ namespace CRM.Server.Services
         Task<ReceiptExtractionResult> ProcessReceiptFromBytesAsync(byte[] fileBytes, string fileName, bool useCustomModel = false, string customModelId = null);
 
         /// <summary>
-        /// Verifica la connettivit� con Azure Form Recognizer
+        /// Verifica la connettività con Azure Form Recognizer
         /// </summary>
         /// <returns>True se connesso correttamente</returns>
         Task<bool> HealthCheckAsync();

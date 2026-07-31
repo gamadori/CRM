@@ -444,6 +444,15 @@ namespace CRM.Shared
 
         public int? IdCommessa { get; set; }
 
+        /// <summary>
+        /// Presenza del legame con una commessa, non una commessa specifica: true = solo lavoro di
+        /// commessa, false = solo assistenza, null = tutti.
+        /// <para>
+        /// Distinto da <see cref="IdCommessa"/>, che filtra su una commessa precisa.
+        /// </para>
+        /// </summary>
+        public bool? HasCommessa { get; set; }
+
         public string? Search { get; set; }
 
         public string IdUserOpened { get; set; }

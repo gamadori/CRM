@@ -1,4 +1,4 @@
-@using CRM.Shared
+﻿@using CRM.Shared
 @using CRM.Shared.DTOs
 @using Microsoft.Extensions.Localization
 @inject IStringLocalizer<CRM.Shared.Resources.Enums.CompanyTypes> LocalizeCompanyTypes
@@ -22,7 +22,7 @@
         <span class="badge @GetBadgeClass(Node.CompanyType)" style="font-size: 0.7rem;">@LocalizeCompanyTypes[Node.CompanyType.ToString()]</span>
         @if (!string.IsNullOrEmpty(Node.Citta))
         {
-            <small class="text-muted ms-1">� @Node.Citta</small>
+            <small class="text-muted ms-1">— @Node.Citta</small>
         }
     </div>
     @if (_expanded && Node.Children.Any())

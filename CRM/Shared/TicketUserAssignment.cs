@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -20,7 +20,7 @@ namespace CRM.Shared
         public string IdUser { get; set; }
 
         /// <summary>
-        /// Data e ora in cui l'utente � stato assegnato al ticket
+        /// Data e ora in cui l'utente è stato assegnato al ticket
         /// </summary>
         public DateTime AssignedDate { get; set; } = DateTime.Now;
 

@@ -1,11 +1,16 @@
-@page "/TicketInterventions/{InterventionId:int}/ExpenseReceipts/{ReceiptId:int}/Details"
+Ôªø@page "/TicketInterventions/{InterventionId:int}/ExpenseReceipts/{ReceiptId:int}/Details"
+@* Gestita dalla scheda dell'attivita': il ritorno e il breadcrumb restano sull'attivita'. *@
+@page "/Activities/{ActivityId:int}/ExpenseReceipts/{ReceiptId:int}/Details"
+@* Senza contesto nel percorso: una spesa che un intervento non ce l'ha era invisibile, perche'
+   non esisteva un indirizzo a cui guardarla. *@
+@page "/ExpenseReceipts/{ReceiptId:int}/Details"
 @using CRM.Shared.DTOs
 @using Microsoft.Extensions.Localization
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize
 
-<BlazorHeader Header="Dettaglio Nota Spese"></BlazorHeader>
+<BlazorHeader Header="@Localize["ExpenseReceiptDetails"]"></BlazorHeader>
 
 @if (_isLoading)
 {
@@ -21,7 +26,7 @@ else
 
         <div class="alert alert-danger">
             <i class="material-icons align-middle">error</i>
-            Nota spese non trovata.
+            @Localize["ExpenseReceiptNotFound"]
         </div>
     }
     else
@@ -74,7 +79,7 @@ else
                             Conferma Dati
                         </button>
                     }
-                    <a href="/TicketInterventions/@InterventionId/ExpenseReceipts/@ReceiptId/Edit" class="btn btn-primary">
+                    <a href="@EditUrl" class="btn btn-primary">
                         <i class="material-icons align-middle" style="font-size:18px;">edit</i>
                         Modifica
                     </a>
@@ -94,7 +99,7 @@ else
                             <div class="card-header bg-light">
                                 <h5 class="mb-0">
                                     <i class="material-icons align-middle text-danger">picture_as_pdf</i>
-                                    Documento Allegato
+                                    @Localize["AttachedDocument"]
                                 </h5>
                             </div>
                             <div class="card-body p-0">
@@ -114,7 +119,7 @@ else
                                    class="btn btn-sm btn-outline-primary"
                                    target="_blank">
                                     <i class="material-icons align-middle" style="font-size:16px;">download</i>
-                                    Scarica PDF
+                                    @Localize["DownloadPdf"]
                                 </a>
                                 <span class="ms-2 text-muted small">@_receipt.AttachmentFileName</span>
                             </div>
@@ -124,17 +129,101 @@ else
 
                 <!-- Colonna Dati Estratti -->
                 <div class="@(_receipt.HasAttachment ? "col-lg-5" : "col-12")">
+                    @if (_documentResults.Count > 0)
+                    {
+                        <section class="mb-4" aria-labelledby="fiscal-documents-title">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 id="fiscal-documents-title" class="mb-0">
+                                    <i class="material-icons align-middle">receipt_long</i>
+                                    @(_documentResults.Count > 1 ? Localize["ReceiptsInDocument"] : Localize["FiscalDocument"])
+                                </h5>
+                                @if (_documentResults.Count > 1)
+                                {
+                                    <span class="badge bg-primary">@_documentResults.Count</span>
+                                }
+                            </div>
+
+                            @for (var i = 0; i < _documentResults.Count; i++)
+                            {
+                                var document = _documentResults[i];
+                                <article class="border rounded p-3 mb-3 bg-white">
+                                    <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                                        <div>
+                                            <div class="text-muted small">@Localize["ReceiptNumber", i + 1]</div>
+                                            @if (document.PageFrom.HasValue)
+                                            {
+                                                <div class="text-muted small">
+                                                    @Localize["Page"] @document.PageFrom@(document.PageTo > document.PageFrom ? $"-{document.PageTo}" : null)
+                                                </div>
+                                            }
+                                            <strong>@(string.IsNullOrWhiteSpace(document.MerchantName) ? Localize["MerchantNotDetected"] : document.MerchantName)</strong>
+                                        </div>
+                                        <strong class="text-success text-nowrap">@DocumentMoney(document, document.TotalAmount)</strong>
+                                    </div>
+                                    <dl class="row mb-0 small">
+                                        <dt class="col-5 text-muted fw-normal">@Localize["Date"]</dt>
+                                        <dd class="col-7 mb-1">@(document.TransactionDate?.ToString("dd/MM/yyyy") ?? Localize["NotDetected"])</dd>
+                                        @if (document.TaxAmount.HasValue)
+                                        {
+                                            <dt class="col-5 text-muted fw-normal">@Localize["Tax"]</dt>
+                                            <dd class="col-7 mb-1">@DocumentMoney(document, document.TaxAmount)</dd>
+                                        }
+                                        @if (document.Lines?.Count > 0)
+                                        {
+                                            <dt class="col-5 text-muted fw-normal">@Localize["Items"]</dt>
+                                            <dd class="col-7 mb-1">@document.Lines.Count</dd>
+                                        }
+                                    </dl>
+                                    @if (document.Lines?.Count > 0)
+                                    {
+                                        <details class="mt-2">
+                                            <summary class="small text-primary">@Localize["LineCount", document.Lines.Count]</summary>
+                                            <div class="table-responsive mt-2">
+                                                <table class="table table-sm mb-0 small">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>@Localize["Description"]</th>
+                                                            <th class="text-end">@Localize["QuantityShort"]</th>
+                                                            <th class="text-end">@Localize["Price"]</th>
+                                                            <th class="text-end">@Localize["Total"]</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var line in document.Lines)
+                                                        {
+                                                            <tr>
+                                                                <td>@line.Description</td>
+                                                                <td class="text-end">@line.Quantity?.ToString("N2")</td>
+                                                                <td class="text-end">@DocumentMoney(document, line.UnitPrice)</td>
+                                                                <td class="text-end">@DocumentMoney(document, line.TotalPrice)</td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </details>
+                                    }
+                                </article>
+                            }
+
+                            <div class="d-flex justify-content-between align-items-center border-top border-2 pt-3">
+                                <strong>@Localize["DocumentTotal"]</strong>
+                                <h5 class="mb-0 text-success">@Money(_receipt.TotalAmount)</h5>
+                            </div>
+                        </section>
+                    }
+
                     <div class="card border-0 shadow-sm mb-3">
                         <div class="card-header bg-light">
                             <h5 class="mb-0">
                                 <i class="material-icons align-middle">info</i>
-                                Dati Nota Spese
+                                @(_documentResults.Count > 0 ? "Riepilogo Nota Spese" : "Dati Nota Spese")
                             </h5>
                         </div>
                         <div class="card-body">
                             <table class="table table-borderless">
                                 <tbody>
-                                    @if (!string.IsNullOrEmpty(_receipt.MerchantName))
+                                    @if (_documentResults.Count == 0 && !string.IsNullOrEmpty(_receipt.MerchantName))
                                     {
                                         <tr>
                                             <td class="text-muted" style="width: 40%;">
@@ -145,7 +234,7 @@ else
                                         </tr>
                                     }
 
-                                    @if (_receipt.TransactionDate.HasValue)
+                                    @if (_documentResults.Count == 0 && _receipt.TransactionDate.HasValue)
                                     {
                                         <tr>
                                             <td class="text-muted">
@@ -156,14 +245,35 @@ else
                                         </tr>
                                     }
 
+                                    @* Da dove nasce la spesa. Senza questa riga una spesa di visita,
+                                       aperta dal suo indirizzo diretto, non mostrava alcun legame
+                                       con la visita che l'ha prodotta. *@
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">@ContextIcon</i>
+                                            Contesto
+                                        </td>
+                                        <td>
+                                            @if (ContextUrl != null)
+                                            {
+                                                <a href="@ContextUrl"><strong>@ContextText</strong></a>
+                                            }
+                                            else
+                                            {
+                                                <strong>@ContextText</strong>
+                                            }
+                                        </td>
+                                    </tr>
+
                                     @if (_receipt.TotalAmount.HasValue)
                                     {
                                         <tr>
                                             <td class="text-muted">
-                                                <i class="material-icons align-middle" style="font-size:18px;">euro</i>
+                                                @* Icona neutra: l'euro qui era sbagliato quanto il simbolo. *@
+                                                <i class="material-icons align-middle" style="font-size:18px;">receipt_long</i>
                                                 Importo Totale
                                             </td>
-                                            <td><h5 class="mb-0 text-success">Ä @_receipt.TotalAmount.Value.ToString("N2")</h5></td>
+                                            <td><h5 class="mb-0 text-success">@Money(_receipt.TotalAmount)</h5></td>
                                         </tr>
                                     }
 
@@ -174,7 +284,7 @@ else
                                                 <i class="material-icons align-middle" style="font-size:18px;">calculate</i>
                                                 IVA/Tasse
                                             </td>
-                                            <td><strong class="text-info">Ä @_receipt.TaxAmount.Value.ToString("N2")</strong></td>
+                                            <td><strong class="text-info">@Money(_receipt.TaxAmount)</strong></td>
                                         </tr>
                                     }
 
@@ -185,7 +295,7 @@ else
                                                 <i class="material-icons align-middle" style="font-size:18px;">account_balance_wallet</i>
                                                 Importo Netto
                                             </td>
-                                            <td><strong>Ä @_receipt.NetAmount.Value.ToString("N2")</strong></td>
+                                            <td><strong>@Money(_receipt.NetAmount)</strong></td>
                                         </tr>
                                     }
 
@@ -200,7 +310,7 @@ else
                                         </tr>
                                     }
 
-                                    @if (!string.IsNullOrEmpty(_receipt.Description))
+                                    @if (_documentResults.Count == 0 && !string.IsNullOrEmpty(_receipt.Description))
                                     {
                                         <tr>
                                             <td class="text-muted">
@@ -240,7 +350,7 @@ else
                                 @if (_receipt.ExtractionConfidence.HasValue)
                                 {
                                     <div class="mb-2">
-                                        <small class="text-muted">Affidabilit‡</small>
+                                        <small class="text-muted">Affidabilit√†</small>
                                         <div class="progress" style="height: 25px;">
                                             <div class="progress-bar @GetConfidenceClass(_receipt.ExtractionConfidence.Value)" 
                                                  role="progressbar" 
@@ -315,7 +425,7 @@ else
 
             <!-- Azioni Footer -->
             <div class="mt-4 d-flex gap-2">
-                <a href="/TicketInterventions/@InterventionId/ExpenseReceipts" class="btn btn-outline-secondary">
+                <a href="@ListUrl" class="btn btn-outline-secondary">
                     <i class="material-icons align-middle" style="font-size:18px;">arrow_back</i>
                     Torna alle Note Spese
                 </a>

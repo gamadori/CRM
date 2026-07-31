@@ -110,7 +110,10 @@ namespace BlazoringComponents.Scheduler
                 // ✅ NUOVO: Popola STATO del ticket
                 model.StatusColor = item.GetPropertyValueSafe<string>("StatusColor", string.Empty);
                 model.StatusText = item.GetPropertyValueSafe<string>("StatusText", string.Empty);
-                
+
+                // Commessa: se assente il ticket e' assistenza
+                model.CommessaCode = item.GetPropertyValueSafe<string>("CommessaCode", string.Empty);
+
                 tickets.Add(model);
             }
 

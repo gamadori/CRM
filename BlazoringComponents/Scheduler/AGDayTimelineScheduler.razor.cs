@@ -128,7 +128,8 @@ namespace BlazoringComponents.Scheduler
                     
                     // ? NUOVO: Popola STATO del ticket
                     StatusColor = item.GetPropertyValueSafe<string>("StatusColor", string.Empty),
-                    StatusText = item.GetPropertyValueSafe<string>("StatusText", string.Empty)
+                    StatusText = item.GetPropertyValueSafe<string>("StatusText", string.Empty),
+                    CommessaCode = item.GetPropertyValueSafe<string>("CommessaCode", string.Empty)
                 };
 
                 // Filtra solo i ticket del giorno corrente

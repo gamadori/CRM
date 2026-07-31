@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Configuration;
+Ôªøusing Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 using OpenAI.Embeddings;
@@ -67,7 +67,7 @@ namespace CRM.Server.Services
         }
 
         /// <summary>
-        /// Genera embeddings per pi˘ testi in batch
+        /// Genera embeddings per pi√π testi in batch
         /// </summary>
         public async Task<List<float[]>> GenerateEmbeddingsAsync(List<string> texts)
         {
@@ -97,13 +97,13 @@ namespace CRM.Server.Services
         }
 
         /// <summary>
-        /// Calcola la similarit‡ coseno tra due vettori
+        /// Calcola la similarit√† coseno tra due vettori
         /// </summary>
         public double CalculateCosineSimilarity(float[] vector1, float[] vector2)
         {
             if (vector1 == null || vector2 == null || vector1.Length != vector2.Length)
             {
-                _logger.LogWarning("Vettori non validi per calcolo similarit‡");
+                _logger.LogWarning("Vettori non validi per calcolo similarit√†");
                 return 0.0;
             }
 
@@ -130,12 +130,12 @@ namespace CRM.Server.Services
         }
 
         /// <summary>
-        /// Converte similarit‡ coseno in percentuale (0-100)
+        /// Converte similarit√† coseno in percentuale (0-100)
         /// </summary>
         public double CosineSimilarityToPercentage(double cosineSimilarity)
         {
-            // Per embeddings OpenAI, cosine similarity Ë quasi sempre >= 0
-            // Normalizziamo direttamente 0-1 -> 0-100% (pi˘ intuitivo)
+            // Per embeddings OpenAI, cosine similarity √® quasi sempre >= 0
+            // Normalizziamo direttamente 0-1 -> 0-100% (pi√π intuitivo)
             // Valori negativi (molto rari) vengono trattati come 0%
             if (cosineSimilarity < 0)
             {

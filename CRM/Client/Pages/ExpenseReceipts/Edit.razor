@@ -1,11 +1,16 @@
-@page "/TicketInterventions/{InterventionId:int}/ExpenseReceipts/{ReceiptId:int}/Edit"
+﻿@page "/TicketInterventions/{InterventionId:int}/ExpenseReceipts/{ReceiptId:int}/Edit"
+@* Gestita dalla scheda dell'attivita': il contesto sta nel percorso, e ci resta anche nel
+   breadcrumb e nei pulsanti di ritorno. *@
+@page "/Activities/{ActivityId:int}/ExpenseReceipts/{ReceiptId:int}/Edit"
+@* Senza contesto nel percorso: vedi Details.razor. *@
+@page "/ExpenseReceipts/{ReceiptId:int}/Edit"
 @using CRM.Shared.DTOs
 @using Microsoft.Extensions.Localization
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize
 
-<BlazorHeader Header="Modifica Nota Spese"></BlazorHeader>
+<BlazorHeader Header="@Localize["EditExpenseReceipt"]"></BlazorHeader>
 
 @if (_isLoading)
 {
@@ -15,7 +20,7 @@ else if (_notFound)
 {
     <div class="alert alert-danger">
         <i class="material-icons align-middle">error</i>
-        Nota spese non trovata.
+        @Localize["ExpenseReceiptNotFound"]
     </div>
 }
 else
@@ -25,10 +30,18 @@ else
         <!-- Breadcrumb -->
         <nav aria-label="breadcrumb" class="mb-3">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/TicketInterventions">Interventi</a></li>
-                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId">Intervento #@InterventionId</a></li>
-                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId/ExpenseReceipts">Note Spese</a></li>
-                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId/ExpenseReceipts/@ReceiptId">Nota #@ReceiptId</a></li>
+                @if (InterventionId.HasValue)
+                {
+                    <li class="breadcrumb-item"><a href="/TicketInterventions">Interventi</a></li>
+                    <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId">Intervento #@InterventionId</a></li>
+                }
+                else if (ActivityId.HasValue)
+                {
+                    <li class="breadcrumb-item"><a href="/Agenda">Agenda</a></li>
+                    <li class="breadcrumb-item"><a href="/Activities/@ActivityId/Info">@ActivityLabel</a></li>
+                }
+                <li class="breadcrumb-item"><a href="@ListUrl">Note Spese</a></li>
+                <li class="breadcrumb-item"><a href="@DetailsUrl">Nota #@ReceiptId</a></li>
                 <li class="breadcrumb-item active" aria-current="page">Modifica</li>
             </ol>
         </nav>
@@ -51,7 +64,7 @@ else
                         <div class="card-header bg-light">
                             <h5 class="mb-0">
                                 <i class="material-icons align-middle text-danger">picture_as_pdf</i>
-                                Documento Allegato
+                                @Localize["AttachedDocument"]
                             </h5>
                         </div>
                         <div class="card-body p-0">
@@ -69,7 +82,7 @@ else
                     <div class="card-header bg-light">
                         <h5 class="mb-0">
                             <i class="material-icons align-middle">edit</i>
-                            Modifica Dati Nota Spese
+                            @Localize["EditExpenseReceiptData"]
                         </h5>
                     </div>
                     <div class="card-body">
@@ -77,6 +90,116 @@ else
                             <DataAnnotationsValidator />
                             <ValidationSummary />
 
+                            @if (_documentResults.Count > 0)
+                            {
+                                <section class="mb-4" aria-labelledby="edit-fiscal-documents-title">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 id="edit-fiscal-documents-title" class="mb-0">
+                                            <i class="material-icons align-middle">receipt_long</i>
+                                            @Localize["ReceiptsInDocument"]
+                                        </h5>
+                                        <span class="badge bg-primary">@_documentResults.Count</span>
+                                    </div>
+
+                                    @for (var documentIndex = 0; documentIndex < _documentResults.Count; documentIndex++)
+                                    {
+                                        var document = _documentResults[documentIndex];
+                                        <details class="border rounded p-3 mb-3" @key="document">
+                                            <summary class="mb-3 fw-semibold">
+                                                @Localize["ReceiptNumber", documentIndex + 1]
+                                                @if (!string.IsNullOrWhiteSpace(document.MerchantName))
+                                                {
+                                                    <span> - @document.MerchantName</span>
+                                                }
+                                                @if (document.PageFrom.HasValue)
+                                                {
+                                                    <span class="text-muted fw-normal">
+                                                        (@Localize["PageShort"] @document.PageFrom@(document.PageTo > document.PageFrom ? $"-{document.PageTo}" : null))
+                                                    </span>
+                                                }
+                                            </summary>
+
+                                            <div class="mb-3">
+                                                <label class="form-label">@Localize["Merchant"]</label>
+                                                <InputText @bind-Value="document.MerchantName" class="form-control" />
+                                            </div>
+
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-md-7">
+                                                    <label class="form-label">@Localize["Date"]</label>
+                                                    <InputDate @bind-Value="document.TransactionDate" class="form-control" />
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <label class="form-label">@Localize["Currency"]</label>
+                                                    <InputText @bind-Value="document.Currency" class="form-control" placeholder="EUR" />
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-2 mb-3">
+                                                <div class="col-6">
+                                                    <label class="form-label">@Localize["Total"]</label>
+                                                    <InputNumber @bind-Value="document.TotalAmount" class="form-control" step="0.01" />
+                                                </div>
+                                                <div class="col-6">
+                                                    <label class="form-label">@Localize["Tax"]</label>
+                                                    <InputNumber @bind-Value="document.TaxAmount" class="form-control" step="0.01" />
+                                                </div>
+                                            </div>
+
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <strong class="small">@Localize["Lines"]</strong>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => AddLine(document)" title="@Localize["AddLine"]">
+                                                    <i class="material-icons align-middle" style="font-size:18px;">add</i>
+                                                    @Localize["Add"]
+                                                </button>
+                                            </div>
+
+                                            @if (document.Lines == null || document.Lines.Count == 0)
+                                            {
+                                                <div class="text-muted small mb-2">@Localize["NoLinesDetected"]</div>
+                                            }
+                                            else
+                                            {
+                                                @foreach (var line in document.Lines)
+                                                {
+                                                    <div class="border-top py-2" @key="line">
+                                                        <div class="d-flex gap-2 align-items-start">
+                                                            <div class="flex-grow-1">
+                                                                <InputText @bind-Value="line.Description" class="form-control form-control-sm mb-2" placeholder="@Localize["Description"]" />
+                                                                <div class="row g-2">
+                                                                    <div class="col-4">
+                                                                        <label class="form-label small mb-1">@Localize["Quantity"]</label>
+                                                                        <InputNumber @bind-Value="line.Quantity" class="form-control form-control-sm" step="0.01" />
+                                                                    </div>
+                                                                    <div class="col-4">
+                                                                        <label class="form-label small mb-1">@Localize["Price"]</label>
+                                                                        <InputNumber @bind-Value="line.UnitPrice" class="form-control form-control-sm" step="0.01" />
+                                                                    </div>
+                                                                    <div class="col-4">
+                                                                        <label class="form-label small mb-1">@Localize["Total"]</label>
+                                                                        <InputNumber @bind-Value="line.TotalPrice" class="form-control form-control-sm" step="0.01" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveLine(document, line)" title="@Localize["DeleteLine"]">
+                                                                <i class="material-icons align-middle" style="font-size:18px;">delete</i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            }
+                                        </details>
+                                    }
+
+                                    <div class="alert alert-light border d-flex justify-content-between mb-3">
+                                        <strong>@Localize["GrandTotal"]</strong>
+                                        <strong>@_documentResults.Where(document => document.TotalAmount.HasValue).Sum(document => document.TotalAmount.Value).ToString("N2")</strong>
+                                    </div>
+                                </section>
+                            }
+
+                            @if (_documentResults.Count == 0)
+                            {
                             <div class="mb-3">
                                 <label class="form-label">
                                     <i class="material-icons align-middle" style="font-size:18px;">store</i>
@@ -118,6 +241,7 @@ else
                                 </label>
                                 <InputText @bind-Value="_model.Currency" class="form-control" placeholder="EUR" />
                             </div>
+                            }
 
                             <div class="mb-3">
                                 <label class="form-label">
@@ -151,7 +275,7 @@ else
                                     <i class="material-icons align-middle" style="font-size:18px;">save</i>
                                     Salva Modifiche
                                 </button>
-                                <a href="/TicketInterventions/@InterventionId/ExpenseReceipts/@ReceiptId" class="btn btn-outline-secondary">
+                                <a href="@DetailsUrl" class="btn btn-outline-secondary">
                                     <i class="material-icons align-middle" style="font-size:18px;">close</i>
                                     Annulla
                                 </a>

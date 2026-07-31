@@ -28,12 +28,8 @@
                             </div>
                         }
                     }
-                    else
-                    {
-                        <div class="empty-day">
-                            <AGEmptyScheduler IsHoliday="day.IsHoliday"></AGEmptyScheduler>
-                        </div>
-                    }
+                    @* Come nel mese: il giorno libero non mostra un segnaposto. La colonna resta
+                       cliccabile e drop zone, il gestore e' sul .day-column. *@
                 </div>
             </div>
         }
@@ -65,7 +61,10 @@
         border-radius: 8px;
         display: flex;
         flex-direction: column;
-        min-height: 400px;
+        /* Era 400px fissi per colonna: una settimana vuota occupava mezzo schermo per non dire
+           niente. Le colonne crescono sul contenuto, con un minimo che resta un bersaglio comodo
+           per il drop. */
+        min-height: 160px;
         border: 2px solid #e5e7eb;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;
@@ -151,15 +150,7 @@
         }
     }
 
-    .empty-day {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #9ca3af;
-        font-size: 0.875rem;
-        padding: 2rem 1rem;
-    }
+    /* .empty-day rimossa insieme al segnaposto delle giornate libere */
 
     /* Responsive */
     @@media (max-width: 1400px) {

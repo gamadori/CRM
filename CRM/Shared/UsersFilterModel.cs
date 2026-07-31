@@ -33,6 +33,19 @@ namespace CRM.Shared
 
         public int? IdTicketAssigned { get; set; }
 
+        /// <summary>
+        /// Solo con <see cref="IdTicketAssigned"/>: aggiunge ai candidati i membri del gruppo
+        /// assegnato al ticket, anche se non hanno un'assegnazione individuale.
+        /// <para>
+        /// Serve al picker degli interventi: un ticket smistato a un gruppo e mai preso in carico
+        /// non ha utenti assegnati, e senza questo flag la lista resterebbe vuota rendendo
+        /// impossibile registrare l'intervento. L'unione (assegnati + membri del gruppo) e'
+        /// volutamente permanente: appena un collega prende in carico il ticket, il resto del
+        /// gruppo deve poter comunque registrare il proprio lavoro.
+        /// </para>
+        /// </summary>
+        public bool IncludeGroupMembers { get; set; }
+
         public int? IdProject { get; set; } = null;
 
         public int? IdProjectParent { get; set; } = null;

@@ -1,4 +1,4 @@
-namespace CRM.Server.Reports.Pdf
+Ôªønamespace CRM.Server.Reports.Pdf
 {
     /// <summary>
     /// Traduzioni italiane per il report di intervento
@@ -15,11 +15,11 @@ namespace CRM.Server.Reports.Pdf
                 CompanyName = "Ragione sociale:",
                 Address = "Indirizzo:",
                 Zip = "CAP:",
-                City = "Citt‡:",
+                City = "Citt√†:",
                 Country = "Paese:",
                 VatId = "P.IVA:",
                 OurTechnician = "Il nostro Tecnico, Sig. ",
-                HasIntervenedAt = "Ë intervenuto presso ",
+                HasIntervenedAt = "√® intervenuto presso ",
                 For = " per:",
                 ToInstall = "Installare",
                 ToTest = "Testare",
@@ -31,16 +31,16 @@ namespace CRM.Server.Reports.Pdf
                 DescriptionOfIntervention = "Descrizione dell'Intervento",
                 ServiceBegan = "Inizio servizio:",
                 ServiceEnded = "Fine servizio:",
-                Activities = "Attivit‡",
+                Activities = "Attivit√†",
                 CustomerDeclaration = "Al termine dell'intervento, il cliente dichiara:",
                 Declaration1 = "1. Che le funzioni delle macchine/dispositivi sono tutte funzionanti;",
-                Declaration2 = "2. Che il funzionamento delle stesse Ë regolare;",
+                Declaration2 = "2. Che il funzionamento delle stesse √® regolare;",
                 Declaration3 = "3. Che i dispositivi di sicurezza sono operativi;",
                 Declaration4 = "4. Che in considerazione di quanto sopra, nulla osta al pagamento dell'importo dovuto secondo gli accordi.",
                 ReplacedAndMountedParts = "PARTI SOSTITUITE E/O MONTATE",
                 Code = "Codice",
                 Description = "Descrizione",
-                Qty = "Qt‡",
+                Qty = "Qt√†",
                 NotesOrReserves = "Note e/o riserve",
                 TickIfNoComments = "Barrare se non ci sono commenti.",
                 AcceptedOn = "Accettato in data:",

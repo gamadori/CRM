@@ -1,4 +1,4 @@
-using CRM.Client.Helpers;
+ï»¿using CRM.Client.Helpers;
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
@@ -176,7 +176,7 @@ namespace CRM.Client.Pages.TicketInterventions
                     {
                         Severity = NotificationSeverity.Success,
                         Summary = "Upload completato",
-                        Detail = "Il report è stato caricato con successo",
+                        Detail = "Il report Ã¨ stato caricato con successo",
                         Duration = 4000
                     });
 
@@ -201,7 +201,7 @@ namespace CRM.Client.Pages.TicketInterventions
                     {
                         Severity = NotificationSeverity.Error,
                         Summary = "Errore Upload",
-                        Detail = "Si è verificato un errore durante il caricamento",
+                        Detail = "Si Ã¨ verificato un errore durante il caricamento",
                         Duration = 4000
                     });
                 }

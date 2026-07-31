@@ -145,6 +145,13 @@
                                             }
                                         </div>
                                     </div>
+                                    @* Il pulsante spesa non dipende da CanComplete: lo scontrino di
+                                       una visita si registra quasi sempre DOPO, a visita conclusa. *@
+                                    @if (CanHaveExpense(item))
+                                    {
+                                        <RadzenButton Icon="receipt_long" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall"
+                                                      Click="@(() => NewExpense(item))" title="@Localize["Nota spese"]" />
+                                    }
                                     @if (item.CanComplete)
                                     {
                                         <RadzenButton Icon="edit_calendar" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall"
@@ -433,6 +440,21 @@
 </style>
 
 @code {
+    /// <summary>
+    /// Attivita' da aprire all'ingresso, indicata come "/Agenda?activity=12".
+    /// <para>
+    /// Un'attivita' non ha una pagina propria: vive nell'agenda e nel suo dialogo. Questo
+    /// parametro e' quindi l'unico indirizzo con cui si puo' rimandare a una singola attivita' -
+    /// dal breadcrumb della nota spese, dalla colonna Contesto dell'elenco spese - e senza di
+    /// esso quei riferimenti resterebbero testo morto.
+    /// </para>
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "activity")]
+    public int? FocusActivityId { get; set; }
+
+    /// <summary>Il dialogo si apre una volta sola: il parametro resta nell'indirizzo.</summary>
+    private bool _focusHandled;
+
     private PageHeaderModel? _pageHeader;
     private RadzenScheduler<CalendarItemDTO>? _scheduler;
     private List<CalendarItemDTO> _items = new();
@@ -494,6 +516,27 @@
     {
         _pageHeader = await HeaderService.Create();
         await Load();
+    }
+
+    /// <summary>
+    /// Il dialogo del link diretto si apre a pagina gia' disegnata. Aprirlo dentro
+    /// OnInitializedAsync lo bloccava a meta': l'attesa della finestra rimanda la prima resa, e
+    /// dietro al dialogo restava il "Caricamento in corso" invece dell'agenda.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _focusHandled || !FocusActivityId.HasValue)
+            return;
+
+        _focusHandled = true;
+
+        // DialogService chiude tutti i dialoghi quando cambia l'indirizzo, e lo fa passando dal
+        // JavaScript: arrivando qui da un link interno la chiusura atterra DOPO questa apertura e
+        // si porterebbe via il dialogo appena aperto. Con il ricaricamento della pagina non
+        // succede, ed e' il motivo per cui il difetto si vede solo navigando dentro l'app.
+        await Task.Delay(120);
+
+        await OpenActivityDialog(FocusActivityId.Value);
     }
 
     private async Task Load()
@@ -685,11 +728,21 @@
         if (item.Source != CalendarItemSource.Activity)
             return;
 
+        await OpenActivityDialog(item.SourceId);
+    }
+
+    /// <summary>
+    /// Apre il dialogo per id, senza passare dalla riga in elenco: chi arriva da un link esterno
+    /// puo' puntare a un'attivita' fuori dal periodo o dai filtri correnti, e cercarla fra gli
+    /// elementi caricati la farebbe semplicemente non aprire.
+    /// </summary>
+    private async Task OpenActivityDialog(int activityId)
+    {
         var saved = await DialogService.OpenAsync<ActivityAgendaDialog>(
             Localize["Modifica attività"],
             new Dictionary<string, object?>
             {
-                ["ActivityId"] = item.SourceId
+                ["ActivityId"] = activityId
             },
             ActivityDialogOptions());
 
@@ -814,4 +867,20 @@
 
     private static bool RequiresCompletionDetails(ActivityKind kind)
         => kind is ActivityKind.Meeting or ActivityKind.Call or ActivityKind.Task;
+
+    /// <summary>
+    /// Solo le attivita' che comportano un'uscita: un incontro o un'incombenza da svolgere.
+    /// Una telefonata, una nota o un'email non producono scontrini, e mettere il pulsante su ogni
+    /// riga dell'agenda l'avrebbe solo affollata.
+    /// </summary>
+    private static bool CanHaveExpense(CalendarItemDTO item)
+        => item.Source == CalendarItemSource.Activity
+           && item.ActivityKind is ActivityKind.Meeting or ActivityKind.Task;
+
+    /// <summary>
+    /// Porta alla registrazione della spesa con la visita gia' impostata: il collegamento non si
+    /// digita, si eredita da dove si e' partiti.
+    /// </summary>
+    private void NewExpense(CalendarItemDTO item)
+        => Nav.NavigateTo($"/Activities/{item.SourceId}/ExpenseReceipts/Create");
 }

@@ -1,4 +1,4 @@
-using CRM.Shared;
+Ôªøusing CRM.Shared;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using Radzen;
@@ -39,14 +39,14 @@ namespace CRM.Client.Pages.TicketInterventions
         private int _tempIdCounter = -1;
 
         /// <summary>
-        /// Indica se il componente lavora in modalit‡ "in memoria" (nuovo intervento non ancora salvato)
+        /// Indica se il componente lavora in modalit√† "in memoria" (nuovo intervento non ancora salvato)
         /// </summary>
         private bool IsInMemoryMode => IdIntervention <= 0;
 
         // Lista dei tipi di intervento per il dropdown
         private List<InterventionTimeType> _timeTypes = Enum.GetValues(typeof(InterventionTimeType)).Cast<InterventionTimeType>().ToList();
 
-        // Propriet‡ calcolate per i riepiloghi
+        // Propriet√† calcolate per i riepiloghi
         private int TotalWorkMinutes => Times?.Where(t => t.TimeType == InterventionTimeType.Work).Sum(t => t.DurationMinutes) ?? 0;
         private int TotalTravelMinutes => Times?.Where(t => t.TimeType == InterventionTimeType.Travel).Sum(t => t.DurationMinutes) ?? 0;
         private int TotalBillableMinutes => Times?.Where(t => t.IsBillable).Sum(t => t.DurationMinutes) ?? 0;
@@ -169,7 +169,7 @@ namespace CRM.Client.Pages.TicketInterventions
         {
             if (IsInMemoryMode)
             {
-                // Modalit‡ in memoria: aggiungi alla lista locale con ID temporaneo
+                // Modalit√† in memoria: aggiungi alla lista locale con ID temporaneo
                 item.Id = _tempIdCounter--;
                 item.IdTicketIntervention = 0;
                 Times.Add(item);
@@ -178,7 +178,7 @@ namespace CRM.Client.Pages.TicketInterventions
                 return;
             }
 
-            // Modalit‡ persistente: salva su API
+            // Modalit√† persistente: salva su API
             try
             {
                 _isLoading = true;
@@ -244,7 +244,7 @@ namespace CRM.Client.Pages.TicketInterventions
         {
             if (IsInMemoryMode)
             {
-                // Modalit‡ in memoria: aggiorna nella lista locale
+                // Modalit√† in memoria: aggiorna nella lista locale
                 var existing = Times.FirstOrDefault(t => t.Id == item.Id);
                 if (existing != null)
                 {
@@ -260,7 +260,7 @@ namespace CRM.Client.Pages.TicketInterventions
                 return;
             }
 
-            // Modalit‡ persistente: aggiorna su API
+            // Modalit√† persistente: aggiorna su API
             try
             {
                 _isLoading = true;
@@ -298,14 +298,14 @@ namespace CRM.Client.Pages.TicketInterventions
             {
                 if (IsInMemoryMode)
                 {
-                    // Modalit‡ in memoria: rimuovi dalla lista locale
+                    // Modalit√† in memoria: rimuovi dalla lista locale
                     Times.Remove(item);
                     await TimesChanged.InvokeAsync(Times);
                     StateHasChanged();
                     return;
                 }
 
-                // Modalit‡ persistente: elimina da API
+                // Modalit√† persistente: elimina da API
                 try
                 {
                     _isLoading = true;
@@ -327,19 +327,19 @@ namespace CRM.Client.Pages.TicketInterventions
 
         private void CalculateDuration(TicketInterventionTimeModel item)
         {
-            // La durata viene calcolata automaticamente dalla propriet‡ DurationMinutes
+            // La durata viene calcolata automaticamente dalla propriet√† DurationMinutes
             StateHasChanged();
         }
 
         private void OnTimeTypeChanged(TicketInterventionTimeModel item)
         {
-            // Se non Ë un viaggio, rimuovi i km
+            // Se non √® un viaggio, rimuovi i km
             if (item.TimeType != InterventionTimeType.Travel)
             {
                 item.TravelKilometers = null;
             }
 
-            // Se Ë una pausa, non Ë fatturabile di default
+            // Se √® una pausa, non √® fatturabile di default
             if (item.TimeType == InterventionTimeType.Break)
             {
                 item.IsBillable = false;
@@ -388,7 +388,7 @@ namespace CRM.Client.Pages.TicketInterventions
             
             Console.WriteLine($"[GetTimeTypeText] Enum: {timeType}, Key: {key}, Translated: {translated}");
             
-            // Se la traduzione non esiste o Ë uguale alla chiave, restituisce il valore dell'enum
+            // Se la traduzione non esiste o √® uguale alla chiave, restituisce il valore dell'enum
             if (string.IsNullOrEmpty(translated) || translated == key)
             {
                 // Fallback: traduzioni hard-coded temporanee

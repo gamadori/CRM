@@ -24,16 +24,63 @@ namespace CRM.Client.Services
         {
           
         }
-        public async Task<bool> CloseTicket(int id, TicketClose item)
+        /// <summary>
+        /// Il messaggio del server viene restituito al chiamante: la chiusura puo' essere rifiutata
+        /// per motivi che l'operatore puo' risolvere (ticket bloccato, intervento mancante) e prima
+        /// venivano persi insieme al resto della risposta.
+        /// </summary>
+        public async Task<CloseTicketResponse> CloseTicket(int id, TicketClose item)
         {
             try
             {
                 var resp = await _http.PutAsJsonAsync<TicketClose>($"{_pathService}/TicketClose/{id}", item);
-                return resp.IsSuccessStatusCode;
+
+                if (resp.IsSuccessStatusCode)
+                    return CloseTicketResponse.Ok();
+
+                var body = await resp.Content.ReadAsStringAsync();
+                return CloseTicketResponse.Fail(string.IsNullOrWhiteSpace(body)
+                    ? $"Chiusura non riuscita ({(int)resp.StatusCode})."
+                    : body);
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                Console.WriteLine($"Errore chiusura ticket: {ex.Message}");
+                return CloseTicketResponse.Fail(ex.Message);
+            }
+        }
+
+        public async Task<CloseTicketResponse> DeleteTicket(int id)
+        {
+            try
+            {
+                var resp = await _http.DeleteAsync($"{_pathService}/{id}");
+
+                if (resp.IsSuccessStatusCode)
+                    return CloseTicketResponse.Ok();
+
+                var body = await resp.Content.ReadAsStringAsync();
+                return CloseTicketResponse.Fail(string.IsNullOrWhiteSpace(body)
+                    ? $"Eliminazione non riuscita ({(int)resp.StatusCode})."
+                    : body);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore eliminazione ticket: {ex.Message}");
+                return CloseTicketResponse.Fail(ex.Message);
+            }
+        }
+
+        public async Task<TicketClosePreconditionDTO?> GetClosePreconditionAsync(int idTicket)
+        {
+            try
+            {
+                return await _http.GetFromJsonAsync<TicketClosePreconditionDTO>($"{_pathService}/{idTicket}/close-precondition");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento precondizioni di chiusura: {ex.Message}");
+                return null;
             }
         }
 
@@ -82,6 +129,11 @@ namespace CRM.Client.Services
 
                 if (args.ViewNotAssigned)
                     query.Add("viewNotAssigned=true");
+
+                // Nullable a tre stati: si manda solo quando l'operatore ha scelto una natura,
+                // altrimenti il parametro resta fuori e il server non filtra.
+                if (args.HasCommessa.HasValue)
+                    query.Add($"hasCommessa={(args.HasCommessa.Value ? "true" : "false")}");
 
                 var url = $"{_pathService}/schedule-items";
                 if (query.Any())
@@ -204,6 +256,19 @@ namespace CRM.Client.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Errore caricamento utenti intervento: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<TicketAssignmentContextDTO?> GetAssignmentContextAsync(int idTicket)
+        {
+            try
+            {
+                return await _http.GetFromJsonAsync<TicketAssignmentContextDTO>($"{_pathService}/{idTicket}/assignment-context");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento contesto assegnazione ticket: {ex.Message}");
                 return null;
             }
         }

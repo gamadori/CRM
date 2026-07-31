@@ -1,4 +1,4 @@
-using CRM.Shared;
+ï»¿using CRM.Shared;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,12 +19,12 @@ namespace CRM.Client.Pages.TicketInterventions
         // Numero effettivo di utenti (minimo 1)
         private int EffectiveUsersCount => AssignedUsersCount > 0 ? AssignedUsersCount : 1;
 
-        // Proprietà calcolate per i riepiloghi (singoli, senza moltiplicazione)
+        // ProprietÃ  calcolate per i riepiloghi (singoli, senza moltiplicazione)
         private int BaseWorkMinutes => Times?.Where(t => t.TimeType == InterventionTimeType.Work).Sum(t => t.DurationMinutes) ?? 0;
         private int BaseTravelMinutes => Times?.Where(t => t.TimeType == InterventionTimeType.Travel).Sum(t => t.DurationMinutes) ?? 0;
         private int BaseBillableMinutes => Times?.Where(t => t.IsBillable).Sum(t => t.DurationMinutes) ?? 0;
 
-        // Proprietà calcolate per i totali (moltiplicati per numero utenti)
+        // ProprietÃ  calcolate per i totali (moltiplicati per numero utenti)
         private int TotalWorkMinutes => BaseWorkMinutes * EffectiveUsersCount;
         private int TotalTravelMinutes => BaseTravelMinutes * EffectiveUsersCount;
         private int TotalBillableMinutes => BaseBillableMinutes * EffectiveUsersCount;

@@ -220,6 +220,11 @@ namespace CRM.Client.Services
 
                     "groups" or "group" =>
                         (await _restClient.GetItem<CRM.Shared.Group, int>((int)domainId, ConstHelper.GroupsPath))?.Name,
+
+                    // Un'attivita' si riconosce dall'oggetto, non dal numero: "Visita clienti"
+                    // dice qualcosa, "19" no.
+                    "activities" or "activity" =>
+                        (await _restClient.GetItem<CRM.Shared.DTOs.ActivityDTO, int>((int)domainId, ConstHelper.ActivitiesPath))?.Subject,
                     //"expensereceipts" or "expensereceipt" =>
                     //    (await _restClient.GetItem<ExpenseReceipt, int>((int)domainId, ConstHelper.ExpenseReceiptsPath))?.Name,
                     _ => null
@@ -329,6 +334,7 @@ namespace CRM.Client.Services
                 "pricelist" => "sell",
                 "invoices" or "invoice" => "receipt_long",
                 "agenda" => "event",
+                "activities" or "activity" => "event_available",
                 "expensereceipts" => "receipt_long",
                 "projects" or "project" => "apps",
                 "contracttypes" or "contracttype" => "description",
@@ -370,7 +376,7 @@ namespace CRM.Client.Services
             if (string.IsNullOrWhiteSpace(url))
                 return items;
 
-            var path = url.Split('?', '#')[0];
+            var path = await CanonicalizeInterventionPathAsync(url.Split('?', '#')[0]);
             var rawSegments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
             // I segmenti che seguono un'azione di lista (Index/filter/search) sono
@@ -412,9 +418,13 @@ namespace CRM.Client.Services
                 }
                 else
                 {
-                    var text = GetLocalizedResourceNotFound(segment)
-                        ? ToTitle(segment)
-                        : GetLocalizedString(segment);
+                    var isActivities = segment.Equals("activities", StringComparison.OrdinalIgnoreCase);
+
+                    var text = isActivities
+                        ? GetLocalizedString("Agenda")
+                        : GetLocalizedResourceNotFound(segment)
+                            ? ToTitle(segment)
+                            : GetLocalizedString(segment);
 
                     cumulative += "/" + segment;
 
@@ -423,7 +433,11 @@ namespace CRM.Client.Services
                     // quell'indirizzo, quindi la voce resta come contesto ma non e' cliccabile.
                     var nestedCollection = i > 0 && IsIdSegment(segments[i - 1], out _, out _);
 
-                    items.Add(new BreadcrumbItem { Text = text, Url = nestedCollection ? null : cumulative });
+                    // Le attivita' non hanno un elenco proprio: la loro casa e' l'agenda, e
+                    // "/Activities" da solo non porta da nessuna parte.
+                    var target = nestedCollection ? null : isActivities ? "/Agenda" : cumulative;
+
+                    items.Add(new BreadcrumbItem { Text = text, Url = target });
                 }
             }
 
@@ -432,6 +446,63 @@ namespace CRM.Client.Services
                 items[items.Count - 1].Url = null;
 
             return items;
+        }
+
+        /// <summary>
+        /// Riporta le rotte che partono dall'intervento alla loro forma gerarchica.
+        /// <para>
+        /// Il breadcrumb e' una funzione pura dell'URL, quindi una pagina raggiungibile a
+        /// "/TicketInterventions/18/ExpenseReceipts" produceva "Ticketinterventions > 18 > Nota
+        /// Spese": corretto per quella rotta, ma senza il ticket di cui l'intervento fa parte.
+        /// Un intervento appartiene sempre a un ticket (IdTicket non e' nullable), quindi
+        /// "/Tickets/34/interventions/18/ExpenseReceipts" e' la stessa risorsa con il suo posto
+        /// nella gerarchia: la scia diventa la stessa da qualunque punto ci si arrivi.
+        /// </para>
+        /// <para>
+        /// L'alternativa sarebbe dichiarare una rotta annidata per ogni pagina figlia e per ogni
+        /// percorso d'ingresso — la strada che ha gia' portato Info.razor a otto @page.
+        /// </para>
+        /// </summary>
+        private async Task<string> CanonicalizeInterventionPathAsync(string path)
+        {
+            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+            // Serve la forma "<radice-intervento>/<id>/<resto>": senza il resto la rotta e' gia'
+            // quella dell'intervento e non c'e' niente da riportare sotto il ticket.
+            if (segments.Length < 3)
+                return path;
+
+            if (!segments[0].Equals("ticketinterventions", StringComparison.OrdinalIgnoreCase)
+                && !segments[0].Equals("interventions", StringComparison.OrdinalIgnoreCase))
+                return path;
+
+            if (!int.TryParse(segments[1], out var idIntervention))
+                return path;
+
+            var idTicket = await GetInterventionTicketIdAsync(idIntervention);
+
+            // Intervento non trovato o irraggiungibile: si tiene la rotta com'e'. Un breadcrumb
+            // piu' corto e' meglio di nessun breadcrumb.
+            if (idTicket == null)
+                return path;
+
+            var rest = string.Join("/", segments.Skip(2));
+            return $"/Tickets/{idTicket}/interventions/{idIntervention}/{rest}";
+        }
+
+        private async Task<int?> GetInterventionTicketIdAsync(int idIntervention)
+        {
+            try
+            {
+                var intervention = await _restClient.GetItem<TicketIntervention, int>(
+                    idIntervention, ConstHelper.TicketsInterventionsPath);
+
+                return intervention?.IdTicket;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private bool IsIdSegment(string segment, out bool isNumeric, out bool isGuid)
@@ -490,6 +561,9 @@ namespace CRM.Client.Services
 
                     "fasi" or "fase" when isNumeric =>
                         (await _restClient.GetItem<CRM.Shared.DTOs.CommessaFaseDTO, int>(int.Parse(segment), ConstHelper.CommessaFasiPath))?.Name ?? segment,
+
+                    "activities" or "activity" when isNumeric =>
+                        (await _restClient.GetItem<CRM.Shared.DTOs.ActivityDTO, int>(int.Parse(segment), ConstHelper.ActivitiesPath))?.Subject ?? segment,
 
                     _ => segment
                 };

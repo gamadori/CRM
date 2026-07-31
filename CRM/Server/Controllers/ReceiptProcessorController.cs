@@ -1,4 +1,4 @@
-using CRM.Client.Services;
+Ôªøusing CRM.Client.Services;
 using CRM.Server.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
@@ -70,7 +70,7 @@ namespace CRM.Server.Controllers
                         result.ErrorMessage);
 
                     // Restituisci 200 con Success=false invece di 400
-                    // (l'errore Ë gestito lato client tramite il campo Success)
+                    // (l'errore √® gestito lato client tramite il campo Success)
                     return Ok(result);
                 }
 
@@ -160,7 +160,7 @@ namespace CRM.Server.Controllers
         }
 
         /// <summary>
-        /// ? NUOVO: Upload diretto file + elaborazione immediata (senza attachment gi‡ salvato)
+        /// ? NUOVO: Upload diretto file + elaborazione immediata (senza attachment gi√† salvato)
         /// </summary>
         /// <param name="file">File caricato (multipart/form-data)</param>
         /// <returns>Risultato estrazione</returns>
@@ -235,7 +235,7 @@ namespace CRM.Server.Controllers
         }
 
         /// <summary>
-        /// Verifica la configurazione e connettivit‡ con Azure Form Recognizer
+        /// Verifica la configurazione e connettivit√† con Azure Form Recognizer
         /// </summary>
         /// <returns>Stato del servizio</returns>
         [HttpGet("health")]

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 
 namespace CRM.Shared
@@ -14,7 +14,7 @@ namespace CRM.Shared
         public string Text { get; set; } = string.Empty;
 
         /// <summary>
-        /// URL di navigazione (opzionale, se null l'elemento non � cliccabile)
+        /// URL di navigazione (opzionale, se null l'elemento non è cliccabile)
         /// </summary>
         public string? Url { get; set; }
 

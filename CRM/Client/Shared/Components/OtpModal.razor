@@ -1,4 +1,4 @@
-@inject IJSRuntime JS
+﻿@inject IJSRuntime JS
 @implements IDisposable
 
 @if (Visible)
@@ -361,7 +361,7 @@
 
     private async Task OnPaste(ClipboardEventArgs e, int index)
     {
-        // Il paste verr� gestito via JS per ottenere i dati
+        // Il paste verrà gestito via JS per ottenere i dati
         try
         {
             var pastedText = await JS.InvokeAsync<string>("navigator.clipboard.readText");

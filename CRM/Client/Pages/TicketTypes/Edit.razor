@@ -36,6 +36,22 @@ else
                     <RadzenRow>
                         <RadzenColumn Size="12">
                             <RadzenStack>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" id="checkRequiresIntervention" @bind="_state.RequiresIntervention" type="checkbox">
+                                    <DisplayName For="@(() => _state.RequiresIntervention)" />
+                                </div>
+                                <small class="text-muted">
+                                    Ore, trasferte, ricambi e rapportino esistono solo negli interventi: con questa
+                                    opzione attiva il ticket non si chiude finché non ne è registrato almeno uno.
+                                    Spegnila sui tipi che si chiudono legittimamente senza lavoro (duplicati,
+                                    richieste di informazioni): su quei tipi la chiusura chiede la modalità di intervento.
+                                </small>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow>
+                        <RadzenColumn Size="12">
+                            <RadzenStack>
                                 <RedGSelectEnum TEnum="PropertyStates" TValue="PropertyStates" @bind-Value="@_state.Date"
                                                 For="@(() => _state.Date)" AllowClear="false" />
                                 

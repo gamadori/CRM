@@ -1,4 +1,4 @@
-using CNM.Authorize;
+Ôªøusing CNM.Authorize;
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Server.Data;
@@ -340,7 +340,7 @@ namespace CRM.Server.Services
                 throw new KeyNotFoundException($"Ticket #{request.IdTicket} non trovato");
 
             if (!ticket.Closed)
-                throw new InvalidOperationException("Il ticket non Ë ancora chiuso");
+                throw new InvalidOperationException("Il ticket non √® ancora chiuso");
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null || user.IdCompany != ticket.IdCompany)
@@ -350,7 +350,7 @@ namespace CRM.Server.Services
                 .FirstOrDefaultAsync(f => f.IdTicket == request.IdTicket);
 
             if (existingFeedback != null)
-                throw new InvalidOperationException("» gi‡ stato lasciato un feedback per questo ticket");
+                throw new InvalidOperationException("√à gi√† stato lasciato un feedback per questo ticket");
 
             var feedback = new TicketFeedback
             {
@@ -430,7 +430,7 @@ namespace CRM.Server.Services
                 .FirstOrDefaultAsync(f => f.IdTicket == ticketId);
 
             if (existingFeedback != null)
-                throw new InvalidOperationException("Esiste gi‡ un feedback per questo ticket");
+                throw new InvalidOperationException("Esiste gi√† un feedback per questo ticket");
 
             var feedback = new TicketFeedback
             {

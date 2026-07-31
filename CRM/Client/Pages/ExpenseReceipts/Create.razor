@@ -1,12 +1,21 @@
 @page "/TicketInterventions/{InterventionId:int}/ExpenseReceipts/Create"
+@* Spesa di una visita: il contesto sta nel percorso, come per l'intervento. La trasferta dal
+   cliente potenziale e' proprio il caso in cui la spesa c'e' e il lavoro fatturabile no. *@
+@page "/Activities/{ActivityId:int}/ExpenseReceipts/Create"
+@* Creazione senza contesto nel percorso: e' la rotta che rende registrabili le spese che un
+   lavoro di riferimento non ce l'hanno (corsi, bollette, cancelleria). *@
+@page "/ExpenseReceipts/Create"
 @using CRM.Shared.DTOs
 @using Microsoft.Extensions.Localization
 @using System.IO
+@using CRM.Shared
+@using CRM.Client.Services
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@inject IBaseRestService<ApplicationUser, UsersFilterModel, string> _userService
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize
 
-<BlazorHeader Header="Nuova Nota Spese"></BlazorHeader>
+<BlazorHeader Header="@Localize["NewExpenseReceipt"]"></BlazorHeader>
 
 @if (_isLoading)
 {
@@ -16,15 +25,85 @@ else
 {
     <div class="container-fluid px-3 py-3">
 
-        <!-- Breadcrumb -->
+        <!-- Breadcrumb: la scia risale da dove si e' arrivati - intervento, agenda o elenco -->
         <nav aria-label="breadcrumb" class="mb-3">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/TicketInterventions">Interventi</a></li>
-                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId">Intervento #@InterventionId</a></li>
-                <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId/ExpenseReceipts">Note Spese</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Nuova</li>
+                @if (InterventionId.HasValue)
+                {
+                    <li class="breadcrumb-item"><a href="/TicketInterventions">@Localize["Interventions"]</a></li>
+                    <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId">@Localize["InterventionNumber", InterventionId]</a></li>
+                    <li class="breadcrumb-item"><a href="/TicketInterventions/@InterventionId/ExpenseReceipts">@Localize["ExpenseReceipts"]</a></li>
+                }
+                else if (ActivityId.HasValue)
+                {
+                    <li class="breadcrumb-item"><a href="/Agenda">Agenda</a></li>
+                    <li class="breadcrumb-item"><a href="/Activities/@ActivityId/Info">@ActivityLabel</a></li>
+                    <li class="breadcrumb-item"><a href="/ExpenseReceipts">@Localize["ExpenseReceipts"]</a></li>
+                }
+                else
+                {
+                    <li class="breadcrumb-item"><a href="/ExpenseReceipts">@Localize["ExpenseReceipts"]</a></li>
+                }
+                <li class="breadcrumb-item active" aria-current="page">@Localize["New"]</li>
             </ol>
         </nav>
+
+        @* Il contesto non si digita mai: o e' nel percorso perche' si arriva da li' (intervento,
+           attivita' in agenda), oppure non c'e' e la spesa e' un costo generale. Nessuno conosce a
+           memoria il numero di un intervento, ed e' il motivo per cui la casella numerica che lo
+           chiedeva e' stata tolta. *@
+        @* Chi ha speso si chiede SEMPRE, anche con un contesto: con piu' assegnati - il caso che
+           la presa in carico dal gruppo ha reso frequente - chi registra non e' per forza chi ha
+           pagato il pranzo, e attribuirlo per default a chi sta scrivendo sbaglia in silenzio. *@
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <strong>@ContextTitle</strong>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">
+                        <i class="material-icons align-middle" style="font-size:18px;">person</i>
+                        @Localize["Spender"] <span class="text-danger">*</span>
+                    </label>
+                    <RadzenDropDown TValue="string" @bind-Value="_model.IdUserSpender"
+                                    Data="_users" TextProperty="NameComplete" ValueProperty="Id"
+                                    AllowFiltering="true" AllowClear="false"
+                                    FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                    Placeholder="@Localize["SelectPerson"]" Style="width:100%" />
+                    <div class="form-text">
+                        La spesa viene rimborsata a questa persona ed entra nel suo totale.
+                        @if (InterventionId.HasValue)
+                        {
+                            <text>Preselezionato fra gli assegnati dell'intervento: cambialo se ha pagato un altro.</text>
+                        }
+                        else if (ActivityId.HasValue)
+                        {
+                            <text>Preselezionato su chi ha in carico la visita: cambialo se ha pagato un altro.</text>
+                        }
+                        else
+                        {
+                            <text>Preselezionato su di te: cambialo se stai registrando la spesa di un collega.</text>
+                        }
+                    </div>
+                </div>
+
+                @if (ActivityId.HasValue)
+                {
+                    <div class="form-text">
+                        La spesa resta legata a questa visita: la ritrovi nell'elenco note spese con il
+                        suo contesto, anche se la visita non produce un ticket.
+                    </div>
+                }
+                else if (!InterventionId.HasValue)
+                {
+                    <div class="form-text">
+                        Spesa che non si riferisce a un lavoro specifico: bolletta, cancelleria, corso,
+                        abbonamento. Per le spese di un intervento o di una visita, registrale da lì:
+                        il collegamento viene impostato da solo.
+                    </div>
+                }
+            </div>
+        </div>
 
         @if (!string.IsNullOrEmpty(_errorMessage))
         {
@@ -40,8 +119,8 @@ else
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center py-5">
                     <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
-                    <h5 class="text-muted">Elaborazione in corso...</h5>
-                    <p class="small text-muted">Azure Form Recognizer sta analizzando il documento</p>
+                    <h5 class="text-muted">@Localize["Processing"]</h5>
+                    <p class="small text-muted">@Localize["AzureAnalyzingDocument"]</p>
                 </div>
             </div>
         }
@@ -57,7 +136,7 @@ else
                         <div class="card-header bg-light">
                             <h5 class="mb-0">
                                 <i class="material-icons align-middle text-danger">picture_as_pdf</i>
-                                Documento Caricato
+                                @Localize["UploadedDocument"]
                             </h5>
                         </div>
                         <div class="card-body p-0">
@@ -85,7 +164,7 @@ else
                         <div class="card-header bg-light">
                             <h5 class="mb-0">
                                 <i class="material-icons align-middle">edit</i>
-                                Dati Estratti
+                                @Localize["ExtractedData"]
                             </h5>
                         </div>
                         <div class="card-body">
@@ -93,13 +172,13 @@ else
                             {
                                 <div class="alert alert-success mb-3">
                                     <i class="material-icons align-middle">check_circle</i>
-                                    Estrazione completata con successo!
+                                    @Localize["ExtractionCompleted"]
                                 </div>
 
                                 @if (_extractionResult.AverageConfidence.HasValue)
                                 {
                                     <div class="mb-3">
-                                        <label class="form-label">Affidabilit� Estrazione</label>
+                                        <label class="form-label">@Localize["ExtractionConfidence"]</label>
                                         <div class="progress" style="height: 25px;">
                                             <div class="progress-bar @GetConfidenceClass(_extractionResult.AverageConfidence.Value)" 
                                                  role="progressbar" 
@@ -109,12 +188,57 @@ else
                                         </div>
                                     </div>
                                 }
+
+                                @if (_extractionResult.DocumentResults != null && _extractionResult.DocumentResults.Count > 1)
+                                {
+                                    <div class="alert alert-info mb-3">
+                                        <div class="fw-semibold mb-2">
+                                            @Localize["MultiDocumentPdfDetected", _extractionResult.DocumentResults.Count]
+                                        </div>
+                                        <div class="small text-muted mb-2">
+                                            @Localize["SeparateExpenseReceiptsWillBeCreated"]
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered align-middle mb-0 bg-white">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>@Localize["Document"]</th>
+                                                        <th>@Localize["Merchant"]</th>
+                                                        <th>@Localize["Date"]</th>
+                                                        <th class="text-end">@Localize["Total"]</th>
+                                                        <th class="text-end">@Localize["Tax"]</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @for (var i = 0; i < _extractionResult.DocumentResults.Count; i++)
+                                                    {
+                                                        var doc = _extractionResult.DocumentResults[i];
+                                                        <tr>
+                                                            <td>@(i + 1)</td>
+                                                            <td>@(doc.MerchantName ?? "-")</td>
+                                                            <td>@(doc.TransactionDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                                            <td class="text-end">@FormatReceiptAmount(doc.TotalAmount, doc.Currency)</td>
+                                                            <td class="text-end">@FormatReceiptAmount(doc.TaxAmount, doc.Currency)</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                                <tfoot class="table-light">
+                                                    <tr>
+                                                        <th colspan="3">@Localize["CombinedTotal"]</th>
+                                                        <th class="text-end">@FormatReceiptAmount(_extractionResult.TotalAmount, _extractionResult.Currency)</th>
+                                                        <th class="text-end">@FormatReceiptAmount(_extractionResult.TaxAmount, _extractionResult.Currency)</th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                }
                             }
                             else
                             {
                                 <div class="alert alert-warning mb-3">
                                     <i class="material-icons align-middle">warning</i>
-                                    Estrazione non riuscita. Inserisci i dati manualmente.
+                                    @Localize["ExtractionFailedEnterManually"]
                                 </div>
                             }
 
@@ -125,7 +249,7 @@ else
                                 <div class="mb-3">
                                     <label class="form-label">
                                         <i class="material-icons align-middle" style="font-size:18px;">store</i>
-                                        Commerciante
+                                        @Localize["Merchant"]
                                     </label>
                                     <InputText @bind-Value="_model.MerchantName" class="form-control" />
                                 </div>
@@ -133,7 +257,7 @@ else
                                 <div class="mb-3">
                                     <label class="form-label">
                                         <i class="material-icons align-middle" style="font-size:18px;">event</i>
-                                        Data Transazione
+                                        @Localize["TransactionDate"]
                                     </label>
                                     <InputDate @bind-Value="_model.TransactionDate" class="form-control" />
                                 </div>
@@ -141,7 +265,7 @@ else
                                 <div class="mb-3">
                                     <label class="form-label">
                                         <i class="material-icons align-middle" style="font-size:18px;">euro</i>
-                                        Importo Totale *
+                                        @Localize["TotalAmount"] *
                                     </label>
                                     <InputNumber @bind-Value="_model.TotalAmount" class="form-control" step="0.01" />
                                     <ValidationMessage For="@(() => _model.TotalAmount)" />
@@ -150,7 +274,7 @@ else
                                 <div class="mb-3">
                                     <label class="form-label">
                                         <i class="material-icons align-middle" style="font-size:18px;">calculate</i>
-                                        IVA/Tasse
+                                        @Localize["Tax"]
                                     </label>
                                     <InputNumber @bind-Value="_model.TaxAmount" class="form-control" step="0.01" />
                                     <ValidationMessage For="@(() => _model.TaxAmount)" />
@@ -159,15 +283,82 @@ else
                                 <div class="mb-3">
                                     <label class="form-label">
                                         <i class="material-icons align-middle" style="font-size:18px;">payments</i>
-                                        Valuta
+                                        @Localize["Currency"]
                                     </label>
-                                    <InputText @bind-Value="_model.Currency" class="form-control" placeholder="EUR" />
+                                    <InputText @bind-Value="_model.Currency" class="form-control" placeholder="@_baseCurrency"
+                                               @onblur="ProposeExchangeRate" />
+
+                                    @* Il simbolo sullo scontrino c'e' quasi sempre; il codice ISO quasi mai.
+                                       Invece di dire "non rilevata" davanti a un "$" bello visibile, si
+                                       propongono le valute compatibili e si chiede una conferma. *@
+                                    @if (_currencyCandidates.Any() && string.IsNullOrWhiteSpace(_model.Currency))
+                                    {
+                                        <div class="mt-2">
+                                            <div class="form-text mb-1">
+                                                Letto <strong>@_extractionResult.CurrencySymbol</strong> sullo scontrino:
+                                                usato da più valute, conferma quale.
+                                            </div>
+                                            <div class="btn-group btn-group-sm flex-wrap" role="group">
+                                                @foreach (var c in _currencyCandidates)
+                                                {
+                                                    <button type="button" class="btn btn-outline-primary"
+                                                            @onclick="() => PickCurrency(c)">@c</button>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    else if (string.IsNullOrWhiteSpace(_model.Currency))
+                                    {
+                                        <div class="form-text text-warning">
+                                            Valuta non riconosciuta dallo scontrino: indicala, altrimenti la spesa
+                                            non entra nei totali.
+                                        </div>
+                                    }
                                 </div>
+
+                                @* Il cambio si chiede solo quando serve davvero, cioe' quando la spesa non e'
+                                   gia' nella valuta di casa. *@
+                                @if (_needsRate)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <i class="material-icons align-middle" style="font-size:18px;">currency_exchange</i>
+                                            @Localize["ExchangeRateTo", _baseCurrency]
+                                        </label>
+                                        <div class="input-group">
+                                            <InputNumber @bind-Value="_model.ExchangeRate" class="form-control" step="0.000001" />
+                                            <button type="button" class="btn btn-outline-secondary" @onclick="ProposeExchangeRate" disabled="@_loadingRate">
+                                                @(_loadingRate ? "..." : Localize["Suggest"])
+                                            </button>
+                                        </div>
+                                        <div class="form-text">
+                                            @if (_rateUnavailable)
+                                            {
+                                                <span class="text-warning">
+                                                    Cambio non disponibile per questa valuta o data: indicalo a mano,
+                                                    oppure salva e resterà da convertire.
+                                                </span>
+                                            }
+                                            else if (_model.ExchangeRate.HasValue && _model.TotalAmount.HasValue)
+                                            {
+                                                <span>
+                                                    @_model.TotalAmount.Value.ToString("N2") @_model.Currency =
+                                                    <strong>@((_model.TotalAmount.Value * _model.ExchangeRate.Value).ToString("N2")) @_baseCurrency</strong>
+                                                    — riferimento BCE, modificabile se la carta ha applicato un cambio diverso.
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span>@Localize["EcbRateHint"]</span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
 
                                 <div class="mb-3">
                                     <label class="form-label">
                                         <i class="material-icons align-middle" style="font-size:18px;">description</i>
-                                        Descrizione
+                                        @Localize["Description"]
                                     </label>
                                     <InputTextArea @bind-Value="_model.Description" class="form-control" rows="3" />
                                 </div>
@@ -175,7 +366,7 @@ else
                                 <div class="mb-3">
                                     <label class="form-label">
                                         <i class="material-icons align-middle" style="font-size:18px;">note</i>
-                                        Note
+                                        @Localize["Notes"]
                                     </label>
                                     <InputTextArea @bind-Value="_model.Notes" class="form-control" rows="2" />
                                 </div>
@@ -183,7 +374,7 @@ else
                                 <div class="form-check mb-3">
                                     <InputCheckbox @bind-Value="_model.IsConfirmed" class="form-check-input" id="confirmCheck" />
                                     <label class="form-check-label" for="confirmCheck">
-                                        Conferma immediatamente i dati
+                                        @Localize["ConfirmDataImmediately"]
                                     </label>
                                 </div>
 
@@ -194,11 +385,11 @@ else
                                             <span class="spinner-border spinner-border-sm me-2"></span>
                                         }
                                         <i class="material-icons align-middle" style="font-size:18px;">save</i>
-                                        Salva Nota Spese
+                                        @Localize["SaveExpenseReceipt"]
                                     </button>
                                     <button type="button" @onclick="ResetForm" class="btn btn-outline-secondary">
                                         <i class="material-icons align-middle" style="font-size:18px;">refresh</i>
-                                        Ricarica Altro
+                                        @Localize["UploadAnother"]
                                     </button>
                                 </div>
                             </EditForm>
@@ -216,7 +407,7 @@ else
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0">
                                 <i class="material-icons align-middle me-2">cloud_upload</i>
-                                Carica Scontrino o Fattura
+                                @Localize["UploadReceiptOrInvoice"]
                             </h5>
                         </div>
                         <div class="card-body">
@@ -225,16 +416,16 @@ else
                                            class="d-none" id="receipt-file" />
                                 <label for="receipt-file" class="upload-label">
                                     <i class="material-icons upload-icon">add_photo_alternate</i>
-                                    <p class="mb-2"><strong>Clicca per selezionare scontrino o fattura</strong></p>
-                                    <p class="text-muted small mb-0">JPG, PNG o PDF &bull; Massimo 10 MB</p>
+                                    <p class="mb-2"><strong>@Localize["SelectReceiptOrInvoice"]</strong></p>
+                                    <p class="text-muted small mb-0">@Localize["AcceptedReceiptFiles"]</p>
                                 </label>
                             </div>
 
                             <div class="text-center text-muted">
-                                <p class="mb-2">oppure</p>
+                                <p class="mb-2">@Localize["Or"]</p>
                                 <button @onclick="ShowManualForm" class="btn btn-outline-secondary">
                                     <i class="material-icons align-middle" style="font-size:18px;">edit_note</i>
-                                    Inserisci Manualmente (senza Documento)
+                                    @Localize["EnterManuallyWithoutDocument"]
                                 </button>
                             </div>
                         </div>
@@ -242,17 +433,19 @@ else
 
                     <div class="alert alert-info mt-3">
                         <i class="material-icons align-middle">info</i>
-                        <strong>Suggerimento:</strong> Carica un PDF o un'immagine dello scontrino per estrarre automaticamente i dati tramite Azure AI.
+                        <strong>@Localize["Tip"]:</strong> @Localize["AzureUploadHint"]
                     </div>
                 </div>
             </div>
         }
 
-        <!-- Torna indietro -->
+        @* Si torna dove si e' partiti. Senza il controllo l'indirizzo diventava
+           "/TicketInterventions//ExpenseReceipts", con il doppio slash e nessuna pagina dietro. *@
         <div class="mt-4">
-            <a href="/TicketInterventions/@InterventionId/ExpenseReceipts" class="btn btn-outline-secondary">
+            <a href="@CancelUrl"
+               class="btn btn-outline-secondary">
                 <i class="material-icons align-middle" style="font-size:18px;">arrow_back</i>
-                Annulla
+                @Localize["Cancel"]
             </a>
         </div>
     </div>

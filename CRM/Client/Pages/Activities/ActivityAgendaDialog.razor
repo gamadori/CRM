@@ -8,10 +8,12 @@
 @inject IAGRestClientService RestClient
 @inject IBaseRestService<ApplicationUser, UsersFilterModel, string> UserService
 @inject ICompaniesService CompaniesService
+@inject IContactsService ContactsService
 @inject ILeadService LeadService
 @inject IDealService DealService
 @inject ITicketsService TicketsService
 @inject DialogService DialogService
+@inject NavigationManager Nav
 @inject NotificationService Notification
 @inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
 
@@ -53,6 +55,12 @@ else
                         case ActivityEntityType.Company:
                             <RadzenDropDown TValue="int" @bind-Value="_activity.EntityId" Data="_companies"
                                             TextProperty="RagioneSociale" ValueProperty="Id" AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            AllowClear="false" Style="width:100%" />
+                            break;
+                        case ActivityEntityType.Contact:
+                            <RadzenDropDown TValue="int" @bind-Value="_activity.EntityId" Data="_contacts"
+                                            TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true"
                                             FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                             AllowClear="false" Style="width:100%" />
                             break;
@@ -142,6 +150,14 @@ else
             </div>
 
             <div class="activity-dialog-actions">
+                @* Il dialogo resta la via rapida per correggere data e assegnatario; "Apri" porta
+                   alla scheda, dove c'e' quello che in una finestra non ci sta - a partire dalle
+                   note spese. Non compare su un'attivita' non ancora salvata: non c'e' scheda. *@
+                @if (!_isNew)
+                {
+                    <RadzenButton Icon="open_in_new" Text="@Localize["Apri"]" ButtonStyle="ButtonStyle.Secondary"
+                                  Variant="Variant.Flat" Click="@OpenActivityPage" Disabled="@_saving" />
+                }
                 <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
                               Click="@Cancel" Disabled="@_saving" />
                 <RadzenButton Icon="save" Text="@Localize["Salva"]" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat"
@@ -229,6 +245,7 @@ else
     private List<ApplicationUser> _users = new();
     private List<string> _participantIds = new();
     private List<CompanyDTO> _companies = new();
+    private List<ContactDTO> _contacts = new();
     private List<LeadDTO> _leads = new();
     private List<DealDTO> _deals = new();
     private List<TicketOption> _tickets = new();
@@ -248,6 +265,7 @@ else
     private List<Option<ActivityEntityType>> EntityTypeOptions => new()
     {
         new(Localize["Azienda"], ActivityEntityType.Company),
+        new(Localize["Contatto"], ActivityEntityType.Contact),
         new(Localize["Ticket"], ActivityEntityType.Ticket),
         new(Localize["Lead"], ActivityEntityType.Lead),
         new(Localize["Deal"], ActivityEntityType.Deal)
@@ -263,6 +281,7 @@ else
     private string EntityLabel => _activity.EntityType switch
     {
         ActivityEntityType.Company => Localize["Azienda"],
+        ActivityEntityType.Contact => Localize["Contatto"],
         ActivityEntityType.Ticket => Localize["Ticket"],
         ActivityEntityType.Lead => Localize["Lead"],
         ActivityEntityType.Deal => Localize["Deal"],
@@ -334,6 +353,10 @@ else
             .OrderBy(x => x.RagioneSociale)
             .ToList() ?? new List<CompanyDTO>();
 
+        _contacts = (await ContactsService.GetListAsync(new ContactFilter()))?
+            .OrderBy(x => x.NameComplete)
+            .ToList() ?? new List<ContactDTO>();
+
         _leads = (await LeadService.GetListAsync(new LeadFilter()))?
             .OrderBy(x => x.Name)
             .ToList() ?? new List<LeadDTO>();
@@ -342,7 +365,11 @@ else
             .OrderBy(x => x.Name)
             .ToList() ?? new List<DealDTO>();
 
-        var ticketResponse = await TicketsService.Search(new TicketFilter());
+        // GetList e non Search: "Search" e' una ricerca full-text
+        // (FREETEXTTABLE su Description) e senza un termine da cercare non restituisce nulla per
+        // definizione. Chiamandola con il filtro vuoto per farsi dare "tutti i ticket", la tendina
+        // e' sempre stata vuota. GetList e' l'elenco vero, lo stesso che alimenta la pagina Ticket.
+        var ticketResponse = await TicketsService.GetList(new TicketFilter());
         _tickets = ticketResponse?.Items?
             .OrderByDescending(x => x.DateOpened)
             .Take(200)
@@ -367,6 +394,7 @@ else
         _activity.EntityId = _activity.EntityType switch
         {
             ActivityEntityType.Company => _companies.FirstOrDefault()?.Id ?? 0,
+            ActivityEntityType.Contact => _contacts.FirstOrDefault()?.Id ?? 0,
             ActivityEntityType.Lead => _leads.FirstOrDefault()?.Id ?? 0,
             ActivityEntityType.Deal => _deals.FirstOrDefault()?.Id ?? 0,
             ActivityEntityType.Ticket => _tickets.FirstOrDefault()?.Id ?? 0,
@@ -421,6 +449,17 @@ else
     private void Cancel()
     {
         DialogService.Close(false);
+    }
+
+    /// <summary>
+    /// Chiude il dialogo e apre la scheda dell'attivita'. Si chiude con "false" apposta: le
+    /// eventuali modifiche non salvate si perdono, ma segnalare un salvataggio che non c'e'
+    /// stato farebbe ricaricare l'agenda mostrando dati vecchi come se fossero nuovi.
+    /// </summary>
+    private void OpenActivityPage()
+    {
+        DialogService.Close(false);
+        Nav.NavigateTo($"/Activities/{ActivityId}/Info");
     }
 
     private static string TicketLabel(TicketDTO ticket)

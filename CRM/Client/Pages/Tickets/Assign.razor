@@ -20,6 +20,36 @@
             </div>
         </div>
 
+        @* Un ticket smistato a un gruppo non ha (ancora) responsabili: chi registra l'intervento
+           lo prende in carico. L'effetto va dichiarato prima del salvataggio, non dopo. *@
+        @if (_assignmentContext?.IdGroupAssigned != null)
+        {
+            var pendingClaim = PendingClaimUserIds;
+
+            <div class="claim-notice @(pendingClaim.Any() ? "claim-notice-active" : "")">
+                <span class="claim-notice-icon material-icons">groups</span>
+                <div class="claim-notice-body">
+                    <div class="claim-notice-title">
+                        @Localize["Ticket assigned to group"]
+                        <span class="group-pill">@_assignmentContext.GroupAssigned</span>
+                    </div>
+                    @if (pendingClaim.Any())
+                    {
+                        <div class="claim-notice-text">
+                            @Localize["Saving will also take the ticket in charge for"]:
+                            <strong>@string.Join(", ", pendingClaim.Select(id => GetSelectedUser(id)?.NameComplete ?? id))</strong>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="claim-notice-text">
+                            @Localize["Group members can be selected: recording the intervention takes the ticket in charge"]
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
         <!-- Sezione ricerca utenti -->
         <div class="search-section mb-4">
             <div class="input-group">
@@ -59,10 +89,21 @@
                         var user = GetSelectedUser(userId);
                         if (user != null)
                         {
-                            <div class="selected-user-chip">
+                            @* Il titolo parla di presa in carico solo dove ha senso: nel picker del
+                               ticket non c'e' nessun gruppo di mezzo. *@
+                            <div class="selected-user-chip @(IsGroupCandidate(userId) ? "from-group" : "")"
+                                 title="@(_assignmentContext?.IdGroupAssigned == null
+                                            ? null
+                                            : IsGroupCandidate(userId)
+                                                ? Localize["Will be taken in charge on save"].Value
+                                                : Localize["Already assigned to the ticket"].Value)">
                                 <span class="chip-avatar">@GetInitials(user.NameComplete)</span>
                                 <span class="chip-name">@user.NameComplete</span>
-                                <button type="button" 
+                                @if (IsGroupCandidate(userId))
+                                {
+                                    <span class="chip-claim-icon material-icons">how_to_reg</span>
+                                }
+                                <button type="button"
                                         class="chip-remove" 
                                         @onclick="() => RemoveUser(userId)"
                                         title="@Localize["Remove"]">
@@ -121,7 +162,23 @@
                             </div>
 
                             <div class="user-main">
-                                <div class="user-name-full">@user.NameComplete</div>
+                                <div class="user-name-line">
+                                    <span class="user-name-full">@user.NameComplete</span>
+                                    @if (IsGroupCandidate(user.Id))
+                                    {
+                                        <span class="group-badge" title="@Localize["Candidate from the assigned group: selecting them takes the ticket in charge"]">
+                                            <span class="material-icons">groups</span>
+                                            @_assignmentContext!.GroupAssigned
+                                        </span>
+                                    }
+                                    else if (_assignmentContext?.IdGroupAssigned != null)
+                                    {
+                                        <span class="assigned-badge" title="@Localize["Already assigned to the ticket"]">
+                                            <span class="material-icons">how_to_reg</span>
+                                            @Localize["In charge"]
+                                        </span>
+                                    }
+                                </div>
 
                                 @if (hasWorkloadData)
                                 {
@@ -167,6 +224,20 @@
                             }
                         </div>
                     }
+                </div>
+            }
+            else if (IsForIntervention && !_users.Any() && string.IsNullOrEmpty(_searchQuery))
+            {
+                @* Il vicolo cieco storico: nessun candidato e nessuna spiegazione. Almeno diciamo
+                   all'operatore che cosa manca e dove sistemarlo. *@
+                <div class="empty-candidates">
+                    <span class="material-icons">person_off</span>
+                    <div>
+                        <div class="empty-candidates-title">@Localize["No candidate users for this ticket"]</div>
+                        <div class="empty-candidates-text">
+                            @Localize["Assign the ticket to a user or to a group to be able to record an intervention"]
+                        </div>
+                    </div>
                 </div>
             }
             else
@@ -292,6 +363,186 @@ else
     .selected-user-chip.unresolved {
         background: #6b7280;
         box-shadow: 0 2px 4px rgba(107, 114, 128, 0.25);
+    }
+
+    /* Selezionato che il salvataggio assegnera' anche al ticket */
+    .selected-user-chip.from-group {
+        background: linear-gradient(135deg, #0f766e 0%, #14a08a 100%);
+        box-shadow: 0 2px 4px rgba(15, 118, 110, 0.3);
+    }
+
+    .selected-user-chip.from-group:hover {
+        box-shadow: 0 4px 8px rgba(15, 118, 110, 0.4);
+    }
+
+    .chip-claim-icon {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    /* ─── Presa in carico implicita: avviso e badge ────────────────────────── */
+
+    .claim-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+        margin-bottom: 1.25rem;
+        border: 1px solid var(--crm-border);
+        border-left: 3px solid #0f766e;
+        border-radius: 12px;
+        background: color-mix(in srgb, #14a08a 6%, var(--crm-surface));
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    /* Con qualcuno da prendere in carico l'avviso smette di essere informativo e diventa un impegno */
+    .claim-notice.claim-notice-active {
+        border-left-color: #b45309;
+        background: color-mix(in srgb, #f59e0b 10%, var(--crm-surface));
+    }
+
+    .claim-notice-icon {
+        font-size: 1.35rem;
+        color: #0f766e;
+        flex-shrink: 0;
+        line-height: 1.4;
+    }
+
+    .claim-notice.claim-notice-active .claim-notice-icon {
+        color: #b45309;
+    }
+
+    .claim-notice-body {
+        min-width: 0;
+    }
+
+    .claim-notice-title {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--crm-text);
+    }
+
+    .claim-notice-text {
+        margin-top: 0.2rem;
+        font-size: 0.82rem;
+        line-height: 1.4;
+        color: var(--crm-text-muted);
+    }
+
+    .claim-notice-text strong {
+        color: var(--crm-text);
+    }
+
+    .group-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.1rem 0.6rem;
+        border-radius: 2rem;
+        background: color-mix(in srgb, #14a08a 18%, var(--crm-surface));
+        border: 1px solid color-mix(in srgb, #0f766e 35%, transparent);
+        color: var(--crm-text);
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .user-name-line {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .user-name-line .user-name-full {
+        min-width: 0;
+    }
+
+    .group-badge,
+    .assigned-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        flex-shrink: 0;
+        padding: 0.1rem 0.5rem;
+        border-radius: 2rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        white-space: nowrap;
+        max-width: 11rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .group-badge .material-icons,
+    .assigned-badge .material-icons {
+        font-size: 0.85rem;
+    }
+
+    .group-badge {
+        background: color-mix(in srgb, #14a08a 14%, var(--crm-surface));
+        border: 1px solid color-mix(in srgb, #0f766e 30%, transparent);
+        color: #0f766e;
+    }
+
+    .assigned-badge {
+        background: color-mix(in srgb, #16a34a 12%, var(--crm-surface));
+        border: 1px solid color-mix(in srgb, #16a34a 28%, transparent);
+        color: #15803d;
+    }
+
+    .empty-candidates {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 1.1rem;
+        border: 1px dashed var(--crm-border-strong);
+        border-radius: 12px;
+        background: var(--crm-surface-muted);
+    }
+
+    .empty-candidates .material-icons {
+        font-size: 1.5rem;
+        color: var(--crm-text-muted);
+        flex-shrink: 0;
+    }
+
+    .empty-candidates-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--crm-text);
+    }
+
+    .empty-candidates-text {
+        margin-top: 0.2rem;
+        font-size: 0.82rem;
+        line-height: 1.4;
+        color: var(--crm-text-muted);
+    }
+
+    /* Tema scuro (body.dark-theme, come il resto della shell): i toni scuri di verde e ambra
+       sono illeggibili su fondo scuro, servono le varianti chiare. */
+    body.dark-theme .claim-notice-icon,
+    body.dark-theme .group-badge {
+        color: #5eead4;
+    }
+
+    body.dark-theme .claim-notice.claim-notice-active .claim-notice-icon {
+        color: #fbbf24;
+    }
+
+    body.dark-theme .assigned-badge {
+        color: #86efac;
+    }
+
+    body.dark-theme .claim-notice {
+        border-left-color: #14a08a;
+    }
+
+    body.dark-theme .claim-notice.claim-notice-active {
+        border-left-color: #f59e0b;
     }
 
     /* Clear-all button */

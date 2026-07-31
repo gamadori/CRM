@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Configuration;
+ï»¿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 using OpenAI.Chat;
@@ -59,7 +59,7 @@ namespace CRM.Server.Services
                 var options = new ChatCompletionOptions
                 {
                     MaxOutputTokenCount = maxTokens,
-                    Temperature = 0.3f // Bassa temperatura per risposte più deterministiche
+                    Temperature = 0.3f // Bassa temperatura per risposte piÃ¹ deterministiche
                 };
 
                 var response = await _chatClient.CompleteChatAsync(messages, options);
@@ -78,13 +78,13 @@ namespace CRM.Server.Services
         }
 
         /// <summary>
-        /// Valida se una query è relativa a problemi tecnici IT
+        /// Valida se una query Ã¨ relativa a problemi tecnici IT
         /// </summary>
         public async Task<ValidationResult> ValidateITQueryAsync(string query)
         {
             try
             {
-                var prompt = $@"Analizza questa richiesta e dimmi se è relativa a problemi tecnici IT (computer, software, hardware, rete, stampanti, sistemi, ecc.).
+                var prompt = $@"Analizza questa richiesta e dimmi se Ã¨ relativa a problemi tecnici IT (computer, software, hardware, rete, stampanti, sistemi, ecc.).
 
 Query utente: '{query}'
 
@@ -113,7 +113,7 @@ Rispondi SOLO in questo formato JSON:
                 {
                     // Fallback: se GPT non risponde in JSON, analizza il testo
                     var isValid = response.Contains("true", StringComparison.OrdinalIgnoreCase) ||
-                                  response.Contains("sì", StringComparison.OrdinalIgnoreCase) ||
+                                  response.Contains("sÃ¬", StringComparison.OrdinalIgnoreCase) ||
                                   response.Contains("valida", StringComparison.OrdinalIgnoreCase);
 
                     return new ValidationResult
@@ -138,7 +138,7 @@ Rispondi SOLO in questo formato JSON:
         }
 
         /// <summary>
-        /// Genera un riassunto intelligente di come un ticket simile può aiutare l'utente
+        /// Genera un riassunto intelligente di come un ticket simile puÃ² aiutare l'utente
         /// </summary>
         public async Task<string> GenerateSolutionSummaryAsync(
             string userProblem, 
@@ -150,11 +150,11 @@ Rispondi SOLO in questo formato JSON:
                 var prompt = $@"L'utente ha questo problema:
 '{userProblem}'
 
-È stato trovato un ticket simile:
+Ãˆ stato trovato un ticket simile:
 Descrizione: {ticketDescription}
 Soluzione applicata: {ticketSolution}
 
-Scrivi in 2 frasi (max 150 caratteri totali) come questa soluzione può aiutare l'utente. Sii conciso e pratico.";
+Scrivi in 2 frasi (max 150 caratteri totali) come questa soluzione puÃ² aiutare l'utente. Sii conciso e pratico.";
 
                 var response = await ChatCompletionAsync(prompt, maxTokens: 100);
                 return response.Trim();
@@ -173,7 +173,7 @@ Scrivi in 2 frasi (max 150 caratteri totali) come questa soluzione può aiutare l
         {
             try
             {
-                var prompt = $@"Estrai le 3-5 parole chiave tecniche più importanti da questa query IT.
+                var prompt = $@"Estrai le 3-5 parole chiave tecniche piÃ¹ importanti da questa query IT.
 Rispondi SOLO con le parole separate da virgola, senza altro testo.
 
 Query: '{query}'";
@@ -229,7 +229,7 @@ Query: '{query}'";
                         ? "N/A" 
                         : t.Solution.Substring(0, Math.Min(200, t.Solution.Length));
                     
-                    return $"TICKET #{i+1} (ID:{t.TicketId}, Similarità:{t.Similarity:F0}%)\n" +
+                    return $"TICKET #{i+1} (ID:{t.TicketId}, SimilaritÃ :{t.Similarity:F0}%)\n" +
                            $"Problema: {descPreview}\n" +
                            $"Soluzione: {solPreview}";
                 }));
@@ -244,8 +244,8 @@ TICKET TROVATI:
 
 ANALISI RICHIESTA:
 1. Esiste almeno UN ticket con una soluzione applicabile a questo problema?
-2. Se SÌ, quale ticket ha la soluzione MIGLIORE (indica il numero)?
-3. Perché questa soluzione è rilevante?
+2. Se SÃŒ, quale ticket ha la soluzione MIGLIORE (indica il numero)?
+3. PerchÃ© questa soluzione Ã¨ rilevante?
 
 Rispondi in formato JSON:
 {{
@@ -289,7 +289,7 @@ Rispondi in formato JSON:
                 {
                     // Fallback: analisi testuale
                     var hasSolution = response.Contains("true", StringComparison.OrdinalIgnoreCase) ||
-                                     response.Contains("sì", StringComparison.OrdinalIgnoreCase);
+                                     response.Contains("sÃ¬", StringComparison.OrdinalIgnoreCase);
 
                     return new AIVerificationResult
                     {

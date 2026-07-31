@@ -3,7 +3,7 @@ using System;
 namespace CRM.Shared.Models
 {
     /// <summary>
-    /// Risultato della ricerca semantica con similarit� AI
+    /// Risultato della ricerca semantica con similarità AI
     /// </summary>
     public class TicketSimilarityResult
     {
@@ -33,12 +33,12 @@ namespace CRM.Shared.Models
         public string CustomerName { get; set; }
 
         /// <summary>
-        /// Percentuale di similarit� (0-100)
+        /// Percentuale di similarità (0-100)
         /// </summary>
         public double SimilarityPercentage { get; set; }
 
         /// <summary>
-        /// Score di similarit� coseno (-1 a 1)
+        /// Score di similarità coseno (-1 a 1)
         /// </summary>
         public double CosineSimilarity { get; set; }
 
@@ -58,7 +58,7 @@ namespace CRM.Shared.Models
         public string Category { get; set; }
 
         /// <summary>
-        /// Priorit� del ticket
+        /// Priorità del ticket
         /// </summary>
         public string Priority { get; set; }
 

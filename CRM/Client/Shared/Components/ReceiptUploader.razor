@@ -1,4 +1,4 @@
-@using CRM.Shared.DTOs
+ï»¿@using CRM.Shared.DTOs
 @using Microsoft.Extensions.Localization
 @using System.IO
 @inject HttpClient Http
@@ -19,7 +19,7 @@
             <label for="@_uploadId" class="upload-label">
                 <i class="material-icons upload-icon">cloud_upload</i>
                 <p class="mb-2"><strong>Clicca per caricare scontrino o fattura</strong></p>
-                <p class="text-muted small mb-0">Formati: JPG, PNG, PDF • Max 10 MB</p>
+                <p class="text-muted small mb-0">Formati: JPG, PNG, PDF â€¢ Max 10 MB</p>
             </label>
         </div>
 
@@ -54,7 +54,7 @@
                     <i class="material-icons me-2">check_circle</i>
                     <strong>Estrazione completata!</strong>
                     <small class="ms-2">
-                        Confidence: @GetConfidenceText() • @_extractionResult.ProcessingTimeMs ms
+                        Confidence: @GetConfidenceText() â€¢ @_extractionResult.ProcessingTimeMs ms
                     </small>
                 </div>
 
@@ -118,7 +118,7 @@
                             <thead>
                                 <tr>
                                     <th>Descrizione</th>
-                                    <th class="text-center">Qtà</th>
+                                    <th class="text-center">QtÃ </th>
                                     <th class="text-end">Prezzo</th>
                                     <th class="text-end">Totale</th>
                                 </tr>
@@ -209,7 +209,7 @@
 </style>
 
 @code {
-    // ? AttachmentFileId ora è OPZIONALE - non più richiesto per il nuovo flusso
+    // ? AttachmentFileId ora Ã¨ OPZIONALE - non piÃ¹ richiesto per il nuovo flusso
     [Parameter] public int? AttachmentFileId { get; set; }
     [Parameter] public EventCallback<ReceiptExtractionResult> OnExtractionConfirmed { get; set; }
 

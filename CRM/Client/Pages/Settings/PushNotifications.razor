@@ -1,4 +1,4 @@
-@page "/settings/push-notifications"
+ï»¿@page "/settings/push-notifications"
 @inject IJSRuntime JSRuntime
 @inject HttpClient Http
 @inject Radzen.NotificationService NotificationService
@@ -6,7 +6,7 @@
 <h3>?? Notifiche Push</h3>
 
 <RadzenCard class="rz-my-3">
-    <p>Attiva le notifiche push per ricevere avvisi in tempo reale anche quando il browser è chiuso.</p>
+    <p>Attiva le notifiche push per ricevere avvisi in tempo reale anche quando il browser Ã¨ chiuso.</p>
     
     @if (_isSupported)
     {
@@ -19,7 +19,7 @@
             <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" class="rz-my-3">
                 <strong>?? Nota:</strong> Le notifiche funzionano:
                 <ul class="rz-mt-2 rz-mb-0">
-                    <li>? <strong>Desktop:</strong> Sempre quando il browser è aperto (anche in background)</li>
+                    <li>? <strong>Desktop:</strong> Sempre quando il browser Ã¨ aperto (anche in background)</li>
                     <li>? <strong>Android:</strong> Sempre, anche con browser chiuso (Chrome, Firefox, Edge)</li>
                     <li>? <strong>iOS Safari:</strong> Con Safari in background o come PWA installata</li>
                     <li>?? <strong>iOS Chrome/Firefox:</strong> Non supportato (usare Safari)</li>

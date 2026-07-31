@@ -3,6 +3,8 @@ using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -19,13 +21,16 @@ namespace CRM.Server.Controllers
     {
         private readonly IExpenseReceiptService _expenseReceiptService;
         private readonly CRM.Client.Services.ILogEventService _logEventService;
+        private readonly IPermitsService _permits;
 
         public ExpenseReceiptsController(
             IExpenseReceiptService expenseReceiptService,
-            CRM.Client.Services.ILogEventService logEventService)
+            CRM.Client.Services.ILogEventService logEventService,
+            IPermitsService permits)
         {
             _expenseReceiptService = expenseReceiptService;
             _logEventService = logEventService;
+            _permits = permits;
         }
 
         private string GetUserId()
@@ -34,8 +39,101 @@ namespace CRM.Server.Controllers
         }
 
         /// <summary>
+        /// Le note spese sono un dato personale: ognuno vede le proprie, admin e superuser tutte.
+        /// Restituisce l'id a cui restringere la lettura, oppure null per chi vede tutto.
+        /// </summary>
+        private async Task<string> GetVisibilityRestrictionAsync()
+        {
+            if (await _permits.IsAdmin() || await _permits.IsSuperUser())
+                return null;
+
+            return GetUserId();
+        }
+
+        /// <summary>
         /// Ottiene tutte le note spese di un intervento
         /// </summary>
+        /// <summary>
+        /// Elenco trasversale filtrato. E' l'endpoint che alimenta la pagina globale.
+        /// </summary>
+        [HttpGet]
+        public async Task<ActionResult<object>> Search([FromQuery] ExpenseReceiptFilter filter)
+        {
+            try
+            {
+                var restrictTo = await GetVisibilityRestrictionAsync();
+                var (items, total) = await _expenseReceiptService.SearchAsync(filter, restrictTo);
+
+                return Ok(new { items, totalCount = total, canSeeAll = restrictTo == null });
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(ExpenseReceiptsController), nameof(Search),
+                    CRM.Shared.LogEvent.EventsTypes.Error, ex);
+
+                return StatusCode(500, "Errore durante la ricerca delle note spese");
+            }
+        }
+
+        /// <summary>
+        /// Totali sull'insieme filtrato: e' il "conto della serva" vero e proprio.
+        /// </summary>
+        [HttpGet("summary")]
+        public async Task<ActionResult<ExpenseReceiptSummaryDTO>> GetGlobalSummary([FromQuery] ExpenseReceiptFilter filter)
+        {
+            try
+            {
+                var restrictTo = await GetVisibilityRestrictionAsync();
+                return Ok(await _expenseReceiptService.GetSummaryAsync(filter, restrictTo));
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(ExpenseReceiptsController), nameof(GetGlobalSummary),
+                    CRM.Shared.LogEvent.EventsTypes.Error, ex);
+
+                return StatusCode(500, "Errore durante il calcolo dei totali");
+            }
+        }
+
+        /// <summary>
+        /// Cambio di riferimento proposto per una valuta a una data. Il form lo precompila e
+        /// lascia comunque modificare: per un rimborso vale spesso il cambio applicato dalla
+        /// carta, che i cambi BCE non conoscono.
+        /// </summary>
+        [HttpGet("exchange-rate")]
+        public async Task<ActionResult<decimal?>> GetExchangeRate(
+            [FromServices] IExchangeRateService exchangeRates,
+            [FromServices] CRM.Server.Data.ApplicationDbContext context,
+            string currency,
+            DateTime? date)
+        {
+            try
+            {
+                var baseCurrency = await context.GlobalSettings
+                    .AsNoTracking()
+                    .OrderBy(g => g.Id)
+                    .Select(g => g.BaseCurrency)
+                    .FirstOrDefaultAsync();
+
+                if (string.IsNullOrWhiteSpace(baseCurrency))
+                    baseCurrency = "EUR";
+
+                // Null e' una risposta valida: valuta non coperta o servizio non raggiungibile.
+                // Il chiamante deve poter salvare lo stesso, lasciando la spesa da convertire.
+                return Ok(await exchangeRates.GetRateAsync(currency, baseCurrency, date ?? DateTime.Today));
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(ExpenseReceiptsController), nameof(GetExchangeRate),
+                    CRM.Shared.LogEvent.EventsTypes.Error, ex);
+
+                return Ok((decimal?)null);
+            }
+        }
+
         [HttpGet("intervention/{interventionId}")]
         public async Task<ActionResult<object>> GetByIntervention(int interventionId)
         {
@@ -74,6 +172,55 @@ namespace CRM.Server.Controllers
                 await _logEventService.RegisterAsync(
                     nameof(ExpenseReceiptsController),
                     nameof(GetSummary),
+                    CRM.Shared.LogEvent.EventsTypes.Error,
+                    ex);
+
+                return StatusCode(500, "Errore durante il recupero del riepilogo");
+            }
+        }
+
+        /// <summary>
+        /// Note spese di un'attivita', con il riepilogo: e' quello che la pagina dell'attivita'
+        /// mostra nella scheda Note spese.
+        /// </summary>
+        [HttpGet("activity/{activityId}")]
+        public async Task<ActionResult<object>> GetByActivity(int activityId)
+        {
+            try
+            {
+                var receipts = await _expenseReceiptService.GetByActivityIdAsync(activityId);
+                var summary = await _expenseReceiptService.GetSummaryByActivityIdAsync(activityId);
+
+                return Ok(new { receipts, summary });
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(ExpenseReceiptsController),
+                    nameof(GetByActivity),
+                    CRM.Shared.LogEvent.EventsTypes.Error,
+                    ex);
+
+                return StatusCode(500, "Errore durante il recupero delle note spese");
+            }
+        }
+
+        /// <summary>
+        /// Solo il riepilogo di un'attivita': la scheda lo usa per il contatore sulla linguetta,
+        /// senza tirarsi dietro l'elenco.
+        /// </summary>
+        [HttpGet("activity/{activityId}/summary")]
+        public async Task<ActionResult<ExpenseReceiptSummaryDTO>> GetActivitySummary(int activityId)
+        {
+            try
+            {
+                return Ok(await _expenseReceiptService.GetSummaryByActivityIdAsync(activityId));
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(ExpenseReceiptsController),
+                    nameof(GetActivitySummary),
                     CRM.Shared.LogEvent.EventsTypes.Error,
                     ex);
 
@@ -135,6 +282,30 @@ namespace CRM.Server.Controllers
                     ex);
 
                 return StatusCode(500, "Errore durante la creazione della nota spese");
+            }
+        }
+
+        /// <summary>
+        /// Crea una nota spesa autonoma per ogni documento fiscale rilevato nello stesso file.
+        /// Tutte le note condividono allegato, persona e contesto.
+        /// </summary>
+        [HttpPost("batch")]
+        public async Task<ActionResult<List<ExpenseReceiptDTO>>> CreateBatch(
+            [FromBody] ExpenseReceiptCreateUpdateDTO dto)
+        {
+            try
+            {
+                var receipts = await _expenseReceiptService.CreateBatchAsync(dto, GetUserId());
+                return Ok(receipts);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(ExpenseReceiptsController),
+                    nameof(CreateBatch),
+                    CRM.Shared.LogEvent.EventsTypes.Error,
+                    ex);
+                return StatusCode(500, "Errore durante la creazione automatica delle note spese");
             }
         }
 

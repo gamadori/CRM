@@ -6,7 +6,9 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "CRM/Server/CRM.Server.csproj", "--launch-profile", "CRM.Server"],
       "port": 5001,
-      "url": "https://localhost:5001"
+      "url": "https://localhost:5001",
+      "_comment": "La porta e' fissa: il profilo CRM.Server la impone in launchSettings.json (applicationUrl) e il certificato di sviluppo e' emesso per localhost:5001. Assegnarne una a caso farebbe partire il server altrove e la pagina non si aprirebbe.",
+      "autoPort": false
     }
   ]
 }

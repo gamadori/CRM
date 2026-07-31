@@ -49,5 +49,14 @@ namespace CRM.Client.Models
         /// ✅ NUOVO: Descrizione testuale dello stato (es. "Aperto", "In Lavorazione", "Chiuso")
         /// </summary>
         public string StatusText { get; set; }
+
+        public int? IdCommessa { get; set; }
+
+        /// <summary>
+        /// Codice commessa (es. CM-2026-0001), vuoto sui ticket di assistenza. Lo scheduler legge
+        /// questa proprieta' per nome via reflection: rinominandola va aggiornato anche
+        /// SchedulerTicket nei quattro componenti di vista.
+        /// </summary>
+        public string CommessaCode { get; set; } = string.Empty;
     }
 }

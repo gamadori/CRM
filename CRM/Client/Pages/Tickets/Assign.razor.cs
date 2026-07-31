@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
 
@@ -79,10 +80,18 @@ namespace CRM.Client.Pages.Tickets
         private List<ApplicationUser> _users = new List<ApplicationUser>();
         private List<ApplicationUser> _filteredUsers = new List<ApplicationUser>();
         private List<ApplicationUser> _selectedUsers = new List<ApplicationUser>();
-        private List<ApplicationUser> _ticketAssignedUsers = new List<ApplicationUser>(); // ✅ Utenti assegnati al ticket
 
         private HashSet<string> _selectedUserIds = new HashSet<string>();
         private string _searchQuery = string.Empty;
+
+        /// <summary>
+        /// Contesto di assegnazione del ticket, popolato solo per il picker degli interventi:
+        /// serve a distinguere chi e' gia' in carico dai candidati che arrivano dal gruppo.
+        /// </summary>
+        private TicketAssignmentContextDTO? _assignmentContext;
+
+        /// <summary>Utenti con assegnazione individuale sul ticket; gli altri candidati vengono dal gruppo.</summary>
+        private HashSet<string> _ticketAssignedUserIds = new HashSet<string>();
 
         // ✅ NUOVO: Mappa del carico di lavoro per ogni utente
         private Dictionary<string, UserWorkloadInfo> _userWorkloadMap = new();
@@ -103,24 +112,45 @@ namespace CRM.Client.Pages.Tickets
             else
                 await LoadAssignedUsers();
 
+            await LoadAssignmentContextAsync();
             await LoadUserAsync();
             await ResolveSelectedUsersAsync();
-            
+
             _filteredUsers = _users.Where(u => !_selectedUserIds.Contains(u.Id)).ToList();
-            
+
             await LoadUserWorkload();
 
             _isLoadingPage = false;
         }
 
-        private async Task LoadData()
+        /// <summary>
+        /// Carica il contesto di assegnazione del ticket. Solo per gli interventi: nel picker del
+        /// ticket i candidati arrivano dal tipo di ticket, non dal gruppo, e l'etichetta
+        /// "dal gruppo" sarebbe fuorviante.
+        /// </summary>
+        private async Task LoadAssignmentContextAsync()
         {
-            
-            // ✅ NUOVO: Carica gli utenti già assegnati
-            await LoadAssignedUsers();
+            if (!IsForIntervention || TicketId == null || TicketId <= 0)
+                return;
+
+            _assignmentContext = await TicketService.GetAssignmentContextAsync(TicketId.Value);
+            _ticketAssignedUserIds = _assignmentContext?.AssignedUserIds != null
+                ? new HashSet<string>(_assignmentContext.AssignedUserIds)
+                : new HashSet<string>();
         }
 
-       
+        /// <summary>
+        /// True per un candidato che e' nella lista solo perche' appartiene al gruppo assegnato:
+        /// salvando, l'intervento vale come presa in carico del ticket.
+        /// </summary>
+        private bool IsGroupCandidate(string userId)
+            => _assignmentContext?.IdGroupAssigned != null
+               && !_ticketAssignedUserIds.Contains(userId)
+               && _users.Any(u => u.Id == userId);
+
+        /// <summary>Selezionati che il salvataggio assegnera' al ticket, oggi non ancora in carico.</summary>
+        private List<string> PendingClaimUserIds
+            => _selectedUserIds.Where(IsGroupCandidate).ToList();
 
         private async Task LoadUserAsync()
         {
@@ -154,6 +184,10 @@ namespace CRM.Client.Pages.Tickets
             UsersFilterModel request = new UsersFilterModel
             {
                 IdTicketAssigned = TicketId,
+                // Un ticket smistato a un gruppo e non ancora preso in carico non ha utenti
+                // assegnati: senza i membri del gruppo la lista sarebbe vuota e l'intervento
+                // non registrabile.
+                IncludeGroupMembers = true,
                 PageSize = 0
             };
 
@@ -219,30 +253,6 @@ namespace CRM.Client.Pages.Tickets
             return _selectedUsers.FirstOrDefault(user => user.Id == userId)
                 ?? _users.FirstOrDefault(user => user.Id == userId);
         }
-
-        /// <summary>
-        /// ✅ NUOVO: Carica gli utenti assegnati al ticket (per filtrare gli interventi)
-        /// </summary>
-        private async Task LoadTicketAssignedUsers()
-        {
-            try
-            {
-                var ticketId =  Id;
-                if (ticketId == 0) return;
-
-                var response = await HttpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{ticketId}/assigned-users");
-                if (response != null && response.Any())
-                {
-                    _ticketAssignedUsers = _users.Where(u => response.Contains(u.Id)).ToList();
-                }
-               
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Errore caricamento utenti ticket: {ex.Message}");
-            }
-        }
-
 
         /// <summary>
         /// ✅ NUOVO: Carica il carico di lavoro (workload) di ogni utente per la data del ticket
@@ -441,16 +451,23 @@ namespace CRM.Client.Pages.Tickets
                 if (response.IsSuccessStatusCode)
                 {
                     // ✅ Messaggio diverso in base al numero di utenti
-                    var message = _selectedUserIds.Any()
+                    string message = _selectedUserIds.Any()
                         ? Localize["Users assigned successfully"]
                         : Localize["All users unassigned successfully"];
+
+                    // Il server dice chi ha preso in carico il ticket strada facendo: e' un effetto
+                    // collaterale del salvataggio e l'operatore deve vederlo dichiarato.
+                    var claimed = IsForIntervention ? await ReadClaimedUsersAsync(response) : null;
+
+                    if (claimed != null && claimed.Any())
+                        message = $"{message}. {Localize["Ticket taken in charge by"]}: {string.Join(", ", claimed)}";
 
                     NotificationService.Notify(new NotificationMessage
                     {
                         Severity = NotificationSeverity.Success,
                         Summary = Localize["Success"],
                         Detail = message,
-                        Duration = 3000
+                        Duration = claimed != null && claimed.Any() ? 5000 : 3000
                     });
 
                     // ✅ Chiudi il dialog e segnala successo
@@ -487,7 +504,36 @@ namespace CRM.Client.Pages.Tickets
             }
         }
 
-        
+        /// <summary>
+        /// Estrae dalla risposta i nomi degli utenti assegnati al ticket dalla presa in carico
+        /// implicita. Un corpo inatteso non e' un errore: l'assegnazione all'intervento e' andata
+        /// a buon fine, resta solo senza dettaglio.
+        /// </summary>
+        private static async Task<List<string>?> ReadClaimedUsersAsync(HttpResponseMessage response)
+        {
+            try
+            {
+                using var payload = await response.Content.ReadFromJsonAsync<JsonDocument>();
+
+                if (payload != null
+                    && payload.RootElement.TryGetProperty("claimedUsers", out var claimed)
+                    && claimed.ValueKind == JsonValueKind.Array)
+                {
+                    return claimed.EnumerateArray()
+                        .Select(x => x.GetString())
+                        .Where(x => !string.IsNullOrWhiteSpace(x))
+                        .Select(x => x!)
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Risposta assegnazione senza dettaglio presa in carico: {ex.Message}");
+            }
+
+            return null;
+        }
+
         protected void Cancel()
         {
             DialogService.Close(false); // Passa false per indicare annullamento

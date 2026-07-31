@@ -432,7 +432,13 @@ namespace CRM.Client.Pages.Tickets
                     OnClickDelete(id.Value);
                 else
                 {
-                    await _service.Delete(id.Value);
+                    // L'esito va guardato: prima si ricaricava e basta, e un'eliminazione rifiutata
+                    // era indistinguibile da una riuscita - il ticket restava li' senza un perche'.
+                    var response = await _service.DeleteTicket(id.Value);
+
+                    if (!response.Success)
+                        NotificationService?.Notify(NotificationSeverity.Error, Localize["Elimina"],
+                            response.ErrorMessage ?? Localize["Eliminazione non riuscita"]);
 
                     await LoadData();
                     StateHasChanged();

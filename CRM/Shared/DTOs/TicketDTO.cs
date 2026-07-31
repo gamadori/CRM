@@ -175,9 +175,6 @@ namespace CRM.Shared.DTOs
 
         public string Numero { get; set; }
 
-        [Display(Name = nameof(Ticket.Support), ResourceType = typeof(Resources.Models.Ticket))]
-        public int Support { get; set; }
-
         [Display(Name = nameof(Ticket.Closed), ResourceType = typeof(Resources.Models.Ticket))]
         public bool Closed { get; set; }
 
@@ -241,6 +238,15 @@ namespace CRM.Shared.DTOs
         public string? State { get; set; }
 
         public string? StateColor { get; set; }
+
+        /// <summary>Commessa a cui il ticket appartiene tramite la fase; null se non e' lavoro di commessa.</summary>
+        public int? IdCommessa { get; set; }
+
+        /// <summary>
+        /// Codice leggibile della commessa (es. CM-2026-0001). La sua presenza e' il discrimine fra
+        /// lavoro pianificato di produzione e assistenza: lo scheduler distingue i due su questo.
+        /// </summary>
+        public string? CommessaCode { get; set; }
 
         public List<TicketScheduleUserDTO> AssignedUsers { get; set; } = new();
     }

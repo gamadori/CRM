@@ -1,8 +1,10 @@
 ﻿@using Radzen
 @using Radzen.Blazor
 
-<div class="modern-ticket-card" 
-     style="border-left-color: @Ticket.BackGroundColor" 
+@* La barra a sinistra dice la NATURA del lavoro (commessa o assistenza), non l'urgenza: quella
+   resta a priorita' e scadenza, che sono dati veri. Il colore di fondo continua a dire "di chi e'". *@
+<div class="modern-ticket-card @(Ticket.IsCommessa ? "is-commessa" : "is-assistenza")"
+     style="border-left-color: @Ticket.BackGroundColor"
      draggable="true"
      data-scheduler-ticket
      @onclick="HandleCardClick"
@@ -20,12 +22,16 @@
         <!-- Ticket ID -->
         <span class="ticket-id">#@Ticket.Id</span>
 
-        <!-- ✅ NUOVO: Status Badge -->
+        @* Lo stato era un chip maiuscolo a piena larghezza: nella cella stretta del mese mandava a
+           capo l'header e da solo valeva una riga in piu' per ogni ticket. Qui e' un pallino del
+           colore dello stato, con title e aria-label a portare l'etichetta leggibile — la stessa
+           convenzione dei calendari. Il testo per esteso resta nel preview al click. *@
         @if (!string.IsNullOrEmpty(Ticket.StatusText))
         {
-            <span class="ticket-status-badge" style="background-color: @Ticket.StatusColor; color: @GetTextColorForBackground(Ticket.StatusColor)">
-                @Ticket.StatusText
-            </span>
+            <span class="ticket-status-dot"
+                  style="background-color: @Ticket.StatusColor"
+                  title="@Ticket.StatusText"
+                  aria-label="@Ticket.StatusText"></span>
         }
 
         <!-- Assigned Users Badges -->
@@ -57,6 +63,13 @@
 
     <div class="ticket-card-body">
         <div class="ticket-company">@Ticket.Company</div>
+        @if (Ticket.IsCommessa)
+        {
+            <div class="ticket-commessa" title="@($"Commessa {Ticket.CommessaCode}")">
+                <span class="material-icons">precision_manufacturing</span>
+                <span class="commessa-code">@Ticket.CommessaCode</span>
+            </div>
+        }
         <div class="ticket-description" title="@Ticket.Description">@Ticket.Description</div>
     </div>
 
@@ -94,7 +107,7 @@
     .modern-ticket-card {
         background: white;
         border-radius: 8px;
-        padding: 1rem;
+        padding: 0.45rem 0.55rem;
         border-left: 4px solid #667eea;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
         transition: all 0.3s ease;
@@ -106,6 +119,49 @@
     .modern-ticket-card:active {
         cursor: grabbing;
         opacity: .72;
+    }
+
+    /* Natura del lavoro: una fascia sottile sul bordo superiore, cosi' non litiga con il bordo
+       sinistro che porta il colore dell'utente assegnato. Due tinte neutre e di pari peso: nessuna
+       delle due deve sembrare "piu' urgente" dell'altra. */
+    .modern-ticket-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .modern-ticket-card.is-commessa::before {
+        background: #6366f1;
+    }
+
+    .modern-ticket-card.is-assistenza::before {
+        background: #0ea5e9;
+    }
+
+    /* Riga commessa */
+    .ticket-commessa {
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+        color: #4f46e5;
+        font-size: 0.7rem;
+        font-weight: 600;
+        min-width: 0;
+    }
+
+    .ticket-commessa .material-icons {
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+
+    .commessa-code {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .modern-ticket-card:hover {
@@ -128,62 +184,68 @@
     .ticket-card-header {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
-        margin-bottom: 0.75rem;
-        flex-wrap: wrap;
+        gap: 0.3rem;
+        margin-bottom: 0.3rem;
+        flex-wrap: nowrap;
+        min-width: 0;
     }
 
     .ticket-time {
-        font-size: 1rem;
+        font-size: 0.8rem;
         font-weight: 700;
         color: #667eea;
         background: rgba(102, 126, 234, 0.1);
-        padding: 0.25rem 0.5rem;
+        padding: 0.1rem 0.3rem;
         border-radius: 4px;
+        white-space: nowrap;
     }
 
     .ticket-id {
-        font-size: 0.875rem;
+        font-size: 0.75rem;
         font-weight: 600;
         color: #6b7280;
         background: #f3f4f6;
-        padding: 0.25rem 0.5rem;
+        padding: 0.1rem 0.3rem;
         border-radius: 4px;
+        white-space: nowrap;
     }
 
-    /* ✅ NUOVO: Status Badge */
-    .ticket-status-badge {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        mix-blend-mode: normal;
-        white-space: nowrap;
+    /* Stato: pallino colorato, etichetta su title/aria-label */
+    .ticket-status-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
     }
 
     .assigned-users {
         display: flex;
-        gap: 0.25rem;
+        gap: 0.15rem;
         margin-left: auto;
+        flex-shrink: 0;
     }
 
+    /* Gli avatar si sovrappongono leggermente: tre iniziali stanno in ~44px invece di 66,
+       e nella cella del mese e' la differenza fra stare in riga e mandare a capo l'header. */
     .user-badge {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 28px;
-        height: 28px;
+        width: 21px;
+        height: 21px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border-radius: 50%;
-        font-size: 0.75rem;
+        font-size: 0.6rem;
         font-weight: 600;
         border: 2px solid white;
         transition: all 0.3s ease;
+        margin-left: -6px;
+    }
+
+    .user-badge:first-child {
+        margin-left: 0;
     }
 
     .user-badge:hover {
@@ -205,23 +267,30 @@
     .ticket-card-body {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.1rem;
+        min-width: 0;
     }
 
     .ticket-company {
         font-weight: 600;
         color: #374151;
-        font-size: 0.95rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
+    /* Una riga invece di due: nella cella del mese la seconda riga di descrizione costava
+       ~18px per ticket e conteneva quasi sempre la coda troncata della prima. Il testo intero
+       resta nel title e nel preview. */
     .ticket-description {
         color: #6b7280;
-        font-size: 0.875rem;
+        font-size: 0.75rem;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        line-height: 1.4;
+        line-height: 1.35;
     }
 
     /* Users Panel Overlay */

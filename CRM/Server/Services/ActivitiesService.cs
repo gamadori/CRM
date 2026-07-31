@@ -222,7 +222,13 @@ namespace CRM.Server.Services
 
             var dto = item.ToDTO();
             if (dto != null)
+            {
+                // Il nome dell'entita' collegata lo risolveva solo l'elenco: chiedendo la singola
+                // attivita' si otteneva EntityName vuoto, e la scheda mostrava "Contatto #2".
+                await ResolveEntityNamesAsync(new List<ActivityDTO> { dto });
+
                 dto.Permits = ComputePermits(item!.IdUser, item.IdAssignee, await SafeCurrentUserAsync());
+            }
             return dto;
         }
 

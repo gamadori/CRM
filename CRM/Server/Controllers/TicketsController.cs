@@ -24,7 +24,6 @@ using Microsoft.Data.SqlClient;
 using Humanizer;
 using CRM.Client.Services;
 using System.Composition;
-using SelectPdf;
 using System.Runtime.Serialization.Formatters.Binary;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Extensions.Configuration;
@@ -45,7 +44,6 @@ namespace CRM.Server.Controllers
         private readonly IEmailSenderPlus _emailSenderPlus;
         private readonly ILanguagesService _languageService;
         private readonly TelegramCommandsService _TelegramService;
-        private readonly IArchiveService _archiveService;
         private readonly OpenAIEmbeddingService _embeddingService;
         private readonly ITicketPdfGenerator _pdfGenerator;
         private readonly IPushNotificationService _pushService;
@@ -64,9 +62,8 @@ namespace CRM.Server.Controllers
             ILogEventService logEventService, 
             IEmailSenderPlus emailSenderPlus, 
             
-            TelegramCommandsService telegram, 
-            IArchiveService archiveService, 
-            OpenAIEmbeddingService embeddingService, 
+            TelegramCommandsService telegram,
+            OpenAIEmbeddingService embeddingService,
             ITicketPdfGenerator pdfGenerator, 
             IPushNotificationService pushService,
             IConfiguration configuration,
@@ -82,8 +79,6 @@ namespace CRM.Server.Controllers
             _emailSenderPlus = emailSenderPlus;
             
             _TelegramService = telegram;
-            _archiveService = archiveService;
-            _archiveService.TypeArchive = ArchiveTypes.Temp;
             _embeddingService = embeddingService;
             _pdfGenerator = pdfGenerator;
             _pushService = pushService;
@@ -241,6 +236,13 @@ namespace CRM.Server.Controllers
                 if (args.IdCommessaFase != null)
                     tickets = tickets.Where(t => t.IdCommessaFase == args.IdCommessaFase);
 
+                // Presenza del legame con una commessa: separa il lavoro di produzione pianificato
+                // dall'assistenza. Null lascia passare tutto.
+                if (args.HasCommessa == true)
+                    tickets = tickets.Where(t => t.IdCommessaFase != null);
+                else if (args.HasCommessa == false)
+                    tickets = tickets.Where(t => t.IdCommessaFase == null);
+
                 var items = await tickets
                     .OrderBy(t => t.Date)
                     .ThenBy(t => t.Time)
@@ -257,6 +259,11 @@ namespace CRM.Server.Controllers
                         IdState = t.IdState,
                         State = t.State != null ? t.State.Description : string.Empty,
                         StateColor = t.State != null ? t.State.Color : string.Empty,
+                        // Il legame con la commessa passa dalla fase: Ticket -> CommessaFase -> Commessa.
+                        IdCommessa = t.CommessaFase != null ? (int?)t.CommessaFase.IdCommessa : null,
+                        CommessaCode = t.CommessaFase != null && t.CommessaFase.Commessa != null
+                            ? t.CommessaFase.Commessa.Code
+                            : null,
                         AssignedUsers = t.AssignedUsers
                             .OrderBy(a => a.AssignedDate)
                             .Select(a => new TicketScheduleUserDTO
@@ -383,24 +390,6 @@ namespace CRM.Server.Controllers
             {
                 await _logEventService.RegisterAsync(nameof(TicketsController), nameof(UpdateSummary), LogEvent.EventsTypes.Error, ex);
                 return Problem(ex.Message);
-            }
-        }
-
-        [HttpGet("Report/{id}")]
-        public async Task<string?> CreateDocPdf(int id)
-        {
-            try
-            {
-                var idLang = await _languageService.GetIdLanguage();
-
-                var pdf = await CreatePdf(id, idLang);
-
-                return pdf;
-            }
-            catch(Exception ex)
-            {
-                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(CreateDocPdf), LogEvent.EventsTypes.Error, ex);
-                return null;
             }
         }
 
@@ -665,10 +654,15 @@ namespace CRM.Server.Controllers
                     return Forbid();
 
                 var result = await _ticketsService.DeleteAsync(id);
-                if (!result)
-                    return NotFound();
 
-                return NoContent();
+                if (result.Success)
+                    return NoContent();
+
+                // Un fallimento non e' un "non trovato": prima rispondeva 404 a qualunque motivo,
+                // e la lista si limitava a ricaricarsi con il ticket ancora li'.
+                return result.Error == DeleteTicketError.TicketNotFound
+                    ? NotFound(result.ErrorMessage)
+                    : Conflict(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -689,6 +683,46 @@ namespace CRM.Server.Controllers
             return await _ticketsService.GetUsersCanAssignTicketTypeAsync(idType);
         }
 
+        // ==========================================
+        // GET: api/Tickets/{id}/close-precondition
+        // Cosa impedisce (o no) la chiusura: la pagina di chiusura mostra la stessa decisione
+        // che CloseAsync applichera', invece di riderivare la regola lato client.
+        // ==========================================
+        [HttpGet("{id}/close-precondition")]
+        public async Task<ActionResult<TicketClosePreconditionDTO>> GetClosePrecondition(int id)
+        {
+            try
+            {
+                var ticket = await _context.Tickets
+                    .AsNoTracking()
+                    .Where(x => x.Id == id)
+                    .Select(x => new { x.IdCompany })
+                    .FirstOrDefaultAsync();
+
+                if (ticket == null)
+                    return NotFound($"Ticket con ID {id} non trovato");
+
+                if (!await _permits.CanGetObject(ticket.IdCompany))
+                    return StatusCode(StatusCodes.Status403Forbidden, "Ticket non accessibile");
+
+                var precondition = await _ticketsService.GetClosePreconditionAsync(id);
+
+                if (precondition == null)
+                    return NotFound($"Ticket con ID {id} non trovato");
+
+                return Ok(precondition);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController),
+                    nameof(GetClosePrecondition),
+                    LogEvent.EventsTypes.Error,
+                    ex);
+                return Problem(ex.Message);
+            }
+        }
+
         [HttpPut("TicketClose/{id}")]
         public async Task<IActionResult> TicketClose(int id, TicketClose model)
         {
@@ -700,19 +734,21 @@ namespace CRM.Server.Controllers
                 }
                 else if (await _permits.CanCloseTicket(id))
                 {
-                    var blocked = await _context.Tickets
-                        .AsNoTracking()
-                        .Where(x => x.Id == id)
-                        .Select(x => x.IsBlocked)
-                        .FirstOrDefaultAsync();
-
-                    if (blocked)
-                        return Conflict("Il ticket e' bloccato. Risolvi il blocco prima di chiuderlo.");
-
+                    // Blocco e vincolo sull'intervento sono verificati dentro CloseAsync: e' l'unico
+                    // punto che scrive Closed = true, quindi presidiare li' copre anche le chiamate
+                    // dirette all'API.
                     var result = await _ticketsService.CloseAsync(id, model);
 
-                    if (!result)
-                        return Problem("Error closing ticket");
+                    if (!result.Success)
+                    {
+                        return result.Error switch
+                        {
+                            CloseTicketError.TicketNotFound => NotFound(result.ErrorMessage),
+                            CloseTicketError.Blocked => Conflict(result.ErrorMessage),
+                            CloseTicketError.InterventionRequired => Conflict(result.ErrorMessage),
+                            _ => Problem(result.ErrorMessage ?? "Error closing ticket")
+                        };
+                    }
 
                     // Generate embedding after close
                     try
@@ -1418,96 +1454,6 @@ namespace CRM.Server.Controllers
         }
 
 
-        private async Task<string?> CreatePdf(int id, int? idLanguage)
-        {
-            try
-            {
-                Ticket ticket = await _context.Tickets.Include(x => x.UserAssigned).Where(x => x.Id == id).FirstOrDefaultAsync();
-
-                Company? company = await _context.GetHeadCompanyAsync();
-
-                if (ticket == null || company == null)
-                    return null;
-
-                HtmlToPdf converter = new HtmlToPdf();
-                converter.Options.PdfPageSize = PdfPageSize.A4;
-                converter.Options.PdfPageOrientation = PdfPageOrientation.Portrait;
-                converter.Options.MarginLeft = 30;
-                converter.Options.MarginRight = 30;
-                converter.Options.MarginTop = 20;
-                converter.Options.MarginBottom = 20;
-
-                converter.Options.DisplayFooter = true;
-                converter.Footer.DisplayOnEvenPages = true;
-                converter.Footer.DisplayOnOddPages = true;
-                converter.Footer.DisplayOnFirstPage = true;
-
-                converter.Options.DisplayHeader = true;
-                converter.Header.DisplayOnFirstPage = true;
-                converter.Header.DisplayOnEvenPages = true;
-                converter.Header.DisplayOnOddPages = true;
-
-                converter.Header.Height = 45;
-
-
-                converter.Options.RenderingEngine = RenderingEngine.Blink;
-
-               
-                string headerUrl = HttpContext.AbsoluteUrl("/Reports/Header",
-                        new { id = company.Id });
-
-                PdfHtmlSection headerHtml = new PdfHtmlSection(headerUrl);
-                headerHtml.AutoFitHeight = HtmlToPdfPageFitMode.AutoFit;
-                headerHtml.MinPageLoadTime = 1;
-
-                converter.Header.Add(headerHtml);
-                
-                string footerUrl = HttpContext.AbsoluteUrl("/Reports/Footer");
-
-                PdfHtmlSection footerHtml = new PdfHtmlSection(footerUrl);
-                headerHtml.AutoFitHeight = HtmlToPdfPageFitMode.AutoFit;
-                headerHtml.MinPageLoadTime = 1;
-
-                PdfTextSection text = new PdfTextSection(0, 10,
-                        "Page: {page_number} of {total_pages}  ",
-                       new System.Drawing.Font("Arial", 8));
-
-                text.HorizontalAlign = PdfTextHorizontalAlign.Right;
-
-                converter.Footer.Add(footerHtml);
-                converter.Footer.Add(text);
-                converter.Footer.FirstPageNumber = 1;
-
-                var absUrl = HttpContext.AbsoluteUrl("/Reports/TicketReport", new { id = id, idLanguage = idLanguage });
-
-                converter.Options.MinPageLoadTime = 1;
-                converter.Options.MaxPageLoadTime = 300;
-                PdfDocument doc = converter.ConvertUrl(absUrl);
-
-                // save pdf document 
-                var path = _archiveService.GetPath($"{Guid.NewGuid()}.pdf");
-                doc.Save(path);
-
-                
-                var bytes = System.IO.File.ReadAllBytes(path);
-
-                
-                doc.Close();
-
-
-                var s = Convert.ToBase64String(bytes);
-                
-                System.IO.File.Delete(path);
-
-                return s;
-            }
-
-            catch (Exception ex)
-            {
-                await _logEventService.RegisterAsync(nameof(TicketInterventionsController), nameof(CreatePdf), LogEvent.EventsTypes.Error, ex.Message);
-                return null;
-            }
-        }
 
         /// <summary>
         /// Genera un PDF del ticket con QuestPDF
@@ -1660,6 +1606,46 @@ namespace CRM.Server.Controllers
                     LogEvent.EventsTypes.Error,
                     $"Errore GetAssignedUsers per ticket #{id}: {ex.Message}");
                 return StatusCode(500, $"Errore interno: {ex.Message}");
+            }
+        }
+
+        // ==========================================
+        // GET: api/Tickets/{id}/assignment-context
+        // Chi e' assegnato e a quale gruppo il ticket e' smistato: serve al picker utenti
+        // dell'intervento per distinguere gli assegnati dai candidati che arrivano dal gruppo.
+        // ==========================================
+        [HttpGet("{id}/assignment-context")]
+        public async Task<ActionResult<TicketAssignmentContextDTO>> GetAssignmentContext(int id)
+        {
+            try
+            {
+                var ticket = await _context.Tickets
+                    .AsNoTracking()
+                    .Where(x => x.Id == id)
+                    .Select(x => new { x.IdCompany })
+                    .FirstOrDefaultAsync();
+
+                if (ticket == null)
+                    return NotFound($"Ticket con ID {id} non trovato");
+
+                if (!await _permits.CanGetObject(ticket.IdCompany))
+                    return StatusCode(StatusCodes.Status403Forbidden, "Ticket non accessibile");
+
+                var context = await _ticketsService.GetAssignmentContextAsync(id);
+
+                if (context == null)
+                    return NotFound($"Ticket con ID {id} non trovato");
+
+                return Ok(context);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsController),
+                    nameof(GetAssignmentContext),
+                    LogEvent.EventsTypes.Error,
+                    ex);
+                return Problem(ex.Message);
             }
         }
 

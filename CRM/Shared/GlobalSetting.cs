@@ -80,6 +80,14 @@ namespace CRM.Shared
         [Display(Name = "Regime fiscale (FatturaPA, es. RF01)")]
         public string? RegimeFiscale { get; set; } = "RF01";
 
+        /// <summary>
+        /// Valuta di casa: e' quella in cui vengono espressi i totali delle note spese, e verso
+        /// cui si convertono le spese sostenute all'estero.
+        /// </summary>
+        [Display(Name = "Valuta base (ISO, es. EUR)")]
+        [MaxLength(3)]
+        public string BaseCurrency { get; set; } = "EUR";
+
         [Display(Name = "Input vocale assistente AI")]
         public VoiceInputMode VoiceInputMode { get; set; } = VoiceInputMode.Off;
 

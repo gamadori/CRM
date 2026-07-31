@@ -27,8 +27,7 @@ namespace CRM.Client.Pages.Tickets
             Allegati,
             Chiusura,
             Interventi,
-            Chat,
-            Print
+            Chat
         }
 
         public enum PartialViews
@@ -245,13 +244,6 @@ namespace CRM.Client.Pages.Tickets
             _partialView = PartialViews.Edit;
 
             StateHasChanged();
-        }
-
-        private void PrintTicket()
-        {
-            selectView = TicketViews.Print;
-            StateHasChanged();
-
         }
 
         #region Chiusura

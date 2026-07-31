@@ -48,7 +48,7 @@ namespace CRM.Client.Pages.TicketInterventions
         }
 
         /// <summary>
-        /// Azzera secondi e millisecondi. Necessario perch� il calcolo del tempo lato server
+        /// Azzera secondi e millisecondi. Necessario perché il calcolo del tempo lato server
         /// usa DATEDIFF(minute, ...) e i secondi residui falsano i totali di lavoro/viaggio.
         /// </summary>
         private static DateTime TruncateToMinute(DateTime value)
@@ -58,13 +58,13 @@ namespace CRM.Client.Pages.TicketInterventions
         {
             Time.TimeType = type;
 
-            // Se non � un viaggio, rimuovi i km
+            // Se non è un viaggio, rimuovi i km
             if (type != InterventionTimeType.Travel)
             {
                 Time.TravelKilometers = null;
             }
 
-            // Se � una pausa, non � fatturabile di default
+            // Se è una pausa, non è fatturabile di default
             if (type == InterventionTimeType.Break)
             {
                 Time.IsBillable = false;

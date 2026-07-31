@@ -45,19 +45,19 @@
                                 @if (day.Tickets.Count > MaxNumDaylyTicket)
                                 {
                                     <div class="more-tickets">
-                                        <AGTicketOthersScheduler Day="@day.Date" 
-                                                                Desc="@day.DescOthers" 
+                                        <AGTicketOthersScheduler Day="@day.Date"
+                                                                Desc="@day.DescOthers"
                                                                 OpenDaylyScheduler="OpenDaylyScheduler">
                                         </AGTicketOthersScheduler>
                                     </div>
                                 }
                             }
-                            else
-                            {
-                                <div class="empty-day">
-                                    <AGEmptyScheduler IsHoliday="day.IsHoliday"></AGEmptyScheduler>
-                                </div>
-                            }
+                            @* Giorno vuoto: nessun segnaposto. Qui c'era una card "Nessun Ticket" per
+                               ogni cella libera — in un mese tipico 28 card che occupavano quanto
+                               quelle vere, gonfiando ogni settimana anche quando non c'era niente
+                               da vedere. La cella resta cliccabile e resta drop zone: il gestore sta
+                               sul .day-cell, non sul contenuto. Nella vista giorno il messaggio ha
+                               senso ed e' rimasto. *@
                         </div>
                     </div>
                 }
@@ -80,16 +80,16 @@
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem 0.5rem;
+        padding: 0.35rem 0.5rem;
         gap: 1px;
     }
 
     .day-header {
         text-align: center;
-        padding: 0.75rem 0.5rem;
+        padding: 0.3rem 0.5rem;
         color: white;
         font-weight: 600;
-        font-size: 0.95rem;
+        font-size: 0.85rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
@@ -116,10 +116,13 @@
         background: #e5e7eb;
     }
 
-    /* Celle giorno */
+    /* Celle giorno
+       min-height abbassata da 120px: e' il pavimento di ogni riga settimana, quindi una settimana
+       senza ticket costava quanto una piena. 76px restano un bersaglio comodo per il drop e per il
+       click che crea il ticket; le settimane con contenuto crescono da sole. */
     .day-cell {
         background: white;
-        min-height: 120px;
+        min-height: 76px;
         padding: 0;
         display: flex;
         flex-direction: column;
@@ -171,7 +174,7 @@
     /* Contenuto cella */
     .day-cell-content {
         flex: 1;
-        padding: 0.5rem;
+        padding: 0.3rem;
         overflow-y: auto;
         overflow-x: hidden;
     }
@@ -195,8 +198,12 @@
 
     /* Ticket items */
     .ticket-item {
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.3rem;
         animation: slideIn 0.3s ease-out;
+    }
+
+    .ticket-item:last-child {
+        margin-bottom: 0;
     }
 
     @@keyframes slideIn {
@@ -211,19 +218,12 @@
     }
 
     .more-tickets {
-        margin-top: 0.5rem;
-        padding-top: 0.5rem;
+        margin-top: 0.3rem;
+        padding-top: 0.3rem;
         border-top: 2px dashed #e5e7eb;
     }
 
-    .empty-day {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #9ca3af;
-        font-size: 0.875rem;
-    }
+    /* .empty-day rimossa insieme al segnaposto delle celle libere */
 
     /* Responsive */
     @@media (max-width: 1200px) {

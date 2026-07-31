@@ -11,7 +11,16 @@ namespace CRM.Client.Services
 {
     public interface ITicketsService : IRestClientModelService<Ticket, TicketDTO, TicketFilter, int>
     {
-        Task<bool> CloseTicket(int id, TicketClose ticket);
+        Task<CloseTicketResponse> CloseTicket(int id, TicketClose ticket);
+
+        /// <summary>
+        /// Cancella riportando il motivo del rifiuto. La <c>Delete</c> generica restituisce un
+        /// <c>bool</c> che nessuno guardava: la riga restava in elenco senza spiegazioni.
+        /// </summary>
+        Task<CloseTicketResponse> DeleteTicket(int id);
+
+        /// <summary>Cosa impedisce la chiusura secondo il server: la UI non riderivano la regola.</summary>
+        Task<TicketClosePreconditionDTO?> GetClosePreconditionAsync(int idTicket);
 
         Task<bool> ReOpenTicket(int id, Ticket item);
 
@@ -30,6 +39,9 @@ namespace CRM.Client.Services
         Task<TicketDTO?> UpdateSummary(int idTicket, UpdateTicketSummaryRequest request);
 
         Task<HashSet<string>?> LoadAssignedUsers(int IdTicket);
+
+        /// <summary>Chi e' assegnato al ticket e a quale gruppo e' smistato: contesto del picker utenti.</summary>
+        Task<TicketAssignmentContextDTO?> GetAssignmentContextAsync(int idTicket);
 
         Task<HttpResponseMessage> AssignUsers(int idTicket, AssignUsersRequest Users);
 

@@ -116,6 +116,12 @@ namespace CRM.Client.Pages.Tickets
 
         private string? _idUser;
 
+        /// <summary>
+        /// Natura del lavoro da mostrare: null = tutti, true = solo commessa, false = solo
+        /// assistenza. Il filtro e' sulla presenza del legame, non su una commessa specifica.
+        /// </summary>
+        private bool? _hasCommessa;
+
         private bool _loading = true;
 
         private PageHeaderModel? _pageHeader;
@@ -152,6 +158,7 @@ namespace CRM.Client.Pages.Tickets
                 filter.IdUserAssigned = _idUser;
             }
             filter.ViewNotAssigned = ViewMode == SchedulerViewMode.Calendar;
+            filter.HasCommessa = _hasCommessa;
 
             filter.DateFrom = _dateStart;
             filter.DateTo = _dateEnd;
@@ -182,7 +189,9 @@ namespace CRM.Client.Pages.Tickets
                 Status = ticket.IdState ?? 0,
                 Expired = ticket.DateExpired.HasValue && ticket.DateExpired.Value < DateTime.Now,
                 StatusColor = ticket.StateColor ?? string.Empty,
-                StatusText = ticket.State ?? string.Empty
+                StatusText = ticket.State ?? string.Empty,
+                IdCommessa = ticket.IdCommessa,
+                CommessaCode = ticket.CommessaCode ?? string.Empty
             };
         }
 
@@ -212,6 +221,16 @@ namespace CRM.Client.Pages.Tickets
         protected async void OnChangeIdUser()
         {
             //StateHasChanged();
+            await schedulerTickets.Update();
+        }
+
+        /// <summary>Cambia la natura del lavoro mostrata e ricarica: il filtro e' applicato dal server.</summary>
+        private async Task SetCommessaFilter(bool? hasCommessa)
+        {
+            if (_hasCommessa == hasCommessa)
+                return;
+
+            _hasCommessa = hasCommessa;
             await schedulerTickets.Update();
         }
 

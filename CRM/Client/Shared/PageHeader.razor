@@ -1,4 +1,4 @@
-@using CRM.Client.Models
+ï»¿@using CRM.Client.Models
 @using CRM.Client.Services
 @using static CRM.Client.Helpers.PageHelper
 @* Modern Page Header Component *@
@@ -131,7 +131,7 @@ else
     }
 
     .breadcrumb-item + .breadcrumb-item::before {
-        content: "›";
+        content: "â€º";
         font-size: 1.2rem;
         color: #6c757d;
     }
@@ -295,7 +295,7 @@ else
     }
 
     /// <summary>
-    /// ? NUOVO: Naviga all'URL specificato, forzando il reload se è la stessa pagina
+    /// ? NUOVO: Naviga all'URL specificato, forzando il reload se Ã¨ la stessa pagina
     /// </summary>
     private void NavigateToUrl(string url)
     {
@@ -306,7 +306,7 @@ else
         var currentPath = new Uri(NavigationManager.Uri).LocalPath.TrimEnd('/');
         var targetPath = url.TrimEnd('/');
 
-        // Se l'URL è relativo, convertilo in assoluto per il confronto
+        // Se l'URL Ã¨ relativo, convertilo in assoluto per il confronto
         if (!url.StartsWith("http"))
         {
             var absoluteUrl = NavigationManager.ToAbsoluteUri(url);

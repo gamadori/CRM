@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -132,7 +132,7 @@ namespace CRM.Server.Services
         }
 
         /// <summary>
-        /// Invia notifica push a più utenti
+        /// Invia notifica push a piÃ¹ utenti
         /// </summary>
         public async Task<int> SendToUsersAsync(List<string> userIds, object notification)
         {
@@ -254,14 +254,14 @@ namespace CRM.Server.Services
                     LogEvent.EventsTypes.Info,
                     $"? Subscription deserializzata - Endpoint: {endpointPreview}...");
 
-                // ? DEBUG: Log JSON completo se endpoint è null
+                // ? DEBUG: Log JSON completo se endpoint Ã¨ null
                 if (string.IsNullOrEmpty(subscription.Endpoint))
                 {
                     await _logEventService.RegisterAsync(
                         nameof(PushNotificationService),
                         nameof(SendPushNotification),
                         LogEvent.EventsTypes.Error,
-                        $"? DEBUG: Endpoint è NULL! JSON originale: {subscriptionJson.Substring(0, Math.Min(300, subscriptionJson.Length))}");
+                        $"? DEBUG: Endpoint Ã¨ NULL! JSON originale: {subscriptionJson.Substring(0, Math.Min(300, subscriptionJson.Length))}");
                     return 0;
                 }
 

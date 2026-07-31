@@ -204,9 +204,9 @@ namespace CRM.Client.Pages.TicketInterventions
             }
 
             // Mostra conferma
-            var message = Localize["Ricreare il report? Il report esistente sar� sovrascritto."];
+            var message = Localize["Ricreare il report? Il report esistente sarà sovrascritto."];
             
-            if (await DialogService.Confirm(message, Localize["Conferma"], new ConfirmOptions { OkButtonText = "S�", CancelButtonText = "No" }) == true)
+            if (await DialogService.Confirm(message, Localize["Conferma"], new ConfirmOptions { OkButtonText = "Sì", CancelButtonText = "No" }) == true)
             {
                 await ReportCreate(selectedLanguageCode.ToString());
             }
@@ -387,7 +387,7 @@ namespace CRM.Client.Pages.TicketInterventions
         }
 
         /// <summary>
-        /// Apre dialog per rinviare email di conferma (con possibilit� di modificare l'email)
+        /// Apre dialog per rinviare email di conferma (con possibilità di modificare l'email)
         /// </summary>
         private async Task OpenResendConfirmationDialog()
         {
@@ -672,9 +672,9 @@ namespace CRM.Client.Pages.TicketInterventions
 
 ?? Email di conferma inviata a: {data.signerEmail}
 
-?? La firma sar� valida SOLO dopo la conferma tramite email.
+?? La firma sarà valida SOLO dopo la conferma tramite email.
 
-Il cliente ricever� un'email con un link per confermare la firma.",
+Il cliente riceverà un'email con un link per confermare la firma.",
                             "Firma Salvata - Conferma Richiesta",
                             new AlertOptions { OkButtonText = "OK" }
                         );

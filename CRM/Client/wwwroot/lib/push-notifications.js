@@ -47,7 +47,7 @@ window.PushNotifications = {
         }
 
         try {
-            // ? FIX: Usa service worker gi‡ registrato in index.html
+            // ? FIX: Usa service worker gi√† registrato in index.html
             const registration = await navigator.serviceWorker.ready;
 
             console.log('[PushNotifications] Service Worker ready:', registration);
@@ -115,7 +115,7 @@ window.PushNotifications = {
             const registration = await navigator.serviceWorker.ready;
             
             await registration.showNotification('Test Notifica CRM', {
-                body: 'Questa Ë una notifica di test',
+                body: 'Questa √® una notifica di test',
                 icon: '/favicon.ico',
                 badge: '/favicon.ico',
                 tag: 'test-notification',

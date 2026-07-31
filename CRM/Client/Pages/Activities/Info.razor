@@ -1,0 +1,208 @@
+@page "/Activities/{Id:int}/Info"
+@* Un'attivita' non aveva un indirizzo proprio: viveva solo nel dialogo dell'agenda. Da qui in
+   poi ce l'ha, ed e' quello a cui puntano i breadcrumb delle sue note spese. *@
+@page "/Activities/{Id:int}"
+@using CRM.Client.Helpers
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+@if (_loading)
+{
+    <Waiting></Waiting>
+}
+else if (_activity == null)
+{
+    <div class="container-fluid px-3 py-3">
+        <div class="alert alert-warning">
+            <i class="material-icons align-middle">warning</i>
+            Attività non trovata.
+            <a href="/Agenda" class="alert-link ms-2">Torna all'agenda</a>
+        </div>
+    </div>
+}
+else
+{
+    <PageHeader Model="_pageHeader">
+        <Actions>
+            <RadzenButton Icon="edit_calendar" Text="Modifica" ButtonStyle="ButtonStyle.Light"
+                          Size="ButtonSize.Small" Click="@EditActivity" />
+            <RadzenButton Icon="arrow_back" Text="Agenda" ButtonStyle="ButtonStyle.Light"
+                          Size="ButtonSize.Small" Click="@(() => Nav.NavigateTo("/Agenda"))" />
+        </Actions>
+    </PageHeader>
+
+    <div class="mb-3">
+        <RadzenSelectBar @bind-Value="_view" TValue="ActivityViews" Size="ButtonSize.Medium">
+            <Items>
+                <RadzenSelectBarItem Text="Dati" Icon="format_list_bulleted" Value="ActivityViews.Dati" />
+                <RadzenSelectBarItem Text="@ExpensesTabText" Icon="receipt_long" Value="ActivityViews.NoteSpese" />
+            </Items>
+        </RadzenSelectBar>
+    </div>
+
+    @if (_view == ActivityViews.Dati)
+    {
+        <div class="container-fluid px-0">
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light d-flex align-items-center gap-2">
+                            <span class="material-icons" style="color:@ActivityUi.Color(_activity.Kind)">
+                                @ActivityUi.Icon(_activity.Kind)
+                            </span>
+                            <strong>@_activity.Subject</strong>
+                            <span class="badge ms-auto @ActivityUi.BadgeClass(_activity.Kind)">
+                                @ActivityUi.KindText(_activity.Kind)
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td class="text-muted" style="width:38%;">
+                                            <i class="material-icons align-middle" style="font-size:18px;">flag</i>
+                                            Stato
+                                        </td>
+                                        <td><span class="badge @StateBadgeClass">@StateText</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">link</i>
+                                            Collegata a
+                                        </td>
+                                        <td>
+                                            @if (EntityUrl != null)
+                                            {
+                                                <a href="@EntityUrl"><strong>@EntityDescription</strong></a>
+                                            }
+                                            else
+                                            {
+                                                <strong>@EntityDescription</strong>
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">person</i>
+                                            Assegnata a
+                                        </td>
+                                        <td><strong>@(string.IsNullOrWhiteSpace(_activity.AssigneeName) ? "—" : _activity.AssigneeName)</strong></td>
+                                    </tr>
+                                    @if (_activity.DueDate.HasValue)
+                                    {
+                                        <tr>
+                                            <td class="text-muted">
+                                                <i class="material-icons align-middle" style="font-size:18px;">event</i>
+                                                Scadenza
+                                            </td>
+                                            <td><strong>@_activity.DueDate.Value.ToString("dd/MM/yyyy HH:mm")</strong></td>
+                                        </tr>
+                                    }
+                                    @if (_activity.ReminderAt.HasValue)
+                                    {
+                                        <tr>
+                                            <td class="text-muted">
+                                                <i class="material-icons align-middle" style="font-size:18px;">notifications</i>
+                                                Promemoria
+                                            </td>
+                                            <td>@_activity.ReminderAt.Value.ToString("dd/MM/yyyy HH:mm")</td>
+                                        </tr>
+                                    }
+                                    @if (_activity.DoneDate.HasValue)
+                                    {
+                                        <tr>
+                                            <td class="text-muted">
+                                                <i class="material-icons align-middle" style="font-size:18px;">check_circle</i>
+                                                Completata il
+                                            </td>
+                                            <td><strong>@_activity.DoneDate.Value.ToString("dd/MM/yyyy HH:mm")</strong></td>
+                                        </tr>
+                                    }
+                                    @if (_activity.ParticipantNames.Any())
+                                    {
+                                        <tr>
+                                            <td class="text-muted">
+                                                <i class="material-icons align-middle" style="font-size:18px;">groups</i>
+                                                Partecipanti
+                                            </td>
+                                            <td>@string.Join(", ", _activity.ParticipantNames)</td>
+                                        </tr>
+                                    }
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">add_circle</i>
+                                            Creata
+                                        </td>
+                                        <td class="small text-muted">
+                                            @_activity.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                            @if (!string.IsNullOrWhiteSpace(_activity.UserName))
+                                            {
+                                                <text> da @_activity.UserName</text>
+                                            }
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light">
+                            <i class="material-icons align-middle">notes</i>
+                            Note
+                        </div>
+                        <div class="card-body">
+                            @if (string.IsNullOrWhiteSpace(_activity.Description)
+                                 && string.IsNullOrWhiteSpace(_activity.Outcome)
+                                 && string.IsNullOrWhiteSpace(_activity.CompletionNotes)
+                                 && string.IsNullOrWhiteSpace(_activity.NextStep))
+                            {
+                                <p class="text-muted mb-0">Nessuna nota su questa attività.</p>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_activity.Description))
+                            {
+                                <div class="mb-3">
+                                    <div class="text-muted small">Descrizione</div>
+                                    <div style="white-space: pre-wrap;">@_activity.Description</div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_activity.Outcome))
+                            {
+                                <div class="mb-3">
+                                    <div class="text-muted small">Esito</div>
+                                    <div style="white-space: pre-wrap;">@_activity.Outcome</div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_activity.CompletionNotes))
+                            {
+                                <div class="mb-3">
+                                    <div class="text-muted small">Relazione di chiusura</div>
+                                    <div style="white-space: pre-wrap;">@_activity.CompletionNotes</div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_activity.NextStep))
+                            {
+                                <div>
+                                    <div class="text-muted small">Prossima azione</div>
+                                    <div style="white-space: pre-wrap;">@_activity.NextStep</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* La stessa pagina che serve l'intervento, incorporata: elenco, riepilogo e azioni sono
+           gli stessi, cambia solo il contenitore. *@
+        <CRM.Client.Pages.ExpenseReceipts.Index ActivityId="Id" Embedded="true" />
+    }
+}

@@ -553,59 +553,177 @@ namespace CRM.Server.Services
             }
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<DeleteTicketResult> DeleteAsync(int id)
         {
             try
             {
                 var ticket = await _context.Tickets.FindAsync(id);
                 if (ticket == null)
-                    return false;
+                    return DeleteTicketResult.Fail(DeleteTicketError.TicketNotFound, $"Ticket con ID {id} non trovato");
+
+                await DetachExpenseReceiptsAsync(id);
 
                 var taskId = ticket.IdCommessaFase;
                 _context.Tickets.Remove(ticket);
                 await _context.SaveChangesAsync();
                 await _commessaFasiService.RecomputeFaseProgressAsync(taskId);
-                return true;
+                return DeleteTicketResult.Ok();
             }
             catch (Exception ex)
             {
+                // Il contesto ha ancora la cancellazione fallita fra le modifiche in sospeso:
+                // qualunque SaveChangesAsync successivo - compreso quello con cui il log si scrive,
+                // che usa lo stesso contesto - riprova la stessa DELETE e rilancia la stessa
+                // eccezione. Senza scartarle, l'errore non finisce nel log e non arriva a chi
+                // guarda: il ticket semplicemente non si cancellava, in silenzio.
+                _context.ChangeTracker.Clear();
+
                 await _logEventService.RegisterAsync(nameof(TicketsService), nameof(DeleteAsync), EventsTypes.Error, ex);
-                return false;
+
+                return DeleteTicketResult.Fail(DeleteTicketError.Unexpected,
+                    "Eliminazione non riuscita: " + (ex.InnerException?.Message ?? ex.Message));
             }
+        }
+
+        /// <summary>
+        /// Sgancia dalle note spese gli interventi del ticket, prima che la cancellazione li porti via.
+        /// <para>
+        /// Una nota spese sopravvive al lavoro a cui era collegata: sono soldi che qualcuno ha
+        /// anticipato e che gli vanno rimborsati comunque, quindi la spesa diventa un costo
+        /// generale invece di sparire insieme al ticket. E' la stessa regola su cui e' costruito il
+        /// modulo - persona e data sono la spina dorsale, il contesto e' facoltativo.
+        /// </para>
+        /// <para>
+        /// Serve farlo qui: il vincolo verso <c>TicketsInterventions</c> e' NO ACTION (SET NULL a
+        /// livello di database creerebbe percorsi di cascata multipli), quindi senza questo passo
+        /// SQL Server rifiuta la cancellazione di qualunque ticket con spese registrate.
+        /// </para>
+        /// </summary>
+        private async Task DetachExpenseReceiptsAsync(int idTicket)
+        {
+            var receipts = await _context.ExpenseReceipts
+                .Where(r => r.TicketInterventionId != null
+                            && r.TicketIntervention!.IdTicket == idTicket)
+                .ToListAsync();
+
+            if (receipts.Count == 0)
+                return;
+
+            foreach (var receipt in receipts)
+                receipt.TicketInterventionId = null;
+
+            await _context.SaveChangesAsync();
         }
 
         #endregion
 
         #region Close / ReOpen
 
-        public async Task<bool> CloseAsync(int id, TicketClose model)
+        public async Task<CloseTicketResult> CloseAsync(int id, TicketClose model)
         {
             try
             {
                 var ticketState = await GetIdState(eTicketStates.Closed);
 
                 Ticket? ticket = await _context.Tickets.FindAsync(id);
-                if (ticket == null) return false;
-                if (ticket.IsBlocked) return false;
+                if (ticket == null)
+                    return CloseTicketResult.Fail(CloseTicketError.TicketNotFound, $"Ticket con ID {id} non trovato");
+
+                if (ticket.IsBlocked)
+                    return CloseTicketResult.Fail(CloseTicketError.Blocked,
+                        "Il ticket e' bloccato. Risolvi il blocco prima di chiuderlo.");
+
+                // Il vincolo sta qui e non solo nella UI: questa e' l'unica strada verso la chiusura
+                // (nessun altro punto scrive Closed = true), quindi e' anche l'unico posto che serve
+                // presidiare perche' non sia aggirabile chiamando l'API a mano.
+                var requiresIntervention = await RequiresInterventionToCloseAsync(ticket.IdType);
+
+                if (requiresIntervention && !await HasInterventionAsync(id))
+                    return CloseTicketResult.Fail(CloseTicketError.InterventionRequired,
+                        "Questo tipo di ticket richiede almeno un intervento registrato per essere chiuso: "
+                        + "registra l'intervento con ore e attivita' svolte, poi chiudi.");
 
                 ticket.DateClosed = DateTime.Now;
                 ticket.CloseDescription = model.Description;
                 ticket.CloseNote = model.Note;
                 ticket.IdUserClosed = await _permitsService.IdUser();
-                ticket.Support = model.Support;
+
+                // Sui tipi che pretendono l'intervento la modalita' e' sull'intervento: il form di
+                // chiusura non la chiede piu' e sovrascriverla con il default dell'enum (0 = Telefono)
+                // falserebbe lo storico dei ticket chiusi prima di questo vincolo.
+                if (!requiresIntervention)
+                    ticket.Support = model.Support;
+
                 ticket.Closed = true;
                 ticket.IdState = ticketState?.Id;
 
                 await _context.SaveChangesAsync();
                 await _commessaFasiService.RecomputeFaseProgressAsync(ticket.IdCommessaFase);
-                return true;
+                return CloseTicketResult.Ok();
             }
             catch (Exception ex)
             {
                 await _logEventService.RegisterAsync(nameof(TicketsService), nameof(CloseAsync), EventsTypes.Error, ex);
-                return false;
+                return CloseTicketResult.Fail(CloseTicketError.Unexpected, "Errore nella chiusura del ticket");
             }
         }
+
+        public async Task<TicketClosePreconditionDTO?> GetClosePreconditionAsync(int idTicket)
+        {
+            try
+            {
+                var ticket = await _context.Tickets
+                    .AsNoTracking()
+                    .Where(t => t.Id == idTicket)
+                    .Select(t => new { t.Id, t.IdType, t.Closed, t.IsBlocked })
+                    .FirstOrDefaultAsync();
+
+                if (ticket == null)
+                    return null;
+
+                var precondition = new TicketClosePreconditionDTO
+                {
+                    IdTicket = ticket.Id,
+                    Closed = ticket.Closed,
+                    IsBlocked = ticket.IsBlocked,
+                    RequiresIntervention = await RequiresInterventionToCloseAsync(ticket.IdType),
+                    InterventionCount = await _context.TicketsInterventions
+                        .AsNoTracking()
+                        .CountAsync(i => i.IdTicket == idTicket)
+                };
+
+                // Stesso ordine di verifica di CloseAsync: l'operatore legge il primo ostacolo reale.
+                if (ticket.IsBlocked)
+                    precondition.BlockReason = "Il ticket e' bloccato: risolvi il blocco prima di chiuderlo.";
+                else if (precondition.RequiresIntervention && precondition.InterventionCount == 0)
+                    precondition.BlockReason = "Questo tipo di ticket richiede almeno un intervento registrato per essere chiuso.";
+
+                precondition.CanClose = precondition.BlockReason == null;
+
+                return precondition;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsService), nameof(GetClosePreconditionAsync), EventsTypes.Error, ex);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Un tipo mancante non deve bloccare la chiusura: senza tipo non c'e' una regola da
+        /// applicare, e fermare il ticket per un dato di configurazione assente sarebbe arbitrario.
+        /// </summary>
+        private async Task<bool> RequiresInterventionToCloseAsync(int idType)
+            => await _context.TicketTypes
+                .AsNoTracking()
+                .Where(x => x.Id == idType)
+                .Select(x => (bool?)x.RequiresIntervention)
+                .FirstOrDefaultAsync() ?? false;
+
+        private async Task<bool> HasInterventionAsync(int idTicket)
+            => await _context.TicketsInterventions
+                .AsNoTracking()
+                .AnyAsync(i => i.IdTicket == idTicket);
 
         public async Task<bool> ReOpenAsync(int id)
         {
@@ -1088,6 +1206,52 @@ namespace CRM.Server.Services
             }
         }
 
+        public async Task<TicketAssignmentContextDTO?> GetAssignmentContextAsync(int idTicket)
+        {
+            try
+            {
+                // Proiezione e non entita': il nome del gruppo arriva senza trascinare Group -> Users.
+                var ticket = await _context.Tickets
+                    .AsNoTracking()
+                    .Where(t => t.Id == idTicket)
+                    .Select(t => new
+                    {
+                        t.Id,
+                        t.IdGroupAssigned,
+                        GroupName = t.GroupAssigned != null ? t.GroupAssigned.Name : null,
+                        t.Closed,
+                        t.IdUserAssigned,
+                        AssignedUserIds = t.AssignedUsers.Select(a => a.IdUser).ToList()
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (ticket == null)
+                    return null;
+
+                // Il campo legacy IdUserAssigned vale come assegnazione, come in GetAssignedUserIdsAsync.
+                var assignedUserIds = ticket.AssignedUserIds
+                    .Where(idUser => !string.IsNullOrWhiteSpace(idUser))
+                    .ToList();
+
+                if (!string.IsNullOrWhiteSpace(ticket.IdUserAssigned))
+                    assignedUserIds.Add(ticket.IdUserAssigned);
+
+                return new TicketAssignmentContextDTO
+                {
+                    IdTicket = ticket.Id,
+                    IdGroupAssigned = ticket.IdGroupAssigned,
+                    GroupAssigned = ticket.GroupName,
+                    Closed = ticket.Closed,
+                    AssignedUserIds = assignedUserIds.Distinct().ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsService), nameof(GetAssignmentContextAsync), EventsTypes.Error, ex);
+                return null;
+            }
+        }
+
         public async Task<AssignUsersResult> AssignUsersAsync(int idTicket, AssignUsersRequest request, string? currentUserId)
         {
             try
@@ -1214,6 +1378,124 @@ namespace CRM.Server.Services
                 await _logEventService.RegisterAsync(nameof(TicketsService), nameof(ClaimAsync), EventsTypes.Error, ex);
                 return FailClaim("Errore nella presa in carico del ticket", System.Net.HttpStatusCode.InternalServerError);
             }
+        }
+
+        public async Task<EnsureAssignedResult> EnsureUsersAssignedAsync(int idTicket, IEnumerable<string> userIds, string? currentUserId)
+        {
+            try
+            {
+                var requested = (userIds ?? Enumerable.Empty<string>())
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Distinct()
+                    .ToList();
+
+                var ticket = await _context.Tickets
+                    .Include(t => t.AssignedUsers)
+                    .FirstOrDefaultAsync(t => t.Id == idTicket);
+
+                if (ticket == null)
+                    return FailEnsure(EnsureAssignedError.TicketNotFound, $"Ticket con ID {idTicket} non trovato");
+
+                if (!await _permitsService.CanGetObject(ticket.IdCompany))
+                    return FailEnsure(EnsureAssignedError.Forbidden, "Ticket non accessibile");
+
+                var alreadyAssigned = ticket.AssignedUsers
+                    .Select(a => a.IdUser)
+                    .ToHashSet();
+
+                if (!string.IsNullOrWhiteSpace(ticket.IdUserAssigned))
+                    alreadyAssigned.Add(ticket.IdUserAssigned);
+
+                var toClaim = requested
+                    .Where(id => !alreadyAssigned.Contains(id))
+                    .ToList();
+
+                if (toClaim.Count == 0)
+                    return new EnsureAssignedResult { Success = true, Ticket = ticket };
+
+                var claimedNames = new List<string>();
+
+                foreach (var idUser in toClaim)
+                {
+                    // Contact serve a NameComplete: senza, il messaggio all'operatore mostrerebbe la mail.
+                    var user = await _context.Users
+                        .AsNoTracking()
+                        .Include(u => u.Contact)
+                        .FirstOrDefaultAsync(u => u.Id == idUser);
+
+                    if (user == null)
+                        return FailEnsure(EnsureAssignedError.UserNotEligible, $"Utente con ID {idUser} non trovato");
+
+                    if (!await CanUserWorkOnTicketAsync(ticket, idUser))
+                        return FailEnsure(EnsureAssignedError.UserNotEligible,
+                            $"{user.NameComplete} non puo' lavorare sul ticket #{idTicket}: non appartiene al gruppo assegnato ne' agli utenti abilitati sul tipo di ticket.");
+
+                    _context.TicketUserAssignments.Add(new TicketUserAssignment
+                    {
+                        IdTicket = ticket.Id,
+                        IdUser = idUser,
+                        AssignedDate = DateTime.Now,
+                        AssignedBy = currentUserId
+                    });
+
+                    claimedNames.Add(user.NameComplete);
+                }
+
+                ticket.IdUserAssigned ??= toClaim.First();
+
+                // Su un ticket chiuso l'assegnazione resta solo una traccia di chi ha lavorato:
+                // riportarlo "in lavorazione" lo riaprirebbe di fatto.
+                if (!ticket.Closed)
+                {
+                    ticket.IdState = await _context.TicketStates
+                        .Where(s => s.State == (int)eTicketStates.Processing)
+                        .Select(s => (int?)s.Id)
+                        .FirstOrDefaultAsync() ?? ticket.IdState;
+                }
+
+                await _context.SaveChangesAsync();
+
+                await _logEventService.RegisterAsync(
+                    nameof(TicketsService),
+                    nameof(EnsureUsersAssignedAsync),
+                    EventsTypes.Info,
+                    $"Ticket #{idTicket}: presa in carico implicita di {claimedNames.Count} utenti ({string.Join(", ", claimedNames)})");
+
+                return new EnsureAssignedResult
+                {
+                    Success = true,
+                    ClaimedUserIds = toClaim,
+                    ClaimedUserNames = claimedNames,
+                    Ticket = ticket
+                };
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsService), nameof(EnsureUsersAssignedAsync), EventsTypes.Error, ex);
+                return FailEnsure(EnsureAssignedError.Unexpected, "Errore nell'assegnazione degli utenti al ticket");
+            }
+        }
+
+        private static EnsureAssignedResult FailEnsure(EnsureAssignedError error, string message)
+            => new() { Success = false, Error = error, ErrorMessage = message };
+
+        /// <summary>
+        /// Un utente puo' lavorare sul ticket se e' nel gruppo a cui e' smistato oppure se e' fra
+        /// gli abilitati sul tipo di ticket (regola gia' usata per l'assegnazione manuale).
+        /// </summary>
+        private async Task<bool> CanUserWorkOnTicketAsync(Ticket ticket, string idUser)
+        {
+            if (ticket.IdGroupAssigned != null)
+            {
+                var belongsToGroup = await _context.Groups
+                    .AsNoTracking()
+                    .AnyAsync(g => g.Id == ticket.IdGroupAssigned.Value && g.Users.Any(u => u.Id == idUser));
+
+                if (belongsToGroup)
+                    return true;
+            }
+
+            return await _permitsService.CanReceveTicket(ticket.Id, idUser);
         }
 
         private async Task<CRM.Client.Models.APIResponseMessage<TicketDTO>> OkClaim(int idTicket, string message)

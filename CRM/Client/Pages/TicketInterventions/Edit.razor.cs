@@ -15,6 +15,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading.Tasks;
 using static CRM.Client.Helpers.PageHelper;
 
@@ -79,9 +80,7 @@ namespace CRM.Client.Pages.TicketInterventions
         private List<InterventionTypeDTO> _interventionTypes;
         
         private List<ApplicationUser> _users = new List<ApplicationUser>();
-        
-        private List<ApplicationUser> _ticketAssignedUsers = new List<ApplicationUser>();
-        
+
         private HashSet<string> _selectedUserIds = new HashSet<string>();
         
         private Ticket _ticket;
@@ -123,18 +122,10 @@ namespace CRM.Client.Pages.TicketInterventions
                         ? (int)TypesSupport.Workshop
                         : (int)TypesSupport.Phone;
 
-                    if (!string.IsNullOrEmpty(_ticket.IdUserAssigned))
-                    {
-                        _selectedUserIds.Add(_ticket.IdUserAssigned);
-                    }
-                    else if (_ticketAssignedUsers.Any())
-                    {
-                        _selectedUserIds.Add(_ticketAssignedUsers.First().Id);
-                    }
+                    await PreselectDefaultUserAsync();
                 }
-                await LoadUsers(new LoadDataArgs());
-               
-                
+                await LoadUsers();
+
                 await GetTicketTypes();
             }
             catch (Exception ex)
@@ -143,25 +134,33 @@ namespace CRM.Client.Pages.TicketInterventions
             }
         }
 
-        private async Task LoadTicketAssignedUsers()
+        /// <summary>
+        /// Precompila l'intervento con chi e' gia' in carico sul ticket: prima il principale
+        /// (IdUserAssigned), altrimenti il primo degli assegnati.
+        /// <para>
+        /// Su un ticket smistato solo a un gruppo non c'e' nessuno da precompilare e la selezione
+        /// resta vuota: la fa l'operatore nel dialog, dove i membri del gruppo sono candidati e il
+        /// salvataggio vale come presa in carico.
+        /// </para>
+        /// </summary>
+        private async Task PreselectDefaultUserAsync()
         {
+            if (!string.IsNullOrEmpty(_ticket?.IdUserAssigned))
+            {
+                _selectedUserIds.Add(_ticket.IdUserAssigned);
+                return;
+            }
+
             try
             {
-                var response = await _httpClient.GetFromJsonAsync<List<string>>($"api/Tickets/{IdTicket}/assigned-users");
-                if (response != null && response.Any())
-                {
-                    _ticketAssignedUsers = _users.Where(u => response.Contains(u.Id)).ToList();
-                }
-                else if (!string.IsNullOrEmpty(_ticket.IdUserAssigned))
-                {
-                    _ticketAssignedUsers = _users.Where(u => u.Id == _ticket.IdUserAssigned).ToList();
-                }
-                _selectedUserIds = await TicketService.LoadAssignedUsers(IdTicket);
-                
+                var assignedUserIds = await TicketService.LoadAssignedUsers(IdTicket);
+
+                if (assignedUserIds != null && assignedUserIds.Any())
+                    _selectedUserIds.Add(assignedUserIds.First());
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Errore caricamento utenti ticket: {ex.Message}");
+                Console.WriteLine($"Errore caricamento utenti assegnati al ticket: {ex.Message}");
             }
         }
 
@@ -219,15 +218,26 @@ namespace CRM.Client.Pages.TicketInterventions
             }
         }
 
-        public async Task LoadUsers(LoadDataArgs args)
+        /// <summary>
+        /// Carica i nomi con cui risolvere gli utenti selezionati: gli stessi candidati del dialog
+        /// (assegnati al ticket + membri del gruppo assegnato), senza paginazione.
+        /// <para>
+        /// Prima era una pagina qualsiasi di tutti gli utenti (PageSize di default = 10): un
+        /// selezionato fuori da quei dieci non veniva risolto e la UI mostrava "Nessun utente
+        /// selezionato" pur avendo la selezione valorizzata.
+        /// </para>
+        /// </summary>
+        private async Task LoadUsers()
         {
-            UsersFilterModel request = new UsersFilterModel();
-            if (args != null && !string.IsNullOrEmpty(args.Filter))
+            UsersFilterModel request = new UsersFilterModel
             {
-                request.Name = args.Filter;
-            }
+                IdTicketAssigned = IdTicket,
+                IncludeGroupMembers = true,
+                PageSize = 0
+            };
+
             var response = await _userService.Get(request);
-            _users = response.Items.ToList();
+            _users = response?.Items?.ToList() ?? new List<ApplicationUser>();
             StateHasChanged();
         }
 
@@ -237,7 +247,14 @@ namespace CRM.Client.Pages.TicketInterventions
             {
                 if (_selectedUserIds == null || !_selectedUserIds.Any())
                 {
-                    Console.WriteLine("ERRORE: Nessun utente selezionato");
+                    // Un intervento senza persone non e' registrabile: dirlo, non solo loggarlo.
+                    NotificationService?.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Warning,
+                        Summary = Localize["Warning"],
+                        Detail = Localize["Select at least one user for the intervention"],
+                        Duration = 5000
+                    });
                     return;
                 }
 
@@ -260,8 +277,13 @@ namespace CRM.Client.Pages.TicketInterventions
                 {
                     if (resp.Data != null)
                         _ticketIntervention = resp.Data;
-                    await SaveUserAssignments(_ticketIntervention.Id);
-                    
+
+                    // L'assegnazione porta con se' la presa in carico del ticket e puo' essere
+                    // rifiutata (utente non abilitato): non si esce senza dirlo, altrimenti
+                    // l'intervento resterebbe salvato ma senza nessuno a cui e' imputato.
+                    if (!await SaveUserAssignments(_ticketIntervention.Id))
+                        return;
+
                     // Salva gli intervalli di tempo se presenti (per nuovi interventi)
                     await SaveInterventionTimes(_ticketIntervention.Id);
 
@@ -341,7 +363,12 @@ namespace CRM.Client.Pages.TicketInterventions
             }
         }
 
-        private async Task SaveUserAssignments(int interventionId)
+        /// <summary>
+        /// Assegna gli utenti all'intervento. Il server, nella stessa chiamata, assegna al ticket
+        /// chi non lo era ancora (presa in carico implicita) e puo' rifiutare chi non e' abilitato.
+        /// </summary>
+        /// <returns>False se l'assegnazione e' stata rifiutata: il chiamante non deve proseguire.</returns>
+        private async Task<bool> SaveUserAssignments(int interventionId)
         {
             try
             {
@@ -349,16 +376,78 @@ namespace CRM.Client.Pages.TicketInterventions
                 var assignmentData = new { UserIds = _selectedUserIds.ToList() };
 
                 var resp = await _httpClient.PostAsJsonAsync($"api/TicketInterventionUsers/intervention/{interventionId}/assign-users", assignmentData);
-                
+
                 if (!resp.IsSuccessStatusCode)
                 {
                     var errorContent = await resp.Content.ReadAsStringAsync();
                     Console.WriteLine($"Errore salvataggio assegnazioni: {resp.StatusCode} - {errorContent}");
+
+                    NotificationService?.Notify(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = Localize["Error"],
+                        Detail = string.IsNullOrWhiteSpace(errorContent)
+                            ? Localize["Failed to assign users"]
+                            : errorContent,
+                        Duration = 8000
+                    });
+
+                    return false;
                 }
+
+                await NotifyImplicitClaimAsync(resp);
+                return true;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Errore salvataggio assegnazioni: {ex.Message}");
+
+                NotificationService?.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = Localize["Error"],
+                    Detail = ex.Message,
+                    Duration = 6000
+                });
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Se il salvataggio ha assegnato qualcuno al ticket, lo dichiara: e' un effetto collaterale
+        /// e l'operatore deve saperlo. Un corpo inatteso non fa fallire nulla.
+        /// </summary>
+        private async Task NotifyImplicitClaimAsync(HttpResponseMessage response)
+        {
+            try
+            {
+                using var payload = await response.Content.ReadFromJsonAsync<JsonDocument>();
+
+                if (payload == null
+                    || !payload.RootElement.TryGetProperty("claimedUsers", out var claimed)
+                    || claimed.ValueKind != JsonValueKind.Array)
+                    return;
+
+                var names = claimed.EnumerateArray()
+                    .Select(x => x.GetString())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToList();
+
+                if (!names.Any())
+                    return;
+
+                NotificationService?.Notify(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Info,
+                    Summary = Localize["Ticket taken in charge by"],
+                    Detail = string.Join(", ", names),
+                    Duration = 6000
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Risposta assegnazione senza dettaglio presa in carico: {ex.Message}");
             }
         }
 

@@ -23,6 +23,9 @@ namespace CRM.Shared.DTOs
         /// </summary>
         public string DocumentType { get; set; }
 
+        public int? PageFrom { get; set; }
+        public int? PageTo { get; set; }
+
         /// <summary>
         /// Totale estratto (campo principale)
         /// </summary>
@@ -76,12 +79,36 @@ namespace CRM.Shared.DTOs
         /// <summary>
         /// Valuta (EUR, USD, ecc.)
         /// </summary>
+        /// <summary>Codice ISO della valuta. Null quando non e' determinabile con certezza.</summary>
         public string Currency { get; set; }
+
+        /// <summary>
+        /// Simbolo letto sullo scontrino ($, €, ¥...). Serve quando il codice ISO manca: il
+        /// simbolo c'e' quasi sempre, ed e' informazione utile anche se non basta da sola.
+        /// </summary>
+        public string CurrencySymbol { get; set; }
+
+        /// <summary>
+        /// Valute compatibili con il simbolo letto, la piu' probabile per prima.
+        /// <para>
+        /// Popolata solo quando il simbolo e' ambiguo: "$" puo' essere USD, CAD, AUD...; "¥" JPY
+        /// o CNY. Serve a proporre una scelta invece di lasciare il campo vuoto, senza pero'
+        /// decidere al posto di chi registra: una valuta sbagliata falsa la conversione.
+        /// </para>
+        /// </summary>
+        public List<string> CurrencyCandidates { get; set; } = new();
 
         /// <summary>
         /// Elementi riga (prodotti/servizi)
         /// </summary>
         public List<ReceiptLineItem> LineItems { get; set; } = new();
+
+        /// <summary>
+        /// Documenti fiscali distinti letti dallo stesso file, per PDF multi-pagina/multi-ricevuta.
+        /// Il risultato principale contiene i totali aggregati; questa lista conserva il dettaglio
+        /// da mostrare nei report senza duplicare l'allegato.
+        /// </summary>
+        public List<ReceiptExtractionResult> DocumentResults { get; set; } = new();
 
         /// <summary>
         /// Campi raw estratti (per debug)
@@ -110,7 +137,7 @@ namespace CRM.Shared.DTOs
         public string Description { get; set; }
 
         /// <summary>
-        /// Quantit�
+        /// Quantità
         /// </summary>
         public decimal? Quantity { get; set; }
 

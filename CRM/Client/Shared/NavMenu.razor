@@ -132,6 +132,13 @@
                         <span class="nav-text">Pianificazione</span>
                     </NavLink>
 
+                    @* Prima le note spese si vedevano solo scendendo dentro un intervento: di
+                       fatto esistevano ma erano invisibili. *@
+                    <NavLink class="nav-link submenu-link" href="ExpenseReceipts" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">receipt_long</span>
+                        <span class="nav-text">Note Spese</span>
+                    </NavLink>
+
                     <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
                         <NavLink class="nav-link submenu-link" href="TicketFeedbacks" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                             <span class="material-icons nav-icon">rate_review</span>

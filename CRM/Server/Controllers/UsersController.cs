@@ -108,9 +108,25 @@ namespace CRM.Server.Controllers
                 if (args.IdTicketAssigned != null && args.IdTicketAssigned > 0)
                 {
                     var idTicketAssigned = args.IdTicketAssigned.Value;
+
+                    // Con IncludeGroupMembers i membri del gruppo assegnato sono candidati a pari
+                    // titolo: senza, un ticket smistato al gruppo e non ancora preso in carico
+                    // restituirebbe una lista vuota. 0 = nessun gruppo, la clausola si spegne.
+                    var idGroupAssigned = 0;
+
+                    if (args.IncludeGroupMembers)
+                    {
+                        idGroupAssigned = await _context.Tickets
+                            .AsNoTracking()
+                            .Where(t => t.Id == idTicketAssigned)
+                            .Select(t => t.IdGroupAssigned ?? 0)
+                            .FirstOrDefaultAsync();
+                    }
+
                     users = users.Where(x =>
                         x.UserAssignedTickets.Any(t => t.Id == idTicketAssigned)
-                        || _context.TicketUserAssignments.Any(a => a.IdTicket == idTicketAssigned && a.IdUser == x.Id));
+                        || _context.TicketUserAssignments.Any(a => a.IdTicket == idTicketAssigned && a.IdUser == x.Id)
+                        || (idGroupAssigned != 0 && x.Groups.Any(g => g.Id == idGroupAssigned)));
                 }
 
                 if (args.NameComplete != null && args.NameComplete.Length > 0)

@@ -1,0 +1,207 @@
+@page "/ExpenseReceipts"
+@using CRM.Shared.DTOs
+@using Microsoft.Extensions.Localization
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+<div class="expenses-overview">
+
+    <div class="filters-bar">
+        <div class="filter-group" role="group" aria-label="@Localize["Period"]">
+            <button type="button" class="chip @(_period == "month" ? "active" : "")" @onclick='() => SetPeriod("month")'>@Localize["ThisMonth"]</button>
+            <button type="button" class="chip @(_period == "prevmonth" ? "active" : "")" @onclick='() => SetPeriod("prevmonth")'>@Localize["PreviousMonth"]</button>
+            <button type="button" class="chip @(_period == "year" ? "active" : "")" @onclick='() => SetPeriod("year")'>@Localize["Year"]</button>
+            <button type="button" class="chip @(_period == "all" ? "active" : "")" @onclick='() => SetPeriod("all")'>@Localize["All"]</button>
+        </div>
+
+        <div class="filter-group" role="group" aria-label="@Localize["Context"]">
+            <button type="button" class="chip @(_filter.Context == ExpenseContextFilter.All ? "active" : "")"
+                    @onclick="() => SetContext(ExpenseContextFilter.All)">@Localize["All"]</button>
+            <button type="button" class="chip @(_filter.Context == ExpenseContextFilter.Intervention ? "active" : "")"
+                    title="@Localize["InterventionExpenses"]"
+                    @onclick="() => SetContext(ExpenseContextFilter.Intervention)">@Localize["Interventions"]</button>
+            <button type="button" class="chip @(_filter.Context == ExpenseContextFilter.Activity ? "active" : "")"
+                    title="@Localize["BusinessVisits"]"
+                    @onclick="() => SetContext(ExpenseContextFilter.Activity)">@Localize["Visits"]</button>
+            <button type="button" class="chip @(_filter.Context == ExpenseContextFilter.None ? "active" : "")"
+                    title="@Localize["GeneralExpensesHint"]"
+                    @onclick="() => SetContext(ExpenseContextFilter.None)">@Localize["General"]</button>
+        </div>
+
+        @if (_canSeeAll)
+        {
+            <button type="button" class="chip chip-wide @(string.IsNullOrEmpty(_filter.IdUserSpender) ? "active" : "")"
+                    @onclick="ToggleAllUsers">
+                <span class="material-icons">group</span>
+                @(string.IsNullOrEmpty(_filter.IdUserSpender) ? Localize["Everyone"] : Localize["OnlyMine"])
+            </button>
+        }
+
+        <a href="/ExpenseReceipts/Create" class="btn-new">
+            <span class="material-icons">add</span>@Localize["NewExpenseReceipt"]
+        </a>
+    </div>
+
+    @if (_loading)
+    {
+        <Waiting></Waiting>
+    }
+    else
+    {
+        <div class="tiles">
+            <div class="tile">
+                <div class="tile-label">@Localize["Total"]</div>
+                <div class="tile-value">@FormatMoney(_summary.TotalExpenses, _summary.BaseCurrency)</div>
+            </div>
+            <div class="tile">
+                <div class="tile-label">@Localize["ExpenseReceipts"]</div>
+                <div class="tile-value">@_summary.TotalReceiptsCount</div>
+            </div>
+            <div class="tile">
+                <div class="tile-label">@Localize["Tax"]</div>
+                <div class="tile-value">@FormatMoney(_summary.TotalTaxes, _summary.BaseCurrency)</div>
+            </div>
+            <div class="tile">
+                <div class="tile-label">@Localize["PendingConfirmation"]</div>
+                <div class="tile-value">@_summary.PendingReceiptsCount</div>
+            </div>
+        </div>
+
+        @* Le spese senza cambio NON sono nei totali qui sopra. Dichiararlo e' il punto: un totale
+           che nasconde in silenzio tre scontrini esteri e' peggio di un totale mancante. *@
+        @if (_summary.NeedsConversionCount > 0)
+        {
+            <div class="to-convert" role="alert">
+                <span class="material-icons">currency_exchange</span>
+                <div>
+                    <strong>@Localize["ExpensesWithoutExchangeRate", _summary.NeedsConversionCount]</strong>
+                    <div class="to-convert-text">
+                        @Localize["ExcludedFromTotalMissingCurrency"]
+                    </div>
+                </div>
+                <button type="button" class="btn-link-inline" @onclick="ShowOnlyToConvert">
+                    @(_filter.NeedsConversion == true ? Localize["ShowAll"] : Localize["ShowOnlyThese"])
+                </button>
+            </div>
+        }
+
+        @if (_summary.ByCurrency.Count > 1)
+        {
+            <div class="breakdown">
+                <span class="breakdown-label">@Localize["ByCurrency"]:</span>
+                @foreach (var c in _summary.ByCurrency)
+                {
+                    <span class="breakdown-item" title="@Localize["ExpenseReceiptCount", c.Count]">
+                        <strong>@c.Currency</strong> @FormatMoney(c.TotalOriginal, c.Currency)
+                    </span>
+                }
+            </div>
+        }
+
+        @if (string.IsNullOrEmpty(_filter.IdUserSpender) && _summary.ByUser.Count > 1)
+        {
+            <div class="breakdown">
+                <span class="breakdown-label">@Localize["ByPerson"]:</span>
+                @foreach (var u in _summary.ByUser)
+                {
+                    <span class="breakdown-item">
+                        @(u.UserName ?? "—") <strong>@FormatMoney(u.TotalBase, _summary.BaseCurrency)</strong>
+                    </span>
+                }
+            </div>
+        }
+
+        @if (!_items.Any())
+        {
+            <div class="empty-state">
+                <span class="material-icons">receipt_long</span>
+                <div>
+                    <div class="empty-title">@Localize["NoExpenseReceiptsInPeriod"]</div>
+                    <div class="empty-text">@Localize["ChangePeriodOrFilter"]</div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="receipts-table-wrap">
+                <table class="receipts-table">
+                    <thead>
+                        <tr>
+                            <th>@Localize["Date"]</th>
+                            @if (_showUserColumn)
+                            {
+                                <th>@Localize["Person"]</th>
+                            }
+                            <th>@Localize["Merchant"]</th>
+                            <th>@Localize["Context"]</th>
+                            <th class="num">@Localize["Amount"]</th>
+                            <th class="num">@Localize["InCurrency", _summary.BaseCurrency]</th>
+                            <th>@Localize["Status"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in _items)
+                        {
+                            var ctx = DescribeContext(r);
+                            <tr class="@(r.NeedsConversion ? "row-warn" : "")" @onclick="() => OpenReceipt(r)">
+                                <td>@((r.TransactionDate ?? r.CreatedDate).ToString("dd/MM/yyyy"))</td>
+                                @if (_showUserColumn)
+                                {
+                                    <td>@(r.UserSpenderName ?? "—")</td>
+                                }
+                                <td class="merchant">@(r.MerchantName ?? r.Description ?? "—")</td>
+                                <td>
+                                    @* Il contesto porta dove la spesa e' nata. stopPropagation
+                                       serve perche' l'intera riga apre gia' la nota spese: senza,
+                                       il click farebbe partire tutt'e due le navigazioni. *@
+                                    @if (ctx.Url != null)
+                                    {
+                                        <a class="ctx ctx-link" href="@ctx.Url" title="@Localize["OpenItem", ctx.Text]"
+                                           @onclick:stopPropagation="true">
+                                            <span class="material-icons">@ctx.Icon</span>@ctx.Text
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="ctx">
+                                            <span class="material-icons">@ctx.Icon</span>@ctx.Text
+                                        </span>
+                                    }
+                                </td>
+                                <td class="num">@FormatMoney(r.TotalAmount, r.Currency ?? "?")</td>
+                                <td class="num">
+                                    @if (r.NeedsConversion)
+                                    {
+                                        <span class="to-convert-badge" title="@Localize["MissingCurrencyOrRate"]">@Localize["ToConvert"]</span>
+                                    }
+                                    else
+                                    {
+                                        @FormatMoney(r.AmountBase, _summary.BaseCurrency)
+                                    }
+                                </td>
+                                <td>
+                                    <span class="status @(r.IsConfirmed ? "ok" : "pending")">
+                                        @(r.IsConfirmed ? Localize["Confirmed"] : Localize["PendingConfirmation"])
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (TotalPages > 1)
+            {
+                <div class="pager">
+                    <button type="button" class="chip" disabled="@(_filter.PageNumber <= 1)"
+                            @onclick="() => GoToPage(_filter.PageNumber - 1)">@Localize["Previous"]</button>
+                    <span class="pager-info">@Localize["PageOfTotal", _filter.PageNumber, TotalPages, _totalCount]</span>
+                    <button type="button" class="chip" disabled="@(_filter.PageNumber >= TotalPages)"
+                            @onclick="() => GoToPage(_filter.PageNumber + 1)">@Localize["Next"]</button>
+                </div>
+            }
+        }
+    }
+</div>

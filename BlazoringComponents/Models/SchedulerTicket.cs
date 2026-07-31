@@ -43,5 +43,17 @@ namespace BlazoringComponents.Models
         public List<string> AssignedUserNames { get; set; } = new List<string>();
 
         public string Description { get; set; }
+
+        /// <summary>
+        /// Codice della commessa a cui il ticket appartiene (es. CM-2026-0001), vuoto quando il
+        /// ticket non e' lavoro di commessa.
+        /// </summary>
+        public string CommessaCode { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Natura del lavoro: appartenere a una commessa o no. E' un dato di fatto, non una misura
+        /// di urgenza — quella resta a priorita' e scadenza, che sono modellate a parte.
+        /// </summary>
+        public bool IsCommessa => !string.IsNullOrWhiteSpace(CommessaCode);
     }
 }

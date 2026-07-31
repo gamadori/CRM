@@ -319,6 +319,18 @@ namespace CRM.Server.Data
                 .HasForeignKey(er => er.AttachmentFileId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            modelBuilder.Entity<ExpenseReceiptDocument>()
+                .HasOne(d => d.ExpenseReceipt)
+                .WithMany(er => er.Documents)
+                .HasForeignKey(d => d.ExpenseReceiptId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<ExpenseReceiptDocumentLine>()
+                .HasOne(l => l.ExpenseReceiptDocument)
+                .WithMany(d => d.Lines)
+                .HasForeignKey(l => l.ExpenseReceiptDocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // ✅ FIX: Previene percorsi multipli di cascade verso ExpenseReceipt
             // Configurazione Attachment → AttachmentFile (Restrict invece di Cascade)
             modelBuilder.Entity<AttachmentFile>()
@@ -1040,6 +1052,8 @@ namespace CRM.Server.Data
         public DbSet<Folder> Folders => Set<Folder>();
 
         public DbSet<ExpenseReceipt> ExpenseReceipts => Set<ExpenseReceipt>();
+        public DbSet<ExpenseReceiptDocument> ExpenseReceiptDocuments => Set<ExpenseReceiptDocument>();
+        public DbSet<ExpenseReceiptDocumentLine> ExpenseReceiptDocumentLines => Set<ExpenseReceiptDocumentLine>();
 
         public DbSet<FolderLanguage> FolderLanguages => Set<FolderLanguage>();
 

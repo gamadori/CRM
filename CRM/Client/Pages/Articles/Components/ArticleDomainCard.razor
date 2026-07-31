@@ -1,4 +1,4 @@
-@using CRM.Shared
+﻿@using CRM.Shared
 @inject HttpClient Http
 
 <div class="card domain-card domain-@Domain.Code.ToLower()">
@@ -95,7 +95,7 @@
     
     private async Task ShowEventDialog(ArticleEventType eventType)
     {
-        // Aprir� un dialog modale per registrare l'evento
+        // Aprirà un dialog modale per registrare l'evento
         // Per ora placeholder
         await OnStateChanged.InvokeAsync();
     }
