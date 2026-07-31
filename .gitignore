@@ -355,3 +355,5 @@ CRM/Server/Archives/
 /.verifybuild*/
 **/.verifybuild/
 **/.verifybuild*/
+/docs
+/tools
