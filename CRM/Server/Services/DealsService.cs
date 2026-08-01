@@ -1,4 +1,4 @@
-using CNM.Authorize;
+﻿using CNM.Authorize;
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Server.Data;
@@ -362,6 +362,8 @@ namespace CRM.Server.Services
                     existing.Phase = item.Phase;
                     existing.DateClosed = item.DateClosed;
                     existing.IdUser = item.IdUser;
+                    // IdActivityOrigin non si aggiorna: da quale visita e' nata l'opportunita' e'
+                    // un fatto avvenuto, non una proprieta' che si cambia in modifica.
                     ReplaceDealProductInterests(existing, item.ProductInterests);
                     await ResolveProductInterestValuesAsync(existing);
                     item = existing;

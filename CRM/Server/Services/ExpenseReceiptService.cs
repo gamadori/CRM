@@ -645,6 +645,14 @@ namespace CRM.Server.Services
             }
 
             var baseCurrency = await GetBaseCurrencyAsync();
+
+            // Con un documento solo, testata e documento sono la stessa spesa vista due volte.
+            if (documents.Count == 1)
+            {
+                await AlignSingleDocumentAsync(receipt, documents[0], baseCurrency);
+                return;
+            }
+
             foreach (var document in documents)
                 await ApplyDocumentConversionAsync(document, baseCurrency);
 
@@ -652,20 +660,7 @@ namespace CRM.Server.Services
                 .Where(document => document.TransactionDate.HasValue)
                 .Select(document => document.TransactionDate)
                 .Min();
-            receipt.MerchantName = documents.Count == 1
-                ? documents[0].MerchantName
-                : $"{documents.Count} documenti fiscali";
-
-            if (documents.Count == 1)
-            {
-                var document = documents[0];
-                receipt.Currency = document.Currency;
-                receipt.TotalAmount = document.TotalAmount;
-                receipt.TaxAmount = document.TaxAmount;
-                receipt.ExchangeRate = document.ExchangeRate;
-                receipt.AmountBase = document.AmountBase;
-                return;
-            }
+            receipt.MerchantName = $"{documents.Count} documenti fiscali";
 
             var allTotalsConverted = documents.All(document =>
                 document.TotalAmount.HasValue && document.AmountBase.HasValue);
@@ -683,6 +678,48 @@ namespace CRM.Server.Services
             receipt.TaxAmount = allTaxesConverted
                 ? taxes.Sum(document => document.TaxAmountBase!.Value)
                 : null;
+        }
+
+        /// <summary>
+        /// Allinea l'unico documento alla testata, e non il contrario.
+        /// <para>
+        /// Con un documento solo i due oggetti descrivono la stessa spesa, e prima vinceva il
+        /// documento: i valori letti dall'OCR sovrascrivevano la testata subito dopo il
+        /// salvataggio. Risultato, <b>ogni correzione fatta nel modulo veniva buttata via</b> -
+        /// la valuta scelta fra i candidati (il "$" confermato come USD tornava vuoto e la spesa
+        /// restava "da convertire"), ma allo stesso modo l'importo corretto a mano, la data,
+        /// l'esercente. Il modulo sembrava funzionare e non serviva a niente.
+        /// </para>
+        /// <para>
+        /// Vince la testata perche' e' quella che l'operatore ha davanti e corregge. Il documento
+        /// conserva il valore letto solo dove la testata non dice niente.
+        /// </para>
+        /// </summary>
+        private async Task AlignSingleDocumentAsync(
+            ExpenseReceipt receipt, ExpenseReceiptDocument document, string baseCurrency)
+        {
+            document.MerchantName = string.IsNullOrWhiteSpace(receipt.MerchantName)
+                ? document.MerchantName
+                : receipt.MerchantName;
+            document.TransactionDate = receipt.TransactionDate ?? document.TransactionDate;
+            document.TotalAmount = receipt.TotalAmount ?? document.TotalAmount;
+            document.TaxAmount = receipt.TaxAmount ?? document.TaxAmount;
+            document.Currency = string.IsNullOrWhiteSpace(receipt.Currency)
+                ? document.Currency
+                : receipt.Currency;
+            document.ExchangeRate = receipt.ExchangeRate ?? document.ExchangeRate;
+
+            await ApplyDocumentConversionAsync(document, baseCurrency);
+
+            // La testata riprende i valori normalizzati dalla conversione (valuta in maiuscolo,
+            // cambio effettivo, importo in valuta base): restano una copia sola, coerente.
+            receipt.MerchantName = document.MerchantName;
+            receipt.TransactionDate = document.TransactionDate;
+            receipt.TotalAmount = document.TotalAmount;
+            receipt.TaxAmount = document.TaxAmount;
+            receipt.Currency = document.Currency;
+            receipt.ExchangeRate = document.ExchangeRate;
+            receipt.AmountBase = document.AmountBase;
         }
 
         private async Task ApplyDocumentConversionAsync(ExpenseReceiptDocument document, string baseCurrency)

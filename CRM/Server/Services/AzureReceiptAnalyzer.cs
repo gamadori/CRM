@@ -1,4 +1,4 @@
-using Azure;
+﻿using Azure;
 using Azure.AI.FormRecognizer.DocumentAnalysis;
 using CRM.Shared.DTOs;
 using Microsoft.Extensions.Configuration;
@@ -46,7 +46,8 @@ namespace CRM.Server.Services
             byte[] fileBytes,
             string fileName,
             bool useCustomModel = false,
-            string customModelId = null)
+            string customModelId = null,
+            ReceiptDocumentKind kind = ReceiptDocumentKind.Unknown)
         {
             var stopwatch = Stopwatch.StartNew();
             try
@@ -54,67 +55,24 @@ namespace CRM.Server.Services
                 if (_formRecognizerClient == null)
                     return NotConfigured(stopwatch);
 
-                // Try prebuilt-receipt first, then fall back to prebuilt-document
-                string modelId = useCustomModel && !string.IsNullOrEmpty(customModelId)
-                    ? customModelId
-                    : "prebuilt-receipt";
-
-                _logger.LogInformation("Elaborazione file '{FileName}' ({Bytes} bytes) con modello '{ModelId}'",
-                    fileName, fileBytes.Length, modelId);
-
-                using var stream = new MemoryStream(fileBytes);
-                var operation = await _formRecognizerClient.AnalyzeDocumentAsync(
-                    WaitUntil.Completed, modelId, stream);
-
-                var result = operation.Value;
-
-                _logger.LogInformation("Analisi completata. Documenti trovati: {Count}", result.Documents.Count);
-
-                var documents = result.Documents;
-
-                var coveredPages = result.Documents
-                    .SelectMany(document => document.BoundingRegions)
-                    .Select(region => region.PageNumber)
-                    .Distinct()
-                    .ToHashSet();
-                var missingPages = Enumerable.Range(1, result.Pages.Count)
-                    .Where(pageNumber => !coveredPages.Contains(pageNumber))
-                    .ToList();
-
-                // Se Azure ha riconosciuto un documento che copre tutte le pagine, e' una
-                // fattura multipagina e resta unita. Si analizzano singolarmente solo le pagine
-                // non attribuite ad alcun documento fiscale.
-                if (missingPages.Count > 0)
+                if (useCustomModel && !string.IsNullOrEmpty(customModelId))
                 {
-                    var pageDocuments = await AnalyzePdfPagesAsync(fileBytes, modelId, missingPages);
-                    if (pageDocuments.Count > 0)
-                        documents = documents.Concat(pageDocuments).ToList();
+                    var custom = await AnalyzeWithModelAsync(fileBytes, fileName, customModelId);
+                    return Finish(custom, stopwatch, fileName);
                 }
+
+                var documents = IsPdf(fileName)
+                    ? await AnalyzePdfAsync(fileBytes, fileName, kind)
+                    : await AnalyzeImageAsync(fileBytes, fileName);
 
                 if (documents.Count == 0)
                 {
-                    // Log raw content to help debug
-                    _logger.LogWarning("Nessun documento strutturato rilevato. Pagine: {Pages}, Parole: {Words}",
-                        result.Pages.Count,
-                        result.Pages.Sum(p => p.Words.Count));
-
                     return Error(
                         "Nessun documento rilevato. Assicurati che lo scontrino/fattura sia leggibile e non ruotato.",
                         stopwatch);
                 }
 
-                var extractionResult = ExtractDocuments(documents, stopwatch);
-
-                _logger.LogInformation(
-                    "Estrazione completata: Totale={Total}, IVA={Tax}, Data={Date}, Commerciante='{Merchant}', Confidence={Conf:P1}, Tempo={Time}ms",
-                    extractionResult.TotalAmount,
-                    extractionResult.TaxAmount,
-                    extractionResult.TransactionDate,
-                    extractionResult.MerchantName,
-                    extractionResult.AverageConfidence,
-                    stopwatch.ElapsedMilliseconds);
-
-                return extractionResult;
+                return Finish(documents, stopwatch, fileName);
             }
             catch (RequestFailedException ex) when (ex.Status == 400)
             {
@@ -126,6 +84,175 @@ namespace CRM.Server.Services
                 _logger.LogError(ex, "Errore durante l'elaborazione Azure Form Recognizer per '{FileName}'", fileName);
                 return Error($"Errore durante l'elaborazione: {ex.Message}", stopwatch);
             }
+        }
+
+        private const string ReceiptModel = "prebuilt-receipt";
+        private const string InvoiceModel = "prebuilt-invoice";
+
+        private static bool IsPdf(string fileName)
+            => !string.IsNullOrWhiteSpace(fileName)
+               && Path.GetExtension(fileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Un'immagine e' uno scontrino fotografato: <c>prebuilt-receipt</c>. Se non ne cava
+        /// niente si prova comunque il modello fattura - la foto di una fattura esiste.
+        /// </summary>
+        private async Task<IReadOnlyList<AnalyzedDocument>> AnalyzeImageAsync(byte[] fileBytes, string fileName)
+        {
+            var documents = await AnalyzeWithModelAsync(fileBytes, fileName, ReceiptModel);
+            if (CountRealExpenses(documents) > 0)
+                return documents;
+
+            _logger.LogInformation(
+                "'{FileName}': nessuna spesa leggibile con {Receipt}, riprovo con {Invoice}.",
+                fileName, ReceiptModel, InvoiceModel);
+
+            var asInvoice = await AnalyzeWithModelAsync(fileBytes, fileName, InvoiceModel);
+            return CountRealExpenses(asInvoice) > 0 ? asInvoice : documents;
+        }
+
+        /// <summary>
+        /// Dentro un PDF ci sono due cose diverse e indistinguibili dall'esterno: una fattura
+        /// emessa, che <c>prebuilt-invoice</c> tratta come un documento solo anche su piu' pagine e
+        /// di cui legge il codice valuta; e una scansione di scontrini, che <c>prebuilt-receipt</c>
+        /// separa uno per uno mentre il modello fattura ne fonde due in uno perdendo il secondo
+        /// importo - misurato su un PDF di due scontrini, 77,58 al posto di 77,58 + 6,60.
+        /// <para>
+        /// Se chi carica lo <b>dichiara</b>, si esegue solo il modello che serve: un'analisi invece
+        /// di due. Se non lo dichiara si eseguono entrambi e vince il migliore - corretto, ma al
+        /// doppio del costo. In ogni caso, se il modello scelto non cava niente si prova l'altro:
+        /// una tendina sbagliata non deve lasciare nessuno senza estrazione.
+        /// </para>
+        /// </summary>
+        private async Task<IReadOnlyList<AnalyzedDocument>> AnalyzePdfAsync(
+            byte[] fileBytes, string fileName, ReceiptDocumentKind kind)
+        {
+            if (kind != ReceiptDocumentKind.Unknown)
+                return await AnalyzeDeclaredPdfAsync(fileBytes, fileName, kind);
+
+            var asInvoice = await AnalyzeWithModelAsync(fileBytes, fileName, InvoiceModel);
+            var asReceipt = await AnalyzeWithModelAsync(fileBytes, fileName, ReceiptModel);
+
+            var invoiceCount = CountRealExpenses(asInvoice);
+            var receiptCount = CountRealExpenses(asReceipt);
+
+            // Vince chi trova piu' spese vere. A parita' vince la fattura: legge il codice valuta
+            // dove il modello scontrino lascia il campo vuoto, e su piu' pagine tiene unito.
+            var useReceipt = receiptCount > invoiceCount;
+
+            _logger.LogInformation(
+                "'{FileName}': {Invoice} trova {InvoiceCount} spese, {Receipt} ne trova {ReceiptCount}. Uso {Chosen}.",
+                fileName, InvoiceModel, invoiceCount, ReceiptModel, receiptCount,
+                useReceipt ? ReceiptModel : InvoiceModel);
+
+            return useReceipt ? asReceipt : asInvoice;
+        }
+
+        /// <summary>
+        /// PDF dichiarato: si esegue il modello corrispondente e basta. L'altro entra in gioco solo
+        /// se il primo non trova nessuna spesa - la dichiarazione fa risparmiare una chiamata, non
+        /// toglie la rete di sicurezza.
+        /// </summary>
+        private async Task<IReadOnlyList<AnalyzedDocument>> AnalyzeDeclaredPdfAsync(
+            byte[] fileBytes, string fileName, ReceiptDocumentKind kind)
+        {
+            var declared = kind == ReceiptDocumentKind.Invoice ? InvoiceModel : ReceiptModel;
+            var other = declared == InvoiceModel ? ReceiptModel : InvoiceModel;
+
+            var documents = await AnalyzeWithModelAsync(fileBytes, fileName, declared);
+
+            if (CountRealExpenses(documents) > 0)
+            {
+                _logger.LogInformation(
+                    "'{FileName}': dichiarato come {Kind}, usato {Model} senza seconda analisi.",
+                    fileName, kind, declared);
+
+                return documents;
+            }
+
+            _logger.LogInformation(
+                "'{FileName}': dichiarato come {Kind} ma {Model} non trova spese, riprovo con {Other}.",
+                fileName, kind, declared, other);
+
+            var fallback = await AnalyzeWithModelAsync(fileBytes, fileName, other);
+            return CountRealExpenses(fallback) > 0 ? fallback : documents;
+        }
+
+        /// <summary>
+        /// Quante spese vere contiene il risultato: documenti con un importo totale proprio. E' il
+        /// metro con cui si confrontano i due modelli, ed e' lo stesso con cui poi si scartano i
+        /// frammenti - vedi <see cref="KeepOnlyRealExpenses"/>.
+        /// </summary>
+        private int CountRealExpenses(IReadOnlyList<AnalyzedDocument> documents)
+            => documents.Count(document =>
+                TryGetCurrency(document.Fields, out _, "Total", "InvoiceTotal", "AmountDue", "TotalAmount")
+                    .HasValue);
+
+        /// <summary>
+        /// Analisi con un modello: documento intero piu' le eventuali pagine che Azure non ha
+        /// attribuito a nessun documento, rianalizzate singolarmente.
+        /// </summary>
+        private async Task<IReadOnlyList<AnalyzedDocument>> AnalyzeWithModelAsync(
+            byte[] fileBytes, string fileName, string modelId)
+        {
+            _logger.LogInformation("Elaborazione file '{FileName}' ({Bytes} bytes) con modello '{ModelId}'",
+                fileName, fileBytes.Length, modelId);
+
+            using var stream = new MemoryStream(fileBytes);
+            var operation = await _formRecognizerClient.AnalyzeDocumentAsync(
+                WaitUntil.Completed, modelId, stream);
+
+            var result = operation.Value;
+
+            _logger.LogInformation("Analisi completata con '{ModelId}'. Documenti trovati: {Count}",
+                modelId, result.Documents.Count);
+
+            var documents = (IReadOnlyList<AnalyzedDocument>)result.Documents;
+
+            var coveredPages = result.Documents
+                .SelectMany(document => document.BoundingRegions)
+                .Select(region => region.PageNumber)
+                .Distinct()
+                .ToHashSet();
+            var missingPages = Enumerable.Range(1, result.Pages.Count)
+                .Where(pageNumber => !coveredPages.Contains(pageNumber))
+                .ToList();
+
+            // Se Azure ha riconosciuto un documento che copre tutte le pagine, e' una fattura
+            // multipagina e resta unita. Si analizzano singolarmente solo le pagine non attribuite
+            // ad alcun documento fiscale.
+            if (missingPages.Count > 0)
+            {
+                var pageDocuments = await AnalyzePdfPagesAsync(fileBytes, modelId, missingPages);
+                if (pageDocuments.Count > 0)
+                    documents = documents.Concat(pageDocuments).ToList();
+            }
+
+            if (documents.Count == 0)
+            {
+                _logger.LogWarning(
+                    "Nessun documento strutturato rilevato con '{ModelId}'. Pagine: {Pages}, Parole: {Words}",
+                    modelId, result.Pages.Count, result.Pages.Sum(p => p.Words.Count));
+            }
+
+            return documents;
+        }
+
+        private ReceiptExtractionResult Finish(
+            IReadOnlyList<AnalyzedDocument> documents, Stopwatch stopwatch, string fileName)
+        {
+            var extractionResult = ExtractDocuments(documents, stopwatch);
+
+            _logger.LogInformation(
+                "Estrazione completata: Totale={Total}, IVA={Tax}, Data={Date}, Commerciante='{Merchant}', Confidence={Conf:P1}, Tempo={Time}ms",
+                extractionResult.TotalAmount,
+                extractionResult.TaxAmount,
+                extractionResult.TransactionDate,
+                extractionResult.MerchantName,
+                extractionResult.AverageConfidence,
+                stopwatch.ElapsedMilliseconds);
+
+            return extractionResult;
         }
 
         private async Task<IReadOnlyList<AnalyzedDocument>> AnalyzePdfPagesAsync(
@@ -161,6 +288,8 @@ namespace CRM.Server.Services
                         continue;
                     }
 
+                    // I frammenti si scartano in un punto solo, dove tutti i documenti si
+                    // ritrovano: vedi ExtractDocuments.
                     foreach (var document in pageResult.Documents)
                         documents.Add(document);
                 }
@@ -177,6 +306,40 @@ namespace CRM.Server.Services
             return documents;
         }
 
+        /// <summary>
+        /// Tiene solo i documenti che sono davvero una spesa a se': quelli con un importo totale
+        /// proprio.
+        /// <para>
+        /// Un documento senza totale non e' una spesa, e' la <b>continuazione</b> di quello prima -
+        /// le righe di una fattura, le condizioni di pagamento, un allegato. Azure lo restituisce
+        /// come documento separato perche', guardando quella pagina da sola, non ha modo di sapere
+        /// che appartiene a un documento piu' grande; noi invece lo sappiamo, perche' una spesa
+        /// senza importo non esiste.
+        /// </para>
+        /// <para>
+        /// Il filtro sbaglia per difetto apposta: unire due spese in una si nota subito, il totale
+        /// non torna e si rimedia. Una nota spese inventata invece finisce nei rimborsi e non se ne
+        /// accorge nessuno. Per lo stesso motivo, se nessun documento ha un totale non si scarta
+        /// niente: meglio farli vedere tutti e lasciar decidere, che restare senza niente.
+        /// </para>
+        /// </summary>
+        private List<ReceiptExtractionResult> KeepOnlyRealExpenses(List<ReceiptExtractionResult> documents)
+        {
+            var withTotal = documents.Where(d => d.TotalAmount.HasValue).ToList();
+
+            if (withTotal.Count == 0 || withTotal.Count == documents.Count)
+                return documents;
+
+            foreach (var discarded in documents.Where(d => !d.TotalAmount.HasValue))
+            {
+                _logger.LogInformation(
+                    "Documento a pagina {Page} senza importo totale: e' la continuazione del precedente, non una nota spese a se'. Scartato.",
+                    discarded.PageFrom);
+            }
+
+            return withTotal;
+        }
+
         private ReceiptExtractionResult ExtractDocuments(IReadOnlyList<AnalyzedDocument> documents, Stopwatch stopwatch)
         {
             if (documents.Count == 1)
@@ -190,6 +353,16 @@ namespace CRM.Server.Services
                 .Select(document => ExtractDocument(document, stopwatch.ElapsedMilliseconds))
                 .OrderBy(document => document.PageFrom ?? int.MaxValue)
                 .ToList();
+
+            partialResults = KeepOnlyRealExpenses(partialResults);
+
+            // Scartati tutti tranne uno: non c'e' piu' niente da aggregare, ed e' il caso della
+            // fattura multipagina che Azure aveva spezzato.
+            if (partialResults.Count == 1)
+            {
+                partialResults[0].ProcessingTimeMs = stopwatch.ElapsedMilliseconds;
+                return partialResults[0];
+            }
 
             var aggregate = new ReceiptExtractionResult
             {
@@ -364,8 +537,14 @@ namespace CRM.Server.Services
             // ?? DATA TRANSAZIONE ??????????????????????????????????????????????????????
             // prebuilt-receipt ? "TransactionDate"
             // prebuilt-invoice ? "InvoiceDate", "DueDate"
+            // Ogni tipo di scontrino chiama la data a modo suo: un conto d'albergo
+            // (receipt.hotel) non ha TransactionDate, ha ArrivalDate e DepartureDate, e cercando
+            // solo i nomi degli altri tipi la data si perdeva pur essendo stata letta da Azure.
+            // Fra le due dell'albergo viene prima la partenza: il conto si salda al check-out.
+            // DueDate resta per ultima perche' e' la scadenza di pagamento, cioe' il surrogato
+            // peggiore della data di spesa.
             result.TransactionDate = TryGetDate(f,
-                "TransactionDate", "InvoiceDate", "DueDate", "ServiceDate");
+                "TransactionDate", "InvoiceDate", "DepartureDate", "ArrivalDate", "ServiceDate", "DueDate");
 
             // ?? ORA ???????????????????????????????????????????????????????????????????
             result.TransactionTime = TryGetTime(f, "TransactionTime");
@@ -820,6 +999,12 @@ namespace CRM.Server.Services
                 return fromText;
             }
 
+            // NON si legge il campo "Currency" che alcuni tipi di scontrino espongono. Sembra la
+            // fonte piu' autorevole ed e' invece la piu' pericolosa: su un conto dell'Holiday Inn
+            // di Bologna, con importi in euro e nessun simbolo estero, Azure lo valorizza a "USD".
+            // Provato e tolto: preferiamo "valuta da indicare", che l'operatore vede e corregge,
+            // a una valuta sbagliata con l'aria di essere giusta, che falsa la conversione e
+            // quindi il rimborso senza che nessuno se ne accorga.
             return null;
         }
 

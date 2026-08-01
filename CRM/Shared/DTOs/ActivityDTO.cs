@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -153,8 +153,59 @@ namespace CRM.Shared.DTOs
         }
     }
 
+    /// <summary>
+    /// Che cosa ha prodotto una visita: le opportunita' e i preventivi che ne sono nati.
+    /// <para>
+    /// E' la meta' che rende utile il collegamento: da sola l'origine sull'opportunita' risponde
+    /// a "quante ne nascono dalle visite", questa risponde a "questa visita a cosa ha portato".
+    /// </para>
+    /// </summary>
+    public class ActivityOutcomeDTO
+    {
+        public List<ActivityGeneratedItemDTO> Deals { get; set; } = new();
+
+        public List<ActivityGeneratedItemDTO> Quotes { get; set; } = new();
+
+        public bool Any => Deals.Count > 0 || Quotes.Count > 0;
+    }
+
+    public class ActivityGeneratedItemDTO
+    {
+        public int Id { get; set; }
+
+        /// <summary>Nome dell'opportunita' o numero del preventivo.</summary>
+        public string Label { get; set; } = string.Empty;
+
+        public decimal Amount { get; set; }
+
+        public DateTime Date { get; set; }
+
+        /// <summary>Stato in chiaro, per il colore del badge.</summary>
+        public string State { get; set; } = string.Empty;
+    }
+
+    /// <summary>Seguito da dare alla visita appena chiusa.</summary>
+    public enum ActivityFollowUpTarget
+    {
+        /// <summary>Nessun seguito commerciale.</summary>
+        None = 0,
+
+        /// <summary>Ne nasce un'opportunita'.</summary>
+        Deal = 1,
+
+        /// <summary>Il cliente ha chiesto un preventivo.</summary>
+        Quote = 2
+    }
+
     public class ActivityCompletionRequest
     {
+        /// <summary>
+        /// Cosa segue la visita. Il server non se ne serve: e' la maschera che, chiusa
+        /// l'attivita', porta al modulo giusto gia' compilato. Sta qui perche' questo oggetto e'
+        /// il risultato del dialogo di chiusura, e il seguito e' parte di com'e' andata.
+        /// </summary>
+        public ActivityFollowUpTarget FollowUpTarget { get; set; } = ActivityFollowUpTarget.None;
+
         [Display(Name = "Esito")]
         public string? Outcome { get; set; }
 

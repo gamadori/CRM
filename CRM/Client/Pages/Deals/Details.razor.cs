@@ -1,4 +1,4 @@
-using CRM.Client.Helpers;
+﻿using CRM.Client.Helpers;
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
@@ -19,6 +19,9 @@ namespace CRM.Client.Pages.Deals
 
         [Inject]
         private IDealService DealService { get; set; } = default!;
+
+        [Inject]
+        private IActivityService ActivityService { get; set; } = default!;
 
         [Inject]
         private IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; } = default!;
@@ -56,12 +59,41 @@ namespace CRM.Client.Pages.Deals
             await LoadDeal();
         }
 
+
+        /// <summary>
+        /// Attivita' da cui il documento e' nato, caricata solo quando c'e' l'origine: una
+        /// chiamata in piu' su una pagina di dettaglio, nessuna sulle altre.
+        /// </summary>
+        private ActivityDTO? _origin;
+
+        private string OriginLabel => _origin == null
+            ? "Attività collegata"
+            : $"{_origin.Subject} del {(_origin.DoneDate ?? _origin.DueDate ?? _origin.CreatedAt):dd/MM/yyyy}";
+
+        private async Task LoadOriginAsync(int? idActivity)
+        {
+            _origin = null;
+            if (idActivity == null)
+                return;
+
+            try
+            {
+                _origin = await ActivityService.GetAsync(idActivity.Value);
+            }
+            catch (Exception ex)
+            {
+                // L'etichetta ripiega su un testo generico: il collegamento resta cliccabile.
+                Console.Error.WriteLine($"Attività di origine non caricata: {ex.Message}");
+            }
+        }
+
         private async Task LoadDeal()
         {
             _loading = true;
             try
             {
                 _deal = await DealService.GetItemAsync(Id);
+                await LoadOriginAsync(_deal?.IdActivityOrigin);
             }
             finally
             {

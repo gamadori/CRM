@@ -1,8 +1,9 @@
-using CRM.Shared;
+﻿using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -74,13 +75,237 @@ namespace CRM.Client.Pages.ExpenseReceipts
         private bool _loadingRate;
         private bool _rateUnavailable;
 
+        /// <summary>
+        /// Vero quando la valuta non c'e'. E' lo stato che merita di essere gridato: senza valuta
+        /// non si puo' convertire, e senza conversione la spesa non entra in nessun totale.
+        /// </summary>
+        private bool CurrencyMissing => string.IsNullOrWhiteSpace(_model.Currency);
+
+        /// <summary>
+        /// Un file che contiene piu' documenti fiscali diventa piu' note spese, una per documento:
+        /// e' quello che fa il server, e la maschera deve mostrare la stessa cosa. Finche' mostrava
+        /// un solo blocco di campi aggregati, si rivedeva un esercente "A / B" e un totale sommato
+        /// che non venivano salvati da nessuna parte.
+        /// </summary>
+        private bool IsMultiDocument => _model.Documents?.Count > 1;
+
+        /// <summary>
+        /// Valuta da propagare con un clic: quella scritta a mano se c'e', altrimenti quella
+        /// riconosciuta sul file, altrimenti quella di casa.
+        /// </summary>
+        private string CurrencyToApply =>
+            !string.IsNullOrWhiteSpace(_model.Currency) ? _model.Currency.Trim().ToUpperInvariant()
+            : !string.IsNullOrWhiteSpace(_extractionResult?.Currency) ? _extractionResult.Currency
+            : _baseCurrency;
+
+        /// <summary>
+        /// Tipo dichiarato da chi carica. Riguarda solo i PDF: senza dichiarazione il file viene
+        /// analizzato con tutti e due i modelli, perche' una fattura e una scansione di scontrini
+        /// dall'esterno non si distinguono. Dichiararlo dimezza il costo dell'analisi.
+        /// </summary>
+        private ReceiptDocumentKind _kind = ReceiptDocumentKind.Unknown;
+
+        /// <summary>Chiave con cui la scelta resta fra un caricamento e l'altro.</summary>
+        private const string KindStorageKey = "crm-expense-document-kind";
+
+        private string KindButtonClass(ReceiptDocumentKind kind)
+            => _kind == kind ? "btn btn-primary" : "btn btn-outline-secondary";
+
+        private string KindHint => _kind switch
+        {
+            ReceiptDocumentKind.Invoice =>
+                "Un documento solo, anche se occupa più pagine. Ne nasce una nota spese.",
+            ReceiptDocumentKind.Receipts =>
+                "Uno o più scontrini: ognuno diventa una nota spese a sé.",
+            _ =>
+                "Se lo indichi, il PDF viene analizzato una volta sola invece di due. "
+                + "Per le foto non serve: sono sempre scontrini."
+        };
+
+        /// <summary>
+        /// La scelta si ricorda: chi carica sempre fatture la imposta una volta e non ci pensa
+        /// piu'. Se il salvataggio locale non e' disponibile si perde la memoria, non la funzione.
+        /// </summary>
+        private async Task SetKind(ReceiptDocumentKind kind)
+        {
+            _kind = kind;
+
+            try
+            {
+                await JsRuntime.InvokeVoidAsync("localStorage.setItem", KindStorageKey, kind.ToString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Preferenza tipo documento non memorizzata: {ex.Message}");
+            }
+        }
+
+        private async Task LoadKindPreferenceAsync()
+        {
+            try
+            {
+                var stored = await JsRuntime.InvokeAsync<string>("localStorage.getItem", KindStorageKey);
+                if (Enum.TryParse<ReceiptDocumentKind>(stored, out var kind))
+                    _kind = kind;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Preferenza tipo documento non letta: {ex.Message}");
+            }
+        }
+
+        /// <summary>Documenti tolti dal lotto, tenuti da parte finche' non si salva.</summary>
+        private readonly List<ExpenseReceiptDocumentDTO> _excludedDocuments = new();
+
+        private static string DescribeDocument(ExpenseReceiptDocumentDTO document)
+            => string.IsNullOrWhiteSpace(document.MerchantName)
+                ? $"#{document.SortOrder + 1}"
+                : $"#{document.SortOrder + 1} {document.MerchantName}";
+
+        /// <summary>
+        /// Toglie un documento dal lotto: e' la pagina di continuazione che il filtro sul totale
+        /// non ha intercettato, e l'unico che puo' saperlo e' chi ha il documento davanti.
+        /// </summary>
+        private void ExcludeDocument(ExpenseReceiptDocumentDTO document)
+        {
+            if (_model.Documents == null || _model.Documents.Count <= 1)
+                return;
+
+            _model.Documents.Remove(document);
+            _excludedDocuments.Add(document);
+
+            RenumberDocuments();
+            PromoteSingleDocument();
+        }
+
+        private void RestoreExcludedDocuments()
+        {
+            if (_excludedDocuments.Count == 0)
+                return;
+
+            _model.Documents.AddRange(_excludedDocuments);
+            _excludedDocuments.Clear();
+
+            _model.Documents = _model.Documents
+                .OrderBy(d => d.PageFrom ?? int.MaxValue)
+                .ThenBy(d => d.SortOrder)
+                .ToList();
+
+            RenumberDocuments();
+        }
+
+        /// <summary>La numerazione delle schede resta 1..N: "Nota spese 3 di 2" non vuol dire niente.</summary>
+        private void RenumberDocuments()
+        {
+            for (var i = 0; i < _model.Documents.Count; i++)
+                _model.Documents[i].SortOrder = i;
+        }
+
+        /// <summary>
+        /// Rimasto un documento solo, la maschera torna a quella singola: i campi in cima devono
+        /// allora contenere QUEL documento, non piu' l'aggregato di quando erano due - altrimenti
+        /// si salverebbe un esercente "A / B" e un totale sommato che non esiste piu'.
+        /// </summary>
+        private void PromoteSingleDocument()
+        {
+            if (_model.Documents.Count != 1)
+                return;
+
+            var document = _model.Documents[0];
+
+            _model.MerchantName = document.MerchantName;
+            _model.TransactionDate = document.TransactionDate;
+            _model.TotalAmount = document.TotalAmount;
+            _model.TaxAmount = document.TaxAmount;
+            _model.Currency = document.Currency;
+            _model.ExchangeRate = document.ExchangeRate;
+            _model.Description = $"{document.MerchantName} - {document.TransactionDate?.ToString("dd/MM/yyyy")}";
+        }
+
+        private void ApplyCurrencyToAllDocuments()
+        {
+            if (_model.Documents == null || string.IsNullOrWhiteSpace(CurrencyToApply))
+                return;
+
+            var currency = CurrencyToApply;
+
+            // Si riempiono solo quelle vuote: se una valuta l'operatore l'ha gia' scelta, un
+            // pulsante "applica a tutte" non deve portargliela via.
+            foreach (var document in _model.Documents.Where(d => string.IsNullOrWhiteSpace(d.Currency)))
+                document.Currency = currency;
+        }
+
+        /// <summary>
+        /// Vero quando i dati arrivano da un documento letto. Cambia cosa si puo' dire all'utente:
+        /// "non trovata sul documento" e' un'informazione, davanti a un inserimento a mano sarebbe
+        /// una bugia, perche' documento non ce n'e'.
+        /// </summary>
+        private bool ReadFromDocument => _extractionResult?.Success == true;
+
+        /// <summary>
+        /// Cosa, salvando adesso, resterebbe fuori dai totali.
+        /// <para>
+        /// Sta in un punto solo perche' serve tre volte - il riquadro sopra il pulsante, il colore
+        /// del pulsante e la conferma - e tre condizioni scritte tre volte divergono.
+        /// </para>
+        /// </summary>
+        private List<string> ConversionWarnings
+        {
+            get
+            {
+                var warnings = new List<string>();
+
+                // Con piu' documenti la valuta sta su ogni nota, non sul modulo: guardare quella
+                // aggregata darebbe un avviso che non corrisponde a niente di salvato.
+                if (IsMultiDocument)
+                {
+                    var documentsWithoutCurrency = DocumentsWithoutCurrency();
+                    if (documentsWithoutCurrency.Count > 0)
+                        warnings.Add($"{documentsWithoutCurrency.Count} note spese su {_model.Documents.Count} "
+                                     + $"sono senza valuta: {string.Join(", ", documentsWithoutCurrency)}.");
+
+                    return warnings;
+                }
+
+                if (CurrencyMissing && _model.TotalAmount.HasValue)
+                    warnings.Add("La valuta non è indicata: la spesa resta «da convertire».");
+
+                if (!CurrencyMissing && _needsRate && !_model.ExchangeRate.HasValue)
+                    warnings.Add($"Manca il cambio da {_model.Currency?.Trim().ToUpperInvariant()} "
+                                 + $"a {_baseCurrency}: la spesa resta «da convertire».");
+
+                return warnings;
+            }
+        }
+
+        /// <summary>
+        /// Documenti dell'estrazione senza valuta, descritti in modo riconoscibile. Vuoto quando
+        /// il documento e' uno solo: quel caso lo copre gia' <see cref="CurrencyMissing"/>.
+        /// </summary>
+        private List<string> DocumentsWithoutCurrency()
+        {
+            if (_model.Documents == null || _model.Documents.Count < 2)
+                return new List<string>();
+
+            return _model.Documents
+                .Where(d => string.IsNullOrWhiteSpace(d.Currency) && d.TotalAmount.HasValue)
+                .Select(d => string.IsNullOrWhiteSpace(d.MerchantName)
+                    ? $"#{d.SortOrder + 1}"
+                    : $"#{d.SortOrder + 1} {d.MerchantName}")
+                .ToList();
+        }
+
         /// <summary>Il cambio serve solo se la spesa non e' gia' nella valuta di casa.</summary>
         private bool _needsRate =>
             !string.IsNullOrWhiteSpace(_model.Currency)
             && !string.Equals(_model.Currency.Trim(), _baseCurrency, StringComparison.OrdinalIgnoreCase);
 
+        [Inject] IJSRuntime JsRuntime { get; set; }
+
         protected override async Task OnInitializedAsync()
         {
+            await LoadKindPreferenceAsync();
+
             _model.TicketInterventionId = InterventionId;
             _model.IdActivity = ActivityId;
 
@@ -327,7 +552,7 @@ namespace CRM.Client.Pages.ExpenseReceipts
 
                 // 2. Process with Azure Form Recognizer
                 var processResponse = await Http.GetFromJsonAsync<ReceiptExtractionResult>(
-                    $"api/ReceiptProcessor/process/{_uploadedAttachmentFileId}");
+                    $"api/ReceiptProcessor/process/{_uploadedAttachmentFileId}?kind={_kind}");
 
                 _extractionResult = processResponse;
 
@@ -390,6 +615,13 @@ namespace CRM.Client.Pages.ExpenseReceipts
                     return;
                 }
 
+                // Salvare senza valuta resta possibile - lo scontrino illeggibile esiste, e
+                // costringere a inventarne una sarebbe peggio - ma deve essere una decisione presa,
+                // non una svista. Il riquadro sopra il pulsante si puo' scorrere senza vederlo;
+                // questa conferma no.
+                if (!await ConfirmIncompleteAsync())
+                    return;
+
                 _isSaving = true;
 
                 var isBatch = _model.Documents?.Count > 1;
@@ -401,7 +633,7 @@ namespace CRM.Client.Pages.ExpenseReceipts
                 {
                     if (isBatch)
                     {
-                        NavigationManager.NavigateTo(CancelUrl);
+                        NavigationManager.NavigateTo(ListUrlForSavedDate());
                         return;
                     }
 
@@ -439,6 +671,63 @@ namespace CRM.Client.Pages.ExpenseReceipts
             }
         }
 
+        /// <summary>
+        /// Chiede conferma quando la spesa nascerebbe gia' fuori dai totali. Restituisce true
+        /// anche quando non c'e' niente da segnalare, cosi' il chiamante ha una condizione sola.
+        /// </summary>
+        /// <summary>
+        /// Elenco su cui tornare dopo il salvataggio. Sull'elenco globale, che si apre sul mese
+        /// corrente, una spesa di due mesi fa non comparirebbe: si chiede allora di aprirlo su
+        /// tutto il periodo, altrimenti un salvataggio riuscito somiglia a uno fallito.
+        /// </summary>
+        private string ListUrlForSavedDate()
+        {
+            if (InterventionId.HasValue || ActivityId.HasValue)
+                return CancelUrl;
+
+            var date = EarliestSavedDate();
+            var today = DateTime.Today;
+
+            return date.HasValue && (date.Value.Year != today.Year || date.Value.Month != today.Month)
+                ? "/ExpenseReceipts?period=all"
+                : "/ExpenseReceipts";
+        }
+
+        private DateTime? EarliestSavedDate()
+        {
+            var dates = (_model.Documents ?? new List<ExpenseReceiptDocumentDTO>())
+                .Where(d => d.TransactionDate.HasValue)
+                .Select(d => d.TransactionDate.Value)
+                .ToList();
+
+            if (_model.TransactionDate.HasValue)
+                dates.Add(_model.TransactionDate.Value);
+
+            return dates.Count > 0 ? dates.Min() : null;
+        }
+
+        private async Task<bool> ConfirmIncompleteAsync()
+        {
+            var warnings = ConversionWarnings;
+            if (warnings.Count == 0)
+                return true;
+
+            var message = string.Join(" ", warnings)
+                + " Puoi salvare lo stesso e completare il dato più tardi, ma finché manca "
+                + "questa spesa non compare in nessun totale.";
+
+            var confirmed = await DialogService.Confirm(
+                message,
+                CurrencyMissing || DocumentsWithoutCurrency().Count > 0 ? "Valuta mancante" : "Cambio mancante",
+                new Radzen.ConfirmOptions
+                {
+                    OkButtonText = "Salva così",
+                    CancelButtonText = "Torna e completa"
+                });
+
+            return confirmed == true;
+        }
+
         private void ResetForm()
         {
             // "Ricarica altro" serve a inserire piu' scontrini di fila: chi ha speso quasi sempre
@@ -455,6 +744,7 @@ namespace CRM.Client.Pages.ExpenseReceipts
             };
             _rateUnavailable = false;
             _currencyCandidates.Clear();
+            _excludedDocuments.Clear();
             _extractionResult = null;
             _previewDataUrl = null;
             _uploadedAttachmentFileId = null;
@@ -482,7 +772,11 @@ namespace CRM.Client.Pages.ExpenseReceipts
                 DocumentType = document.DocumentType,
                 MerchantName = document.MerchantName,
                 TransactionDate = document.TransactionDate,
-                Currency = document.Currency,
+
+                // Se il singolo documento la valuta non la dichiara, vale quella riconosciuta sul
+                // file: gli scontrini di uno stesso PDF vengono da una trasferta sola. Resta una
+                // proposta modificabile riga per riga, non un'assunzione nascosta.
+                Currency = string.IsNullOrWhiteSpace(document.Currency) ? extraction.Currency : document.Currency,
                 SubtotalAmount = document.SubtotalAmount,
                 TaxAmount = document.TaxAmount,
                 TotalAmount = document.TotalAmount,

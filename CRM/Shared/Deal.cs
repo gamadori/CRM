@@ -34,6 +34,21 @@ namespace CRM.Shared
     {
         public int Id { get; set; }
 
+        /// <summary>
+        /// Attivita' da cui l'opportunita' e' nata: la visita, la chiamata, l'incontro in fiera.
+        /// <para>
+        /// Il collegamento va in questa direzione, e non dall'attivita' all'opportunita', perche'
+        /// e' quella che rende rispondibile la domanda vera - quante opportunita' nascono dalle
+        /// visite, cioe' se le visite servono. Sull'attivita' sarebbe un campo buono solo a
+        /// disegnare un link.
+        /// </para>
+        /// <para>
+        /// L'attivita' NON viene riagganciata all'opportunita': la visita e' avvenuta prima che
+        /// l'opportunita' esistesse, e resta legata al cliente che si e' andati a trovare.
+        /// </para>
+        /// </summary>
+        public int? IdActivityOrigin { get; set; }
+
         [Display(Name = nameof(Deal.Date), ResourceType = typeof(Resources.Models.Deal))]
         public DateTime Date { get; set; }
 

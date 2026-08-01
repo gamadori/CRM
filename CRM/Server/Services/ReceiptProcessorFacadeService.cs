@@ -1,4 +1,4 @@
-using CRM.Server.Data;
+﻿using CRM.Server.Data;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +32,8 @@ namespace CRM.Server.Services
         public async Task<ReceiptExtractionResult> ProcessReceiptAsync(
             int attachmentFileId,
             bool useCustomModel = false,
-            string customModelId = null)
+            string customModelId = null,
+            ReceiptDocumentKind kind = ReceiptDocumentKind.Unknown)
         {
             try
             {
@@ -47,7 +48,7 @@ namespace CRM.Server.Services
                 if (fileBytes == null || fileBytes.Length == 0)
                     return Error("File vuoto o non trovato nell'archivio");
 
-                return await _analyzer.AnalyzeAsync(fileBytes, file.Name, useCustomModel, customModelId);
+                return await _analyzer.AnalyzeAsync(fileBytes, file.Name, useCustomModel, customModelId, kind);
             }
             catch (Exception ex)
             {
@@ -60,8 +61,9 @@ namespace CRM.Server.Services
             byte[] fileBytes,
             string fileName,
             bool useCustomModel = false,
-            string customModelId = null) =>
-            _analyzer.AnalyzeAsync(fileBytes, fileName, useCustomModel, customModelId);
+            string customModelId = null,
+            ReceiptDocumentKind kind = ReceiptDocumentKind.Unknown) =>
+            _analyzer.AnalyzeAsync(fileBytes, fileName, useCustomModel, customModelId, kind);
 
         public Task<bool> HealthCheckAsync() => _analyzer.HealthCheckAsync();
 

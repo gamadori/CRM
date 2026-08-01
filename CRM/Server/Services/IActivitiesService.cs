@@ -1,4 +1,4 @@
-using CRM.Client.Models;
+﻿using CRM.Client.Models;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 
@@ -9,6 +9,9 @@ namespace CRM.Server.Services
         Task<List<ActivityDTO>?> GetByEntityAsync(ActivityEntityType entityType, int entityId);
         Task<List<ActivityDTO>?> GetMyAgendaAsync(ActivityFilter? args);
         Task<ActivityDTO?> GetItemAsync(int id);
+
+        /// <summary>Opportunita' e preventivi nati da questa attivita'.</summary>
+        Task<ActivityOutcomeDTO> GetOutcomeAsync(int id);
         Task<APIResponseMessage<ActivityDTO>> PostAsync(Activity item);
         Task<APIResponseMessage<ActivityDTO>> CompleteAsync(int id, ActivityCompletionRequest? completion = null);
         Task<bool> DeleteAsync(int id);

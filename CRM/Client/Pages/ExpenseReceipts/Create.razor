@@ -12,6 +12,7 @@
 @using CRM.Client.Services
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
+@inject Radzen.DialogService DialogService
 @inject IBaseRestService<ApplicationUser, UsersFilterModel, string> _userService
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize
 
@@ -189,48 +190,46 @@ else
                                     </div>
                                 }
 
-                                @if (_extractionResult.DocumentResults != null && _extractionResult.DocumentResults.Count > 1)
+                                @if (IsMultiDocument)
                                 {
                                     <div class="alert alert-info mb-3">
-                                        <div class="fw-semibold mb-2">
-                                            @Localize["MultiDocumentPdfDetected", _extractionResult.DocumentResults.Count]
+                                        <div class="fw-semibold">
+                                            @Localize["MultiDocumentPdfDetected", _model.Documents.Count]
                                         </div>
-                                        <div class="small text-muted mb-2">
-                                            @Localize["SeparateExpenseReceiptsWillBeCreated"]
+                                        <div class="small text-muted">
+                                            Verranno create <strong>@_model.Documents.Count note spese distinte</strong>,
+                                            una per documento, tutte collegate a questo file. Ognuna ha i suoi importi
+                                            e la sua valuta: controllale qui sotto prima di salvare.
                                         </div>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-bordered align-middle mb-0 bg-white">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th>@Localize["Document"]</th>
-                                                        <th>@Localize["Merchant"]</th>
-                                                        <th>@Localize["Date"]</th>
-                                                        <th class="text-end">@Localize["Total"]</th>
-                                                        <th class="text-end">@Localize["Tax"]</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @for (var i = 0; i < _extractionResult.DocumentResults.Count; i++)
-                                                    {
-                                                        var doc = _extractionResult.DocumentResults[i];
-                                                        <tr>
-                                                            <td>@(i + 1)</td>
-                                                            <td>@(doc.MerchantName ?? "-")</td>
-                                                            <td>@(doc.TransactionDate?.ToString("dd/MM/yyyy") ?? "-")</td>
-                                                            <td class="text-end">@FormatReceiptAmount(doc.TotalAmount, doc.Currency)</td>
-                                                            <td class="text-end">@FormatReceiptAmount(doc.TaxAmount, doc.Currency)</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                                <tfoot class="table-light">
-                                                    <tr>
-                                                        <th colspan="3">@Localize["CombinedTotal"]</th>
-                                                        <th class="text-end">@FormatReceiptAmount(_extractionResult.TotalAmount, _extractionResult.Currency)</th>
-                                                        <th class="text-end">@FormatReceiptAmount(_extractionResult.TaxAmount, _extractionResult.Currency)</th>
-                                                    </tr>
-                                                </tfoot>
-                                            </table>
-                                        </div>
+
+                                        @* Un PDF di scontrini e' quasi sempre di una trasferta sola, quindi
+                                           di una valuta sola: compilarle una per una sarebbe lavoro inutile
+                                           nel caso normale. *@
+                                        @if (DocumentsWithoutCurrency().Count > 0 && !string.IsNullOrWhiteSpace(CurrencyToApply))
+                                        {
+                                            <button type="button" class="btn btn-sm btn-warning mt-2"
+                                                    @onclick="ApplyCurrencyToAllDocuments">
+                                                Imposta @CurrencyToApply su tutte
+                                            </button>
+                                        }
+                                    </div>
+                                }
+
+                                @* Escludere non e' cancellare: finche' non si salva si puo' rimettere,
+                                   altrimenti per un clic sbagliato tocca ricaricare il file. *@
+                                @if (_excludedDocuments.Any())
+                                {
+                                    <div class="alert alert-secondary d-flex align-items-center gap-2 py-2">
+                                        <i class="material-icons" style="font-size:18px;">block</i>
+                                        <span class="small flex-fill">
+                                            @_excludedDocuments.Count
+                                            @(_excludedDocuments.Count == 1 ? "documento escluso" : "documenti esclusi")
+                                            dal lotto: @string.Join(", ", _excludedDocuments.Select(DescribeDocument))
+                                        </span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                @onclick="RestoreExcludedDocuments">
+                                            Ripristina
+                                        </button>
                                     </div>
                                 }
                             }
@@ -246,6 +245,81 @@ else
                                 <DataAnnotationsValidator />
                                 <ValidationSummary />
 
+                                @* Con piu' documenti ogni nota spese ha la sua scheda: i campi in comune
+                                   restano fuori (chi ha speso, note, conferma), quelli che appartengono
+                                   al singolo documento stanno dentro. I campi aggregati che c'erano prima
+                                   - un esercente "A / B", un totale sommato, una valuta sola - non
+                                   corrispondevano a niente di cio' che veniva salvato. *@
+                                @if (IsMultiDocument)
+                                {
+                                    @foreach (var doc in _model.Documents)
+                                    {
+                                        var missing = string.IsNullOrWhiteSpace(doc.Currency);
+                                        <div class="card mb-3 @(missing ? "border-warning" : "")">
+                                            <div class="card-header d-flex align-items-center gap-2 @(missing ? "bg-warning-subtle" : "bg-light")">
+                                                <i class="material-icons" style="font-size:18px;">receipt_long</i>
+                                                <strong>Nota spese @(doc.SortOrder + 1) di @_model.Documents.Count</strong>
+                                                @if (doc.PageFrom.HasValue)
+                                                {
+                                                    <span class="small text-muted">
+                                                        (pag. @doc.PageFrom@(doc.PageTo > doc.PageFrom ? $"-{doc.PageTo}" : ""))
+                                                    </span>
+                                                }
+                                                @if (missing)
+                                                {
+                                                    <span class="badge bg-warning text-dark ms-auto">valuta da indicare</span>
+                                                }
+                                                @* Nessuna euristica indovina sempre se due pagine sono la
+                                                   stessa fattura: chi guarda il documento lo sa, e deve
+                                                   poterlo dire. *@
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-secondary @(missing ? "" : "ms-auto")"
+                                                        title="Toglila dal lotto: fa parte del documento precedente"
+                                                        @onclick="() => ExcludeDocument(doc)">
+                                                    <i class="material-icons align-middle" style="font-size:16px;">block</i>
+                                                    Non è una nota spese a sé
+                                                </button>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row g-2">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small">@Localize["Merchant"]</label>
+                                                        <input class="form-control" @bind="doc.MerchantName" />
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label small">@Localize["TransactionDate"]</label>
+                                                        <input type="date" class="form-control" @bind="doc.TransactionDate" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label small">@Localize["TotalAmount"] *</label>
+                                                        <input type="number" step="0.01" class="form-control" @bind="doc.TotalAmount" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label small">@Localize["Tax"]</label>
+                                                        <input type="number" step="0.01" class="form-control" @bind="doc.TaxAmount" />
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label small">@Localize["Currency"]</label>
+                                                        <input class="@(missing ? "form-control is-invalid" : "form-control")"
+                                                               placeholder="da indicare"
+                                                               @bind="doc.Currency" @bind:event="oninput" />
+                                                    </div>
+                                                </div>
+
+                                                @if (missing)
+                                                {
+                                                    <div class="small text-warning-emphasis mt-2">
+                                                        <i class="material-icons align-middle" style="font-size:16px;">report_problem</i>
+                                                        Senza valuta questa nota resta <strong>da convertire</strong>
+                                                        e non entra in nessun totale.
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
                                 <div class="mb-3">
                                     <label class="form-label">
                                         <i class="material-icons align-middle" style="font-size:18px;">store</i>
@@ -280,38 +354,72 @@ else
                                     <ValidationMessage For="@(() => _model.TaxAmount)" />
                                 </div>
 
-                                <div class="mb-3">
+                                @* La valuta mancante non e' un dettaglio: senza, la spesa non entra
+                                   in nessun totale. Va detto dove si guarda, non in una riga di
+                                   aiuto sotto il campo. *@
+                                <div class="mb-3 @(CurrencyMissing ? "currency-missing" : "")">
                                     <label class="form-label">
                                         <i class="material-icons align-middle" style="font-size:18px;">payments</i>
                                         @Localize["Currency"]
+                                        @if (CurrencyMissing)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-1">da indicare</span>
+                                        }
                                     </label>
-                                    <InputText @bind-Value="_model.Currency" class="form-control" placeholder="@_baseCurrency"
+                                    <InputText @bind-Value="_model.Currency"
+                                               class="@(CurrencyMissing ? "form-control is-invalid" : "form-control")"
+                                               placeholder="da indicare"
                                                @onblur="ProposeExchangeRate" />
 
-                                    @* Il simbolo sullo scontrino c'e' quasi sempre; il codice ISO quasi mai.
-                                       Invece di dire "non rilevata" davanti a un "$" bello visibile, si
-                                       propongono le valute compatibili e si chiede una conferma. *@
-                                    @if (_currencyCandidates.Any() && string.IsNullOrWhiteSpace(_model.Currency))
+                                    @if (CurrencyMissing)
                                     {
-                                        <div class="mt-2">
-                                            <div class="form-text mb-1">
-                                                Letto <strong>@_extractionResult.CurrencySymbol</strong> sullo scontrino:
-                                                usato da più valute, conferma quale.
+                                        <div class="alert alert-warning mt-2 mb-0 py-2 px-3">
+                                            <div class="d-flex align-items-start gap-2">
+                                                <i class="material-icons" style="font-size:20px;">report_problem</i>
+                                                <div class="flex-fill">
+                                                    @* Due situazioni diverse, e conviene distinguerle: un simbolo
+                                                       ambiguo si conferma con un clic, un documento che la valuta
+                                                       non la scrive proprio va compilato a mano. *@
+                                                    @if (_currencyCandidates.Any())
+                                                    {
+                                                        <div class="fw-semibold">
+                                                            Sul documento c'è <strong>@_extractionResult?.CurrencySymbol</strong>,
+                                                            che appartiene a più valute: conferma quale.
+                                                        </div>
+                                                    }
+                                                    else if (ReadFromDocument)
+                                                    {
+                                                        <div class="fw-semibold">
+                                                            Valuta non trovata sul documento.
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="fw-semibold">
+                                                            Valuta non indicata.
+                                                        </div>
+                                                    }
+                                                    <div class="small mt-1">
+                                                        Finché manca, questa spesa resta <strong>da convertire</strong>:
+                                                        non entra nei totali del periodo, né in quelli della persona.
+                                                    </div>
+
+                                                    <div class="btn-group btn-group-sm flex-wrap mt-2" role="group">
+                                                        @foreach (var c in _currencyCandidates)
+                                                        {
+                                                            <button type="button" class="btn btn-warning"
+                                                                    @onclick="() => PickCurrency(c)">@c</button>
+                                                        }
+                                                        @* Quasi tutte le spese sono nella valuta di casa: il caso
+                                                           normale deve costare un clic. Resta una scelta esplicita,
+                                                           non il ripiego automatico che marcava EUR ogni scontrino. *@
+                                                        <button type="button" class="btn btn-outline-secondary"
+                                                                @onclick="() => PickCurrency(_baseCurrency)">
+                                                            È in @_baseCurrency
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div class="btn-group btn-group-sm flex-wrap" role="group">
-                                                @foreach (var c in _currencyCandidates)
-                                                {
-                                                    <button type="button" class="btn btn-outline-primary"
-                                                            @onclick="() => PickCurrency(c)">@c</button>
-                                                }
-                                            </div>
-                                        </div>
-                                    }
-                                    else if (string.IsNullOrWhiteSpace(_model.Currency))
-                                    {
-                                        <div class="form-text text-warning">
-                                            Valuta non riconosciuta dallo scontrino: indicala, altrimenti la spesa
-                                            non entra nei totali.
                                         </div>
                                     }
                                 </div>
@@ -362,7 +470,10 @@ else
                                     </label>
                                     <InputTextArea @bind-Value="_model.Description" class="form-control" rows="3" />
                                 </div>
+                                }
 
+                                @* Da qui in giu' i campi valgono per tutto quello che si sta salvando,
+                                   una nota o dieci. *@
                                 <div class="mb-3">
                                     <label class="form-label">
                                         <i class="material-icons align-middle" style="font-size:18px;">note</i>
@@ -378,8 +489,28 @@ else
                                     </label>
                                 </div>
 
+                                @* Riepilogo di cosa non tornera' nei conti, subito sopra il pulsante:
+                                   e' l'ultimo punto in cui si guarda prima di salvare, ed e' li' che
+                                   l'avviso ha ancora la possibilita' di cambiare qualcosa. *@
+                                @if (ConversionWarnings.Any())
+                                {
+                                    <div class="alert alert-warning d-flex align-items-start gap-2">
+                                        <i class="material-icons">warning</i>
+                                        <div>
+                                            <div class="fw-semibold">Salvando adesso, non entra nei totali:</div>
+                                            <ul class="mb-0 ps-3 small">
+                                                @foreach (var warning in ConversionWarnings)
+                                                {
+                                                    <li>@warning</li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    </div>
+                                }
+
                                 <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-success flex-fill" disabled="@_isSaving">
+                                    <button type="submit" class="btn @(ConversionWarnings.Any() ? "btn-warning" : "btn-success") flex-fill"
+                                            disabled="@_isSaving">
                                         @if (_isSaving)
                                         {
                                             <span class="spinner-border spinner-border-sm me-2"></span>
@@ -411,6 +542,35 @@ else
                             </h5>
                         </div>
                         <div class="card-body">
+
+                            @* Dichiarare che cosa si carica fa risparmiare un'analisi Azure sui PDF:
+                               senza, il file viene letto due volte, come fattura e come scontrini,
+                               perche' dall'esterno i due casi sono indistinguibili. Resta
+                               facoltativo - "Non lo so" e' il comportamento di prima. *@
+                            <div class="mb-3">
+                                <div class="form-label mb-1">Che cosa stai caricando?</div>
+                                <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Tipo di documento">
+                                    <button type="button"
+                                            class="@KindButtonClass(ReceiptDocumentKind.Unknown)"
+                                            @onclick="() => SetKind(ReceiptDocumentKind.Unknown)">
+                                        Non lo so
+                                    </button>
+                                    <button type="button"
+                                            class="@KindButtonClass(ReceiptDocumentKind.Invoice)"
+                                            @onclick="() => SetKind(ReceiptDocumentKind.Invoice)">
+                                        <i class="material-icons align-middle" style="font-size:16px;">description</i>
+                                        Una fattura
+                                    </button>
+                                    <button type="button"
+                                            class="@KindButtonClass(ReceiptDocumentKind.Receipts)"
+                                            @onclick="() => SetKind(ReceiptDocumentKind.Receipts)">
+                                        <i class="material-icons align-middle" style="font-size:16px;">receipt</i>
+                                        Scontrini
+                                    </button>
+                                </div>
+                                <div class="form-text">@KindHint</div>
+                            </div>
+
                             <div class="upload-zone mb-3">
                                 <InputFile @ref="_inputFile" OnChange="OnFileSelected" accept="image/*,.pdf"
                                            class="d-none" id="receipt-file" />
@@ -452,6 +612,14 @@ else
 }
 
 <style>
+    /* Il blocco della valuta mancante si stacca dal resto del modulo: e' l'unico campo che, se
+       resta vuoto, fa nascere la spesa fuori dai totali. */
+    .currency-missing {
+        border-left: 4px solid #ffc107;
+        padding-left: .75rem;
+        margin-left: -.75rem;
+    }
+
     .upload-zone {
         border: 3px dashed #dee2e6;
         border-radius: 8px;

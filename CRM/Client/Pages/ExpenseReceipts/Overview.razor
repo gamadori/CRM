@@ -119,7 +119,24 @@
                 <span class="material-icons">receipt_long</span>
                 <div>
                     <div class="empty-title">@Localize["NoExpenseReceiptsInPeriod"]</div>
-                    <div class="empty-text">@Localize["ChangePeriodOrFilter"]</div>
+                    @* Registrare uno scontrino vecchio e non ritrovarlo somiglia troppo a un
+                       salvataggio fallito: se ce ne sono fuori dal periodo, lo si dice e si offre
+                       il modo di vederle, invece di lasciarlo dedurre da un elenco vuoto. *@
+                    @if (_countOutsidePeriod > 0)
+                    {
+                        <div class="empty-text">
+                            Ce ne @(_countOutsidePeriod == 1 ? "è" : "sono")
+                            <strong>@_countOutsidePeriod</strong> fuori da questo periodo:
+                            quella che hai appena registrato potrebbe essere fra queste.
+                        </div>
+                        <button type="button" class="btn-link-inline" @onclick='() => SetPeriod("all")'>
+                            Mostra tutte le note spese
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="empty-text">@Localize["ChangePeriodOrFilter"]</div>
+                    }
                 </div>
             </div>
         }

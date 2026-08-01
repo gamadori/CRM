@@ -1,4 +1,4 @@
-@page "/Deals/{Id:int}/Details"
+﻿@page "/Deals/{Id:int}/Details"
 @using CRM.Shared.DTOs
 @using CRM.Shared.Helper
 @using Radzen.Blazor
@@ -85,6 +85,22 @@
                     <ChildContent><p class="mb-0 text-dark">@(_deal.DateClosed == default ? "-" : _deal.DateClosed.ToString("dd/MM/yyyy"))</p></ChildContent>
                 </RedGDetailField>
             </RedGDetailSection>
+
+            @* Da dove nasce l'opportunita'. Compare solo quando c'e': un'opportunita' creata a
+               mano non ha un'origine da mostrare, e una riga vuota sarebbe solo rumore. *@
+            @if (_deal.IdActivityOrigin.HasValue)
+            {
+                <RedGDetailSection Title="Origine" Icon="event_available">
+                    <RedGDetailField Icon="event_available">
+                        <LabelContent>Nata da</LabelContent>
+                        <ChildContent>
+                            <a href="/Activities/@_deal.IdActivityOrigin/Info" class="text-decoration-none">
+                                <strong>@OriginLabel</strong>
+                            </a>
+                        </ChildContent>
+                    </RedGDetailField>
+                </RedGDetailSection>
+            }
 
             @if (!string.IsNullOrWhiteSpace(_deal.Note))
             {

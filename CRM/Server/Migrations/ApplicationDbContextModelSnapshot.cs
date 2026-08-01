@@ -1266,6 +1266,9 @@ namespace CRM.Server.Migrations
                     b.Property<int>("IdCompany")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdActivityOrigin")
+                        .HasColumnType("int");
+
                     b.Property<int?>("IdContact")
                         .HasColumnType("int");
 
@@ -1296,6 +1299,8 @@ namespace CRM.Server.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ExpectedCloseDate");
+
+                    b.HasIndex("IdActivityOrigin");
 
                     b.HasIndex("IdCompany");
 
@@ -3178,6 +3183,9 @@ namespace CRM.Server.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("IdActivityOrigin")
+                        .HasColumnType("int");
+
                     b.Property<int>("IdCompany")
                         .HasColumnType("int");
 
@@ -3230,6 +3238,8 @@ namespace CRM.Server.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IdActivityOrigin");
 
                     b.HasIndex("IdCompany");
 

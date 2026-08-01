@@ -51,6 +51,24 @@ namespace CRM.Server.Controllers
             }
         }
 
+        /// <summary>
+        /// Che cosa ha prodotto l'attivita': opportunita' e preventivi nati da qui. E' la lettura
+        /// speculare del collegamento, quella che risponde a "questa visita a cosa ha portato".
+        /// </summary>
+        [HttpGet("{id}/outcome")]
+        public async Task<ActionResult<ActivityOutcomeDTO>> GetOutcome(int id)
+        {
+            try
+            {
+                return Ok(await _activitiesService.GetOutcomeAsync(id));
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(ActivitiesController), nameof(GetOutcome), LogEvent.EventsTypes.Error, ex);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<ActivityDTO?>> GetItem(int id)
         {

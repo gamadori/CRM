@@ -1,4 +1,4 @@
-@page "/Quotes/{Id:int}/Details"
+﻿@page "/Quotes/{Id:int}/Details"
 @using CRM.Client.Models
 @using CRM.Client.Services
 @using CRM.Shared
@@ -11,6 +11,7 @@
 @attribute [Authorize]
 @inject IQuoteService QuoteService
 @inject IOrderService OrderService
+@inject IActivityService ActivityService
 @inject IHeaderService HeaderService
 @inject NavigationManager Nav
 @inject DialogService DialogService
@@ -97,6 +98,15 @@ else
                 <div class="col-md-3"><small class="text-muted d-block">Contatto</small>@(string.IsNullOrEmpty(_quote.ContactName) ? "—" : _quote.ContactName)</div>
                 <div class="col-md-3"><small class="text-muted d-block">Trattativa</small>@(string.IsNullOrEmpty(_quote.DealName) ? "—" : _quote.DealName)</div>
                 <div class="col-md-3"><small class="text-muted d-block">Owner</small>@_quote.UserName</div>
+                @if (_quote.IdActivityOrigin.HasValue)
+                {
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Nato da</small>
+                        <a href="/Activities/@_quote.IdActivityOrigin/Info" class="text-decoration-none">
+                            @OriginLabel
+                        </a>
+                    </div>
+                }
                 @if (_quote.LastSentAt.HasValue)
                 {
                     <div class="col-md-3">
@@ -333,6 +343,32 @@ else
     private async Task Load()
     {
         _quote = await QuoteService.GetItemAsync(Id);
+        await LoadOriginAsync(_quote?.IdActivityOrigin);
+    }
+
+    /// <summary>
+    /// Attivita' da cui il preventivo e' nato, caricata solo quando c'e' l'origine.
+    /// </summary>
+    private ActivityDTO? _origin;
+
+    private string OriginLabel => _origin == null
+        ? "Attività collegata"
+        : $"{_origin.Subject} del {(_origin.DoneDate ?? _origin.DueDate ?? _origin.CreatedAt):dd/MM/yyyy}";
+
+    private async Task LoadOriginAsync(int? idActivity)
+    {
+        _origin = null;
+        if (idActivity == null)
+            return;
+
+        try
+        {
+            _origin = await ActivityService.GetAsync(idActivity.Value);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Attività di origine non caricata: {ex.Message}");
+        }
     }
 
     private async Task CreateOrder()

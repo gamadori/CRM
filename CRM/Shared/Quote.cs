@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -23,6 +23,12 @@ namespace CRM.Shared
     {
         [Key]
         public int Id { get; set; }
+
+        /// <summary>
+        /// Attivita' da cui la richiesta di preventivo e' nata. Stessa direzione e stesso motivo
+        /// di <see cref="Deal.IdActivityOrigin"/>.
+        /// </summary>
+        public int? IdActivityOrigin { get; set; }
 
         [Display(Name = "Numero")]
         public string? Number { get; set; }

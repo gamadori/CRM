@@ -1,4 +1,4 @@
-using CRM.Client.Helpers;
+﻿using CRM.Client.Helpers;
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
@@ -54,6 +54,17 @@ namespace CRM.Client.Pages.Deals
 
         [Parameter]
         public int? IdCompany { get; set; }
+
+        /// <summary>
+        /// Attivita' da cui si arriva: "/Deals/New?fromActivity=19". La visita ha gia' detto chi
+        /// e' il cliente e com'e' andata, quindi il modulo si apre compilato invece di chiedere
+        /// di nuovo le stesse cose.
+        /// </summary>
+        [SupplyParameterFromQuery(Name = "fromActivity")]
+        public int? FromActivity { get; set; }
+
+        [Inject]
+        private IActivityService ActivityService { get; set; } = default!;
 
         [Parameter]
         public Action? OnClickSave { get; set; }
@@ -113,6 +124,8 @@ namespace CRM.Client.Pages.Deals
                     };
 
                     _lockCompany = IdCompany != null;
+
+                    await ApplyActivityOriginAsync();
                 }
 
                 await LoadContacts();
@@ -121,6 +134,61 @@ namespace CRM.Client.Pages.Deals
             finally
             {
                 _loading = false;
+            }
+        }
+
+        /// <summary>
+        /// Precompila l'opportunita' con quello che la visita sa gia': cliente, contatto, e la
+        /// relazione di chiusura come nota. Registra anche da dove nasce - e' quel campo che un
+        /// domani risponde a "quante opportunita' portano le visite".
+        /// </summary>
+        private async Task ApplyActivityOriginAsync()
+        {
+            if (FromActivity == null || _deal == null)
+                return;
+
+            var activity = await ActivityService.GetAsync(FromActivity.Value);
+            if (activity == null)
+                return;
+
+            _deal.IdActivityOrigin = activity.Id;
+            _deal.Name = string.IsNullOrWhiteSpace(activity.Subject)
+                ? _deal.Name
+                : activity.Subject;
+
+            // Il cliente si eredita solo da un'attivita' che ce l'ha: su un lead o un ticket
+            // l'azienda si ricava altrove, e indovinarla qui sarebbe peggio che lasciarla vuota.
+            if (activity.EntityType == ActivityEntityType.Company)
+            {
+                _deal.IdCompany = activity.EntityId;
+                _lockCompany = true;
+            }
+            else if (activity.EntityType == ActivityEntityType.Contact)
+            {
+                _deal.IdContact = activity.EntityId;
+                _deal.IdCompany = await CompanyOfContactAsync(activity.EntityId) ?? _deal.IdCompany;
+                _lockCompany = _deal.IdCompany != null;
+            }
+
+            var story = new[] { activity.CompletionNotes, activity.NextStep }
+                .Where(x => !string.IsNullOrWhiteSpace(x));
+
+            _deal.Note = string.Join(Environment.NewLine + Environment.NewLine, story);
+
+            if (!string.IsNullOrWhiteSpace(activity.IdAssignee))
+                _deal.IdUser = activity.IdAssignee;
+        }
+
+        private async Task<int?> CompanyOfContactAsync(int idContact)
+        {
+            try
+            {
+                var contact = await ContactsService.GetItemAsync(idContact);
+                return contact?.IdCompany;
+            }
+            catch
+            {
+                return null;
             }
         }
 

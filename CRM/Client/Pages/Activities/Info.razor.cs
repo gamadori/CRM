@@ -1,7 +1,9 @@
+﻿using CRM.Client.Helpers;
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
+using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Components;
 using Radzen;
 using System;
@@ -39,6 +41,8 @@ namespace CRM.Client.Pages.Activities
 
         [Inject] HttpClient Http { get; set; }
 
+        [Inject] NotificationService Notification { get; set; }
+
         [Parameter] public int Id { get; set; }
 
         /// <summary>
@@ -52,7 +56,24 @@ namespace CRM.Client.Pages.Activities
         private PageHeaderModel _pageHeader;
         private ActivityViews _view = ActivityViews.Dati;
         private bool _loading = true;
+        private bool _completing;
         private int _expensesCount;
+
+        /// <summary>Opportunita' e preventivi nati da questa visita.</summary>
+        private ActivityOutcomeDTO _outcome;
+
+        /// <summary>Valuta in cui si esprimono gli importi commerciali.</summary>
+        private string _baseCurrency = "EUR";
+
+        /// <summary>
+        /// Si completa quello che e' ancora aperto, e solo se si ha il diritto di modificarlo:
+        /// stessa condizione della riga in agenda, cosi' la scheda non offre un'azione che
+        /// l'elenco nega (o viceversa).
+        /// </summary>
+        private bool CanComplete =>
+            _activity != null
+            && _activity.State == ActivityState.Planned
+            && _activity.Permits.Edit();
 
         private string ExpensesTabText => _expensesCount > 0
             ? $"Note spese ({_expensesCount})"
@@ -121,6 +142,7 @@ namespace CRM.Client.Pages.Activities
                     _pageHeader.Subtitle = _activity.Subject;
 
                 await LoadExpensesCountAsync();
+                await LoadOutcomeAsync();
             }
             catch (Exception ex)
             {
@@ -153,6 +175,92 @@ namespace CRM.Client.Pages.Activities
                 Console.Error.WriteLine($"Conteggio note spese non disponibile: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// Che cosa e' nato dalla visita. Se non arriva, il riquadro semplicemente non compare:
+        /// e' una lettura in piu', non un dato senza il quale la scheda non ha senso.
+        /// </summary>
+        private async Task LoadOutcomeAsync()
+        {
+            try
+            {
+                _outcome = await Http.GetFromJsonAsync<ActivityOutcomeDTO>($"api/Activities/{Id}/outcome");
+            }
+            catch (Exception ex)
+            {
+                _outcome = null;
+                Console.Error.WriteLine($"Esiti dell'attività non disponibili: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Completamento con le stesse regole dell'agenda: per incontri, chiamate e incombenze si
+        /// chiede prima esito e prossima azione, perche' e' li' che sta il valore di averle
+        /// registrate; per una nota o un'email si chiude e basta.
+        /// </summary>
+        private async Task CompleteActivity()
+        {
+            if (!CanComplete)
+                return;
+
+            ActivityCompletionRequest completion = null;
+
+            if (RequiresCompletionDetails(_activity.Kind))
+            {
+                completion = await DialogService.OpenAsync<ActivityCompleteDialog>(
+                    "Completa attività",
+                    new Dictionary<string, object>
+                    {
+                        ["Kind"] = _activity.Kind,
+                        ["Subject"] = _activity.Subject,
+                        ["EntityType"] = _activity.EntityType,
+                        ["DefaultAssigneeId"] = _activity.IdAssignee
+                    },
+                    new DialogOptions
+                    {
+                        Width = "680px",
+                        Height = "auto",
+                        Resizable = false,
+                        Draggable = true
+                    }) as ActivityCompletionRequest;
+
+                // Dialogo annullato: non si completa niente di nascosto.
+                if (completion == null)
+                    return;
+            }
+
+            try
+            {
+                _completing = true;
+
+                var response = await ActivityService.CompleteAsync(Id, completion);
+
+                if (!response.State)
+                {
+                    Notification.Notify(NotificationSeverity.Error, "Errore",
+                        response.Message ?? "Operazione fallita");
+                    return;
+                }
+
+                // Stessa regola dell'agenda: se dalla visita nasce qualcosa, si arriva al modulo
+                // gia' compilato invece di doverlo cercare in un altro menu.
+                var next = Agenda.FollowUpUrl(Id, completion);
+                if (next != null)
+                {
+                    Nav.NavigateTo(next);
+                    return;
+                }
+
+                await LoadAsync();
+            }
+            finally
+            {
+                _completing = false;
+            }
+        }
+
+        private static bool RequiresCompletionDetails(ActivityKind kind)
+            => kind is ActivityKind.Meeting or ActivityKind.Call or ActivityKind.Task;
 
         private async Task EditActivity()
         {

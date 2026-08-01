@@ -1,4 +1,4 @@
-@page "/Agenda"
+﻿@page "/Agenda"
 @using CRM.Client.Models
 @using CRM.Client.Services
 @using CRM.Client.Helpers
@@ -132,12 +132,24 @@
                                 <div class="agenda-row">
                                     <span class="material-icons agenda-row-icon" style="@($"color:{item.Color}")">@Icon(item)</span>
                                     <div class="agenda-row-body">
+                                        @* Il titolo apre cio' che e' scritto nel titolo: Url ora
+                                           significa "l'elemento stesso" per ogni tipo di riga. *@
                                         <a href="@item.Url" class="agenda-row-title">@item.Title</a>
                                         <div class="agenda-row-meta">
                                             @item.Start.ToString("dd/MM HH:mm")
                                             @if (!string.IsNullOrWhiteSpace(item.Subtitle))
                                             {
-                                                <span> - @item.Subtitle</span>
+                                                <span> - </span>
+                                                @* Il cliente resta a un clic, ma da dove ci si aspetta
+                                                   di trovarlo: dal suo nome. *@
+                                                @if (!string.IsNullOrWhiteSpace(item.EntityUrl))
+                                                {
+                                                    <a href="@item.EntityUrl" class="agenda-row-entity">@item.Subtitle</a>
+                                                }
+                                                else
+                                                {
+                                                    <span>@item.Subtitle</span>
+                                                }
                                             }
                                             @if (!string.IsNullOrWhiteSpace(item.AssigneeName))
                                             {
@@ -389,6 +401,18 @@
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+
+    /* Il cliente resta discreto quanto il resto della riga: non deve competere con il titolo,
+       che e' la destinazione principale. */
+    .agenda-row-entity {
+        color: inherit;
+        text-decoration: none;
+    }
+
+        .agenda-row-entity:hover {
+            color: var(--crm-primary, #2563eb);
+            text-decoration: underline;
+        }
 
     .agenda-legend {
         display: flex;
@@ -648,6 +672,7 @@
             return;
         }
 
+        // Stessa regola della riga in elenco: si apre l'appuntamento, non il cliente collegato.
         if (!string.IsNullOrEmpty(args.Data.Url))
             Nav.NavigateTo(args.Data.Url);
     }
@@ -687,6 +712,7 @@
                 {
                     ["Kind"] = item.ActivityKind.Value,
                     ["Subject"] = item.Title,
+                    ["EntityType"] = item.EntityType ?? ActivityEntityType.Company,
                     ["DefaultAssigneeId"] = item.IdAssignee
                 },
                 new DialogOptions
@@ -702,10 +728,22 @@
         }
 
         var resp = await ActivityService.CompleteAsync(item.SourceId, completion);
-        if (resp.State)
-            await Load();
-        else
+        if (!resp.State)
+        {
             Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Operazione fallita"]);
+            return;
+        }
+
+        // Chiusa l'attivita', si va dove il seguito ha detto di andare: il modulo si apre gia'
+        // compilato con cliente e relazione, cosi' non si ridigita niente.
+        var next = FollowUpUrl(item.SourceId, completion);
+        if (next != null)
+        {
+            Nav.NavigateTo(next);
+            return;
+        }
+
+        await Load();
     }
 
     private async Task NewActivity()
@@ -867,6 +905,18 @@
 
     private static bool RequiresCompletionDetails(ActivityKind kind)
         => kind is ActivityKind.Meeting or ActivityKind.Call or ActivityKind.Task;
+
+    /// <summary>
+    /// Dove portare dopo la chiusura, secondo il seguito scelto. Null quando non ne segue niente:
+    /// il chiamante resta dov'e' e ricarica.
+    /// </summary>
+    internal static string? FollowUpUrl(int idActivity, ActivityCompletionRequest? completion)
+        => completion?.FollowUpTarget switch
+        {
+            ActivityFollowUpTarget.Deal => $"/Deals/New?fromActivity={idActivity}",
+            ActivityFollowUpTarget.Quote => $"/Quotes/New?fromActivity={idActivity}",
+            _ => null
+        };
 
     /// <summary>
     /// Solo le attivita' che comportano un'uscita: un incontro o un'incombenza da svolgere.

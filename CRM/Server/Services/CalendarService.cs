@@ -129,7 +129,10 @@ namespace CRM.Server.Services
                     Start = start,
                     End = start.AddMinutes(30),
                     Color = ActivityColor(activity.Kind, start < now),
-                    Url = EntityUrl(activity.EntityType, activity.EntityId),
+                    // L'elemento e' l'attivita': si apre la sua scheda. Il cliente resta
+                    // raggiungibile, ma da un campo suo.
+                    Url = $"/Activities/{activity.Id}/Info",
+                    EntityUrl = EntityUrl(activity.EntityType, activity.EntityId),
                     IdAssignee = activity.IdAssignee,
                     AssigneeName = activity.Assignee?.NameComplete ?? string.Empty,
                     StateText = ActivityKindText(activity.Kind),

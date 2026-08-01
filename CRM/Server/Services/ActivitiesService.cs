@@ -1,4 +1,4 @@
-using CRM.Client.Models;
+﻿using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Server.Data;
 using CRM.Shared;
@@ -374,6 +374,40 @@ namespace CRM.Server.Services
             }
         }
 
+        /// <summary>Opportunita' e preventivi nati da questa attivita'.</summary>
+        public async Task<ActivityOutcomeDTO> GetOutcomeAsync(int id)
+        {
+            var deals = await _context.Deals
+                .AsNoTracking()
+                .Where(d => d.IdActivityOrigin == id)
+                .OrderByDescending(d => d.Date)
+                .Select(d => new ActivityGeneratedItemDTO
+                {
+                    Id = d.Id,
+                    Label = d.Name,
+                    Amount = d.Amount,
+                    Date = d.Date,
+                    State = d.State.ToString()
+                })
+                .ToListAsync();
+
+            var quotes = await _context.Quotes
+                .AsNoTracking()
+                .Where(q => q.IdActivityOrigin == id)
+                .OrderByDescending(q => q.Date)
+                .Select(q => new ActivityGeneratedItemDTO
+                {
+                    Id = q.Id,
+                    Label = string.IsNullOrWhiteSpace(q.Number) ? $"Bozza #{q.Id}" : q.Number,
+                    Amount = q.Total,
+                    Date = q.Date,
+                    State = q.State.ToString()
+                })
+                .ToListAsync();
+
+            return new ActivityOutcomeDTO { Deals = deals, Quotes = quotes };
+        }
+
         public async Task<bool> DeleteAsync(int id)
         {
             var item = await _context.Activities.FindAsync(id);
@@ -381,15 +415,39 @@ namespace CRM.Server.Services
                 return false;
             try
             {
+                // Opportunita' e preventivi sopravvivono all'attivita' da cui sono nati: si perde
+                // la provenienza, non il dato commerciale. Il vincolo e' NO ACTION apposta, quindi
+                // lo sgancio va fatto qui - senza, la cancellazione fallirebbe e (peggio) la
+                // cascata avrebbe potuto portarsi via un'opportunita' aperta.
+                await DetachGeneratedItemsAsync(id);
+
                 _context.Activities.Remove(item);
                 await _context.SaveChangesAsync();
                 return true;
             }
             catch (Exception ex)
             {
+                // Il contesto ha ancora la cancellazione fallita in sospeso: senza scartarla,
+                // anche la scrittura del log riproverebbe la stessa DELETE e l'errore sparirebbe.
+                _context.ChangeTracker.Clear();
+
                 await _logEventService.RegisterAsync(nameof(ActivitiesService), nameof(DeleteAsync), EventsTypes.Error, ex);
                 return false;
             }
+        }
+
+        private async Task DetachGeneratedItemsAsync(int idActivity)
+        {
+            var deals = await _context.Deals.Where(d => d.IdActivityOrigin == idActivity).ToListAsync();
+            foreach (var deal in deals)
+                deal.IdActivityOrigin = null;
+
+            var quotes = await _context.Quotes.Where(q => q.IdActivityOrigin == idActivity).ToListAsync();
+            foreach (var quote in quotes)
+                quote.IdActivityOrigin = null;
+
+            if (deals.Count > 0 || quotes.Count > 0)
+                await _context.SaveChangesAsync();
         }
 
         private async Task<string?> SafeCurrentUserAsync()

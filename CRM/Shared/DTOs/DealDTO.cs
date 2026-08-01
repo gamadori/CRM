@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -8,6 +8,10 @@ namespace CRM.Shared.DTOs
     public class DealDTO
     {
         public int Id { get; set; }
+
+        /// <summary>Attivita' da cui l'opportunita' e' nata; null se non viene da una visita.</summary>
+        public int? IdActivityOrigin { get; set; }
+
 
         [Display(Name = nameof(Deal.Date), ResourceType = typeof(Resources.Models.Deal))]
         public DateTime Date { get; set; }
@@ -87,6 +91,7 @@ namespace CRM.Shared.DTOs
                 Id = deal.Id,
                 Date = deal.Date,
                 Name = deal.Name,
+                IdActivityOrigin = deal.IdActivityOrigin,
                 IdCompany = deal.IdCompany,
                 IdContact = deal.IdContact,
                 Amount = deal.Amount,
@@ -117,6 +122,7 @@ namespace CRM.Shared.DTOs
                 Id = dto.Id,
                 Date = dto.Date,
                 Name = dto.Name,
+                IdActivityOrigin = dto.IdActivityOrigin,
                 IdCompany = dto.IdCompany,
                 IdContact = dto.IdContact,
                 Amount = dto.Amount,

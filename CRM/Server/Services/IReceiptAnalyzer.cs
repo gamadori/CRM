@@ -1,4 +1,4 @@
-using CRM.Shared.DTOs;
+﻿using CRM.Shared.DTOs;
 using System.Threading.Tasks;
 
 namespace CRM.Server.Services
@@ -10,7 +10,8 @@ namespace CRM.Server.Services
             byte[] fileBytes,
             string fileName,
             bool useCustomModel = false,
-            string customModelId = null);
+            string customModelId = null,
+            ReceiptDocumentKind kind = ReceiptDocumentKind.Unknown);
 
         Task<bool> HealthCheckAsync();
     }

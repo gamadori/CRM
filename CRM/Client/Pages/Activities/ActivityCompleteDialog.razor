@@ -1,4 +1,4 @@
-@using CRM.Client.Services
+﻿@using CRM.Client.Services
 @using CRM.Shared
 @using CRM.Shared.DTOs
 @using Radzen
@@ -34,6 +34,41 @@
             <label>@Localize["Prossima azione"]</label>
             <textarea class="form-control" rows="2" @bind="_completion.NextStep"
                       placeholder="@Localize["Es. inviare offerta, fissare follow-up, attendere documenti"]"></textarea>
+        </div>
+
+        @* Il seguito commerciale si sceglie qui, nel momento in cui si sta raccontando com'e'
+           andata: e' li' che l'informazione esiste. Chiudendo si arriva al modulo giusto gia'
+           compilato, invece di ridigitare azienda e contatto in un altro menu. *@
+        <div class="activity-complete-field activity-complete-field-full">
+            <label>@Localize["Ne è nato qualcosa?"]</label>
+            <RadzenSelectBar @bind-Value="_completion.FollowUpTarget" TValue="ActivityFollowUpTarget"
+                             Size="ButtonSize.Medium">
+                <Items>
+                    <RadzenSelectBarItem Text="@Localize["Niente"]" Icon="block"
+                                         Value="ActivityFollowUpTarget.None" />
+                    @* Su un'attivita' gia' agganciata a un'opportunita' non ha senso proporne una
+                       nuova: quella esiste gia', semmai serve il preventivo. *@
+                    @if (EntityType != ActivityEntityType.Deal)
+                    {
+                        <RadzenSelectBarItem Text="@Localize["Un'opportunità"]" Icon="trending_up"
+                                             Value="ActivityFollowUpTarget.Deal" />
+                    }
+                    <RadzenSelectBarItem Text="@Localize["Un preventivo"]" Icon="request_quote"
+                                         Value="ActivityFollowUpTarget.Quote" />
+                </Items>
+            </RadzenSelectBar>
+
+            @if (_completion.FollowUpTarget != ActivityFollowUpTarget.None)
+            {
+                <div class="activity-followup-note">
+                    <span class="material-icons">arrow_forward</span>
+                    <span>
+                        @(_completion.FollowUpTarget == ActivityFollowUpTarget.Deal
+                            ? Localize["Alla conferma si apre la nuova opportunità, già compilata con cliente e relazione."]
+                            : Localize["Alla conferma si apre il nuovo preventivo, già compilato con cliente e relazione."])
+                    </span>
+                </div>
+            }
         </div>
 
         <div class="activity-followup">
@@ -132,6 +167,22 @@
         padding-top: .9rem;
     }
 
+    .activity-followup-note {
+        align-items: center;
+        background: #eff6ff;
+        border-radius: 6px;
+        color: #1d4ed8;
+        display: flex;
+        font-size: .82rem;
+        gap: .4rem;
+        margin-top: .6rem;
+        padding: .45rem .65rem;
+    }
+
+        .activity-followup-note .material-icons {
+            font-size: 1rem;
+        }
+
     .activity-followup-toggle {
         align-items: center;
         color: #111827;
@@ -171,6 +222,12 @@
 
 @code {
     [Parameter] public ActivityKind Kind { get; set; }
+
+    /// <summary>
+    /// Entita' a cui l'attivita' e' agganciata: serve a non proporre "genera opportunita'" su una
+    /// visita che di un'opportunita' fa gia' parte.
+    /// </summary>
+    [Parameter] public ActivityEntityType EntityType { get; set; } = ActivityEntityType.Company;
     [Parameter] public string Subject { get; set; } = string.Empty;
     [Parameter] public string? DefaultAssigneeId { get; set; }
 

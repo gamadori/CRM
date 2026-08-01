@@ -14,8 +14,9 @@ namespace CRM.Server.Services
         /// <param name="attachmentFileId">ID del file attachment caricato</param>
         /// <param name="useCustomModel">Se true, usa modello custom invece di prebuilt-receipt</param>
         /// <param name="customModelId">ID del modello custom (opzionale)</param>
+        /// <param name="kind">Tipo dichiarato da chi carica: risparmia un'analisi sui PDF.</param>
         /// <returns>Risultato dell'estrazione con campi estratti</returns>
-        Task<ReceiptExtractionResult> ProcessReceiptAsync(int attachmentFileId, bool useCustomModel = false, string customModelId = null);
+        Task<ReceiptExtractionResult> ProcessReceiptAsync(int attachmentFileId, bool useCustomModel = false, string customModelId = null, ReceiptDocumentKind kind = ReceiptDocumentKind.Unknown);
 
         /// <summary>
         /// Elabora un file da byte array direttamente
@@ -25,7 +26,7 @@ namespace CRM.Server.Services
         /// <param name="useCustomModel">Se true, usa modello custom</param>
         /// <param name="customModelId">ID modello custom</param>
         /// <returns>Risultato dell'estrazione</returns>
-        Task<ReceiptExtractionResult> ProcessReceiptFromBytesAsync(byte[] fileBytes, string fileName, bool useCustomModel = false, string customModelId = null);
+        Task<ReceiptExtractionResult> ProcessReceiptFromBytesAsync(byte[] fileBytes, string fileName, bool useCustomModel = false, string customModelId = null, ReceiptDocumentKind kind = ReceiptDocumentKind.Unknown);
 
         /// <summary>
         /// Verifica la connettività con Azure Form Recognizer

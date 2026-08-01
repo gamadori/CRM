@@ -48,7 +48,9 @@ namespace CRM.Server.Controllers
         public async Task<ActionResult<ReceiptExtractionResult>> ProcessReceipt(
             int attachmentFileId,
             [FromQuery] bool useCustomModel = false,
-            [FromQuery] string customModelId = null)
+            [FromQuery] string customModelId = null,
+            // Dichiarato da chi carica: evita la seconda analisi sui PDF. Assente = come prima.
+            [FromQuery] ReceiptDocumentKind kind = ReceiptDocumentKind.Unknown)
         {
             try
             {
@@ -60,7 +62,8 @@ namespace CRM.Server.Controllers
                 var result = await _receiptProcessor.ProcessReceiptAsync(
                     attachmentFileId,
                     useCustomModel,
-                    customModelId);
+                    customModelId,
+                    kind);
 
                 if (!result.Success)
                 {
@@ -128,7 +131,8 @@ namespace CRM.Server.Controllers
                 var result = await _receiptProcessor.ProcessReceiptAsync(
                     request.AttachmentFileId,
                     request.UseCustomModel,
-                    request.CustomModelId);
+                    request.CustomModelId,
+                    request.Kind);
 
                 if (result.Success)
                 {

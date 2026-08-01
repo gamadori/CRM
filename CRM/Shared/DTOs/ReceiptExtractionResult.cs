@@ -158,10 +158,38 @@ namespace CRM.Shared.DTOs
     }
 
     /// <summary>
+    /// Che cosa dichiara di caricare chi carica.
+    /// <para>
+    /// Serve solo per i PDF, dove un file puo' essere una fattura (un documento solo, magari su
+    /// piu' pagine) o una scansione di scontrini (piu' documenti), e i due casi vogliono modelli
+    /// diversi. Senza dichiarazione si eseguono entrambi e vince il migliore: e' corretto ma costa
+    /// due analisi. Dichiararlo ne fa risparmiare una.
+    /// </para>
+    /// <para>
+    /// Resta un <b>indizio</b>, non un ordine: se il modello dichiarato non cava niente si prova
+    /// comunque l'altro, perche' nessuno deve restare senza estrazione per una tendina sbagliata.
+    /// </para>
+    /// </summary>
+    public enum ReceiptDocumentKind
+    {
+        /// <summary>Non dichiarato: si provano entrambi i modelli.</summary>
+        Unknown = 0,
+
+        /// <summary>Fattura o ricevuta fiscale emessa.</summary>
+        Invoice = 1,
+
+        /// <summary>Uno o piu' scontrini, tipicamente scansionati insieme.</summary>
+        Receipts = 2
+    }
+
+    /// <summary>
     /// Richiesta di elaborazione receipt
     /// </summary>
     public class ProcessReceiptRequest
     {
+        /// <summary>Tipo dichiarato da chi carica; vedi <see cref="ReceiptDocumentKind"/>.</summary>
+        public ReceiptDocumentKind Kind { get; set; } = ReceiptDocumentKind.Unknown;
+
         /// <summary>
         /// ID dell'attachment file caricato
         /// </summary>

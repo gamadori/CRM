@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -55,6 +55,10 @@ namespace CRM.Shared.DTOs
 
         [Display(Name = "Trattativa")]
         public int? IdDeal { get; set; }
+
+        /// <summary>Attivita' da cui la richiesta di preventivo e' nata; null se non viene da una visita.</summary>
+        public int? IdActivityOrigin { get; set; }
+
 
         [Display(Name = "Owner")]
         public string? IdUser { get; set; }
@@ -211,6 +215,7 @@ namespace CRM.Shared.DTOs
                 IdCompany = quote.IdCompany,
                 IdContact = quote.IdContact,
                 IdDeal = quote.IdDeal,
+                IdActivityOrigin = quote.IdActivityOrigin,
                 IdUser = quote.IdUser,
                 State = quote.State,
                 Note = quote.Note,
@@ -263,6 +268,7 @@ namespace CRM.Shared.DTOs
                 IdCompany = dto.IdCompany,
                 IdContact = dto.IdContact,
                 IdDeal = dto.IdDeal,
+                IdActivityOrigin = dto.IdActivityOrigin,
                 IdUser = dto.IdUser,
                 State = dto.State,
                 Note = dto.Note,

@@ -43,6 +43,14 @@ namespace CRM.Client.Pages.ExpenseReceipts
 
         private string _period = "month";
 
+        /// <summary>
+        /// Periodo su cui aprire l'elenco ("/ExpenseReceipts?period=all"). Lo usa chi ha appena
+        /// salvato una spesa vecchia: mandarlo sul mese corrente significherebbe mostrargli una
+        /// pagina vuota subito dopo un salvataggio riuscito.
+        /// </summary>
+        [SupplyParameterFromQuery(Name = "period")]
+        public string PeriodParam { get; set; }
+
         protected override async Task OnInitializedAsync()
         {
             _pageHeader = await HeaderService.Create();
@@ -50,7 +58,7 @@ namespace CRM.Client.Pages.ExpenseReceipts
             // La pagina si apre gia' rispondendo alla domanda per cui esiste: quanto ho speso
             // io questo mese. Chi vuole altro cambia i filtri, ma il caso frequente non richiede
             // di impostare niente.
-            ApplyPeriod("month");
+            ApplyPeriod(string.IsNullOrWhiteSpace(PeriodParam) ? "month" : PeriodParam);
             _filter.PageSize = 25;
 
             await LoadCurrentUserAsync();
@@ -142,6 +150,47 @@ namespace CRM.Client.Pages.ExpenseReceipts
             return _currentUserId;
         }
 
+        /// <summary>
+        /// Quante note spese esistono, con gli stessi filtri ma senza limite di periodo.
+        /// <para>
+        /// Serve a un caso preciso: si registra uno scontrino di due mesi fa, si torna
+        /// all'elenco - che si apre sul mese corrente - e non c'e'. Sembra che il salvataggio non
+        /// abbia funzionato. La pagina vuota deve dire dove sono finite, non lasciar dedurre.
+        /// </para>
+        /// </summary>
+        private async Task CountOutsidePeriodAsync()
+        {
+            // Domanda che ha senso solo quando il periodo taglia qualcosa e non si vede niente.
+            if (_totalCount > 0 || _period == "all")
+            {
+                _countOutsidePeriod = 0;
+                return;
+            }
+
+            try
+            {
+                var from = _filter.DateFrom;
+                var to = _filter.DateTo;
+
+                _filter.DateFrom = null;
+                _filter.DateTo = null;
+
+                var all = await Http.GetFromJsonAsync<SearchResponse>($"api/ExpenseReceipts?{BuildQuery()}");
+                _countOutsidePeriod = all?.TotalCount ?? 0;
+
+                _filter.DateFrom = from;
+                _filter.DateTo = to;
+            }
+            catch (Exception ex)
+            {
+                // E' un aiuto, non un dato: se non arriva, l'elenco vuoto resta vuoto e basta.
+                _countOutsidePeriod = 0;
+                Console.WriteLine($"Conteggio fuori periodo non disponibile: {ex.Message}");
+            }
+        }
+
+        private int _countOutsidePeriod;
+
         private async Task ReloadAsync()
         {
             _loading = true;
@@ -161,6 +210,8 @@ namespace CRM.Client.Pages.ExpenseReceipts
 
                 _summary = await Http.GetFromJsonAsync<ExpenseReceiptSummaryDTO>($"api/ExpenseReceipts/summary?{query}")
                            ?? new ExpenseReceiptSummaryDTO();
+
+                await CountOutsidePeriodAsync();
             }
             catch (Exception ex)
             {

@@ -1,4 +1,4 @@
-@page "/Quotes/New"
+﻿@page "/Quotes/New"
 @page "/Quotes/{Id:int}/Edit"
 @using CRM.Client.Models
 @using CRM.Client.Services
@@ -15,6 +15,7 @@
 @inject IProductsService ProductsService
 @inject IPriceListService PriceListService
 @inject IDealService DealService
+@inject IActivityService ActivityService
 @inject IAGRestClientService RestClient
 @inject IHeaderService HeaderService
 @inject NavigationManager Nav
@@ -164,6 +165,12 @@ else
     [SupplyParameterFromQuery] public int? IdDeal { get; set; }
     [SupplyParameterFromQuery] public int? IdCompany { get; set; }
 
+    /// <summary>
+    /// Visita da cui nasce la richiesta: "/Quotes/New?fromActivity=19". Il modulo si apre gia'
+    /// compilato con cliente e relazione, e il preventivo si ricorda da dove arriva.
+    /// </summary>
+    [SupplyParameterFromQuery] public int? FromActivity { get; set; }
+
     private PageHeaderModel? _pageHeader;
     private QuoteDTO? _quote;
     private List<CompanyDTO> _companies = new();
@@ -204,6 +211,7 @@ else
             _quote.IdDeal = IdDeal;
             _quote.IdCompany = IdCompany;
             await ApplyDealDefaults();
+            await ApplyActivityOriginAsync();
         }
 
         await LoadContacts();
@@ -224,6 +232,46 @@ else
         State = QuoteStates.Draft,
         Rows = new List<QuoteRowDTO>()
     };
+
+    /// <summary>
+    /// Precompila il preventivo con quello che la visita sa gia' e ne registra l'origine: e' il
+    /// campo che rende misurabile quanto rendono le visite.
+    /// </summary>
+    private async Task ApplyActivityOriginAsync()
+    {
+        if (FromActivity == null || _quote == null)
+            return;
+
+        var activity = await ActivityService.GetAsync(FromActivity.Value);
+        if (activity == null)
+            return;
+
+        _quote.IdActivityOrigin = activity.Id;
+
+        // Il cliente si eredita solo dove l'attivita' ce l'ha davvero. Se arriva gia' da un deal
+        // (ApplyDealDefaults) non si tocca niente: quello e' un dato piu' preciso.
+        if (_quote.IdCompany == null)
+        {
+            if (activity.EntityType == ActivityEntityType.Company)
+            {
+                _quote.IdCompany = activity.EntityId;
+            }
+            else if (activity.EntityType == ActivityEntityType.Contact)
+            {
+                _quote.IdContact = activity.EntityId;
+                var contact = await ContactsService.GetItemAsync(activity.EntityId);
+                _quote.IdCompany = contact?.IdCompany ?? _quote.IdCompany;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(_quote.Note))
+        {
+            var story = new[] { activity.Subject, activity.CompletionNotes }
+                .Where(x => !string.IsNullOrWhiteSpace(x));
+
+            _quote.Note = string.Join(Environment.NewLine + Environment.NewLine, story);
+        }
+    }
 
     private async Task ApplyDealDefaults()
     {

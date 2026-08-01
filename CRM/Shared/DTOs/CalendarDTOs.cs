@@ -57,7 +57,23 @@ namespace CRM.Shared.DTOs
 
         public string Color { get; set; } = "#607d8b";
 
+        /// <summary>
+        /// Dove vive l'elemento stesso: la pagina del ticket, la scheda dell'attivita'.
+        /// <para>
+        /// Significava due cose diverse a seconda del tipo - per un ticket la sua pagina, per
+        /// un'attivita' l'entita' collegata - e chi lo usava per "aprire la riga" apriva il ticket
+        /// giusto e, sull'attivita', la scheda del cliente. E' successo in agenda e di nuovo nella
+        /// dashboard: un campo con due significati produce lo stesso difetto in ogni punto che lo
+        /// consuma. L'entita' collegata ha adesso un campo suo, <see cref="EntityUrl"/>.
+        /// </para>
+        /// </summary>
         public string Url { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Indirizzo dell'entita' collegata (azienda, contatto, trattativa...). Vuoto sui ticket,
+        /// che un'entita' collegata in questo senso non ce l'hanno.
+        /// </summary>
+        public string EntityUrl { get; set; } = string.Empty;
 
         public string? IdAssignee { get; set; }
 
