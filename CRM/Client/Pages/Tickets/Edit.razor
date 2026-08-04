@@ -179,7 +179,9 @@ else
                         </RadzenRow>
                     }
 
-                    @* Ticket di produzione: commessa e fase di appartenenza, in sola lettura. *@
+                    @* Ticket di produzione: commessa e fase di appartenenza. Il riepilogo è sempre
+                       in sola lettura; il legame si sceglie nel pannello sotto, che compare solo
+                       quando non si arriva dalla presa in carico di una fase. *@
                     @if (_commessaFase != null)
                     {
                         <div class="alert alert-light border d-flex flex-wrap align-items-center gap-3 py-2 mb-3">
@@ -202,7 +204,66 @@ else
                                 <span class="text-muted small">@Localize["Scadenza fase"]</span>
                                 <span class="fw-semibold">@_commessaFase.EndDate.ToShortDateString()</span>
                             </span>
+                            @if (CanEditCommessaLink)
+                            {
+                                <RadzenButton Icon="link_off" Text="@Localize["Scollega"]" ButtonStyle="ButtonStyle.Light"
+                                              Size="ButtonSize.ExtraSmall" Class="ms-auto" Click="UnlinkCommessa" />
+                            }
                         </div>
+                    }
+
+                    @if (CanEditCommessaLink && (_commessaFase == null || _linkingCommessa) && _ticket.IdCompany > 0)
+                    {
+                        @if (!_linkingCommessa && _commesseOptions.Any())
+                        {
+                            <div class="mb-3">
+                                <RadzenButton Icon="precision_manufacturing" Text="@Localize["Collega a una commessa"]"
+                                              ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                              Click="@(() => _linkingCommessa = true)" />
+                            </div>
+                        }
+                        else if (_linkingCommessa)
+                        {
+                            <div class="border rounded p-3 mb-3">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="material-icons text-muted" style="font-size:18px;">precision_manufacturing</span>
+                                    <span class="fw-semibold">@Localize["Commessa di produzione"]</span>
+                                    <span class="text-muted small">@Localize["facoltativa"]</span>
+                                </div>
+
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-1 d-block">@Localize["Commessa"]</label>
+                                        <RadzenDropDown TValue="int?" Value="_selectedCommessaId" Data="_commesseOptions"
+                                                        TextProperty="Code" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                                                        Placeholder="@Localize["Nessuna"]" Style="width:100%"
+                                                        Change="OnCommessaLinkChanged">
+                                            <Template Context="c">
+                                                @(((CommessaDTO)c).Code) — @(((CommessaDTO)c).Name)
+                                            </Template>
+                                        </RadzenDropDown>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small mb-1 d-block">@Localize["Fase"]</label>
+                                        <RadzenDropDown TValue="int?" Value="_ticket.IdCommessaFase" Data="_fasiOptions"
+                                                        TextProperty="Name" ValueProperty="Id" AllowClear="true"
+                                                        Disabled="@(_selectedCommessaId == null)"
+                                                        Placeholder="@Localize["Scegli la fase"]" Style="width:100%"
+                                                        Change="OnCommessaFaseChanged" />
+                                    </div>
+                                </div>
+
+                                <div class="form-text mt-2">
+                                    <span class="material-icons align-middle" style="font-size:14px;">info</span>
+                                    @Localize["Il ticket entra nell'avanzamento della fase e le sue ore nel consuntivo della commessa. Scadenza e prodotto seguiranno la fase."]
+                                </div>
+
+                                <div class="d-flex gap-2 mt-2">
+                                    <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light"
+                                                  Size="ButtonSize.ExtraSmall" Click="CancelCommessaLink" />
+                                </div>
+                            </div>
+                        }
                     }
 
                     <!-- Product and Article -->

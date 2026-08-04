@@ -43,6 +43,14 @@ else
             <RadzenButton Icon="edit" Text="Modifica" ButtonStyle="ButtonStyle.Primary"
                           Click="@(() => Nav.NavigateTo($"/{ConstHelper.ClientOrdersPath}/{_order.Id}/Edit"))" />
         }
+        @* Scorciatoia all'elenco filtrato: dalla tabella si arriva a una commessa per volta,
+           e su un ordine con molte righe avviate serve vederle tutte insieme. *@
+        @if (_commesseByRow.Any())
+        {
+            <RadzenButton Icon="precision_manufacturing" Text="@($"Commesse ({_commesseByRow.Sum(r => r.Value.Count)})")"
+                          ButtonStyle="ButtonStyle.Light"
+                          Click="@(() => Nav.NavigateTo($"/Commesse?IdOrder={_order.Id}"))" />
+        }
         @if (_order.IdQuote != null)
         {
             <RadzenButton Icon="request_quote" Text="Preventivo" ButtonStyle="ButtonStyle.Light"
@@ -163,8 +171,13 @@ else
                                         }
                                         else
                                         {
+                                            @* Niente template: o la riga e' merce da spedire (conferma pronto),
+                                               o e' un lavoro senza ciclo predefinito e vuole una commessa aperta. *@
                                             <RadzenButton Icon="check" Text="Conferma pronto" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
                                                           IsBusy="@(_busyRow == r.Id)" Disabled="@(_busyRow != null)" Click="@(() => ConfirmReady(r))" />
+                                            <RadzenButton Icon="folder_open" Text="Apri commessa" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                                          Disabled="@(_busyRow != null)" Click="@(() => OpenCommessa(r))"
+                                                          title="Lavoro senza ciclo predefinito: commessa con ticket aggiunti a mano" />
                                         }
                                     }
                                     else if (r.ProductionStatus is RowProductionStatus.InProduction or RowProductionStatus.Closed && _commesseByRow.TryGetValue(r.Id, out var cc) && cc.Any())
@@ -258,6 +271,34 @@ else
             else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
         }
         finally { _busyRow = null; }
+    }
+
+    /// <summary>
+    /// Commessa a fasi libere per una riga senza template: consegna e ore stimate si dichiarano
+    /// nel dialogo perché non c'è un modello da cui dedurle, e diventano la baseline del consuntivo.
+    /// </summary>
+    private async Task OpenCommessa(OrderRowDTO r)
+    {
+        var parameters = new Dictionary<string, object>
+        {
+            { nameof(CRM.Client.Pages.Commesse.OpenCommessaDialog.IdOrderRow), r.Id },
+            { nameof(CRM.Client.Pages.Commesse.OpenCommessaDialog.DefaultName), r.Description ?? string.Empty }
+        };
+
+        // Solo se l'ordine ha una consegna: passare null qui lascerebbe il dialogo senza il suo
+        // default, che e' oggi + 30 giorni.
+        if (_order?.DeliveryDate != null)
+            parameters[nameof(CRM.Client.Pages.Commesse.OpenCommessaDialog.DefaultDate)] = _order.DeliveryDate.Value;
+
+        var created = await DialogService.OpenAsync<CRM.Client.Pages.Commesse.OpenCommessaDialog>(
+            $"Apri commessa — {r.Description}",
+            parameters,
+            new DialogOptions { Width = "720px", CloseDialogOnOverlayClick = false });
+
+        if (created is not true) return;
+
+        _order = await OrderService.GetItemAsync(Id);
+        await LoadCommesse();
     }
 
     private async Task ConfirmReady(OrderRowDTO r)

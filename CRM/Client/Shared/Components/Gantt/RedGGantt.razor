@@ -54,6 +54,32 @@
                             <label class="form-label small ms-1 mb-0">Richiede ticket</label>
                         </div>
                     </div>
+
+                    @* Senza tipo ticket la fase non ne apre nessuno: e' il campo che rende
+                       lavorabile una fase aggiunta a mano su una commessa aperta. *@
+                    <div class="row g-2 align-items-end mt-1">
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1 d-block">Tipo ticket</label>
+                            <RadzenDropDown TValue="int?" @bind-Value="_editing.IdTicketType" Data="_ticketTypes"
+                                            TextProperty="Desc" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                                            Placeholder="Nessuno" Style="width:100%" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1 d-block">Gruppo abilitato</label>
+                            <RadzenDropDown TValue="int?" @bind-Value="_editing.IdGroup" Data="_groups"
+                                            TextProperty="Name" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                                            Placeholder="Tutti" Style="width:100%" />
+                        </div>
+                        <div class="col-md-4">
+                            @if (_editing.IdTicketType == null && _editing.AutoCreateTicketOnTake)
+                            {
+                                <div class="small text-muted">
+                                    <span class="material-icons align-middle" style="font-size:14px;">info</span>
+                                    Senza tipo ticket la fase si potrà solo completare a mano.
+                                </div>
+                            }
+                        </div>
+                    </div>
                 }
 
                 @if (_editing.Id > 0)

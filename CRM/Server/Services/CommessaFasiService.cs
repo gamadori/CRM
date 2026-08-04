@@ -121,6 +121,12 @@ namespace CRM.Server.Services
                     if (!await CanActOnGroupAsync(entity.IdGroup))
                         return Fail("Non sei abilitato a modificare questa fase", HttpStatusCode.Forbidden);
 
+                    // Spostare la fase a un altro gruppo segue la regola della creazione: solo verso
+                    // un gruppo di cui si fa parte, altrimenti si assegnerebbe lavoro a un reparto
+                    // qualsiasi uscendo dal proprio perimetro.
+                    if (dto.IdGroup != entity.IdGroup && !await CanActOnGroupAsync(dto.IdGroup))
+                        return Fail("Non sei abilitato ad assegnare la fase a questo gruppo", HttpStatusCode.Forbidden);
+
                     // Chiudere a mano una fase con predecessori aperti equivale a saltare la coda.
                     // Si blocca solo l'avanzamento: ripianificare date e anagrafica resta libero.
                     if (dto.Progress > 0 || dto.State != CommessaFaseStates.Pending)
@@ -150,9 +156,12 @@ namespace CRM.Server.Services
                     entity.AutoCreateTicketOnTake = dto.AutoCreateTicketOnTake;
                     entity.RequiresTicket = dto.RequiresTicket;
 
-                    // IdGroup e IdTicketType arrivano dal template e nessun editor li espone:
-                    // non si aggiornano da qui, cosi' un DTO parziale non puo' azzerarli.
-                    // Azzerare il gruppo toglierebbe anche il vincolo su chi puo' eseguire la fase.
+                    // Gruppo e tipo ticket ora si modificano dall'editor delle fasi: senza, una fase
+                    // nata senza tipo (commessa aperta, fase aggiunta a mano) non avrebbe mai potuto
+                    // aprire ticket, e non c'era modo di rimediare. Chi chiama SaveAsync deve quindi
+                    // mandare il DTO completo: entrambi gli editor ricopiano i valori esistenti.
+                    entity.IdGroup = dto.IdGroup;
+                    entity.IdTicketType = dto.IdTicketType;
 
                     wasDone = entity.State == CommessaFaseStates.Done;
                     entity.Progress = Math.Clamp(dto.Progress, 0, 100);

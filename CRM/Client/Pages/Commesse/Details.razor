@@ -38,6 +38,14 @@ else
                     <div class="d-flex align-items-center gap-2 mb-1">
                         <span class="badge bg-light text-dark border">@_c.Code</span>
                         <span class="badge @CommessaUi.StateBadgeClass(_c.State)">@CommessaUi.StateText(_c.State)</span>
+                        @if (_c.IsOpen)
+                        {
+                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle"
+                                  title="@Localize["Commessa a fasi libere: nessun template, ticket aggiunti a mano."]">
+                                <span class="material-icons align-middle" style="font-size:14px;">folder_open</span>
+                                @Localize["Aperta"]
+                            </span>
+                        }
                         @if (_c.IsExpectedLate)
                         {
                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
@@ -136,13 +144,20 @@ else
                         <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
                                       Click="@(() => _reschedule = null)" Disabled="@_rescheduleBusy" />
 
-                        @* Azione distinta e distruttiva: rifà le fasi dal modello del prodotto. *@
-                        <RadzenButton Icon="restart_alt" Text="@Localize["Ripristina dal modello"]" ButtonStyle="ButtonStyle.Danger" ButtonType="ButtonType.Button"
-                                      Size="ButtonSize.Small" Class="ms-auto" Click="ApplyRebuild" Disabled="@_rescheduleBusy" />
+                        @* Azione distinta e distruttiva: rifà le fasi dal modello del prodotto.
+                           Su una commessa aperta non c'è nessun modello a cui tornare. *@
+                        @if (_c.IdGanttPlan != null)
+                        {
+                            <RadzenButton Icon="restart_alt" Text="@Localize["Ripristina dal modello"]" ButtonStyle="ButtonStyle.Danger" ButtonType="ButtonType.Button"
+                                          Size="ButtonSize.Small" Class="ms-auto" Click="ApplyRebuild" Disabled="@_rescheduleBusy" />
+                        }
                     </div>
-                    <div class="small text-muted mt-2">
-                        @Localize["\"Ripristina dal modello\" ricostruisce le fasi dal template del prodotto sulla nuova consegna: scarta durate, dipendenze e fasi modificate a mano. Consentito solo se nessuna fase è stata avviata."]
-                    </div>
+                    @if (_c.IdGanttPlan != null)
+                    {
+                        <div class="small text-muted mt-2">
+                            @Localize["\"Ripristina dal modello\" ricostruisce le fasi dal template del prodotto sulla nuova consegna: scarta durate, dipendenze e fasi modificate a mano. Consentito solo se nessuna fase è stata avviata."]
+                        </div>
+                    }
                 </div>
             }
 
@@ -221,6 +236,76 @@ else
     {
         case View.Overview:
             <div class="row g-3">
+                @* Promesso all'avvio contro quello che e' successo: la baseline e' congelata alla
+                   creazione, quindi il confronto regge anche dopo dieci riprogrammazioni. *@
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <span class="material-icons text-muted" style="font-size:20px;">insights</span>
+                                <span class="fw-semibold">@Localize["Consuntivo"]</span>
+                                @if (_c.EndDateActual == null)
+                                {
+                                    <span class="badge bg-light text-dark border">@Localize["in corso"]</span>
+                                }
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="text-muted small mb-1">@Localize["Consegna"]</div>
+                                    @if (!_c.HasBaseline)
+                                    {
+                                        <div class="text-muted small">
+                                            @Localize["Nessuna promessa registrata: commessa creata prima dell'introduzione della baseline."]
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex flex-wrap align-items-baseline gap-2">
+                                            <strong class="fs-5">@_c.EndDateBaseline!.Value.ToString("dd/MM/yyyy")</strong>
+                                            <span class="material-icons text-muted" style="font-size:16px;">arrow_forward</span>
+                                            <strong class="fs-5">@(_c.EndDateActual?.ToString("dd/MM/yyyy") ?? DateTime.Today.ToString("dd/MM/yyyy"))</strong>
+                                            <span class="badge @DeltaBadge(_c.DeliveryDeltaDays)">@DeltaDaysText(_c.DeliveryDeltaDays)</span>
+                                        </div>
+                                        <div class="small text-muted mt-1">
+                                            @(_c.EndDateActual == null
+                                                ? Localize["promessa all'avvio, confrontata con oggi"]
+                                                : Localize["promessa all'avvio, confrontata con la fine effettiva"])
+                                            @if (_c.EndDateBaseline!.Value.Date != _c.EndDatePlanned.Date)
+                                            {
+                                                <text> · @Localize["consegna operativa"] @_c.EndDatePlanned.ToString("dd/MM/yyyy")</text>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="text-muted small mb-1">@Localize["Ore"]</div>
+                                    <div class="d-flex flex-wrap align-items-baseline gap-2">
+                                        <strong class="fs-5">@(_c.BudgetHoursBaseline?.ToString() ?? "—")</strong>
+                                        <span class="material-icons text-muted" style="font-size:16px;">arrow_forward</span>
+                                        <strong class="fs-5">@_c.SpentHours.ToString("0.#")</strong>
+                                        @if (_c.HoursDeltaPct != null)
+                                        {
+                                            <span class="badge @DeltaBadge(_c.HoursDeltaPct)">@DeltaPctText(_c.HoursDeltaPct!.Value)</span>
+                                        }
+                                    </div>
+                                    <div class="small text-muted mt-1">
+                                        @if (_c.BudgetHoursBaseline == null)
+                                        {
+                                            @Localize["nessuna stima iniziale: ci sono solo le ore registrate sui ticket"]
+                                        }
+                                        else
+                                        {
+                                            @Localize["stimate all'avvio, confrontate con le ore registrate sui ticket (pause escluse)"]
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
                     <div class="text-muted small">@Localize["Fasi"]</div><div class="fs-3 fw-bold">@_c.PhaseCount</div></div></div></div>
                 <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
@@ -290,37 +375,41 @@ else
                                     {
                                         <span class="text-success small"><span class="material-icons align-middle" style="font-size:16px;">check_circle</span> @Localize["Fatto"]</span>
                                     }
-                                    else if (f.PendingPlannedTicketCount > 0)
-                                    {
-                                        <RadzenButton Icon="add_task" Text="@Localize["Genera previsti"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
-                                                      Disabled="@(!CanTake(f))" Click="@(() => GeneratePendingPlans(f))" />
-                                    }
-                                    else if ((f.IdTicketType != null || f.TicketPlans.Any()) && f.AutoCreateTicketOnTake)
-                                    {
-                                        @if (f.TicketCount > 0)
-                                        {
-                                            <RadzenButton Icon="confirmation_number" Text="@Localize["Vedi ticket"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
-                                                          Click="@(() => ShowPhaseTickets(f))" />
-                                            @if (f.IdTicketType != null)
-                                            {
-                                                <RadzenButton Icon="add" Text="@Localize["Nuovo"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
-                                                              Disabled="@(!CanTake(f))" Click="@(() => TakeInCharge(f))" />
-                                            }
-                                        }
-                                        else
-                                        {
-                                            <span title="@TakeBlockedReason(f)">
-                                                <RadzenButton Icon="play_arrow" Text="@Localize["Prendi in carico"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
-                                                              Disabled="@(!CanTake(f))" Click="@(() => TakeInCharge(f))" />
-                                            </span>
-                                        }
-                                    }
                                     else
                                     {
-                                        <span title="@CompleteBlockedReason(f)">
-                                            <RadzenButton Icon="check" Text="@Localize["Completa"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success"
-                                                          Disabled="@(!CanTake(f) || !CanComplete(f))" Click="@(() => MarkDone(f))" />
-                                        </span>
+                                        @if (f.PendingPlannedTicketCount > 0)
+                                        {
+                                            <RadzenButton Icon="add_task" Text="@Localize["Genera previsti"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                                          Disabled="@(!CanTake(f))" Click="@(() => GeneratePendingPlans(f))" />
+                                        }
+                                        else if (HasTicketAutomation(f))
+                                        {
+                                            @if (f.TicketCount > 0)
+                                            {
+                                                <RadzenButton Icon="confirmation_number" Text="@Localize["Vedi ticket"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light"
+                                                              Click="@(() => ShowPhaseTickets(f))" />
+                                                @if (f.IdTicketType != null)
+                                                {
+                                                    <RadzenButton Icon="add" Text="@Localize["Nuovo"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                                                  Disabled="@(!CanTake(f))" Click="@(() => TakeInCharge(f))" />
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span title="@TakeBlockedReason(f)">
+                                                    <RadzenButton Icon="play_arrow" Text="@Localize["Prendi in carico"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                                                  Disabled="@(!CanTake(f))" Click="@(() => TakeInCharge(f))" />
+                                                </span>
+                                            }
+                                        }
+
+                                        @if (ShowsManualComplete(f))
+                                        {
+                                            <span title="@CompleteBlockedReason(f)">
+                                                <RadzenButton Icon="check" Text="@Localize["Completa"]" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Success"
+                                                              Disabled="@(!CanTake(f) || !CanComplete(f))" Click="@(() => MarkDone(f))" />
+                                            </span>
+                                        }
                                     }
                                 </td>
                             </tr>
@@ -436,6 +525,28 @@ else
         _ => "bg-light text-dark"
     };
 
+    // ─── Consuntivo ──────────────────────────────────────────────────────────
+    // In ritardo o sopra stima = rosso; in pari o sotto = verde. Il caso "nessuna baseline" non
+    // arriva qui: la vista non mostra il confronto quando manca il termine di paragone.
+
+    private static string DeltaBadge(int? delta) => delta switch
+    {
+        null => "bg-light text-dark border",
+        > 0 => "bg-danger-subtle text-danger border border-danger-subtle",
+        _ => "bg-success-subtle text-success-emphasis border border-success-subtle"
+    };
+
+    private string DeltaDaysText(int? delta)
+    {
+        if (delta == null) return "—";
+        if (delta == 0) return Localize["in pari"];
+        var giorni = Math.Abs(delta.Value) == 1 ? Localize["1 giorno"] : $"{Math.Abs(delta.Value)} {Localize["giorni"]}";
+        return delta > 0 ? $"+{giorni}" : $"-{giorni}";
+    }
+
+    private string DeltaPctText(int pct)
+        => pct == 0 ? Localize["in pari"] : (pct > 0 ? $"+{pct}%" : $"{pct}%");
+
     private string CompletionModeText(CommessaFaseCompletionMode mode) => mode switch
     {
         CommessaFaseCompletionMode.Manual => Localize["Manuale"],
@@ -470,6 +581,20 @@ else
 
         return SequenceAllowsStart(f) ? string.Empty : Localize["Ci sono fasi precedenti non ancora completate."];
     }
+
+    /// <summary>La fase apre ticket da sola: o ha un tipo, o ha dei ticket previsti da generare.</summary>
+    private static bool HasTicketAutomation(CommessaFaseDTO f)
+        => (f.IdTicketType != null || f.TicketPlans.Any()) && f.AutoCreateTicketOnTake;
+
+    /// <summary>
+    /// Quando offrire la chiusura a mano. Oltre al caso senza automazione, vale per le fasi a
+    /// completamento manuale: lì i ticket sono tracciamento e nessuno chiuderà la fase al posto
+    /// dell'utente, quindi senza questo pulsante resterebbe aperta per sempre.
+    /// </summary>
+    private static bool ShowsManualComplete(CommessaFaseDTO f)
+        => f.PendingPlannedTicketCount == 0
+            && (!HasTicketAutomation(f)
+                || f.CompletionMode is CommessaFaseCompletionMode.Manual or CommessaFaseCompletionMode.ProgressManual);
 
     /// <summary>Il flag "Richiede ticket" della fase: niente chiusura senza un ticket che la documenti.</summary>
     private static bool CanComplete(CommessaFaseDTO f)

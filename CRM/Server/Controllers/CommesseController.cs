@@ -62,6 +62,11 @@ namespace CRM.Server.Controllers
         public async Task<ActionResult<APIResponseMessage<List<CommessaDTO>>>> StartProduction(int orderRowId)
             => Ok(await _service.StartProductionAsync(orderRowId));
 
+        /// <summary>Apre una commessa a fasi libere da una riga senza template di produzione.</summary>
+        [HttpPost("open-from-orderrow")]
+        public async Task<ActionResult<APIResponseMessage<CommessaDTO>>> OpenFromOrderRow(OpenCommessaRequestDTO req)
+            => Ok(await _service.OpenCommessaFromOrderRowAsync(req));
+
         [HttpPost("internal")]
         public async Task<ActionResult<APIResponseMessage<List<CommessaDTO>>>> StartInternalProduction(InternalProductionRequestDTO req)
             => Ok(await _service.StartInternalProductionAsync(req));

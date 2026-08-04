@@ -29,6 +29,17 @@
                         TextProperty="Text" ValueProperty="Value" AllowClear="true"
                         Placeholder="Stato" Style="width: 200px;" Change="@(async _ => await Reload())" />
 
+        @* Arrivo da un ordine: la lista è già ristretta alle sue commesse e lo deve dire,
+           altrimenti sembra che il CRM ne abbia solo quelle. *@
+        @if (IdOrder != null)
+        {
+            <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle d-inline-flex align-items-center gap-1">
+                <span class="material-icons" style="font-size:14px;">receipt_long</span>
+                Commesse dell'ordine @(_items?.FirstOrDefault()?.OrderNumber is { Length: > 0 } n ? n : IdOrder.ToString())
+            </span>
+            <RadzenButton Icon="filter_alt_off" Text="Tutte" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="ClearOrderFilter" />
+        }
+
         @if (ExpectedLate)
         {
             <span class="badge bg-danger-subtle text-danger border border-danger-subtle d-inline-flex align-items-center gap-1">
@@ -53,6 +64,14 @@
         <RadzenDataGridColumn TItem="CommessaDTO" Property="Name" Title="Commessa">
             <Template Context="c">
                 <a href="@($"/Commesse/{c.Id}")" class="text-decoration-none fw-semibold">@(string.IsNullOrWhiteSpace(c.Name) ? c.Code : c.Name)</a>
+                @if (c.IsOpen)
+                {
+                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle ms-2"
+                          title="Commessa a fasi libere: nessun template, ticket aggiunti a mano">
+                        <span class="material-icons align-middle" style="font-size:13px;">folder_open</span>
+                        Aperta
+                    </span>
+                }
                 @if (c.HasBlockingTickets)
                 {
                     <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-2"
@@ -167,6 +186,10 @@
     [Parameter, SupplyParameterFromQuery]
     public bool ExpectedLate { get; set; }
 
+    /// <summary>Arrivo dalla scheda ordine: mostra le sole commesse di quell'ordine.</summary>
+    [Parameter, SupplyParameterFromQuery]
+    public int? IdOrder { get; set; }
+
     private record StateOption(string Text, CommessaStates? Value);
     private readonly List<StateOption> _stateOptions = new()
     {
@@ -180,6 +203,24 @@
     };
 
     protected override async Task OnInitializedAsync() => _pageHeader = await HeaderService.Create();
+
+    // Filtri che viaggiano nella query string: cambiarli è una navigazione, non un evento della
+    // griglia, che quindi resta ferma sui dati di prima finché non le si chiede di ricaricare.
+    private bool _lastExpectedLate;
+    private int? _lastIdOrder;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_lastExpectedLate == ExpectedLate && _lastIdOrder == IdOrder)
+            return;
+
+        _lastExpectedLate = ExpectedLate;
+        _lastIdOrder = IdOrder;
+
+        // Al primo passaggio la griglia non esiste ancora e carica da sola.
+        if (_grid != null)
+            await Reload();
+    }
 
     private async Task NewInternalProduction()
     {
@@ -200,6 +241,7 @@
             _filter.OrderBy = args.OrderBy;
             _filter.State = _stateFilter;
             _filter.ExpectedLate = ExpectedLate ? true : null;
+            _filter.IdOrder = IdOrder;
             var resp = await CommessaService.GetSummaryAsync(_filter);
             _items = resp?.Items ?? new List<CommessaDTO>();
             _count = resp?.MetaData?.TotalCount ?? 0;
@@ -210,6 +252,7 @@
     private async Task Reload() { if (_grid != null) await _grid.Reload(); }
     private async Task OnSearchKey(KeyboardEventArgs e) { if (e.Key == "Enter") await Reload(); }
     private void ClearExpectedLateFilter() => Nav.NavigateTo("/Commesse");
+    private void ClearOrderFilter() => Nav.NavigateTo("/Commesse");
 
     private void OnRowRender(RowRenderEventArgs<CommessaDTO> args)
     {

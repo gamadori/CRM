@@ -20,6 +20,23 @@ namespace CRM.Shared
     }
 
     /// <summary>
+    /// Come nasce e come si governa il piano di una commessa.
+    /// </summary>
+    public enum CommessaKinds
+    {
+        /// <summary>Fasi clonate dal template del prodotto e schedulate all'indietro dalla consegna.</summary>
+        Templated,
+
+        /// <summary>
+        /// Commessa aperta: nessun template, una sola fase di lavorazione e ticket aggiunti a mano
+        /// man mano che il lavoro si presenta (sviluppo software, consulenza, servizi su misura).
+        /// È l'unico caso in cui una commessa può nascere senza fasi da modello: serve a distinguere
+        /// "vuota per scelta" da "vuota per errore", che le guardie sull'avvio produzione rifiutano.
+        /// </summary>
+        Open
+    }
+
+    /// <summary>
     /// Commessa di produzione: il fascicolo di lavorazione di UNA singola unità (matricola).
     /// Nasce dalla riga d'ordine ("Avvia produzione") copiando le fasi dal template del prodotto
     /// (<see cref="GanttPlan"/>). Entità dedicata ed estensibile. Perimetro aziende fail-closed.
@@ -54,6 +71,10 @@ namespace CRM.Shared
         [ForeignKey(nameof(GanttPlan))]
         public int? IdGanttPlan { get; set; }
 
+        /// <summary>Da modello o aperta: decide se il piano nasce dal template o si costruisce a mano.</summary>
+        [Display(Name = "Tipo")]
+        public CommessaKinds Kind { get; set; } = CommessaKinds.Templated;
+
         [Display(Name = "Nome")]
         public string? Name { get; set; }
 
@@ -75,6 +96,16 @@ namespace CRM.Shared
         [Display(Name = "Fine pianificata")]
         public DateTime EndDatePlanned { get; set; }
 
+        /// <summary>
+        /// La consegna promessa all'avvio, scritta una volta sola e mai più toccata: né da
+        /// Riprogramma né dal salvataggio della scheda. <see cref="EndDatePlanned"/> è la consegna
+        /// operativa e si muove, quindi a fine lavoro confronterebbe l'effettivo con l'ultima
+        /// previsione invece che con la prima — e la commessa risulterebbe sempre puntuale.
+        /// Null sulle commesse nate prima della baseline: lì la promessa iniziale non esiste più.
+        /// </summary>
+        [Display(Name = "Consegna promessa")]
+        public DateTime? EndDateBaseline { get; set; }
+
         [Display(Name = "Inizio effettivo")]
         public DateTime? StartDateActual { get; set; }
 
@@ -87,6 +118,11 @@ namespace CRM.Shared
 
         [Display(Name = "Ore a budget")]
         public int? BudgetHours { get; set; }
+
+        /// <summary>Le ore stimate all'avvio. Stesso patto di <see cref="EndDateBaseline"/>:
+        /// <see cref="BudgetHours"/> resta modificabile in corsa, questa no.</summary>
+        [Display(Name = "Ore stimate")]
+        public int? BudgetHoursBaseline { get; set; }
 
         [Display(Name = "Responsabile")]
         [ForeignKey(nameof(UserResponsible))]
@@ -120,6 +156,7 @@ namespace CRM.Shared
         public int? IdOrder { get; set; }
         public string? IdUserResponsible { get; set; }
         public CommessaStates? State { get; set; }
+        public CommessaKinds? Kind { get; set; }
         public bool? ExpectedLate { get; set; }
     }
 }

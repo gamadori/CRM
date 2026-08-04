@@ -26,34 +26,11 @@ namespace CRM.Client.Services
         public Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(int orderRowId)
             => PostAction<List<CommessaDTO>>($"{_pathService}/from-orderrow/{orderRowId}");
 
-        public async Task<APIResponseMessage<List<CommessaDTO>>> StartInternalProductionAsync(InternalProductionRequestDTO req)
-        {
-            try
-            {
-                var resp = await _http.PostAsJsonAsync($"{_pathService}/internal", req);
-                if (resp.IsSuccessStatusCode)
-                {
-                    return JsonSerializer.Deserialize<APIResponseMessage<List<CommessaDTO>>>(
-                        await resp.Content.ReadAsStringAsync(), _json)
-                        ?? new APIResponseMessage<List<CommessaDTO>> { State = false, Message = "null" };
-                }
-                return new APIResponseMessage<List<CommessaDTO>>
-                {
-                    State = false,
-                    Code = resp.StatusCode,
-                    Message = $"{resp.ReasonPhrase}\n\r{await resp.Content.ReadAsStringAsync()}"
-                };
-            }
-            catch (AccessTokenNotAvailableException exception)
-            {
-                exception.Redirect();
-                return new APIResponseMessage<List<CommessaDTO>> { State = false, Code = System.Net.HttpStatusCode.Unauthorized };
-            }
-            catch (Exception ex)
-            {
-                return new APIResponseMessage<List<CommessaDTO>> { State = false, Message = ex.Message };
-            }
-        }
+        public Task<APIResponseMessage<List<CommessaDTO>>> StartInternalProductionAsync(InternalProductionRequestDTO req)
+            => PostBody<InternalProductionRequestDTO, List<CommessaDTO>>($"{_pathService}/internal", req);
+
+        public Task<APIResponseMessage<CommessaDTO>> OpenCommessaAsync(OpenCommessaRequestDTO req)
+            => PostBody<OpenCommessaRequestDTO, CommessaDTO>($"{_pathService}/open-from-orderrow", req);
 
         public Task<APIResponseMessage<CommessaDTO>> ConfirmRowReadyAsync(int orderRowId)
             => PostAction<CommessaDTO>($"{_pathService}/orderrow/{orderRowId}/ready");
@@ -84,11 +61,19 @@ namespace CRM.Client.Services
             }
         }
 
-        private async Task<APIResponseMessage<T>> PostAction<T>(string url)
+        /// <summary>POST senza corpo: le azioni che stanno tutte nella rotta.</summary>
+        private Task<APIResponseMessage<T>> PostAction<T>(string url)
+            => Send<T>(() => _http.PostAsync(url, null));
+
+        /// <summary>POST con corpo JSON.</summary>
+        private Task<APIResponseMessage<T>> PostBody<TRequest, T>(string url, TRequest body)
+            => Send<T>(() => _http.PostAsJsonAsync(url, body));
+
+        private async Task<APIResponseMessage<T>> Send<T>(Func<Task<HttpResponseMessage>> call)
         {
             try
             {
-                var resp = await _http.PostAsync(url, null);
+                var resp = await call();
                 if (resp.IsSuccessStatusCode)
                 {
                     return JsonSerializer.Deserialize<APIResponseMessage<T>>(

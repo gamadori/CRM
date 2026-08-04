@@ -26,6 +26,14 @@ namespace CRM.Server.Services
         /// commesse senza riga d'ordine, schedulate all'indietro dalla data obiettivo indicata.</summary>
         Task<APIResponseMessage<List<CommessaDTO>>> StartInternalProductionAsync(InternalProductionRequestDTO req);
 
+        /// <summary>
+        /// Apre una commessa "a fasi libere" da una riga d'ordine il cui prodotto non ha un template
+        /// (sviluppo software, consulenza, servizi su misura): una sola commessa qualunque sia la
+        /// quantità, una fase di lavorazione a chiusura manuale, ticket aggiunti a mano. Congela
+        /// consegna e ore stimate come baseline del consuntivo.
+        /// </summary>
+        Task<APIResponseMessage<CommessaDTO>> OpenCommessaFromOrderRowAsync(OpenCommessaRequestDTO req);
+
         /// <summary>Conferma "pronto" una riga senza produzione (nessuna commessa).</summary>
         Task<APIResponseMessage<CommessaDTO>> ConfirmRowReadyAsync(int orderRowId);
 

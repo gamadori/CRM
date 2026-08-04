@@ -1,0 +1,167 @@
+@using CRM.Client.Helpers
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+@inject ICommessaService CommessaService
+@inject ITicketTypesService TicketTypeService
+@inject ICompaniesService CompaniesService
+@inject IAGRestClientService Rest
+@inject IBaseRestService<ApplicationUser, UsersFilterModel, string> UsersService
+@inject DialogService DialogService
+@inject NotificationService Notification
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+@* Commessa a fasi libere: lavori senza ciclo predefinito (sviluppo software, consulenza,
+   servizi su misura). Non c'e' template da clonare, quindi le due date e le ore stimate le
+   dichiara l'utente qui — ed e' l'unico momento in cui la baseline si puo' scrivere. *@
+
+<div class="open-commessa">
+    <div class="alert alert-light border d-flex align-items-start gap-2 py-2">
+        <span class="material-icons" style="font-size:20px;">engineering</span>
+        <div class="small">
+            <div class="fw-semibold">@Localize["Il prodotto di questa riga non ha un ciclo di produzione."]</div>
+            @Localize["Nasce una commessa con una sola fase di lavorazione: i ticket si aggiungono a mano, man mano che il lavoro si presenta."]
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12">
+            <label class="form-label small mb-1 d-block">@Localize["Nome commessa"]</label>
+            <input class="form-control" @bind="_req.Name" placeholder="@DefaultName" />
+            <div class="form-text">@Localize["Se lo lasci vuoto viene usata la descrizione della riga d'ordine."]</div>
+        </div>
+
+        <div class="col-sm-6">
+            <label class="form-label small mb-1 d-block">@Localize["Consegna prevista"]</label>
+            <RadzenDatePicker TValue="DateTime?" @bind-Value="_targetDate" DateFormat="dd/MM/yyyy" Style="width:100%" />
+            <div class="form-text">
+                <span class="material-icons align-middle" style="font-size:14px;">flag</span>
+                @Localize["Resta congelata come promessa iniziale: riprogrammare la commessa non la cambia."]
+            </div>
+        </div>
+
+        <div class="col-sm-6">
+            <label class="form-label small mb-1 d-block">@Localize["Ore stimate"]</label>
+            <RadzenNumeric TValue="int?" @bind-Value="_req.BudgetHours" Min="0" Style="width:100%" />
+            <div class="form-text">@Localize["Facoltative. A fine lavoro si confrontano con le ore registrate sui ticket."]</div>
+        </div>
+
+        <div class="col-sm-6">
+            <label class="form-label small mb-1 d-block">@Localize["Tipo dei ticket di lavorazione"]</label>
+            <RadzenDropDown TValue="int?" @bind-Value="_req.IdTicketType" Data="_ticketTypes"
+                            TextProperty="Desc" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                            Placeholder="@Localize["Nessuno"]" Style="width:100%" />
+            @if (_req.IdTicketType == null)
+            {
+                <div class="form-text text-warning-emphasis">
+                    <span class="material-icons align-middle" style="font-size:14px;">warning</span>
+                    @Localize["Senza tipo ticket la fase non potrà aprirne: potrai solo chiuderla a mano."]
+                </div>
+            }
+        </div>
+
+        <div class="col-sm-6">
+            <label class="form-label small mb-1 d-block">@Localize["Gruppo abilitato"]</label>
+            <RadzenDropDown TValue="int?" @bind-Value="_req.IdGroup" Data="_groups"
+                            TextProperty="Name" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                            Placeholder="@Localize["Tutti"]" Style="width:100%" />
+            <div class="form-text">@Localize["Chi può lavorare la fase. Vuoto = nessun vincolo."]</div>
+        </div>
+
+        <div class="col-sm-6">
+            <label class="form-label small mb-1 d-block">@Localize["Capo commessa"]</label>
+            <RadzenDropDown TValue="string" @bind-Value="_req.IdUserResponsible" Data="_headCompanyUsers"
+                            TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                            Placeholder="@Localize["Chi apre la commessa"]" Style="width:100%" />
+        </div>
+
+        <div class="col-sm-6">
+            <label class="form-label small mb-1 d-block">@Localize["Note"]</label>
+            <textarea class="form-control" rows="2" @bind="_req.Note"
+                      placeholder="@Localize["Es. perimetro concordato, riferimento capitolato..."]"></textarea>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-4">
+        <RadzenButton Icon="folder_open" Text="@(_saving ? Localize["Apertura..."] : Localize["Apri commessa"])"
+                      ButtonStyle="ButtonStyle.Primary" Disabled="@(_saving || _targetDate == null)" Click="Create" />
+        <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light"
+                      Disabled="@_saving" Click="@(() => DialogService.Close(false))" />
+    </div>
+</div>
+
+@code {
+    /// <summary>Riga d'ordine da cui nasce la commessa.</summary>
+    [Parameter] public int IdOrderRow { get; set; }
+
+    /// <summary>Descrizione della riga: e' il nome proposto, mostrato come placeholder.</summary>
+    [Parameter] public string DefaultName { get; set; } = string.Empty;
+
+    /// <summary>Consegna dell'ordine, se c'e': altrimenti si parte da oggi + 30 giorni.</summary>
+    [Parameter] public DateTime? DefaultDate { get; set; }
+
+    private readonly OpenCommessaRequestDTO _req = new();
+    private DateTime? _targetDate;
+    private List<TicketType> _ticketTypes = new();
+    private List<CRM.Shared.Group> _groups = new();
+    private List<ApplicationUser> _headCompanyUsers = new();
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _req.IdOrderRow = IdOrderRow;
+        _targetDate = DefaultDate?.Date ?? DateTime.Today.AddDays(30);
+
+        var tipi = await TicketTypeService.GetList(new TicketTypeFilter { PageSize = 1000 });
+        _ticketTypes = tipi?.Items ?? new();
+        _groups = await Rest.Get<CRM.Shared.Group>(ConstHelper.GroupsPath) ?? new();
+        await LoadHeadCompanyUsers();
+    }
+
+    /// <summary>Il capo commessa e' sempre un utente dell'azienda madre: il server rifiuta gli altri.</summary>
+    private async Task LoadHeadCompanyUsers()
+    {
+        var headCompany = await CompaniesService.GetHeadCompanyAsync();
+        if (headCompany?.Id == null)
+        {
+            _headCompanyUsers = new();
+            return;
+        }
+
+        var response = await UsersService.Get(new UsersFilterModel
+        {
+            IdCompany = headCompany.Id,
+            PageSize = 0
+        });
+
+        _headCompanyUsers = response?.Items?.OrderBy(user => user.NameComplete).ToList() ?? new();
+    }
+
+    private async Task Create()
+    {
+        if (_targetDate == null) return;
+
+        _saving = true;
+        try
+        {
+            _req.TargetDate = _targetDate;
+            var resp = await CommessaService.OpenCommessaAsync(_req);
+
+            if (!resp.State)
+            {
+                Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Apertura fallita"]);
+                return;
+            }
+
+            Notification.Notify(NotificationSeverity.Success, Localize["Fatto"], resp.Message ?? Localize["Commessa aperta"]);
+            DialogService.Close(true);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

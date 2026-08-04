@@ -48,6 +48,7 @@ namespace CRM.Server.Services
             var dto = item.ToDTO()!;
             dto.TicketCount = await _context.Tickets.CountAsync(t => t.CommessaFase!.IdCommessa == id);
             dto.BlockedTicketCount = await _context.Tickets.CountAsync(t => t.CommessaFase!.IdCommessa == id && !t.Closed && t.IsBlocked);
+            dto.SpentMinutes = await SpentMinutesAsync(id);
             dto.Permits = await _permitsService.ObjectPermits(dto.IdCompany, dto.IdUserResponsible ?? string.Empty);
             return dto;
         }
@@ -77,6 +78,7 @@ namespace CRM.Server.Services
                         ProductName = c.Product != null ? c.Product.Name : string.Empty,
                         IdArticle = c.IdArticle,
                         ArticleSerial = c.Article != null ? c.Article.SerialNumber : string.Empty,
+                        Kind = c.Kind,
                         Name = c.Name,
                         State = c.State,
                         Priority = c.Priority,
@@ -85,8 +87,10 @@ namespace CRM.Server.Services
                         ExpectedEndDate = c.Phases.Any() ? c.Phases.Max(f => f.EndDate) : c.EndDatePlanned,
                         StartDateActual = c.StartDateActual,
                         EndDateActual = c.EndDateActual,
+                        EndDateBaseline = c.EndDateBaseline,
                         Progress = c.Progress,
                         BudgetHours = c.BudgetHours,
+                        BudgetHoursBaseline = c.BudgetHoursBaseline,
                         IdUserResponsible = c.IdUserResponsible,
                         ResponsibleName = c.UserResponsible != null ? c.UserResponsible.NameComplete : string.Empty,
                         CreatedAt = c.CreatedAt,
@@ -132,6 +136,7 @@ namespace CRM.Server.Services
                     ProductName = c.Product != null ? c.Product.Name : string.Empty,
                     IdArticle = c.IdArticle,
                     ArticleSerial = c.Article != null ? c.Article.SerialNumber : string.Empty,
+                    Kind = c.Kind,
                     Name = c.Name,
                     State = c.State,
                     Priority = c.Priority,
@@ -140,8 +145,10 @@ namespace CRM.Server.Services
                     ExpectedEndDate = c.Phases.Any() ? c.Phases.Max(f => f.EndDate) : c.EndDatePlanned,
                     StartDateActual = c.StartDateActual,
                     EndDateActual = c.EndDateActual,
+                    EndDateBaseline = c.EndDateBaseline,
                     Progress = c.Progress,
                     BudgetHours = c.BudgetHours,
+                    BudgetHoursBaseline = c.BudgetHoursBaseline,
                     IdUserResponsible = c.IdUserResponsible,
                     ResponsibleName = c.UserResponsible != null ? c.UserResponsible.NameComplete : string.Empty,
                     CreatedAt = c.CreatedAt,
@@ -338,6 +345,8 @@ namespace CRM.Server.Services
                     var (startPlan, phases) = BuildPhasesBackward(template, target);
                     commessa.StartDatePlanned = startPlan;
                     commessa.EndDatePlanned = target;
+                    // La data obiettivo di oggi è la promessa su cui si misurerà il consuntivo.
+                    commessa.EndDateBaseline = target;
                     commessa.Phases = phases.Select(p => p.Fase).ToList();
 
                     _context.Commesse.Add(commessa);
@@ -436,6 +445,9 @@ namespace CRM.Server.Services
                     var (startPlan, phases) = BuildPhasesBackward(template, delivery);
                     commessa.StartDatePlanned = startPlan;
                     commessa.EndDatePlanned = delivery;
+                    // La consegna dell'ordine è la promessa: Riprogramma muoverà EndDatePlanned,
+                    // questa resta ferma ed è quella con cui si misura il ritardo a fine commessa.
+                    commessa.EndDateBaseline = delivery;
                     commessa.Phases = phases.Select(p => p.Fase).ToList();
 
                     _context.Commesse.Add(commessa);
@@ -464,6 +476,110 @@ namespace CRM.Server.Services
             {
                 await _logEventService.RegisterAsync(nameof(CommesseService), nameof(StartProductionAsync), EventsTypes.Error, ex);
                 return FailList("Errore nell'avvio produzione", HttpStatusCode.InternalServerError);
+            }
+        }
+
+        public async Task<APIResponseMessage<CommessaDTO>> OpenCommessaFromOrderRowAsync(OpenCommessaRequestDTO req)
+        {
+            try
+            {
+                if (req == null || req.IdOrderRow <= 0)
+                    return Fail("Riga d'ordine obbligatoria", HttpStatusCode.BadRequest);
+
+                var row = await _context.OrderRows
+                    .Include(r => r.Order)
+                    .Include(r => r.Product)
+                    .FirstOrDefaultAsync(r => r.Id == req.IdOrderRow);
+
+                if (row == null || row.Order == null)
+                    return Fail("Riga d'ordine non trovata", HttpStatusCode.NotFound);
+
+                if (!await CanAccessAsync(row.Order.IdCompany))
+                    return Fail("Ordine non accessibile", HttpStatusCode.Forbidden);
+
+                // La riga si avvia una volta sola: senza questa guardia un doppio clic aprirebbe
+                // due commesse per lo stesso lavoro, e la seconda non se ne accorgerebbe.
+                if (row.ProductionStatus != RowProductionStatus.None
+                    || await _context.Commesse.AnyAsync(c => c.IdOrderRow == row.Id))
+                    return Fail("La riga ha già una lavorazione avviata", HttpStatusCode.Conflict);
+
+                if (req.IdTicketType != null && !await _context.TicketTypes.AnyAsync(t => t.Id == req.IdTicketType))
+                    return Fail("Tipo ticket non valido", HttpStatusCode.BadRequest);
+
+                var target = (req.TargetDate ?? row.Order.DeliveryDate ?? DateTime.Today.AddDays(30)).Date;
+                var now = DateTime.Now;
+                // Una consegna già passata è legittima (commessa aperta su lavoro iniziato prima):
+                // in quel caso il piano parte dalla consegna, non da una data successiva alla fine.
+                var start = target < now.Date ? target : now.Date;
+
+                var currentUser = await _permitsService.IdUser();
+                var responsibleUserId = await ResolveDefaultResponsibleAsync(row.IdProduct, req.IdUserResponsible, currentUser);
+
+                var name = FirstNotEmpty(
+                    req.Name,
+                    row.Description,
+                    row.Product?.Name,
+                    $"Commessa ordine {(string.IsNullOrWhiteSpace(row.Order.Number) ? row.Order.Id.ToString() : row.Order.Number)}");
+
+                // Codice progressivo e riga d'ordine nella stessa transazione, come gli altri avvii.
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
+                var commessa = new Commessa
+                {
+                    Code = await GenerateCodeAsync(now),
+                    IdOrderRow = row.Id,
+                    IdCompany = row.Order.IdCompany,
+                    IdProduct = row.IdProduct,
+                    IdGanttPlan = null,
+                    Kind = CommessaKinds.Open,
+                    Name = name,
+                    Note = req.Note,
+                    State = CommessaStates.Planned,
+                    StartDatePlanned = start,
+                    EndDatePlanned = target,
+                    EndDateBaseline = target,
+                    BudgetHours = req.BudgetHours,
+                    BudgetHoursBaseline = req.BudgetHours,
+                    IdUserResponsible = responsibleUserId,
+                    IdUserCreate = currentUser,
+                    CreatedAt = now,
+                    Progress = 0
+                };
+
+                // Una fase sola, a chiusura manuale: i ticket si agganciano alla fase (non esiste un
+                // legame diretto ticket-commessa) e il lavoro qui non ha un ciclo prevedibile, quindi
+                // l'avanzamento non può derivare dai ticket chiusi — con quella regola la commessa
+                // risulterebbe conclusa ogni volta che, per un attimo, non ci sono ticket aperti.
+                commessa.Phases = new List<CommessaFase>
+                {
+                    new()
+                    {
+                        Name = "Lavorazione",
+                        StartDate = start,
+                        EndDate = target,
+                        SortOrder = 1,
+                        State = CommessaFaseStates.Pending,
+                        CompletionMode = CommessaFaseCompletionMode.Manual,
+                        AutoCreateTicketOnTake = req.IdTicketType != null,
+                        RequiresTicket = false,
+                        IdTicketType = req.IdTicketType,
+                        IdGroup = req.IdGroup
+                    }
+                };
+
+                _context.Commesse.Add(commessa);
+                await _context.SaveChangesAsync();
+
+                row.ProductionStatus = RowProductionStatus.InProduction;
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Ok(await GetItemAsync(commessa.Id), $"Commessa {commessa.Code} aperta");
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(CommesseService), nameof(OpenCommessaFromOrderRowAsync), EventsTypes.Error, ex);
+                return Fail("Errore nell'apertura della commessa", HttpStatusCode.InternalServerError);
             }
         }
 
@@ -777,6 +893,30 @@ namespace CRM.Server.Services
         }
 
         // ─── Helper ──────────────────────────────────────────────────────────────
+
+        private static string FirstNotEmpty(params string?[] candidates)
+            => candidates.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c))?.Trim() ?? string.Empty;
+
+        /// <summary>
+        /// Minuti di lavoro registrati sui ticket della commessa, pause escluse.
+        /// Volutamente diverso da <see cref="TicketBillableMinutes"/>, che risponde a "quanto
+        /// fatturo" e scarta i tempi non fatturabili: qui la domanda è quanto è costata la commessa,
+        /// e le ore regalate sono proprio quelle che una stima futura deve conoscere.
+        /// La somma si fa in memoria perché la differenza fra due datetime non è traducibile in SQL
+        /// e DateDiffMinute è solo di SQL Server, mentre questa strada la percorrono anche i test
+        /// con il provider in memoria. I segmenti di una commessa sono al più qualche centinaio.
+        /// </summary>
+        private async Task<int> SpentMinutesAsync(int idCommessa)
+        {
+            var segmenti = await _context.TicketsInterventions
+                .Where(i => i.Ticket.CommessaFase != null && i.Ticket.CommessaFase.IdCommessa == idCommessa)
+                .SelectMany(i => i.TicketInterventionTime)
+                .Where(t => t.TimeType != InterventionTimeType.Break)
+                .Select(t => new { t.StartDateTime, t.EndDateTime })
+                .ToListAsync();
+
+            return segmenti.Sum(s => (int)(s.EndDateTime - s.StartDateTime).TotalMinutes);
+        }
 
         private static APIResponseMessage<CommessaDTO> Fail(string m, HttpStatusCode c) => new() { State = false, Message = m, Code = c };
         private static APIResponseMessage<CommessaDTO> Ok(CommessaDTO? d, string m) => new() { State = true, Data = d, Message = m, Code = HttpStatusCode.OK };
@@ -1092,6 +1232,7 @@ namespace CRM.Server.Services
                 if (args?.IdOrder != null) items = items.Where(c => c.OrderRow != null && c.OrderRow.IdOrder == args.IdOrder);
                 if (args?.IdUserResponsible != null) items = items.Where(c => c.IdUserResponsible == args.IdUserResponsible);
                 if (args?.State != null) items = items.Where(c => c.State == args.State);
+                if (args?.Kind != null) items = items.Where(c => c.Kind == args.Kind);
                 if (args?.ExpectedLate == true)
                 {
                     items = items.Where(c =>

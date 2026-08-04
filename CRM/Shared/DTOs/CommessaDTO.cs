@@ -17,6 +17,8 @@ namespace CRM.Shared.DTOs
         public int? IdArticle { get; set; }
         public string ArticleSerial { get; set; } = string.Empty;
         public int? IdGanttPlan { get; set; }
+        public CommessaKinds Kind { get; set; }
+        public bool IsOpen => Kind == CommessaKinds.Open;
         public string? Name { get; set; }
         public string? Description { get; set; }
         public string? Note { get; set; }
@@ -34,6 +36,34 @@ namespace CRM.Shared.DTOs
         public string? IdUserResponsible { get; set; }
         public string ResponsibleName { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
+
+        // ─── Consuntivo: promesso all'avvio contro quello che è successo davvero ──────────
+
+        public DateTime? EndDateBaseline { get; set; }
+        public int? BudgetHoursBaseline { get; set; }
+
+        /// <summary>
+        /// Minuti di lavoro registrati sui ticket della commessa. Valorizzato solo dalla scheda
+        /// (GetItemAsync): nelle liste costerebbe una query per riga e nessuno lo guarda lì.
+        /// </summary>
+        public int SpentMinutes { get; set; }
+
+        public bool HasBaseline => EndDateBaseline.HasValue;
+
+        /// <summary>
+        /// Giorni fra la consegna promessa all'avvio e quella effettiva. Positivo = in ritardo.
+        /// Finché la commessa è aperta il confronto usa oggi: è la proiezione del ritardo, non un consuntivo.
+        /// </summary>
+        public int? DeliveryDeltaDays => EndDateBaseline == null
+            ? null
+            : ((EndDateActual ?? DateTime.Today).Date - EndDateBaseline.Value.Date).Days;
+
+        public decimal SpentHours => Math.Round(SpentMinutes / 60m, 1);
+
+        /// <summary>Scostamento percentuale delle ore sulla stima iniziale. Positivo = sforamento.</summary>
+        public int? HoursDeltaPct => BudgetHoursBaseline is null or 0
+            ? null
+            : (int)Math.Round((SpentHours - BudgetHoursBaseline.Value) * 100m / BudgetHoursBaseline.Value);
 
         public int PhaseCount { get; set; }
         public int TicketCount { get; set; }
@@ -70,6 +100,35 @@ namespace CRM.Shared.DTOs
         public string? IdUserResponsible { get; set; }
     }
 
+    /// <summary>
+    /// Apertura di una commessa da una riga d'ordine senza template di produzione: lavori che non
+    /// hanno un ciclo predefinito (sviluppo software, consulenza, servizi su misura). Nasce con una
+    /// sola fase di lavorazione e i ticket si aggiungono a mano strada facendo.
+    /// </summary>
+    public class OpenCommessaRequestDTO
+    {
+        public int IdOrderRow { get; set; }
+
+        /// <summary>Consegna prevista. Diventa anche la baseline: è la promessa su cui si misura.</summary>
+        public DateTime? TargetDate { get; set; }
+
+        /// <summary>Ore stimate all'avvio, congelate come baseline per il consuntivo.</summary>
+        public int? BudgetHours { get; set; }
+
+        /// <summary>Tipo dei ticket aperti sulla fase di lavorazione. Senza, la fase non ne apre.</summary>
+        public int? IdTicketType { get; set; }
+
+        /// <summary>Gruppo abilitato a lavorare la fase (null = nessun vincolo).</summary>
+        public int? IdGroup { get; set; }
+
+        /// <summary>Nome della commessa: se vuoto, la descrizione della riga d'ordine.</summary>
+        public string? Name { get; set; }
+
+        public string? Note { get; set; }
+
+        public string? IdUserResponsible { get; set; }
+    }
+
     public static class CommessaMapper
     {
         public static CommessaDTO? ToDTO(this Commessa? c)
@@ -89,6 +148,7 @@ namespace CRM.Shared.DTOs
                 IdArticle = c.IdArticle,
                 ArticleSerial = c.Article != null ? c.Article.SerialNumber : string.Empty,
                 IdGanttPlan = c.IdGanttPlan,
+                Kind = c.Kind,
                 Name = c.Name,
                 Description = c.Description,
                 Note = c.Note,
@@ -99,8 +159,10 @@ namespace CRM.Shared.DTOs
                 ExpectedEndDate = c.Phases != null && c.Phases.Count > 0 ? c.Phases.Max(f => f.EndDate) : c.EndDatePlanned,
                 StartDateActual = c.StartDateActual,
                 EndDateActual = c.EndDateActual,
+                EndDateBaseline = c.EndDateBaseline,
                 Progress = c.Progress,
                 BudgetHours = c.BudgetHours,
+                BudgetHoursBaseline = c.BudgetHoursBaseline,
                 IdUserResponsible = c.IdUserResponsible,
                 ResponsibleName = c.UserResponsible != null ? c.UserResponsible.NameComplete : string.Empty,
                 CreatedAt = c.CreatedAt,

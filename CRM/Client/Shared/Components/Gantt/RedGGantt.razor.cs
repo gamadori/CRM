@@ -1,3 +1,4 @@
+using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
@@ -49,6 +50,8 @@ namespace CRM.Client.Shared.Components.Gantt
         [Parameter] public EventCallback OnProgressChanged { get; set; }
 
         [Inject] private ICommessaFaseService TaskService { get; set; } = default!;
+        [Inject] private ITicketTypesService TicketTypeService { get; set; } = default!;
+        [Inject] private IAGRestClientService Rest { get; set; } = default!;
         [Inject] private DialogService DialogService { get; set; } = default!;
         [Inject] private IJSRuntime JS { get; set; } = default!;
 
@@ -79,6 +82,8 @@ namespace CRM.Client.Shared.Components.Gantt
         private List<CommessaFaseDTO> _parentOptions = new();
         private List<CommessaFaseDTO> _predecessorOptions = new();
         private int? _newPredecessorId;
+        private List<TicketType> _ticketTypes = new();
+        private List<CRM.Shared.Group> _groups = new();
 
         private record CompletionOption(string Text, CommessaFaseCompletionMode Value);
         private readonly List<CompletionOption> _completionOptions = new()
@@ -105,7 +110,23 @@ namespace CRM.Client.Shared.Components.Gantt
             public bool Moved { get; set; }
         }
 
-        protected override async Task OnInitializedAsync() => await LoadAsync();
+        protected override async Task OnInitializedAsync()
+        {
+            await LoadAsync();
+            await LoadEditorListsAsync();
+        }
+
+        /// <summary>
+        /// Tipi ticket e gruppi per l'editor delle fasi. Caricati una volta sola: cambiano di rado
+        /// e servono solo al pannello di modifica, che si apre dopo il primo rendering del piano.
+        /// </summary>
+        private async Task LoadEditorListsAsync()
+        {
+            var tipi = await TicketTypeService.GetList(new TicketTypeFilter { PageSize = 1000 });
+            _ticketTypes = tipi?.Items ?? new();
+            _groups = await Rest.Get<CRM.Shared.Group>(ConstHelper.GroupsPath) ?? new();
+            StateHasChanged();
+        }
 
         /// <summary>
         /// Ricarica il piano dal server. Serve al contenitore dopo un'operazione che cambia le date
@@ -734,8 +755,8 @@ namespace CRM.Client.Shared.Components.Gantt
                 CompletionMode = t.CompletionMode,
                 AutoCreateTicketOnTake = t.AutoCreateTicketOnTake,
                 RequiresTicket = t.RequiresTicket,
-                // Stato, gruppo e tipo ticket non si modificano da qui, ma vanno ricopiati: un DTO
-                // parziale li riporterebbe ai valori di default (fase Pending, senza gruppo).
+                // Lo stato non si modifica da qui ma va ricopiato: un DTO parziale riporterebbe la
+                // fase a Pending. Gruppo e tipo ticket sono modificabili nel pannello sotto.
                 State = t.State,
                 IdGroup = t.IdGroup,
                 IdTicketType = t.IdTicketType,

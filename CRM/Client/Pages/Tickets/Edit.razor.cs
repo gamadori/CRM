@@ -45,6 +45,9 @@ namespace CRM.Client.Pages.Tickets
         ICommessaFaseService CommessaFaseService { get; set; }
 
         [Inject]
+        ICommessaService CommessaService { get; set; }
+
+        [Inject]
         IArticlesService ArticlesService { get; set; }
 
         [Inject]
@@ -159,11 +162,39 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _lockArticle = false;
 
-        /// <summary>Prodotto non modificabile: il ticket nasce da una fase di commessa.</summary>
-        private bool _lockProduct = false;
+        /// <summary>
+        /// Prodotto non modificabile: il ticket appartiene a una fase di commessa e produce quel
+        /// prodotto e nessun altro. Calcolato, non salvato: il legame ora si può creare e togliere
+        /// mentre la scheda è aperta, e un flag fissato all'apertura resterebbe indietro.
+        /// </summary>
+        private bool _lockProduct => _ticket?.IdCommessaFase != null;
 
         /// <summary>Fase di commessa collegata, per mostrare commessa e fase nel form.</summary>
         private CommessaFaseDTO? _commessaFase;
+
+        // ─── Collegamento a una commessa fatto a mano ────────────────────────────
+        // Serve ai ticket che nascono altrove (mail, telefono) e che solo dopo si scoprono
+        // lavoro di una commessa: senza, l'unica strada era "prendi in carico" dalla fase.
+
+        /// <summary>Commesse dell'azienda del ticket, escluse quelle chiuse o annullate.</summary>
+        private List<CommessaDTO> _commesseOptions = new();
+
+        /// <summary>Fasi della commessa scelta, milestone escluse: non sono lavoro.</summary>
+        private List<CommessaFaseDTO> _fasiOptions = new();
+
+        private int? _selectedCommessaId;
+
+        /// <summary>
+        /// True mentre l'utente sta collegando il ticket a mano: tiene aperto il pannello anche
+        /// dopo che la fase è stata scelta, così può ancora cambiare idea prima di salvare.
+        /// </summary>
+        private bool _linkingCommessa;
+
+        /// <summary>
+        /// Il collegamento si modifica solo se non si arriva dalla presa in carico: in quel caso
+        /// la fase è il motivo per cui il ticket esiste, e cambiarla mentre lo si crea non ha senso.
+        /// </summary>
+        private bool CanEditCommessaLink => FaseId == null && IdCommessaFase == null;
 
         private string _header;
 
@@ -254,13 +285,14 @@ namespace CRM.Client.Pages.Tickets
                 _lockCompany = IdCompany != null && IdCompany != 0;
                 _lockArticle = IdArticle != null && IdArticle != 0;
 
-                // Un ticket legato a una fase di commessa produce quel prodotto e nessun altro:
-                // vale sia alla creazione sia riaprendo il ticket in modifica.
-                _lockProduct = _ticket?.IdCommessaFase != null;
-
                 // Commessa e fase vanno mostrate sia in creazione sia in modifica.
                 if (_ticket?.IdCommessaFase != null)
+                {
                     _commessaFase = await CommessaFaseService.GetItemAsync(_ticket.IdCommessaFase.Value);
+                    _selectedCommessaId = _commessaFase?.IdCommessa;
+                }
+
+                await LoadCommesseOptions();
 
                 await LoadArticles();
                 await LoadProducts();
@@ -281,6 +313,89 @@ namespace CRM.Client.Pages.Tickets
                 Console.WriteLine(ex);
             }
         }
+
+        /// <summary>
+        /// Commesse collegabili: quelle dell'azienda del ticket ancora in lavorazione. Consegnate e
+        /// annullate restano fuori perché aggiungere lavoro a una commessa chiusa ne falserebbe il
+        /// consuntivo. Quella già collegata resta comunque nell'elenco, anche se nel frattempo si è
+        /// chiusa, o il campo si svuoterebbe da solo alla riapertura del ticket.
+        /// </summary>
+        private async Task LoadCommesseOptions()
+        {
+            if (!CanEditCommessaLink || _ticket == null || _ticket.IdCompany <= 0)
+                return;
+
+            var commesse = await CommessaService.GetListAsync(new CommessaFilter
+            {
+                IdCompany = _ticket.IdCompany,
+                PageSize = 0
+            }) ?? new();
+
+            _commesseOptions = commesse
+                .Where(c => c.Id == _selectedCommessaId
+                    || c.State is not (CommessaStates.Delivered or CommessaStates.Cancelled))
+                .OrderByDescending(c => c.CreatedAt)
+                .ToList();
+
+            if (_selectedCommessaId != null)
+                await LoadFasiOptions(_selectedCommessaId.Value);
+        }
+
+        private async Task LoadFasiOptions(int idCommessa)
+        {
+            var fasi = await CommessaFaseService.GetTreeAsync(idCommessa) ?? new();
+            _fasiOptions = fasi.Where(f => !f.IsMilestone).ToList();
+        }
+
+        /// <summary>Cambiando commessa la fase scelta non vale più: si ricarica l'elenco e si azzera.</summary>
+        private async Task OnCommessaLinkChanged(object? value)
+        {
+            _selectedCommessaId = value as int?;
+            _ticket.IdCommessaFase = null;
+            _commessaFase = null;
+            _fasiOptions = new();
+
+            if (_selectedCommessaId != null)
+                await LoadFasiOptions(_selectedCommessaId.Value);
+        }
+
+        /// <summary>
+        /// Scelta la fase, il ticket eredita il prodotto della commessa e la scadenza del piano:
+        /// le applica il server al salvataggio, qui si aggiorna solo quello che l'utente vede.
+        /// </summary>
+        private async Task OnCommessaFaseChanged(object? value)
+        {
+            var idFase = value as int?;
+            _ticket.IdCommessaFase = idFase;
+            _commessaFase = idFase == null ? null : await CommessaFaseService.GetItemAsync(idFase.Value);
+
+            if (_commessaFase == null)
+                return;
+
+            if (_commessaFase.IdTicketType != null && _ticket.IdType <= 0)
+            {
+                _ticket.IdType = _commessaFase.IdTicketType.Value;
+                OnChangeTicketType();
+            }
+
+            // Il prodotto ora è quello della commessa e diventa bloccato: lo si propone solo se il
+            // ticket non ne aveva già uno, per non sovrascrivere in silenzio una scelta dell'utente.
+            if (_ticket.IdProduct == null)
+                _ticket.IdProduct = _commesseOptions.FirstOrDefault(c => c.Id == _selectedCommessaId)?.IdProduct;
+        }
+
+        /// <summary>Toglie il ticket dalla commessa: torna un ticket qualunque, prodotto sbloccato.</summary>
+        private void UnlinkCommessa()
+        {
+            _ticket.IdCommessaFase = null;
+            _commessaFase = null;
+            _selectedCommessaId = null;
+            _fasiOptions = new();
+            _linkingCommessa = true;
+        }
+
+        /// <summary>Chiude il pannello lasciando il collegamento com'è: quello che vale è la fase scelta.</summary>
+        private void CancelCommessaLink() => _linkingCommessa = false;
 
         /// <summary>
         /// ✅ NUOVO: Carica gli utenti già assegnati al ticket

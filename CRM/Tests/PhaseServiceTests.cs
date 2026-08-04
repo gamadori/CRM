@@ -7,7 +7,7 @@ namespace CRM.Tests;
 
 /// <summary>
 /// Regole che vivono nel servizio e passano dal database: chi può toccare una fase, quando è
-/// avviabile, cosa succede quando si chiude. Sono i tre bug corretti (gruppo, campi azzerati,
+/// avviabile, cosa succede quando si chiude. Sono i bug corretti (gruppo, stato riportato indietro,
 /// dipendenze non vincolanti) più l'automazione dei ticket previsti.
 /// </summary>
 public class PhaseServiceTests
@@ -25,8 +25,11 @@ public class PhaseServiceTests
             State = stato ?? f.State,
             CompletionMode = f.CompletionMode,
             RequiresTicket = f.RequiresTicket,
-            AutoCreateTicketOnTake = f.AutoCreateTicketOnTake
-            // IdGroup e IdTicketType volutamente assenti: è il DTO parziale che azzerava i campi.
+            AutoCreateTicketOnTake = f.AutoCreateTicketOnTake,
+            // Gruppo e tipo ticket fanno parte del DTO: da quando l'editor li espone, il
+            // salvataggio li scrive, e mandarne uno senza equivarrebbe a cancellarli.
+            IdGroup = f.IdGroup,
+            IdTicketType = f.IdTicketType
         };
 
     // ─── Permessi di gruppo ──────────────────────────────────────────────────
@@ -79,29 +82,50 @@ public class PhaseServiceTests
         Assert.True((await ctx.Service.SaveAsync(Dto(fase))).State);
     }
 
-    // ─── Campi che il DTO parziale azzerava ──────────────────────────────────
+    // ─── Gruppo e tipo ticket ────────────────────────────────────────────────
 
     /// <summary>
-    /// Regressione: l'editor del Gantt non rispediva gruppo e tipo ticket, e il salvataggio li
-    /// scriveva comunque. Rinominare una fase le toglieva il vincolo su chi può eseguirla.
+    /// Da quando l'editor delle fasi espone gruppo e tipo ticket, il DTO comanda: una fase nata
+    /// senza tipo (commessa aperta, fase aggiunta a mano) altrimenti non avrebbe mai potuto aprire
+    /// ticket. Il rovescio è che ora chi chiama deve mandare il DTO completo — prima quei due campi
+    /// venivano ignorati apposta, perché nessun editor li rispediva.
     /// </summary>
     [Fact]
-    public async Task Un_dto_senza_gruppo_e_tipo_ticket_non_li_cancella()
+    public async Task Gruppo_e_tipo_ticket_si_aggiornano_dal_dto()
     {
         using var ctx = ProductionTestContext.ComeAdmin();
         ctx.CreaCommessa();
-        var fase = ctx.CreaFase(1, idGruppo: 5, idTicketType: 7);
+        var fase = ctx.CreaFase(1, idGruppo: null, idTicketType: null);
 
         var dto = Dto(fase);
-        dto.Name = "Rinominata";
-        Assert.Null(dto.IdGroup);          // il DTO arriva davvero senza
-        Assert.Null(dto.IdTicketType);
+        dto.IdGroup = 5;
+        dto.IdTicketType = 7;
 
-        await ctx.Service.SaveAsync(dto);
+        Assert.True((await ctx.Service.SaveAsync(dto)).State);
 
         var salvata = ctx.Rileggi(1);
         Assert.Equal(5, salvata.IdGroup);
         Assert.Equal(7, salvata.IdTicketType);
+    }
+
+    /// <summary>
+    /// Il gruppo si può cambiare solo verso uno di cui si fa parte: stessa regola della creazione.
+    /// Senza, bastava riassegnare la fase a un reparto qualsiasi per uscire dal proprio perimetro.
+    /// </summary>
+    [Fact]
+    public async Task Non_si_sposta_una_fase_a_un_gruppo_di_cui_non_si_fa_parte()
+    {
+        using var ctx = ProductionTestContext.ComeUtenteDelGruppo(3);
+        ctx.CreaCommessa();
+        var fase = ctx.CreaFase(1, idGruppo: 3);
+
+        var dto = Dto(fase);
+        dto.IdGroup = 9; // gruppo altrui
+
+        var resp = await ctx.Service.SaveAsync(dto);
+
+        Assert.False(resp.State);
+        Assert.Equal(3, ctx.Rileggi(1).IdGroup);
     }
 
     /// <summary>Regressione: lo stato arrivava dal DTO, quindi tornava a Pending.</summary>

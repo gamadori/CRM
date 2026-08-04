@@ -3,6 +3,7 @@ using CRM.Server.Data;
 using CRM.Server.Services;
 using CRM.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using NSubstitute;
 
 namespace CRM.Tests;
@@ -28,8 +29,12 @@ public sealed class ProductionTestContext : IDisposable
 
     private ProductionTestContext(bool admin, int? gruppoUtente, List<int>? aziendeVisibili)
     {
+        // Il provider in memoria non ha transazioni e per default alza l'avviso a errore: senza
+        // questo, ogni metodo che ne apre una fallirebbe qui dentro. Il rovescio da tenere a mente
+        // è che un rollback non annulla nulla, quindi questi test non provano l'atomicità.
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase($"crm-test-{Guid.NewGuid()}")
+            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
         Db = new ApplicationDbContext(options);
