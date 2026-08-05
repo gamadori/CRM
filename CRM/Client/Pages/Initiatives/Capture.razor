@@ -1,0 +1,525 @@
+@page "/Initiatives/{Id:int}/Capture"
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Client.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
+@using System.Net.Http.Headers
+@attribute [Authorize]
+@implements IAsyncDisposable
+@inject HttpClient Http
+@inject NavigationManager Nav
+@inject IInitiativeService InitiativeService
+@inject IOfflineLeadQueue Queue
+
+@* Cattura allo stand: trenta secondi, in piedi, una mano occupata. Tutto qui dentro e'
+   subordinato a quel vincolo - bottoni grandi, pochi campi, nessuna navigazione dopo il
+   salvataggio perche' chi registra ha altri dieci biglietti in mano.
+
+   E soprattutto: il biglietto viene messo in coda LOCALE prima di qualunque tentativo di rete.
+   In fiera la rete e' quella che e', e un salvataggio fallito perderebbe il contatto senza che
+   nessuno se ne accorga - l'unico danno irreversibile di tutto il modulo. *@
+
+<div class="capture-page">
+    <header class="capture-head">
+        <div>
+            <strong>@(_initiative?.Name ?? "Cattura biglietti")</strong>
+            <small>@_savedCount raccolti in questa sessione</small>
+        </div>
+        <button type="button" class="link-btn" @onclick="Leave">Chiudi</button>
+    </header>
+
+    @if (_pending > 0)
+    {
+        <div class="pending-bar">
+            <span>
+                <strong>@_pending</strong>
+                @(_pending == 1 ? " biglietto da inviare" : " biglietti da inviare")
+                @(_online ? "" : " - senza rete")
+            </span>
+            <button type="button" @onclick="() => FlushAsync()" disabled="@_flushing">
+                @(_flushing ? "Invio..." : "Invia ora")
+            </button>
+        </div>
+    }
+
+    <label class="photo-drop @(_busy ? "busy" : "")">
+        <InputFile OnChange="OnPhotoSelected" accept="image/*" capture="environment" disabled="@_busy" />
+        @if (_busy)
+        {
+            <span class="photo-text">Lettura in corso...</span>
+        }
+        else if (!string.IsNullOrEmpty(_photoDataUrl))
+        {
+            <img src="@_photoDataUrl" alt="Biglietto" />
+        }
+        else
+        {
+            <span class="photo-icon material-icons">photo_camera</span>
+            <span class="photo-text">Fotografa il biglietto</span>
+        }
+    </label>
+
+    @* Seconda via, senza "capture": con quell'attributo il telefono apre SOLO la fotocamera e la
+       galleria diventa irraggiungibile. Allo stand e' giusto cosi' - un tocco, nessun menu - ma la
+       sera in albergo si caricano i biglietti fotografati durante il giorno, ed e' anche l'unica
+       uscita per chi ha negato il permesso alla fotocamera.
+       Si mostra solo dove serve: su desktop l'area grande apre gia' il selettore file, e ripeterlo
+       sarebbe soltanto rumore. *@
+    <label class="from-gallery @(_busy ? "busy" : "")">
+        <InputFile OnChange="OnPhotoSelected" accept="image/*" disabled="@_busy" />
+        <span class="material-icons">photo_library</span>
+        <span>Scegli una foto già scattata</span>
+    </label>
+
+    @if (!string.IsNullOrWhiteSpace(_readNote))
+    {
+        <div class="read-note @(_readOk ? "ok" : "warn")">@_readNote</div>
+    }
+
+    <div class="fields">
+        <label>
+            <span>Nome</span>
+            <input @bind="_name" @bind:event="oninput" autocomplete="off" />
+        </label>
+        <label>
+            <span>Azienda</span>
+            <input @bind="_company" @bind:event="oninput" autocomplete="off" />
+        </label>
+        <label>
+            <span>Telefono</span>
+            <input @bind="_phone" @bind:event="oninput" inputmode="tel" autocomplete="off" />
+        </label>
+        <label>
+            <span>Email</span>
+            <input @bind="_email" @bind:event="oninput" inputmode="email" autocomplete="off" />
+        </label>
+    </div>
+
+    @* Il campo che conta davvero: nome e azienda stanno sul cartoncino e si recuperano sempre,
+       quello che questa persona ha chiesto non sta da nessuna parte e stasera e' gia' evaporato. *@
+    <label class="want">
+        <span>Cosa voleva</span>
+        <textarea rows="3" @bind="_note" @bind:event="oninput"
+                  placeholder="Due parole bastano: «preventivo per fresatrice 5 assi», «cerca rivenditore in Spagna»"></textarea>
+    </label>
+
+    <div class="heat">
+        <button type="button" class="@(_heat == Heat.Hot ? "sel hot" : "hot")" @onclick="@(() => _heat = Heat.Hot)">Caldo</button>
+        <button type="button" class="@(_heat == Heat.Warm ? "sel warm" : "warm")" @onclick="@(() => _heat = Heat.Warm)">Tiepido</button>
+        <button type="button" class="@(_heat == Heat.Cold ? "sel cold" : "cold")" @onclick="@(() => _heat = Heat.Cold)">Freddo</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_error))
+    {
+        <div class="read-note warn">@_error</div>
+    }
+
+    <button type="button" class="save-btn" disabled="@(_busy || _saving)" @onclick="Save">
+        @(_saving ? "Salvataggio..." : "Salva e avanti")
+    </button>
+
+    @if (_recent.Count > 0)
+    {
+        <section class="recent">
+            <h4>Ultimi raccolti</h4>
+            @foreach (var row in _recent)
+            {
+                <div class="recent-row">
+                    <strong>@row.Label</strong>
+                    <small>@row.When.ToString("HH:mm")</small>
+                </div>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private enum Heat { Hot, Warm, Cold }
+
+    private record Captured(string Label, DateTime When);
+
+    private InitiativeDTO? _initiative;
+    private DotNetObjectReference<Capture>? _selfRef;
+
+    private string? _name;
+    private string? _company;
+    private string? _phone;
+    private string? _email;
+    private string? _note;
+    private Heat _heat = Heat.Warm;
+
+    private string? _photoDataUrl;
+    private string? _photoFileName;
+    private string? _readNote;
+    private bool _readOk;
+    private string? _error;
+
+    private bool _busy;
+    private bool _saving;
+    private bool _flushing;
+    private bool _online = true;
+    private int _savedCount;
+    private int _pending;
+    private readonly List<Captured> _recent = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _initiative = await InitiativeService.GetItemAsync(Id);
+
+        _selfRef = DotNetObjectReference.Create(this);
+        await Queue.WatchOnlineAsync(_selfRef);
+
+        _pending = await Queue.CountAsync();
+        _online = await Queue.IsOnlineAsync();
+
+        // Aprire la pagina e' gia' un tentativo di svuotare la coda: se la rete e' tornata durante
+        // la notte, i biglietti di ieri partono senza che nessuno debba ricordarsene.
+        await FlushAsync();
+    }
+
+    /// <summary>Chiamato dal browser quando la rete torna: e' il momento giusto per riprovare.</summary>
+    [JSInvokable]
+    public async Task OnBackOnline()
+    {
+        _online = true;
+        await FlushAsync();
+        StateHasChanged();
+    }
+
+    private async Task OnPhotoSelected(InputFileChangeEventArgs e)
+    {
+        _error = null;
+        _readNote = null;
+        _busy = true;
+
+        try
+        {
+            var file = e.File;
+            byte[] bytes;
+            using (var stream = file.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024))
+            using (var memory = new MemoryStream())
+            {
+                await stream.CopyToAsync(memory);
+                bytes = memory.ToArray();
+            }
+
+            var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "image/jpeg" : file.ContentType;
+            _photoFileName = string.IsNullOrWhiteSpace(file.Name) ? "biglietto.jpg" : file.Name;
+
+            // Si riduce subito, non al momento dell'invio: cosi' la foto piccola e' quella che
+            // finisce in coda, e la coda di una giornata di fiera resta di qualche megabyte
+            // invece che di qualche centinaio.
+            _photoDataUrl = await Queue.ShrinkAsync($"data:{contentType};base64,{Convert.ToBase64String(bytes)}");
+
+            await ReadCardAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Foto non acquisita: {ex.Message}. Puoi comunque compilare i campi a mano.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    /// <summary>
+    /// Lettura automatica dei campi. Richiede la rete e puo' fallire: e' una comodita', non un
+    /// passaggio obbligato. La foto e' gia' al sicuro nel modulo e finira' in coda comunque.
+    /// </summary>
+    private async Task ReadCardAsync()
+    {
+        if (string.IsNullOrEmpty(_photoDataUrl))
+            return;
+
+        if (!await Queue.IsOnlineAsync())
+        {
+            _online = false;
+            _readOk = false;
+            _readNote = "Senza rete: compila i campi a mano, la foto viene salvata comunque.";
+            return;
+        }
+
+        try
+        {
+            using var content = BuildPhotoContent(_photoDataUrl, _photoFileName);
+            var response = await Http.PostAsync("api/BusinessCards/analyze", content);
+            var result = await response.Content.ReadFromJsonAsync<BusinessCardExtractionResult>();
+
+            if (result == null || !result.Success)
+            {
+                _readOk = false;
+                _readNote = result?.ErrorMessage ?? "Lettura non riuscita: compila i campi a mano.";
+                return;
+            }
+
+            // Si riempiono solo i campi vuoti: se l'operatore ha gia' scritto qualcosa, la lettura
+            // automatica non deve portargliela via.
+            _name = string.IsNullOrWhiteSpace(_name) ? result.FullName : _name;
+            _company = string.IsNullOrWhiteSpace(_company) ? result.CompanyName : _company;
+            _phone = string.IsNullOrWhiteSpace(_phone) ? result.Phone : _phone;
+            _email = string.IsNullOrWhiteSpace(_email) ? result.Email : _email;
+
+            _readOk = true;
+            _readNote = "Campi letti dal biglietto: controllali con un'occhiata.";
+        }
+        catch (Exception ex)
+        {
+            _readOk = false;
+            _readNote = "Lettura non disponibile: compila i campi a mano, la foto resta allegata.";
+            Console.WriteLine($"Lettura biglietto non riuscita: {ex.Message}");
+        }
+    }
+
+    private async Task Save()
+    {
+        _error = null;
+
+        // Serve almeno qualcosa: un lead completamente vuoto non e' un contatto, e' rumore.
+        if (string.IsNullOrWhiteSpace(_name) && string.IsNullOrWhiteSpace(_company)
+            && string.IsNullOrWhiteSpace(_email) && string.IsNullOrWhiteSpace(_phone)
+            && string.IsNullOrEmpty(_photoDataUrl))
+        {
+            _error = "Fotografa il biglietto o scrivi almeno un dato.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            // Il nome e' obbligatorio sull'entita', ma allo stand puo' mancare: se c'e' la foto il
+            // contatto e' recuperabile, quindi si salva con un segnaposto invece di bloccare.
+            // Perdere il biglietto sarebbe irreversibile, un nome da sistemare no.
+            var label = FirstFilled(_name, _company, _email, _phone) ?? $"Biglietto delle {DateTime.Now:HH:mm}";
+
+            await Queue.EnqueueAsync(new PendingLead
+            {
+                Name = label,
+                CompanyName = _company,
+                Email = _email,
+                Phone = _phone,
+                Note = _note,
+                IdInitiative = Id,
+                Score = _heat switch { Heat.Hot => 80, Heat.Warm => 50, _ => 20 },
+                PhotoDataUrl = _photoDataUrl,
+                PhotoFileName = _photoFileName,
+                CreatedAt = DateTime.Now
+            });
+
+            // Il modulo si svuota solo DOPO che la coda ha accettato: da qui in poi il contatto
+            // esiste su questo dispositivo e non dipende piu' dalla rete.
+            _savedCount++;
+            _pending = await Queue.CountAsync();
+            _recent.Insert(0, new Captured(label, DateTime.Now));
+            if (_recent.Count > 5)
+                _recent.RemoveAt(_recent.Count - 1);
+
+            ResetForm();
+        }
+        catch (Exception ex)
+        {
+            // La coda non ha accettato: il modulo NON si svuota, perche' in questo istante il
+            // contatto esiste solo qui sullo schermo.
+            _error = $"Biglietto non messo in coda ({ex.Message}). I dati sono ancora qui: riprova o annotalo a parte.";
+            return;
+        }
+        finally
+        {
+            _saving = false;
+        }
+
+        await FlushAsync();
+    }
+
+    /// <summary>
+    /// Prova a mandare al server i biglietti in coda, uno per volta e in ordine di arrivo.
+    /// <para>
+    /// Si ferma al primo fallimento: se la rete non c'e', insistere sugli altri serve solo a
+    /// consumare batteria. Un elemento esce dalla coda solo quando il server lo ha accettato.
+    /// </para>
+    /// </summary>
+    private async Task FlushAsync()
+    {
+        if (_flushing)
+            return;
+
+        _online = await Queue.IsOnlineAsync();
+        if (!_online)
+            return;
+
+        _flushing = true;
+        try
+        {
+            foreach (var item in await Queue.ListAsync())
+            {
+                if (!await SendAsync(item))
+                    break;
+
+                await Queue.RemoveAsync(item.Id);
+            }
+        }
+        finally
+        {
+            _pending = await Queue.CountAsync();
+            _flushing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<bool> SendAsync(PendingLead item)
+    {
+        try
+        {
+            // La foto si carica adesso, non alla cattura: allo stand poteva non esserci rete.
+            // Se il caricamento non riesce il lead NON parte, altrimenti resterebbe a sistema
+            // senza la sua fonte e nessuno saprebbe piu' da quale biglietto veniva.
+            int? attachmentId = null;
+            if (!string.IsNullOrEmpty(item.PhotoDataUrl))
+            {
+                attachmentId = await UploadPhotoAsync(item.PhotoDataUrl, item.PhotoFileName);
+                if (attachmentId == null)
+                    return false;
+            }
+
+            var lead = new Lead
+            {
+                Name = item.Name ?? "Biglietto",
+                CompanyName = item.CompanyName,
+                Email = item.Email,
+                Phone = item.Phone,
+                Note = item.Note,
+                IdInitiative = item.IdInitiative,
+                IdBusinessCard = attachmentId,
+                Source = LeadSource.Event,
+                Status = LeadStatus.New,
+                Score = item.Score,
+                CreatedAt = item.CreatedAt
+            };
+
+            var response = await Http.PostAsJsonAsync("api/Leads", lead);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Invio biglietto rimandato: {ex.Message}");
+            return false;
+        }
+    }
+
+    private async Task<int?> UploadPhotoAsync(string dataUrl, string? fileName)
+    {
+        try
+        {
+            using var content = BuildPhotoContent(dataUrl, fileName);
+            var response = await Http.PostAsync("api/AttachmentFiles/upload", content);
+
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            return (await response.Content.ReadFromJsonAsync<UploadResult>())?.Id;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Foto non caricata: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static MultipartFormDataContent BuildPhotoContent(string dataUrl, string? fileName)
+    {
+        var comma = dataUrl.IndexOf(',');
+        var header = comma > 0 ? dataUrl[..comma] : "data:image/jpeg;base64";
+        var payload = comma > 0 ? dataUrl[(comma + 1)..] : dataUrl;
+
+        var contentType = header.Replace("data:", string.Empty).Replace(";base64", string.Empty);
+        if (string.IsNullOrWhiteSpace(contentType))
+            contentType = "image/jpeg";
+
+        var part = new ByteArrayContent(Convert.FromBase64String(payload));
+        part.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+
+        var content = new MultipartFormDataContent();
+        content.Add(part, "file", string.IsNullOrWhiteSpace(fileName) ? "biglietto.jpg" : fileName);
+        return content;
+    }
+
+    private void ResetForm()
+    {
+        _name = null;
+        _company = null;
+        _phone = null;
+        _email = null;
+        _note = null;
+        _heat = Heat.Warm;
+        _photoDataUrl = null;
+        _photoFileName = null;
+        _readNote = null;
+        _error = null;
+    }
+
+    private static string? FirstFilled(params string?[] values)
+        => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
+
+    private void Leave() => Nav.NavigateTo($"/Initiatives/{Id}/Info");
+
+    public async ValueTask DisposeAsync()
+    {
+        _selfRef?.Dispose();
+        await Queue.DisposeAsync();
+    }
+
+    private class UploadResult
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+    }
+}
+
+<style>
+    .capture-page { max-width: 560px; margin: 0 auto; padding: 1rem; display: grid; gap: .85rem; background: var(--crm-page-bg); color: var(--crm-text); min-height: calc(100vh - 1rem); }
+    .capture-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .capture-head strong { display: block; font-size: 1.05rem; }
+    .capture-head small { color: var(--crm-text-muted); }
+    .link-btn { border: 0; background: transparent; color: var(--crm-link); font-weight: 800; }
+    .pending-bar { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .6rem .75rem; border-radius: 10px; background: color-mix(in srgb, #d97706 14%, transparent); color: #b45309; font-weight: 800; }
+    .pending-bar button { min-height: 38px; padding: 0 .8rem; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: inherit; font-weight: 850; }
+    .pending-bar button:disabled { opacity: .5; }
+    .photo-drop { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4rem; min-height: 190px; border: 2px dashed color-mix(in srgb, var(--crm-link) 45%, var(--crm-border)); border-radius: 12px; background: var(--crm-surface-raised); cursor: pointer; overflow: hidden; }
+    .photo-drop.busy { opacity: .6; }
+    .photo-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .photo-drop img { width: 100%; max-height: 260px; object-fit: contain; }
+    .photo-icon { font-size: 44px; color: var(--crm-link); }
+    .photo-text { color: var(--crm-text-muted); font-weight: 800; }
+    .from-gallery { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; margin: -.35rem auto 0; padding: .5rem .75rem; border-radius: 8px; color: var(--crm-text-muted); font-size: .88rem; font-weight: 750; cursor: pointer; }
+    .from-gallery:hover { background: var(--crm-surface-hover); color: var(--crm-link); }
+    .from-gallery.busy { opacity: .5; pointer-events: none; }
+    .from-gallery input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .from-gallery .material-icons { font-size: 18px; }
+    /* Su desktop l'area grande apre gia' il selettore file: qui la seconda via non serve. */
+    @@media (hover: hover) and (pointer: fine) { .from-gallery { display: none; } }
+    .read-note { padding: .6rem .75rem; border-radius: 8px; font-weight: 700; font-size: .88rem; }
+    .read-note.ok { background: color-mix(in srgb, #16a34a 12%, transparent); color: #16a34a; }
+    .read-note.warn { background: color-mix(in srgb, #d97706 14%, transparent); color: #b45309; }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+    .fields label, .want { display: grid; gap: .25rem; min-width: 0; }
+    .fields span, .want span { color: var(--crm-text-muted); font-size: .78rem; font-weight: 800; text-transform: uppercase; }
+    .fields input, .want textarea { min-height: 46px; padding: .55rem .7rem; border: 1px solid var(--crm-border); border-radius: 10px; background: var(--crm-surface-raised); color: var(--crm-text); font: inherit; font-size: 1rem; }
+    .want textarea { min-height: unset; resize: vertical; }
+    .fields input:focus-visible, .want textarea:focus-visible { border-color: var(--crm-link); outline: none; }
+    .heat { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .heat button { min-height: 52px; border: 1px solid var(--crm-border); border-radius: 10px; background: var(--crm-surface-raised); color: var(--crm-text-muted); font-weight: 850; font-size: 1rem; }
+    .heat .sel.hot { background: color-mix(in srgb, #dc2626 16%, transparent); border-color: #dc2626; color: #dc2626; }
+    .heat .sel.warm { background: color-mix(in srgb, #d97706 16%, transparent); border-color: #d97706; color: #b45309; }
+    .heat .sel.cold { background: color-mix(in srgb, #0284c7 16%, transparent); border-color: #0284c7; color: #0284c7; }
+    .save-btn { min-height: 60px; border: 0; border-radius: 12px; background: var(--crm-link); color: var(--crm-surface-raised); font-size: 1.1rem; font-weight: 850; }
+    .save-btn:disabled { opacity: .55; }
+    .recent { border-top: 1px solid var(--crm-border); padding-top: .6rem; }
+    .recent h4 { margin: 0 0 .4rem; font-size: .78rem; text-transform: uppercase; color: var(--crm-text-muted); }
+    .recent-row { display: flex; justify-content: space-between; gap: 1rem; padding: .3rem 0; }
+    .recent-row small { color: var(--crm-text-muted); }
+    @@media (max-width: 460px) { .fields { grid-template-columns: 1fr; } }
+</style>

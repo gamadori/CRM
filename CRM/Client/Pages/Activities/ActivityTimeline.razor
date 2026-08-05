@@ -26,7 +26,7 @@
             <div class="col-md-3">
                 <label class="form-label mb-1 small">@Localize["Assegna a"]</label>
                 <RadzenDropDown TValue="string" @bind-Value="_new.IdAssignee" Data="_users"
-                                TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                                TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true"
                                 Placeholder="@Localize["Me stesso"]" Style="width:100%" />
             </div>
             <div class="col-md-2">

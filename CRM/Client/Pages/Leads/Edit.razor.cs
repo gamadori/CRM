@@ -19,11 +19,21 @@ namespace CRM.Client.Pages.Leads
         [Inject] private IProductsService ProductsService { get; set; } = default!;
         [Inject] private IEnumService EnumService { get; set; } = default!;
         [Inject] private IHeaderService HeaderService { get; set; } = default!;
+        [Inject] private IInitiativeService InitiativeService { get; set; } = default!;
 
         [Parameter] public int? Id { get; set; }
 
+        /// <summary>
+        /// Iniziativa di provenienza ("/Leads/New?idInitiative=12"): registrando il lead dal
+        /// resoconto della fiera il contesto sta nel percorso e non si sceglie da una tendina.
+        /// Allo stand nessuno cerca la fiera in un elenco.
+        /// </summary>
+        [SupplyParameterFromQuery(Name = "idInitiative")]
+        public int? InitiativeParam { get; set; }
+
         private PageHeaderModel? _pageHeader;
         private LeadDTO? _lead;
+        private List<InitiativeDTO> _initiatives = new();
         private List<CompanyDTO> _companies = new();
         private List<ProductDTO> _products = new();
         private int? _selectedProductId;
@@ -44,11 +54,22 @@ namespace CRM.Client.Pages.Leads
             {
                 _companies = await CompaniesService.GetListAsync(new CompanyFilter()) ?? new List<CompanyDTO>();
                 _products = await ProductsService.GetListAsync(new ProductFilter()) ?? new List<ProductDTO>();
+                _initiatives = await InitiativeService.GetListAsync(new InitiativeFilter()) ?? new List<InitiativeDTO>();
+
                 _lead = Id == null
                     ? new LeadDTO { CreatedAt = DateTime.Now, Source = LeadSource.Manual, Status = LeadStatus.New, Score = 10 }
                     : await LeadService.GetItemAsync(Id.Value);
 
                 _lead ??= new LeadDTO();
+
+                // Arrivando da un'iniziativa si imposta anche la FONTE: un lead raccolto in fiera
+                // che resta "Manuale" e' una riga che mente in ogni statistica per canale, e
+                // nessuno tornera' a correggerla.
+                if (Id == null && InitiativeParam is > 0)
+                {
+                    _lead.IdInitiative = InitiativeParam;
+                    _lead.Source = LeadSource.Event;
+                }
                 SyncCompanyNameFromSelection();
                 RecalculateLeadValue();
             }
@@ -69,7 +90,7 @@ namespace CRM.Client.Pages.Leads
                 var response = await LeadService.PostAsync(_lead.ToEntity()!);
                 if (response.State)
                 {
-                    NavigationManager.NavigateTo($"/{ConstHelper.ClientLeadsPath}");
+                    NavigationManager.NavigateTo(ReturnUrl);
                 }
                 else
                 {
@@ -82,7 +103,16 @@ namespace CRM.Client.Pages.Leads
             }
         }
 
-        private void Cancel() => NavigationManager.NavigateTo($"/{ConstHelper.ClientLeadsPath}");
+        /// <summary>
+        /// Si torna da dove si e' arrivati. Chi sta registrando i biglietti di una fiera ne ha
+        /// altri dieci in mano: rispedirlo sull'elenco generale dei lead gli costa due clic per
+        /// ogni biglietto.
+        /// </summary>
+        private string ReturnUrl => InitiativeParam is > 0
+            ? $"/{ConstHelper.ClientInitiativesPath}/{InitiativeParam}/Info"
+            : $"/{ConstHelper.ClientLeadsPath}";
+
+        private void Cancel() => NavigationManager.NavigateTo(ReturnUrl);
 
         private string StatusText(LeadStatus status) => EnumService.Get(typeof(LeadStatus), status);
 

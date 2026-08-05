@@ -1,25 +1,28 @@
-﻿using Microsoft.Extensions.Logging;
+using CRM.Mobile.Pages;
+using CRM.Mobile.Services;
 
-namespace CRM.Mobile
+namespace CRM.Mobile;
+
+public static class MauiProgram
 {
-    public static class MauiProgram
+    public static MauiApp CreateMauiApp()
     {
-        public static MauiApp CreateMauiApp()
-        {
-            var builder = MauiApp.CreateBuilder();
-            builder
-                .UseMauiApp<App>()
-                .ConfigureFonts(fonts =>
-                {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-                });
+        var builder = MauiApp.CreateBuilder();
 
-#if DEBUG
-		builder.Logging.AddDebug();
-#endif
+        builder.UseMauiApp<App>();
 
-            return builder.Build();
-        }
+        builder.Services.AddSingleton<AppSettingsStore>();
+        builder.Services.AddSingleton<CrmApiClient>();
+        builder.Services.AddSingleton<LeadQueueStore>();
+        builder.Services.AddSingleton<InitiativeCatalog>();
+
+        // Singleton: si iscrive al cambio di connettivita' e deve restare vivo anche quando
+        // nessuna pagina e' aperta, altrimenti il ritorno della rete non fa ripartire la coda.
+        builder.Services.AddSingleton<LeadSyncService>();
+
+        builder.Services.AddSingleton<CapturePage>();
+        builder.Services.AddSingleton<SettingsPage>();
+
+        return builder.Build();
     }
 }

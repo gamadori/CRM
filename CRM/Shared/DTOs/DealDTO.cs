@@ -12,6 +12,12 @@ namespace CRM.Shared.DTOs
         /// <summary>Attivita' da cui l'opportunita' e' nata; null se non viene da una visita.</summary>
         public int? IdActivityOrigin { get; set; }
 
+        /// <summary>
+        /// Iniziativa che l'ha generata. Valorizzato per fiere e campagne; sulle trasferte resta
+        /// null di proposito e il legame corre lungo <see cref="IdActivityOrigin"/>.
+        /// </summary>
+        public int? IdInitiative { get; set; }
+
 
         [Display(Name = nameof(Deal.Date), ResourceType = typeof(Resources.Models.Deal))]
         public DateTime Date { get; set; }
@@ -92,6 +98,7 @@ namespace CRM.Shared.DTOs
                 Date = deal.Date,
                 Name = deal.Name,
                 IdActivityOrigin = deal.IdActivityOrigin,
+                IdInitiative = deal.IdInitiative,
                 IdCompany = deal.IdCompany,
                 IdContact = deal.IdContact,
                 Amount = deal.Amount,
@@ -123,6 +130,7 @@ namespace CRM.Shared.DTOs
                 Date = dto.Date,
                 Name = dto.Name,
                 IdActivityOrigin = dto.IdActivityOrigin,
+                IdInitiative = dto.IdInitiative,
                 IdCompany = dto.IdCompany,
                 IdContact = dto.IdContact,
                 Amount = dto.Amount,

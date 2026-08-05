@@ -3,48 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CRM.Shared.DTOs
 {
-    public class ExternalTicketApiKeyDTO
-    {
-        public int Id { get; set; }
-
-        public string Name { get; set; } = string.Empty;
-
-        public string? KeyPrefix { get; set; }
-
-        public int IdCompany { get; set; }
-
-        public string? Company { get; set; }
-
-        public bool IsActive { get; set; }
-
-        public DateTime CreatedAt { get; set; }
-
-        public DateTime? ExpiresAt { get; set; }
-
-        public DateTime? LastUsedAt { get; set; }
-
-        public string? Notes { get; set; }
-    }
-
-    public class ExternalTicketApiKeyCreateRequest
-    {
-        [Required]
-        public string Name { get; set; } = string.Empty;
-
-        [Required]
-        public int IdCompany { get; set; }
-
-        public DateTime? ExpiresAt { get; set; }
-
-        public string? Notes { get; set; }
-    }
-
-    public class ExternalTicketApiKeyCreateResponse
-    {
-        public ExternalTicketApiKeyDTO ApiKey { get; set; } = new();
-
-        public string PlainTextKey { get; set; } = string.Empty;
-    }
+    // I DTO delle chiavi non stanno piu' qui: sono confluiti in ApiKeyDTO / ApiKeyCreateRequest /
+    // ApiKeyCreateResponse, condivisi con backup macchina e app fiera. Qui restano i ticket.
 
     public class ExternalTicketCreateRequest
     {

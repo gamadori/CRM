@@ -1222,10 +1222,8 @@ namespace CRM.Server.Services
                 if (allowed != null)
                     items = items.Where(c => c.IdCompany != null && allowed.Contains(c.IdCompany.Value));
 
-                if (args?.OrderBy != null && args.OrderBy.Length > 0)
-                    items = items.OrderBy(args.OrderBy);
-                else
-                    items = items.OrderByDescending(c => c.CreatedAt).ThenByDescending(c => c.Id);
+                items = GridSort.Apply(items, args?.OrderBy, SortableColumns,
+                    q => q.OrderByDescending(c => c.CreatedAt).ThenByDescending(c => c.Id));
 
                 if (args?.IdCompany != null) items = items.Where(c => c.IdCompany == args.IdCompany);
                 if (args?.IdOrderRow != null) items = items.Where(c => c.IdOrderRow == args.IdOrderRow);
@@ -1258,5 +1256,25 @@ namespace CRM.Server.Services
                 return null;
             }
         }
+
+        /// <summary>
+        /// Nomi di colonna della griglia (proprieta' di <see cref="CommessaDTO"/>) tradotti nei
+        /// percorsi dell'entita' <see cref="Commessa"/>: la griglia ordina per CompanyName e
+        /// OrderNumber, che su Commessa non esistono. Il numero d'ordine sta due livelli sotto,
+        /// perche' la commessa e' agganciata alla riga d'ordine, non all'ordine.
+        /// A destra devono esserci colonne vere: NameComplete e' [NotMapped] e in un ORDER BY non
+        /// e' traducibile in SQL, per questo il responsabile si ordina per cognome.
+        /// </summary>
+        private static readonly Dictionary<string, string> SortableColumns = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["CompanyName"] = "Company.RagioneSociale",
+            ["OrderNumber"] = "OrderRow.Order.Number",
+            ["ProductName"] = "Product.Name",
+            ["ArticleSerial"] = "Article.SerialNumber",
+            ["ResponsibleName"] = "UserResponsible.Surname",
+        };
+
+        internal static string? TranslateOrderBy(string? orderBy)
+            => GridSort.Translate<Commessa>(orderBy, SortableColumns);
     }
 }

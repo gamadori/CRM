@@ -1,0 +1,207 @@
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+@inject DialogService DialogService
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+@* Conferma della chiusura a mano di una fase. Qui nessun ticket chiudera' la fase al posto
+   dell'utente: e' una dichiarazione di lavoro concluso che sblocca le fasi successive e ne fa
+   nascere i ticket, quindi il dialogo deve dire per esteso cosa sta per succedere. *@
+
+<div class="fase-complete-dialog">
+    <div class="fase-complete-head">
+        <span class="material-icons">task_alt</span>
+        <div>
+            <strong>@Fase.Name</strong>
+            <small>@SubTitle</small>
+        </div>
+    </div>
+
+    <p class="fase-complete-lead">
+        @string.Format(Localize["Stai dichiarando concluso a mano il lavoro della fase «{0}». Nessun ticket la chiuderà al posto tuo: è la tua conferma a farla risultare completata."], Fase.Name)
+    </p>
+
+    <div class="fase-complete-block">
+        <div class="fase-complete-label">@Localize["Confermando"]</div>
+        <ul class="fase-complete-list">
+            <li>
+                <span class="material-icons">check</span>
+                <span>@Localize["La fase passa a Completata con avanzamento al 100%."]</span>
+            </li>
+            <li>
+                <span class="material-icons">check</span>
+                <span>@Localize["L'avanzamento della commessa viene ricalcolato di conseguenza."]</span>
+            </li>
+            @if (Successors.Count > 0)
+            {
+                <li>
+                    <span class="material-icons">check</span>
+                    <span>
+                        @string.Format(Localize["Si sbloccano le fasi che dipendono da questa: {0}. Quelle senza altri predecessori aperti ricevono subito i ticket previsti a inizio fase."], string.Join(", ", Successors))
+                    </span>
+                </li>
+            }
+            else
+            {
+                <li>
+                    <span class="material-icons">check</span>
+                    <span>@Localize["Nessuna fase dipende da questa: non verranno sbloccate altre lavorazioni."]</span>
+                </li>
+            }
+        </ul>
+    </div>
+
+    @if (Fase.OpenTicketCount > 0)
+    {
+        <div class="fase-complete-note fase-complete-note-warn">
+            <span class="material-icons">report_problem</span>
+            <span>
+                @string.Format(
+                    Fase.OpenTicketCount == 1
+                        ? Localize["C'è ancora {0} ticket aperto su questa fase: non verrà chiuso e resterà a carico di chi lo ha in gestione."]
+                        : Localize["Ci sono ancora {0} ticket aperti su questa fase: non verranno chiusi e resteranno a carico di chi li ha in gestione."],
+                    Fase.OpenTicketCount)
+            </span>
+        </div>
+    }
+
+    <div class="fase-complete-note">
+        <span class="material-icons">undo</span>
+        <span>@Localize["Si torna indietro riportando l'avanzamento sotto il 100% dalla scheda Pianificazione, ma i ticket già generati sulle fasi successive restano aperti."]</span>
+    </div>
+
+    <div class="fase-complete-actions">
+        <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
+                      Click="@(() => DialogService.Close(false))" />
+        <RadzenButton Icon="check" Text="@Localize["Completa la fase"]" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat"
+                      Click="@(() => DialogService.Close(true))" />
+    </div>
+</div>
+
+<style>
+    .fase-complete-dialog {
+        min-width: min(560px, 82vw);
+    }
+
+    .fase-complete-head {
+        align-items: center;
+        border-bottom: 1px solid var(--crm-border);
+        display: flex;
+        gap: .75rem;
+        margin-bottom: .9rem;
+        padding-bottom: .85rem;
+    }
+
+        .fase-complete-head .material-icons {
+            color: var(--bs-success, #198754);
+            font-size: 28px;
+        }
+
+        .fase-complete-head strong,
+        .fase-complete-head small {
+            display: block;
+        }
+
+        .fase-complete-head small {
+            color: var(--crm-text-muted);
+            font-size: .78rem;
+            margin-top: .15rem;
+        }
+
+    .fase-complete-lead {
+        color: var(--crm-text);
+        margin-bottom: 1rem;
+    }
+
+    .fase-complete-label {
+        color: var(--crm-text-muted);
+        font-size: .74rem;
+        font-weight: 700;
+        margin-bottom: .35rem;
+        text-transform: uppercase;
+    }
+
+    .fase-complete-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+        .fase-complete-list li {
+            align-items: flex-start;
+            display: flex;
+            gap: .45rem;
+            margin-bottom: .35rem;
+        }
+
+        .fase-complete-list .material-icons {
+            color: var(--bs-success, #198754);
+            font-size: 18px;
+            line-height: 1.4;
+        }
+
+    .fase-complete-note {
+        align-items: flex-start;
+        background: var(--crm-surface-muted);
+        border-radius: 6px;
+        color: var(--crm-text-muted);
+        display: flex;
+        font-size: .84rem;
+        gap: .45rem;
+        margin-top: .85rem;
+        padding: .5rem .7rem;
+    }
+
+        .fase-complete-note .material-icons {
+            font-size: 1.05rem;
+        }
+
+    .fase-complete-note-warn {
+        background: color-mix(in srgb, var(--bs-warning, #ffc107) 18%, var(--crm-surface));
+        color: var(--crm-text);
+    }
+
+    .fase-complete-actions {
+        display: flex;
+        gap: .5rem;
+        justify-content: flex-end;
+        margin-top: 1.15rem;
+    }
+
+    @@media (max-width: 700px) {
+        .fase-complete-dialog {
+            min-width: 0;
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public CommessaFaseDTO Fase { get; set; } = new();
+
+    /// <summary>Codice della commessa, mostrato nel sottotitolo per non chiudere la fase sbagliata.</summary>
+    [Parameter] public string CommessaCode { get; set; } = string.Empty;
+
+    /// <summary>Nomi delle fasi che hanno questa come predecessore: sono quelle che si sbloccano.</summary>
+    [Parameter] public List<string> Successors { get; set; } = new();
+
+    private string SubTitle
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(CommessaCode)) parts.Add(CommessaCode);
+            if (!string.IsNullOrWhiteSpace(Fase.GroupName)) parts.Add(Fase.GroupName);
+            parts.Add($"{Localize["Completamento"]}: {CompletionModeText}");
+            return string.Join(" · ", parts);
+        }
+    }
+
+    private string CompletionModeText => Fase.CompletionMode switch
+    {
+        CommessaFaseCompletionMode.Manual => Localize["Manuale"],
+        CommessaFaseCompletionMode.AnyTicketClosed => Localize["Un ticket chiuso"],
+        CommessaFaseCompletionMode.ProgressManual => Localize["Percentuale manuale"],
+        _ => Localize["Tutti i ticket chiusi"]
+    };
+}

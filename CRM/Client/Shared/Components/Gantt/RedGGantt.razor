@@ -61,13 +61,13 @@
                         <div class="col-md-4">
                             <label class="form-label small mb-1 d-block">Tipo ticket</label>
                             <RadzenDropDown TValue="int?" @bind-Value="_editing.IdTicketType" Data="_ticketTypes"
-                                            TextProperty="Desc" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                                            TextProperty="Desc" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true"
                                             Placeholder="Nessuno" Style="width:100%" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small mb-1 d-block">Gruppo abilitato</label>
                             <RadzenDropDown TValue="int?" @bind-Value="_editing.IdGroup" Data="_groups"
-                                            TextProperty="Name" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                                            TextProperty="Name" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true"
                                             Placeholder="Tutti" Style="width:100%" />
                         </div>
                         <div class="col-md-4">
@@ -95,7 +95,7 @@
                                 </span>
                             }
                             <RadzenDropDown TValue="int?" @bind-Value="_newPredecessorId" Data="_predecessorOptions" TextProperty="Name" ValueProperty="Id"
-                                            AllowClear="true" AllowFiltering="true" Placeholder="Aggiungi predecessore" Style="width:220px" />
+                                            AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Placeholder="Aggiungi predecessore" Style="width:220px" />
                             <button class="btn btn-sm btn-outline-secondary" @onclick="AddDependency" disabled="@(_newPredecessorId == null)">Aggiungi</button>
                         </div>
                     </div>

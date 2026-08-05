@@ -16,11 +16,7 @@ namespace CRM.Shared
         MachineApi = 2
     }
 
-    public enum MachineParameterApiKeyPermission
-    {
-        ReadOnly = 1,
-        ReadWrite = 2
-    }
+    // Il permesso della chiave di backup e' ora ApiKeyPermission, condiviso con gli altri ambiti.
 
     public class MachineBackup
     {
@@ -66,29 +62,7 @@ namespace CRM.Shared
         public Article? Article { get; set; }
     }
 
-    public class MachineParameterApiKey
-    {
-        [Key]
-        public int Id { get; set; }
-
-        [Required]
-        public string Name { get; set; } = string.Empty;
-
-        [Required]
-        public string KeyHash { get; set; } = string.Empty;
-
-        public string? KeyPrefix { get; set; }
-
-        public MachineParameterApiKeyPermission Permission { get; set; }
-
-        public bool IsActive { get; set; } = true;
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        public DateTime? ExpiresAt { get; set; }
-
-        public DateTime? LastUsedAt { get; set; }
-
-        public string? Notes { get; set; }
-    }
+    // La chiave dei backup non vive piu' qui: e' confluita in ApiKey (ambito MachineBackup),
+    // insieme a quelle dei ticket esterni e dell'app fiera. Erano tre tabelle con gli stessi
+    // campi e tre punti di verifica da ricordare di correggere insieme.
 }

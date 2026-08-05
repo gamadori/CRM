@@ -1,4 +1,4 @@
-using CRM.Client.Services;
+﻿using CRM.Client.Services;
 using CRM.Server.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
@@ -14,11 +14,13 @@ namespace CRM.Server.Controllers
     {
         private const string ApiKeyHeader = "X-Api-Key";
         private readonly IExternalTicketApiService _service;
+        private readonly IApiKeyService _apiKeys;
         private readonly ILogEventService _logEventService;
 
-        public ExternalTicketsController(IExternalTicketApiService service, ILogEventService logEventService)
+        public ExternalTicketsController(IExternalTicketApiService service, IApiKeyService apiKeys, ILogEventService logEventService)
         {
             _service = service;
+            _apiKeys = apiKeys;
             _logEventService = logEventService;
         }
 
@@ -97,7 +99,7 @@ namespace CRM.Server.Controllers
             }
         }
 
-        private Task<ExternalTicketApiKey?> AuthorizeAsync()
+        private Task<ApiKey?> AuthorizeAsync()
         {
             var key = Request.Headers.TryGetValue(ApiKeyHeader, out var values)
                 ? values.FirstOrDefault()
@@ -114,7 +116,7 @@ namespace CRM.Server.Controllers
                 }
             }
 
-            return _service.ValidateApiKeyAsync(key);
+            return _apiKeys.ValidateAsync(key, ApiKeyScope.ExternalTicket);
         }
     }
 }

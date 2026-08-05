@@ -1,0 +1,38 @@
+@using Microsoft.AspNetCore.Identity
+@using CRM.Shared
+@inject SignInManager<ApplicationUser> SignInManager
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@*
+    Rete di sicurezza per il layout di default di Identity UI.
+
+    Quel layout arriva dal pacchetto e pretende un parziale "_LoginPartial": se la pagina che sta
+    rendendo non e' una di quelle del progetto - che usano "_LayoutIdentity" - si ritrova senza, e
+    l'intera richiesta muore con un 500 al posto della pagina di accesso. Il progetto un
+    "_LoginPartial" ce l'ha gia' in Pages/Shared e in Areas/Identity/Pages/Shared, ma la ricerca
+    parte dalla cartella della pagina in esecuzione e in certe combinazioni - cultura nell'URL,
+    pagina servita dal pacchetto - nessuna delle due viene raggiunta.
+
+    Questo file sta nella cartella dove il layout del pacchetto cerca per primo, cosi' il caso
+    limite smette di essere un errore fatale: al massimo si vede un menu essenziale.
+*@
+
+<ul class="navbar-nav">
+    @if (SignInManager.IsSignedIn(User))
+    {
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index">@User.Identity?.Name</a>
+        </li>
+        <li class="nav-item">
+            <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
+                <button type="submit" class="nav-link btn btn-link text-dark">Esci</button>
+            </form>
+        </li>
+    }
+    else
+    {
+        <li class="nav-item">
+            <a class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Login">Accedi</a>
+        </li>
+    }
+</ul>

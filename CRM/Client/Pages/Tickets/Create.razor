@@ -197,7 +197,7 @@
                                 <div class="field-grid">
                                     <div class="field">
                                         <DisplayName For="@(() => _ticket.IdProduct)" />
-                                        <RadzenDropDown @bind-Value="@_ticket.IdProduct" AllowClear="true" AllowFiltering="true" Change="OnChangeIdProduct"
+                                        <RadzenDropDown @bind-Value="@_ticket.IdProduct" AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Change="OnChangeIdProduct"
                                                         Data="@_products" Count="@_products.Count()" TextProperty="Name" ValueProperty="Id"
                                                         Style="width:100%" />
                                     </div>
@@ -259,7 +259,7 @@
                             {
                                 <div class="field">
                                     <DisplayName For="@(() => _ticket.IdUserAssigned)" />
-                                    <RadzenDropDownDataGrid @bind-value="@_ticket.IdUserAssigned" TValue="string" LoadData="@LoadUsers" AllowFiltering="true"
+                                    <RadzenDropDownDataGrid @bind-value="@_ticket.IdUserAssigned" TValue="string" LoadData="@LoadUsers" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                                             AllowClear="true" Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id"
                                                             Change="@OnChangeIdUser" Style="width:100%" />
                                 </div>

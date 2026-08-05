@@ -32,6 +32,11 @@
                                 ButtonStyle="@(_includeTickets ? ButtonStyle.Primary : ButtonStyle.Light)"
                                 Variant="Variant.Flat"
                                 Click="@ToggleTickets" />
+                <RadzenButton Icon="@(_includeInitiatives ? "badge" : "badge")"
+                                Text="@Localize["Iniziative"]"
+                                ButtonStyle="@(_includeInitiatives ? ButtonStyle.Primary : ButtonStyle.Light)"
+                                Variant="Variant.Flat"
+                                Click="@ToggleInitiatives" />
                 <RadzenButton Icon="support_agent" Text="@Localize["Pianificazione Ticket"]" ButtonStyle="ButtonStyle.Light"
                                 Variant="Variant.Flat" Click="@GoToTicketPlanning" />
             </div>
@@ -189,6 +194,7 @@
                 <span><i style="background:#1976d2"></i> @Localize["Attività"]</span>
                 <span><i style="background:#c62828"></i> @Localize["Scadute"]</span>
                 <span><i style="background:#455a64"></i> @Localize["Ticket"]</span>
+                <span><i style="background:#2563eb"></i> @Localize["Iniziative"]</span>
             </div>
             <RadzenScheduler @ref="_scheduler" TItem="CalendarItemDTO" Data="_filteredItems" class="agenda-scheduler"
                              StartProperty="Start" EndProperty="End" TextProperty="Title" SelectedIndex="0"
@@ -488,6 +494,7 @@
     private bool _loading = true;
     private bool _includeActivities = true;
     private bool _includeTickets = true;
+    private bool _includeInitiatives = true;
     private bool _canViewTeam;
     private CalendarScope _scope = CalendarScope.Mine;
     private DateTime? _dateFrom = DateTime.Today.AddDays(-45);
@@ -504,7 +511,8 @@
     {
         All,
         Activities,
-        Tickets
+        Tickets,
+        Initiatives
     }
 
     private enum CalendarStateFilter
@@ -521,7 +529,8 @@
     {
         new(Localize["Tutto"], CalendarSourceFilter.All),
         new(Localize["Attività"], CalendarSourceFilter.Activities),
-        new(Localize["Ticket"], CalendarSourceFilter.Tickets)
+        new(Localize["Ticket"], CalendarSourceFilter.Tickets),
+        new(Localize["Iniziative"], CalendarSourceFilter.Initiatives)
     };
 
     private List<FilterOption<CalendarStateFilter>> StateOptions => new()
@@ -578,7 +587,8 @@
                 ? CalendarScope.User
                 : _scope,
             IncludeActivities = _includeActivities,
-            IncludeTickets = _includeTickets
+            IncludeTickets = _includeTickets,
+            IncludeInitiatives = _includeInitiatives
         });
 
         if (!string.IsNullOrWhiteSpace(agenda.ErrorMessage))
@@ -663,6 +673,13 @@
         if (args.Data.Source == CalendarItemSource.Ticket)
         {
             _ = OpenTicketActions(args.Data);
+            return;
+        }
+
+        if (args.Data.Source == CalendarItemSource.InitiativeSchedule)
+        {
+            if (!string.IsNullOrEmpty(args.Data.Url))
+                Nav.NavigateTo(args.Data.Url);
             return;
         }
 
@@ -802,8 +819,7 @@
     private async Task ToggleActivities()
     {
         _includeActivities = !_includeActivities;
-        if (!_includeActivities && !_includeTickets)
-            _includeTickets = true;
+        EnsureOneSourceSelected();
         SyncSourceFilter();
         await Load();
     }
@@ -811,8 +827,15 @@
     private async Task ToggleTickets()
     {
         _includeTickets = !_includeTickets;
-        if (!_includeActivities && !_includeTickets)
-            _includeActivities = true;
+        EnsureOneSourceSelected();
+        SyncSourceFilter();
+        await Load();
+    }
+
+    private async Task ToggleInitiatives()
+    {
+        _includeInitiatives = !_includeInitiatives;
+        EnsureOneSourceSelected();
         SyncSourceFilter();
         await Load();
     }
@@ -846,28 +869,37 @@
         _stateFilter = CalendarStateFilter.Open;
         _includeActivities = true;
         _includeTickets = true;
+        _includeInitiatives = true;
 
         await Load();
     }
 
     private void SyncSourceToggles()
     {
-        (_includeActivities, _includeTickets) = _sourceFilter switch
+        (_includeActivities, _includeTickets, _includeInitiatives) = _sourceFilter switch
         {
-            CalendarSourceFilter.Activities => (true, false),
-            CalendarSourceFilter.Tickets => (false, true),
-            _ => (true, true)
+            CalendarSourceFilter.Activities => (true, false, false),
+            CalendarSourceFilter.Tickets => (false, true, false),
+            CalendarSourceFilter.Initiatives => (false, false, true),
+            _ => (true, true, true)
         };
     }
 
     private void SyncSourceFilter()
     {
-        _sourceFilter = (_includeActivities, _includeTickets) switch
+        _sourceFilter = (_includeActivities, _includeTickets, _includeInitiatives) switch
         {
-            (true, false) => CalendarSourceFilter.Activities,
-            (false, true) => CalendarSourceFilter.Tickets,
+            (true, false, false) => CalendarSourceFilter.Activities,
+            (false, true, false) => CalendarSourceFilter.Tickets,
+            (false, false, true) => CalendarSourceFilter.Initiatives,
             _ => CalendarSourceFilter.All
         };
+    }
+
+    private void EnsureOneSourceSelected()
+    {
+        if (!_includeActivities && !_includeTickets && !_includeInitiatives)
+            _includeInitiatives = true;
     }
 
     private static CalendarSummaryDTO BuildSummary(List<CalendarItemDTO> items)
@@ -899,6 +931,9 @@
     {
         if (item.Source == CalendarItemSource.Ticket)
             return "confirmation_number";
+
+        if (item.Source == CalendarItemSource.InitiativeSchedule)
+            return "badge";
 
         return item.ActivityKind.HasValue ? ActivityUi.Icon(item.ActivityKind.Value) : "event";
     }

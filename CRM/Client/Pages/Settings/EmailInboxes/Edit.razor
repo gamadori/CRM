@@ -47,12 +47,12 @@ else
                         <div class="mb-1">
                             <DisplayName For="@(() => _item.IdDefaultType)" />
                             <RadzenDropDown TValue="int?" @bind-Value="_item.IdDefaultType" Data="_ticketTypes" ValueProperty="Id" TextProperty="Desc"
-                                            AllowClear="true" AllowFiltering="true" Placeholder="Tipo ticket..." Style="width:100%" />
+                                            AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Placeholder="Tipo ticket..." Style="width:100%" />
                         </div>
                         <div class="mb-1">
                             <DisplayName For="@(() => _item.IdDefaultOwner)" />
                             <RadzenDropDown TValue="string" @bind-Value="_item.IdDefaultOwner" Data="_users" ValueProperty="Id" TextProperty="NameComplete"
-                                            AllowClear="true" AllowFiltering="true" Placeholder="Proprietario..." Style="width:100%" />
+                                            AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Placeholder="Proprietario..." Style="width:100%" />
                         </div>
                         <div class="text-muted small">La creazione automatica di ticket richiede tipo e proprietario impostati; altrimenti l'email diventa un'attività.</div>
                     }

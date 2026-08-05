@@ -1,0 +1,377 @@
+@page "/Settings/ApiKeys"
+@* Rotte delle due pagine precedenti: le chiavi erano gestite in posti diversi (e quelle dei
+   ticket esterni da nessuna parte). Si tengono perché i segnalibri non finiscano su un 404. *@
+@page "/Settings/MachineParameterApiKeys"
+@page "/Settings/FieldApiKeys"
+@using CRM.Client.Services
+@using CRM.Client.Models
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Microsoft.AspNetCore.Authorization
+@using Radzen
+@attribute [Authorize(Policy = "AdminRole")]
+@inject IApiKeysService KeysService
+@inject ICompaniesService CompaniesService
+@inject IBaseRestService<ApplicationUser, UsersFilterModel, string> UsersService
+@inject DialogService DialogService
+
+<PageHeader Model="_pageHeader"></PageHeader>
+
+<div class="api-keys">
+    <section class="api-keys-head">
+        <div>
+            <span>Accessi senza login</span>
+            <h1>Chiavi API</h1>
+            <p>
+                Ogni chiave vale <strong>solo per il suo ambito</strong>: quella di una macchina non può
+                scrivere lead, quella di un telefono in fiera non può leggere i backup.
+            </p>
+        </div>
+        <button type="button" class="primary" @onclick="NewKey">
+            <span class="material-icons">add</span>
+            <span>Chiave</span>
+        </button>
+    </section>
+
+    @if (_created != null)
+    {
+        <section class="created-key">
+            <div>
+                <span>Chiave creata</span>
+                <strong>@_created.ApiKey?.Name</strong>
+                <p>Copiala adesso: dopo il ricaricamento resteranno solo prefisso e date.</p>
+            </div>
+            <code>@_created.PlainTextKey</code>
+        </section>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <div class="api-keys-alert">@_message</div>
+    }
+
+    @if (_draft != null)
+    {
+        <section class="api-keys-editor">
+            <div class="editor-grid">
+                <label>
+                    <span>Ambito</span>
+                    <select @bind="_draft.Scope">
+                        <option value="@ApiKeyScope.Field">App fiera</option>
+                        <option value="@ApiKeyScope.MachineBackup">Backup macchina</option>
+                        <option value="@ApiKeyScope.ExternalTicket">Ticket esterni</option>
+                    </select>
+                </label>
+
+                <label>
+                    <span>Nome</span>
+                    <input @bind="_draft.Name" placeholder="@NamePlaceholder" />
+                </label>
+
+                @* L'intestatario cambia con l'ambito, e per il backup non esiste: mostrare un
+                   campo che non verrà usato è il modo più rapido per farlo compilare a vuoto. *@
+                @if (_draft.Scope == ApiKeyScope.Field)
+                {
+                    <label>
+                        <span>Intestata a</span>
+                        <RadzenDropDown TValue="string" @bind-Value="_draft.IdUser" Data="_users"
+                                        TextProperty="NameComplete" ValueProperty="Id"
+                                        AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Placeholder="Scegli la persona" Style="width:100%" />
+                    </label>
+                }
+                else if (_draft.Scope == ApiKeyScope.ExternalTicket)
+                {
+                    <label>
+                        <span>Azienda</span>
+                        <RadzenDropDown TValue="int?" @bind-Value="_draft.IdCompany" Data="_companies"
+                                        TextProperty="RagioneSociale" ValueProperty="Id"
+                                        AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Placeholder="Scegli l'azienda" Style="width:100%" />
+                    </label>
+                }
+                else
+                {
+                    <label>
+                        <span>Permesso</span>
+                        <select @bind="_draft.Permission">
+                            <option value="@ApiKeyPermission.ReadOnly">Solo lettura</option>
+                            <option value="@ApiKeyPermission.ReadWrite">Lettura e scrittura</option>
+                        </select>
+                    </label>
+                }
+
+                <label>
+                    <span>Scadenza (facoltativa)</span>
+                    <input type="date" @bind="_expiresAt" />
+                </label>
+
+                <label class="col-wide">
+                    <span>Note</span>
+                    <input @bind="_draft.Notes" placeholder="Dispositivo, referente, fiera..." />
+                </label>
+            </div>
+
+            <div class="editor-actions">
+                <button type="button" class="ghost" @onclick="CancelDraft">Annulla</button>
+                <button type="button" class="primary" disabled="@_saving" @onclick="SaveDraft">
+                    @(_saving ? "Creazione..." : "Crea chiave")
+                </button>
+            </div>
+        </section>
+    }
+
+    <section class="api-keys-filters">
+        <button type="button" class="chip-filter @(_filter == null ? "active" : "")" @onclick="@(() => Filter(null))">Tutte</button>
+        @foreach (var scope in new[] { ApiKeyScope.Field, ApiKeyScope.MachineBackup, ApiKeyScope.ExternalTicket })
+        {
+            <button type="button" class="chip-filter @(_filter == scope ? "active" : "")" @onclick="@(() => Filter(scope))">@ScopeText(scope)</button>
+        }
+    </section>
+
+    @if (_loading)
+    {
+        <Waiting></Waiting>
+    }
+    else if (_keys.Count == 0)
+    {
+        <section class="empty-state">
+            <span class="material-icons">key_off</span>
+            <strong>Nessuna chiave</strong>
+            <p>Creane una per ogni dispositivo o integrazione che accede senza login.</p>
+        </section>
+    }
+    else
+    {
+        <section class="api-keys-table">
+            <table>
+                <thead>
+                    <tr><th>Nome</th><th>Ambito</th><th>Intestata a</th><th>Chiave</th><th>Stato</th><th>Ultimo uso</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var key in _keys)
+                    {
+                        <tr class="@(key.IsUsable ? "" : "inactive")">
+                            <td>
+                                <strong>@key.Name</strong>
+                                <small>@(string.IsNullOrWhiteSpace(key.Notes) ? "-" : key.Notes)</small>
+                            </td>
+                            <td><span class="scope-chip">@ScopeText(key.Scope)</span></td>
+                            <td>
+                                @key.Holder
+                                @if (key.Scope == ApiKeyScope.MachineBackup)
+                                {
+                                    <small>@(key.Permission == ApiKeyPermission.ReadOnly ? "solo lettura" : "lettura e scrittura")</small>
+                                }
+                            </td>
+                            <td><code>@key.KeyPrefix…</code></td>
+                            <td>
+                                @if (!key.IsActive)
+                                {
+                                    <span class="chip revoked">revocata</span>
+                                }
+                                else if (key.IsExpired)
+                                {
+                                    <span class="chip revoked">scaduta</span>
+                                }
+                                else
+                                {
+                                    <span class="chip active">attiva</span>
+                                    @if (key.ExpiresAt != null)
+                                    {
+                                        <small>fino al @key.ExpiresAt.Value.ToString("dd/MM/yyyy")</small>
+                                    }
+                                }
+                            </td>
+                            <td>@(key.LastUsedAt?.ToString("dd/MM/yyyy HH:mm") ?? "mai")</td>
+                            <td class="row-actions">
+                                @if (key.IsActive)
+                                {
+                                    <button type="button" @onclick="@(() => Revoke(key))">Revoca</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+</div>
+
+@code {
+    private PageHeaderModel? _pageHeader;
+    private List<ApiKeyDTO> _keys = new();
+    private List<ApplicationUser> _users = new();
+    private List<CompanyDTO> _companies = new();
+    private ApiKeyCreateRequest? _draft;
+    private ApiKeyCreateResponse? _created;
+    private ApiKeyScope? _filter;
+    private DateTime? _expiresAt;
+    private string? _message;
+    private bool _loading = true;
+    private bool _saving;
+
+    [Inject] private IHeaderService HeaderService { get; set; } = default!;
+
+    private string NamePlaceholder => _draft?.Scope switch
+    {
+        ApiKeyScope.Field => "Telefono di Marco, tablet stand...",
+        ApiKeyScope.ExternalTicket => "Portale del cliente Rossi...",
+        _ => "Linea collaudo, macchina SN..."
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        await LoadLookupsAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadLookupsAsync()
+    {
+        var users = await UsersService.GetList(new UsersFilterModel());
+        _users = users?.Items?.OrderBy(x => x.NameComplete).ToList() ?? new List<ApplicationUser>();
+
+        _companies = (await CompaniesService.GetListAsync(new CompanyFilter()))?
+            .OrderBy(x => x.RagioneSociale)
+            .ToList() ?? new List<CompanyDTO>();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _keys = await KeysService.GetAsync(_filter);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Filter(ApiKeyScope? scope)
+    {
+        _filter = scope;
+        await LoadAsync();
+    }
+
+    private void NewKey()
+    {
+        _created = null;
+        _message = null;
+        _expiresAt = null;
+        _draft = new ApiKeyCreateRequest { Scope = _filter ?? ApiKeyScope.Field };
+    }
+
+    private void CancelDraft()
+    {
+        _draft = null;
+        _message = null;
+    }
+
+    private async Task SaveDraft()
+    {
+        if (_draft == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(_draft.Name))
+        {
+            _message = "Serve un nome per riconoscere la chiave nell'elenco.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            _draft.ExpiresAt = _expiresAt?.Date.AddDays(1).AddSeconds(-1);
+
+            var (response, error) = await KeysService.CreateAsync(_draft);
+            if (response == null)
+            {
+                _message = error;
+                return;
+            }
+
+            _created = response;
+            _draft = null;
+            _message = null;
+            await LoadAsync();
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private async Task Revoke(ApiKeyDTO key)
+    {
+        var consequence = key.Scope switch
+        {
+            ApiKeyScope.Field => "Il dispositivo smette subito di poter inviare biglietti; i lead già arrivati restano.",
+            ApiKeyScope.ExternalTicket => "Il cliente smette subito di poter aprire ticket; quelli già aperti restano.",
+            _ => "La macchina smette subito di poter leggere o caricare backup; quelli già caricati restano."
+        };
+
+        if (await DialogService.Confirm($"Revocare la chiave '{key.Name}'? {consequence}", "Revoca chiave") != true)
+            return;
+
+        if (await KeysService.RevokeAsync(key.Id))
+            await LoadAsync();
+        else
+            _message = "Revoca non riuscita.";
+    }
+
+    private static string ScopeText(ApiKeyScope scope) => scope switch
+    {
+        ApiKeyScope.Field => "App fiera",
+        ApiKeyScope.ExternalTicket => "Ticket esterni",
+        _ => "Backup macchina"
+    };
+}
+
+<style>
+    .api-keys { padding: 1.25rem; background: var(--crm-page-bg); color: var(--crm-text); min-height: calc(100vh - 1rem); }
+    .api-keys-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .api-keys-head span { color: var(--crm-text-muted); font-size: .78rem; font-weight: 850; text-transform: uppercase; }
+    .api-keys-head h1 { margin: .1rem 0 .3rem; font-size: 1.5rem; }
+    .api-keys-head p { margin: 0; color: var(--crm-text-muted); max-width: 66ch; }
+    .primary, .ghost { display: inline-flex; align-items: center; gap: .4rem; padding: .55rem .95rem; border: 1px solid var(--crm-link); border-radius: 8px; background: var(--crm-link); color: var(--crm-surface-raised); font-weight: 800; }
+    .ghost { background: var(--crm-surface-raised); color: var(--crm-link); border-color: var(--crm-border); }
+    .primary:disabled { opacity: .55; }
+    .created-key { display: grid; gap: .5rem; padding: .95rem; margin-bottom: 1rem; border: 1px solid color-mix(in srgb, #16a34a 40%, var(--crm-border)); border-radius: 8px; background: color-mix(in srgb, #16a34a 8%, var(--crm-surface-raised)); }
+    .created-key span { color: var(--crm-text-muted); font-size: .78rem; font-weight: 850; text-transform: uppercase; }
+    .created-key strong { display: block; font-size: 1.05rem; }
+    .created-key p { margin: .2rem 0 0; color: var(--crm-text-muted); font-size: .88rem; }
+    .created-key code { display: block; padding: .6rem .7rem; border-radius: 8px; background: var(--crm-surface-muted); overflow-wrap: anywhere; font-size: .95rem; }
+    .api-keys-alert { padding: .65rem .8rem; margin-bottom: 1rem; border-radius: 8px; background: color-mix(in srgb, #d97706 14%, transparent); color: #b45309; font-weight: 750; }
+    .api-keys-editor, .api-keys-table { border: 1px solid var(--crm-border); border-radius: 8px; background: var(--crm-surface-raised); box-shadow: var(--crm-shadow); }
+    .api-keys-editor { padding: 1rem; margin-bottom: 1rem; }
+    .editor-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .9rem; }
+    .editor-grid label { display: grid; gap: .3rem; min-width: 0; }
+    .editor-grid .col-wide { grid-column: span 4; }
+    .editor-grid span { color: var(--crm-text-muted); font-size: .78rem; font-weight: 800; text-transform: uppercase; }
+    .editor-grid input, .editor-grid select { min-height: 40px; padding: .45rem .6rem; border: 1px solid var(--crm-border); border-radius: 8px; background: var(--crm-surface-raised); color: var(--crm-text); font: inherit; }
+    .editor-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }
+    .api-keys-filters { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .chip-filter { border: 1px solid var(--crm-border); border-radius: 999px; padding: .35rem .85rem; background: var(--crm-surface-raised); color: var(--crm-text-muted); font-weight: 800; font-size: .85rem; }
+    .chip-filter.active { background: var(--crm-link); border-color: var(--crm-link); color: var(--crm-surface-raised); }
+    .api-keys-table { overflow-x: auto; }
+    .api-keys-table table { width: 100%; min-width: 980px; border-collapse: collapse; }
+    .api-keys-table th, .api-keys-table td { padding: .75rem .85rem; border-bottom: 1px solid var(--crm-border); text-align: left; vertical-align: middle; }
+    .api-keys-table th { color: var(--crm-text-muted); font-size: .76rem; text-transform: uppercase; background: var(--crm-surface-muted); }
+    .api-keys-table small { display: block; color: var(--crm-text-muted); }
+    .api-keys-table tr.inactive { opacity: .55; }
+    .api-keys-table code { background: var(--crm-surface-muted); padding: .15rem .4rem; border-radius: 6px; }
+    .row-actions button { border: 1px solid var(--crm-border); border-radius: 8px; padding: .35rem .7rem; background: var(--crm-surface-raised); color: #dc2626; font-weight: 800; }
+    .scope-chip { display: inline-flex; border-radius: 999px; padding: .18rem .55rem; background: var(--crm-surface-muted); font-size: .78rem; font-weight: 800; }
+    .chip { display: inline-flex; border-radius: 999px; padding: .18rem .55rem; font-size: .76rem; font-weight: 850; }
+    .chip.active { background: color-mix(in srgb, #16a34a 15%, transparent); color: #16a34a; }
+    .chip.revoked { background: color-mix(in srgb, #dc2626 14%, transparent); color: #dc2626; }
+    .empty-state { min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4rem; color: var(--crm-text-muted); }
+    .empty-state .material-icons { font-size: 44px; }
+    @@media (max-width: 1100px) { .editor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .editor-grid .col-wide { grid-column: span 2; } }
+    @@media (max-width: 700px) { .editor-grid { grid-template-columns: 1fr; } .editor-grid .col-wide { grid-column: span 1; } }
+</style>

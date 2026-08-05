@@ -6,7 +6,8 @@ namespace CRM.Shared.DTOs
     public enum CalendarItemSource
     {
         Activity,
-        Ticket
+        Ticket,
+        InitiativeSchedule
     }
 
     public enum CalendarScope
@@ -31,6 +32,8 @@ namespace CRM.Shared.DTOs
         public bool IncludeActivities { get; set; } = true;
 
         public bool IncludeTickets { get; set; } = true;
+
+        public bool IncludeInitiatives { get; set; } = true;
     }
 
     public class CalendarItemDTO

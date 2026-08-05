@@ -187,7 +187,7 @@ else
                         <div class="col-md-3">
                             <label class="form-label small mb-1">@Localize["Responsabile"]</label>
                             <RadzenDropDown TValue="string" @bind-Value="_edit.IdUserResponsible" Data="_users" TextProperty="NameComplete" ValueProperty="Id"
-                                            AllowFiltering="true" AllowClear="true" Style="width:100%" />
+                                            AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true" Style="width:100%" />
                         </div>
                         <div class="col-md-2">
                             <label class="form-label small mb-1">@Localize["Priorità"]</label>
@@ -623,14 +623,43 @@ else
         Nav.NavigateTo($"/Commesse/{Id}/Fasi/{f.Id}/Tickets/New?{string.Join("&", q)}");
     }
 
+    /// <summary>
+    /// Chiusura a mano della fase. Passa da un dialogo di conferma perche' l'operazione non e'
+    /// solo un cambio di stato: sblocca le fasi successive e ne fa nascere i ticket, mentre i
+    /// ticket ancora aperti su questa fase restano tali.
+    /// </summary>
     private async Task MarkDone(CommessaFaseDTO f)
     {
+        var confirmed = await DialogService.OpenAsync<FaseCompleteDialog>(
+            Localize["Completare la fase?"],
+            new Dictionary<string, object>
+            {
+                { nameof(FaseCompleteDialog.Fase), f },
+                { nameof(FaseCompleteDialog.CommessaCode), _c?.Code ?? string.Empty },
+                { nameof(FaseCompleteDialog.Successors), SuccessorNames(f) }
+            },
+            new DialogOptions { Width = "600px", CloseDialogOnOverlayClick = false });
+
+        if (confirmed is not true) return;
+
         f.State = CommessaFaseStates.Done;
         f.Progress = 100;
         var resp = await FaseService.SaveAsync(f);
-        if (resp.State) await ReloadHeaderAsync();
+        if (resp.State)
+        {
+            Notification.Notify(NotificationSeverity.Success, Localize["Fatto"], string.Format(Localize["Fase «{0}» completata"], f.Name));
+            await ReloadHeaderAsync();
+        }
         else Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Operazione fallita"]);
     }
+
+    /// <summary>Fasi che hanno questa come predecessore: sono quelle che la chiusura sblocca.</summary>
+    private List<string> SuccessorNames(CommessaFaseDTO f)
+        => _fasi
+            .Where(x => x.Dependencies.Any(d => d.IdPredecessorFase == f.Id))
+            .OrderBy(x => x.SortOrder)
+            .Select(x => x.Name)
+            .ToList();
 
     private async Task OnChangeState(CommessaStates state)
     {

@@ -81,6 +81,18 @@
                         <span class="nav-text">@Localize["Deals"]</span>
                     </NavLink>
 
+                    @* Due voci per la stessa pagina: fiere e trasferte condividono la tabella ma
+                       si leggono con due resoconti diversi, e nel menu vanno cercate separate. *@
+                    <NavLink class="nav-link submenu-link" href="Initiatives/List/Fair" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">storefront</span>
+                        <span class="nav-text">Fiere e campagne</span>
+                    </NavLink>
+
+                    <NavLink class="nav-link submenu-link" href="Initiatives/List/Trip" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">flight_takeoff</span>
+                        <span class="nav-text">Trasferte</span>
+                    </NavLink>
+
                     <NavLink class="nav-link submenu-link" href="Deals/Forecast" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">query_stats</span>
                         <span class="nav-text">Forecast</span>

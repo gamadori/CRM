@@ -31,6 +31,18 @@ namespace CRM.Client.Pages.ExpenseReceipts
         /// </summary>
         [Parameter] public int? ActivityId { get; set; }
 
+        /// <summary>
+        /// Iniziativa di provenienza ("/ExpenseReceipts/Create?idInitiative=12"): registrando la
+        /// spesa dal resoconto della trasferta, il contesto sta nel percorso e non si digita.
+        /// Resta comunque scegliibile a mano, perche' la spesa di una fiera si registra spesso
+        /// dall'elenco generale, giorni dopo.
+        /// </summary>
+        [SupplyParameterFromQuery(Name = "idInitiative")]
+        public int? InitiativeParam { get; set; }
+
+        /// <summary>Iniziative selezionabili: recenti e future (vedi <see cref="LoadInitiativesAsync"/>).</summary>
+        private List<InitiativeDTO> _initiatives = new();
+
         /// <summary>Visita di riferimento; null su ogni altra rotta.</summary>
         private ActivityDTO _activity;
 
@@ -42,14 +54,20 @@ namespace CRM.Client.Pages.ExpenseReceipts
             ? $"Attivita #{ActivityId}"
             : _activitySubject;
 
+        /// <summary>Nome dell'iniziativa scelta, per intestare la pagina con qualcosa di leggibile.</summary>
+        private string InitiativeLabel =>
+            _initiatives.FirstOrDefault(i => i.Id == _model.IdInitiative)?.Name ?? $"Iniziativa #{_model.IdInitiative}";
+
         private string ContextTitle =>
             InterventionId.HasValue ? $"Spesa dell'intervento #{InterventionId}"
             : ActivityId.HasValue ? $"Spesa della visita: {ActivityLabel}"
+            : _model.IdInitiative.HasValue ? $"Spesa di: {InitiativeLabel}"
             : "Costo generale";
 
         private string CancelUrl =>
             InterventionId.HasValue ? $"/TicketInterventions/{InterventionId}/ExpenseReceipts"
             : ActivityId.HasValue ? $"/Activities/{ActivityId}/Info?view=notespese"
+            : InitiativeParam.HasValue ? $"/Initiatives/{InitiativeParam}/Info"
             : "/ExpenseReceipts";
 
         private ExpenseReceiptCreateUpdateDTO _model = new();
@@ -308,6 +326,9 @@ namespace CRM.Client.Pages.ExpenseReceipts
 
             _model.TicketInterventionId = InterventionId;
             _model.IdActivity = ActivityId;
+            _model.IdInitiative = InitiativeParam;
+
+            await LoadInitiativesAsync();
 
             // La data e' obbligatoria: una spesa senza data non e' collocabile in nessun periodo,
             // quindi si parte da oggi invece che da vuoto.
@@ -354,6 +375,35 @@ namespace CRM.Client.Pages.ExpenseReceipts
                 // Senza elenco il campo resta vuoto e la validazione blocca il salvataggio:
                 // meglio fermarsi che attribuire la spesa a qualcuno a caso.
                 Console.WriteLine($"Errore caricamento persone: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Iniziative fra cui scegliere: quelle che si sovrappongono all'ultimo anno o che devono
+        /// ancora finire.
+        /// <para>
+        /// Non tutte, perche' uno scontrino non si attribuisce a una fiera di tre anni fa e un
+        /// elenco lungo cosi' non si scorre; non solo quelle in corso, perche' gli scontrini di una
+        /// trasferta arrivano in ufficio settimane dopo, a viaggio ormai chiuso. Se serve
+        /// un'iniziativa piu' vecchia, la si assegna dalla modifica della nota spese.
+        /// </para>
+        /// </summary>
+        private async Task LoadInitiativesAsync()
+        {
+            try
+            {
+                var items = await InitiativeService.GetListAsync(new InitiativeFilter
+                {
+                    DateFrom = DateTime.Today.AddYears(-1)
+                });
+
+                _initiatives = items ?? new List<InitiativeDTO>();
+            }
+            catch (Exception ex)
+            {
+                // Senza elenco resta un campo vuoto e la spesa si registra lo stesso: il contesto
+                // e' facoltativo per costruzione, perderlo non deve impedire il rimborso.
+                Console.WriteLine($"Iniziative non caricate: {ex.Message}");
             }
         }
 
@@ -682,7 +732,7 @@ namespace CRM.Client.Pages.ExpenseReceipts
         /// </summary>
         private string ListUrlForSavedDate()
         {
-            if (InterventionId.HasValue || ActivityId.HasValue)
+            if (InterventionId.HasValue || ActivityId.HasValue || InitiativeParam.HasValue)
                 return CancelUrl;
 
             var date = EarliestSavedDate();
@@ -734,10 +784,16 @@ namespace CRM.Client.Pages.ExpenseReceipts
             // resta lo stesso, quindi si conserva invece di farlo riselezionare ogni volta.
             var previousSpender = _model.IdUserSpender;
 
+            // Stesso motivo dell'iniziativa: chi svuota la busta della trasferta carica dieci
+            // scontrini di fila, tutti dello stesso viaggio. Rifarglielo scegliere ogni volta e'
+            // il modo piu' sicuro per ritrovarsi meta' spese senza contesto.
+            var previousInitiative = _model.IdInitiative;
+
             _model = new ExpenseReceiptCreateUpdateDTO
             {
                 TicketInterventionId = InterventionId,
                 IdActivity = ActivityId,
+                IdInitiative = previousInitiative,
                 IdUserSpender = previousSpender,
                 Currency = _baseCurrency,
                 TransactionDate = (_activity?.DoneDate ?? _activity?.DueDate)?.Date ?? DateTime.Today

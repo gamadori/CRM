@@ -14,6 +14,7 @@
 @inject NavigationManager NavigationManager
 @inject Radzen.DialogService DialogService
 @inject IBaseRestService<ApplicationUser, UsersFilterModel, string> _userService
+@inject IInitiativeService InitiativeService
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize
 
 <BlazorHeader Header="@Localize["NewExpenseReceipt"]"></BlazorHeader>
@@ -85,6 +86,28 @@ else
                         {
                             <text>Preselezionato su di te: cambialo se stai registrando la spesa di un collega.</text>
                         }
+                    </div>
+                </div>
+
+                @* L'iniziativa e' un contesto a se', non un'alternativa alla visita: i costi comuni
+                   di una fiera o di un giro clienti - stand, volo, albergo dei dieci giorni - non
+                   appartengono a nessuna visita in particolare, e senza questo campo finirebbero
+                   fra i costi generali proprio mentre il resoconto li conta come costi di quella
+                   occasione. *@
+                <div class="mb-3">
+                    <label class="form-label">
+                        <i class="material-icons align-middle" style="font-size:18px;">event_note</i>
+                        Iniziativa
+                    </label>
+                    <RadzenDropDown TValue="int?" @bind-Value="_model.IdInitiative"
+                                    Data="_initiatives" TextProperty="Name" ValueProperty="Id"
+                                    AllowFiltering="true" AllowClear="true"
+                                    FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                    Placeholder="Nessuna" Style="width:100%" />
+                    <div class="form-text">
+                        Fiera o trasferta a cui la spesa appartiene. Può convivere con la visita: il pranzo
+                        col cliente durante il giro è di entrambe. Sono elencate le iniziative dell'ultimo
+                        anno e quelle future.
                     </div>
                 </div>
 

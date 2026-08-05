@@ -9,6 +9,7 @@
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<CRM.Shared.Resources.App> Localize
+@inject CRM.Client.Services.IInitiativeService InitiativeService
 
 <BlazorHeader Header="@Localize["EditExpenseReceipt"]"></BlazorHeader>
 
@@ -214,6 +215,24 @@ else
                                     Data Transazione
                                 </label>
                                 <InputDate @bind-Value="_model.TransactionDate" class="form-control" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="material-icons align-middle" style="font-size:18px;">event_note</i>
+                                    Iniziativa
+                                </label>
+                                <InputSelect @bind-Value="_model.IdInitiative" class="form-select">
+                                    <option value="">Nessuna</option>
+                                    @foreach (var initiative in _initiatives)
+                                    {
+                                        <option value="@initiative.Id">@initiative.Name</option>
+                                    }
+                                </InputSelect>
+                                <div class="form-text">
+                                    Fiera o trasferta a cui la spesa appartiene. Qui l'elenco è completo: è il
+                                    punto in cui si riattacca una spesa a un'iniziativa più vecchia.
+                                </div>
                             </div>
 
                             <div class="mb-3">

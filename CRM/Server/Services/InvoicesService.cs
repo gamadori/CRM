@@ -438,10 +438,8 @@ namespace CRM.Server.Services
                 if (allowed != null)
                     items = items.Where(x => x.IdCompany != null && allowed.Contains(x.IdCompany.Value));
 
-                if (args?.OrderBy != null && args.OrderBy.Length > 0)
-                    items = items.OrderBy(args.OrderBy);
-                else
-                    items = items.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id);
+                items = GridSort.Apply(items, args?.OrderBy, SortableColumns,
+                    q => q.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id));
 
                 if (args?.IdCompany != null)
                     items = items.Where(x => x.IdCompany == args.IdCompany);
@@ -471,5 +469,22 @@ namespace CRM.Server.Services
                 return null;
             }
         }
+
+        /// <summary>
+        /// Nomi di colonna della griglia (proprieta' di <see cref="InvoiceDTO"/>) tradotti nei
+        /// percorsi dell'entita' <see cref="Invoice"/>: la griglia ordina per CompanyName e
+        /// OrderNumber, che su Invoice non esistono. A destra devono esserci colonne vere:
+        /// NameComplete e' [NotMapped] e in un ORDER BY non e' traducibile in SQL.
+        /// </summary>
+        private static readonly Dictionary<string, string> SortableColumns = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["CompanyName"] = "Company.RagioneSociale",
+            ["ContactName"] = "Contact.Surname",
+            ["OrderNumber"] = "Order.Number",
+            ["UserName"] = "User.Surname",
+        };
+
+        internal static string? TranslateOrderBy(string? orderBy)
+            => GridSort.Translate<Invoice>(orderBy, SortableColumns);
     }
 }

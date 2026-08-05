@@ -1,4 +1,4 @@
-using CRM.Server.Data;
+﻿using CRM.Server.Data;
 using CRM.Server.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
@@ -15,12 +15,12 @@ namespace CRM.Server.Controllers
     {
         private const string ApiKeyHeader = "X-Api-Key";
         private readonly ApplicationDbContext _context;
-        private readonly IMachineParameterApiKeyService _apiKeys;
+        private readonly IApiKeyService _apiKeys;
         private readonly IMachineBackupsService _backups;
 
         public MachineParametersController(
             ApplicationDbContext context,
-            IMachineParameterApiKeyService apiKeys,
+            IApiKeyService apiKeys,
             IMachineBackupsService backups)
         {
             _context = context;
@@ -31,7 +31,7 @@ namespace CRM.Server.Controllers
         [HttpGet("articles")]
         public async Task<ActionResult<List<MachineArticleDTO>>> GetArticles([FromQuery] MachineArticleListFilter filter)
         {
-            if (!await IsAuthorized(MachineParameterApiKeyPermission.ReadOnly))
+            if (!await IsAuthorized(ApiKeyPermission.ReadOnly))
             {
                 return Unauthorized();
             }
@@ -81,7 +81,7 @@ namespace CRM.Server.Controllers
         [HttpGet("backups/{id:int}/file")]
         public async Task<IActionResult> Download(int id)
         {
-            if (!await IsAuthorized(MachineParameterApiKeyPermission.ReadOnly)) return Unauthorized();
+            if (!await IsAuthorized(ApiKeyPermission.ReadOnly)) return Unauthorized();
             var file = await _backups.DownloadAsync(id);
             return file == null ? NotFound() : File(file.Value.Content, file.Value.ContentType, file.Value.FileName, true);
         }
@@ -95,7 +95,7 @@ namespace CRM.Server.Controllers
             [FromForm] string? externalReference,
             CancellationToken cancellationToken)
         {
-            var apiKey = await Authorize(MachineParameterApiKeyPermission.ReadWrite);
+            var apiKey = await Authorize(ApiKeyPermission.ReadWrite);
             if (apiKey == null) return Unauthorized();
             if (file == null || file.Length == 0) return BadRequest("Select a non-empty backup file.");
 
@@ -115,17 +115,17 @@ namespace CRM.Server.Controllers
 
         private async Task<ActionResult> GetLatest(MachineBackupOwnerType ownerType, int ownerId)
         {
-            if (!await IsAuthorized(MachineParameterApiKeyPermission.ReadOnly)) return Unauthorized();
+            if (!await IsAuthorized(ApiKeyPermission.ReadOnly)) return Unauthorized();
             var backup = await _backups.GetLatestAsync(ownerType, ownerId);
             return backup == null ? NotFound() : Ok(backup);
         }
 
-        private async Task<bool> IsAuthorized(MachineParameterApiKeyPermission permission) => await Authorize(permission) != null;
+        private async Task<bool> IsAuthorized(ApiKeyPermission permission) => await Authorize(permission) != null;
 
-        private Task<MachineParameterApiKey?> Authorize(MachineParameterApiKeyPermission permission)
+        private Task<ApiKey?> Authorize(ApiKeyPermission permission)
         {
             var value = Request.Headers.TryGetValue(ApiKeyHeader, out var values) ? values.FirstOrDefault() : null;
-            return _apiKeys.ValidateAsync(value, permission);
+            return _apiKeys.ValidateAsync(value, ApiKeyScope.MachineBackup, permission);
         }
     }
 }

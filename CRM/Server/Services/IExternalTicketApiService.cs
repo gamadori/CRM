@@ -3,20 +3,20 @@ using CRM.Shared.DTOs;
 
 namespace CRM.Server.Services
 {
+    /// <summary>
+    /// I ticket aperti da un cliente esterno tramite API.
+    /// <para>
+    /// La gestione delle chiavi non sta piu' qui: e' passata a <see cref="IApiKeyService"/>, che le
+    /// governa per tutti gli ambiti. Questo servizio riceve una chiave gia' verificata e si occupa
+    /// solo dei ticket.
+    /// </para>
+    /// </summary>
     public interface IExternalTicketApiService
     {
-        Task<List<ExternalTicketApiKeyDTO>> GetApiKeysAsync();
+        Task<ExternalTicketResponse> CreateTicketAsync(ApiKey apiKey, ExternalTicketCreateRequest request);
 
-        Task<ExternalTicketApiKeyCreateResponse> CreateApiKeyAsync(ExternalTicketApiKeyCreateRequest request);
+        Task<ExternalTicketResponse?> GetTicketAsync(ApiKey apiKey, int id);
 
-        Task<bool> RevokeApiKeyAsync(int id);
-
-        Task<ExternalTicketApiKey?> ValidateApiKeyAsync(string? plainTextKey);
-
-        Task<ExternalTicketResponse> CreateTicketAsync(ExternalTicketApiKey apiKey, ExternalTicketCreateRequest request);
-
-        Task<ExternalTicketResponse?> GetTicketAsync(ExternalTicketApiKey apiKey, int id);
-
-        Task<List<ExternalTicketResponse>> GetTicketsAsync(ExternalTicketApiKey apiKey, bool includeClosed, int skip, int top);
+        Task<List<ExternalTicketResponse>> GetTicketsAsync(ApiKey apiKey, bool includeClosed, int skip, int top);
     }
 }

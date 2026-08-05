@@ -1,4 +1,4 @@
-@page "/Settings"
+﻿@page "/Settings"
 @using CRM.Client.Models
 @using CRM.Client.Services
 @using Microsoft.AspNetCore.Authorization;
@@ -237,7 +237,7 @@
                 new("switch_account", "Settings/Logos", Localize["Logos"], "Gestisci loghi aziendali", "#e64a19"),
                 new("settings", "GlobalSettings", Localize["GlobalSettings"], "Impostazioni globali", "#fbc02d"),
                 new("event_note", ConstHelper.ClientLogEventsPath, Localize["logevents"], "Visualizza log di sistema", "#388e3c"),
-                new("vpn_key", "Settings/MachineParameterApiKeys", "Chiavi API macchina", "Accesso ai backup via API", "#0f4a8a"),
+                new("vpn_key", "Settings/ApiKeys", "Chiavi API", "Backup macchina, ticket esterni, app fiera", "#0f4a8a"),
                 new("engineering", "Settings/Maintenance", "Manutenzione server", "Avvisa gli utenti prima di un aggiornamento", "#ed6c02"),
             }),
 

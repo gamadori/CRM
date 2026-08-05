@@ -67,7 +67,7 @@ else
                                     <RadzenDropDown TItem="GanttPlanDTO" TValue="int?" ValueProperty="Id" TextProperty="Display"
                                                     @bind-Value="@_product.IdGanttPlan"
                                                     Data="_ganttPlans"
-                                                    AllowFiltering="true"
+                                                    AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                                     AllowClear="true"
                                                     Placeholder="Nessun template Gantt"
                                                     Style="width:100%" />
@@ -88,7 +88,7 @@ else
                                 <RadzenDropDown TItem="ApplicationUser" TValue="string" ValueProperty="Id" TextProperty="NameComplete"
                                                 @bind-Value="@_product.IdDefaultCommessaResponsible"
                                                 Data="_headCompanyUsers"
-                                                AllowFiltering="true"
+                                                AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                                 AllowClear="true"
                                                 Placeholder="Seleziona un utente HeadCompany"
                                                 Style="width:100%" />

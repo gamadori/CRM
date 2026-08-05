@@ -97,6 +97,40 @@ namespace CRM.Server.Services
             }
         }
 
+        public async Task<List<ActivityDTO>?> GetByInitiativeAsync(int idInitiative)
+        {
+            try
+            {
+                var currentUser = await SafeCurrentUserAsync();
+                var items = await _context.Activities
+                    .Include(a => a.User)
+                    .Include(a => a.Assignee)
+                    .Include(a => a.CompletedBy)
+                    .Include(a => a.Participants)
+                        .ThenInclude(p => p.User)
+                    .Where(a => a.IdInitiative == idInitiative)
+                    .OrderBy(a => a.DueDate ?? a.CreatedAt)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                var dtos = items.Select(a =>
+                {
+                    var dto = a.ToDTO()!;
+                    dto.Permits = ComputePermits(a.IdUser, a.IdAssignee, currentUser);
+                    return dto;
+                }).ToList();
+
+                await ResolveEntityNamesAsync(dtos);
+                await ResolveEmailEngagementAsync(dtos);
+                return dtos;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(ActivitiesService), nameof(GetByInitiativeAsync), EventsTypes.Error, ex);
+                return null;
+            }
+        }
+
         /// <summary>Popola la sintesi di engagement (stato/aperture/click) per le attività email con email collegata.</summary>
         private async Task ResolveEmailEngagementAsync(List<ActivityDTO> dtos)
         {
@@ -151,6 +185,8 @@ namespace CRM.Server.Services
                     q = q.Where(a => a.DueDate <= args.DateTo);
                 if (args?.Kind != null)
                     q = q.Where(a => a.Kind == args.Kind);
+                if (args?.IdInitiative != null)
+                    q = q.Where(a => a.IdInitiative == args.IdInitiative);
 
                 var items = await q.OrderBy(a => a.DueDate).AsNoTracking().ToListAsync();
 
@@ -260,6 +296,7 @@ namespace CRM.Server.Services
                     existing.EntityType = item.EntityType;
                     existing.EntityId = item.EntityId;
                     existing.IdAssignee = string.IsNullOrWhiteSpace(item.IdAssignee) ? existing.IdUser : item.IdAssignee;
+                    existing.IdInitiative = item.IdInitiative;
                     existing.DueDate = item.DueDate;
                     // Se il promemoria viene spostato, ne va rischedulata la consegna da zero.
                     if (existing.ReminderAt != item.ReminderAt)

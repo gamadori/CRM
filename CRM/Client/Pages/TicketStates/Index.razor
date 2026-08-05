@@ -8,7 +8,7 @@
     }
 </style>
 
-<RadzenDataGrid @ref="_grdTicketState" AllowAlternatingRows="false" LoadData="@LoadData" AllowFiltering="true" AllowPaging="true" PageSize="@ConstHelper.PageSize" AllowSorting="true" EditMode="DataGridEditMode.Single"
+<RadzenDataGrid @ref="_grdTicketState" AllowAlternatingRows="false" LoadData="@LoadData" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="@ConstHelper.PageSize" AllowSorting="true" EditMode="DataGridEditMode.Single"
                 Data="@_items" TItem="TicketState" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" Sort="@Reset" Page="@Reset" Filter="@Reset" ColumnWidth="200px">
     <HeaderTemplate>
         <RedGButton RGButtonType="RGButtonType.New" Click="@InsertRow" Disabled="@(_itemsToInsert.Count() > 0)"></RedGButton>

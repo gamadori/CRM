@@ -49,6 +49,9 @@ namespace CRM.Server.Services
                 if (ShouldInclude(filter, CalendarItemSource.Ticket))
                     items.AddRange(await LoadTicketsAsync(filter, requestedUserId, allowedCompanyIds, canEditTickets));
 
+                if (ShouldInclude(filter, CalendarItemSource.InitiativeSchedule))
+                    items.AddRange(await LoadInitiativeSchedulesAsync(filter, requestedUserId, allowedUserIds));
+
                 items = items
                     .OrderBy(i => i.Start)
                     .ThenBy(i => i.Source)
@@ -224,6 +227,56 @@ namespace CRM.Server.Services
             }).ToList();
         }
 
+        private async Task<List<CalendarItemDTO>> LoadInitiativeSchedulesAsync(
+            CalendarFilter filter,
+            string? userId,
+            List<string> allowedUserIds)
+        {
+            var query = _context.InitiativeSchedules
+                .Include(s => s.Initiative)
+                .Include(s => s.User)
+                .AsQueryable();
+
+            query = query.Where(s => allowedUserIds.Contains(s.IdUser));
+
+            if (!string.IsNullOrWhiteSpace(userId))
+                query = query.Where(s => s.IdUser == userId);
+
+            if (filter.DateFrom.HasValue)
+                query = query.Where(s => s.End >= filter.DateFrom);
+
+            if (filter.DateTo.HasValue)
+            {
+                var dateTo = NormalizeDateTo(filter.DateTo.Value);
+                query = query.Where(s => s.Start < dateTo);
+            }
+
+            var rows = await query
+                .OrderBy(s => s.Start)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return rows.Select(row => new CalendarItemDTO
+            {
+                Id = $"{CalendarItemSource.InitiativeSchedule}:{row.Id}",
+                Source = CalendarItemSource.InitiativeSchedule,
+                SourceId = row.Id,
+                Title = row.Initiative == null ? "Iniziativa" : row.Initiative.Name,
+                Subtitle = ScheduleTypeText(row.Type),
+                Start = row.Start,
+                End = row.End <= row.Start ? row.Start.AddHours(1) : row.End,
+                Color = ScheduleColor(row.Type),
+                Url = row.Initiative == null ? string.Empty : $"/Initiatives/{row.IdInitiative}/Info",
+                IdAssignee = row.IdUser,
+                AssigneeName = row.User?.NameComplete ?? string.Empty,
+                StateText = ScheduleTypeText(row.Type),
+                IsOverdue = false,
+                IsCompleted = row.End < DateTime.Now,
+                CanComplete = false,
+                Permits = PermitsHelper.SetRead(0)
+            }).ToList();
+        }
+
         private async Task<Dictionary<(ActivityEntityType, int), string>> ResolveActivityEntityNamesAsync(List<Activity> activities)
         {
             var result = new Dictionary<(ActivityEntityType, int), string>();
@@ -277,6 +330,7 @@ namespace CRM.Server.Services
             {
                 CalendarItemSource.Activity => filter.IncludeActivities,
                 CalendarItemSource.Ticket => filter.IncludeTickets,
+                CalendarItemSource.InitiativeSchedule => filter.IncludeInitiatives,
                 _ => false
             };
         }
@@ -349,6 +403,26 @@ namespace CRM.Server.Services
             ActivityKind.Meeting => "Meeting",
             ActivityKind.Task => "Task",
             _ => "Nota"
+        };
+
+        private static string ScheduleTypeText(InitiativeScheduleType type) => type switch
+        {
+            InitiativeScheduleType.Travel => "Viaggio",
+            InitiativeScheduleType.Stand => "Presidio stand",
+            InitiativeScheduleType.Setup => "Allestimento",
+            InitiativeScheduleType.InternalTask => "Attivita interna",
+            InitiativeScheduleType.Other => "Altro",
+            _ => "Presenza"
+        };
+
+        private static string ScheduleColor(InitiativeScheduleType type) => type switch
+        {
+            InitiativeScheduleType.Travel => "#0f766e",
+            InitiativeScheduleType.Stand => "#7c3aed",
+            InitiativeScheduleType.Setup => "#b45309",
+            InitiativeScheduleType.InternalTask => "#475569",
+            InitiativeScheduleType.Other => "#64748b",
+            _ => "#2563eb"
         };
 
         private async Task<string?> SafeCurrentUserAsync()

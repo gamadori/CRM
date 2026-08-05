@@ -906,10 +906,8 @@ namespace CRM.Server.Services
                 // Le precedenti restano raggiungibili dal dettaglio, come storia.
                 items = items.Where(x => x.IsCurrent);
 
-                if (args?.OrderBy != null && args.OrderBy.Length > 0)
-                    items = items.OrderBy(args.OrderBy);
-                else
-                    items = items.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id);
+                items = GridSort.Apply(items, args?.OrderBy, SortableColumns,
+                    q => q.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id));
 
                 if (args?.IdCompany != null)
                     items = items.Where(x => x.IdCompany == args.IdCompany);
@@ -943,5 +941,23 @@ namespace CRM.Server.Services
                 return null;
             }
         }
+
+        /// <summary>
+        /// Nomi di colonna della griglia (proprieta' di <see cref="QuoteDTO"/>) tradotti nei percorsi
+        /// dell'entita' <see cref="Quote"/>. A destra devono esserci colonne vere: NameComplete e'
+        /// [NotMapped] e in un ORDER BY non e' traducibile in SQL, per questo si usa il cognome.
+        /// OrderNumber non c'e': il preventivo non ha una navigazione verso l'ordine, quindi quel
+        /// criterio viene scartato e resta l'ordinamento di default.
+        /// </summary>
+        private static readonly Dictionary<string, string> SortableColumns = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["CompanyName"] = "Company.RagioneSociale",
+            ["ContactName"] = "Contact.Surname",
+            ["DealName"] = "Deal.Name",
+            ["UserName"] = "User.Surname",
+        };
+
+        internal static string? TranslateOrderBy(string? orderBy)
+            => GridSort.Translate<Quote>(orderBy, SortableColumns);
     }
 }

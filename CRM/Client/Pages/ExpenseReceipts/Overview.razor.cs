@@ -51,6 +51,13 @@ namespace CRM.Client.Pages.ExpenseReceipts
         [SupplyParameterFromQuery(Name = "period")]
         public string PeriodParam { get; set; }
 
+        /// <summary>
+        /// Spese di una singola iniziativa ("/ExpenseReceipts?idInitiative=12"): e' la nota spese
+        /// della trasferta, aperta dal resoconto.
+        /// </summary>
+        [SupplyParameterFromQuery(Name = "idInitiative")]
+        public int? InitiativeParam { get; set; }
+
         protected override async Task OnInitializedAsync()
         {
             _pageHeader = await HeaderService.Create();
@@ -58,10 +65,23 @@ namespace CRM.Client.Pages.ExpenseReceipts
             // La pagina si apre gia' rispondendo alla domanda per cui esiste: quanto ho speso
             // io questo mese. Chi vuole altro cambia i filtri, ma il caso frequente non richiede
             // di impostare niente.
-            ApplyPeriod(string.IsNullOrWhiteSpace(PeriodParam) ? "month" : PeriodParam);
+            //
+            // Arrivando da un'iniziativa le regole cambiano entrambe: il periodo si apre a tutto e
+            // il filtro sulla persona sparisce. Un viaggio di marzo aperto a giugno, o le spese dei
+            // colleghi che erano in fiera, mostrerebbero altrimenti una pagina vuota - che si legge
+            // come "non ci sono spese" e non come "le stai guardando dalla finestra sbagliata".
+            var fromInitiative = InitiativeParam is > 0;
+            ApplyPeriod(fromInitiative ? "all" : (string.IsNullOrWhiteSpace(PeriodParam) ? "month" : PeriodParam));
             _filter.PageSize = 25;
 
             await LoadCurrentUserAsync();
+
+            if (fromInitiative)
+            {
+                _filter.IdInitiative = InitiativeParam;
+                _filter.IdUserSpender = null;
+            }
+
             await ReloadAsync();
         }
 

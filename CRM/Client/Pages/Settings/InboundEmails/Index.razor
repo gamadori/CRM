@@ -90,7 +90,7 @@ else
                                     {
                                         <div class="d-flex gap-2">
                                             <RadzenDropDown TValue="int?" @bind-Value="_selectedCompany[item.Id]" Data="_companies"
-                                                            ValueProperty="Id" TextProperty="RagioneSociale" AllowFiltering="true"
+                                                            ValueProperty="Id" TextProperty="RagioneSociale" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                                             Placeholder="Azienda..." Style="width:100%" />
                                             <RadzenButton Text="Associa" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
                                                           Disabled="@(_busy || _selectedCompany[item.Id] == null)"

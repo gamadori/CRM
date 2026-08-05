@@ -125,6 +125,28 @@ namespace CRM.Shared
         /// <summary>Email in ingresso collegata (quando l'attività rappresenta una email ricevuta e registrata).</summary>
         public int? IdInboundEmail { get; set; }
 
+        /// <summary>
+        /// Iniziativa (fiera, trasferta) durante la quale l'attivita' e' avvenuta.
+        /// <para>
+        /// E' un'etichetta SECONDARIA: la casa dell'attivita' resta l'entita' a cui e' agganciata
+        /// (<see cref="EntityType"/>/<see cref="EntityId"/>), cioe' il cliente che si e' andati a
+        /// trovare. Chi apre la scheda del cliente fra sei mesi deve vedere la visita senza dover
+        /// sapere di che giro faceva parte.
+        /// </para>
+        /// <para>
+        /// Per le trasferte questo campo e' anche l'unico ponte verso opportunita' e preventivi:
+        /// si arriva ai documenti passando da <c>Deal.IdActivityOrigin</c> e
+        /// <c>Quote.IdActivityOrigin</c>, senza bisogno di attribuzioni dirette. In viaggio
+        /// l'attivita' c'e' sempre - eri fisicamente nella stanza - mentre in fiera spesso manca,
+        /// ed e' per questo che li' l'attribuzione va invece diretta sul documento.
+        /// </para>
+        /// </summary>
+        [ForeignKey(nameof(Initiative))]
+        [Display(Name = "Iniziativa")]
+        public int? IdInitiative { get; set; }
+
+        public virtual Initiative? Initiative { get; set; }
+
         public virtual ApplicationUser? User { get; set; }
 
         public virtual ApplicationUser? Assignee { get; set; }
@@ -170,6 +192,8 @@ namespace CRM.Shared
         public ActivityState? State { get; set; }
 
         public ActivityKind? Kind { get; set; }
+
+        public int? IdInitiative { get; set; }
 
         public DateTime? DateFrom { get; set; }
 

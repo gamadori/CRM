@@ -1,14 +1,12 @@
-﻿<?xml version = "1.0" encoding = "UTF-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:CRM.Mobile"
              x:Class="CRM.Mobile.App">
     <Application.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
-                <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
+        <Color x:Key="PageBackground">#F7F8FA</Color>
+        <Color x:Key="Surface">#FFFFFF</Color>
+        <Color x:Key="Primary">#0F766E</Color>
+        <Color x:Key="TextMain">#172026</Color>
+        <Color x:Key="TextMuted">#65727D</Color>
     </Application.Resources>
 </Application>

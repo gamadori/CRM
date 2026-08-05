@@ -37,7 +37,7 @@
                             TextProperty="NameComplete"
                             ValueProperty="Id"
                             AllowClear="true"
-                            AllowFiltering="true"
+                            AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                             Placeholder="@Localize["Owner"]"
                             Style="width: 190px"
                             Change="@(_ => ReloadGrid())" />

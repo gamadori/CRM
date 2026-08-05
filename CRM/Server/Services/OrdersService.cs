@@ -458,6 +458,9 @@ namespace CRM.Server.Services
                     .Include(x => x.Company)
                     .Include(x => x.Contact)
                     .Include(x => x.Quote)
+                    // Senza questa Include il nome dell'opportunita' resta vuoto in elenco e la
+                    // colonna ripiega sull'id: ToDTO legge order.Deal, che nessuno caricava.
+                    .Include(x => x.Deal)
                     .Include(x => x.User)
                     .AsQueryable();
 
@@ -467,10 +470,8 @@ namespace CRM.Server.Services
                 if (allowed != null)
                     items = items.Where(x => x.IdCompany != null && allowed.Contains(x.IdCompany.Value));
 
-                if (args?.OrderBy != null && args.OrderBy.Length > 0)
-                    items = items.OrderBy(args.OrderBy);
-                else
-                    items = items.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id);
+                items = GridSort.Apply(items, args?.OrderBy, SortableColumns,
+                    q => q.OrderByDescending(x => x.Date).ThenByDescending(x => x.Id));
 
                 if (args?.IdCompany != null)
                     items = items.Where(x => x.IdCompany == args.IdCompany);
@@ -503,5 +504,23 @@ namespace CRM.Server.Services
                 return null;
             }
         }
+
+        /// <summary>
+        /// Nomi di colonna della griglia (proprieta' di <see cref="OrderDTO"/>) tradotti nei percorsi
+        /// dell'entita' <see cref="Order"/>: la griglia ordina per CompanyName, QuoteNumber e
+        /// DealName, che su Order non esistono. A destra devono esserci colonne vere: NameComplete
+        /// e' [NotMapped] e in un ORDER BY non e' traducibile in SQL, per questo si usa il cognome.
+        /// </summary>
+        private static readonly Dictionary<string, string> SortableColumns = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["CompanyName"] = "Company.RagioneSociale",
+            ["ContactName"] = "Contact.Surname",
+            ["QuoteNumber"] = "Quote.Number",
+            ["DealName"] = "Deal.Name",
+            ["UserName"] = "User.Surname",
+        };
+
+        internal static string? TranslateOrderBy(string? orderBy)
+            => GridSort.Translate<Order>(orderBy, SortableColumns);
     }
 }

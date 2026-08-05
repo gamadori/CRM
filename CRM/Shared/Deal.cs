@@ -49,6 +49,25 @@ namespace CRM.Shared
         /// </summary>
         public int? IdActivityOrigin { get; set; }
 
+        /// <summary>
+        /// Iniziativa che ha generato l'opportunita': la fiera, il webinar, la campagna.
+        /// <para>
+        /// L'attribuzione qui e' DIRETTA e non passa da <see cref="IdActivityOrigin"/> apposta,
+        /// anche se una strada indiretta esisterebbe. Alla fiera meta' delle opportunita' nascono
+        /// settimane dopo, da un biglietto da visita, senza nessuna attivita' di origine: dedurre
+        /// l'attribuzione dall'attivita' la farebbe sparire proprio nei casi che pesano di piu'.
+        /// </para>
+        /// <para>
+        /// Per le TRASFERTE vale l'opposto e questo campo resta vuoto: li' l'attivita' c'e' sempre,
+        /// e il collegamento corre lungo <see cref="IdActivityOrigin"/> -> <c>Activity.IdInitiative</c>.
+        /// Riempirlo anche per i viaggi significherebbe far entrare nelle statistiche di ritorno
+        /// commerciale ordini che sarebbero arrivati comunque.
+        /// </para>
+        /// </summary>
+        [ForeignKey(nameof(Initiative))]
+        [Display(Name = "Iniziativa")]
+        public int? IdInitiative { get; set; }
+
         [Display(Name = nameof(Deal.Date), ResourceType = typeof(Resources.Models.Deal))]
         public DateTime Date { get; set; }
 
@@ -103,6 +122,8 @@ namespace CRM.Shared
 
         public virtual ApplicationUser User { get; set; }
 
+        public virtual Initiative? Initiative { get; set; }
+
         public virtual ICollection<DealProductInterest> ProductInterests { get; set; } = new List<DealProductInterest>();
 
         public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
@@ -117,6 +138,8 @@ namespace CRM.Shared
         public DealStates? State { get; set; }
 
         public DealPhases? Phase { get; set; }
+
+        public int? IdInitiative { get; set; }
 
         public DateTime? ExpectedCloseFrom { get; set; }
 

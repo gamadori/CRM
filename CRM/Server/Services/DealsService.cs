@@ -364,6 +364,14 @@ namespace CRM.Server.Services
                     existing.IdUser = item.IdUser;
                     // IdActivityOrigin non si aggiorna: da quale visita e' nata l'opportunita' e'
                     // un fatto avvenuto, non una proprieta' che si cambia in modifica.
+                    //
+                    // L'iniziativa invece si puo' ASSEGNARE finche' e' vuota, ma non riscrivere una
+                    // volta messa. Vietarla del tutto sembrava coerente, ma lasciava il campo
+                    // irraggiungibile: un'opportunita' nata in fiera senza passare da un lead non
+                    // aveva piu' nessun modo di essere attribuita, e il resoconto della fiera la
+                    // perdeva per sempre. Spostare un'attribuzione gia' data resta invece vietato,
+                    // perche' e' quello che falserebbe il confronto fra iniziative.
+                    existing.IdInitiative ??= item.IdInitiative;
                     ReplaceDealProductInterests(existing, item.ProductInterests);
                     await ResolveProductInterestValuesAsync(existing);
                     item = existing;
@@ -511,6 +519,11 @@ namespace CRM.Server.Services
                 if (args?.Phase != null)
                 {
                     items = items.Where(x => x.Phase == args.Phase);
+                }
+
+                if (args?.IdInitiative != null)
+                {
+                    items = items.Where(x => x.IdInitiative == args.IdInitiative);
                 }
 
                 if (args?.ExpectedCloseFrom != null)

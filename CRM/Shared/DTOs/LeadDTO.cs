@@ -38,6 +38,12 @@ namespace CRM.Shared.DTOs
 
         public int? IdContact { get; set; }
 
+        /// <summary>Iniziativa (fiera, campagna) da cui il lead arriva.</summary>
+        public int? IdInitiative { get; set; }
+
+        /// <summary>Foto del biglietto da visita: la fonte da cui i campi sono stati letti.</summary>
+        public int? IdBusinessCard { get; set; }
+
         public string? IdUser { get; set; }
 
         public int? ConvertedDealId { get; set; }
@@ -85,6 +91,8 @@ namespace CRM.Shared.DTOs
                 Note = lead.Note,
                 IdCompany = lead.IdCompany,
                 IdContact = lead.IdContact,
+                IdInitiative = lead.IdInitiative,
+                IdBusinessCard = lead.IdBusinessCard,
                 IdUser = lead.IdUser,
                 ConvertedDealId = lead.ConvertedDealId,
                 CreatedAt = lead.CreatedAt,
@@ -120,6 +128,8 @@ namespace CRM.Shared.DTOs
                 Note = dto.Note,
                 IdCompany = dto.IdCompany,
                 IdContact = dto.IdContact,
+                IdInitiative = dto.IdInitiative,
+                IdBusinessCard = dto.IdBusinessCard,
                 IdUser = dto.IdUser,
                 ConvertedDealId = dto.ConvertedDealId,
                 CreatedAt = dto.CreatedAt,

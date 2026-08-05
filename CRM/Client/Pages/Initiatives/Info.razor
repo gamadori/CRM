@@ -1,0 +1,600 @@
+@page "/Initiatives/{Id:int}/Info"
+@* Rotta breve: era di una seconda pagina di dettaglio, oggi eliminata perche' non conosceva
+   membri e presenze. La si tiene qui perche' e' quella che usano i rientri da nota spese, lead e
+   cattura biglietti - e i segnalibri di chi l'ha gia' aperta. *@
+@page "/Initiatives/{Id:int}"
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Radzen
+@using Radzen.Blazor
+@using static CRM.Client.Helpers.PageHelper
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+@if (_loading)
+{
+    <Waiting></Waiting>
+}
+else if (_initiative == null || _report == null)
+{
+    <PageHeader Model="_pageHeader"></PageHeader>
+    <section class="initiative-empty">
+        <span class="material-icons">error_outline</span>
+        <strong>Iniziativa non trovata</strong>
+    </section>
+}
+else
+{
+    <PageHeader Model="_pageHeader">
+        @* Lo slot Actions dell'intestazione non mette spaziatura fra i figli: il gruppo se la
+           porta da sé. "Elenco" è un ritorno, non un'azione al pari delle altre, quindi resta
+           più leggero e staccato da ciò che invece si fa su questa iniziativa. *@
+        <Actions>
+            <div class="header-actions">
+                <button type="button" class="link-action" @onclick="Back">
+                    <span class="material-icons">arrow_back</span>
+                    <span>Elenco</span>
+                </button>
+
+                <span class="header-actions-sep" aria-hidden="true"></span>
+
+                <button type="button" class="ghost-action" @onclick="OpenExpenses">
+                    <span class="material-icons">receipt_long</span>
+                    <span>Note spese</span>
+                </button>
+                <button type="button" class="ghost-action" @onclick="NewExpense">
+                    <span class="material-icons">add_card</span>
+                    <span>Registra spesa</span>
+                </button>
+
+                @if (_initiative.Kind.HasMeaningfulRoi())
+                {
+                    <button type="button" class="primary-action" @onclick="Capture">
+                        <span class="material-icons">photo_camera</span>
+                        <span>Cattura biglietti</span>
+                    </button>
+                }
+            </div>
+        </Actions>
+    </PageHeader>
+
+    <section class="initiative-head">
+        <div>
+            <h2>@_initiative.Name</h2>
+            <small>
+                @KindText(_initiative.Kind)
+                @if (!string.IsNullOrWhiteSpace(_initiative.Location))
+                {
+                    <span> - @_initiative.Location</span>
+                }
+                <span> - @_initiative.DateFrom.ToString("dd/MM/yyyy") - @_initiative.DateTo.ToString("dd/MM/yyyy")</span>
+            </small>
+        </div>
+        <span class="state-chip @StateClass(_initiative.State)">@StateText(_initiative.State)</span>
+    </section>
+
+    <div class="d-none d-md-block mb-3">
+        <RadzenSelectBar Size="@_buttonSize" @bind-Value="_selectedView" TValue="InitiativeViews" Change="@((args) => ChangeView())">
+            <Items>
+                <RadzenSelectBarItem Text="Dettagli" Icon="format_list_bulleted" Value="InitiativeViews.Details" />
+                <RadzenSelectBarItem Text="Partecipanti" Icon="groups" Value="InitiativeViews.Members" />
+                <RadzenSelectBarItem Text="Presenze" Icon="event_available" Value="InitiativeViews.Schedule" />
+                <RadzenSelectBarItem Text="Attività" Icon="event_note" Value="InitiativeViews.Activities" />
+                <RadzenSelectBarItem Text="Lead" Icon="person_search" Value="InitiativeViews.Leads" />
+                <RadzenSelectBarItem Text="Opportunity" Icon="work" Value="InitiativeViews.Deals" />
+                <RadzenSelectBarItem Text="Preventivi" Icon="request_quote" Value="InitiativeViews.Quotes" />
+                <RadzenSelectBarItem Text="Ordini" Icon="shopping_cart" Value="InitiativeViews.Orders" />
+            </Items>
+        </RadzenSelectBar>
+    </div>
+
+    <div class="d-md-none mb-3">
+        <RadzenDropDown @bind-Value="_selectedView"
+                        TValue="InitiativeViews"
+                        Change="@((args) => ChangeView())"
+                        Data="@_viewOptions"
+                        TextProperty="Text"
+                        ValueProperty="Value"
+                        Style="width: 100%;" />
+    </div>
+
+    @if (_selectedView == InitiativeViews.Details)
+    {
+        @if (_detailMode == DetailMode.Edit)
+        {
+            <CRM.Client.Pages.Initiatives.Edit Id="@Id"
+                                               PageMode="@PageModality.Child"
+                                               OnClickSave="@(async () => await SaveInline())"
+                                               OnClickCancel="@CancelInline"></CRM.Client.Pages.Initiatives.Edit>
+        }
+        else
+        {
+            <section class="initiative-metrics">
+                <article>
+                    <span>Speso</span>
+                    <strong>@_report.CostTotal.ToString("C")</strong>
+                </article>
+                <article>
+                    <span>Budget previsto</span>
+                    <strong>@(_report.BudgetPlanned == null ? "-" : _report.BudgetPlanned.Value.ToString("C"))</strong>
+                </article>
+                <article>
+                    <span>Lead</span>
+                    <strong>@_report.LeadTotal</strong>
+                </article>
+                <article>
+                    <span>Opportunity</span>
+                    <strong>@_report.DealCount</strong>
+                    <small>@_report.DealAmount.ToString("C")</small>
+                </article>
+            </section>
+
+            <section class="initiative-detail-grid">
+                <article>
+                    <h3>Dettagli iniziativa</h3>
+                    <dl>
+                        <dt>Responsabile</dt>
+                        <dd>@(string.IsNullOrWhiteSpace(_initiative.OwnerName) ? "-" : _initiative.OwnerName)</dd>
+                        <dt>Partecipanti</dt>
+                        <dd>@(_initiative.ParticipantNames.Count == 0 ? "-" : string.Join(", ", _initiative.ParticipantNames))</dd>
+                        <dt>Stato</dt>
+                        <dd>@StateText(_initiative.State)</dd>
+                    </dl>
+                </article>
+                <article>
+                    <h3>Ritorno</h3>
+                    <dl>
+                        <dt>Lead convertiti</dt>
+                        <dd>@_report.LeadConverted</dd>
+                        <dt>Costo per lead</dt>
+                        <dd>@CostPerLeadText()</dd>
+                        <dt>ROI sul vinto</dt>
+                        <dd>@RoiText()</dd>
+                    </dl>
+                </article>
+            </section>
+
+            @if (!string.IsNullOrWhiteSpace(_initiative.Objective))
+            {
+                <section class="initiative-prose">
+                    <h3>Obiettivo</h3>
+                    <p>@_initiative.Objective</p>
+                </section>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_initiative.ClosingNotes))
+            {
+                <section class="initiative-prose">
+                    <h3>Relazione finale</h3>
+                    <p>@_initiative.ClosingNotes</p>
+                </section>
+            }
+
+            <section class="initiative-detail-actions">
+                <button type="button" class="primary-action" @onclick="EditInline">Modifica</button>
+            </section>
+        }
+    }
+    else if (_selectedView == InitiativeViews.Members)
+    {
+        <section class="initiative-toolbar">
+            <strong>@_initiative.Members.Count partecipanti</strong>
+            <span>Gestione nominativi da Dettagli / Modifica</span>
+        </section>
+
+        @if (_initiative.Members.Count == 0)
+        {
+            @EmptyFolder("groups", "Nessun partecipante assegnato.")
+        }
+        else
+        {
+            <section class="initiative-member-grid">
+                @foreach (var member in _initiative.Members.OrderBy(m => m.UserName))
+                {
+                    <article class="initiative-member-card">
+                        <span class="material-icons">account_circle</span>
+                        <div>
+                            <strong>@member.UserName</strong>
+                            <small>@RoleText(member.Role)</small>
+                            @if (!string.IsNullOrWhiteSpace(member.Notes))
+                            {
+                                <p>@member.Notes</p>
+                            }
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+    }
+    else if (_selectedView == InitiativeViews.Schedule)
+    {
+        @if (_scheduleEdit != null)
+        {
+            <section class="initiative-form-card">
+                <div class="initiative-form-grid">
+                    <label>
+                        <span>Utente</span>
+                        <select @bind="_scheduleEdit.IdUser">
+                            <option value="">Seleziona</option>
+                            @foreach (var member in _initiative.Members.OrderBy(m => m.UserName))
+                            {
+                                <option value="@member.IdUser">@member.UserName</option>
+                            }
+                        </select>
+                    </label>
+                    <label>
+                        <span>Tipo</span>
+                        <select @bind="_scheduleEdit.Type">
+                            @foreach (var type in Enum.GetValues<InitiativeScheduleType>())
+                            {
+                                <option value="@type">@ScheduleTypeText(type)</option>
+                            }
+                        </select>
+                    </label>
+                    <label>
+                        <span>Inizio</span>
+                        <input type="datetime-local" @bind="_scheduleEdit.Start" />
+                    </label>
+                    <label>
+                        <span>Fine</span>
+                        <input type="datetime-local" @bind="_scheduleEdit.End" />
+                    </label>
+                    <label class="col-2">
+                        <span>Luogo</span>
+                        <input @bind="_scheduleEdit.Location" />
+                    </label>
+                    <label class="col-2">
+                        <span>Note</span>
+                        <textarea rows="3" @bind="_scheduleEdit.Notes"></textarea>
+                    </label>
+                </div>
+                <div class="initiative-detail-actions">
+                    <button type="button" class="ghost-action" @onclick="CancelSchedule" disabled="@_scheduleSaving">Annulla</button>
+                    <button type="button" class="primary-action" @onclick="SaveSchedule" disabled="@_scheduleSaving">@(_scheduleSaving ? "Salvataggio..." : "Salva presenza")</button>
+                </div>
+            </section>
+        }
+        else
+        {
+            <section class="initiative-toolbar">
+                <strong>@_schedules.Count presenze pianificate</strong>
+                <button type="button" class="primary-action" @onclick="NewSchedule" disabled="@(_initiative.Members.Count == 0)">Nuova presenza</button>
+            </section>
+
+            @if (_initiative.Members.Count == 0)
+            {
+                @EmptyFolder("groups", "Aggiungi prima almeno un partecipante.")
+            }
+            else if (_schedules.Count == 0)
+            {
+                @EmptyFolder("event_available", "Nessuna presenza pianificata.")
+            }
+            else
+            {
+                <section class="initiative-table-wrap">
+                    <table>
+                        <thead>
+                            <tr><th>Utente</th><th>Tipo</th><th>Inizio</th><th>Fine</th><th>Luogo</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in _schedules)
+                            {
+                                <tr>
+                                    <td><strong>@item.UserName</strong><small>@item.Notes</small></td>
+                                    <td>@ScheduleTypeText(item.Type)</td>
+                                    <td>@item.Start.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@item.End.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.Location) ? "-" : item.Location)</td>
+                                    <td class="row-actions">
+                                        <RedGButton RGButtonType="RGButtonType.Edit" Click="@(() => EditSchedule(item))"></RedGButton>
+                                        <RedGButton RGButtonType="RGButtonType.Delete" Click="@(async () => await DeleteSchedule(item))"></RedGButton>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </section>
+            }
+        }
+    }
+    else if (_selectedView == InitiativeViews.Activities)
+    {
+        <section class="initiative-toolbar">
+            <strong>@_activities.Count attività collegate</strong>
+            <button type="button" class="primary-action" @onclick="NewActivity">Nuova attività</button>
+        </section>
+
+        @if (_activities.Count == 0)
+        {
+            @EmptyFolder("event_note", "Nessuna attività collegata a questa iniziativa.")
+        }
+        else
+        {
+            <section class="initiative-table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Attività</th><th>Contesto</th><th>Data</th><th>Assegnata a</th><th>Stato</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _activities)
+                        {
+                            <tr>
+                                <td><strong>@item.Subject</strong><small>@ActivityKindText(item.Kind)</small></td>
+                                <td>@(string.IsNullOrWhiteSpace(item.EntityName) ? "-" : item.EntityName)</td>
+                                <td>@(item.DueDate == null ? "-" : item.DueDate.Value.ToString("dd/MM/yyyy HH:mm"))</td>
+                                <td>@(string.IsNullOrWhiteSpace(item.AssigneeName) ? item.UserName : item.AssigneeName)</td>
+                                <td>@ActivityStateText(item.State)</td>
+                                <td class="row-actions">
+                                    <RedGButton RGButtonType="RGButtonType.Edit" Click="@(async () => await EditActivity(item.Id))"></RedGButton>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        }
+    }
+    else if (_selectedView == InitiativeViews.Leads)
+    {
+        @* Il triage della sera: la cattura allo stand dura trenta secondi e lascia dei buchi per
+           forza, qui si vede quali sono e a chi il biglietto somiglia fra i clienti gia' noti. *@
+        <section class="initiative-toolbar">
+            <div class="triage-counts">
+                <strong>@_triage.Count raccolti</strong>
+                @if (IncompleteCount > 0)
+                {
+                    <span class="triage-chip warn">@IncompleteCount da completare</span>
+                }
+                @if (SuggestedCount > 0)
+                {
+                    <span class="triage-chip info">@SuggestedCount già a sistema</span>
+                }
+            </div>
+            <div class="triage-actions">
+                @if (IncompleteCount > 0)
+                {
+                    <button type="button" class="ghost-action @(_onlyIncomplete ? "active" : "")"
+                            @onclick="@(() => _onlyIncomplete = !_onlyIncomplete)">
+                        @(_onlyIncomplete ? "Mostra tutti" : "Solo da completare")
+                    </button>
+                }
+                <button type="button" class="primary-action" @onclick="NewLead">Nuovo lead</button>
+            </div>
+        </section>
+
+        @if (_triage.Count == 0)
+        {
+            @EmptyFolder("person_search", "Nessun lead collegato a questa iniziativa.")
+        }
+        else if (VisibleTriage.Count == 0)
+        {
+            @EmptyFolder("task_alt", "Nessun biglietto da completare: sono tutti a posto.")
+        }
+        else
+        {
+            <section class="initiative-table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Lead</th><th>Azienda</th><th>Cosa voleva</th><th>Da completare</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var lead in VisibleTriage)
+                        {
+                            <tr>
+                                <td>
+                                    <button type="button" class="text-link" @onclick="@(() => OpenLead(lead.Id))">@lead.Name</button>
+                                    <small>
+                                        @lead.CreatedAt.ToString("dd/MM HH:mm")
+                                        @if (lead.HasBusinessCard)
+                                        {
+                                            <span class="card-flag" title="Foto del biglietto allegata">· biglietto</span>
+                                        }
+                                    </small>
+                                </td>
+                                <td>
+                                    <strong>@(string.IsNullOrWhiteSpace(lead.CompanyName) ? "-" : lead.CompanyName)</strong>
+                                    <small>@(string.IsNullOrWhiteSpace(lead.Email) ? lead.Phone : lead.Email)</small>
+
+                                    @if (lead.IdCompany == null && lead.SuggestedCompanyId != null)
+                                    {
+                                        <div class="triage-suggestion">
+                                            <span>Forse è <strong>@lead.SuggestedCompanyName</strong> — @lead.SuggestionReason</span>
+                                            <button type="button" @onclick="@(() => LinkLead(lead))">Collega</button>
+                                        </div>
+                                    }
+                                    else if (lead.IdCompany != null)
+                                    {
+                                        <span class="triage-chip ok">collegato</span>
+                                    }
+                                </td>
+                                <td class="triage-want">
+                                    @(string.IsNullOrWhiteSpace(lead.Note) ? "—" : lead.Note)
+                                </td>
+                                <td>
+                                    @if (lead.Missing.Count == 0)
+                                    {
+                                        <span class="triage-chip ok">completo</span>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var missing in lead.Missing)
+                                        {
+                                            <span class="triage-chip warn">@missing</span>
+                                        }
+                                    }
+                                </td>
+                                <td class="row-actions">
+                                    <RedGButton RGButtonType="RGButtonType.Edit" Click="@(() => OpenLead(lead.Id))"></RedGButton>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        }
+    }
+    else if (_selectedView == InitiativeViews.Deals)
+    {
+        @if (_dealMode == DealMode.Edit)
+        {
+            <CRM.Client.Pages.Deals.Edit Id="@_idDeal"
+                                         IdInitiative="@Id"
+                                         PageMode="@PageModality.Child"
+                                         OnClickSave="@(async () => await SaveDealInline())"
+                                         OnClickCancel="@CancelDealInline"></CRM.Client.Pages.Deals.Edit>
+        }
+        else
+        {
+            @GeneratedItems("Opportunity", _report.Deals, _report.DealAmount, OpenDeal, NewDealInline, EditDealInline)
+        }
+    }
+    else if (_selectedView == InitiativeViews.Quotes)
+    {
+        @GeneratedItems("Preventivi", _report.Quotes, _report.QuoteAmount, OpenQuote)
+    }
+    else if (_selectedView == InitiativeViews.Orders)
+    {
+        @GeneratedItems("Ordini", _report.Orders, _report.OrderAmount, OpenOrder)
+    }
+}
+
+@code {
+    private RenderFragment EmptyFolder(string Icon, string Text) => @<section class="initiative-empty">
+        <span class="material-icons">@Icon</span>
+        <strong>@Text</strong>
+    </section>;
+
+    private RenderFragment GeneratedItems(string Title, List<ActivityGeneratedItemDTO> Items, decimal Total, Action<int> Open, Action? New = null, Action<int>? Edit = null) => @<section>
+        <section class="initiative-toolbar">
+            <strong>@Items.Count @Title.ToLowerInvariant()</strong>
+            <div class="initiative-toolbar-actions">
+                <span>Totale: <b>@Total.ToString("C")</b></span>
+                @if (New != null)
+                {
+                    <button type="button" class="primary-action" @onclick="@New">Nuova opportunity</button>
+                }
+            </div>
+        </section>
+
+        @if (Items.Count == 0)
+        {
+            <section class="initiative-empty">
+                <span class="material-icons">folder_open</span>
+                <strong>Nessun elemento in questa cartella.</strong>
+            </section>
+        }
+        else
+        {
+            <section class="initiative-table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>@Title</th><th>Data</th><th>Stato</th><th class="right">Importo</th>@if (Edit != null) { <th></th> }</tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Items)
+                        {
+                            <tr>
+                                <td><button type="button" class="text-link" @onclick="@(() => Open(item.Id))">@item.Label</button></td>
+                                <td>@item.Date.ToString("dd/MM/yyyy")</td>
+                                <td>@item.State</td>
+                                <td class="right money">@item.Amount.ToString("C")</td>
+                                @if (Edit != null)
+                                {
+                                    <td class="row-actions">
+                                        <RedGButton RGButtonType="RGButtonType.Edit" Click="@(() => Edit(item.Id))"></RedGButton>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </section>
+        }
+    </section>;
+}
+
+<style>
+    .primary-action, .ghost-action, .link-action { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; padding: .5rem .85rem; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--crm-link); font-weight: 750; font-size: .88rem; line-height: 1.2; white-space: nowrap; transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease; }
+    .primary-action .material-icons, .ghost-action .material-icons, .link-action .material-icons { font-size: 17px; }
+
+    .ghost-action { border-color: var(--crm-border); background: var(--crm-surface-raised); }
+    .ghost-action:hover { background: var(--crm-surface-hover); border-color: color-mix(in srgb, var(--crm-link) 40%, var(--crm-border)); }
+
+    .primary-action { background: var(--crm-link); border-color: var(--crm-link); color: var(--crm-surface-raised); font-weight: 850; }
+    .primary-action:hover { background: color-mix(in srgb, var(--crm-link) 88%, var(--crm-text)); }
+
+    /* Il ritorno all'elenco non compete con le azioni: nessun bordo finche' non ci si passa sopra. */
+    .link-action { color: var(--crm-text-muted); padding-left: .5rem; padding-right: .6rem; }
+    .link-action:hover { background: var(--crm-surface-hover); color: var(--crm-link); }
+
+    .primary-action:focus-visible, .ghost-action:focus-visible, .link-action:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--crm-link) 30%, transparent); }
+
+    .header-actions { display: flex; align-items: center; justify-content: flex-end; gap: .45rem; flex-wrap: wrap; }
+    .header-actions-sep { width: 1px; align-self: stretch; min-height: 24px; margin: 0 .2rem; background: var(--crm-border); }
+
+    @@media (max-width: 640px) {
+        .header-actions { width: 100%; justify-content: stretch; }
+        .header-actions .ghost-action, .header-actions .primary-action { flex: 1 1 auto; }
+        .header-actions-sep { display: none; }
+    }
+    .initiative-head, .initiative-metrics article, .initiative-detail-grid article, .initiative-prose, .initiative-table-wrap, .initiative-toolbar, .initiative-empty, .initiative-member-card, .initiative-form-card { border: 1px solid var(--crm-border); border-radius: 8px; background: var(--crm-surface-raised); box-shadow: var(--crm-shadow); }
+    .initiative-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .initiative-head h2 { margin: 0; font-size: 1.35rem; }
+    .initiative-head small, .initiative-metrics span, .initiative-metrics small, .initiative-table-wrap small, .initiative-detail-grid dt, .initiative-toolbar span { color: var(--crm-text-muted); }
+    .initiative-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .85rem; margin-bottom: 1rem; }
+    .initiative-metrics article { display: grid; gap: .15rem; padding: .9rem; }
+    .initiative-metrics strong { font-size: 1.3rem; overflow-wrap: anywhere; }
+    .initiative-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; margin-bottom: 1rem; }
+    .initiative-detail-grid article, .initiative-prose { padding: .9rem; }
+    .initiative-detail-grid h3, .initiative-prose h3 { margin: 0 0 .75rem; font-size: .85rem; text-transform: uppercase; color: var(--crm-text-muted); }
+    .initiative-detail-grid dl { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: .45rem .75rem; margin: 0; }
+    .initiative-detail-grid dd { margin: 0; font-weight: 700; }
+    .initiative-prose p { margin: 0; white-space: pre-wrap; }
+    .initiative-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .8rem .9rem; margin-bottom: .85rem; flex-wrap: wrap; }
+    .initiative-toolbar-actions { display: flex; align-items: center; justify-content: flex-end; gap: .7rem; flex-wrap: wrap; }
+    .triage-counts { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+    .triage-actions { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+    .triage-actions .ghost-action.active { background: var(--crm-link); border-color: var(--crm-link); color: var(--crm-surface-raised); }
+    .triage-chip { display: inline-flex; align-items: center; border-radius: 999px; padding: .18rem .55rem; margin: 0 .25rem .25rem 0; font-size: .76rem; font-weight: 850; }
+    .triage-chip.warn { background: color-mix(in srgb, #d97706 16%, transparent); color: #b45309; }
+    .triage-chip.info { background: color-mix(in srgb, #0284c7 16%, transparent); color: #0284c7; }
+    .triage-chip.ok { background: color-mix(in srgb, #16a34a 15%, transparent); color: #16a34a; }
+    .triage-suggestion { display: flex; align-items: center; gap: .5rem; margin-top: .35rem; padding: .35rem .5rem; border: 1px dashed color-mix(in srgb, #0284c7 45%, var(--crm-border)); border-radius: 8px; font-size: .8rem; flex-wrap: wrap; }
+    .triage-suggestion button { border: 1px solid #0284c7; border-radius: 6px; padding: .15rem .55rem; background: transparent; color: #0284c7; font-weight: 850; }
+    .triage-suggestion button:hover { background: color-mix(in srgb, #0284c7 12%, transparent); }
+    .triage-want { max-width: 320px; overflow-wrap: anywhere; }
+    .card-flag { color: var(--crm-text-muted); }
+    .initiative-detail-actions { display: flex; justify-content: flex-end; margin-top: 1rem; }
+    .initiative-member-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .85rem; }
+    .initiative-member-card { display: flex; align-items: flex-start; gap: .75rem; padding: .9rem; min-width: 0; }
+    .initiative-member-card .material-icons { color: var(--crm-link); }
+    .initiative-member-card div { min-width: 0; display: grid; gap: .12rem; }
+    .initiative-member-card strong, .initiative-member-card small, .initiative-member-card p { overflow-wrap: anywhere; }
+    .initiative-member-card small { color: var(--crm-text-muted); }
+    .initiative-member-card p { margin: .25rem 0 0; color: var(--crm-text-muted); }
+    .initiative-form-card { padding: 1rem; }
+    .initiative-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem; }
+    .initiative-form-grid label { display: grid; gap: .3rem; min-width: 0; }
+    .initiative-form-grid .col-2 { grid-column: span 2; }
+    .initiative-form-grid span { color: var(--crm-text-muted); font-size: .8rem; font-weight: 800; text-transform: uppercase; }
+    .initiative-form-grid input, .initiative-form-grid select, .initiative-form-grid textarea { min-height: 40px; padding: .45rem .6rem; border: 1px solid var(--crm-border); border-radius: 8px; background: var(--crm-surface-raised); color: var(--crm-text); font: inherit; }
+    .initiative-table-wrap { overflow-x: auto; }
+    .initiative-table-wrap table { width: 100%; min-width: 760px; border-collapse: collapse; }
+    .initiative-table-wrap th, .initiative-table-wrap td { padding: .7rem .8rem; border-bottom: 1px solid var(--crm-border); vertical-align: middle; text-align: left; }
+    .initiative-table-wrap th { color: var(--crm-text-muted); font-size: .76rem; text-transform: uppercase; background: var(--crm-surface-muted); }
+    .initiative-table-wrap tbody tr:hover td { background: var(--crm-surface-hover); }
+    .initiative-table-wrap small { display: block; margin-top: .15rem; }
+    .text-link { border: 0; padding: 0; background: transparent; color: var(--crm-link); font-weight: 850; text-align: left; }
+    .row-actions { text-align: right; white-space: nowrap; }
+    .right { text-align: right !important; }
+    .money { font-weight: 850; }
+    .state-chip { display: inline-flex; border-radius: 999px; padding: .3rem .7rem; font-weight: 850; font-size: .8rem; }
+    .state-new { background: color-mix(in srgb, #64748b 15%, transparent); color: var(--crm-text-muted); }
+    .state-active { background: color-mix(in srgb, #0d9488 15%, transparent); color: #0d9488; }
+    .state-won { background: color-mix(in srgb, #16a34a 15%, transparent); color: #16a34a; }
+    .state-lost { background: color-mix(in srgb, #dc2626 15%, transparent); color: #dc2626; }
+    .initiative-empty { min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; color: var(--crm-text-muted); text-align: center; }
+    .initiative-empty .material-icons { font-size: 48px; }
+    @@media (max-width: 1080px) { .initiative-metrics, .initiative-detail-grid, .initiative-member-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @@media (max-width: 720px) { .initiative-metrics, .initiative-detail-grid, .initiative-member-grid, .initiative-form-grid { grid-template-columns: 1fr; } .initiative-detail-grid dl { grid-template-columns: 1fr; } .initiative-form-grid .col-2 { grid-column: span 1; } }
+</style>

@@ -59,6 +59,26 @@ namespace CRM.Client.Services
             }
         }
 
+        public async Task<List<ActivityDTO>> GetByInitiativeAsync(int idInitiative)
+        {
+            try
+            {
+                return await _http.GetFromJsonAsync<List<ActivityDTO>>(
+                    $"{ConstHelper.ActivitiesPath}/by-initiative/{idInitiative}") ?? new List<ActivityDTO>();
+            }
+            catch (AccessTokenNotAvailableException exception)
+            {
+                exception.Redirect();
+                return new List<ActivityDTO>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return new List<ActivityDTO>();
+            }
+        }
+
+
         public async Task<List<ActivityDTO>> GetMyAgendaAsync(ActivityFilter? filter = null)
         {
             try

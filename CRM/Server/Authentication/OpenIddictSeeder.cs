@@ -9,6 +9,10 @@ namespace CRM.Server.Authentication
             var configuration = services.GetRequiredService<IConfiguration>();
             var environment = services.GetRequiredService<IHostEnvironment>();
             var manager = services.GetRequiredService<IOpenIddictApplicationManager>();
+            // Ogni origine da cui il CRM viene aperto deve stare qui dentro: l'autenticazione
+            // confronta il redirect con questo elenco, e un'origine mancante non da' un errore
+            // parlante - la pagina si apre e il login fallisce citando redirect_uri.
+            // Per provare da telefono in LAN va aggiunto l'indirizzo di rete accanto a localhost.
             var clientUris = configuration.GetSection("OpenIddict:ClientUris").Get<string[]>();
             if (clientUris == null || clientUris.Length == 0)
             {

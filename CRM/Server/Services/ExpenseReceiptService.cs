@@ -90,6 +90,7 @@ namespace CRM.Server.Services
                 .Where(er => er.IdActivity == activityId)
                 .Include(er => er.AttachmentFile)
                 .Include(er => er.Activity)
+                .Include(er => er.Initiative)
                 .Include(er => er.UserSpender).ThenInclude(u => u.Contact)
                 .OrderByDescending(er => er.CreatedDate)
                 .ToListAsync();
@@ -151,6 +152,7 @@ namespace CRM.Server.Services
                 .AsNoTracking()
                 .Include(er => er.AttachmentFile)
                 .Include(er => er.Activity)
+                .Include(er => er.Initiative)
                 .Include(er => er.UserSpender).ThenInclude(u => u.Contact)
                 .AsQueryable();
 
@@ -173,13 +175,20 @@ namespace CRM.Server.Services
                 query = query.Where(er => (er.TransactionDate ?? er.CreatedDate) < to);
             }
 
+            // Una spesa di fiera ha un contesto anche quando non ha ne' intervento ne' attivita':
+            // senza l'iniziativa fra le condizioni di "None", il costo dello stand comparirebbe
+            // fra i costi generali proprio mentre il resoconto lo conta come costo della fiera.
             query = filter.Context switch
             {
                 ExpenseContextFilter.Intervention => query.Where(er => er.TicketInterventionId != null),
                 ExpenseContextFilter.Activity => query.Where(er => er.IdActivity != null),
-                ExpenseContextFilter.None => query.Where(er => er.TicketInterventionId == null && er.IdActivity == null),
+                ExpenseContextFilter.Initiative => query.Where(er => er.IdInitiative != null),
+                ExpenseContextFilter.None => query.Where(er => er.TicketInterventionId == null && er.IdActivity == null && er.IdInitiative == null),
                 _ => query
             };
+
+            if (filter.IdInitiative.HasValue)
+                query = query.Where(er => er.IdInitiative == filter.IdInitiative.Value);
 
             if (filter.IsConfirmed.HasValue)
                 query = query.Where(er => er.IsConfirmed == filter.IsConfirmed.Value);
@@ -276,6 +285,7 @@ namespace CRM.Server.Services
             var receipt = await _context.ExpenseReceipts
                 .Include(er => er.AttachmentFile)
                 .Include(er => er.Activity)
+                .Include(er => er.Initiative)
                 .Include(er => er.UserSpender).ThenInclude(u => u.Contact)
                 .Include(er => er.Documents).ThenInclude(d => d.Lines)
                 .FirstOrDefaultAsync(er => er.Id == id);
@@ -292,6 +302,7 @@ namespace CRM.Server.Services
             {
                 TicketInterventionId = dto.TicketInterventionId,
                 IdActivity = dto.IdActivity,
+                IdInitiative = dto.IdInitiative,
                 // Se non e' indicato chi ha speso, ha speso chi sta registrando: e' il caso
                 // normale, e lasciarlo vuoto renderebbe la spesa invisibile nei totali per persona.
                 IdUserSpender = string.IsNullOrWhiteSpace(dto.IdUserSpender) ? userId : dto.IdUserSpender,
@@ -344,6 +355,7 @@ namespace CRM.Server.Services
                 {
                     TicketInterventionId = dto.TicketInterventionId,
                     IdActivity = dto.IdActivity,
+                    IdInitiative = dto.IdInitiative,
                     IdUserSpender = dto.IdUserSpender,
                     Description = $"{document.MerchantName} - {document.TransactionDate?.ToString("dd/MM/yyyy")}",
                     AttachmentFileId = dto.AttachmentFileId,
@@ -376,6 +388,7 @@ namespace CRM.Server.Services
 
             receipt.TicketInterventionId = dto.TicketInterventionId;
             receipt.IdActivity = dto.IdActivity;
+            receipt.IdInitiative = dto.IdInitiative;
 
             if (!string.IsNullOrWhiteSpace(dto.IdUserSpender))
                 receipt.IdUserSpender = dto.IdUserSpender;
@@ -486,6 +499,8 @@ namespace CRM.Server.Services
                 TicketInterventionId = receipt.TicketInterventionId,
                 IdActivity = receipt.IdActivity,
                 ActivitySubject = receipt.Activity?.Subject,
+                IdInitiative = receipt.IdInitiative,
+                InitiativeName = receipt.Initiative?.Name,
                 IdUserSpender = receipt.IdUserSpender,
                 UserSpenderName = receipt.UserSpender?.NameComplete,
                 ExchangeRate = receipt.ExchangeRate,

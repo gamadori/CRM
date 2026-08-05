@@ -178,6 +178,19 @@
                                             @Localize["In charge"]
                                         </span>
                                     }
+
+                                    @* Avviso, non divieto: si puo' assegnare lo stesso, ma senza
+                                       questo l'unico modo per sapere che è fuori era ricordarselo. *@
+                                    @{
+                                        var away = GetAway(user.Id);
+                                    }
+                                    @if (away != null)
+                                    {
+                                        <span class="away-badge" title="@($"{away.InitiativeName}{(string.IsNullOrWhiteSpace(away.Location) ? "" : $" — {away.Location}")}")">
+                                            <span class="material-icons">flight_takeoff</span>
+                                            @AwayText(away)
+                                        </span>
+                                    }
                                 </div>
 
                                 @if (hasWorkloadData)
@@ -461,7 +474,8 @@ else
     }
 
     .group-badge,
-    .assigned-badge {
+    .assigned-badge,
+    .away-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.25rem;
@@ -477,8 +491,20 @@ else
     }
 
     .group-badge .material-icons,
-    .assigned-badge .material-icons {
+    .assigned-badge .material-icons,
+    .away-badge .material-icons {
         font-size: 0.85rem;
+    }
+
+    /* Ambra e non rosso: e' un avviso, non un errore - assegnare a chi e' fuori resta legittimo. */
+    .away-badge {
+        background: color-mix(in srgb, #d97706 14%, var(--crm-surface));
+        border: 1px solid color-mix(in srgb, #d97706 32%, transparent);
+        color: #b45309;
+    }
+
+    body.dark-theme .away-badge {
+        color: #fbbf24;
     }
 
     .group-badge {

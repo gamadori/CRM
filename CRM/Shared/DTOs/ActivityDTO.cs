@@ -63,6 +63,9 @@ namespace CRM.Shared.DTOs
         /// <summary>Id dell'email in ingresso collegata (attività da email ricevuta).</summary>
         public int? IdInboundEmail { get; set; }
 
+        /// <summary>Iniziativa (fiera, trasferta) durante la quale l'attività è avvenuta.</summary>
+        public int? IdInitiative { get; set; }
+
         /// <summary>Stato di engagement dell'email collegata (risolto per la timeline).</summary>
         public EmailEngagementStatus? EmailEngagement { get; set; }
 
@@ -113,6 +116,7 @@ namespace CRM.Shared.DTOs
                 CreatedAt = a.CreatedAt,
                 IdEmailSent = a.IdEmailSent,
                 IdInboundEmail = a.IdInboundEmail,
+                IdInitiative = a.IdInitiative,
                 UserName = a.User != null ? a.User.NameComplete : string.Empty,
                 AssigneeName = a.Assignee != null ? a.Assignee.NameComplete : string.Empty,
                 CompletedByName = a.CompletedBy != null ? a.CompletedBy.NameComplete : string.Empty,
@@ -144,6 +148,7 @@ namespace CRM.Shared.DTOs
                 State = dto.State,
                 ReminderAt = dto.ReminderAt,
                 CreatedAt = dto.CreatedAt,
+                IdInitiative = dto.IdInitiative,
                 Participants = dto.ParticipantIds
                     .Where(id => !string.IsNullOrWhiteSpace(id))
                     .Distinct()

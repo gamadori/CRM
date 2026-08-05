@@ -124,6 +124,10 @@ namespace CRM.Server.Services
                     existing.Note = item.Note;
                     existing.IdCompany = item.IdCompany;
                     existing.IdContact = item.IdContact;
+                    existing.IdInitiative = item.IdInitiative;
+                    // Solo se ne arriva uno: la modifica di un lead non deve staccare la foto del
+                    // biglietto solo perche' la maschera non la rispedisce.
+                    existing.IdBusinessCard = item.IdBusinessCard ?? existing.IdBusinessCard;
                     existing.IdUser = string.IsNullOrWhiteSpace(item.IdUser) ? existing.IdUser : item.IdUser;
                     existing.UpdatedAt = DateTime.Now;
                     ReplaceLeadProductInterests(existing, item.ProductInterests);
@@ -191,6 +195,11 @@ namespace CRM.Server.Services
                     Name = string.IsNullOrWhiteSpace(request.DealName) ? lead.Name : request.DealName!,
                     IdCompany = lead.IdCompany,
                     IdContact = lead.IdContact,
+
+                    // L'iniziativa che ha portato il lead segue l'opportunita': e' proprio qui che
+                    // l'attribuzione di una fiera si perde se ci si dimentica, e senza di essa il
+                    // resoconto mostra i lead raccolti ma non gli affari che ne sono nati.
+                    IdInitiative = lead.IdInitiative,
                     Amount = request.Amount ?? lead.EstimatedValue,
                     Target = request.Amount ?? lead.EstimatedValue,
                     Probability = Math.Clamp(probability, 0, 100),
@@ -329,6 +338,11 @@ namespace CRM.Server.Services
             if (args?.Source != null)
             {
                 q = q.Where(x => x.Source == args.Source);
+            }
+
+            if (args?.IdInitiative != null)
+            {
+                q = q.Where(x => x.IdInitiative == args.IdInitiative);
             }
 
             if (args?.DateFrom != null)

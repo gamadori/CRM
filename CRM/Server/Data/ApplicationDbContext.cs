@@ -358,19 +358,26 @@ namespace CRM.Server.Data
                 .HasForeignKey(a => a.IdAttachmentFile)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<MachineParameterApiKey>()
-                .HasIndex(x => x.KeyHash)
-                .IsUnique();
-
-            modelBuilder.Entity<ExternalTicketApiKey>(entity =>
+            // ---- Chiavi API (backup macchina, ticket esterni, app fiera) ----
+            // Una tabella sola: l'ambito e' una colonna, non tre tabelle. L'intestatario e'
+            // facoltativo perche' dipende dall'ambito, e nessuna delle due cancellazioni deve
+            // portarsi via la chiave in silenzio - la si revoca, non sparisce.
+            modelBuilder.Entity<ApiKey>(entity =>
             {
                 entity.HasOne(x => x.Company)
                       .WithMany()
                       .HasForeignKey(x => x.IdCompany)
-                      .OnDelete(DeleteBehavior.Restrict);
+                      .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasOne(x => x.User)
+                      .WithMany()
+                      .HasForeignKey(x => x.IdUser)
+                      .OnDelete(DeleteBehavior.NoAction);
 
                 entity.HasIndex(x => x.KeyHash).IsUnique();
+                entity.HasIndex(x => x.Scope);
                 entity.HasIndex(x => x.IdCompany);
+                entity.HasIndex(x => x.IdUser);
             });
 
             modelBuilder.Entity<MachineBackup>(entity =>
@@ -690,6 +697,95 @@ namespace CRM.Server.Data
                 entity.HasIndex(p => p.IdUser);
             });
 
+            // ---- Iniziative (fiere, trasferte, campagne) ----
+            modelBuilder.Entity<Initiative>(entity =>
+            {
+                entity.HasOne(i => i.Owner)
+                      .WithMany()
+                      .HasForeignKey(i => i.IdOwner)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(i => i.Members)
+                      .WithOne(p => p.Initiative)
+                      .HasForeignKey(p => p.IdInitiative)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(i => i.Schedules)
+                      .WithOne(p => p.Initiative)
+                      .HasForeignKey(p => p.IdInitiative)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(i => new { i.Kind, i.DateFrom });
+                entity.HasIndex(i => i.State);
+            });
+
+            modelBuilder.Entity<InitiativeMember>(entity =>
+            {
+                entity.HasOne(p => p.User)
+                      .WithMany()
+                      .HasForeignKey(p => p.IdUser)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(p => new { p.IdInitiative, p.IdUser }).IsUnique();
+                entity.HasIndex(p => p.IdInitiative);
+                entity.HasIndex(p => p.IdUser);
+            });
+
+            modelBuilder.Entity<InitiativeSchedule>(entity =>
+            {
+                entity.HasOne(p => p.User)
+                      .WithMany()
+                      .HasForeignKey(p => p.IdUser)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(p => p.IdInitiative);
+                entity.HasIndex(p => p.IdUser);
+                entity.HasIndex(p => new { p.Start, p.End });
+            });
+
+            // Cancellare un'iniziativa non deve portarsi via cio' che ha prodotto: lead, opportunita',
+            // attivita' e note spese restano, sganciati dal servizio prima della cancellazione.
+            // Stessa scelta dell'origine attivita' su Deal/Quote, e per lo stesso motivo: la cascata
+            // su dati commerciali e' silenziosa e irreversibile.
+            modelBuilder.Entity<Activity>()
+                        .HasOne(a => a.Initiative)
+                        .WithMany()
+                        .HasForeignKey(a => a.IdInitiative)
+                        .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ExpenseReceipt>()
+                        .HasOne(e => e.Initiative)
+                        .WithMany()
+                        .HasForeignKey(e => e.IdInitiative)
+                        .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Lead>()
+                        .HasOne(l => l.Initiative)
+                        .WithMany()
+                        .HasForeignKey(l => l.IdInitiative)
+                        .OnDelete(DeleteBehavior.NoAction);
+
+            // La foto del biglietto e' la fonte del lead: cancellare il file non deve portarsi via
+            // il contatto, quindi nessuna cascata in questa direzione.
+            modelBuilder.Entity<Lead>()
+                        .HasOne(l => l.BusinessCard)
+                        .WithMany()
+                        .HasForeignKey(l => l.IdBusinessCard)
+                        .OnDelete(DeleteBehavior.NoAction);
+
+            // Indice filtrato: l'identificativo dell'app esiste solo sui lead arrivati da li',
+            // e un indice unico su una colonna quasi sempre nulla accetterebbe un solo NULL.
+            modelBuilder.Entity<Lead>()
+                        .HasIndex(l => l.FieldClientId)
+                        .IsUnique()
+                        .HasFilter("[FieldClientId] IS NOT NULL");
+
+            modelBuilder.Entity<Deal>()
+                        .HasOne(d => d.Initiative)
+                        .WithMany()
+                        .HasForeignKey(d => d.IdInitiative)
+                        .OnDelete(DeleteBehavior.NoAction);
+
             // ---- Coda di invio email (outbox) ----
             modelBuilder.Entity<EmailOutbox>(entity =>
             {
@@ -915,8 +1011,7 @@ namespace CRM.Server.Data
         public DbSet<ProductCatalogAsset> ProductCatalogAssets => Set<ProductCatalogAsset>();
 
         public DbSet<MachineBackup> MachineBackups => Set<MachineBackup>();
-        public DbSet<MachineParameterApiKey> MachineParameterApiKeys => Set<MachineParameterApiKey>();
-        public DbSet<ExternalTicketApiKey> ExternalTicketApiKeys => Set<ExternalTicketApiKey>();
+        public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
         public DbSet<CRM.Shared.Article> Articles => Set<Article>();
         public DbSet<CRM.Shared.TicketState> TicketStates => Set<TicketState>();
         public DbSet<CRM.Shared.Ticket> Tickets => Set<Ticket>();
@@ -1006,6 +1101,12 @@ namespace CRM.Server.Data
         public DbSet<Activity> Activities => Set<Activity>();
 
         public DbSet<ActivityParticipant> ActivityParticipants => Set<ActivityParticipant>();
+
+        public DbSet<Initiative> Initiatives => Set<Initiative>();
+
+        public DbSet<InitiativeMember> InitiativeMembers => Set<InitiativeMember>();
+
+        public DbSet<InitiativeSchedule> InitiativeSchedules => Set<InitiativeSchedule>();
 
         public DbSet<AccessoryType> AccessoryTypes => Set<AccessoryType>();
 

@@ -41,6 +41,7 @@ namespace CRM.Client.Services
                 {
                     query.Add($"includeActivities={filter.IncludeActivities.ToString().ToLowerInvariant()}");
                     query.Add($"includeTickets={filter.IncludeTickets.ToString().ToLowerInvariant()}");
+                    query.Add($"includeInitiatives={filter.IncludeInitiatives.ToString().ToLowerInvariant()}");
                 }
 
                 var url = $"{ConstHelper.CalendarPath}/agenda";

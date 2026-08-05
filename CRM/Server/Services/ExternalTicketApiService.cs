@@ -1,4 +1,4 @@
-using CRM.Server.Data;
+﻿using CRM.Server.Data;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Identity;
@@ -25,100 +25,22 @@ namespace CRM.Server.Services
             _configuration = configuration;
         }
 
-        public async Task<List<ExternalTicketApiKeyDTO>> GetApiKeysAsync()
+        public async Task<ExternalTicketResponse> CreateTicketAsync(ApiKey apiKey, ExternalTicketCreateRequest request)
         {
-            var keys = await _context.ExternalTicketApiKeys
-                .AsNoTracking()
-                .Include(x => x.Company)
-                .OrderByDescending(x => x.CreatedAt)
-                .ToListAsync();
+            // L'azienda su una chiave di questo ambito e' garantita da chi la crea; qui si
+            // ricontrolla perche' il campo e' facoltativo sulla tabella condivisa, e un ticket
+            // senza azienda sarebbe invisibile a tutti.
+            var idCompany = apiKey.IdCompany
+                ?? throw new InvalidOperationException("La chiave non e' associata a nessuna azienda.");
 
-            return keys.Select(x => x.ToDto()).ToList();
-        }
-
-        public async Task<ExternalTicketApiKeyCreateResponse> CreateApiKeyAsync(ExternalTicketApiKeyCreateRequest request)
-        {
-            var companyExists = await _context.Companies.AnyAsync(x => x.Id == request.IdCompany);
-            if (!companyExists)
-            {
-                throw new InvalidOperationException("Company non trovata.");
-            }
-
-            var plainTextKey = $"{Prefix}_{Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).Replace("+", "").Replace("/", "").Replace("=", "")}";
-            var key = new ExternalTicketApiKey
-            {
-                Name = request.Name.Trim(),
-                KeyHash = Hash(plainTextKey),
-                KeyPrefix = plainTextKey.Length > 12 ? plainTextKey.Substring(0, 12) : plainTextKey,
-                IdCompany = request.IdCompany,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                ExpiresAt = request.ExpiresAt,
-                Notes = request.Notes?.Trim()
-            };
-
-            _context.ExternalTicketApiKeys.Add(key);
-            await _context.SaveChangesAsync();
-
-            key.Company = await _context.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.Id == key.IdCompany);
-
-            return new ExternalTicketApiKeyCreateResponse
-            {
-                ApiKey = key.ToDto(),
-                PlainTextKey = plainTextKey
-            };
-        }
-
-        public async Task<bool> RevokeApiKeyAsync(int id)
-        {
-            var key = await _context.ExternalTicketApiKeys.FirstOrDefaultAsync(x => x.Id == id);
-            if (key == null)
-            {
-                return false;
-            }
-
-            key.IsActive = false;
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<ExternalTicketApiKey?> ValidateApiKeyAsync(string? plainTextKey)
-        {
-            if (string.IsNullOrWhiteSpace(plainTextKey))
-            {
-                return null;
-            }
-
-            var hash = Hash(plainTextKey.Trim());
-            var key = await _context.ExternalTicketApiKeys
-                .Include(x => x.Company)
-                .FirstOrDefaultAsync(x => x.KeyHash == hash);
-
-            if (key == null || !key.IsActive)
-            {
-                return null;
-            }
-
-            if (key.ExpiresAt != null && key.ExpiresAt.Value < DateTime.UtcNow)
-            {
-                return null;
-            }
-
-            key.LastUsedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-            return key;
-        }
-
-        public async Task<ExternalTicketResponse> CreateTicketAsync(ExternalTicketApiKey apiKey, ExternalTicketCreateRequest request)
-        {
-            await ValidateTicketReferencesAsync(apiKey.IdCompany, request);
+            await ValidateTicketReferencesAsync(idCompany, request);
 
             var now = DateTime.Now;
             var state = await _context.TicketStates.FirstOrDefaultAsync(x => x.State == (int)eTicketStates.Created);
             var ownerUserId = await ResolveOwnerUserIdAsync();
             var ticket = new Ticket
             {
-                IdCompany = apiKey.IdCompany,
+                IdCompany = idCompany,
                 IdType = request.IdType,
                 IdArticle = request.IdArticle,
                 IdProduct = request.IdProduct,
@@ -145,7 +67,7 @@ namespace CRM.Server.Services
             return (await GetTicketAsync(apiKey, ticket.Id))!;
         }
 
-        public async Task<ExternalTicketResponse?> GetTicketAsync(ExternalTicketApiKey apiKey, int id)
+        public async Task<ExternalTicketResponse?> GetTicketAsync(ApiKey apiKey, int id)
         {
             return await QueryTickets(apiKey)
                 .Where(x => x.Id == id)
@@ -153,7 +75,7 @@ namespace CRM.Server.Services
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<List<ExternalTicketResponse>> GetTicketsAsync(ExternalTicketApiKey apiKey, bool includeClosed, int skip, int top)
+        public async Task<List<ExternalTicketResponse>> GetTicketsAsync(ApiKey apiKey, bool includeClosed, int skip, int top)
         {
             top = Math.Clamp(top, 1, 100);
             skip = Math.Max(skip, 0);
@@ -172,7 +94,7 @@ namespace CRM.Server.Services
                 .ToListAsync();
         }
 
-        private IQueryable<Ticket> QueryTickets(ExternalTicketApiKey apiKey)
+        private IQueryable<Ticket> QueryTickets(ApiKey apiKey)
         {
             return _context.Tickets
                 .AsNoTracking()
@@ -293,23 +215,4 @@ namespace CRM.Server.Services
         }
     }
 
-    internal static class ExternalTicketApiKeyMapping
-    {
-        public static ExternalTicketApiKeyDTO ToDto(this ExternalTicketApiKey key)
-        {
-            return new ExternalTicketApiKeyDTO
-            {
-                Id = key.Id,
-                Name = key.Name,
-                KeyPrefix = key.KeyPrefix,
-                IdCompany = key.IdCompany,
-                Company = key.Company?.RagioneSociale,
-                IsActive = key.IsActive,
-                CreatedAt = key.CreatedAt,
-                ExpiresAt = key.ExpiresAt,
-                LastUsedAt = key.LastUsedAt,
-                Notes = key.Notes
-            };
-        }
-    }
 }

@@ -1,7 +1,7 @@
 ﻿
 @if (_users != null)
 {
-    <RadzenDropDownDataGrid class="form-control" @bind-Value="@Value" TValue="string" AllowFiltering="true" PageSize="@ConstHelper.PageSize" AllowClear="true"
+    <RadzenDropDownDataGrid class="form-control" @bind-Value="@Value" TValue="string" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" PageSize="@ConstHelper.PageSize" AllowClear="true"
                             Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id" Change="OnSelectedUserChange" />
 }
 else

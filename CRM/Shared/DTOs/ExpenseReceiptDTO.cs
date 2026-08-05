@@ -20,6 +20,12 @@ namespace CRM.Shared.DTOs
         /// <summary>Oggetto dell'attivita', per mostrare il contesto senza una seconda chiamata.</summary>
         public string? ActivitySubject { get; set; }
 
+        /// <summary>Iniziativa (fiera, trasferta) a cui la spesa appartiene; null altrimenti.</summary>
+        public int? IdInitiative { get; set; }
+
+        /// <summary>Nome dell'iniziativa, per mostrare il contesto senza una seconda chiamata.</summary>
+        public string? InitiativeName { get; set; }
+
         public string? IdUserSpender { get; set; }
 
         public string? UserSpenderName { get; set; }
@@ -110,6 +116,13 @@ namespace CRM.Shared.DTOs
         public int? TicketInterventionId { get; set; }
 
         public int? IdActivity { get; set; }
+
+        /// <summary>
+        /// Iniziativa a cui la spesa appartiene. Puo' convivere con l'attivita' - il pranzo col
+        /// cliente durante la trasferta e' di entrambe - ed e' l'unico contesto possibile per i
+        /// costi comuni (stand, volo, albergo) che non sono di nessuna visita in particolare.
+        /// </summary>
+        public int? IdInitiative { get; set; }
 
         /// <summary>Chi ha speso. Se non valorizzato, il server usa l'utente corrente.</summary>
         public string? IdUserSpender { get; set; }
@@ -224,6 +237,8 @@ namespace CRM.Shared.DTOs
         Intervention = 1,
         /// <summary>Legate a un'attivita' (visita commerciale o di cortesia).</summary>
         Activity = 2,
+        /// <summary>Legate a un'iniziativa (fiera, trasferta, campagna).</summary>
+        Initiative = 4,
         /// <summary>Senza contesto: costi generali.</summary>
         None = 3
     }
@@ -238,6 +253,12 @@ namespace CRM.Shared.DTOs
         public string? IdUserSpender { get; set; }
 
         public ExpenseContextFilter Context { get; set; } = ExpenseContextFilter.All;
+
+        /// <summary>
+        /// Spese di una singola iniziativa. E' la chiave della nota spese di una trasferta:
+        /// insieme a <see cref="IdUserSpender"/> da' "quanto devo rimborsare a X per quel viaggio".
+        /// </summary>
+        public int? IdInitiative { get; set; }
 
         public bool? IsConfirmed { get; set; }
 

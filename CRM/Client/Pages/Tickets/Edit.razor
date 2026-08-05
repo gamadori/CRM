@@ -235,7 +235,7 @@ else
                                     <div class="col-md-6">
                                         <label class="form-label small mb-1 d-block">@Localize["Commessa"]</label>
                                         <RadzenDropDown TValue="int?" Value="_selectedCommessaId" Data="_commesseOptions"
-                                                        TextProperty="Code" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                                                        TextProperty="Code" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true"
                                                         Placeholder="@Localize["Nessuna"]" Style="width:100%"
                                                         Change="OnCommessaLinkChanged">
                                             <Template Context="c">

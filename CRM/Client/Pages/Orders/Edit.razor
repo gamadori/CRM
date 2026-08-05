@@ -34,7 +34,7 @@ else
                     <div class="col-md-4">
                         <label class="form-label">Azienda</label>
                         <RadzenDropDown TValue="int?" @bind-Value="_order.IdCompany" Data="_companies"
-                                        TextProperty="RagioneSociale" ValueProperty="Id" AllowFiltering="true"
+                                        TextProperty="RagioneSociale" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                         AllowClear="true" Placeholder="Seleziona azienda" Style="width:100%"
                                         Change="@(async _ => await OnChangeCompany())" />
                         <ValidationMessage For="@(() => _order.IdCompany)" />
@@ -42,7 +42,7 @@ else
                     <div class="col-md-4">
                         <label class="form-label">Contatto</label>
                         <RadzenDropDown TValue="int?" @bind-Value="_order.IdContact" Data="_contacts"
-                                        TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true"
+                                        TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                         AllowClear="true" Placeholder="Referente" Style="width:100%" />
                     </div>
                     <div class="col-md-4">
@@ -93,7 +93,7 @@ else
                             <tr>
                                 <td>
                                     <RadzenDropDown TValue="int?" Value="row.IdProduct" Data="_products"
-                                                    TextProperty="Name" ValueProperty="Id" AllowFiltering="true"
+                                                    TextProperty="Name" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                                     AllowClear="true" Placeholder="—" Style="width:100%"
                                                     Change="@(args => OnSelectProduct(row, args as int?))" />
                                 </td>

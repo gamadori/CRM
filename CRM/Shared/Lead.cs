@@ -81,6 +81,47 @@ namespace CRM.Shared
         [ForeignKey(nameof(ConvertedDeal))]
         public int? ConvertedDealId { get; set; }
 
+        /// <summary>
+        /// Iniziativa da cui il lead arriva: la fiera, il webinar, la campagna.
+        /// <para>
+        /// <see cref="Source"/> dice il canale, questo dice QUALE occasione - ed e' la seconda meta'
+        /// a rendere rispondibile la domanda vera, cioe' se quella fiera e' valsa la spesa.
+        /// </para>
+        /// <para>
+        /// In conversione va propagato sul <see cref="Deal"/>: e' esattamente li' che
+        /// l'attribuzione si perde se ci si dimentica.
+        /// </para>
+        /// </summary>
+        [ForeignKey(nameof(Initiative))]
+        [Display(Name = "Iniziativa")]
+        public int? IdInitiative { get; set; }
+
+        /// <summary>
+        /// Foto del biglietto da visita da cui il lead e' nato.
+        /// <para>
+        /// E' la FONTE, non un allegato decorativo: la lettura automatica dei campi e' una
+        /// comodita' che puo' fallire, essere non configurata o non partire perche' allo stand non
+        /// c'e' rete. Finche' la foto e' salvata, il contatto e' recuperabile a mano; senza, un
+        /// biglietto letto male e' un contatto perso.
+        /// </para>
+        /// </summary>
+        [ForeignKey(nameof(BusinessCard))]
+        [Display(Name = "Biglietto da visita")]
+        public int? IdBusinessCard { get; set; }
+
+        /// <summary>
+        /// Identificativo assegnato dall'app da campo al momento della cattura.
+        /// <para>
+        /// Serve a non duplicare: un telefono in fiera manda, non riceve la risposta perche' la
+        /// rete cade a meta', e riprova. Senza questa chiave il secondo tentativo creerebbe un
+        /// secondo lead identico, e il doppione lo si scopre solo la sera contando i biglietti.
+        /// </para>
+        /// </summary>
+        [MaxLength(64)]
+        public string? FieldClientId { get; set; }
+
+        public virtual AttachmentFile? BusinessCard { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public DateTime? UpdatedAt { get; set; }
@@ -95,6 +136,8 @@ namespace CRM.Shared
 
         public virtual Deal? ConvertedDeal { get; set; }
 
+        public virtual Initiative? Initiative { get; set; }
+
         public virtual ICollection<LeadProductInterest> ProductInterests { get; set; } = new List<LeadProductInterest>();
     }
 
@@ -107,6 +150,8 @@ namespace CRM.Shared
         public LeadStatus? Status { get; set; }
 
         public LeadSource? Source { get; set; }
+
+        public int? IdInitiative { get; set; }
 
         public DateTime? DateFrom { get; set; }
 

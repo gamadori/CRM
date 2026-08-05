@@ -21,7 +21,7 @@
     <div class="card-body">
         <label class="form-label">Cliente</label>
         <RadzenDropDown TValue="int?" @bind-Value="_idCompany" Data="_companies"
-                        TextProperty="RagioneSociale" ValueProperty="Id" AllowFiltering="true"
+                        TextProperty="RagioneSociale" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                         AllowClear="true" Placeholder="Seleziona un cliente" Style="width:100%; max-width:480px;"
                         Change="@(async _ => await LoadItems())" />
         <div class="form-text">Il listino definisce prezzo e sconto dedicati per cliente; in preventivo/ordine sostituiscono il prezzo di catalogo.</div>
@@ -71,7 +71,7 @@
                     <tr class="table-light">
                         <td>
                             <RadzenDropDown TValue="int?" @bind-Value="_newIdProduct" Data="_availableProducts"
-                                            TextProperty="Name" ValueProperty="Id" AllowFiltering="true"
+                                            TextProperty="Name" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                             AllowClear="true" Placeholder="Aggiungi prodotto" Style="width:100%"
                                             Change="@(args => OnPickNewProduct(args as int?))" />
                         </td>

@@ -103,6 +103,8 @@ namespace CRM.Client
             builder.Services.AddTransient<IDealService, ProxyDealService>();
 
             builder.Services.AddTransient<ILeadService, ProxyLeadService>();
+            builder.Services.AddTransient<IInitiativeService, ProxyInitiativeService>();
+            builder.Services.AddScoped<IOfflineLeadQueue, OfflineLeadQueue>();
 
             builder.Services.AddTransient<IWorkflowAutomationClientService, ProxyWorkflowAutomationService>();
 
@@ -154,7 +156,7 @@ namespace CRM.Client
             builder.Services.AddScoped<IProductCatalogAssetsService, ProxyProductCatalogAssetsService>();
             builder.Services.AddScoped<IProductCatalogService, ProxyProductCatalogService>();
             builder.Services.AddScoped<IMachineBackupsService, ProxyMachineBackupsService>();
-            builder.Services.AddScoped<IMachineParameterApiKeysService, ProxyMachineParameterApiKeysService>();
+            builder.Services.AddScoped<IApiKeysService, ProxyApiKeysService>();
             builder.Services.AddScoped<IProductsService, ProxyProductsService>();
             builder.Services.AddScoped<IProductTypesService, ProxyProductTypesService>();
             builder.Services.AddScoped<ICompaniesService, ProxyCompaniesService>();

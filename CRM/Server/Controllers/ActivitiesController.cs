@@ -36,6 +36,21 @@ namespace CRM.Server.Controllers
             }
         }
 
+        [HttpGet("by-initiative/{idInitiative:int}")]
+        public async Task<ActionResult<IEnumerable<ActivityDTO>>> GetByInitiative(int idInitiative)
+        {
+            try
+            {
+                var items = await _activitiesService.GetByInitiativeAsync(idInitiative);
+                return Ok(items ?? new List<ActivityDTO>());
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(ActivitiesController), nameof(GetByInitiative), LogEvent.EventsTypes.Error, ex);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
+
         [HttpGet("my-agenda")]
         public async Task<ActionResult<IEnumerable<ActivityDTO>>> GetMyAgenda([FromQuery] ActivityFilter? args = null)
         {

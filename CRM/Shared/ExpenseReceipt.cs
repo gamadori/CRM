@@ -58,6 +58,26 @@ namespace CRM.Shared
         public Activity? Activity { get; set; }
 
         /// <summary>
+        /// Iniziativa (fiera, trasferta) a cui la spesa appartiene: TERZO contesto possibile,
+        /// alternativo a intervento e attivita', non un quarto obbligo.
+        /// <para>
+        /// Serve perche' i costi condivisi di un'occasione non sono di nessuno in particolare: lo
+        /// stand, l'allestimento, il volo, l'albergo dei dieci giorni non appartengono all'attivita'
+        /// di un singolo cliente. Senza questo campo o si riaggancia ogni scontrino a mano a
+        /// un'attivita' a caso - sporcando proprio il costo del lavoro per cui il collegamento
+        /// esisteva - oppure finiscono tutti "costo generale" e la fiera non ha un consuntivo.
+        /// </para>
+        /// <para>
+        /// Puo' convivere con <see cref="IdActivity"/>: il pranzo col cliente durante la trasferta
+        /// e' della visita E del viaggio. E' invece l'iniziativa da sola a reggere i costi comuni.
+        /// </para>
+        /// </summary>
+        [ForeignKey(nameof(Initiative))]
+        public int? IdInitiative { get; set; }
+
+        public Initiative? Initiative { get; set; }
+
+        /// <summary>
         /// Descrizione testuale della nota spese
         /// </summary>
         [MaxLength(500)]

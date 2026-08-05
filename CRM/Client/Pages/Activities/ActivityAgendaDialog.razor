@@ -12,6 +12,7 @@
 @inject ILeadService LeadService
 @inject IDealService DealService
 @inject ITicketsService TicketsService
+@inject IInitiativeService InitiativeService
 @inject DialogService DialogService
 @inject NavigationManager Nav
 @inject NotificationService Notification
@@ -104,6 +105,17 @@ else
                                         Style="width:100%" />
                     </div>
                 }
+
+                @* L'iniziativa e' un'etichetta secondaria: la casa dell'attivita' resta il cliente
+                   scelto sopra. Serve al resoconto della trasferta, che raggiunge opportunita' e
+                   preventivi proprio passando di qui. *@
+                <div class="activity-field">
+                    <label>@Localize["Iniziativa"]</label>
+                    <RadzenDropDown TValue="int?" @bind-Value="_activity.IdInitiative" Data="_initiatives"
+                                    TextProperty="Name" ValueProperty="Id" AllowFiltering="true"
+                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                    AllowClear="true" Placeholder="@Localize["Nessuna"]" Style="width:100%" />
+                </div>
 
                 <div class="activity-field">
                     <label>@Localize["Scadenza"]</label>
@@ -229,6 +241,7 @@ else
     [Parameter] public ActivityEntityType? DefaultEntityType { get; set; }
     [Parameter] public int? DefaultEntityId { get; set; }
     [Parameter] public string? DefaultSubject { get; set; }
+    [Parameter] public int? DefaultInitiativeId { get; set; }
 
     private Activity _activity = new()
     {
@@ -249,6 +262,7 @@ else
     private List<LeadDTO> _leads = new();
     private List<DealDTO> _deals = new();
     private List<TicketOption> _tickets = new();
+    private List<InitiativeDTO> _initiatives = new();
 
     private record Option<T>(string Text, T Value);
     private record TicketOption(int Id, string DisplayName);
@@ -310,6 +324,7 @@ else
             _activity.EntityType = DefaultEntityType ?? ActivityEntityType.Company;
             _activity.EntityId = DefaultEntityId ?? 0;
             _activity.Subject = DefaultSubject ?? string.Empty;
+            _activity.IdInitiative = DefaultInitiativeId;
             ApplyReminderDefault();
         }
 
@@ -364,6 +379,11 @@ else
         _deals = (await DealService.GetListAsync(new DealFilter()))?
             .OrderBy(x => x.Name)
             .ToList() ?? new List<DealDTO>();
+
+        // Solo l'ultimo anno e il futuro: una visita non si assegna a una fiera di tre anni fa, e
+        // un elenco lungo cosi' non si scorre. Il collegamento resta comunque facoltativo.
+        _initiatives = (await InitiativeService.GetListAsync(new InitiativeFilter { DateFrom = DateTime.Today.AddYears(-1) }))
+            ?? new List<InitiativeDTO>();
 
         // GetList e non Search: "Search" e' una ricerca full-text
         // (FREETEXTTABLE su Description) e senza un termine da cercare non restituisce nulla per

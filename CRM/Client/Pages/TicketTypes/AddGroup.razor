@@ -22,7 +22,7 @@ else
                 <div class="mb-3">
 
                     <DisplayName For="@(()=>_ticketTypeGroup.IdGroup)" />
-                    <RadzenDropDownDataGrid class="form-control" @bind-value="@_ticketTypeGroup.IdGroup" TValue="int" LoadData="@LoadGroups" AllowFiltering="true" AllowClear="true"
+                    <RadzenDropDownDataGrid class="form-control" @bind-value="@_ticketTypeGroup.IdGroup" TValue="int" LoadData="@LoadGroups" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true"
                                             Data="@_groups" Count="@_groups.Count" TextProperty="Name" ValueProperty="Id" Style="margin-bottom: 20px" />
 
                     <ValidationMessage For="@(() => _ticketTypeGroup.IdGroup)" />

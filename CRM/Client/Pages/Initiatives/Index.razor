@@ -1,0 +1,162 @@
+@page "/Initiatives"
+@page "/Initiatives/List/{KindFilter}"
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using CRM.Shared.Helper
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+<div class="commercial-page">
+    <PageHeader Model="_pageHeader">
+        <Actions>
+            <RedGButton RGButtonType="RGButtonType.New" Click="@New"></RedGButton>
+        </Actions>
+    </PageHeader>
+
+    <section class="commercial-metrics">
+        <article>
+            <span>@PageTitle</span>
+            <strong>@TotalCount</strong>
+        </article>
+        <article>
+            <span>Budget previsto (filtro)</span>
+            <strong>@_items.Total.ToString("C")</strong>
+        </article>
+        <article>
+            <span>Speso in pagina</span>
+            <strong>@CostInPage.ToString("C")</strong>
+        </article>
+    </section>
+
+    <section class="commercial-filters">
+        <div class="search-box">
+            <span class="material-icons">search</span>
+            <input @bind="_search" @bind:event="oninput" placeholder="Cerca nome, luogo o obiettivo" />
+        </div>
+        <select @bind="_state">
+            <option value="">Tutti gli stati</option>
+            @foreach (var state in Enum.GetValues<InitiativeState>())
+            {
+                <option value="@state">@StateText(state)</option>
+            }
+        </select>
+        <button type="button" class="icon-action" title="Applica filtri" @onclick="ApplyFilters">
+            <span class="material-icons">tune</span>
+        </button>
+        <button type="button" class="icon-action" title="Pulisci filtri" @onclick="ClearFilters">
+            <span class="material-icons">filter_alt_off</span>
+        </button>
+    </section>
+
+    @if (_loading)
+    {
+        <Waiting></Waiting>
+    }
+    else if (!_items.Items.Any())
+    {
+        <section class="empty-state">
+            <span class="material-icons">event_note</span>
+            <strong>Nessuna iniziativa trovata</strong>
+            <p>Modifica i filtri oppure registrane una nuova.</p>
+        </section>
+    }
+    else
+    {
+        <section class="commercial-table-wrap">
+            <table class="commercial-table">
+                <thead>
+                    <tr>
+                        <th>Iniziativa</th>
+                        <th>Tipo</th>
+                        <th>Periodo</th>
+                        <th>Stato</th>
+                        <th>Attività</th>
+                        <th>Budget</th>
+                        <th>Speso</th>
+                        <th>Responsabile</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in _items.Items)
+                    {
+                        <tr>
+                            <td>
+                                <button type="button" class="text-link" @onclick="@(() => Open(item.Id))">@item.Name</button>
+                                <small>@(string.IsNullOrWhiteSpace(item.Location) ? "-" : item.Location)</small>
+                            </td>
+                            <td>@KindText(item.Kind)</td>
+                            <td>@Period(item)</td>
+                            <td><span class="state-chip @StateClass(item.State)">@StateText(item.State)</span></td>
+                            <td>@item.ActivityCount</td>
+                            <td class="money">@BudgetText(item)</td>
+                            <td class="money">@item.CostTotal.ToString("C")</td>
+                            <td>@item.OwnerName</td>
+                            <td>
+                                <div class="row-actions">
+                                    <RedGButton RGButtonType="RGButtonType.View" Click="@(() => Open(item.Id))"></RedGButton>
+                                    <RedGButton RGButtonType="RGButtonType.Edit" Click="@(() => Edit(item.Id))" Disabled="@(!item.Permits.Edit())"></RedGButton>
+                                    <RedGButton RGButtonType="RGButtonType.Delete" Click="@(() => Delete(item))" Disabled="@(!item.Permits.Delete())"></RedGButton>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        <section class="pager">
+            <button type="button" disabled="@(!CanGoPrevious)" @onclick="PreviousPage">
+                <span>Precedente</span>
+            </button>
+            <strong>Pagina @_pageNumber di @TotalPages</strong>
+            <button type="button" disabled="@(!CanGoNext)" @onclick="NextPage">
+                <span>Successiva</span>
+            </button>
+        </section>
+    }
+</div>
+
+<style>
+    .commercial-page { min-height: calc(100vh - 1rem); padding: 1.25rem; background: var(--crm-page-bg); color: var(--crm-text); }
+    .primary-action, .icon-action, .row-actions button, .pager button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid color-mix(in srgb, var(--crm-link) 28%, var(--crm-border)); border-radius: 8px; background: var(--crm-surface-raised); color: var(--crm-link); font-weight: 800; transition: background-color 120ms ease, border-color 120ms ease; }
+    .icon-action:hover, .row-actions button:hover:not(:disabled), .pager button:hover:not(:disabled) { background: var(--crm-surface-hover); border-color: color-mix(in srgb, var(--crm-link) 45%, var(--crm-border)); }
+    .primary-action { padding: .62rem .85rem; background: var(--crm-link); border-color: var(--crm-link); color: var(--crm-surface-raised); }
+    .primary-action:hover { background: color-mix(in srgb, var(--crm-link) 88%, var(--crm-text)); }
+    .commercial-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .85rem; margin-bottom: 1rem; }
+    .commercial-metrics article, .commercial-filters, .commercial-table-wrap { border: 1px solid var(--crm-border); border-radius: 8px; background: var(--crm-surface-raised); box-shadow: var(--crm-shadow); }
+    .commercial-metrics article { display: grid; gap: .2rem; padding: .9rem; }
+    .commercial-metrics span, .commercial-table small { color: var(--crm-text-muted); }
+    .commercial-metrics strong { font-size: 1.35rem; overflow-wrap: anywhere; }
+    .commercial-filters { display: grid; grid-template-columns: minmax(240px, 1fr) 180px 42px 42px; gap: .6rem; padding: .75rem; margin-bottom: 1rem; }
+    .commercial-filters select, .search-box { min-height: 40px; border: 1px solid var(--crm-border); border-radius: 8px; background: var(--crm-surface-raised); color: var(--crm-text); }
+    .commercial-filters select:focus-visible, .search-box:focus-within { border-color: var(--crm-link); outline: none; }
+    .search-box { display: flex; align-items: center; gap: .5rem; padding: .42rem .55rem; min-width: 0; }
+    .search-box .material-icons { color: var(--crm-text-muted); }
+    .search-box input { width: 100%; border: 0; outline: 0; min-width: 0; background: transparent; color: inherit; }
+    .search-box input::placeholder { color: var(--crm-text-muted); }
+    .icon-action { width: 40px; height: 40px; padding: 0; }
+    .commercial-table-wrap { overflow-x: auto; }
+    .commercial-table { width: 100%; min-width: 1040px; border-collapse: collapse; }
+    .commercial-table th, .commercial-table td { padding: .78rem .85rem; border-bottom: 1px solid var(--crm-border); vertical-align: middle; }
+    .commercial-table th { color: var(--crm-text-muted); font-size: .76rem; text-transform: uppercase; background: var(--crm-surface-muted); }
+    .commercial-table tbody tr:hover td { background: var(--crm-surface-hover); }
+    .commercial-table small { display: block; margin-top: .15rem; }
+    .text-link { border: 0; padding: 0; background: transparent; color: var(--crm-link); font-weight: 850; text-align: left; }
+    .state-chip { display: inline-flex; border-radius: 999px; padding: .25rem .55rem; font-weight: 850; font-size: .78rem; }
+    .state-new { background: color-mix(in srgb, #64748b 15%, transparent); color: var(--crm-text-muted); }
+    .state-active { background: color-mix(in srgb, #0d9488 15%, transparent); color: #0d9488; }
+    .state-won { background: color-mix(in srgb, #16a34a 15%, transparent); color: #16a34a; }
+    .state-lost { background: color-mix(in srgb, #dc2626 15%, transparent); color: #dc2626; }
+    .money { font-weight: 850; }
+    .row-actions { display: flex; justify-content: flex-end; gap: .35rem; }
+    .row-actions button { width: 34px; height: 34px; padding: 0; }
+    .row-actions button .material-icons { font-size: 18px; }
+    .row-actions button:disabled, .pager button:disabled { opacity: .45; }
+    .pager { display: flex; align-items: center; justify-content: center; gap: .75rem; padding: 1rem 0; }
+    .pager button { padding: .45rem .7rem; }
+    .empty-state { min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; color: var(--crm-text-muted); text-align: center; }
+    .empty-state .material-icons { font-size: 48px; }
+    @@media (max-width: 1080px) { .commercial-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .commercial-filters { grid-template-columns: 1fr 1fr; } }
+    @@media (max-width: 720px) { .commercial-metrics, .commercial-filters { grid-template-columns: 1fr; } .icon-action { width: 100%; } }
+</style>

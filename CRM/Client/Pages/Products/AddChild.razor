@@ -18,7 +18,7 @@ else
                 <div class="mb-3">
 
                     <DisplayName For="@(()=>_parentChild.IdChild)" />
-                    <RadzenDropDownDataGrid class="form-control" @bind-value="@_parentChild.IdChild" TValue="int" LoadData="@LoadsChilds" AllowFiltering="true" AllowClear="true"
+                    <RadzenDropDownDataGrid class="form-control" @bind-value="@_parentChild.IdChild" TValue="int" LoadData="@LoadsChilds" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true"
                                             Data="@_products" Count="@_products.Count()" TextProperty="Name" ValueProperty="Id" Style="margin-bottom: 20px" />
 
                     <ValidationMessage For="@(() => _parentChild.IdChild)" />

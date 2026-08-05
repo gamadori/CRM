@@ -37,6 +37,9 @@ namespace CRM.Client.Pages.Tickets
         private IBaseRestService<ApplicationUser, UsersFilterModel, string> UsersService { get; set; }
 
         [Inject]
+        private IInitiativeService InitiativeService { get; set; }
+
+        [Inject]
         DialogService DialogService { get; set; }
 
         [Inject]
@@ -76,6 +79,23 @@ namespace CRM.Client.Pages.Tickets
         // ✅ NUOVO: Flag per distinguere se viene usato per Interventi
         [Parameter]
         public bool IsForIntervention { get; set; } = false;
+
+        /// <summary>
+        /// Chi e' impegnato in una fiera o in una trasferta nei prossimi giorni.
+        /// <para>
+        /// Chi smista un ticket non apre l'agenda: guarda questo elenco e sceglie. Senza il
+        /// segnale, un tecnico in fiera fino a giovedi' qui risulta disponibile come uno in
+        /// ufficio, e l'unico modo per saperlo e' ricordarselo.
+        /// </para>
+        /// <para>
+        /// Non e' un divieto: si puo' assegnare lo stesso, perche' una cosa che si puo' fare al
+        /// rientro e' comunque da assegnare a chi la sa fare.
+        /// </para>
+        /// </summary>
+        private Dictionary<string, UserAwayDTO> _away = new();
+
+        /// <summary>Finestra su cui ha senso avvisare: oltre, non e' piu' un'informazione utile qui.</summary>
+        private const int AwayLookaheadDays = 7;
 
         private List<ApplicationUser> _users = new List<ApplicationUser>();
         private List<ApplicationUser> _filteredUsers = new List<ApplicationUser>();
@@ -165,6 +185,37 @@ namespace CRM.Client.Pages.Tickets
                 await LoadUserTicketToAssign();
             }
             _filteredUsers = _users.Where(u => !_selectedUserIds.Contains(u.Id)).ToList();
+            await LoadAwayAsync();
+        }
+
+        private async Task LoadAwayAsync()
+        {
+            var from = DateTime.Today;
+            var to = from.AddDays(AwayLookaheadDays);
+
+            var away = await InitiativeService.GetAwayUsersAsync(from, to);
+
+            // Una persona puo' avere piu' impegni nella finestra: vale il primo, che e' quello che
+            // condiziona l'assegnazione di oggi.
+            _away = away
+                .GroupBy(x => x.IdUser)
+                .ToDictionary(g => g.Key, g => g.OrderBy(x => x.Start).First());
+        }
+
+        private UserAwayDTO GetAway(string idUser)
+            => _away.TryGetValue(idUser, out var info) ? info : null;
+
+        /// <summary>
+        /// "In fiera fino a gio 07/08", oppure "in fiera dal 06/08" se non e' ancora partito: sono
+        /// due informazioni diverse per chi deve decidere adesso.
+        /// </summary>
+        private static string AwayText(UserAwayDTO info)
+        {
+            var what = info.Kind == InitiativeKind.Fair ? "In fiera" : "In trasferta";
+
+            return info.Start.Date > DateTime.Today
+                ? $"{what} dal {info.Start:dd/MM}"
+                : $"{what} fino al {info.End:dd/MM}";
         }
 
         private async Task LoadUserTicketToAssign()

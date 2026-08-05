@@ -34,7 +34,7 @@
             <div class="col-12">
                 <label class="form-label small mb-1 d-block">@Localize["Prodotto"]</label>
                 <RadzenDropDown TValue="int?" @bind-Value="_req.IdProductNullable" Data="_products"
-                                TextProperty="Name" ValueProperty="Id" AllowFiltering="true"
+                                TextProperty="Name" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                 Placeholder="@Localize["Seleziona il prodotto da produrre"]" />
                 @if (SelectedProduct != null)
                 {
@@ -67,7 +67,7 @@
             <div class="col-12">
                 <label class="form-label small mb-1 d-block">@Localize["Capo commessa"]</label>
                 <RadzenDropDown TValue="string" @bind-Value="_req.IdUserResponsible" Data="_headCompanyUsers"
-                                TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true"
+                                TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                 AllowClear="true" Placeholder="@Localize["Default del prodotto"]"
                                 Style="width:100%" />
                 <div class="form-text">@Localize["Se non indicato, viene usato il capo commessa predefinito del prodotto."]</div>

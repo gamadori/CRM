@@ -182,6 +182,9 @@ namespace CRM.Server.Migrations
                     b.Property<int?>("IdInboundEmail")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdInitiative")
+                        .HasColumnType("int");
+
                     b.Property<string>("IdUser")
                         .HasColumnType("nvarchar(450)");
 
@@ -224,6 +227,8 @@ namespace CRM.Server.Migrations
 
                     b.HasIndex("IdEmailSent");
 
+                    b.HasIndex("IdInitiative");
+
                     b.HasIndex("IdUser");
 
                     b.HasIndex("EntityType", "EntityId");
@@ -261,6 +266,71 @@ namespace CRM.Server.Migrations
                     b.HasIndex("IdUser");
 
                     b.ToTable("ActivityParticipants");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ApiKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("IdCompany")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdUser")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("KeyPrefix")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Permission")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdCompany");
+
+                    b.HasIndex("IdUser");
+
+                    b.HasIndex("KeyHash")
+                        .IsUnique();
+
+                    b.HasIndex("Scope");
+
+                    b.ToTable("ApiKeys");
                 });
 
             modelBuilder.Entity("CRM.Shared.ApplicationUser", b =>
@@ -1272,6 +1342,9 @@ namespace CRM.Server.Migrations
                     b.Property<int?>("IdContact")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdInitiative")
+                        .HasColumnType("int");
+
                     b.Property<string>("IdUser")
                         .HasColumnType("nvarchar(450)");
 
@@ -1305,6 +1378,8 @@ namespace CRM.Server.Migrations
                     b.HasIndex("IdCompany");
 
                     b.HasIndex("IdContact");
+
+                    b.HasIndex("IdInitiative");
 
                     b.HasIndex("IdUser");
 
@@ -1664,6 +1739,9 @@ namespace CRM.Server.Migrations
                     b.Property<int?>("IdActivity")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdInitiative")
+                        .HasColumnType("int");
+
                     b.Property<string>("IdUserSpender")
                         .HasColumnType("nvarchar(450)");
 
@@ -1701,6 +1779,8 @@ namespace CRM.Server.Migrations
                     b.HasIndex("AttachmentFileId");
 
                     b.HasIndex("IdActivity");
+
+                    b.HasIndex("IdInitiative");
 
                     b.HasIndex("IdUserSpender");
 
@@ -1747,57 +1827,6 @@ namespace CRM.Server.Migrations
                     b.HasKey("Id");
                     b.HasIndex("ExpenseReceiptDocumentId");
                     b.ToTable("ExpenseReceiptDocumentLines");
-                });
-
-            modelBuilder.Entity("CRM.Shared.ExternalTicketApiKey", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("IdCompany")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("KeyHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
-
-                    b.Property<string>("KeyPrefix")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime?>("LastUsedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IdCompany");
-
-                    b.HasIndex("KeyHash")
-                        .IsUnique();
-
-                    b.ToTable("ExternalTicketApiKeys");
                 });
 
             modelBuilder.Entity("CRM.Shared.Folder", b =>
@@ -2054,6 +2083,150 @@ namespace CRM.Server.Migrations
                     b.ToTable("InboundEmailAttachments");
                 });
 
+            modelBuilder.Entity("CRM.Shared.Initiative", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("BudgetPlanned")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ClosingNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DateTo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IdOwner")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Objective")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdOwner");
+
+                    b.HasIndex("State");
+
+                    b.HasIndex("Kind", "DateFrom");
+
+                    b.ToTable("Initiatives");
+                });
+
+            modelBuilder.Entity("CRM.Shared.InitiativeMember", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AddedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IdInitiative")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdUser")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdInitiative");
+
+                    b.HasIndex("IdUser");
+
+                    b.HasIndex("IdInitiative", "IdUser")
+                        .IsUnique();
+
+                    b.ToTable("InitiativeMembers");
+                });
+
+            modelBuilder.Entity("CRM.Shared.InitiativeSchedule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("End")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdInitiative")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdUser")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Start")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdInitiative");
+
+                    b.HasIndex("IdUser");
+
+                    b.HasIndex("Start", "End");
+
+                    b.ToTable("InitiativeSchedules");
+                });
+
             modelBuilder.Entity("CRM.Shared.InterventionType", b =>
                 {
                     b.Property<int>("Id")
@@ -2284,10 +2457,20 @@ namespace CRM.Server.Migrations
                     b.Property<DateTime?>("ExpectedCloseDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("FieldClientId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<int?>("IdCompany")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdBusinessCard")
+                        .HasColumnType("int");
+
                     b.Property<int?>("IdContact")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdInitiative")
                         .HasColumnType("int");
 
                     b.Property<string>("IdUser")
@@ -2326,7 +2509,15 @@ namespace CRM.Server.Migrations
 
                     b.HasIndex("IdCompany");
 
+                    b.HasIndex("FieldClientId")
+                        .IsUnique()
+                        .HasFilter("[FieldClientId] IS NOT NULL");
+
+                    b.HasIndex("IdBusinessCard");
+
                     b.HasIndex("IdContact");
+
+                    b.HasIndex("IdInitiative");
 
                     b.HasIndex("IdUser");
 
@@ -2511,51 +2702,6 @@ namespace CRM.Server.Migrations
                         {
                             t.HasCheckConstraint("CK_MachineBackups_Owner", "([OwnerType] = 1 AND [IdProduct] IS NOT NULL AND [IdArticle] IS NULL) OR ([OwnerType] = 2 AND [IdArticle] IS NOT NULL AND [IdProduct] IS NULL)");
                         });
-                });
-
-            modelBuilder.Entity("CRM.Shared.MachineParameterApiKey", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("KeyHash")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("KeyPrefix")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("LastUsedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Permission")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("KeyHash")
-                        .IsUnique();
-
-                    b.ToTable("MachineParameterApiKeys");
                 });
 
             modelBuilder.Entity("CRM.Shared.Order", b =>
@@ -4681,6 +4827,11 @@ namespace CRM.Server.Migrations
                         .HasForeignKey("IdEmailSent")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("CRM.Shared.Initiative", "Initiative")
+                        .WithMany()
+                        .HasForeignKey("IdInitiative")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("CRM.Shared.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("IdUser")
@@ -4691,6 +4842,8 @@ namespace CRM.Server.Migrations
                     b.Navigation("CompletedBy");
 
                     b.Navigation("EmailSent");
+
+                    b.Navigation("Initiative");
 
                     b.Navigation("User");
                 });
@@ -4710,6 +4863,23 @@ namespace CRM.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("Activity");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ApiKey", b =>
+                {
+                    b.HasOne("CRM.Shared.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("IdCompany")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("CRM.Shared.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Company");
 
                     b.Navigation("User");
                 });
@@ -5057,6 +5227,11 @@ namespace CRM.Server.Migrations
                         .WithMany()
                         .HasForeignKey("IdContact");
 
+                    b.HasOne("CRM.Shared.Initiative", "Initiative")
+                        .WithMany()
+                        .HasForeignKey("IdInitiative")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("CRM.Shared.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("IdUser");
@@ -5064,6 +5239,8 @@ namespace CRM.Server.Migrations
                     b.Navigation("Company");
 
                     b.Navigation("Contact");
+
+                    b.Navigation("Initiative");
 
                     b.Navigation("User");
                 });
@@ -5119,6 +5296,11 @@ namespace CRM.Server.Migrations
                         .HasForeignKey("IdActivity")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("CRM.Shared.Initiative", "Initiative")
+                        .WithMany()
+                        .HasForeignKey("IdInitiative")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("CRM.Shared.TicketIntervention", "TicketIntervention")
                         .WithMany("ExpenseReceipts")
                         .HasForeignKey("TicketInterventionId")
@@ -5132,6 +5314,8 @@ namespace CRM.Server.Migrations
                     b.Navigation("Activity");
 
                     b.Navigation("AttachmentFile");
+
+                    b.Navigation("Initiative");
 
                     b.Navigation("TicketIntervention");
 
@@ -5156,17 +5340,6 @@ namespace CRM.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                     b.Navigation("ExpenseReceiptDocument");
-                });
-
-            modelBuilder.Entity("CRM.Shared.ExternalTicketApiKey", b =>
-                {
-                    b.HasOne("CRM.Shared.Company", "Company")
-                        .WithMany()
-                        .HasForeignKey("IdCompany")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Company");
                 });
 
             modelBuilder.Entity("CRM.Shared.FolderLanguage", b =>
@@ -5208,6 +5381,54 @@ namespace CRM.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("InboundEmail");
+                });
+
+            modelBuilder.Entity("CRM.Shared.Initiative", b =>
+                {
+                    b.HasOne("CRM.Shared.ApplicationUser", "Owner")
+                        .WithMany()
+                        .HasForeignKey("IdOwner")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("CRM.Shared.InitiativeMember", b =>
+                {
+                    b.HasOne("CRM.Shared.Initiative", "Initiative")
+                        .WithMany("Members")
+                        .HasForeignKey("IdInitiative")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Initiative");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CRM.Shared.InitiativeSchedule", b =>
+                {
+                    b.HasOne("CRM.Shared.Initiative", "Initiative")
+                        .WithMany("Schedules")
+                        .HasForeignKey("IdInitiative")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CRM.Shared.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("IdUser")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Initiative");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("CRM.Shared.InterventionTypeLanguage", b =>
@@ -5296,16 +5517,30 @@ namespace CRM.Server.Migrations
                         .HasForeignKey("IdContact")
                         .OnDelete(DeleteBehavior.NoAction);
 
+                    b.HasOne("CRM.Shared.AttachmentFile", "BusinessCard")
+                        .WithMany()
+                        .HasForeignKey("IdBusinessCard")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("CRM.Shared.Initiative", "Initiative")
+                        .WithMany()
+                        .HasForeignKey("IdInitiative")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("CRM.Shared.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("IdUser")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("BusinessCard");
 
                     b.Navigation("Company");
 
                     b.Navigation("Contact");
 
                     b.Navigation("ConvertedDeal");
+
+                    b.Navigation("Initiative");
 
                     b.Navigation("User");
                 });
@@ -6167,6 +6402,13 @@ namespace CRM.Server.Migrations
                     b.Navigation("Attachments");
 
                     b.Navigation("FolderLanguages");
+                });
+
+            modelBuilder.Entity("CRM.Shared.Initiative", b =>
+                {
+                    b.Navigation("Members");
+
+                    b.Navigation("Schedules");
                 });
 
             modelBuilder.Entity("CRM.Shared.InterventionType", b =>

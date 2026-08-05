@@ -14,7 +14,7 @@
 <PageHeader Model="@_pageHeader">
 </PageHeader>
 
-<RadzenDataGrid @ref="_grdLanguages" AllowAlternatingRows="false" LoadData="@LoadData" AllowFiltering="true" AllowPaging="true" PageSize="@ConstHelper.PageSize" AllowSorting="true" EditMode="DataGridEditMode.Single"
+<RadzenDataGrid @ref="_grdLanguages" AllowAlternatingRows="false" LoadData="@LoadData" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="@ConstHelper.PageSize" AllowSorting="true" EditMode="DataGridEditMode.Single"
                  Data="@_languages" TItem="Language" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow" Sort="@Reset" Page="@Reset" Filter="@Reset" ColumnWidth="200px">
     <HeaderTemplate>
         <RedGButton RGButtonType="RGButtonType.New" Click="@InsertRow" Disabled="@(_languagesToInsert.Count() > 0)"></RedGButton>

@@ -49,32 +49,8 @@ namespace CRM.Shared.DTOs
         public MachineBackupDTO? Backup { get; set; }
     }
 
-    public class MachineParameterApiKeyDTO
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string? KeyPrefix { get; set; }
-        public MachineParameterApiKeyPermission Permission { get; set; }
-        public bool IsActive { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? ExpiresAt { get; set; }
-        public DateTime? LastUsedAt { get; set; }
-        public string? Notes { get; set; }
-    }
-
-    public class MachineParameterApiKeyCreateRequest
-    {
-        public string Name { get; set; } = string.Empty;
-        public MachineParameterApiKeyPermission Permission { get; set; } = MachineParameterApiKeyPermission.ReadOnly;
-        public DateTime? ExpiresAt { get; set; }
-        public string? Notes { get; set; }
-    }
-
-    public class MachineParameterApiKeyCreateResponse
-    {
-        public MachineParameterApiKeyDTO ApiKey { get; set; } = new();
-        public string PlainTextKey { get; set; } = string.Empty;
-    }
+    // I DTO delle chiavi di backup sono confluiti in ApiKeyDTO / ApiKeyCreateRequest /
+    // ApiKeyCreateResponse, con l'ambito a distinguerli dagli altri usi.
 
     public class MachineArticleListFilter
     {

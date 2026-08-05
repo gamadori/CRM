@@ -1,3 +1,4 @@
+using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -43,6 +44,13 @@ namespace CRM.Client.Pages.ExpenseReceipts
         private ExpenseReceiptCreateUpdateDTO _model = new();
         private List<ExpenseReceiptDocumentDTO> _documentResults = new();
 
+        /// <summary>
+        /// Iniziative selezionabili. Qui l'elenco NON e' ristretto all'ultimo anno come in
+        /// creazione: la modifica e' proprio il posto in cui si rimedia, riattaccando una spesa a
+        /// una fiera vecchia che in creazione non compariva.
+        /// </summary>
+        private List<InitiativeDTO> _initiatives = new();
+
         /// <summary>Oggetto della visita: arriva con la nota spese, senza una seconda chiamata.</summary>
         private string _activitySubject;
 
@@ -58,6 +66,21 @@ namespace CRM.Client.Pages.ExpenseReceipts
         protected override async Task OnInitializedAsync()
         {
             await LoadReceipt();
+            await LoadInitiativesAsync();
+        }
+
+        private async Task LoadInitiativesAsync()
+        {
+            try
+            {
+                _initiatives = await InitiativeService.GetListAsync(new InitiativeFilter()) ?? new List<InitiativeDTO>();
+            }
+            catch (Exception ex)
+            {
+                // Senza elenco il campo resta com'e': si perde la possibilita' di cambiarlo, non
+                // il valore gia' salvato, che viaggia comunque nel modello.
+                Console.WriteLine($"Iniziative non caricate: {ex.Message}");
+            }
         }
 
         private async Task LoadReceipt()
@@ -83,6 +106,7 @@ namespace CRM.Client.Pages.ExpenseReceipts
                     // sovrascrive con quello che riceve, quindi ometterli qui significava
                     // staccare l'attivita' collegata a ogni salvataggio, in silenzio.
                     IdActivity = receipt.IdActivity,
+                    IdInitiative = receipt.IdInitiative,
                     IdUserSpender = receipt.IdUserSpender,
                     ExchangeRate = receipt.ExchangeRate,
                     Description = receipt.Description,

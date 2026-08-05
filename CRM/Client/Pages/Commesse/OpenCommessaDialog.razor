@@ -52,7 +52,7 @@
         <div class="col-sm-6">
             <label class="form-label small mb-1 d-block">@Localize["Tipo dei ticket di lavorazione"]</label>
             <RadzenDropDown TValue="int?" @bind-Value="_req.IdTicketType" Data="_ticketTypes"
-                            TextProperty="Desc" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                            TextProperty="Desc" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true"
                             Placeholder="@Localize["Nessuno"]" Style="width:100%" />
             @if (_req.IdTicketType == null)
             {
@@ -66,7 +66,7 @@
         <div class="col-sm-6">
             <label class="form-label small mb-1 d-block">@Localize["Gruppo abilitato"]</label>
             <RadzenDropDown TValue="int?" @bind-Value="_req.IdGroup" Data="_groups"
-                            TextProperty="Name" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                            TextProperty="Name" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true"
                             Placeholder="@Localize["Tutti"]" Style="width:100%" />
             <div class="form-text">@Localize["Chi può lavorare la fase. Vuoto = nessun vincolo."]</div>
         </div>
@@ -74,7 +74,7 @@
         <div class="col-sm-6">
             <label class="form-label small mb-1 d-block">@Localize["Capo commessa"]</label>
             <RadzenDropDown TValue="string" @bind-Value="_req.IdUserResponsible" Data="_headCompanyUsers"
-                            TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true" AllowClear="true"
+                            TextProperty="NameComplete" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowClear="true"
                             Placeholder="@Localize["Chi apre la commessa"]" Style="width:100%" />
         </div>
 

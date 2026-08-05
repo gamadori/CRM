@@ -7,13 +7,13 @@
 
              <div class="mb-3">
                 <DisplayName For="@(()=>_email.To)" />
-                <RadzenAutoComplete Data=@_addresses TextProperty="CompanyName" LoadData=@OnLoadData Style="width: 100%;" @bind-Value="@_email.To" />
+                <RadzenAutoComplete FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Data=@_addresses TextProperty="CompanyName" LoadData=@OnLoadData Style="width: 100%;" @bind-Value="@_email.To" />
                 <ValidationMessage For="@(() => _email.To)" />
             </div>
 
             <div class="mb-3">
                 <DisplayName For="@(()=>_email.CC)" />
-                <RadzenAutoComplete Data=@_addresses TextProperty="CompanyName" LoadData=@OnLoadData Style="width: 100%;" @bind-Value="@_email.CC" />
+                <RadzenAutoComplete FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Data=@_addresses TextProperty="CompanyName" LoadData=@OnLoadData Style="width: 100%;" @bind-Value="@_email.CC" />
                 <ValidationMessage For="@(() => _email.CC)" />
             </div>
 

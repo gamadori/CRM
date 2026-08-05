@@ -100,6 +100,23 @@
                             </InputSelect>
                         </label>
                     </div>
+                    @* La fonte dice il CANALE, questa dice QUALE occasione: sono le due metà che
+                       rendono rispondibile la domanda vera, cioè se quella fiera è valsa la spesa.
+                       Senza, il resoconto mostra i costi con "0 lead" - un numero che si legge come
+                       un fallimento invece che come un dato mancante. *@
+                    <div class="two-cols">
+                        <label class="field">
+                            <span>Iniziativa</span>
+                            <InputSelect class="form-input" @bind-Value="_lead.IdInitiative">
+                                <option value="">Nessuna</option>
+                                @foreach (var initiative in _initiatives)
+                                {
+                                    <option value="@initiative.Id">@initiative.Name</option>
+                                }
+                            </InputSelect>
+                            <small class="field-hint">Fiera o campagna da cui il lead arriva. Segue il lead in conversione: è l'opportunità nata da qui a rendere misurabile la fiera.</small>
+                        </label>
+                    </div>
                     <div class="two-cols">
                         <label class="field">
                             <span>Score</span>
@@ -219,6 +236,7 @@
     .field { display: grid; gap: .35rem; margin-bottom: .8rem; min-width: 0; }
     .field span { color: var(--crm-text-muted); font-size: .82rem; font-weight: 800; }
     .field small span { color: var(--crm-text-muted); font-size: .78rem; font-weight: 650; }
+    .field-hint { color: var(--crm-text-muted); font-size: .78rem; font-weight: 650; }
     .form-input { width: 100%; min-height: 40px; border: 1px solid var(--crm-border); border-radius: 8px; background: var(--crm-surface-raised); color: var(--crm-text); padding: .48rem .6rem; }
     .form-input:focus-visible { border-color: var(--crm-link); outline: none; }
     .form-input::placeholder { color: var(--crm-text-muted); }

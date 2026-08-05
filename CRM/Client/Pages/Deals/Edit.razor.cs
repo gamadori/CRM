@@ -55,6 +55,9 @@ namespace CRM.Client.Pages.Deals
         [Parameter]
         public int? IdCompany { get; set; }
 
+        [Parameter]
+        public int? IdInitiative { get; set; }
+
         /// <summary>
         /// Attivita' da cui si arriva: "/Deals/New?fromActivity=19". La visita ha gia' detto chi
         /// e' il cliente e com'e' andata, quindi il modulo si apre compilato invece di chiedere
@@ -65,6 +68,22 @@ namespace CRM.Client.Pages.Deals
 
         [Inject]
         private IActivityService ActivityService { get; set; } = default!;
+
+        [Inject]
+        private IInitiativeService InitiativeService { get; set; } = default!;
+
+        /// <summary>Iniziative fra cui scegliere. Vuoto se il servizio non risponde: campo facoltativo.</summary>
+        private List<InitiativeDTO> _initiatives = new();
+
+        /// <summary>
+        /// Vero quando l'iniziativa e' gia' stata assegnata: da li' in poi si mostra, non si cambia.
+        /// Spostare un'opportunita' da una fiera all'altra falserebbe il confronto fra iniziative,
+        /// e il server la rifiuterebbe comunque.
+        /// </summary>
+        private bool InitiativeLocked => Id != null && _deal?.IdInitiative != null;
+
+        private string InitiativeName =>
+            _initiatives.FirstOrDefault(x => x.Id == _deal?.IdInitiative)?.Name ?? "-";
 
         [Parameter]
         public Action? OnClickSave { get; set; }
@@ -98,7 +117,21 @@ namespace CRM.Client.Pages.Deals
             _dealPhases = EnumService.EnumGetList(typeof(DealPhases));
             await LoadCompanies();
             await LoadProducts();
+            await LoadInitiatives();
             await LoadDeal();
+        }
+
+        private async Task LoadInitiatives()
+        {
+            try
+            {
+                _initiatives = await InitiativeService.GetListAsync(new InitiativeFilter()) ?? new List<InitiativeDTO>();
+            }
+            catch (Exception ex)
+            {
+                // L'attribuzione e' facoltativa: senza elenco l'opportunita' si salva lo stesso.
+                Console.WriteLine($"Iniziative non caricate: {ex.Message}");
+            }
         }
 
         private async Task LoadDeal()
@@ -120,7 +153,8 @@ namespace CRM.Client.Pages.Deals
                         State = DealStates.Open,
                         Phase = DealPhases.InitialContact,
                         Probability = 15,
-                        ExpectedCloseDate = DateTime.Today.AddMonths(1)
+                        ExpectedCloseDate = DateTime.Today.AddMonths(1),
+                        IdInitiative = IdInitiative
                     };
 
                     _lockCompany = IdCompany != null;
@@ -220,6 +254,8 @@ namespace CRM.Client.Pages.Deals
                 _deal.IdContact = null;
             }
         }
+
+       
 
         private async Task OnChangeCompany()
         {

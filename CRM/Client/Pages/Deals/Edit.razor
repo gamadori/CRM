@@ -1,5 +1,6 @@
 @page "/Deals/New"
 @page "/Deals/{Id:int}/Edit"
+@page "/Initiatives/{IdInitiative:int}/Deals/New"
 @using CRM.Shared.DTOs
 @using Radzen
 @using Radzen.Blazor
@@ -108,6 +109,25 @@ else
                                 <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem="OnGetContact" DialogType="RedGDialog.DialogType.Contacts"></RedGButtonDialog>
                             </End>
                         </RedGDropDown>
+                    </div>
+
+                    @* Da quale fiera/campagna nasce l'opportunità. Una volta assegnata non si
+                       cambia: spostarla altrove falserebbe il confronto fra iniziative, ed è la
+                       stessa regola che applica il server. *@
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label">Iniziativa</label>
+                        @if (InitiativeLocked)
+                        {
+                            <div class="form-control-plaintext">@InitiativeName</div>
+                        }
+                        else
+                        {
+                            <RadzenDropDown TValue="int?" @bind-Value="_deal.IdInitiative"
+                                            Data="_initiatives" TextProperty="Name" ValueProperty="Id"
+                                            AllowFiltering="true" AllowClear="true"
+                                            FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                            Placeholder="Nessuna" Style="width:100%" />
+                        }
                     </div>
 
                     <div class="col-12">

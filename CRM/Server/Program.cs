@@ -160,6 +160,14 @@ builder.Services.AddScoped<CRM.Server.Services.IProductCatalogService, ProductCa
 
 builder.Services.AddScoped<IReceiptAnalyzer, AzureReceiptAnalyzer>();
 builder.Services.AddScoped<IReceiptProcessorService, ReceiptProcessorService>();
+builder.Services.AddScoped<IBusinessCardAnalyzer, AzureBusinessCardAnalyzer>();
+
+// Chiavi API di ogni ambito (backup macchina, ticket esterni, app fiera): un punto solo di
+// generazione e verifica, con l'ambito che impedisce a una chiave di valere fuori dal suo uso.
+builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
+
+// Ponte con l'app di cattura biglietti in fiera (autenticazione a chiave, non OIDC).
+builder.Services.AddScoped<IFieldApiService, FieldApiService>();
 
 builder.Services.AddScoped<IExpenseReceiptService, ExpenseReceiptService>();
 
@@ -176,7 +184,6 @@ builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 builder.Services.AddScoped<ICompaniesService, CompaniesService>();
 
 builder.Services.AddScoped<IProductsService, ProductsService>();
-builder.Services.AddScoped<IMachineParameterApiKeyService, MachineParameterApiKeyService>();
 builder.Services.AddScoped<IExternalTicketApiService, ExternalTicketApiService>();
 builder.Services.AddScoped<CRM.Server.Services.IMachineBackupsService, MachineBackupsService>();
 
@@ -212,6 +219,7 @@ builder.Services.AddScoped<CRM.Server.Services.IPriceListService, CRM.Server.Ser
 builder.Services.AddScoped<IInvoicesService, InvoicesService>();
 
 builder.Services.AddScoped<IActivitiesService, ActivitiesService>();
+builder.Services.AddScoped<IInitiativesService, InitiativesService>();
 builder.Services.AddScoped<CRM.Server.Services.ICalendarService, CRM.Server.Services.CalendarService>();
 
 // IHttpClientFactory per i canali email basati su API (es. Brevo) e altri client HTTP.
@@ -330,7 +338,16 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// In sviluppo il rimbalzo su HTTPS resta spento, cosi' un telefono in LAN puo' aprire il CRM su
+// http://<ip>:5000 senza inciampare nel certificato, che e' emesso per "localhost" e su un
+// indirizzo di rete darebbe nome sbagliato e CA sconosciuta.
+//
+// Cosa si perde e cosa no: su HTTP il service worker non si registra (niente PWA ne' shell
+// offline), mentre continuano a funzionare l'attributo "capture" della cattura biglietti - e' il
+// selettore file nativo, non getUserMedia - e IndexedDB, quindi anche la coda offline dei lead.
+// Per provare la PWA da telefono serve invece un certificato valido per l'IP (mkcert).
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 
 // Nessun file servito da UseStaticFiles ha l'hash nel nome (index.html, il bundle degli scoped
 // CSS CRM.Client.styles.css, css/*.css, il service worker): senza Cache-Control il browser calcola

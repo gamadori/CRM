@@ -59,13 +59,13 @@ else
                         <div class="col-sm-6">
                             <label class="form-label small mb-1 d-block">Tipo ticket</label>
                             <RadzenDropDown TValue="int?" @bind-Value="_phase.IdTicketType" Data="_ticketTypes" TextProperty="Desc" ValueProperty="Id"
-                                            AllowClear="true" AllowFiltering="true" Placeholder="— (fase manuale)" />
+                                            AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Placeholder="— (fase manuale)" />
                         </div>
 
                         <div class="col-sm-6">
                             <label class="form-label small mb-1 d-block">Gruppo abilitato</label>
                             <RadzenDropDown TValue="int?" @bind-Value="_phase.IdGroup" Data="_groups" TextProperty="Name" ValueProperty="Id"
-                                            AllowClear="true" AllowFiltering="true" Placeholder="—" />
+                                            AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Placeholder="—" />
                         </div>
 
                         <div class="col-sm-6">
@@ -92,7 +92,7 @@ else
                                 </span>
                             }
                             <RadzenDropDown TValue="int?" @bind-Value="_newPredId" Data="_predOptions" TextProperty="Name" ValueProperty="Id"
-                                            AllowClear="true" AllowFiltering="true" Placeholder="Aggiungi predecessore" Style="width:220px" />
+                                            AllowClear="true" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Placeholder="Aggiungi predecessore" Style="width:220px" />
                             <RedGButton RGButtonType="RGButtonType.New" Text="Aggiungi" Size="ButtonSize.Small"
                                         ButtonStyle="ButtonStyle.Light" Click="AddDep" Disabled="@(_newPredId == null)" />
                         </div>
@@ -128,13 +128,13 @@ else
                                                     <td><input class="form-control form-control-sm" @bind="t.Title" @bind:event="oninput" /></td>
                                                     <td>
                                                         <RadzenDropDown TValue="int" @bind-Value="t.IdTicketType" Data="_ticketTypes"
-                                                                        TextProperty="Desc" ValueProperty="Id" AllowFiltering="true"
+                                                                        TextProperty="Desc" ValueProperty="Id" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                                                         Style="width:100%" />
                                                     </td>
                                                     <td>
                                                         <RadzenDropDown TValue="int?" @bind-Value="t.IdGroupAssigned" Data="_groups"
                                                                         TextProperty="Name" ValueProperty="Id" AllowClear="true"
-                                                                        AllowFiltering="true" Style="width:100%" />
+                                                                        AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Style="width:100%" />
                                                     </td>
                                                     <td>
                                                         <RadzenDropDown TValue="ProductionTicketAutoCreateMode" @bind-Value="t.AutoCreateMode"

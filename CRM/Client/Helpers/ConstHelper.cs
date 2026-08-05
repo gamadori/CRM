@@ -86,6 +86,8 @@ namespace CRM.Client.Helpers
 
         public static string LeadsPath = "api/Leads";
 
+        public static string InitiativesPath = "api/Initiatives";
+
         public static string WorkflowAutomationsPath = "api/WorkflowAutomations";
 
         public static string QuotesPath = "api/Quotes";
@@ -170,6 +172,8 @@ namespace CRM.Client.Helpers
         public static string ClientDealPath = "Deals";
 
         public static string ClientLeadsPath = "Leads";
+
+        public static string ClientInitiativesPath = "Initiatives";
 
         public static string ClientForecastPath = "Deals/Forecast";
 
