@@ -1,0 +1,162 @@
+name: iOS
+
+# I runner macOS consumano i minuti con moltiplicatore 10x: il filtro sui path
+# evita che ogni push al CRM accenda un Mac per niente.
+on:
+  push:
+    # NB: il pulsante "Run workflow" di workflow_dispatch compare solo quando il
+    # file e' sul branch di default. Finche' lavori su un branch, tienilo qui.
+    branches: [main, upgrade-dotnet-10]
+    paths: ['CRM.Mobile/**', 'Directory.Packages.props', '.github/workflows/ios.yml']
+  workflow_dispatch:
+    inputs:
+      firma:
+        description: 'Firma e produci un .ipa installabile (richiede i secrets Apple)'
+        type: boolean
+        default: false
+
+env:
+  PROGETTO: CRM.Mobile/CRM.Mobile.csproj
+  TFM: net9.0-ios
+  # Deve essere una Xcode presente sul runner: il primo step la elenca.
+  # .NET 9 iOS richiede Xcode 16.x.
+  XCODE: '16.4'
+
+jobs:
+
+  # -------------------------------------------------------------------------
+  # Compila per il simulatore. Nessun account Apple, nessuna firma, nessun
+  # secret: serve a sapere se il codice iOS sta in piedi. Girera' anche prima
+  # che tu abbia speso un euro.
+  # -------------------------------------------------------------------------
+  compila:
+    name: Compila (simulatore)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode disponibili sul runner
+        run: ls -d /Applications/Xcode*.app
+
+      - name: Seleziona Xcode
+        run: |
+          sudo xcode-select -s "/Applications/Xcode_${XCODE}.app"
+          xcodebuild -version
+
+      # Installa l'SDK in una cartella isolata: cosi' il "rollForward: latestMajor"
+      # di global.json non puo' scegliere un .NET 10 preinstallato sul runner,
+      # che non sa compilare il TFM net9.0-ios.
+      - uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+        with:
+          global-json-file: global.json
+
+      - run: dotnet --info
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-ios-${{ hashFiles('Directory.Packages.props', 'CRM.Mobile/CRM.Mobile.csproj') }}
+          restore-keys: nuget-ios-
+
+      - name: Workload MAUI
+        run: dotnet workload restore "$PROGETTO"
+
+      - name: Build
+        run: |
+          dotnet build "$PROGETTO" \
+            -f "$TFM" -c Release \
+            -p:RuntimeIdentifier=iossimulator-arm64
+
+  # -------------------------------------------------------------------------
+  # Firma e impacchetta l'.ipa. Parte solo a mano (spuntando "firma") o su un
+  # tag mobile-v*. Richiede i quattro secrets Apple.
+  # -------------------------------------------------------------------------
+  ipa:
+    name: Pacchetto .ipa (firmato)
+    needs: compila
+    if: github.event_name == 'workflow_dispatch' && inputs.firma
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Seleziona Xcode
+        run: sudo xcode-select -s "/Applications/Xcode_${XCODE}.app"
+
+      - uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+        with:
+          global-json-file: global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-ios-${{ hashFiles('Directory.Packages.props', 'CRM.Mobile/CRM.Mobile.csproj') }}
+          restore-keys: nuget-ios-
+
+      - name: Workload MAUI
+        run: dotnet workload restore "$PROGETTO"
+
+      # Il certificato entra in un portachiavi temporaneo che vive quanto il job.
+      # La macchina viene distrutta a fine corsa, chiavi comprese.
+      - name: Importa certificato e provisioning
+        env:
+          CERT_P12: ${{ secrets.IOS_CERT_P12_BASE64 }}
+          CERT_PWD: ${{ secrets.IOS_CERT_PASSWORD }}
+          PROFILE: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/firma.keychain-db"
+          KEYCHAIN_PWD=$(uuidgen)
+          echo "KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+
+          security create-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PWD" "$KEYCHAIN"
+
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$CERT_PWD" \
+            -T /usr/bin/codesign -T /usr/bin/security -A
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PWD" "$KEYCHAIN" > /dev/null
+          security list-keychain -d user -s "$KEYCHAIN" login.keychain-db
+
+          # Xcode recente e i task .NET iOS leggono da due posti diversi: scrivo in entrambi.
+          for DIR in "$HOME/Library/MobileDevice/Provisioning Profiles" \
+                     "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            mkdir -p "$DIR"
+            echo "$PROFILE" | base64 --decode > "$DIR/crm-fiera.mobileprovision"
+          done
+
+          rm "$RUNNER_TEMP/cert.p12"
+          security find-identity -v -p codesigning "$KEYCHAIN"
+
+      - name: Publish firmato
+        env:
+          IDENTITA: ${{ secrets.IOS_SIGNING_IDENTITY }}
+          PROVISION: ${{ secrets.IOS_PROVISION_NAME }}
+        run: |
+          dotnet publish "$PROGETTO" \
+            -f "$TFM" -c Release \
+            -p:RuntimeIdentifier=ios-arm64 \
+            -p:ArchiveOnBuild=true \
+            -p:CodesignKey="$IDENTITA" \
+            -p:CodesignProvision="$PROVISION"
+
+      - name: Raccogli l'.ipa
+        run: |
+          mkdir -p artefatti
+          find CRM.Mobile/bin/Release -name '*.ipa' -exec cp {} artefatti/ \;
+          ls -lh artefatti/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crm-fiera-ipa
+          path: artefatti/*.ipa
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Distruggi il portachiavi
+        if: always()
+        run: security delete-keychain "$KEYCHAIN" || true
