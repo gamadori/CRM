@@ -72,10 +72,14 @@ jobs:
       - name: Workload MAUI
         run: dotnet workload restore "$PROGETTO"
 
+      # Debug e non Release: qui interessa sapere se il codice compila, non avere
+      # un binario ottimizzato. Release fa girare linker e AOT, che da soli
+      # portano la corsa da ~4 a ~25 minuti — e i minuti macOS contano 10x.
+      # Il Release resta dove serve davvero, nel job che produce l'.ipa.
       - name: Build
         run: |
           dotnet build "$PROGETTO" \
-            -f "$TFM" -c Release \
+            -f "$TFM" -c Debug \
             -p:RuntimeIdentifier=iossimulator-arm64
 
   # -------------------------------------------------------------------------
