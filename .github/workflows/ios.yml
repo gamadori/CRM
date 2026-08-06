@@ -43,14 +43,16 @@ jobs:
           sudo xcode-select -s "/Applications/Xcode_${XCODE}.app"
           xcodebuild -version
 
-      # Installa l'SDK in una cartella isolata: cosi' il "rollForward: latestMajor"
-      # di global.json non puo' scegliere un .NET 10 preinstallato sul runner,
-      # che non sa compilare il TFM net9.0-ios.
+      # Installa l'SDK in una cartella isolata: cosi' l'unico SDK visibile e' questo,
+      # e un .NET 10 preinstallato sul runner non puo' essere scelto al posto suo
+      # (non sa compilare il TFM net9.0-ios).
       - uses: actions/setup-dotnet@v4
         env:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
         with:
-          global-json-file: global.json
+          # Versione esplicita e non global-json-file: global.json e' tracciato
+          # sul branch upgrade-dotnet-10 ma non su main, e il job morirebbe li'.
+          dotnet-version: '9.0.316'
 
       - run: dotnet --info
 
@@ -88,7 +90,9 @@ jobs:
         env:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
         with:
-          global-json-file: global.json
+          # Versione esplicita e non global-json-file: global.json e' tracciato
+          # sul branch upgrade-dotnet-10 ma non su main, e il job morirebbe li'.
+          dotnet-version: '9.0.316'
 
       - uses: actions/cache@v4
         with:
