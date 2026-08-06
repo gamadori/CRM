@@ -32,7 +32,8 @@ jobs:
   # -------------------------------------------------------------------------
   compila:
     name: Compila (simulatore)
-    runs-on: macos-15
+    # macos-15 si ferma a Xcode 26.3, troppo vecchia per il workload iOS 26.5.
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
@@ -85,7 +86,8 @@ jobs:
     name: Pacchetto .ipa (firmato)
     needs: compila
     if: github.event_name == 'workflow_dispatch' && inputs.firma
-    runs-on: macos-15
+    # macos-15 si ferma a Xcode 26.3, troppo vecchia per il workload iOS 26.5.
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
