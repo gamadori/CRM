@@ -18,9 +18,10 @@ on:
 env:
   PROGETTO: CRM.Mobile/CRM.Mobile.csproj
   TFM: net9.0-ios
-  # Deve essere una Xcode presente sul runner: il primo step la elenca.
-  # .NET 9 iOS richiede Xcode 16.x.
-  XCODE: '16.4'
+  # Il workload .NET for iOS ha la numerazione allineata a Xcode e si muove nel
+  # tempo: oggi net9.0-ios vuole Xcode 26.5. Se questa versione non e' sul runner
+  # lo step "Seleziona Xcode" ripiega da solo sulla piu' recente installata.
+  XCODE: '26.5'
 
 jobs:
 
@@ -40,7 +41,12 @@ jobs:
 
       - name: Seleziona Xcode
         run: |
-          sudo xcode-select -s "/Applications/Xcode_${XCODE}.app"
+          APP="/Applications/Xcode_${XCODE}.app"
+          if [ ! -d "$APP" ]; then
+            APP=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+            echo "Xcode ${XCODE} non presente: ripiego su $APP"
+          fi
+          sudo xcode-select -s "$APP"
           xcodebuild -version
 
       # Installa l'SDK in una cartella isolata: cosi' l'unico SDK visibile e' questo,
@@ -84,7 +90,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Seleziona Xcode
-        run: sudo xcode-select -s "/Applications/Xcode_${XCODE}.app"
+        run: |
+          APP="/Applications/Xcode_${XCODE}.app"
+          if [ ! -d "$APP" ]; then
+            APP=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+            echo "Xcode ${XCODE} non presente: ripiego su $APP"
+          fi
+          sudo xcode-select -s "$APP"
+          xcodebuild -version
 
       - uses: actions/setup-dotnet@v4
         env:
