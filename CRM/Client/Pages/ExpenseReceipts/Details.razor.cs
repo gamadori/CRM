@@ -25,19 +25,30 @@ namespace CRM.Client.Pages.ExpenseReceipts
         /// <summary>Valorizzato quando si gestisce la spesa dalla scheda dell'attivita'.</summary>
         [Parameter] public int? ActivityId { get; set; }
 
+        /// <summary>
+        /// Valorizzato quando si arriva dalla cartella spese di un'iniziativa. Non e' ridondante
+        /// rispetto a <c>_receipt.IdInitiative</c>: quello dice a che cosa la spesa appartiene,
+        /// questo da dove si e' entrati - e sono la stessa cosa solo quasi sempre.
+        /// </summary>
+        [Parameter] public int? InitiativeId { get; set; }
+
         private string Root => ActivityId.HasValue
             ? $"/Activities/{ActivityId}"
-            : InterventionId.HasValue
-                ? $"/TicketInterventions/{InterventionId}"
-                : null;
+            : InitiativeId.HasValue
+                ? $"/Initiatives/{InitiativeId}"
+                : InterventionId.HasValue
+                    ? $"/TicketInterventions/{InterventionId}"
+                    : null;
 
-        // Dall'attivita' si torna alla sua scheda gia' aperta sulle note spese: e' il posto da
-        // cui si e' partiti, non un elenco a se' stante.
+        // Dall'attivita' e dall'iniziativa si torna alla loro scheda gia' aperta sulle note spese:
+        // e' il posto da cui si e' partiti, non un elenco a se' stante.
         private string ListUrl => ActivityId.HasValue
             ? $"/Activities/{ActivityId}/Info?view=notespese"
-            : Root != null
-                ? $"{Root}/ExpenseReceipts"
-                : "/ExpenseReceipts";
+            : InitiativeId.HasValue
+                ? $"/Initiatives/{InitiativeId}/Info?view=notespese"
+                : Root != null
+                    ? $"{Root}/ExpenseReceipts"
+                    : "/ExpenseReceipts";
 
         private string EditUrl => Root != null
             ? $"{Root}/ExpenseReceipts/{ReceiptId}/Edit"
@@ -50,20 +61,27 @@ namespace CRM.Client.Pages.ExpenseReceipts
         /// Contesto della spesa - intervento, visita o niente. Le tre voci stanno insieme perche'
         /// sono un'alternativa sola: icona, testo e destinazione cambiano tutti nello stesso punto.
         /// </summary>
+        /// <para>
+        /// L'iniziativa entra fra i casi: prima una spesa di fiera senza visita risultava "costo
+        /// generale" proprio mentre il consuntivo della fiera la contava fra i suoi costi.
+        /// </para>
         private string ContextIcon =>
             _receipt?.TicketInterventionId != null ? "build"
             : _receipt?.IdActivity != null ? "event_available"
+            : _receipt?.IdInitiative != null ? "event_note"
             : "receipt_long";
 
         private string ContextText =>
             _receipt?.TicketInterventionId != null ? $"Intervento #{_receipt.TicketInterventionId}"
             : _receipt?.IdActivity != null ? (_receipt.ActivitySubject ?? $"Attivita #{_receipt.IdActivity}")
+            : _receipt?.IdInitiative != null ? (_receipt.InitiativeName ?? $"Iniziativa #{_receipt.IdInitiative}")
             : "Costo generale";
 
         /// <summary>Null sul costo generale: non c'e' niente da aprire, e un link finto e' peggio.</summary>
         private string ContextUrl =>
             _receipt?.TicketInterventionId != null ? $"/TicketInterventions/{_receipt.TicketInterventionId}"
             : _receipt?.IdActivity != null ? $"/Activities/{_receipt.IdActivity}/Info"
+            : _receipt?.IdInitiative != null ? $"/Initiatives/{_receipt.IdInitiative}/Info?view=notespese"
             : null;
         [Parameter] public int ReceiptId { get; set; }
 

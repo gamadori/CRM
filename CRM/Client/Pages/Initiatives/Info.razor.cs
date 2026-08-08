@@ -25,6 +25,7 @@ namespace CRM.Client.Pages.Initiatives
             Members,
             Schedule,
             Activities,
+            Expenses,
             Leads,
             Deals,
             Quotes,
@@ -53,6 +54,17 @@ namespace CRM.Client.Pages.Initiatives
         [Inject] private NotificationService NotificationService { get; set; } = default!;
 
         [Parameter] public int Id { get; set; }
+
+        /// <summary>
+        /// Linguetta su cui aprire la scheda ("/Initiatives/12/Info?view=notespese").
+        /// <para>
+        /// La usano i ritorni dalle pagine figlie delle note spese: senza, chi salva una spesa
+        /// tornerebbe sulla scheda ma su "Dettagli", e dovrebbe ritrovare la cartella da cui era
+        /// partito. E' lo stesso meccanismo gia' usato dalla scheda dell'attivita'.
+        /// </para>
+        /// </summary>
+        [SupplyParameterFromQuery(Name = "view")]
+        public string? ViewParam { get; set; }
 
         private PageHeaderModel? _pageHeader;
         private InitiativeDTO? _initiative;
@@ -89,7 +101,32 @@ namespace CRM.Client.Pages.Initiatives
 
         protected override async Task OnParametersSetAsync()
         {
+            ApplyViewParam();
             await LoadDataAsync();
+        }
+
+        /// <summary>
+        /// Traduce "?view=..." nella linguetta da aprire. Un valore che non si riconosce non e' un
+        /// errore: si resta su Dettagli, che e' dove si arriva aprendo la scheda senza chiedere
+        /// niente.
+        /// </summary>
+        private void ApplyViewParam()
+        {
+            if (string.IsNullOrWhiteSpace(ViewParam))
+                return;
+
+            _selectedView = ViewParam.Trim().ToLowerInvariant() switch
+            {
+                "notespese" or "expenses" => InitiativeViews.Expenses,
+                "partecipanti" or "members" => InitiativeViews.Members,
+                "presenze" or "schedule" => InitiativeViews.Schedule,
+                "attivita" or "activities" => InitiativeViews.Activities,
+                "lead" or "leads" => InitiativeViews.Leads,
+                "opportunity" or "deals" => InitiativeViews.Deals,
+                "preventivi" or "quotes" => InitiativeViews.Quotes,
+                "ordini" or "orders" => InitiativeViews.Orders,
+                _ => _selectedView
+            };
         }
 
         private async Task LoadDataAsync()
@@ -117,6 +154,7 @@ namespace CRM.Client.Pages.Initiatives
                 new() { Text = "Partecipanti", Value = InitiativeViews.Members },
                 new() { Text = "Presenze", Value = InitiativeViews.Schedule },
                 new() { Text = "Attivita", Value = InitiativeViews.Activities },
+                new() { Text = "Note spese", Value = InitiativeViews.Expenses },
                 new() { Text = "Lead", Value = InitiativeViews.Leads },
                 new() { Text = "Opportunity", Value = InitiativeViews.Deals },
                 new() { Text = "Preventivi", Value = InitiativeViews.Quotes },
@@ -338,7 +376,20 @@ namespace CRM.Client.Pages.Initiatives
         private void NewLead()
             => NavigationManager.NavigateTo($"/{ConstHelper.ClientLeadsPath}/New?idInitiative={Id}");
 
+        /// <summary>
+        /// Apre la cartella delle note spese, che ora sta DENTRO la scheda: prima portava fuori,
+        /// all'elenco generale filtrato, e per tornare al resoconto bisognava rifare la strada.
+        /// L'elenco generale resta a un clic dal pulsante "Vedi nell'elenco generale" della cartella,
+        /// per chi ci arriva cercando un periodo o una persona.
+        /// </summary>
         private void OpenExpenses()
+            => _selectedView = InitiativeViews.Expenses;
+
+        /// <summary>
+        /// Elenco generale filtrato su questa iniziativa: e' l'unico posto con periodo, persona e
+        /// tipologia, e serve a chi sta mettendo insieme un rimborso e non un consuntivo.
+        /// </summary>
+        private void OpenExpensesList()
             => NavigationManager.NavigateTo($"/ExpenseReceipts?idInitiative={Id}");
 
         /// <summary>
@@ -346,7 +397,7 @@ namespace CRM.Client.Pages.Initiatives
         /// va ne' digitato ne' ricordato davanti allo scontrino.
         /// </summary>
         private void NewExpense()
-            => NavigationManager.NavigateTo($"/ExpenseReceipts/Create?idInitiative={Id}");
+            => NavigationManager.NavigateTo($"/{ConstHelper.ClientInitiativesPath}/{Id}/ExpenseReceipts/Create");
 
         private void OpenLead(int id)
             => NavigationManager.NavigateTo($"/{ConstHelper.ClientLeadsPath}/{id}/Edit");

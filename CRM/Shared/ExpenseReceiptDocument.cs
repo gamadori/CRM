@@ -24,6 +24,20 @@ namespace CRM.Shared
         [MaxLength(200)]
         public string? MerchantName { get; set; }
 
+        /// <summary>
+        /// Tipologia del singolo documento fiscale. Sta anche qui, e non solo sulla testata,
+        /// perche' un PDF di scontrini diventa PIU' note spese: il pieno di benzina e la cena
+        /// stanno nello stesso file e non hanno la stessa voce di rimborso.
+        /// </summary>
+        public ExpenseCategory? Category { get; set; }
+
+        public ExpenseCategorySource? CategorySource { get; set; }
+
+        public double? CategoryConfidence { get; set; }
+
+        [MaxLength(500)]
+        public string? CategoryReason { get; set; }
+
         public DateTime? TransactionDate { get; set; }
 
         [MaxLength(10)]

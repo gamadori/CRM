@@ -15,7 +15,7 @@
         <PageHeader Model="_pageHeader">
             <Actions>
                 <button type="button" class="secondary-action" @onclick="Cancel">
-                    <span class="action-icon close-icon" aria-hidden="true"></span>
+                    <span class="material-icons">close</span>
                     <span>Annulla</span>
                 </button>
             </Actions>
@@ -139,7 +139,7 @@
                                 }
                             </InputSelect>
                             <button type="button" class="secondary-action" @onclick="AddProductInterest">
-                                <span class="action-icon add-icon" aria-hidden="true"></span>
+                                <span class="material-icons">add</span>
                                 <span>Aggiungi</span>
                             </button>
                         </div>
@@ -172,7 +172,7 @@
                                                 <td class="money">@row.LineTotal.ToString("C")</td>
                                                 <td>
                                                     <button type="button" class="icon-row-action" title="Rimuovi prodotto" @onclick="@(() => RemoveProductInterest(row))">
-                                                        <span class="action-icon delete-icon" aria-hidden="true"></span>
+                                                        <span class="material-icons">delete</span>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -192,15 +192,30 @@
                         <InputTextArea class="form-input notes" @bind-Value="_lead.Note" />
                     </label>
                 </article>
+
+                @* Il biglietto fotografato allo stand: i campi qui sopra li ha letti l'OCR, e
+                   l'originale e' l'unico modo di verificarli la sera, quando il cliente non e'
+                   piu' davanti. Compare solo sui lead che nascono da una cattura. *@
+                @if (_lead.IdBusinessCard != null)
+                {
+                    <article>
+                        <div class="panel-title">
+                            <span class="material-icons">contact_mail</span>
+                            <h2>Biglietto da visita</h2>
+                        </div>
+                        <AttachmentImage AttachmentFileId="@_lead.IdBusinessCard.Value"
+                                         AltText="@($"Biglietto da visita di {_lead.Name}")" />
+                    </article>
+                }
             </section>
 
             <section class="form-footer">
                 <button type="button" class="secondary-action" @onclick="Cancel" disabled="@_saving">
-                    <span class="action-icon back-icon" aria-hidden="true"></span>
+                    <span class="material-icons">arrow_back</span>
                     <span>Annulla</span>
                 </button>
                 <button type="submit" class="primary-action" disabled="@_saving">
-                    <span class="action-icon save-icon" aria-hidden="true"></span>
+                    <span class="material-icons">save</span>
                     <span>@(_saving ? "Salvataggio..." : "Salva lead")</span>
                 </button>
             </section>
@@ -215,26 +230,16 @@
     .secondary-action:hover { background: var(--crm-surface-hover); border-color: color-mix(in srgb, var(--crm-link) 45%, var(--crm-border)); }
     .primary-action { background: var(--crm-link); border-color: var(--crm-link); color: var(--crm-surface-raised); }
     .primary-action:hover { background: color-mix(in srgb, var(--crm-link) 88%, var(--crm-text)); }
-    .action-icon { position: relative; display: inline-flex; width: 16px; height: 16px; flex: 0 0 16px; align-items: center; justify-content: center; }
-    .action-icon::before, .action-icon::after { content: ""; position: absolute; box-sizing: border-box; }
-    .close-icon::before, .close-icon::after { width: 15px; height: 2px; background: currentColor; border-radius: 2px; }
-    .close-icon::before { transform: rotate(45deg); }
-    .close-icon::after { transform: rotate(-45deg); }
-    .add-icon::before { width: 14px; height: 2px; background: currentColor; border-radius: 2px; }
-    .add-icon::after { width: 2px; height: 14px; background: currentColor; border-radius: 2px; }
-    .delete-icon::before { width: 11px; height: 12px; border: 2px solid currentColor; border-top: 0; border-radius: 0 0 2px 2px; transform: translateY(2px); }
-    .delete-icon::after { width: 13px; height: 2px; background: currentColor; box-shadow: 0 -3px 0 -1px currentColor; transform: translateY(-5px); }
-    .back-icon::before { width: 13px; height: 2px; background: currentColor; }
-    .back-icon::after { width: 8px; height: 8px; border-top: 2px solid currentColor; border-left: 2px solid currentColor; transform: translateX(-4px) rotate(-45deg); }
-    .save-icon::before { width: 13px; height: 13px; border: 2px solid currentColor; border-radius: 2px; }
-    .save-icon::after { width: 7px; height: 5px; border-left: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(3px); }
+    .primary-action .material-icons, .secondary-action .material-icons, .icon-row-action .material-icons { font-size: 18px; }
     .lead-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .85fr); gap: 1rem; }
     .lead-form-grid article { border: 1px solid var(--crm-border); border-radius: 8px; background: var(--crm-surface-raised); padding: 1rem; box-shadow: var(--crm-shadow); min-width: 0; }
     .panel-title { display: flex; align-items: center; gap: .5rem; margin-bottom: .9rem; }
     .panel-title h2 { margin: 0; font-size: 1.1rem; font-weight: 850; }
     .two-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
     .field { display: grid; gap: .35rem; margin-bottom: .8rem; min-width: 0; }
-    .field span { color: var(--crm-text-muted); font-size: .82rem; font-weight: 800; }
+    /* Solo l'etichetta figlia diretta: cosi' scritta prendeva anche il testo e l'icona dei
+       pulsanti annidati nel campo, che finivano grigio-etichetta invece che colore pulsante. */
+    .field > span { color: var(--crm-text-muted); font-size: .82rem; font-weight: 800; }
     .field small span { color: var(--crm-text-muted); font-size: .78rem; font-weight: 650; }
     .field-hint { color: var(--crm-text-muted); font-size: .78rem; font-weight: 650; }
     .form-input { width: 100%; min-height: 40px; border: 1px solid var(--crm-border); border-radius: 8px; background: var(--crm-surface-raised); color: var(--crm-text); padding: .48rem .6rem; }

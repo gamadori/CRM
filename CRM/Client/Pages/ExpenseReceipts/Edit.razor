@@ -2,6 +2,9 @@
 @* Gestita dalla scheda dell'attivita': il contesto sta nel percorso, e ci resta anche nel
    breadcrumb e nei pulsanti di ritorno. *@
 @page "/Activities/{ActivityId:int}/ExpenseReceipts/{ReceiptId:int}/Edit"
+@* Dalla cartella spese di una fiera o di una trasferta: l'iniziativa resta nel percorso, cosi'
+   il breadcrumb riporta alla sua scheda e non all'elenco generale. *@
+@page "/Initiatives/{InitiativeId:int}/ExpenseReceipts/{ReceiptId:int}/Edit"
 @* Senza contesto nel percorso: vedi Details.razor. *@
 @page "/ExpenseReceipts/{ReceiptId:int}/Edit"
 @using CRM.Shared.DTOs
@@ -40,6 +43,11 @@ else
                 {
                     <li class="breadcrumb-item"><a href="/Agenda">Agenda</a></li>
                     <li class="breadcrumb-item"><a href="/Activities/@ActivityId/Info">@ActivityLabel</a></li>
+                }
+                else if (InitiativeId.HasValue)
+                {
+                    <li class="breadcrumb-item"><a href="/Initiatives">Iniziative</a></li>
+                    <li class="breadcrumb-item"><a href="/Initiatives/@InitiativeId/Info">@InitiativeLabel</a></li>
                 }
                 <li class="breadcrumb-item"><a href="@ListUrl">Note Spese</a></li>
                 <li class="breadcrumb-item"><a href="@DetailsUrl">Nota #@ReceiptId</a></li>
@@ -145,6 +153,19 @@ else
                                                     <label class="form-label">@Localize["Tax"]</label>
                                                     <InputNumber @bind-Value="document.TaxAmount" class="form-control" step="0.01" />
                                                 </div>
+                                            </div>
+
+                                            @* La tipologia si modifica QUI e non in testata: con i documenti
+                                               presenti e' il documento a fare da riga di comando, e la testata
+                                               si ricalcola da questi. Metterla in due punti significherebbe
+                                               che una delle due modifiche viene buttata via al salvataggio. *@
+                                            <div class="mb-3">
+                                                <ExpenseCategoryField Value="document.Category"
+                                                                      ValueChanged="@(category => OnDocumentCategoryChanged(document, category))"
+                                                                      Suggested="DocumentSuggestion(document)"
+                                                                      Source="document.CategorySource"
+                                                                      Confidence="document.CategoryConfidence"
+                                                                      Reason="@document.CategoryReason" />
                                             </div>
 
                                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -260,6 +281,13 @@ else
                                 </label>
                                 <InputText @bind-Value="_model.Currency" class="form-control" placeholder="da indicare" />
                             </div>
+
+                            <ExpenseCategoryField Value="_model.Category"
+                                                  ValueChanged="OnCategoryChanged"
+                                                  Suggested="_model.CategorySuggested"
+                                                  Source="_model.CategorySource"
+                                                  Confidence="_model.CategoryConfidence"
+                                                  Reason="@_model.CategoryReason" />
                             }
 
                             <div class="mb-3">

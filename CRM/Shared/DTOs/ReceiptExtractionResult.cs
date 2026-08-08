@@ -99,6 +99,29 @@ namespace CRM.Shared.DTOs
         public List<string> CurrencyCandidates { get; set; } = new();
 
         /// <summary>
+        /// Da dove viene la valuta quando non e' scritta accanto all'importo: il codice letto nel
+        /// testo, il simbolo ambiguo, l'indirizzo dell'esercente. Si mostra a chi registra, perche'
+        /// una proposta che non dice su cosa si basa non e' verificabile.
+        /// </summary>
+        public string CurrencyHint { get; set; }
+
+        /// <summary>
+        /// Tipologia di spesa PROPOSTA per questo documento. Null quando nessun livello ha
+        /// saputo dirlo con sufficiente sicurezza: il campo resta da compilare, che e' una
+        /// risposta migliore di una voce di rimborso sbagliata.
+        /// </summary>
+        public ExpenseCategory? SuggestedCategory { get; set; }
+
+        /// <summary>Chi l'ha proposta: tipo di documento, regola sull'esercente o modello.</summary>
+        public ExpenseCategorySource? CategorySource { get; set; }
+
+        /// <summary>Confidenza della proposta (0-1).</summary>
+        public double? CategoryConfidence { get; set; }
+
+        /// <summary>Perche' quella tipologia: si mostra accanto al campo, per poterla verificare.</summary>
+        public string CategoryReason { get; set; }
+
+        /// <summary>
         /// Elementi riga (prodotti/servizi)
         /// </summary>
         public List<ReceiptLineItem> LineItems { get; set; } = new();

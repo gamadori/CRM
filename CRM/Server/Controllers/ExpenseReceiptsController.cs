@@ -98,6 +98,43 @@ namespace CRM.Server.Controllers
         }
 
         /// <summary>
+        /// Prospetto PDF delle note spese raggruppate per tipologia.
+        /// <para>
+        /// Prende lo <b>stesso filtro</b> dell'elenco: cosi' quello che si stampa e' esattamente
+        /// quello che si sta guardando - periodo, persona, contenitore, tipologia - e non un
+        /// secondo insieme che diverge in silenzio. Vale anche per il vincolo di visibilita'.
+        /// </para>
+        /// <para>
+        /// Nessuna riga significa nessun documento: si risponde 204, e la pagina lo dice. Un PDF
+        /// con solo l'intestazione somiglia troppo a un errore di stampa.
+        /// </para>
+        /// </summary>
+        [HttpGet("report")]
+        public async Task<IActionResult> GetReport(
+            [FromServices] IExpenseReportPdfGenerator pdfGenerator,
+            [FromQuery] ExpenseReceiptFilter filter)
+        {
+            try
+            {
+                var restrictTo = await GetVisibilityRestrictionAsync();
+                var data = await _expenseReceiptService.BuildReportDataAsync(filter, restrictTo);
+
+                if (data.RowCount == 0)
+                    return NoContent();
+
+                return File(pdfGenerator.Generate(data), "application/pdf", data.FileName);
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(ExpenseReceiptsController), nameof(GetReport),
+                    CRM.Shared.LogEvent.EventsTypes.Error, ex);
+
+                return StatusCode(500, "Errore durante la generazione del prospetto");
+            }
+        }
+
+        /// <summary>
         /// Cambio di riferimento proposto per una valuta a una data. Il form lo precompila e
         /// lascia comunque modificare: per un rimborso vale spesso il cambio applicato dalla
         /// carta, che i cambi BCE non conoscono.
@@ -202,6 +239,39 @@ namespace CRM.Server.Controllers
                     ex);
 
                 return StatusCode(500, "Errore durante il recupero delle note spese");
+            }
+        }
+
+        /// <summary>
+        /// Note spese di un'iniziativa, con il riepilogo: e' la cartella che la scheda della
+        /// fiera o della trasferta mostra nella linguetta Note spese.
+        /// <para>
+        /// <c>canSeeAll</c> dice se chi guarda sta vedendo tutte le spese dell'iniziativa o solo
+        /// le proprie. Serve alla pagina per non far sembrare un errore la differenza fra il
+        /// totale del resoconto e la somma delle righe che riesce a mostrare.
+        /// </para>
+        /// </summary>
+        [HttpGet("initiative/{initiativeId}")]
+        public async Task<ActionResult<object>> GetByInitiative(int initiativeId)
+        {
+            try
+            {
+                var restrictTo = await GetVisibilityRestrictionAsync();
+
+                var receipts = await _expenseReceiptService.GetByInitiativeIdAsync(initiativeId, restrictTo);
+                var summary = await _expenseReceiptService.GetSummaryByInitiativeIdAsync(initiativeId, restrictTo);
+
+                return Ok(new { receipts, summary, canSeeAll = restrictTo == null });
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(
+                    nameof(ExpenseReceiptsController),
+                    nameof(GetByInitiative),
+                    CRM.Shared.LogEvent.EventsTypes.Error,
+                    ex);
+
+                return StatusCode(500, "Errore durante il recupero delle note spese dell'iniziativa");
             }
         }
 

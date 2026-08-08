@@ -390,7 +390,15 @@ namespace CRM.Server.Data
                     "CK_MachineBackups_Owner",
                     "([OwnerType] = 1 AND [IdProduct] IS NOT NULL AND [IdArticle] IS NULL) OR ([OwnerType] = 2 AND [IdArticle] IS NOT NULL AND [IdProduct] IS NULL)"));
             });
-            
+
+            // Le due domande che la tabella dei consumi deve reggere: "quanto nel periodo" e
+            // "quanto per funzione nel periodo". Nessun altro indice: cresce a ogni chiamata AI.
+            modelBuilder.Entity<ExternalServiceUsage>(entity =>
+            {
+                entity.HasIndex(x => x.OccurredAt);
+                entity.HasIndex(x => new { x.Feature, x.OccurredAt });
+            });
+
             base.OnModelCreating(modelBuilder);
             modelBuilder.UseOpenIddict();
 
@@ -1037,6 +1045,9 @@ namespace CRM.Server.Data
         public DbSet<Language> Languages => Set<Language>();
 
         public DbSet<LogEvent> LogEvents => Set<LogEvent>();
+
+        /// <summary>Consumi dei servizi esterni a pagamento (Claude, Azure): registro a sola aggiunta.</summary>
+        public DbSet<ExternalServiceUsage> ExternalServiceUsages => Set<ExternalServiceUsage>();
 
         public DbSet<CSVMapping> CSVMappings => Set<CSVMapping>();
         public DbSet<ProductType> ProductTypes => Set<ProductType>();

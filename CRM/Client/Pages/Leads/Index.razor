@@ -9,10 +9,7 @@
 <div class="commercial-page">
     <PageHeader Model="_pageHeader">
         <Actions>
-            <button type="button" class="primary-action" @onclick="NewLead">
-                <span class="action-icon add-person-icon" aria-hidden="true"></span>
-                <span>Nuovo lead</span>
-            </button>
+            <RedGButton RGButtonType="RGButtonType.New" Text="Nuovo lead" Click="@(_ => NewLead())"></RedGButton>
         </Actions>
     </PageHeader>
 
@@ -55,10 +52,10 @@
             }
         </select>
         <button type="button" class="icon-action" title="Applica filtri" @onclick="ApplyFilters">
-            <span class="action-icon tune-icon" aria-hidden="true"></span>
+            <span class="material-icons">tune</span>
         </button>
         <button type="button" class="icon-action" title="Pulisci filtri" @onclick="ClearFilters">
-            <span class="action-icon clear-filter-icon" aria-hidden="true"></span>
+            <span class="material-icons">filter_alt_off</span>
         </button>
     </section>
 
@@ -96,7 +93,18 @@
                     {
                         <tr>
                             <td>
-                                <button type="button" class="text-link" @onclick="@(() => Edit(lead.Id))">@lead.Name</button>
+                                <div class="lead-name">
+                                    <button type="button" class="text-link" @onclick="@(() => Edit(lead.Id))">@lead.Name</button>
+                                    @* Nato da una cattura in fiera: c'e' la foto del biglietto da
+                                       confrontare con quello che ha letto l'OCR. La sera, davanti
+                                       a cento righe, serve sapere quali si possono verificare. *@
+                                    @if (lead.IdBusinessCard != null)
+                                    {
+                                        <span class="card-badge material-icons"
+                                              title="Biglietto da visita disponibile"
+                                              aria-label="Biglietto da visita disponibile">contact_mail</span>
+                                    }
+                                </div>
                                 <small>@lead.CreatedAt.ToString("dd/MM/yyyy")</small>
                             </td>
                             <td>
@@ -116,15 +124,17 @@
                             <td>@lead.UserName</td>
                             <td>
                                 <div class="row-actions">
-                                    <button type="button" title="Modifica" disabled="@(!lead.Permits.Edit())" @onclick="@(() => Edit(lead.Id))">
-                                        <span class="action-icon edit-icon" aria-hidden="true"></span>
-                                    </button>
-                                    <button type="button" title="Converti in opportunita" disabled="@(lead.Status == LeadStatus.Converted || !lead.Permits.Edit())" @onclick="@(() => ConvertLead(lead))">
-                                        <span class="action-icon convert-icon" aria-hidden="true"></span>
-                                    </button>
-                                    <button type="button" title="Elimina" disabled="@(!lead.Permits.Delete())" @onclick="@(() => Delete(lead.Id))">
-                                        <span class="action-icon delete-icon" aria-hidden="true"></span>
-                                    </button>
+                                    <RedGButton RGButtonType="RGButtonType.Edit" title="Modifica"
+                                                Disabled="@(!lead.Permits.Edit())"
+                                                Click="@(_ => Edit(lead.Id))"></RedGButton>
+                                    @* Nessun preset per la conversione: icona e stile espliciti, che
+                                       in RedGButton hanno la precedenza sul tipo. *@
+                                    <RedGButton Icon="swap_horiz" ButtonStyle="ButtonStyle.Info" title="Converti in opportunita"
+                                                Disabled="@(lead.Status == LeadStatus.Converted || !lead.Permits.Edit())"
+                                                Click="@(_ => ConvertLead(lead))"></RedGButton>
+                                    <RedGButton RGButtonType="RGButtonType.Delete" title="Elimina"
+                                                Disabled="@(!lead.Permits.Delete())"
+                                                Click="@(_ => Delete(lead.Id))"></RedGButton>
                                 </div>
                             </td>
                         </tr>
@@ -135,13 +145,13 @@
 
         <section class="pager">
             <button type="button" disabled="@(!CanGoPrevious)" @onclick="PreviousPage">
-                <span class="action-icon chevron-left-icon" aria-hidden="true"></span>
+                <span class="material-icons">chevron_left</span>
                 <span>Precedente</span>
             </button>
             <strong>Pagina @_pageNumber di @TotalPages</strong>
             <button type="button" disabled="@(!CanGoNext)" @onclick="NextPage">
                 <span>Successiva</span>
-                <span class="action-icon chevron-right-icon" aria-hidden="true"></span>
+                <span class="material-icons">chevron_right</span>
             </button>
         </section>
     }
@@ -153,25 +163,6 @@
     .icon-action:hover, .row-actions button:hover:not(:disabled), .pager button:hover:not(:disabled) { background: var(--crm-surface-hover); border-color: color-mix(in srgb, var(--crm-link) 45%, var(--crm-border)); }
     .primary-action { padding: .62rem .85rem; background: var(--crm-link); border-color: var(--crm-link); color: var(--crm-surface-raised); }
     .primary-action:hover { background: color-mix(in srgb, var(--crm-link) 88%, var(--crm-text)); }
-    .action-icon { position: relative; display: inline-flex; width: 16px; height: 16px; flex: 0 0 16px; align-items: center; justify-content: center; }
-    .action-icon::before, .action-icon::after { content: ""; position: absolute; box-sizing: border-box; }
-    .add-person-icon::before { width: 9px; height: 9px; border: 2px solid currentColor; border-radius: 50%; transform: translate(-3px, -4px); }
-    .add-person-icon::after { width: 14px; height: 8px; border: 2px solid currentColor; border-bottom: 0; border-radius: 8px 8px 0 0; transform: translate(-3px, 5px); }
-    .primary-action .add-person-icon { margin-right: 2px; }
-    .primary-action .add-person-icon::after { box-shadow: 10px -6px 0 -5px currentColor, 10px -6px 0 -3px transparent; }
-    .tune-icon::before { width: 15px; height: 2px; background: currentColor; box-shadow: 0 -5px 0 currentColor, 0 5px 0 currentColor; }
-    .tune-icon::after { width: 4px; height: 4px; border-radius: 50%; background: currentColor; box-shadow: -5px -5px 0 currentColor, 5px 5px 0 currentColor; }
-    .clear-filter-icon::before { width: 14px; height: 10px; border: 2px solid currentColor; border-top-width: 3px; clip-path: polygon(0 0, 100% 0, 60% 55%, 60% 100%, 40% 100%, 40% 55%); }
-    .clear-filter-icon::after { width: 18px; height: 2px; background: currentColor; transform: rotate(-38deg); }
-    .edit-icon::before { width: 12px; height: 4px; border: 2px solid currentColor; border-radius: 2px; transform: rotate(-42deg); }
-    .edit-icon::after { width: 8px; height: 2px; background: currentColor; transform: translate(-4px, 6px); }
-    .convert-icon::before { width: 13px; height: 13px; border: 2px solid currentColor; border-left-color: transparent; border-radius: 50%; }
-    .convert-icon::after { width: 6px; height: 6px; border-top: 2px solid currentColor; border-right: 2px solid currentColor; transform: translate(4px, -5px) rotate(25deg); }
-    .delete-icon::before { width: 11px; height: 12px; border: 2px solid currentColor; border-top: 0; border-radius: 0 0 2px 2px; transform: translateY(2px); }
-    .delete-icon::after { width: 13px; height: 2px; background: currentColor; box-shadow: 0 -3px 0 -1px currentColor; transform: translateY(-5px); }
-    .chevron-left-icon::before, .chevron-right-icon::before { width: 9px; height: 9px; border-top: 2px solid currentColor; border-left: 2px solid currentColor; }
-    .chevron-left-icon::before { transform: rotate(-45deg); }
-    .chevron-right-icon::before { transform: rotate(135deg); }
     .commercial-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .85rem; margin-bottom: 1rem; }
     .commercial-metrics article, .commercial-filters, .commercial-table-wrap { border: 1px solid var(--crm-border); border-radius: 8px; background: var(--crm-surface-raised); box-shadow: var(--crm-shadow); }
     .commercial-metrics article { display: grid; gap: .2rem; padding: .9rem; }
@@ -192,6 +183,8 @@
     .commercial-table tbody tr:hover td { background: var(--crm-surface-hover); }
     .commercial-table small { display: block; margin-top: .15rem; }
     .text-link { border: 0; padding: 0; background: transparent; color: var(--crm-link); font-weight: 850; text-align: left; }
+    .lead-name { display: flex; align-items: center; gap: .35rem; min-width: 0; }
+    .card-badge { flex: 0 0 auto; font-size: 16px; color: var(--crm-text-muted); cursor: default; }
     .state-chip { display: inline-flex; border-radius: 999px; padding: .25rem .55rem; font-weight: 850; font-size: .78rem; }
     .state-new { background: color-mix(in srgb, #64748b 15%, transparent); color: var(--crm-text-muted); }
     .state-active { background: color-mix(in srgb, #0d9488 15%, transparent); color: #0d9488; }
@@ -203,9 +196,11 @@
     .money { font-weight: 850; }
     .row-actions { display: flex; justify-content: flex-end; gap: .35rem; }
     .row-actions button { width: 34px; height: 34px; padding: 0; }
+    .row-actions button .material-icons, .row-actions button .rzi { font-size: 18px; }
     .row-actions button:disabled, .pager button:disabled { opacity: .45; }
     .pager { display: flex; align-items: center; justify-content: center; gap: .75rem; padding: 1rem 0; }
     .pager button { padding: .45rem .7rem; }
+    .pager .material-icons { font-size: 18px; }
     .empty-state { min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; color: var(--crm-text-muted); text-align: center; }
     .empty-state .material-icons { font-size: 48px; }
     @@media (max-width: 1080px) { .commercial-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .commercial-filters { grid-template-columns: 1fr 1fr; } }

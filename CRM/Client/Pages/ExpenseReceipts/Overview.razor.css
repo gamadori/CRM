@@ -62,6 +62,16 @@
     font-size: 1rem;
 }
 
+/* Il report sta accanto al pulsante di creazione ma non compete con lui: e' un'azione sulla
+   pagina, non il gesto principale. */
+.chip-report {
+    margin-left: auto;
+}
+
+.chip-report + .btn-new {
+    margin-left: 0;
+}
+
 .btn-new {
     display: inline-flex;
     align-items: center;
@@ -312,9 +322,77 @@
     color: var(--crm-text-muted, #64748b);
 }
 
+/* Intervallo di date: sta nella barra dei filtri e ne segue la forma, cosi' non sembra un
+   modulo a parte ma un filtro come gli altri. */
+.date-range {
+    align-items: center;
+    gap: .35rem;
+    padding: 0 .6rem;
+}
+
+.date-range label {
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--crm-text-muted, #64748b);
+}
+
+.chip-date {
+    border: none;
+    background: transparent;
+    color: var(--crm-text, #1f2937);
+    font-size: .8rem;
+    font-weight: 600;
+    padding: .3rem .2rem;
+}
+
+.chip-date:focus-visible {
+    outline: 2px solid color-mix(in srgb, #6366f1 45%, transparent);
+    border-radius: 6px;
+}
+
+/* Tipologia di spesa */
+.chip-select {
+    border: 1px solid var(--crm-border, #e5e7eb);
+    border-radius: 8px;
+    background: var(--crm-surface, #fff);
+    color: var(--crm-text, #1f2937);
+    max-width: 14rem;
+}
+
+.category {
+    font-size: .78rem;
+    white-space: nowrap;
+}
+
+/* "Da indicare" non e' un trattino qualunque: e' la voce che manca al rimborso. */
+.category-missing {
+    font-weight: 600;
+    color: #b45309;
+}
+
+/* Proposta non ancora confermata: si distingue, ma senza gridare - nel caso normale e' giusta. */
+.category-suggested {
+    display: inline-block;
+    margin-left: .25rem;
+    font-size: .7rem;
+    font-weight: 700;
+    color: #4f46e5;
+    cursor: help;
+}
+
+.breakdown-item.breakdown-missing {
+    border-style: dashed;
+    color: #b45309;
+}
+
 /* Tema scuro: solo i letterali ambra/verde, le --crm-* si adattano da sole */
 body.dark-theme .to-convert { border-left-color: #f59e0b; }
 body.dark-theme .to-convert > .material-icons,
 body.dark-theme .btn-link-inline,
 body.dark-theme .to-convert-badge { color: #fbbf24; }
 body.dark-theme .status.ok { color: #86efac; }
+/* Il calendario nativo si disegna da sé: senza questo resta chiaro dentro una barra scura. */
+body.dark-theme .chip-date { color-scheme: dark; }
+body.dark-theme .category-missing,
+body.dark-theme .breakdown-item.breakdown-missing { color: #fbbf24; }
+body.dark-theme .category-suggested { color: #a5b4fc; }

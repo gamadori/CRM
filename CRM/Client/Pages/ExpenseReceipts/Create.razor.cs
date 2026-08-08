@@ -40,6 +40,19 @@ namespace CRM.Client.Pages.ExpenseReceipts
         [SupplyParameterFromQuery(Name = "idInitiative")]
         public int? InitiativeParam { get; set; }
 
+        /// <summary>
+        /// Iniziativa nel PERCORSO ("/Initiatives/12/ExpenseReceipts/Create"), cioe' quando si
+        /// registra la spesa dalla cartella della fiera. Vale come l'intervento: il contesto non
+        /// si digita e il ritorno e' il posto da cui si e' partiti.
+        /// </summary>
+        [Parameter] public int? InitiativeId { get; set; }
+
+        /// <summary>
+        /// L'iniziativa di riferimento, da qualunque delle due strade arrivi. Il percorso vince
+        /// sulla query string: se ci sono entrambi, quello che si ha davanti e' il percorso.
+        /// </summary>
+        private int? InitiativeContextId => InitiativeId ?? InitiativeParam;
+
         /// <summary>Iniziative selezionabili: recenti e future (vedi <see cref="LoadInitiativesAsync"/>).</summary>
         private List<InitiativeDTO> _initiatives = new();
 
@@ -67,7 +80,9 @@ namespace CRM.Client.Pages.ExpenseReceipts
         private string CancelUrl =>
             InterventionId.HasValue ? $"/TicketInterventions/{InterventionId}/ExpenseReceipts"
             : ActivityId.HasValue ? $"/Activities/{ActivityId}/Info?view=notespese"
-            : InitiativeParam.HasValue ? $"/Initiatives/{InitiativeParam}/Info"
+            // Si torna alla scheda dell'iniziativa GIA' APERTA sulle note spese: e' il posto da
+            // cui si e' partiti. Prima si atterrava sui dettagli e la cartella andava ritrovata.
+            : InitiativeContextId.HasValue ? $"/Initiatives/{InitiativeContextId}/Info?view=notespese"
             : "/ExpenseReceipts";
 
         private ExpenseReceiptCreateUpdateDTO _model = new();
@@ -237,6 +252,11 @@ namespace CRM.Client.Pages.ExpenseReceipts
             _model.TaxAmount = document.TaxAmount;
             _model.Currency = document.Currency;
             _model.ExchangeRate = document.ExchangeRate;
+            _model.Category = document.Category;
+            _model.CategorySuggested = DocumentSuggestion(document);
+            _model.CategorySource = document.CategorySource;
+            _model.CategoryConfidence = document.CategoryConfidence;
+            _model.CategoryReason = document.CategoryReason;
             _model.Description = $"{document.MerchantName} - {document.TransactionDate?.ToString("dd/MM/yyyy")}";
         }
 
@@ -313,6 +333,35 @@ namespace CRM.Client.Pages.ExpenseReceipts
                 .ToList();
         }
 
+        /// <summary>
+        /// Tipologia proposta per un documento del lotto. Serve al campo per capire se il valore
+        /// che sta mostrando e' ancora la proposta o una correzione: sul documento la proposta
+        /// non si conserva a parte, la si riconosce dal fatto che nessuno l'ha toccata.
+        /// </summary>
+        private static ExpenseCategory? DocumentSuggestion(ExpenseReceiptDocumentDTO document) =>
+            document.CategorySource == ExpenseCategorySource.Manual ? null : document.Category;
+
+        /// <summary>
+        /// La tipologia scelta a mano smette di essere una proposta: si azzerano provenienza,
+        /// confidenza e motivo, che parlavano di un valore che non c'e' piu'. Il server ricava
+        /// comunque la provenienza per conto suo - qui si tiene solo la maschera coerente.
+        /// </summary>
+        private void OnCategoryChanged(ExpenseCategory? category)
+        {
+            _model.Category = category;
+            _model.CategorySource = category.HasValue ? ExpenseCategorySource.Manual : null;
+            _model.CategoryConfidence = null;
+            _model.CategoryReason = null;
+        }
+
+        private static void OnDocumentCategoryChanged(ExpenseReceiptDocumentDTO document, ExpenseCategory? category)
+        {
+            document.Category = category;
+            document.CategorySource = category.HasValue ? ExpenseCategorySource.Manual : null;
+            document.CategoryConfidence = null;
+            document.CategoryReason = null;
+        }
+
         /// <summary>Il cambio serve solo se la spesa non e' gia' nella valuta di casa.</summary>
         private bool _needsRate =>
             !string.IsNullOrWhiteSpace(_model.Currency)
@@ -326,7 +375,7 @@ namespace CRM.Client.Pages.ExpenseReceipts
 
             _model.TicketInterventionId = InterventionId;
             _model.IdActivity = ActivityId;
-            _model.IdInitiative = InitiativeParam;
+            _model.IdInitiative = InitiativeContextId;
 
             await LoadInitiativesAsync();
 
@@ -617,6 +666,16 @@ namespace CRM.Client.Pages.ExpenseReceipts
                     // Valuta non riconosciuta = campo vuoto da compilare, non "EUR" per default:
                     // su uno scontrino estero l'assunzione produrrebbe un importo sbagliato.
                     _model.Currency = _extractionResult.Currency;
+
+                    // Tipologia PROPOSTA: si presenta gia' scelta perche' nel caso normale e'
+                    // giusta e confermarla non deve costare un clic in piu', ma resta marcata
+                    // come proposta finche' non la si tocca o non si salva.
+                    _model.Category = _extractionResult.SuggestedCategory;
+                    _model.CategorySuggested = _extractionResult.SuggestedCategory;
+                    _model.CategorySource = _extractionResult.CategorySource;
+                    _model.CategoryConfidence = _extractionResult.CategoryConfidence;
+                    _model.CategoryReason = _extractionResult.CategoryReason;
+
                     _currencyCandidates = _extractionResult.CurrencyCandidates ?? new List<string>();
                     _model.Description = $"{_extractionResult.MerchantName} - {_extractionResult.TransactionDate?.ToString("dd/MM/yyyy")}";
                     _model.ExtractionConfidence = _extractionResult.AverageConfidence;
@@ -699,6 +758,11 @@ namespace CRM.Client.Pages.ExpenseReceipts
                     else if (created.IdActivity != null)
                         NavigationManager.NavigateTo(
                             $"/Activities/{created.IdActivity}/ExpenseReceipts/{created.Id}/Details");
+                    // Il percorso di entrata si conserva anche dopo il salvataggio: chi e' partito
+                    // dalla fiera resta dentro la fiera, e il breadcrumb ce lo riporta.
+                    else if (InitiativeContextId.HasValue)
+                        NavigationManager.NavigateTo(
+                            $"/Initiatives/{InitiativeContextId}/ExpenseReceipts/{created.Id}/Details");
                     else
                         NavigationManager.NavigateTo($"/ExpenseReceipts/{created.Id}/Details");
                 }
@@ -732,7 +796,7 @@ namespace CRM.Client.Pages.ExpenseReceipts
         /// </summary>
         private string ListUrlForSavedDate()
         {
-            if (InterventionId.HasValue || ActivityId.HasValue || InitiativeParam.HasValue)
+            if (InterventionId.HasValue || ActivityId.HasValue || InitiativeContextId.HasValue)
                 return CancelUrl;
 
             var date = EarliestSavedDate();
@@ -827,6 +891,10 @@ namespace CRM.Client.Pages.ExpenseReceipts
                 PageTo = document.PageTo,
                 DocumentType = document.DocumentType,
                 MerchantName = document.MerchantName,
+                Category = document.SuggestedCategory,
+                CategorySource = document.CategorySource,
+                CategoryConfidence = document.CategoryConfidence,
+                CategoryReason = document.CategoryReason,
                 TransactionDate = document.TransactionDate,
 
                 // Se il singolo documento la valuta non la dichiara, vale quella riconosciuta sul

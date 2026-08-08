@@ -80,6 +80,7 @@ else
                 <RadzenSelectBarItem Text="Partecipanti" Icon="groups" Value="InitiativeViews.Members" />
                 <RadzenSelectBarItem Text="Presenze" Icon="event_available" Value="InitiativeViews.Schedule" />
                 <RadzenSelectBarItem Text="Attività" Icon="event_note" Value="InitiativeViews.Activities" />
+                <RadzenSelectBarItem Text="Note spese" Icon="receipt_long" Value="InitiativeViews.Expenses" />
                 <RadzenSelectBarItem Text="Lead" Icon="person_search" Value="InitiativeViews.Leads" />
                 <RadzenSelectBarItem Text="Opportunity" Icon="work" Value="InitiativeViews.Deals" />
                 <RadzenSelectBarItem Text="Preventivi" Icon="request_quote" Value="InitiativeViews.Quotes" />
@@ -239,11 +240,11 @@ else
                         <span>Fine</span>
                         <input type="datetime-local" @bind="_scheduleEdit.End" />
                     </label>
-                    <label class="col-2">
+                    <label class="field-wide">
                         <span>Luogo</span>
                         <input @bind="_scheduleEdit.Location" />
                     </label>
-                    <label class="col-2">
+                    <label class="field-wide">
                         <span>Note</span>
                         <textarea rows="3" @bind="_scheduleEdit.Notes"></textarea>
                     </label>
@@ -333,6 +334,33 @@ else
                 </table>
             </section>
         }
+    }
+    else if (_selectedView == InitiativeViews.Expenses)
+    {
+        @* La cartella delle spese dell'occasione. In testa i numeri del RESOCONTO, che contano
+           tutte le spese dell'iniziativa: se chi guarda può vedere solo le proprie, l'elenco qui
+           sotto lo dichiara da sé, invece di lasciar leggere la differenza come un errore. *@
+        <section class="initiative-toolbar">
+            <div class="triage-counts">
+                <strong>@_report.ExpenseCount note spese</strong>
+                <span>Totale: <b>@_report.CostTotal.ToString("C")</b></span>
+                @if (_report.ExpensePendingConversion > 0)
+                {
+                    <span class="triage-chip warn">@_report.ExpensePendingConversion da convertire</span>
+                }
+            </div>
+            <div class="initiative-toolbar-actions">
+                <button type="button" class="ghost-action" @onclick="OpenExpensesList">
+                    <span class="material-icons">list</span>
+                    <span>Elenco generale</span>
+                </button>
+                <button type="button" class="primary-action" @onclick="NewExpense">Registra spesa</button>
+            </div>
+        </section>
+
+        @* La stessa pagina che serve intervento e attività, incorporata: elenco, riepilogo e
+           azioni sono gli stessi, cambia solo il contenitore. *@
+        <CRM.Client.Pages.ExpenseReceipts.Index InitiativeId="Id" Embedded="true" />
     }
     else if (_selectedView == InitiativeViews.Leads)
     {
@@ -575,8 +603,12 @@ else
     .initiative-form-card { padding: 1rem; }
     .initiative-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem; }
     .initiative-form-grid label { display: grid; gap: .3rem; min-width: 0; }
-    .initiative-form-grid .col-2 { grid-column: span 2; }
-    .initiative-form-grid span { color: var(--crm-text-muted); font-size: .8rem; font-weight: 800; text-transform: uppercase; }
+    /* Vedi Edit.razor: "col-2" e' una classe di Bootstrap (colonna 2/12, width 16,6%) e il
+       campo restava stretto invece di occupare la riga. */
+    .initiative-form-grid .field-wide { grid-column: span 2; }
+    /* Solo le etichette dirette: prendere ogni "span" colpirebbe anche le icone material-icons,
+       e text-transform:uppercase spezza la legatura del font. */
+    .initiative-form-grid > label > span { color: var(--crm-text-muted); font-size: .8rem; font-weight: 800; text-transform: uppercase; }
     .initiative-form-grid input, .initiative-form-grid select, .initiative-form-grid textarea { min-height: 40px; padding: .45rem .6rem; border: 1px solid var(--crm-border); border-radius: 8px; background: var(--crm-surface-raised); color: var(--crm-text); font: inherit; }
     .initiative-table-wrap { overflow-x: auto; }
     .initiative-table-wrap table { width: 100%; min-width: 760px; border-collapse: collapse; }
@@ -596,5 +628,5 @@ else
     .initiative-empty { min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; color: var(--crm-text-muted); text-align: center; }
     .initiative-empty .material-icons { font-size: 48px; }
     @@media (max-width: 1080px) { .initiative-metrics, .initiative-detail-grid, .initiative-member-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @@media (max-width: 720px) { .initiative-metrics, .initiative-detail-grid, .initiative-member-grid, .initiative-form-grid { grid-template-columns: 1fr; } .initiative-detail-grid dl { grid-template-columns: 1fr; } .initiative-form-grid .col-2 { grid-column: span 1; } }
+    @@media (max-width: 720px) { .initiative-metrics, .initiative-detail-grid, .initiative-member-grid, .initiative-form-grid { grid-template-columns: 1fr; } .initiative-detail-grid dl { grid-template-columns: 1fr; } .initiative-form-grid .field-wide { grid-column: span 1; } }
 </style>

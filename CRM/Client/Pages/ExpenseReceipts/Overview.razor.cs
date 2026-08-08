@@ -4,8 +4,10 @@ using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -23,6 +25,8 @@ namespace CRM.Client.Pages.ExpenseReceipts
         [Inject] private NavigationManager NavigationManager { get; set; }
         [Inject] private IHeaderService HeaderService { get; set; }
         [Inject] private IBaseRestService<ApplicationUser, UsersFilterModel, string> UsersService { get; set; }
+        [Inject] private Microsoft.JSInterop.IJSRuntime JS { get; set; }
+        [Inject] private Radzen.NotificationService NotificationService { get; set; }
 
         private PageHeaderModel _pageHeader;
 
@@ -109,6 +113,10 @@ namespace CRM.Client.Pages.ExpenseReceipts
 
             switch (period)
             {
+                // L'intervallo scelto a mano non ha date da calcolare: sono gia' nel filtro, e
+                // ricalcolarle qui vorrebbe dire cancellare proprio quello che si e' scelto.
+                case "custom":
+                    break;
                 case "month":
                     _filter.DateFrom = new DateTime(today.Year, today.Month, 1);
                     _filter.DateTo = _filter.DateFrom.Value.AddMonths(1).AddDays(-1);
@@ -134,6 +142,73 @@ namespace CRM.Client.Pages.ExpenseReceipts
             ApplyPeriod(period);
             _filter.PageNumber = 1;
             await ReloadAsync();
+        }
+
+        /// <summary>
+        /// Passa all'intervallo scelto a mano partendo da quello che si sta gia' guardando: chi
+        /// arriva dal mese corrente vuole quasi sempre spostarne un estremo, non ricominciare da
+        /// due caselle vuote. Da "Tutte" non ci sono date da cui partire e si propone l'ultimo
+        /// mese, che e' il periodo con cui si lavora piu' spesso.
+        /// </summary>
+        private async Task StartCustomPeriod()
+        {
+            if (_period == "custom")
+                return;
+
+            var today = DateTime.Today;
+
+            _filter.DateFrom ??= today.AddMonths(-1);
+            _filter.DateTo ??= today;
+
+            _period = "custom";
+            _filter.PageNumber = 1;
+            await ReloadAsync();
+        }
+
+        /// <summary>Valore per il campo data: vuoto quando la data non c'e'.</summary>
+        private static string DateValue(DateTime? date) => date?.ToString("yyyy-MM-dd") ?? string.Empty;
+
+        private async Task SetDateFrom(ChangeEventArgs args)
+        {
+            var date = ParseDate(args);
+
+            // Svuotare l'inizio significa "da sempre fino a": e' un intervallo legittimo, non un
+            // errore da rifiutare.
+            _filter.DateFrom = date;
+
+            // Un intervallo rovesciato non restituisce niente, e una pagina vuota si legge come
+            // "non ci sono spese" invece che "hai chiesto un periodo impossibile": si sposta
+            // l'altro estremo, che e' quello che l'operatore stava per fare comunque.
+            if (_filter.DateFrom.HasValue && _filter.DateTo.HasValue && _filter.DateTo < _filter.DateFrom)
+                _filter.DateTo = _filter.DateFrom;
+
+            await ApplyCustomRangeAsync();
+        }
+
+        private async Task SetDateTo(ChangeEventArgs args)
+        {
+            _filter.DateTo = ParseDate(args);
+
+            if (_filter.DateFrom.HasValue && _filter.DateTo.HasValue && _filter.DateFrom > _filter.DateTo)
+                _filter.DateFrom = _filter.DateTo;
+
+            await ApplyCustomRangeAsync();
+        }
+
+        private async Task ApplyCustomRangeAsync()
+        {
+            _period = "custom";
+            _filter.PageNumber = 1;
+            await ReloadAsync();
+        }
+
+        private static DateTime? ParseDate(ChangeEventArgs args)
+        {
+            var raw = args.Value?.ToString();
+
+            return DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed)
+                ? parsed.Date
+                : null;
         }
 
         private async Task SetContext(ExpenseContextFilter context)
@@ -247,6 +322,56 @@ namespace CRM.Client.Pages.ExpenseReceipts
             }
         }
 
+        private bool _isDownloading;
+
+        /// <summary>
+        /// Prospetto PDF dell'insieme filtrato, raggruppato per tipologia.
+        /// <para>
+        /// Riusa <see cref="BuildQuery"/>: quello che si stampa e' esattamente quello che si sta
+        /// guardando. Costruire una seconda query per la stampa e' il modo piu' rapido per
+        /// ritrovarsi un totale a schermo e uno diverso sulla carta.
+        /// </para>
+        /// </summary>
+        private async Task DownloadReport()
+        {
+            try
+            {
+                _isDownloading = true;
+
+                var response = await Http.GetAsync($"api/ExpenseReceipts/report?{BuildQuery()}");
+
+                if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
+                {
+                    NotificationService.Notify(Radzen.NotificationSeverity.Info, "Report note spese",
+                        "Non c'è nessuna nota spese da stampare con questi filtri.");
+                    return;
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    NotificationService.Notify(Radzen.NotificationSeverity.Error, "Report note spese",
+                        $"Prospetto non generato ({(int)response.StatusCode}).");
+                    return;
+                }
+
+                var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+                               ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                               ?? "note-spese.pdf";
+
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                await JS.InvokeVoidAsync("downloadFileFromBytes", fileName, "application/pdf", bytes);
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Notify(Radzen.NotificationSeverity.Error, "Report note spese", ex.Message);
+                Console.Error.WriteLine($"Errore report note spese: {ex.Message}");
+            }
+            finally
+            {
+                _isDownloading = false;
+            }
+        }
+
         private string BuildQuery()
         {
             var parts = new List<string>();
@@ -255,6 +380,8 @@ namespace CRM.Client.Pages.ExpenseReceipts
             if (_filter.DateTo.HasValue) parts.Add($"dateTo={_filter.DateTo.Value:yyyy-MM-dd}");
             if (!string.IsNullOrEmpty(_filter.IdUserSpender)) parts.Add($"idUserSpender={Uri.EscapeDataString(_filter.IdUserSpender)}");
             if (_filter.Context != ExpenseContextFilter.All) parts.Add($"context={(int)_filter.Context}");
+            if (_filter.Category.HasValue) parts.Add($"category={(int)_filter.Category.Value}");
+            if (_filter.MissingCategory == true) parts.Add("missingCategory=true");
             if (_filter.NeedsConversion == true) parts.Add("needsConversion=true");
             if (!string.IsNullOrWhiteSpace(_filter.Search)) parts.Add($"search={Uri.EscapeDataString(_filter.Search)}");
 
@@ -262,6 +389,29 @@ namespace CRM.Client.Pages.ExpenseReceipts
             parts.Add($"pageSize={_filter.PageSize}");
 
             return string.Join("&", parts);
+        }
+
+        private async Task OnCategoryFilterChanged(ChangeEventArgs args)
+        {
+            var raw = args.Value?.ToString();
+
+            _filter.Category = string.IsNullOrWhiteSpace(raw)
+                ? null
+                : Enum.TryParse<ExpenseCategory>(raw, out var parsed) ? parsed : null;
+
+            // Chiedere una tipologia e insieme "quelle senza" darebbe sempre zero righe.
+            if (_filter.Category != null)
+                _filter.MissingCategory = null;
+
+            _filter.PageNumber = 1;
+            await ReloadAsync();
+        }
+
+        private async Task ToggleMissingCategory()
+        {
+            _filter.MissingCategory = _filter.MissingCategory == true ? null : true;
+            _filter.PageNumber = 1;
+            await ReloadAsync();
         }
 
         private async Task ShowOnlyToConvert()
@@ -294,6 +444,13 @@ namespace CRM.Client.Pages.ExpenseReceipts
             if (receipt.IdActivity.HasValue)
                 return ("event_available", receipt.ActivitySubject ?? $"Attivita #{receipt.IdActivity}",
                         $"/Activities/{receipt.IdActivity}/Info");
+
+            // La spesa di una fiera senza visita risultava "costo generale" proprio mentre il
+            // consuntivo della fiera la contava fra i suoi costi: due pagine che dicevano il
+            // contrario sullo stesso scontrino.
+            if (receipt.IdInitiative.HasValue)
+                return ("event_note", receipt.InitiativeName ?? $"Iniziativa #{receipt.IdInitiative}",
+                        $"/Initiatives/{receipt.IdInitiative}/Info?view=notespese");
 
             return ("receipt_long", "Costo generale", null);
         }

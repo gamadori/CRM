@@ -1710,6 +1710,22 @@ namespace CRM.Server.Migrations
                     b.Property<int?>("AttachmentFileId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("Category")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("CategoryConfidence")
+                        .HasColumnType("float");
+
+                    b.Property<string>("CategoryReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("CategorySource")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CategorySuggested")
+                        .HasColumnType("int");
+
                     b.Property<string>("ConfirmedByUserId")
                         .HasColumnType("nvarchar(max)");
 
@@ -1795,6 +1811,10 @@ namespace CRM.Server.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
                     b.Property<string>("Currency").HasMaxLength(10).HasColumnType("nvarchar(10)");
                     b.Property<string>("DocumentType").HasMaxLength(100).HasColumnType("nvarchar(100)");
+                    b.Property<int?>("Category").HasColumnType("int");
+                    b.Property<double?>("CategoryConfidence").HasColumnType("float");
+                    b.Property<string>("CategoryReason").HasMaxLength(500).HasColumnType("nvarchar(500)");
+                    b.Property<int?>("CategorySource").HasColumnType("int");
                     b.Property<decimal?>("AmountBase").HasColumnType("decimal(18,2)");
                     b.Property<decimal?>("ExchangeRate").HasColumnType("decimal(18,6)");
                     b.Property<int>("ExpenseReceiptId").HasColumnType("int");
@@ -1827,6 +1847,68 @@ namespace CRM.Server.Migrations
                     b.HasKey("Id");
                     b.HasIndex("ExpenseReceiptDocumentId");
                     b.ToTable("ExpenseReceiptDocumentLines");
+                });
+
+            modelBuilder.Entity("CRM.Shared.ExternalServiceUsage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<long>("CacheReadTokens")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("CacheWriteTokens")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Currency")
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
+
+                    b.Property<int>("DurationMs")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("EstimatedCost")
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<int>("Feature")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdUser")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<long>("InputTokens")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Model")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("OutputTokens")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Units")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAt");
+
+                    b.HasIndex("Feature", "OccurredAt");
+
+                    b.ToTable("ExternalServiceUsages");
                 });
 
             modelBuilder.Entity("CRM.Shared.Folder", b =>
@@ -1905,6 +1987,12 @@ namespace CRM.Server.Migrations
                     b.Property<decimal>("DefaultVatRate")
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
+
+                    b.Property<bool>("ExpenseCategoryAiEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<double>("ExpenseCategoryMinConfidence")
+                        .HasColumnType("float");
 
                     b.Property<int?>("LogoReport")
                         .HasColumnType("int");

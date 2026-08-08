@@ -1,0 +1,104 @@
+@using CRM.Shared
+
+@*
+    Campo "tipologia" della nota spese: la tendina piu' il motivo per cui e' stata proposta.
+    Sta in un componente solo perche' compare in quattro posti (creazione singola, ogni scheda di
+    un PDF multi-documento, modifica, schede documento della modifica) e l'informazione che conta
+    non e' il valore, e' la sua PROVENIENZA: una tipologia proposta e una scelta da una persona
+    si devono distinguere a colpo d'occhio, altrimenti si conferma una proposta senza sapere di
+    averlo fatto.
+*@
+
+<div class="expense-category-field @(Compact ? "" : "mb-3")">
+    <label class="form-label @(Compact ? "small" : "")">
+        @if (!Compact)
+        {
+            <i class="material-icons align-middle" style="font-size:18px;">sell</i>
+        }
+        @Label
+        @if (IsSuggestion)
+        {
+            <span class="badge bg-info-subtle text-info-emphasis ms-1">proposta</span>
+        }
+    </label>
+
+    <select class="form-select @(Compact ? "form-select-sm" : "") @(Value == null ? "is-warning-empty" : "")"
+            value="@(Value?.ToString() ?? string.Empty)"
+            @onchange="OnSelected">
+        <option value="">Da indicare</option>
+        @foreach (var category in ExpenseCategories.All)
+        {
+            <option value="@category">@ExpenseCategories.Label(category)</option>
+        }
+    </select>
+
+    @if (IsSuggestion)
+    {
+        <div class="form-text">
+            <i class="material-icons align-middle" style="font-size:14px;">smart_toy</i>
+            @Reason
+            @if (Confidence.HasValue)
+            {
+                <span class="text-muted"> (@((Confidence.Value * 100).ToString("F0"))% — @ExpenseCategories.SourceLabel(Source))</span>
+            }
+            <div>Se non è giusta, cambiala qui: quella che salvi è quella che conta.</div>
+        </div>
+    }
+    else if (Value == null)
+    {
+        @* Non e' un campo facoltativo travestito: senza tipologia la spesa non entra in nessuno
+           spaccato per voce, e la deducibilita' non si puo' determinare. Lo si dice qui, non in
+           un messaggio dopo il salvataggio. *@
+        <div class="form-text text-warning-emphasis">
+            Senza tipologia la spesa resta fuori dallo spaccato per voce di rimborso.
+        </div>
+    }
+    else if (Corrected)
+    {
+        <div class="form-text text-muted">
+            Corretta: era stata proposta «@ExpenseCategories.Label(Suggested)».
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>Tipologia in vigore. Null e' un valore legittimo: "da indicare".</summary>
+    [Parameter] public ExpenseCategory? Value { get; set; }
+
+    [Parameter] public EventCallback<ExpenseCategory?> ValueChanged { get; set; }
+
+    /// <summary>Quella proposta dall'automatismo, per distinguere conferme e correzioni.</summary>
+    [Parameter] public ExpenseCategory? Suggested { get; set; }
+
+    [Parameter] public ExpenseCategorySource? Source { get; set; }
+
+    [Parameter] public double? Confidence { get; set; }
+
+    [Parameter] public string Reason { get; set; }
+
+    /// <summary>Versione ridotta, per le schede dei singoli documenti di un PDF.</summary>
+    [Parameter] public bool Compact { get; set; }
+
+    [Parameter] public string Label { get; set; } = "Tipologia di spesa";
+
+    /// <summary>
+    /// Vero quando il valore attuale e' ancora quello proposto e nessuno l'ha toccato: e' il
+    /// caso in cui va detto da dove viene, perche' nessuno l'ha ancora verificato.
+    /// </summary>
+    private bool IsSuggestion =>
+        Value.HasValue && Source.HasValue && Source != ExpenseCategorySource.Manual && Value == Suggested;
+
+    private bool Corrected => Value.HasValue && Suggested.HasValue && Value != Suggested;
+
+    private async Task OnSelected(ChangeEventArgs args)
+    {
+        var raw = args.Value?.ToString();
+
+        var value = string.IsNullOrWhiteSpace(raw)
+            ? (ExpenseCategory?)null
+            : Enum.TryParse<ExpenseCategory>(raw, out var parsed) ? parsed : null;
+
+        Value = value;
+        await ValueChanged.InvokeAsync(value);
+    }
+}

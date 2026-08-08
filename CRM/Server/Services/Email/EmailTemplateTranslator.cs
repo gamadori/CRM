@@ -1,7 +1,10 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using Anthropic;
 using Anthropic.Models.Messages;
+using CRM.Server.Services.Usage;
+using CRM.Shared;
 using CRM.Shared.DTOs;
 
 namespace CRM.Server.Services.Email
@@ -9,12 +12,14 @@ namespace CRM.Server.Services.Email
     public class EmailTemplateTranslator : IEmailTemplateTranslator
     {
         private readonly ILogger<EmailTemplateTranslator> _logger;
+        private readonly IUsageRecorder _usage;
         private readonly AnthropicClient? _client;
         private readonly string _model;
 
-        public EmailTemplateTranslator(IConfiguration configuration, ILogger<EmailTemplateTranslator> logger)
+        public EmailTemplateTranslator(IConfiguration configuration, ILogger<EmailTemplateTranslator> logger, IUsageRecorder usage)
         {
             _logger = logger;
+            _usage = usage;
 
             var apiKey = configuration["Anthropic:ApiKey"];
             _model = configuration["Anthropic:ChatModel"] ?? "claude-opus-4-8";
@@ -33,6 +38,8 @@ namespace CRM.Server.Services.Email
             if (_client == null || targets.Count == 0 || string.IsNullOrWhiteSpace(subject))
                 return new List<EmailTemplateVersionDTO>();
 
+            var stopwatch = Stopwatch.StartNew();
+
             try
             {
                 var response = await _client.Messages.Create(new MessageCreateParams
@@ -46,6 +53,10 @@ namespace CRM.Server.Services.Email
                         new() { Role = Role.User, Content = BuildUserPrompt(sourceLanguage, subject, body, targets) }
                     },
                 });
+
+                await _usage.RecordTokensAsync(
+                    ExternalServiceFeature.EmailTemplateTranslation, _model, response.TokenUsageOf(),
+                    true, stopwatch.ElapsedMilliseconds);
 
                 var text = string.Concat(response.Content.Select(x => x.Value).OfType<TextBlock>().Select(x => x.Text));
                 return Parse(text, targets);

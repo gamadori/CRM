@@ -48,10 +48,32 @@ namespace CRM.Client.Pages.Initiatives
             _ => "Iniziative"
         };
 
+        /// <summary>
+        /// Sottotitolo della lista filtrata. Le due misure non sono intercambiabili, ed e' il
+        /// motivo per cui i due tipi hanno report distinti: in fiera si contano i contatti nuovi,
+        /// in trasferta il ROI mente e restano costi e cose successe.
+        /// </summary>
+        private string KindSubtitle => _kind switch
+        {
+            InitiativeKind.Fair => "Le fiere a cui partecipiamo, con i contatti raccolti e il loro costo.",
+            InitiativeKind.Trip => "Le trasferte e i giri clienti, con i costi sostenuti.",
+            _ => "Fiere e trasferte."
+        };
+
         protected override async Task OnParametersSetAsync()
         {
             _kind = ParseKind(KindFilter);
             _pageHeader = await HeaderService.Create();
+
+            // Sulla rotta filtrata (/Initiatives/List/Fair) l'ultimo segmento e' il tipo, e
+            // l'intestazione dedotta dall'indirizzo finiva per intitolare la pagina "Fair".
+            // Il tipo lo conosce questa pagina: e' lei a dire come si chiama quello che mostra.
+            if (_pageHeader != null && _kind != null)
+            {
+                _pageHeader.Title = PageTitle;
+                _pageHeader.Subtitle = KindSubtitle;
+            }
+
             await Load(true);
         }
 

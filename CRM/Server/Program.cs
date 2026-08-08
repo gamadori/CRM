@@ -101,6 +101,12 @@ builder.Services.AddScoped<SignInManager<ApplicationUser>, ApplicationSignInMana
 
 builder.Services.AddScoped<ILangSelectorService, LangSelectorService>();
 
+// Registro dei consumi dei servizi esterni a pagamento. Singleton con scope proprio: viene
+// chiamato anche da servizi in background, e non deve mai scrivere sul DbContext del chiamante.
+builder.Services.Configure<CRM.Server.Services.Usage.AiPricingOptions>(
+    builder.Configuration.GetSection(CRM.Server.Services.Usage.AiPricingOptions.SectionName));
+builder.Services.AddSingleton<CRM.Server.Services.Usage.IUsageRecorder, CRM.Server.Services.Usage.UsageRecorder>();
+
 builder.Services.AddScoped<CRM.Server.Services.ITicketsService, TicketsService>();
 builder.Services.AddScoped<ITicketSummaryService, TicketSummaryService>();
 builder.Services.AddScoped<ITicketNotificationService, TicketNotificationService>();
@@ -162,6 +168,12 @@ builder.Services.AddScoped<IReceiptAnalyzer, AzureReceiptAnalyzer>();
 builder.Services.AddScoped<IReceiptProcessorService, ReceiptProcessorService>();
 builder.Services.AddScoped<IBusinessCardAnalyzer, AzureBusinessCardAnalyzer>();
 
+// Tipologia della nota spese in tre livelli: sottotipo del documento, dizionario di esercenti
+// e - solo se i primi due tacciono e qualcuno l'ha acceso - il modello. Come per lo smistamento
+// dei ticket, il client AI e' separato dalle regole, cosi' queste restano verificabili senza rete.
+builder.Services.AddScoped<CRM.Server.Services.ExpenseCategorization.IExpenseCategoryAiClient, CRM.Server.Services.ExpenseCategorization.ExpenseCategoryAiClient>();
+builder.Services.AddScoped<CRM.Server.Services.ExpenseCategorization.IExpenseCategorizer, CRM.Server.Services.ExpenseCategorization.ExpenseCategorizer>();
+
 // Chiavi API di ogni ambito (backup macchina, ticket esterni, app fiera): un punto solo di
 // generazione e verifica, con l'ambito che impedisce a una chiave di valere fuori dal suo uso.
 builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
@@ -170,6 +182,9 @@ builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
 builder.Services.AddScoped<IFieldApiService, FieldApiService>();
 
 builder.Services.AddScoped<IExpenseReceiptService, ExpenseReceiptService>();
+
+// Prospetto PDF delle note spese per tipologia: i conti li fa il servizio, qui c'e' solo la resa.
+builder.Services.AddScoped<IExpenseReportPdfGenerator, ExpenseReportPdfGenerator>();
 
 // Cambi BCE per le spese sostenute all'estero. HttpClient tipizzato: il servizio ne configura
 // il timeout, cosi' un cambio lento non rallenta il salvataggio di una nota spese.

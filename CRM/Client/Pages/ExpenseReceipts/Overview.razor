@@ -14,7 +14,25 @@
             <button type="button" class="chip @(_period == "prevmonth" ? "active" : "")" @onclick='() => SetPeriod("prevmonth")'>@Localize["PreviousMonth"]</button>
             <button type="button" class="chip @(_period == "year" ? "active" : "")" @onclick='() => SetPeriod("year")'>@Localize["Year"]</button>
             <button type="button" class="chip @(_period == "all" ? "active" : "")" @onclick='() => SetPeriod("all")'>@Localize["All"]</button>
+            @* I periodi pronti coprono il caso frequente; l'intervallo copre quello che nessun
+               pulsante può indovinare: la trasferta di marzo, il trimestre da rendicontare, il
+               periodo che il commercialista ha chiesto. *@
+            <button type="button" class="chip @(_period == "custom" ? "active" : "")"
+                    title="Scegli tu le date di inizio e fine"
+                    @onclick="StartCustomPeriod">Intervallo</button>
         </div>
+
+        @if (_period == "custom")
+        {
+            <div class="filter-group date-range" role="group" aria-label="Intervallo di date">
+                <label for="expense-date-from">Dal</label>
+                <input id="expense-date-from" type="date" class="chip-date"
+                       value="@DateValue(_filter.DateFrom)" @onchange="SetDateFrom" />
+                <label for="expense-date-to">al</label>
+                <input id="expense-date-to" type="date" class="chip-date"
+                       value="@DateValue(_filter.DateTo)" @onchange="SetDateTo" />
+            </div>
+        }
 
         <div class="filter-group" role="group" aria-label="@Localize["Context"]">
             <button type="button" class="chip @(_filter.Context == ExpenseContextFilter.All ? "active" : "")"
@@ -30,6 +48,27 @@
                     @onclick="() => SetContext(ExpenseContextFilter.None)">@Localize["General"]</button>
         </div>
 
+        @* Voce di rimborso: e' la seconda domanda che si fa su una nota spese dopo "quanto",
+           ed e' quella che serve per la deducibilita'. *@
+        <select class="chip chip-select" value="@(_filter.Category?.ToString() ?? string.Empty)"
+                @onchange="OnCategoryFilterChanged" aria-label="Tipologia">
+            <option value="">Tutte le tipologie</option>
+            @foreach (var category in ExpenseCategories.All)
+            {
+                <option value="@category">@ExpenseCategories.Label(category)</option>
+            }
+        </select>
+
+        @if (_filter.Category == null && _summary.MissingCategoryCount > 0)
+        {
+            <button type="button" class="chip @(_filter.MissingCategory == true ? "active" : "")"
+                    title="Le spese senza tipologia: sono quelle da sistemare prima di chiudere un rimborso"
+                    @onclick="ToggleMissingCategory">
+                <span class="material-icons">sell</span>
+                Senza tipologia (@_summary.MissingCategoryCount)
+            </button>
+        }
+
         @if (_canSeeAll)
         {
             <button type="button" class="chip chip-wide @(string.IsNullOrEmpty(_filter.IdUserSpender) ? "active" : "")"
@@ -38,6 +77,15 @@
                 @(string.IsNullOrEmpty(_filter.IdUserSpender) ? Localize["Everyone"] : Localize["OnlyMine"])
             </button>
         }
+
+        @* Il prospetto stampa l'insieme che si sta guardando, con i filtri applicati: periodo,
+           persona, tipologia. Stampare "tutto" da una pagina filtrata sarebbe un altro documento. *@
+        <button type="button" class="chip chip-wide chip-report" disabled="@_isDownloading"
+                title="Prospetto PDF delle spese filtrate, raggruppate per tipologia"
+                @onclick="DownloadReport">
+            <span class="material-icons">picture_as_pdf</span>
+            @(_isDownloading ? "..." : "Report PDF")
+        </button>
 
         <a href="/ExpenseReceipts/Create" class="btn-new">
             <span class="material-icons">add</span>@Localize["NewExpenseReceipt"]
@@ -100,6 +148,22 @@
             </div>
         }
 
+        @* Lo spaccato per voce di rimborso e' il motivo per cui la tipologia esiste: senza,
+           il totale dice quanto si e' speso ma non in che cosa. *@
+        @if (_summary.ByCategory.Count > 1)
+        {
+            <div class="breakdown">
+                <span class="breakdown-label">Per tipologia:</span>
+                @foreach (var c in _summary.ByCategory)
+                {
+                    <span class="breakdown-item @(c.Category == null ? "breakdown-missing" : "")"
+                          title="@Localize["ExpenseReceiptCount", c.Count]">
+                        @ExpenseCategories.Label(c.Category) <strong>@FormatMoney(c.TotalBase, _summary.BaseCurrency)</strong>
+                    </span>
+                }
+            </div>
+        }
+
         @if (string.IsNullOrEmpty(_filter.IdUserSpender) && _summary.ByUser.Count > 1)
         {
             <div class="breakdown">
@@ -152,6 +216,7 @@
                                 <th>@Localize["Person"]</th>
                             }
                             <th>@Localize["Merchant"]</th>
+                            <th>Tipologia</th>
                             <th>@Localize["Context"]</th>
                             <th class="num">@Localize["Amount"]</th>
                             <th class="num">@Localize["InCurrency", _summary.BaseCurrency]</th>
@@ -169,6 +234,24 @@
                                     <td>@(r.UserSpenderName ?? "—")</td>
                                 }
                                 <td class="merchant">@(r.MerchantName ?? r.Description ?? "—")</td>
+                                <td>
+                                    @if (r.Category.HasValue)
+                                    {
+                                        <span class="category">
+                                            @ExpenseCategories.Label(r.Category)
+                                            @if (r.CategoryIsSuggestion)
+                                            {
+                                                @* Una proposta non confermata si vede: e' la differenza fra
+                                                   un dato e un'ipotesi, e su questo campo cambia la deducibilita'. *@
+                                                <span class="category-suggested" title="@r.CategoryReason">?</span>
+                                            }
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="category category-missing">da indicare</span>
+                                    }
+                                </td>
                                 <td>
                                     @* Il contesto porta dove la spesa e' nata. stopPropagation
                                        serve perche' l'intera riga apre gia' la nota spese: senza,

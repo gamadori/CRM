@@ -84,6 +84,37 @@ namespace CRM.Shared
         public string? Description { get; set; }
 
         /// <summary>
+        /// A che cosa e' stata spesa la somma: vitto, alloggio, trasporti...
+        /// <para>
+        /// Null finche' non e' determinata, e va bene cosi': la tipologia decide il trattamento
+        /// fiscale, quindi un valore inventato costa piu' di un campo vuoto. Fino alla conferma
+        /// e' una PROPOSTA - vedi <see cref="CategorySource"/> - e l'ultima parola resta di chi
+        /// registra la spesa.
+        /// </para>
+        /// </summary>
+        public ExpenseCategory? Category { get; set; }
+
+        /// <summary>
+        /// La tipologia PROPOSTA automaticamente, conservata anche quando poi viene corretta.
+        /// <para>
+        /// E' l'unico modo di sapere se l'automatismo ci prende: confrontandola con
+        /// <see cref="Category"/> dopo la conferma si contano proposte accettate e corrette,
+        /// come si fa gia' con lo smistamento dei ticket.
+        /// </para>
+        /// </summary>
+        public ExpenseCategory? CategorySuggested { get; set; }
+
+        /// <summary>Da dove viene la tipologia in vigore. Null quando non e' indicata.</summary>
+        public ExpenseCategorySource? CategorySource { get; set; }
+
+        /// <summary>Confidenza (0-1) di chi l'ha proposta. Null se l'ha scelta una persona.</summary>
+        public double? CategoryConfidence { get; set; }
+
+        /// <summary>Perche' e' stata proposta quella tipologia: si mostra accanto al campo.</summary>
+        [MaxLength(500)]
+        public string? CategoryReason { get; set; }
+
+        /// <summary>
         /// ID del file attachment contenente lo scontrino/fattura PDF (opzionale)
         /// </summary>
         [ForeignKey("AttachmentFile")]

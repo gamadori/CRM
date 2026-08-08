@@ -20,21 +20,28 @@ namespace CRM.Client.Pages.ExpenseReceipts
         /// <summary>Valorizzato quando si gestisce la spesa dalla scheda dell'attivita'.</summary>
         [Parameter] public int? ActivityId { get; set; }
 
+        /// <summary>Valorizzato quando si arriva dalla cartella spese di un'iniziativa.</summary>
+        [Parameter] public int? InitiativeId { get; set; }
+
         /// <summary>
         /// Radice da cui si e' arrivati. Tenerla in un punto solo e' quello che evita gli
         /// indirizzi con il doppio slash e le pagine da cui non si torna indietro.
         /// </summary>
         private string Root => ActivityId.HasValue
             ? $"/Activities/{ActivityId}"
-            : InterventionId.HasValue
-                ? $"/TicketInterventions/{InterventionId}"
-                : null;
+            : InitiativeId.HasValue
+                ? $"/Initiatives/{InitiativeId}"
+                : InterventionId.HasValue
+                    ? $"/TicketInterventions/{InterventionId}"
+                    : null;
 
         private string ListUrl => ActivityId.HasValue
             ? $"/Activities/{ActivityId}/Info?view=notespese"
-            : Root != null
-                ? $"{Root}/ExpenseReceipts"
-                : "/ExpenseReceipts";
+            : InitiativeId.HasValue
+                ? $"/Initiatives/{InitiativeId}/Info?view=notespese"
+                : Root != null
+                    ? $"{Root}/ExpenseReceipts"
+                    : "/ExpenseReceipts";
 
         private string DetailsUrl => Root != null
             ? $"{Root}/ExpenseReceipts/{ReceiptId}/Details"
@@ -57,6 +64,13 @@ namespace CRM.Client.Pages.ExpenseReceipts
         private string ActivityLabel => string.IsNullOrWhiteSpace(_activitySubject)
             ? $"Attività #{ActivityId}"
             : _activitySubject;
+
+        /// <summary>Nome dell'iniziativa: arriva con la nota spese, senza una seconda chiamata.</summary>
+        private string _initiativeName;
+
+        private string InitiativeLabel => string.IsNullOrWhiteSpace(_initiativeName)
+            ? $"Iniziativa #{InitiativeId}"
+            : _initiativeName;
 
         private bool _isLoading = true;
         private bool _isSaving = false;
@@ -97,6 +111,7 @@ namespace CRM.Client.Pages.ExpenseReceipts
                 }
 
                 _activitySubject = receipt.ActivitySubject;
+                _initiativeName = receipt.InitiativeName;
 
                 _model = new ExpenseReceiptCreateUpdateDTO
                 {
@@ -116,6 +131,16 @@ namespace CRM.Client.Pages.ExpenseReceipts
                     TransactionDate = receipt.TransactionDate,
                     MerchantName = receipt.MerchantName,
                     Currency = receipt.Currency,
+
+                    // Tipologia e provenienza tornano indietro come sono: il server distingue una
+                    // conferma da una correzione confrontandole, e ometterle qui trasformerebbe
+                    // ogni salvataggio in una scelta manuale, falsando la misura dell'automatismo.
+                    Category = receipt.Category,
+                    CategorySuggested = receipt.CategorySuggested,
+                    CategorySource = receipt.CategorySource,
+                    CategoryConfidence = receipt.CategoryConfidence,
+                    CategoryReason = receipt.CategoryReason,
+
                     Notes = receipt.Notes,
                     IsConfirmed = receipt.IsConfirmed,
                     ExtractionConfidence = receipt.ExtractionConfidence,
@@ -172,6 +197,29 @@ namespace CRM.Client.Pages.ExpenseReceipts
             }
         }
 
+        /// <summary>
+        /// Tipologia proposta per un documento: e' quella che c'e' finche' nessuno la tocca.
+        /// Toccata, la provenienza diventa manuale e non c'e' piu' nessuna proposta da mostrare.
+        /// </summary>
+        private static ExpenseCategory? DocumentSuggestion(ExpenseReceiptDocumentDTO document) =>
+            document.CategorySource == ExpenseCategorySource.Manual ? null : document.Category;
+
+        private void OnCategoryChanged(ExpenseCategory? category)
+        {
+            _model.Category = category;
+            _model.CategorySource = category.HasValue ? ExpenseCategorySource.Manual : null;
+            _model.CategoryConfidence = null;
+            _model.CategoryReason = null;
+        }
+
+        private static void OnDocumentCategoryChanged(ExpenseReceiptDocumentDTO document, ExpenseCategory? category)
+        {
+            document.Category = category;
+            document.CategorySource = category.HasValue ? ExpenseCategorySource.Manual : null;
+            document.CategoryConfidence = null;
+            document.CategoryReason = null;
+        }
+
         private void AddLine(ExpenseReceiptDocumentDTO document)
         {
             document.Lines ??= new();
@@ -216,6 +264,26 @@ namespace CRM.Client.Pages.ExpenseReceipts
             _model.MerchantName = _documentResults.Count == 1
                 ? _documentResults[0].MerchantName
                 : $"{_documentResults.Count} documenti fiscali";
+
+            // La tipologia della testata la fanno i documenti, che sono quelli che si modificano
+            // qui. Con documenti che dicono cose diverse la testata non ne ha una: dichiararne
+            // una sola direbbe il falso sugli altri.
+            var categories = _documentResults.Select(document => document.Category).Distinct().ToList();
+            if (categories.Count == 1)
+            {
+                var document = _documentResults[0];
+                _model.Category = document.Category;
+                _model.CategorySource = document.CategorySource;
+                _model.CategoryConfidence = document.CategoryConfidence;
+                _model.CategoryReason = document.CategoryReason;
+            }
+            else
+            {
+                _model.Category = null;
+                _model.CategorySource = null;
+                _model.CategoryConfidence = null;
+                _model.CategoryReason = null;
+            }
         }
 
         private static decimal? SumNullable(IEnumerable<decimal?> values)

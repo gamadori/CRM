@@ -123,6 +123,19 @@
                                 </div>
                             }
 
+                            @* Tipologia: e' una deduzione, non un dato letto, e va detto perche'
+                               qui non c'e' nessun campo in cui correggerla. *@
+                            <div class="col-md-4">
+                                <div class="result-card">
+                                    <label class="result-label">🏷️ Tipologia</label>
+                                    <div class="result-value">@ExpenseCategories.Label(_extractionResult.SuggestedCategory)</div>
+                                    @if (!string.IsNullOrWhiteSpace(_extractionResult.CategoryReason))
+                                    {
+                                        <small class="text-muted">@_extractionResult.CategoryReason</small>
+                                    }
+                                </div>
+                            </div>
+
                             @if (_extractionResult.SubtotalAmount.HasValue)
                             {
                                 <div class="col-md-4">

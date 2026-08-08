@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  Primo piano dell'icona: il biglietto da visita, che e' quello che l'app fa.
+
+  Sfondo trasparente e disegno centrato: e' il livello che Android muove rispetto allo sfondo
+  nell'effetto di profondita' delle icone adattive, e che ForegroundScale rimpicciolisce per
+  tenerlo dentro la zona che nessuna maschera ritaglia.
+-->
+<svg width="456" height="456" viewBox="0 0 456 456" xmlns="http://www.w3.org/2000/svg">
+  <!-- Il cartoncino -->
+  <rect x="78" y="121" width="300" height="214" rx="36" fill="#FFFFFF"/>
+
+  <!-- Il nome, in evidenza: e' il campo che si legge per primo su un biglietto -->
+  <rect x="121" y="171" width="128" height="28" rx="14" fill="#0F766E"/>
+
+  <!-- Le righe secondarie (azienda, contatti) -->
+  <rect x="121" y="228" width="214" height="21" rx="10" fill="#94A3B8"/>
+  <rect x="121" y="271" width="150" height="21" rx="10" fill="#94A3B8"/>
+</svg>

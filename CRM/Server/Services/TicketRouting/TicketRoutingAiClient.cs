@@ -1,7 +1,10 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using Anthropic;
 using Anthropic.Models.Messages;
+using CRM.Server.Services.Usage;
+using CRM.Shared;
 
 namespace CRM.Server.Services.TicketRouting
 {
@@ -15,11 +18,13 @@ namespace CRM.Server.Services.TicketRouting
         private const int MaxDescriptionChars = 4000;
 
         private readonly ILogger<TicketRoutingAiClient> _logger;
+        private readonly IUsageRecorder _usage;
         private readonly AnthropicClient? _client;
 
-        public TicketRoutingAiClient(IConfiguration configuration, ILogger<TicketRoutingAiClient> logger)
+        public TicketRoutingAiClient(IConfiguration configuration, ILogger<TicketRoutingAiClient> logger, IUsageRecorder usage)
         {
             _logger = logger;
+            _usage = usage;
 
             var apiKey = configuration["Anthropic:ApiKey"];
             Model = configuration["Anthropic:ChatModel"] ?? "claude-opus-4-8";
@@ -37,11 +42,15 @@ namespace CRM.Server.Services.TicketRouting
             if (_client == null || request.Candidates.Count == 0)
                 return null;
 
+            // Il modello effettivo, non quello di default: e' quello che finisce a listino.
+            var model = string.IsNullOrWhiteSpace(modelOverride) ? Model : modelOverride!;
+            var stopwatch = Stopwatch.StartNew();
+
             try
             {
                 var response = await _client.Messages.Create(new MessageCreateParams
                 {
-                    Model = string.IsNullOrWhiteSpace(modelOverride) ? Model : modelOverride!,
+                    Model = model,
                     MaxTokens = 400,
                     System = BuildSystemPrompt(),
                     OutputConfig = new OutputConfig { Effort = Effort.Medium },
@@ -50,6 +59,10 @@ namespace CRM.Server.Services.TicketRouting
                         new() { Role = Role.User, Content = BuildUserPrompt(request) }
                     },
                 });
+
+                await _usage.RecordTokensAsync(
+                    ExternalServiceFeature.TicketRouting, model, response.TokenUsageOf(),
+                    true, stopwatch.ElapsedMilliseconds);
 
                 var text = string.Concat(
                     response.Content

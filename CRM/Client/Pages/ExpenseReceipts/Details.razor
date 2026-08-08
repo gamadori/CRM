@@ -1,6 +1,10 @@
 ﻿@page "/TicketInterventions/{InterventionId:int}/ExpenseReceipts/{ReceiptId:int}/Details"
 @* Gestita dalla scheda dell'attivita': il ritorno e il breadcrumb restano sull'attivita'. *@
 @page "/Activities/{ActivityId:int}/ExpenseReceipts/{ReceiptId:int}/Details"
+@* Aperta dalla cartella spese di una fiera o di una trasferta: l'iniziativa resta nel percorso
+   fino a qui, cosi' il breadcrumb riporta sempre alla sua scheda invece di lasciare la spesa
+   senza strada di ritorno. *@
+@page "/Initiatives/{InitiativeId:int}/ExpenseReceipts/{ReceiptId:int}/Details"
 @* Senza contesto nel percorso: una spesa che un intervento non ce l'ha era invisibile, perche'
    non esisteva un indirizzo a cui guardarla. *@
 @page "/ExpenseReceipts/{ReceiptId:int}/Details"
@@ -163,6 +167,8 @@ else
                                     <dl class="row mb-0 small">
                                         <dt class="col-5 text-muted fw-normal">@Localize["Date"]</dt>
                                         <dd class="col-7 mb-1">@(document.TransactionDate?.ToString("dd/MM/yyyy") ?? Localize["NotDetected"])</dd>
+                                        <dt class="col-5 text-muted fw-normal">Tipologia</dt>
+                                        <dd class="col-7 mb-1">@ExpenseCategories.Label(document.Category)</dd>
                                         @if (document.TaxAmount.HasValue)
                                         {
                                             <dt class="col-5 text-muted fw-normal">@Localize["Tax"]</dt>
@@ -261,6 +267,34 @@ else
                                             else
                                             {
                                                 <strong>@ContextText</strong>
+                                            }
+                                        </td>
+                                    </tr>
+
+                                    @* Voce di rimborso: e' quella che determina la deducibilita', quindi
+                                       si dice sempre - anche quando manca, e soprattutto quando e' solo
+                                       una proposta che nessuno ha ancora confermato. *@
+                                    <tr>
+                                        <td class="text-muted">
+                                            <i class="material-icons align-middle" style="font-size:18px;">sell</i>
+                                            Tipologia
+                                        </td>
+                                        <td>
+                                            @if (_receipt.Category.HasValue)
+                                            {
+                                                <strong>@ExpenseCategories.Label(_receipt.Category)</strong>
+                                                @if (_receipt.CategoryIsSuggestion)
+                                                {
+                                                    <span class="badge bg-info-subtle text-info-emphasis ms-1">proposta, da confermare</span>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(_receipt.CategoryReason))
+                                                {
+                                                    <div class="small text-muted">@_receipt.CategoryReason</div>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="text-warning-emphasis">Da indicare</span>
                                             }
                                         </td>
                                     </tr>

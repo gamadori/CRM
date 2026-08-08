@@ -62,6 +62,47 @@ namespace CRM.Server.Services
             receipt.AmountBase = Math.Round(receipt.TotalAmount.Value * rate.Value, 2, MidpointRounding.AwayFromZero);
         }
 
+        /// <summary>
+        /// Fissa tipologia e provenienza sulla spesa.
+        /// <para>
+        /// La provenienza NON si prende da quello che dichiara il client: la si deduce qui,
+        /// confrontando la scelta arrivata con la proposta registrata. E' l'unica cosa che
+        /// permette di sapere se l'automatismo ci prende davvero - se il client potesse dire
+        /// "l'ho scelta io l'AI", accettazioni e correzioni si confonderebbero e la misura non
+        /// varrebbe niente.
+        /// </para>
+        /// <para>
+        /// La proposta invece si conserva anche quando viene corretta: e' il termine di paragone.
+        /// </para>
+        /// </summary>
+        private static void ApplyCategory(ExpenseReceipt receipt, ExpenseReceiptCreateUpdateDTO dto)
+        {
+            receipt.CategorySuggested = dto.CategorySuggested ?? receipt.CategorySuggested;
+            receipt.Category = dto.Category;
+
+            if (dto.Category == null)
+            {
+                receipt.CategorySource = null;
+                receipt.CategoryConfidence = null;
+                receipt.CategoryReason = null;
+                return;
+            }
+
+            // Confermare la proposta lascia la provenienza automatica: serve a distinguerla, in
+            // elenco e nelle statistiche, da una tipologia scelta a mano fin dall'inizio.
+            var confirmsSuggestion =
+                receipt.CategorySuggested == dto.Category
+                && dto.CategorySource is not null
+                && dto.CategorySource != ExpenseCategorySource.Manual;
+
+            receipt.CategorySource = confirmsSuggestion ? dto.CategorySource : ExpenseCategorySource.Manual;
+            receipt.CategoryConfidence = confirmsSuggestion ? dto.CategoryConfidence : null;
+            receipt.CategoryReason = confirmsSuggestion ? Truncate(dto.CategoryReason, 500) : null;
+        }
+
+        private static string? Truncate(string? value, int maxLength) =>
+            string.IsNullOrEmpty(value) || value.Length <= maxLength ? value : value.Substring(0, maxLength);
+
         public async Task<List<ExpenseReceiptDTO>> GetByInterventionIdAsync(int interventionId)
         {
             var receipts = await _context.ExpenseReceipts
@@ -108,6 +149,47 @@ namespace CRM.Server.Services
         }
 
         /// <summary>
+        /// Le spese di un'iniziativa passano da <see cref="BuildQuery"/> e non da una query nuova:
+        /// e' quello che le fa vedere con lo stesso vincolo di visibilita' dell'elenco generale.
+        /// Nessuna paginazione, perche' questa e' una cartella e non un elenco da sfogliare.
+        /// </summary>
+        private IQueryable<ExpenseReceipt> InitiativeQuery(int initiativeId, string restrictToUserId)
+            => BuildQuery(new ExpenseReceiptFilter { IdInitiative = initiativeId }, restrictToUserId);
+
+        public async Task<List<ExpenseReceiptDTO>> GetByInitiativeIdAsync(int initiativeId, string restrictToUserId)
+        {
+            var receipts = await InitiativeQuery(initiativeId, restrictToUserId)
+                .OrderByDescending(er => er.TransactionDate ?? er.CreatedDate)
+                .ThenByDescending(er => er.Id)
+                .ToListAsync();
+
+            return receipts.Select(MapToDTO).ToList();
+        }
+
+        public async Task<ExpenseReceiptSummaryDTO> GetSummaryByInitiativeIdAsync(int initiativeId, string restrictToUserId)
+        {
+            var receipts = await InitiativeQuery(initiativeId, restrictToUserId).ToListAsync();
+
+            var summary = await BuildOwnerSummaryAsync(receipts);
+
+            // Lo spaccato per persona e' il senso della cartella di una trasferta: dice a chi va
+            // rimborsato cosa, che e' la domanda per cui esiste.
+            summary.ByUser = receipts
+                .GroupBy(r => new { r.IdUserSpender, Name = r.UserSpender != null ? r.UserSpender.NameComplete : null })
+                .Select(g => new ExpenseUserBreakdownDTO
+                {
+                    IdUser = g.Key.IdUserSpender,
+                    UserName = g.Key.Name,
+                    Count = g.Count(),
+                    TotalBase = g.Where(r => r.AmountBase.HasValue).Sum(r => r.AmountBase.Value)
+                })
+                .OrderByDescending(x => x.TotalBase)
+                .ToList();
+
+            return summary;
+        }
+
+        /// <summary>
         /// Riepilogo delle spese di un singolo contenitore (intervento o attivita').
         /// <para>
         /// I totali sommano <c>AmountBase</c>, non l'importo originale: sommare importi in valute
@@ -134,7 +216,9 @@ namespace CRM.Server.Services
                     .Sum(r => Math.Round(r.TaxAmount.Value * r.ExchangeRate.Value, 2, MidpointRounding.AwayFromZero)),
 
                 NeedsConversionCount = receipts.Count(r => r.TotalAmount.HasValue && !r.AmountBase.HasValue),
-                BaseCurrency = await GetBaseCurrencyAsync()
+                BaseCurrency = await GetBaseCurrencyAsync(),
+                ByCategory = BuildCategoryBreakdown(receipts),
+                MissingCategoryCount = receipts.Count(r => r.Category == null)
             };
         }
 
@@ -190,8 +274,22 @@ namespace CRM.Server.Services
             if (filter.IdInitiative.HasValue)
                 query = query.Where(er => er.IdInitiative == filter.IdInitiative.Value);
 
+            // Il singolo contenitore: serve al prospetto stampato da dentro un intervento o una
+            // visita, che cosi' passa da qui come tutto il resto.
+            if (filter.TicketInterventionId.HasValue)
+                query = query.Where(er => er.TicketInterventionId == filter.TicketInterventionId.Value);
+
+            if (filter.IdActivity.HasValue)
+                query = query.Where(er => er.IdActivity == filter.IdActivity.Value);
+
             if (filter.IsConfirmed.HasValue)
                 query = query.Where(er => er.IsConfirmed == filter.IsConfirmed.Value);
+
+            if (filter.Category.HasValue)
+                query = query.Where(er => er.Category == filter.Category.Value);
+
+            if (filter.MissingCategory == true)
+                query = query.Where(er => er.Category == null);
 
             if (filter.NeedsConversion == true)
                 query = query.Where(er => er.TotalAmount != null && er.AmountBase == null);
@@ -276,8 +374,237 @@ namespace CRM.Server.Services
                         TotalBase = g.Where(r => r.AmountBase.HasValue).Sum(r => r.AmountBase.Value)
                     })
                     .OrderByDescending(x => x.TotalBase)
-                    .ToList()
+                    .ToList(),
+
+                ByCategory = BuildCategoryBreakdown(receipts),
+                MissingCategoryCount = receipts.Count(r => r.Category == null)
             };
+        }
+
+        /// <summary>
+        /// Spaccato per voce di rimborso. Le spese senza tipologia restano nell'elenco, in fondo:
+        /// nasconderle darebbe uno spaccato che non somma al totale, e proprio quel gruppo e'
+        /// quello su cui c'e' da lavorare prima di chiudere un rimborso.
+        /// </summary>
+        private static List<ExpenseCategoryBreakdownDTO> BuildCategoryBreakdown(List<ExpenseReceipt> receipts) =>
+            receipts
+                .GroupBy(r => r.Category)
+                .Select(g => new ExpenseCategoryBreakdownDTO
+                {
+                    Category = g.Key,
+                    Count = g.Count(),
+                    TotalBase = g.Where(r => r.AmountBase.HasValue).Sum(r => r.AmountBase.Value)
+                })
+                .OrderBy(x => x.Category == null)
+                .ThenByDescending(x => x.TotalBase)
+                .ToList();
+
+        /// <summary>
+        /// Prepara il prospetto delle note spese raggruppate per tipologia.
+        /// <para>
+        /// I conti si fanno qui e non nel generatore PDF: se li facesse la stampa, i totali sulla
+        /// carta e quelli a schermo potrebbero divergere senza che nessuno se ne accorga. E si
+        /// passa da <see cref="BuildQuery"/>, quindi il prospetto vede esattamente quello che vede
+        /// l'elenco - stesso filtro, stesso vincolo di visibilita'.
+        /// </para>
+        /// </summary>
+        public async Task<ExpenseReportData> BuildReportDataAsync(
+            ExpenseReceiptFilter filter, string restrictToUserId)
+        {
+            var receipts = await BuildQuery(filter, restrictToUserId)
+                .OrderBy(er => er.TransactionDate ?? er.CreatedDate)
+                .ThenBy(er => er.Id)
+                .ToListAsync();
+
+            var baseCurrency = await GetBaseCurrencyAsync();
+
+            var data = new ExpenseReportData
+            {
+                BaseCurrency = baseCurrency,
+                RowCount = receipts.Count,
+                PartialView = !string.IsNullOrWhiteSpace(restrictToUserId),
+                NeedsConversionCount = receipts.Count(r => r.TotalAmount.HasValue && !r.AmountBase.HasValue),
+                TotalBase = receipts.Where(r => r.AmountBase.HasValue).Sum(r => r.AmountBase!.Value),
+
+                // L'imposta segue il cambio congelato del suo importo: convertirla con un altro
+                // cambio la scollegherebbe dal totale di cui fa parte.
+                TotalTaxBase = receipts
+                    .Where(r => r.AmountBase.HasValue && r.TaxAmount.HasValue && r.ExchangeRate.HasValue)
+                    .Sum(r => Math.Round(r.TaxAmount!.Value * r.ExchangeRate!.Value, 2, MidpointRounding.AwayFromZero)),
+
+                // La colonna "Persona" ha senso solo se ce n'e' piu' d'una: su un intervento con
+                // un tecnico solo sarebbe la stessa parola ripetuta a ogni riga.
+                ShowSpender = receipts.Select(r => r.IdUserSpender).Distinct().Count() > 1
+            };
+
+            data.Groups = receipts
+                .GroupBy(r => r.Category)
+                .Select(g => new ExpenseReportGroup
+                {
+                    Category = g.Key,
+                    Label = ExpenseCategories.Label(g.Key),
+                    TotalBase = g.Where(r => r.AmountBase.HasValue).Sum(r => r.AmountBase!.Value),
+                    NeedsConversionCount = g.Count(r => r.TotalAmount.HasValue && !r.AmountBase.HasValue),
+                    Rows = g.Select(ToReportRow).ToList()
+                })
+                // Le spese senza tipologia restano in fondo, ma restano: nasconderle darebbe un
+                // prospetto che non somma al totale.
+                .OrderBy(x => x.Category == null)
+                .ThenByDescending(x => x.TotalBase)
+                .ToList();
+
+            await FillReportHeaderAsync(data, filter, receipts);
+
+            return data;
+        }
+
+        private static ExpenseReportRow ToReportRow(ExpenseReceipt receipt) => new()
+        {
+            Date = receipt.TransactionDate ?? receipt.CreatedDate,
+            SpenderName = receipt.UserSpender?.NameComplete ?? string.Empty,
+            MerchantName = string.IsNullOrWhiteSpace(receipt.MerchantName)
+                ? (receipt.Description ?? string.Empty)
+                : receipt.MerchantName,
+            Context = DescribeContext(receipt),
+            Amount = receipt.TotalAmount,
+            Currency = receipt.Currency ?? string.Empty,
+            AmountBase = receipt.AmountBase,
+            IsConfirmed = receipt.IsConfirmed
+        };
+
+        /// <summary>Da dove nasce la spesa, in una parola: e' la colonna che rende verificabile una riga.</summary>
+        private static string DescribeContext(ExpenseReceipt receipt)
+        {
+            if (receipt.TicketInterventionId != null)
+                return $"Intervento #{receipt.TicketInterventionId}";
+
+            if (receipt.Activity != null)
+                return receipt.Activity.Subject ?? $"Attivita #{receipt.IdActivity}";
+
+            if (receipt.Initiative != null)
+                return receipt.Initiative.Name ?? $"Iniziativa #{receipt.IdInitiative}";
+
+            return "Costo generale";
+        }
+
+        /// <summary>
+        /// Intestazione del prospetto: di che cosa e', di chi e di quando. Sono le domande a cui
+        /// un foglio stampato deve rispondere da solo, perche' sul tavolo del commercialista non
+        /// c'e' la pagina da cui e' uscito.
+        /// </summary>
+        private async Task FillReportHeaderAsync(
+            ExpenseReportData data, ExpenseReceiptFilter filter, List<ExpenseReceipt> receipts)
+        {
+            if (filter.TicketInterventionId.HasValue)
+                data.Title = $"Intervento #{filter.TicketInterventionId}";
+            else if (filter.IdActivity.HasValue)
+                data.Title = receipts.FirstOrDefault(r => r.Activity != null)?.Activity?.Subject
+                             ?? $"Attivita #{filter.IdActivity}";
+            else if (filter.IdInitiative.HasValue)
+                data.Title = receipts.FirstOrDefault(r => r.Initiative != null)?.Initiative?.Name
+                             ?? $"Iniziativa #{filter.IdInitiative}";
+            else
+                data.Title = "Elenco note spese";
+
+            data.Context.Add(DescribePeriod(filter));
+
+            if (!string.IsNullOrWhiteSpace(filter.IdUserSpender))
+            {
+                var name = receipts.FirstOrDefault(r => r.IdUserSpender == filter.IdUserSpender)?.UserSpender?.NameComplete
+                           ?? await _context.Users.AsNoTracking()
+                               .Where(u => u.Id == filter.IdUserSpender)
+                               .Select(u => u.NameComplete)
+                               .FirstOrDefaultAsync();
+
+                data.Context.Add($"Persona: {name ?? filter.IdUserSpender}");
+            }
+
+            if (filter.Category.HasValue)
+                data.Context.Add($"Tipologia: {ExpenseCategories.Label(filter.Category)}");
+
+            if (filter.MissingCategory == true)
+                data.Context.Add("Solo spese senza tipologia");
+
+            if (filter.NeedsConversion == true)
+                data.Context.Add("Solo spese da convertire");
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+                data.Context.Add($"Ricerca: {filter.Search}");
+
+            data.Provider = await _context.GetHeadCompanyAsync();
+            data.LogoBytes = await LoadReportLogoAsync();
+            data.FileName = BuildFileName(data.Title);
+        }
+
+        private static string DescribePeriod(ExpenseReceiptFilter filter)
+        {
+            if (filter.DateFrom.HasValue && filter.DateTo.HasValue)
+                return $"Periodo: dal {filter.DateFrom:dd/MM/yyyy} al {filter.DateTo:dd/MM/yyyy}";
+
+            if (filter.DateFrom.HasValue)
+                return $"Periodo: dal {filter.DateFrom:dd/MM/yyyy}";
+
+            if (filter.DateTo.HasValue)
+                return $"Periodo: fino al {filter.DateTo:dd/MM/yyyy}";
+
+            return "Periodo: tutte le date";
+        }
+
+        private async Task<byte[]> LoadReportLogoAsync()
+        {
+            var logoId = await _context.GlobalSettings
+                .AsNoTracking()
+                .OrderBy(g => g.Id)
+                .Select(g => g.LogoReport)
+                .FirstOrDefaultAsync();
+
+            if (logoId == null)
+                return null;
+
+            var inputFile = await _context.Logos.AsNoTracking()
+                .Where(l => l.Id == logoId.Value)
+                .Select(l => l.InputFile)
+                .FirstOrDefaultAsync();
+
+            if (string.IsNullOrWhiteSpace(inputFile))
+                return null;
+
+            try
+            {
+                var base64 = inputFile.Contains(',') ? inputFile.Split(',')[1] : inputFile;
+                var bytes = Convert.FromBase64String(base64);
+
+                if (bytes.Length <= 8)
+                    return null;
+
+                // QuestPDF accetta PNG e JPEG: passargli altro fa fallire l'intera generazione,
+                // e un prospetto che non esce e' peggio di un prospetto senza logo.
+                var isPng = bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47;
+                var isJpeg = bytes[0] == 0xFF && bytes[1] == 0xD8;
+
+                return isPng || isJpeg ? bytes : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Nome file leggibile e valido: il titolo ripulito di quello che il filesystem rifiuta.</summary>
+        private static string BuildFileName(string title)
+        {
+            var clean = new string((title ?? string.Empty)
+                .Select(c => char.IsLetterOrDigit(c) ? c : '-')
+                .ToArray())
+                .Trim('-');
+
+            while (clean.Contains("--"))
+                clean = clean.Replace("--", "-");
+
+            if (string.IsNullOrWhiteSpace(clean))
+                clean = "note-spese";
+
+            return $"NoteSpese-{clean}-{DateTime.Now:yyyyMMdd}.pdf";
         }
 
         public async Task<ExpenseReceiptDTO> GetByIdAsync(int id)
@@ -320,6 +647,8 @@ namespace CRM.Server.Services
                 Documents = (dto.Documents ?? new()).Select(ToEntity).ToList(),
                 CreatedDate = DateTime.UtcNow
             };
+
+            ApplyCategory(receipt, dto);
 
             if (dto.IsConfirmed)
             {
@@ -368,6 +697,20 @@ namespace CRM.Server.Services
                     IsConfirmed = dto.IsConfirmed,
                     ExtractionConfidence = document.ExtractionConfidence,
                     ExtractedFieldsJson = dto.ExtractedFieldsJson,
+
+                    // La tipologia e' del singolo documento, non del file: nello stesso PDF ci
+                    // stanno il pieno di benzina e la cena, e ognuno porta la sua sulla nota
+                    // spese che ne nasce. Una tipologia gia' corretta a mano nella maschera non
+                    // vale come proposta, altrimenti risulterebbe che l'automatismo ci aveva
+                    // preso proprio dove era stato corretto.
+                    Category = document.Category,
+                    CategorySuggested = document.CategorySource == ExpenseCategorySource.Manual
+                        ? null
+                        : document.Category,
+                    CategorySource = document.CategorySource,
+                    CategoryConfidence = document.CategoryConfidence,
+                    CategoryReason = document.CategoryReason,
+
                     Documents = new List<ExpenseReceiptDocumentDTO> { document }
                 };
 
@@ -403,6 +746,8 @@ namespace CRM.Server.Services
             receipt.Notes = dto.Notes;
             receipt.ExtractedFieldsJson = dto.ExtractedFieldsJson ?? receipt.ExtractedFieldsJson;
             receipt.LastModifiedDate = DateTime.UtcNow;
+
+            ApplyCategory(receipt, dto);
 
             SyncDocuments(receipt, dto.Documents);
 
@@ -473,6 +818,15 @@ namespace CRM.Server.Services
                 // va scelto, altrimenti uno scontrino estero verrebbe convertito come se fosse
                 // in euro, cioe' per niente.
                 Currency = extractionResult.Currency,
+
+                // Tipologia PROPOSTA, non decisa: la spesa nasce da confermare (IsConfirmed resta
+                // false qui sotto) e la voce di rimborso e' uno dei dati che si confermano.
+                Category = extractionResult.SuggestedCategory,
+                CategorySuggested = extractionResult.SuggestedCategory,
+                CategorySource = extractionResult.SuggestedCategory.HasValue ? extractionResult.CategorySource : null,
+                CategoryConfidence = extractionResult.SuggestedCategory.HasValue ? extractionResult.CategoryConfidence : null,
+                CategoryReason = Truncate(extractionResult.CategoryReason, 500),
+
                 ExtractionConfidence = extractionResult.AverageConfidence,
                 ExtractedFieldsJson = System.Text.Json.JsonSerializer.Serialize(extractionResult),
                 ProcessedDate = DateTime.UtcNow,
@@ -513,6 +867,11 @@ namespace CRM.Server.Services
                 TransactionDate = receipt.TransactionDate,
                 MerchantName = receipt.MerchantName,
                 Currency = receipt.Currency,
+                Category = receipt.Category,
+                CategorySuggested = receipt.CategorySuggested,
+                CategorySource = receipt.CategorySource,
+                CategoryConfidence = receipt.CategoryConfidence,
+                CategoryReason = receipt.CategoryReason,
                 ExtractionConfidence = receipt.ExtractionConfidence,
                 ExtractedFieldsJson = receipt.ExtractedFieldsJson,
                 ProcessedDate = receipt.ProcessedDate,
@@ -532,6 +891,10 @@ namespace CRM.Server.Services
                         PageTo = document.PageTo,
                         DocumentType = document.DocumentType,
                         MerchantName = document.MerchantName,
+                        Category = document.Category,
+                        CategorySource = document.CategorySource,
+                        CategoryConfidence = document.CategoryConfidence,
+                        CategoryReason = document.CategoryReason,
                         TransactionDate = document.TransactionDate,
                         Currency = document.Currency,
                         SubtotalAmount = document.SubtotalAmount,
@@ -641,6 +1004,10 @@ namespace CRM.Server.Services
             document.PageTo = dto.PageTo;
             document.DocumentType = dto.DocumentType;
             document.MerchantName = dto.MerchantName;
+            document.Category = dto.Category;
+            document.CategorySource = dto.Category.HasValue ? dto.CategorySource : null;
+            document.CategoryConfidence = dto.Category.HasValue ? dto.CategoryConfidence : null;
+            document.CategoryReason = dto.Category.HasValue ? Truncate(dto.CategoryReason, 500) : null;
             document.TransactionDate = dto.TransactionDate;
             document.Currency = dto.Currency;
             document.SubtotalAmount = dto.SubtotalAmount;
@@ -676,6 +1043,17 @@ namespace CRM.Server.Services
                 .Select(document => document.TransactionDate)
                 .Min();
             receipt.MerchantName = $"{documents.Count} documenti fiscali";
+
+            // La testata prende la tipologia solo se i documenti vanno d'accordo: se nello stesso
+            // file ci sono il pieno e la cena, dichiararne una sola direbbe il falso sull'altra.
+            var categories = documents.Select(document => document.Category).Distinct().ToList();
+            if (categories.Count > 1)
+            {
+                receipt.Category = null;
+                receipt.CategorySource = null;
+                receipt.CategoryConfidence = null;
+                receipt.CategoryReason = null;
+            }
 
             var allTotalsConverted = documents.All(document =>
                 document.TotalAmount.HasValue && document.AmountBase.HasValue);
@@ -723,6 +1101,17 @@ namespace CRM.Server.Services
                 ? document.Currency
                 : receipt.Currency;
             document.ExchangeRate = receipt.ExchangeRate ?? document.ExchangeRate;
+
+            // Vince la testata, SEMPRE - anche quando e' vuota, ed e' l'unico campo in cui questa
+            // differenza conta. Il documento conserva la tipologia letta dall'OCR; la maschera a
+            // documento singolo modifica solo la testata. Se il documento potesse riempire una
+            // testata vuota, togliere una tipologia sbagliata non funzionerebbe: sparirebbe dal
+            // modulo e tornerebbe al salvataggio, che e' il modo migliore per far perdere fiducia
+            // in un campo.
+            document.Category = receipt.Category;
+            document.CategorySource = receipt.CategorySource;
+            document.CategoryConfidence = receipt.CategoryConfidence;
+            document.CategoryReason = receipt.CategoryReason;
 
             await ApplyDocumentConversionAsync(document, baseCurrency);
 
@@ -790,6 +1179,10 @@ namespace CRM.Server.Services
                 PageTo = document.PageTo,
                 DocumentType = document.DocumentType,
                 MerchantName = document.MerchantName,
+                Category = document.SuggestedCategory,
+                CategorySource = document.CategorySource,
+                CategoryConfidence = document.CategoryConfidence,
+                CategoryReason = document.CategoryReason,
                 TransactionDate = document.TransactionDate,
                 Currency = document.Currency,
                 SubtotalAmount = document.SubtotalAmount,

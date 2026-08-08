@@ -17,7 +17,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <MauiIcon Include="Resources\AppIcon\appicon.svg" Color="#0F766E" />
+    <!--
+      Icona composta: sfondo + primo piano. E' la forma che genera l'icona ADATTIVA di Android,
+      quella che il launcher puo' ritagliare tonda, quadrata o a goccia; con un livello solo il
+      disegno viene tagliato ai bordi. ForegroundScale lo riduce al 65% perche' la maschera puo'
+      mangiare fino a un terzo del bordo.
+
+      Color NON e' facoltativo: senza un colore di sfondo iOS considera l'icona trasparente e
+      App Store Connect rifiuta il caricamento del pacchetto.
+    -->
+    <MauiIcon Include="Resources\AppIcon\appicon.svg"
+              ForegroundFile="Resources\AppIcon\appiconfg.svg"
+              ForegroundScale="0.65"
+              Color="#0F766E" />
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0F766E" BaseSize="128,128" />
     <MauiImage Include="Resources\Images\*" />
     <MauiFont Include="Resources\Fonts\*" />

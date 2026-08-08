@@ -1,5 +1,7 @@
 using Azure;
 using Azure.AI.FormRecognizer.DocumentAnalysis;
+using CRM.Server.Services.Usage;
+using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -26,11 +28,13 @@ namespace CRM.Server.Services
         private const string BusinessCardModel = "prebuilt-businessCard";
 
         private readonly ILogger<AzureBusinessCardAnalyzer> _logger;
+        private readonly IUsageRecorder _usage;
         private readonly DocumentAnalysisClient? _client;
 
-        public AzureBusinessCardAnalyzer(ILogger<AzureBusinessCardAnalyzer> logger, IConfiguration configuration)
+        public AzureBusinessCardAnalyzer(ILogger<AzureBusinessCardAnalyzer> logger, IConfiguration configuration, IUsageRecorder usage)
         {
             _logger = logger;
+            _usage = usage;
 
             var endpoint = configuration["AzureFormRecognizer:Endpoint"];
             var apiKey = configuration["AzureFormRecognizer:ApiKey"];
@@ -52,6 +56,13 @@ namespace CRM.Server.Services
             {
                 using var stream = new MemoryStream(fileBytes);
                 var operation = await _client.AnalyzeDocumentAsync(WaitUntil.Completed, BusinessCardModel, stream);
+
+                // Un biglietto e' una foto, una pagina: si paga anche quando non ne esce niente,
+                // quindi si registra prima di controllare l'esito.
+                await _usage.RecordUnitsAsync(
+                    ExternalServiceProvider.Azure, ExternalServiceFeature.BusinessCardOcr, BusinessCardModel,
+                    Math.Max(1, operation.Value.Pages.Count), true, stopwatch.ElapsedMilliseconds);
+
                 var document = operation.Value.Documents.FirstOrDefault();
 
                 if (document == null)

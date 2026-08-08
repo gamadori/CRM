@@ -1,9 +1,11 @@
 using Anthropic;
 using Anthropic.Models.Messages;
 using CRM.Server.Data;
+using CRM.Server.Services.Usage;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 using System.Text;
 
 namespace CRM.Server.Services
@@ -17,6 +19,7 @@ namespace CRM.Server.Services
         private readonly IPermitsService _permitsService;
         private readonly ITicketsService _ticketsService;
         private readonly ILogger<TicketSummaryService> _logger;
+        private readonly IUsageRecorder _usage;
         private readonly AnthropicClient? _client;
         private readonly string _model;
 
@@ -25,12 +28,14 @@ namespace CRM.Server.Services
             IPermitsService permitsService,
             ITicketsService ticketsService,
             IConfiguration configuration,
-            ILogger<TicketSummaryService> logger)
+            ILogger<TicketSummaryService> logger,
+            IUsageRecorder usage)
         {
             _context = context;
             _permitsService = permitsService;
             _ticketsService = ticketsService;
             _logger = logger;
+            _usage = usage;
 
             var apiKey = configuration["Anthropic:ApiKey"];
             _model = configuration["Anthropic:ChatModel"] ?? "claude-opus-4-8";
@@ -125,6 +130,8 @@ namespace CRM.Server.Services
 
         private async Task<string?> GenerateWithAiAsync(Ticket ticket, IReadOnlyList<TicketChat> messages)
         {
+            var stopwatch = Stopwatch.StartNew();
+
             var response = await _client!.Messages.Create(new MessageCreateParams
             {
                 Model = _model,
@@ -136,6 +143,10 @@ namespace CRM.Server.Services
                     new() { Role = Role.User, Content = BuildUserPrompt(ticket, messages) }
                 },
             });
+
+            await _usage.RecordTokensAsync(
+                ExternalServiceFeature.TicketSummary, _model, response.TokenUsageOf(),
+                true, stopwatch.ElapsedMilliseconds);
 
             return string.Concat(
                 response.Content

@@ -1,0 +1,111 @@
+@implements IAsyncDisposable
+@using CRM.Client.Services
+@inject IAttachmentsService AttachmentsService
+@inject IJSRuntime JSRuntime
+
+@*
+    Immagine di un file allegato, scaricata con l'autenticazione dell'utente.
+
+    Non si puo' usare un <img src="/api/..."> normale: l'API sta dietro a un token bearer che
+    il browser NON allega alle richieste generate dai tag, e l'immagine tornerebbe 401. Il file
+    si scarica quindi con l'HttpClient dell'applicazione e si mostra da un object URL.
+*@
+
+@if (_loading)
+{
+    <div class="attachment-image loading">
+        <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Small" />
+    </div>
+}
+else if (_objectUrl == null)
+{
+    <div class="attachment-image missing">
+        <span class="material-icons">broken_image</span>
+        <span>Immagine non disponibile</span>
+    </div>
+}
+else if (_isImage)
+{
+    <div class="attachment-image">
+        @* Il blob si apre in una scheda nuova a dimensione piena: sul biglietto di un cliente
+           il numero di telefono si legge solo ingrandendo. *@
+        <a href="@_objectUrl" target="_blank" rel="noopener" title="Apri a dimensione piena">
+            <img src="@_objectUrl" alt="@AltText" />
+        </a>
+        <a class="attachment-download" href="@_objectUrl" download="@_fileName">
+            <span class="material-icons">download</span>
+            <span>@_fileName</span>
+        </a>
+    </div>
+}
+else
+{
+    <a class="attachment-download" href="@_objectUrl" download="@_fileName">
+        <span class="material-icons">attach_file</span>
+        <span>@_fileName</span>
+    </a>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public int AttachmentFileId { get; set; }
+
+    [Parameter]
+    public string AltText { get; set; } = string.Empty;
+
+    private int? _loadedId;
+    private string? _objectUrl;
+    private string? _fileName;
+    private bool _isImage;
+    private bool _loading;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedId == AttachmentFileId)
+            return;
+
+        await ReleaseObjectUrlAsync();
+        _loadedId = AttachmentFileId;
+        _loading = true;
+
+        try
+        {
+            var (bytes, contentType, fileName) = await AttachmentsService.DownloadFile(AttachmentFileId);
+
+            if (bytes is { Length: > 0 })
+            {
+                _fileName = string.IsNullOrWhiteSpace(fileName) ? "allegato" : fileName;
+                _isImage = contentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true;
+                _objectUrl = await JSRuntime.InvokeAsync<string>("catalogFiles.createObjectUrl", contentType, bytes);
+            }
+        }
+        catch
+        {
+            // Un allegato irraggiungibile non deve far fallire la pagina che lo ospita: resta il
+            // segnaposto, e il resto della scheda continua a funzionare.
+            _objectUrl = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    public async ValueTask DisposeAsync() => await ReleaseObjectUrlAsync();
+
+    private async ValueTask ReleaseObjectUrlAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_objectUrl))
+            return;
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("catalogFiles.revokeObjectUrl", _objectUrl);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+
+        _objectUrl = null;
+    }
+}

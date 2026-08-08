@@ -96,6 +96,7 @@ Cuore operativo del sistema.
 - **Firma cliente**: firma su schermo (`SignaturePad`/`SignatureOverlay`), **firma remota** (`/RemoteSignature`, `/ConfirmSignature`) con **OTP via SMS o email** (`SignatureOtpService`, layer SMS provider-neutrale/Twilio); stato firma `Pending/…`; elenco firme in sospeso (`/TicketsIntervention/PendingSignatures`).
 - **PDF rapportino** (`InterventionPdfGenerator`) + ReportViewer + upload report.
 - **Note spese** (`ExpenseReceipts`): upload scontrino, **estrazione automatica OCR/AI** di importo, IVA, data, esercente, valuta con punteggio di confidenza e conferma manuale (`ReceiptProcessorService`).
+- **Tipologia di spesa** (`ExpenseCategory`: vitto, alloggio, trasporti, carburante, pedaggi, parcheggi, rappresentanza, materiali, formazione, telefonia): proposta in tre livelli — sottotipo riconosciuto dall'OCR, dizionario esercenti/righe, e solo se entrambi tacciono il modello AI (`ExpenseCategorizer`, spegnibile da `GlobalSetting.ExpenseCategoryAiEnabled`). Resta sempre una **proposta confermabile**; la proposta viene conservata anche se corretta, per misurarne l'accuratezza. Filtro per tipologia e per spese non classificate, spaccato per voce nel riepilogo.
 
 **API ticket esterna**
 - `api/external/tickets` con API key (`ExternalTicketApiKeys`) per apertura/lettura ticket da sistemi terzi.
@@ -132,6 +133,7 @@ Cuore operativo del sistema.
 | **Riepilogo ticket** | sintesi automatica del ticket |
 | **Triage email in ingresso** | riassunto + verdetto AI, non bloccante |
 | **OCR note spese** | estrazione campi da scontrini/fatture |
+| **Tipologia note spese** | voce di rimborso proposta in cascata: sottotipo del documento → dizionario esercenti → modello (`ExpenseCategoryAiClient`, opt-in); soglia di confidenza in `GlobalSetting.ExpenseCategoryMinConfidence` |
 | **Input vocale** | `VoiceTranscriptionService`, abilitazione via `GlobalSetting.VoiceInputMode` |
 | **Log assistente** | `Settings/AssistantLogs` — domande, risposte, feedback pollice su/giù |
 

@@ -3,5 +3,8 @@
   <uses-permission android:name="android.permission.CAMERA" />
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-  <application android:allowBackup="true" android:usesCleartextTraffic="true" android:supportsRtl="true" />
+  <!-- I due nomi derivano dal file dichiarato in <MauiIcon> (appicon.svg), senza percorso ne'
+       estensione. Senza questi attributi il build genera comunque le mipmap, ma non le referenzia
+       nessuno e l'app esce con l'icona predefinita di Android. -->
+  <application android:allowBackup="true" android:usesCleartextTraffic="true" android:supportsRtl="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" />
 </manifest>

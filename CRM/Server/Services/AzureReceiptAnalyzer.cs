@@ -1,5 +1,7 @@
 ﻿using Azure;
 using Azure.AI.FormRecognizer.DocumentAnalysis;
+using CRM.Server.Services.Usage;
+using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -17,15 +19,18 @@ namespace CRM.Server.Services
     public class AzureReceiptAnalyzer : IReceiptAnalyzer
     {
         private readonly ILogger<AzureReceiptAnalyzer> _logger;
+        private readonly IUsageRecorder _usage;
         private readonly DocumentAnalysisClient _formRecognizerClient;
         private readonly string _endpoint;
         private readonly string _apiKey;
 
         public AzureReceiptAnalyzer(
             ILogger<AzureReceiptAnalyzer> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IUsageRecorder usage)
         {
             _logger = logger;
+            _usage = usage;
 
             _endpoint = configuration["AzureFormRecognizer:Endpoint"];
             _apiKey = configuration["AzureFormRecognizer:ApiKey"];
@@ -61,18 +66,18 @@ namespace CRM.Server.Services
                     return Finish(custom, stopwatch, fileName);
                 }
 
-                var documents = IsPdf(fileName)
+                var reading = IsPdf(fileName)
                     ? await AnalyzePdfAsync(fileBytes, fileName, kind)
                     : await AnalyzeImageAsync(fileBytes, fileName);
 
-                if (documents.Count == 0)
+                if (reading.Documents.Count == 0)
                 {
                     return Error(
                         "Nessun documento rilevato. Assicurati che lo scontrino/fattura sia leggibile e non ruotato.",
                         stopwatch);
                 }
 
-                return Finish(documents, stopwatch, fileName);
+                return Finish(reading, stopwatch, fileName);
             }
             catch (RequestFailedException ex) when (ex.Status == 400)
             {
@@ -89,6 +94,28 @@ namespace CRM.Server.Services
         private const string ReceiptModel = "prebuilt-receipt";
         private const string InvoiceModel = "prebuilt-invoice";
 
+        /// <summary>
+        /// Il risultato di un'analisi: i documenti riconosciuti e la valuta che compare nel
+        /// <b>testo</b> del file.
+        /// <para>
+        /// La seconda parte esiste perche' su un conto d'albergo la valuta e' scritta dove i campi
+        /// strutturati non arrivano: "Balance 0.00 <b>USD</b>" in fondo, "Rate: <b>$</b>127.00" in
+        /// testata. Nessuno dei due sta nel campo Total, che contiene "104.92" e basta - quindi
+        /// tutta la logica sulla valuta, che guarda solo i campi degli importi, non trovava niente
+        /// e il documento risultava "valuta non rilevata" pur avendola stampata sopra due volte.
+        /// </para>
+        /// </summary>
+        private sealed record Reading(
+            IReadOnlyList<AnalyzedDocument> Documents,
+            string TextCode,
+            string TextSymbol)
+        {
+            public static Reading Empty { get; } = new(Array.Empty<AnalyzedDocument>(), null, null);
+
+            public Reading With(IReadOnlyList<AnalyzedDocument> documents) =>
+                new(documents, TextCode, TextSymbol);
+        }
+
         private static bool IsPdf(string fileName)
             => !string.IsNullOrWhiteSpace(fileName)
                && Path.GetExtension(fileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
@@ -97,18 +124,18 @@ namespace CRM.Server.Services
         /// Un'immagine e' uno scontrino fotografato: <c>prebuilt-receipt</c>. Se non ne cava
         /// niente si prova comunque il modello fattura - la foto di una fattura esiste.
         /// </summary>
-        private async Task<IReadOnlyList<AnalyzedDocument>> AnalyzeImageAsync(byte[] fileBytes, string fileName)
+        private async Task<Reading> AnalyzeImageAsync(byte[] fileBytes, string fileName)
         {
-            var documents = await AnalyzeWithModelAsync(fileBytes, fileName, ReceiptModel);
-            if (CountRealExpenses(documents) > 0)
-                return documents;
+            var reading = await AnalyzeWithModelAsync(fileBytes, fileName, ReceiptModel);
+            if (CountRealExpenses(reading.Documents) > 0)
+                return reading;
 
             _logger.LogInformation(
                 "'{FileName}': nessuna spesa leggibile con {Receipt}, riprovo con {Invoice}.",
                 fileName, ReceiptModel, InvoiceModel);
 
             var asInvoice = await AnalyzeWithModelAsync(fileBytes, fileName, InvoiceModel);
-            return CountRealExpenses(asInvoice) > 0 ? asInvoice : documents;
+            return CountRealExpenses(asInvoice.Documents) > 0 ? asInvoice : reading;
         }
 
         /// <summary>
@@ -124,7 +151,7 @@ namespace CRM.Server.Services
         /// una tendina sbagliata non deve lasciare nessuno senza estrazione.
         /// </para>
         /// </summary>
-        private async Task<IReadOnlyList<AnalyzedDocument>> AnalyzePdfAsync(
+        private async Task<Reading> AnalyzePdfAsync(
             byte[] fileBytes, string fileName, ReceiptDocumentKind kind)
         {
             if (kind != ReceiptDocumentKind.Unknown)
@@ -133,8 +160,8 @@ namespace CRM.Server.Services
             var asInvoice = await AnalyzeWithModelAsync(fileBytes, fileName, InvoiceModel);
             var asReceipt = await AnalyzeWithModelAsync(fileBytes, fileName, ReceiptModel);
 
-            var invoiceCount = CountRealExpenses(asInvoice);
-            var receiptCount = CountRealExpenses(asReceipt);
+            var invoiceCount = CountRealExpenses(asInvoice.Documents);
+            var receiptCount = CountRealExpenses(asReceipt.Documents);
 
             // Vince chi trova piu' spese vere. A parita' vince la fattura: legge il codice valuta
             // dove il modello scontrino lascia il campo vuoto, e su piu' pagine tiene unito.
@@ -153,21 +180,21 @@ namespace CRM.Server.Services
         /// se il primo non trova nessuna spesa - la dichiarazione fa risparmiare una chiamata, non
         /// toglie la rete di sicurezza.
         /// </summary>
-        private async Task<IReadOnlyList<AnalyzedDocument>> AnalyzeDeclaredPdfAsync(
+        private async Task<Reading> AnalyzeDeclaredPdfAsync(
             byte[] fileBytes, string fileName, ReceiptDocumentKind kind)
         {
             var declared = kind == ReceiptDocumentKind.Invoice ? InvoiceModel : ReceiptModel;
             var other = declared == InvoiceModel ? ReceiptModel : InvoiceModel;
 
-            var documents = await AnalyzeWithModelAsync(fileBytes, fileName, declared);
+            var reading = await AnalyzeWithModelAsync(fileBytes, fileName, declared);
 
-            if (CountRealExpenses(documents) > 0)
+            if (CountRealExpenses(reading.Documents) > 0)
             {
                 _logger.LogInformation(
                     "'{FileName}': dichiarato come {Kind}, usato {Model} senza seconda analisi.",
                     fileName, kind, declared);
 
-                return documents;
+                return reading;
             }
 
             _logger.LogInformation(
@@ -175,7 +202,7 @@ namespace CRM.Server.Services
                 fileName, kind, declared, other);
 
             var fallback = await AnalyzeWithModelAsync(fileBytes, fileName, other);
-            return CountRealExpenses(fallback) > 0 ? fallback : documents;
+            return CountRealExpenses(fallback.Documents) > 0 ? fallback : reading;
         }
 
         /// <summary>
@@ -192,17 +219,25 @@ namespace CRM.Server.Services
         /// Analisi con un modello: documento intero piu' le eventuali pagine che Azure non ha
         /// attribuito a nessun documento, rianalizzate singolarmente.
         /// </summary>
-        private async Task<IReadOnlyList<AnalyzedDocument>> AnalyzeWithModelAsync(
+        private async Task<Reading> AnalyzeWithModelAsync(
             byte[] fileBytes, string fileName, string modelId)
         {
             _logger.LogInformation("Elaborazione file '{FileName}' ({Bytes} bytes) con modello '{ModelId}'",
                 fileName, fileBytes.Length, modelId);
 
             using var stream = new MemoryStream(fileBytes);
+            var analysisStopwatch = Stopwatch.StartNew();
             var operation = await _formRecognizerClient.AnalyzeDocumentAsync(
                 WaitUntil.Completed, modelId, stream);
 
             var result = operation.Value;
+
+            // Azure fattura a PAGINA, non a documento: le unita' sono le pagine di questa
+            // analisi. Il ripiego sull'altro modello e la rianalisi pagina per pagina piu' sotto
+            // sono chiamate a se', e infatti si registrano a se': sono spesa vera in piu'.
+            await _usage.RecordUnitsAsync(
+                ExternalServiceProvider.Azure, ExternalServiceFeature.ReceiptOcr, modelId,
+                Math.Max(1, result.Pages.Count), true, analysisStopwatch.ElapsedMilliseconds);
 
             _logger.LogInformation("Analisi completata con '{ModelId}'. Documenti trovati: {Count}",
                 modelId, result.Documents.Count);
@@ -235,13 +270,21 @@ namespace CRM.Server.Services
                     modelId, result.Pages.Count, result.Pages.Sum(p => p.Words.Count));
             }
 
-            return documents;
+            var (textCode, textSymbol) = ReadCurrencyFromText(result.Content);
+
+            if (textCode != null || textSymbol != null)
+            {
+                _logger.LogInformation(
+                    "'{FileName}': nel testo del documento compaiono codice='{Code}' simbolo='{Symbol}'.",
+                    fileName, textCode ?? "-", textSymbol ?? "-");
+            }
+
+            return new Reading(documents, textCode, textSymbol);
         }
 
-        private ReceiptExtractionResult Finish(
-            IReadOnlyList<AnalyzedDocument> documents, Stopwatch stopwatch, string fileName)
+        private ReceiptExtractionResult Finish(Reading reading, Stopwatch stopwatch, string fileName)
         {
-            var extractionResult = ExtractDocuments(documents, stopwatch);
+            var extractionResult = ExtractDocuments(reading, stopwatch);
 
             _logger.LogInformation(
                 "Estrazione completata: Totale={Total}, IVA={Tax}, Data={Date}, Commerciante='{Merchant}', Confidence={Conf:P1}, Tempo={Time}ms",
@@ -274,6 +317,7 @@ namespace CRM.Server.Services
                     var options = new AnalyzeDocumentOptions();
                     options.Pages.Add(pageNumber.ToString(CultureInfo.InvariantCulture));
 
+                    var pageStopwatch = Stopwatch.StartNew();
                     var pageOperation = await _formRecognizerClient.AnalyzeDocumentAsync(
                         WaitUntil.Completed,
                         modelId,
@@ -281,6 +325,10 @@ namespace CRM.Server.Services
                         options);
 
                     var pageResult = pageOperation.Value;
+
+                    await _usage.RecordUnitsAsync(
+                        ExternalServiceProvider.Azure, ExternalServiceFeature.ReceiptOcr, modelId,
+                        1, true, pageStopwatch.ElapsedMilliseconds);
 
                     if (pageResult.Documents.Count == 0)
                     {
@@ -340,17 +388,19 @@ namespace CRM.Server.Services
             return withTotal;
         }
 
-        private ReceiptExtractionResult ExtractDocuments(IReadOnlyList<AnalyzedDocument> documents, Stopwatch stopwatch)
+        private ReceiptExtractionResult ExtractDocuments(Reading reading, Stopwatch stopwatch)
         {
+            var documents = reading.Documents;
+
             if (documents.Count == 1)
-                return ExtractDocument(documents[0], stopwatch.ElapsedMilliseconds);
+                return ExtractDocument(documents[0], stopwatch.ElapsedMilliseconds, reading);
 
             _logger.LogInformation(
                 "PDF multi-documento rilevato: aggrego {Count} documenti restituiti da Azure.",
                 documents.Count);
 
             var partialResults = documents
-                .Select(document => ExtractDocument(document, stopwatch.ElapsedMilliseconds))
+                .Select(document => ExtractDocument(document, stopwatch.ElapsedMilliseconds, reading))
                 .OrderBy(document => document.PageFrom ?? int.MaxValue)
                 .ToList();
 
@@ -385,6 +435,7 @@ namespace CRM.Server.Services
                 MerchantAddress = FirstNonEmpty(partialResults.Select(x => x.MerchantAddress)),
                 MerchantPhoneNumber = FirstNonEmpty(partialResults.Select(x => x.MerchantPhoneNumber)),
                 CurrencySymbol = FirstNonEmpty(partialResults.Select(x => x.CurrencySymbol)),
+                CurrencyHint = FirstNonEmpty(partialResults.Select(x => x.CurrencyHint)),
                 DocumentResults = partialResults
             };
 
@@ -426,7 +477,8 @@ namespace CRM.Server.Services
             return aggregate;
         }
 
-        private ReceiptExtractionResult ExtractDocument(AnalyzedDocument document, long processingTimeMs)
+        private ReceiptExtractionResult ExtractDocument(
+            AnalyzedDocument document, long processingTimeMs, Reading reading)
         {
             _logger.LogInformation("Documento tipo '{DocType}', Confidence={Conf:P1}, Campi disponibili: [{Fields}]",
                 document.DocumentType,
@@ -457,7 +509,7 @@ namespace CRM.Server.Services
                 extractionResult.PageTo = pageNumbers[^1];
             }
 
-            ExtractCommonFields(document, extractionResult);
+            ExtractCommonFields(document, extractionResult, reading);
             ExtractLineItems(document, extractionResult);
             CalculateAverageConfidence(extractionResult);
 
@@ -498,7 +550,8 @@ namespace CRM.Server.Services
         /// Estrae i campi principali coprendo sia prebuilt-receipt che prebuilt-invoice.
         /// NON usa controlli strict sul FieldType: legge il content grezzo come fallback.
         /// </summary>
-        private void ExtractCommonFields(AnalyzedDocument document, ReceiptExtractionResult result)
+        private void ExtractCommonFields(
+            AnalyzedDocument document, ReceiptExtractionResult result, Reading reading)
         {
             var f = document.Fields;
 
@@ -564,15 +617,18 @@ namespace CRM.Server.Services
             result.MerchantPhoneNumber = TryGetContent(f,
                 "MerchantPhoneNumber", "VendorPhone", "SupplierPhone");
 
+            // La valuta si risolve PRIMA della descrizione: la descrizione la stampa, e costruirla
+            // prima significava scrivere "104,92" senza valuta anche quando poi la valuta veniva
+            // riconosciuta un istante dopo.
+            ResolveCurrencyCandidates(result, reading);
+            FillCurrencyDiagnostics(f, result);
+
             // ?? DESCRIZIONE AUTO-GENERATA ?????????????????????????????????????????????
             var parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(result.MerchantName)) parts.Add(result.MerchantName);
             if (result.TransactionDate.HasValue) parts.Add(result.TransactionDate.Value.ToString("dd/MM/yyyy"));
             if (result.TotalAmount.HasValue) parts.Add(FormatAmount(result));
             result.Description = string.Join(" - ", parts);
-
-            ResolveCurrencyCandidates(result);
-            FillCurrencyDiagnostics(f, result);
         }
 
         /// <summary>
@@ -609,14 +665,39 @@ namespace CRM.Server.Services
         /// falsa la conversione e quindi il rimborso.
         /// </para>
         /// </summary>
-        private void ResolveCurrencyCandidates(ReceiptExtractionResult result)
+        private void ResolveCurrencyCandidates(ReceiptExtractionResult result, Reading reading)
         {
             if (!string.IsNullOrWhiteSpace(result.Currency))
                 return;
 
+            // Il codice ISO scritto nel TESTO del documento, fuori dai campi degli importi. Su un
+            // conto d'albergo e' l'unico posto in cui compare ("Balance 0.00 USD"), e vale quanto
+            // il codice accanto al totale: e' scritto sulla carta, non dedotto da Azure - che e'
+            // la differenza con il campo "Currency", che invece resta ignorato (vedi sotto).
+            if (!string.IsNullOrWhiteSpace(reading?.TextCode))
+            {
+                result.Currency = reading.TextCode;
+                result.CurrencyHint = $"Codice {reading.TextCode} letto sul documento.";
+                _logger.LogInformation(
+                    "Valuta {Currency} letta dal testo del documento (nessun campo strutturato la conteneva).",
+                    reading.TextCode);
+                return;
+            }
+
+            // Nessun simbolo nei campi degli importi: si guarda quello scritto nel resto del
+            // documento ("Rate: $127.00" in testata di un conto d'albergo).
+            if (string.IsNullOrWhiteSpace(result.CurrencySymbol)
+                && !string.IsNullOrWhiteSpace(reading?.TextSymbol))
+            {
+                result.CurrencySymbol = reading.TextSymbol;
+                _logger.LogInformation(
+                    "Simbolo '{Symbol}' letto dal testo del documento, fuori dai campi degli importi.",
+                    reading.TextSymbol);
+            }
+
             if (string.IsNullOrWhiteSpace(result.CurrencySymbol))
             {
-                _logger.LogWarning("Valuta NON estratta e nessun simbolo letto: va scelta a mano.");
+                ProposeCurrencyFromAddress(result);
                 return;
             }
 
@@ -636,6 +717,7 @@ namespace CRM.Server.Services
             if (!AmbiguousCurrencySymbols.TryGetValue(symbol, out var candidates))
             {
                 _logger.LogWarning("Simbolo valuta '{Symbol}' non riconosciuto: la valuta va scelta a mano.", symbol);
+                ProposeCurrencyFromAddress(result);
                 return;
             }
 
@@ -646,27 +728,43 @@ namespace CRM.Server.Services
                 ordered.Insert(0, hinted);
 
             result.CurrencyCandidates = ordered;
+            result.CurrencyHint = $"Sul documento c'è «{symbol}», che appartiene a più valute."
+                + (hinted != null ? $" L'indirizzo dell'esercente indica {hinted}." : string.Empty);
 
             _logger.LogInformation(
                 "Simbolo '{Symbol}' ambiguo: propongo {Candidates} (indirizzo: {Hint}).",
                 symbol, string.Join(", ", ordered), hinted ?? "nessun indizio");
         }
 
-        private string GuessCurrencyFromAddress(string address)
+        /// <summary>
+        /// Ultimo indizio: il paese dell'esercente. Non decide - un indirizzo americano non e' una
+        /// valuta scritta - ma proporre "USD" da confermare con un clic e' molto meglio di un
+        /// campo vuoto con scritto "valuta non trovata" su un conto di Redmond, WA.
+        /// </summary>
+        private void ProposeCurrencyFromAddress(ReceiptExtractionResult result)
         {
-            if (string.IsNullOrWhiteSpace(address))
-                return null;
+            var hinted = GuessCurrencyFromAddress(result.MerchantAddress);
 
-            var normalized = address.ToUpperInvariant();
-
-            foreach (var (pattern, currency) in AddressCurrencyHints)
+            if (hinted == null)
             {
-                if (System.Text.RegularExpressions.Regex.IsMatch(normalized, pattern))
-                    return currency;
+                _logger.LogWarning("Valuta NON estratta e nessun indizio utilizzabile: va scelta a mano.");
+                return;
             }
 
-            return null;
+            result.CurrencyCandidates = new List<string> { hinted };
+            result.CurrencyHint =
+                $"La valuta non è scritta sul documento, ma l'indirizzo dell'esercente indica {hinted}.";
+
+            _logger.LogInformation(
+                "Valuta non scritta sul documento: dall'indirizzo '{Address}' propongo {Currency}.",
+                result.MerchantAddress, hinted);
         }
+
+        private static (string Code, string Symbol) ReadCurrencyFromText(string content)
+            => ReceiptCurrencyText.Read(content);
+
+        private static string GuessCurrencyFromAddress(string address)
+            => ReceiptCurrencyText.GuessFromAddress(address);
 
         /// <summary>
         /// Simbolo della valuta, cercato PRIMA nel campo strutturato e poi nel testo grezzo.
@@ -715,24 +813,7 @@ namespace CRM.Server.Services
         }
 
         private static string ExtractSymbolFromText(string content)
-        {
-            if (string.IsNullOrWhiteSpace(content))
-                return null;
-
-            foreach (var symbol in UnambiguousCurrencySymbols.Keys)
-            {
-                if (content.Contains(symbol, StringComparison.Ordinal))
-                    return symbol;
-            }
-
-            foreach (var symbol in AmbiguousCurrencySymbols.Keys)
-            {
-                if (content.Contains(symbol, StringComparison.Ordinal))
-                    return symbol;
-            }
-
-            return null;
-        }
+            => ReceiptCurrencyText.ExtractSymbol(content);
 
         /// <summary>
         /// Registra cosa ha davvero restituito il servizio sui campi monetari.
@@ -879,57 +960,12 @@ namespace CRM.Server.Services
             return null;
         }
 
-        /// <summary>
-        /// Simboli che identificano una valuta senza ambiguita': qui si puo' concludere da soli.
-        /// </summary>
-        private static readonly Dictionary<string, string> UnambiguousCurrencySymbols = new()
-        {
-            ["€"] = "EUR",
-            ["£"] = "GBP",
-            ["₣"] = "CHF",
-            ["₹"] = "INR",
-            ["₽"] = "RUB",
-            ["₩"] = "KRW",
-            ["₪"] = "ILS",
-            ["₺"] = "TRY",
-            ["zł"] = "PLN",
-            ["Kč"] = "CZK",
-        };
+        // Le tabelle di simboli, codici e indizi d'indirizzo stanno in ReceiptCurrencyText: sono
+        // funzioni pure su stringhe, e li' si possono provare sul testo di un documento vero senza
+        // chiamare Azure.
+        private static Dictionary<string, string> UnambiguousCurrencySymbols => ReceiptCurrencyText.UnambiguousSymbols;
 
-        /// <summary>
-        /// Simboli usati da piu' valute, con i candidati in ordine di probabilita'.
-        /// <para>
-        /// Non si sceglie per conto dell'operatore - una valuta sbagliata falsa la conversione e
-        /// quindi il rimborso - ma non si butta via nemmeno l'informazione: il simbolo sullo
-        /// scontrino c'e', e lasciare il campo vuoto dicendo "valuta non rilevata" mentre il "$"
-        /// e' bello visibile e' un modo di dare torto a chi guarda.
-        /// </para>
-        /// </summary>
-        private static readonly Dictionary<string, string[]> AmbiguousCurrencySymbols = new()
-        {
-            ["$"] = new[] { "USD", "CAD", "AUD", "NZD", "SGD", "HKD", "MXN" },
-            ["¥"] = new[] { "JPY", "CNY" },
-            ["kr"] = new[] { "SEK", "NOK", "DKK" },
-            ["R$"] = new[] { "BRL" },
-            ["₨"] = new[] { "PKR", "LKR", "NPR" },
-        };
-
-        /// <summary>
-        /// Indizi nell'indirizzo dell'esercente che permettono di mettere in cima il candidato
-        /// giusto. Non decide: riordina soltanto una lista che l'operatore conferma comunque.
-        /// </summary>
-        private static readonly (string Pattern, string Currency)[] AddressCurrencyHints =
-        {
-            (@"\b(USA|U\.S\.A\.|UNITED STATES)\b", "USD"),
-            // Sigla di stato USA di due lettere seguita dal CAP a 5 cifre: "Redmond, WA 98052".
-            (@"\b[A-Z]{2}\s+\d{5}(-\d{4})?\b", "USD"),
-            (@"\b(CANADA)\b", "CAD"),
-            (@"\b(AUSTRALIA)\b", "AUD"),
-            (@"\b(SINGAPORE)\b", "SGD"),
-            (@"\b(HONG KONG)\b", "HKD"),
-            (@"\b(JAPAN|NIPPON)\b", "JPY"),
-            (@"\b(CHINA)\b", "CNY"),
-        };
+        private static Dictionary<string, string[]> AmbiguousCurrencySymbols => ReceiptCurrencyText.AmbiguousSymbols;
 
         /// <summary>
         /// Ricava il codice valuta ISO dai campi estratti.
@@ -1013,35 +1049,7 @@ namespace CRM.Server.Services
         /// lettere maiuscole qualunque prenderebbe per valuta anche "IVA" o una sigla dell'azienda.
         /// </summary>
         private static string ExtractIsoCodeFromText(string content)
-        {
-            if (string.IsNullOrWhiteSpace(content))
-                return null;
-
-            foreach (Match match in IsoCodeInText.Matches(content.ToUpperInvariant()))
-            {
-                var code = match.Value;
-                if (KnownCurrencyCodes.Contains(code))
-                    return code;
-            }
-
-            return null;
-        }
-
-        private static readonly Regex IsoCodeInText =
-            new(@"\b[A-Z]{3}\b", RegexOptions.Compiled);
-
-        /// <summary>
-        /// Codici accettati quando compaiono nel testo. Sono quelli delle due tabelle dei simboli
-        /// piu' le valute senza un simbolo proprio, che nei documenti si scrivono sempre cosi'.
-        /// </summary>
-        private static readonly HashSet<string> KnownCurrencyCodes = new(StringComparer.Ordinal)
-        {
-            "EUR", "USD", "GBP", "CHF", "JPY", "CNY", "INR", "RUB", "KRW", "ILS", "TRY",
-            "PLN", "CZK", "SEK", "NOK", "DKK", "BRL", "CAD", "AUD", "NZD", "SGD", "HKD",
-            "MXN", "ZAR", "HUF", "RON", "BGN", "HRK", "AED", "SAR", "THB", "MYR", "IDR",
-            "PHP", "VND", "ARS", "CLP", "COP", "PEN", "UYU", "EGP", "MAD", "TND", "PKR",
-            "LKR", "NPR", "ISK", "UAH", "RSD", "TWD"
-        };
+            => ReceiptCurrencyText.ExtractIsoCode(content);
 
         private DateTime? TryGetDate(
             IReadOnlyDictionary<string, DocumentField> fields,

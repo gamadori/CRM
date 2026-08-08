@@ -649,6 +649,21 @@
   <data name="LeadsListSubTitle" xml:space="preserve">
     <value>Capture, qualify and convert leads into deals.</value>
   </data>
+  <data name="Initiatives" xml:space="preserve">
+    <value>Initiatives</value>
+  </data>
+  <data name="InitiativesListSubTitle" xml:space="preserve">
+    <value>Fairs and trips, with what they cost and what they produced.</value>
+  </data>
+  <data name="InitiativesNewSubTitle" xml:space="preserve">
+    <value>New initiative</value>
+  </data>
+  <data name="InitiativesEditSubTitle" xml:space="preserve">
+    <value>Edit initiative:</value>
+  </data>
+  <data name="InitiativesDetailsSubTitle" xml:space="preserve">
+    <value>Initiative details:</value>
+  </data>
   <data name="CatalogListSubTitle" xml:space="preserve">
     <value>Browse catalog products with images and previews.</value>
   </data>

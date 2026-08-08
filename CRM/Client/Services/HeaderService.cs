@@ -25,9 +25,11 @@ namespace CRM.Client.Services
             StringComparer.OrdinalIgnoreCase
         );
 
-        // Azioni di lista: i segmenti che le seguono sono parametri di filtro, non risorse
+        // Azioni di lista: i segmenti che le seguono sono parametri di filtro, non risorse.
+        // "list" ci sta per /Initiatives/List/Fair, dove "Fair" e' il filtro per tipo: senza,
+        // la scia diventava "Iniziative > List > Fair", due voci che non portano da nessuna parte.
         private static readonly HashSet<string> ListActionKeywords = new(
-            new[] { "index", "filter", "search" },
+            new[] { "index", "list", "filter", "search" },
             StringComparer.OrdinalIgnoreCase
         );
 
@@ -225,6 +227,9 @@ namespace CRM.Client.Services
                     // dice qualcosa, "19" no.
                     "activities" or "activity" =>
                         (await _restClient.GetItem<CRM.Shared.DTOs.ActivityDTO, int>((int)domainId, ConstHelper.ActivitiesPath))?.Subject,
+
+                    "initiatives" or "initiative" =>
+                        (await _restClient.GetItem<CRM.Shared.DTOs.InitiativeDTO, int>((int)domainId, ConstHelper.InitiativesPath))?.Name,
                     //"expensereceipts" or "expensereceipt" =>
                     //    (await _restClient.GetItem<ExpenseReceipt, int>((int)domainId, ConstHelper.ExpenseReceiptsPath))?.Name,
                     _ => null
@@ -335,6 +340,11 @@ namespace CRM.Client.Services
                 "invoices" or "invoice" => "receipt_long",
                 "agenda" => "event",
                 "activities" or "activity" => "event_available",
+                "initiatives" or "initiative" => "tour",
+                // Le rotte filtrate per tipo (/Initiatives/List/Fair) espongono il tipo come
+                // ultimo segmento, ed e' da li' che si deduce l'icona.
+                "fair" => "storefront",
+                "trip" => "flight_takeoff",
                 "expensereceipts" => "receipt_long",
                 "projects" or "project" => "apps",
                 "contracttypes" or "contracttype" => "description",
@@ -564,6 +574,12 @@ namespace CRM.Client.Services
 
                     "activities" or "activity" when isNumeric =>
                         (await _restClient.GetItem<CRM.Shared.DTOs.ActivityDTO, int>(int.Parse(segment), ConstHelper.ActivitiesPath))?.Subject ?? segment,
+
+                    // Un'iniziativa si riconosce dal nome: "Fiera Saca" dice qualcosa, "7" no.
+                    // Serve alle rotte figlie (le note spese della fiera), che senza questo
+                    // mostrerebbero un numero nel punto in cui si torna indietro.
+                    "initiatives" or "initiative" when isNumeric =>
+                        (await _restClient.GetItem<CRM.Shared.DTOs.InitiativeDTO, int>(int.Parse(segment), ConstHelper.InitiativesPath))?.Name ?? segment,
 
                     _ => segment
                 };

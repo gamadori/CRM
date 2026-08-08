@@ -274,6 +274,89 @@ public class SchedulingTests
         Assert.Equal(consegna, consegna.PreviousWorkday()); // idempotente su un giorno lavorativo
     }
 
+    // ─── Commessa aperta: fase unica, nessun template ────────────────────────
+
+    private static DateTime ProssimoSabato(DateTime da)
+    {
+        var d = da.Date;
+        while (d.DayOfWeek != DayOfWeek.Saturday)
+            d = d.AddDays(1);
+        return d;
+    }
+
+    /// <summary>
+    /// Senza ciclo di produzione non c'è nulla da schedulare, ma il calendario resta quello:
+    /// la fase unica deve stare sui giorni lavorativi come le fasi generate dal template.
+    /// </summary>
+    [Fact]
+    public void La_fase_unica_di_una_commessa_aperta_sta_nei_giorni_lavorativi()
+    {
+        var sabato = ProssimoSabato(DateTime.Today.AddDays(60));
+
+        var (start, end) = CommesseService.OpenPlanWindow(sabato, DateTime.Today);
+
+        Assert.True(end < sabato);   // consegna nel weekend: si chiude entro il venerdì
+        Assert.DoesNotContain(start.DayOfWeek, new[] { DayOfWeek.Saturday, DayOfWeek.Sunday });
+        Assert.DoesNotContain(end.DayOfWeek, new[] { DayOfWeek.Saturday, DayOfWeek.Sunday });
+        Assert.True(start <= end);
+    }
+
+    /// <summary>
+    /// I festivi non sono solo il weekend: una consegna a Natale va indietro come un sabato.
+    /// </summary>
+    [Fact]
+    public void Una_consegna_su_un_festivo_arretra_al_giorno_lavorativo_precedente()
+    {
+        var natale = new DateTime(DateTime.Today.Year + 1, 12, 25);
+
+        var (_, end) = CommesseService.OpenPlanWindow(natale, DateTime.Today);
+
+        Assert.True(end < natale);
+    }
+
+    /// <summary>
+    /// L'apertura avviene di sabato (turno, straordinario, recupero): il piano non può partire
+    /// da quel giorno, che sul Gantt non esiste nemmeno come colonna.
+    /// </summary>
+    [Fact]
+    public void Aprendo_la_commessa_in_un_giorno_non_lavorativo_il_piano_parte_dal_primo_feriale()
+    {
+        var oggi = ProssimoSabato(DateTime.Today.AddDays(7));
+
+        var (start, _) = CommesseService.OpenPlanWindow(oggi.AddDays(30), oggi);
+
+        Assert.True(start > oggi);
+        Assert.DoesNotContain(start.DayOfWeek, new[] { DayOfWeek.Saturday, DayOfWeek.Sunday });
+    }
+
+    /// <summary>
+    /// Consegna già passata: caso legittimo (commessa aperta su lavoro iniziato prima). Il piano
+    /// deve collassare sulla consegna, non iniziare dopo la propria fine.
+    /// </summary>
+    [Fact]
+    public void Con_la_consegna_gia_passata_la_fase_unica_non_inizia_dopo_la_fine()
+    {
+        var (start, end) = CommesseService.OpenPlanWindow(DateTime.Today.AddDays(-30), DateTime.Today);
+
+        Assert.True(start <= end);
+        Assert.True(end < DateTime.Today);
+    }
+
+    /// <summary>
+    /// Su date già lavorative la finestra non si muove: l'utente ritrova quello che ha scritto.
+    /// </summary>
+    [Fact]
+    public void Su_date_gia_lavorative_la_finestra_resta_quella_richiesta()
+    {
+        var oggi = DateTime.Today.NextWorkday();
+        var consegna = oggi.AddWorkdays(20);
+
+        var (start, end) = CommesseService.OpenPlanWindow(consegna, oggi);
+
+        Assert.Equal(oggi, start);
+        Assert.Equal(consegna, end);
+    }
+
     /// <summary>
     /// Assegna gli Id che in produzione arriverebbero da EF dopo il primo SaveChanges e traduce
     /// le dipendenze del template in dipendenze fra fasi.

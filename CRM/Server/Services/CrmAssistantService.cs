@@ -2,6 +2,7 @@ using Anthropic;
 using Anthropic.Models.Messages;
 using CRM.Client.Services;   // interfacce servizi applicativi (ICompaniesService, IArticlesService, IContactsService, IProductsService)
 using CRM.Server.Data;
+using CRM.Server.Services.Usage;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using CRM.Shared.Models;
@@ -54,6 +55,7 @@ namespace CRM.Server.Services
         private readonly IPermitsService _permits;
         private readonly ITicketNotificationService _ticketNotifications;
         private readonly ILogger<CrmAssistantService> _logger;
+        private readonly IUsageRecorder _usage;
         private readonly AnthropicClient _client;
         private readonly string _model;
         private readonly string _judgeModel;
@@ -76,8 +78,10 @@ namespace CRM.Server.Services
             ApplicationDbContext context,
             IPermitsService permits,
             ITicketNotificationService ticketNotifications,
-            ILogger<CrmAssistantService> logger)
+            ILogger<CrmAssistantService> logger,
+            IUsageRecorder usage)
         {
+            _usage = usage;
             _companies = companies;
             _articles = articles;
             _contacts = contacts;
@@ -168,6 +172,15 @@ namespace CRM.Server.Services
                 StringBuilder? currentText = null;
                 PendingToolUse? currentTool = null;
 
+                // Consumo di QUESTA iterazione. Una domanda all'assistente puo' valere fino a
+                // MaxIterations chiamate all'API, e ognuna si paga: registrarle una per una e'
+                // piu' vero che sommarle in una riga sola, e non perde tutto se l'utente chiude
+                // la pagina a meta' risposta.
+                var iterationUsage = default(TokenUsage);
+                // Qualificato: "using System.Diagnostics" renderebbe ambiguo ActivityKind,
+                // che qui e' quello del CRM.
+                var iterationStopwatch = System.Diagnostics.Stopwatch.StartNew();
+
                 await foreach (var streamEvent in _client.Messages
                     .CreateStreaming(parameters)
                     .WithCancellation(cancellationToken))
@@ -218,7 +231,23 @@ namespace CRM.Server.Services
                             currentText = null;
                         }
                     }
+                    else if (streamEvent.TryPickStart(out var messageStart))
+                    {
+                        // In apertura arrivano input e cache; l'output qui e' solo il primo token.
+                        var opening = messageStart.Message.Usage.ToTokenUsage();
+                        iterationUsage += new TokenUsage(opening.Input, 0, opening.CacheRead, opening.CacheWrite);
+                    }
+                    else if (streamEvent.TryPickDelta(out var messageDelta))
+                    {
+                        // L'output arriva solo qui, ed e' gia' il totale del messaggio: si assegna,
+                        // non si somma, altrimenti ogni delta conterebbe due volte quelli prima.
+                        iterationUsage = iterationUsage with { Output = messageDelta.Usage.OutputTokens };
+                    }
                 }
+
+                await _usage.RecordTokensAsync(
+                    ExternalServiceFeature.Assistant, _model, iterationUsage,
+                    true, iterationStopwatch.ElapsedMilliseconds);
 
                 // Il modello richiede l'esecuzione di tool solo emettendo blocchi tool_use:
                 // se non ce ne sono, la risposta è completa (indipendentemente da come l'SDK
@@ -845,6 +874,8 @@ REGOLE:
                     sb.AppendLine();
                 }
 
+                var judgeStopwatch = System.Diagnostics.Stopwatch.StartNew();
+
                 var response = await _client.Messages.Create(new MessageCreateParams
                 {
                     Model = _judgeModel,
@@ -856,6 +887,12 @@ REGOLE:
                         new() { Role = Role.User, Content = sb.ToString() }
                     },
                 });
+
+                // Voce separata dall'assistente: gira su un modello diverso ed e' una spesa
+                // che si puo' spegnere da sola, quindi va potuta guardare da sola.
+                await _usage.RecordTokensAsync(
+                    ExternalServiceFeature.AssistantRerank, _judgeModel, response.TokenUsageOf(),
+                    true, judgeStopwatch.ElapsedMilliseconds);
 
                 var text = string.Concat(response.Content
                     .Select(x => x.Value).OfType<TextBlock>().Select(x => x.Text));

@@ -28,6 +28,19 @@ namespace CRM.Server.Services
         Task<ExpenseReceiptSummaryDTO> GetSummaryByActivityIdAsync(int activityId);
 
         /// <summary>
+        /// Note spese di un'iniziativa (fiera, trasferta): e' la cartella delle spese di quella
+        /// occasione, quella che risponde a "quanto ci e' costata".
+        /// </summary>
+        /// <param name="restrictToUserId">
+        /// Valorizzato per chi puo' vedere solo le proprie spese; null per chi le vede tutte.
+        /// Il vincolo si applica qui e non nella pagina: e' l'unico punto da cui passano le letture.
+        /// </param>
+        Task<List<ExpenseReceiptDTO>> GetByInitiativeIdAsync(int initiativeId, string restrictToUserId);
+
+        /// <summary>Riepilogo delle note spese di un'iniziativa, con lo stesso vincolo di visibilita'.</summary>
+        Task<ExpenseReceiptSummaryDTO> GetSummaryByInitiativeIdAsync(int initiativeId, string restrictToUserId);
+
+        /// <summary>
         /// Elenco trasversale filtrato: e' quello che rende le note spese consultabili senza
         /// dover scendere dentro un intervento.
         /// </summary>
@@ -43,6 +56,13 @@ namespace CRM.Server.Services
         /// </summary>
         Task<ExpenseReceiptSummaryDTO> GetSummaryAsync(
             ExpenseReceiptFilter filter, string restrictToUserId);
+
+        /// <summary>
+        /// Prepara il prospetto delle note spese raggruppate per tipologia (vitto, alloggio,
+        /// trasporti...), sullo stesso insieme che l'elenco sta mostrando: stesso filtro, stesso
+        /// vincolo di visibilita'. Restituisce i dati gia' calcolati; la stampa e' un'altra cosa.
+        /// </summary>
+        Task<ExpenseReportData> BuildReportDataAsync(ExpenseReceiptFilter filter, string restrictToUserId);
 
         /// <summary>
         /// Ottiene una singola nota spese per ID

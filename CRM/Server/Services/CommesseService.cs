@@ -508,9 +508,9 @@ namespace CRM.Server.Services
 
                 var target = (req.TargetDate ?? row.Order.DeliveryDate ?? DateTime.Today.AddDays(30)).Date;
                 var now = DateTime.Now;
-                // Una consegna già passata è legittima (commessa aperta su lavoro iniziato prima):
-                // in quel caso il piano parte dalla consegna, non da una data successiva alla fine.
-                var start = target < now.Date ? target : now.Date;
+                // Qui non c'è un template da cui derivare le date, ma il calendario è lo stesso
+                // della schedulazione: la finestra della fase va sui giorni lavorativi.
+                var (start, end) = OpenPlanWindow(target, now.Date);
 
                 var currentUser = await _permitsService.IdUser();
                 var responsibleUserId = await ResolveDefaultResponsibleAsync(row.IdProduct, req.IdUserResponsible, currentUser);
@@ -536,6 +536,9 @@ namespace CRM.Server.Services
                     Note = req.Note,
                     State = CommessaStates.Planned,
                     StartDatePlanned = start,
+                    // La consegna resta quella richiesta anche se cade di sabato: è la promessa,
+                    // e arretrarla la falserebbe. Ad arretrare è la fine del lavoro, non la data
+                    // concordata — come nelle commesse generate dal template.
                     EndDatePlanned = target,
                     EndDateBaseline = target,
                     BudgetHours = req.BudgetHours,
@@ -556,7 +559,7 @@ namespace CRM.Server.Services
                     {
                         Name = "Lavorazione",
                         StartDate = start,
-                        EndDate = target,
+                        EndDate = end,
                         SortOrder = 1,
                         State = CommessaFaseStates.Pending,
                         CompletionMode = CommessaFaseCompletionMode.Manual,
@@ -922,6 +925,26 @@ namespace CRM.Server.Services
         private static APIResponseMessage<CommessaDTO> Ok(CommessaDTO? d, string m) => new() { State = true, Data = d, Message = m, Code = HttpStatusCode.OK };
         private static APIResponseMessage<List<CommessaDTO>> FailList(string m, HttpStatusCode c) => new() { State = false, Message = m, Code = c };
         private static APIResponseMessage<bool> FailDelete(string m, HttpStatusCode c) => new() { State = false, Message = m, Code = c };
+
+        /// <summary>
+        /// Finestra della fase unica di una commessa aperta: senza template non c'è nulla da
+        /// schedulare, ma il calendario è quello di tutti gli altri piani. Una lavorazione che
+        /// inizia di domenica o scade a Ferragosto è una data che nessuno lavorerà, e il Gantt
+        /// (che disegna solo colonne feriali) la mostrerebbe comunque spostata altrove.
+        /// </summary>
+        internal static (DateTime start, DateTime end) OpenPlanWindow(DateTime target, DateTime today)
+        {
+            // La consegna arrotonda all'indietro, come nella riprogrammazione: se cade di sabato
+            // il lavoro dev'essere chiuso entro il venerdì, non il lunedì dopo.
+            var end = target.Date.PreviousWorkday();
+
+            // Una consegna già passata è legittima (commessa aperta su lavoro iniziato prima):
+            // in quel caso il piano parte da lì, non da una data successiva alla fine.
+            var start = end < today.Date ? end : today.Date.NextWorkday();
+
+            // Difesa: una fase non può finire prima di iniziare.
+            return (start > end ? end : start, end);
+        }
 
         /// <summary>
         /// Costruisce le fasi con date assolute, schedulazione all'indietro dalla consegna.

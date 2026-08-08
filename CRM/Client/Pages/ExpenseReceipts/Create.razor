@@ -2,6 +2,11 @@
 @* Spesa di una visita: il contesto sta nel percorso, come per l'intervento. La trasferta dal
    cliente potenziale e' proprio il caso in cui la spesa c'e' e il lavoro fatturabile no. *@
 @page "/Activities/{ActivityId:int}/ExpenseReceipts/Create"
+
+@* Registrata dalla cartella spese di una fiera o di una trasferta: l'iniziativa sta nel percorso
+   come per l'intervento, cosi' il ritorno e' la sua scheda e non l'elenco generale. *@
+@page "/Initiatives/{InitiativeId:int}/ExpenseReceipts/Create"
+
 @* Creazione senza contesto nel percorso: e' la rotta che rende registrabili le spese che un
    lavoro di riferimento non ce l'hanno (corsi, bollette, cancelleria). *@
 @page "/ExpenseReceipts/Create"
@@ -41,6 +46,12 @@ else
                     <li class="breadcrumb-item"><a href="/Agenda">Agenda</a></li>
                     <li class="breadcrumb-item"><a href="/Activities/@ActivityId/Info">@ActivityLabel</a></li>
                     <li class="breadcrumb-item"><a href="/ExpenseReceipts">@Localize["ExpenseReceipts"]</a></li>
+                }
+                else if (InitiativeId.HasValue)
+                {
+                    <li class="breadcrumb-item"><a href="/Initiatives">Iniziative</a></li>
+                    <li class="breadcrumb-item"><a href="/Initiatives/@InitiativeId/Info">@InitiativeLabel</a></li>
+                    <li class="breadcrumb-item"><a href="@CancelUrl">@Localize["ExpenseReceipts"]</a></li>
                 }
                 else
                 {
@@ -329,6 +340,20 @@ else
                                                     </div>
                                                 </div>
 
+                                                @* La tipologia sta su OGNI documento e non sul file: nella
+                                                   stessa busta della trasferta ci sono il pieno di benzina e
+                                                   la cena, e non hanno la stessa voce di rimborso. *@
+                                                <div class="mt-2">
+                                                    <ExpenseCategoryField Value="doc.Category"
+                                                                          ValueChanged="@(category => OnDocumentCategoryChanged(doc, category))"
+                                                                          Suggested="DocumentSuggestion(doc)"
+                                                                          Source="doc.CategorySource"
+                                                                          Confidence="doc.CategoryConfidence"
+                                                                          Reason="@doc.CategoryReason"
+                                                                          Compact="true"
+                                                                          Label="Tipologia" />
+                                                </div>
+
                                                 @if (missing)
                                                 {
                                                     <div class="small text-warning-emphasis mt-2">
@@ -400,14 +425,27 @@ else
                                             <div class="d-flex align-items-start gap-2">
                                                 <i class="material-icons" style="font-size:20px;">report_problem</i>
                                                 <div class="flex-fill">
-                                                    @* Due situazioni diverse, e conviene distinguerle: un simbolo
-                                                       ambiguo si conferma con un clic, un documento che la valuta
-                                                       non la scrive proprio va compilato a mano. *@
+                                                    @* Due situazioni diverse, e conviene distinguerle: una valuta
+                                                       proposta si conferma con un clic, un documento che non da'
+                                                       nessun indizio va compilato a mano. Il motivo della proposta
+                                                       lo scrive chi l'ha fatta: puo' essere il simbolo, il codice
+                                                       letto nel testo o l'indirizzo dell'esercente. *@
                                                     @if (_currencyCandidates.Any())
                                                     {
                                                         <div class="fw-semibold">
-                                                            Sul documento c'è <strong>@_extractionResult?.CurrencySymbol</strong>,
-                                                            che appartiene a più valute: conferma quale.
+                                                            @if (!string.IsNullOrWhiteSpace(_extractionResult?.CurrencyHint))
+                                                            {
+                                                                @_extractionResult.CurrencyHint
+
+                                                                <text> Conferma quale.</text>
+                                                            }
+                                                            else
+                                                            {
+                                                                <text>
+                                                                    Sul documento c'è <strong>@_extractionResult?.CurrencySymbol</strong>,
+                                                                    che appartiene a più valute: conferma quale.
+                                                                </text>
+                                                            }
                                                         </div>
                                                     }
                                                     else if (ReadFromDocument)
@@ -485,6 +523,13 @@ else
                                         </div>
                                     </div>
                                 }
+
+                                <ExpenseCategoryField Value="_model.Category"
+                                                      ValueChanged="OnCategoryChanged"
+                                                      Suggested="_model.CategorySuggested"
+                                                      Source="_model.CategorySource"
+                                                      Confidence="_model.CategoryConfidence"
+                                                      Reason="@_model.CategoryReason" />
 
                                 <div class="mb-3">
                                     <label class="form-label">

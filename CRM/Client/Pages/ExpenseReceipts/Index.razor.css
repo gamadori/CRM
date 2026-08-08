@@ -1,0 +1,184 @@
+/*
+    Elenco note spese di un contenitore (intervento, visita, iniziativa).
+
+    Gli stili ricalcano quelli dell'elenco generale (Overview.razor.css) perche' e' lo stesso
+    dato e deve leggersi allo stesso modo. Non si riusano: il CSS di Blazor e' scoped per
+    componente, e l'unica alternativa - portarli in un foglio globale - li renderebbe modificabili
+    da qualunque pagina senza accorgersene.
+*/
+
+.receipts-table-wrap {
+    overflow-x: auto;
+    background: var(--crm-surface-raised, #fff);
+    border: 1px solid var(--crm-border, #e8ecf1);
+    border-radius: 12px;
+}
+
+.receipts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+}
+
+.receipts-table th {
+    text-align: left;
+    padding: .6rem .8rem;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--crm-text-muted, #64748b);
+    border-bottom: 1px solid var(--crm-border, #e8ecf1);
+    white-space: nowrap;
+}
+
+.receipts-table td {
+    padding: .55rem .8rem;
+    border-bottom: 1px solid var(--crm-border, #eef2f6);
+    color: var(--crm-text, #1f2937);
+}
+
+.receipts-table tbody tr {
+    cursor: pointer;
+    transition: background-color .12s ease;
+}
+
+.receipts-table tbody tr:hover {
+    background: var(--crm-surface-hover, #f1f5f9);
+}
+
+.receipts-table .num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.merchant {
+    max-width: 22rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Allegato ed estrazione automatica: due dettagli che nella scheda erano una riga ciascuno e
+   qui bastano come segno accanto al dato che qualificano. */
+.row-flag {
+    font-size: .95rem;
+    vertical-align: middle;
+    color: var(--crm-text-muted, #64748b);
+}
+
+.row-warn td {
+    background: color-mix(in srgb, #f59e0b 6%, transparent);
+}
+
+.to-convert-badge {
+    font-size: .72rem;
+    font-weight: 600;
+    color: #b45309;
+    background: color-mix(in srgb, #f59e0b 16%, transparent);
+    padding: .1rem .45rem;
+    border-radius: 2rem;
+    white-space: nowrap;
+}
+
+.status {
+    font-size: .72rem;
+    font-weight: 600;
+    padding: .1rem .5rem;
+    border-radius: 2rem;
+    white-space: nowrap;
+}
+
+.status.ok {
+    color: #15803d;
+    background: color-mix(in srgb, #16a34a 12%, transparent);
+}
+
+.status.pending {
+    color: var(--crm-text-muted, #64748b);
+    background: var(--crm-surface-muted, #f1f5f9);
+}
+
+/* Tipologia di spesa */
+.category {
+    font-size: .78rem;
+    white-space: nowrap;
+}
+
+/* "Da indicare" non e' un trattino qualunque: e' la voce che manca al rimborso. */
+.category-missing {
+    font-weight: 600;
+    color: #b45309;
+}
+
+/* Proposta non ancora confermata: si distingue, ma senza gridare. */
+.category-suggested {
+    display: inline-block;
+    margin-left: .25rem;
+    font-size: .7rem;
+    font-weight: 700;
+    color: #4f46e5;
+    cursor: help;
+}
+
+/* Azioni: icone soltanto, perche' la riga intera apre gia' il dettaglio. */
+.row-actions {
+    white-space: nowrap;
+    text-align: right;
+}
+
+.icon-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-left: .15rem;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--crm-text-muted, #64748b);
+    text-decoration: none;
+}
+
+.icon-action .material-icons {
+    font-size: 1rem;
+}
+
+.icon-action:hover {
+    background: var(--crm-surface-hover, #f1f5f9);
+    color: var(--crm-text, #1f2937);
+}
+
+.icon-action.ok:hover {
+    color: #15803d;
+}
+
+.icon-action.danger:hover {
+    color: #b91c1c;
+}
+
+.icon-action:disabled {
+    opacity: .45;
+    cursor: default;
+}
+
+/*
+    Schermi stretti: la tabella scorre in orizzontale come nell'elenco generale, ma prima si
+    lasciano cadere le colonne che su un telefono non servono a decidere niente - la persona
+    (quasi sempre chi guarda) e il controvalore in valuta base. Data, esercente, tipologia e
+    importo restano, ed e' quello che si cerca guardando le spese dal cellulare.
+*/
+@media (max-width: 640px) {
+    .col-user,
+    .col-base {
+        display: none;
+    }
+
+    .merchant {
+        max-width: 10rem;
+    }
+}

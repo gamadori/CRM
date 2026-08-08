@@ -648,6 +648,21 @@
   <data name="LeadsListSubTitle" xml:space="preserve">
     <value>Acquisisci, qualifica e converti i lead in opportunità commerciali.</value>
   </data>
+  <data name="Initiatives" xml:space="preserve">
+    <value>Iniziative</value>
+  </data>
+  <data name="InitiativesListSubTitle" xml:space="preserve">
+    <value>Fiere e trasferte, con quello che sono costate e quello che hanno prodotto.</value>
+  </data>
+  <data name="InitiativesNewSubTitle" xml:space="preserve">
+    <value>Nuova iniziativa</value>
+  </data>
+  <data name="InitiativesEditSubTitle" xml:space="preserve">
+    <value>Modifica iniziativa:</value>
+  </data>
+  <data name="InitiativesDetailsSubTitle" xml:space="preserve">
+    <value>Dettagli iniziativa:</value>
+  </data>
   <data name="CatalogListSubTitle" xml:space="preserve">
     <value>Sfoglia i prodotti a catalogo con immagini e anteprime.</value>
   </data>

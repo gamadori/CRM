@@ -76,6 +76,41 @@ else
                 </div>
             }
 
+            @* Su un'iniziativa le spese sono di piu' persone: senza questo avviso, chi vede solo
+               le proprie confronterebbe il totale del resoconto con la somma delle righe qui
+               sotto e leggerebbe la differenza come un errore dei conti. *@
+            @if (!_canSeeAll)
+            {
+                <div class="alert alert-secondary d-flex align-items-center gap-2 mb-3">
+                    <i class="material-icons">visibility_off</i>
+                    <span>
+                        Vedi solo le <strong>tue</strong> note spese. Il costo totale dell'iniziativa
+                        comprende anche quelle dei colleghi.
+                    </span>
+                </div>
+            }
+
+            @* Spaccato per persona: su una fiera e' la domanda vera ("a chi devo rimborsare cosa"),
+               su un intervento sarebbe rumore, quindi compare solo dove serve. *@
+            @if (InitiativeId.HasValue && _summary.ByUser.Count > 1)
+            {
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body py-2">
+                        <div class="small text-muted mb-1">Da rimborsare</div>
+                        <div class="d-flex flex-wrap gap-3">
+                            @foreach (var user in _summary.ByUser)
+                            {
+                                <span>
+                                    @(user.UserName ?? "—")
+                                    <strong>@Base(user.TotalBase)</strong>
+                                    <span class="text-muted small">(@user.Count)</span>
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
             <div class="alert alert-info d-flex align-items-center gap-2 mb-3">
                 <i class="material-icons">info</i>
                 <span>
@@ -97,10 +132,27 @@ else
         <!-- Azioni -->
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">Elenco note spese</h5>
-            <a href="@CreateUrl" class="btn btn-primary">
-                <i class="material-icons align-middle" style="font-size:18px;">add</i>
-                Aggiungi nota spese
-            </a>
+            <div class="d-flex gap-2">
+                @* Il prospetto stampa esattamente queste spese, raggruppate per tipologia: e' la
+                   forma in cui servono a chi le deve dedurre, perche' vitto, alloggio e trasporti
+                   hanno trattamenti diversi. *@
+                <button type="button" class="btn btn-outline-secondary" disabled="@_isDownloading"
+                        title="Prospetto PDF raggruppato per tipologia" @onclick="DownloadReport">
+                    @if (_isDownloading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    else
+                    {
+                        <i class="material-icons align-middle" style="font-size:18px;">picture_as_pdf</i>
+                    }
+                    Report PDF
+                </button>
+                <a href="@CreateUrl" class="btn btn-primary">
+                    <i class="material-icons align-middle" style="font-size:18px;">add</i>
+                    Aggiungi nota spese
+                </a>
+            </div>
         </div>
 
         <!-- Elenco -->
@@ -118,138 +170,108 @@ else
         }
         else
         {
-            <div class="row g-3">
-                @foreach (var receipt in _receipts)
-                {
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card expense-receipt-card border-0 shadow-sm h-100 @(receipt.IsConfirmed ? "border-start border-success border-3" : "")">
-                            <div class="card-body d-flex flex-column">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <div>
-                                        @if (receipt.HasAttachment)
-                                        {
-                                            <i class="material-icons text-danger align-middle">picture_as_pdf</i>
-                                        }
-                                        else
-                                        {
-                                            <i class="material-icons text-secondary align-middle">description</i>
-                                        }
-                                        <strong class="ms-1">#@receipt.Id</strong>
-                                    </div>
-                                    @if (receipt.IsConfirmed)
+            @* Tabella e non schede: con una fiera le spese sono decine, e qui si confrontano
+               importi e date incolonnati per mettere insieme un rimborso. Le schede reggevano
+               quando l'unico contenitore era l'intervento, cioe' due o tre righe. Stesso
+               linguaggio visivo dell'elenco generale: e' lo stesso dato. *@
+            <div class="receipts-table-wrap">
+                <table class="receipts-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            @if (_showUserColumn)
+                            {
+                                <th class="col-user">Persona</th>
+                            }
+                            <th>Esercente</th>
+                            <th>Tipologia</th>
+                            <th class="num">Importo</th>
+                            <th class="num col-base">In @(_summary?.BaseCurrency ?? "EUR")</th>
+                            <th>Stato</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var receipt in _receipts)
+                        {
+                            <tr class="@(receipt.NeedsConversion ? "row-warn" : "")" @onclick="() => OpenReceipt(receipt.Id)">
+                                <td class="nowrap">
+                                    @((receipt.TransactionDate ?? receipt.CreatedDate).ToString("dd/MM/yyyy"))
+                                    @if (receipt.HasAttachment)
                                     {
-                                        <span class="badge bg-success">
-                                            <i class="material-icons align-middle" style="font-size:14px;">check_circle</i>
-                                            Confermata
+                                        <i class="material-icons row-flag" title="Documento allegato">attach_file</i>
+                                    }
+                                </td>
+                                @if (_showUserColumn)
+                                {
+                                    <td class="nowrap col-user">@(receipt.UserSpenderName ?? "—")</td>
+                                }
+                                <td class="merchant">
+                                    @(receipt.MerchantName ?? receipt.Description ?? "—")
+                                    @if (receipt.WasAutoExtracted)
+                                    {
+                                        <i class="material-icons row-flag" title="Estratto automaticamente dal documento">smart_toy</i>
+                                    }
+                                </td>
+                                <td>
+                                    @if (receipt.Category.HasValue)
+                                    {
+                                        <span class="category">
+                                            @ExpenseCategories.Label(receipt.Category)
+                                            @if (receipt.CategoryIsSuggestion)
+                                            {
+                                                @* Una proposta non confermata si distingue: su questo
+                                                   campo cambia la deducibilita'. *@
+                                                <span class="category-suggested" title="@receipt.CategoryReason">?</span>
+                                            }
                                         </span>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-warning text-dark">
-                                            <i class="material-icons align-middle" style="font-size:14px;">pending</i>
-                                            In attesa
-                                        </span>
+                                        <span class="category category-missing">da indicare</span>
                                     }
-                                </div>
-
-                                @if (!string.IsNullOrEmpty(receipt.MerchantName))
-                                {
-                                    <h6 class="card-title">@receipt.MerchantName</h6>
-                                }
-
-                                @if (!string.IsNullOrEmpty(receipt.Description))
-                                {
-                                    <p class="card-text text-muted small">@receipt.Description</p>
-                                }
-
-                                <div class="mb-2">
-                                    @if (receipt.TransactionDate.HasValue)
-                                    {
-                                        <div class="small text-muted">
-                                            <i class="material-icons align-middle" style="font-size:16px;">event</i>
-                                            @receipt.TransactionDate.Value.ToString("dd/MM/yyyy")
-                                        </div>
-                                    }
-                                    @if (!string.IsNullOrEmpty(receipt.UserSpenderName))
-                                    {
-                                        <div class="small text-muted">
-                                            <i class="material-icons align-middle" style="font-size:16px;">person</i>
-                                            @receipt.UserSpenderName
-                                        </div>
-                                    }
-                                </div>
-
-                                @if (receipt.TotalAmount.HasValue)
-                                {
-                                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                                        <div>
-                                            <div class="small text-muted">Totale</div>
-                                            @* Valuta della riga, non quella di casa: e' quello che c'e'
-                                               scritto sul documento. *@
-                                            <div class="h5 mb-0 text-success">@CurrencyUi.Money(receipt.TotalAmount, receipt.Currency)</div>
-                                        </div>
-                                        @if (receipt.TaxAmount.HasValue)
-                                        {
-                                            <div>
-                                                <div class="small text-muted">IVA</div>
-                                                <div class="small">@CurrencyUi.Money(receipt.TaxAmount, receipt.Currency)</div>
-                                            </div>
-                                        }
-                                    </div>
-
+                                </td>
+                                @* Valuta della riga, non quella di casa: e' quello che c'e' scritto
+                                   sul documento. *@
+                                <td class="num">@CurrencyUi.Money(receipt.TotalAmount, receipt.Currency ?? "?")</td>
+                                <td class="num col-base">
                                     @if (receipt.NeedsConversion)
                                     {
-                                        <div class="small text-warning mt-1">
-                                            <i class="material-icons align-middle" style="font-size:14px;">warning</i>
-                                            Da convertire: non entra nei totali
-                                        </div>
+                                        <span class="to-convert-badge" title="Manca la valuta o il cambio: non entra nei totali">da convertire</span>
                                     }
-                                    else if (!string.Equals(receipt.Currency, _summary?.BaseCurrency, StringComparison.OrdinalIgnoreCase))
+                                    else
                                     {
-                                        <div class="small text-muted mt-1">
-                                            = @CurrencyUi.Money(receipt.AmountBase, _summary?.BaseCurrency)
-                                        </div>
+                                        @CurrencyUi.Money(receipt.AmountBase, _summary?.BaseCurrency)
                                     }
-                                }
-
-                                @if (receipt.WasAutoExtracted && receipt.ExtractionConfidence.HasValue)
-                                {
-                                    <div class="mt-2">
-                                        <small class="text-muted">
-                                            <i class="material-icons align-middle" style="font-size:14px;">smart_toy</i>
-                                            Estratto automaticamente (@((receipt.ExtractionConfidence.Value * 100).ToString("F0"))%)
-                                        </small>
-                                    </div>
-                                }
-
-                                <div class="expense-receipt-actions mt-auto pt-3 d-flex gap-2">
-                                    <a href="@DetailsUrl(receipt.Id)" class="btn btn-sm btn-outline-primary flex-fill"
-                                       title="Visualizza">
-                                        <i class="material-icons align-middle" style="font-size:16px;">visibility</i>
-                                    </a>
-                                    <a href="@EditUrl(receipt.Id)" class="btn btn-sm btn-outline-secondary"
-                                       title="Modifica">
-                                        <i class="material-icons align-middle" style="font-size:16px;">edit</i>
+                                </td>
+                                <td>
+                                    <span class="status @(receipt.IsConfirmed ? "ok" : "pending")">
+                                        @(receipt.IsConfirmed ? "Confermata" : "In attesa")
+                                    </span>
+                                </td>
+                                @* Le azioni non devono far partire anche l'apertura della riga. *@
+                                <td class="row-actions" @onclick:stopPropagation="true">
+                                    <a href="@EditUrl(receipt.Id)" class="icon-action" title="Modifica">
+                                        <i class="material-icons">edit</i>
                                     </a>
                                     @if (!receipt.IsConfirmed)
                                     {
-                                        <button @onclick="() => ConfirmReceipt(receipt.Id)"
-                                                class="btn btn-sm btn-success"
-                                                disabled="@_isConfirming" title="Conferma i dati">
-                                            <i class="material-icons align-middle" style="font-size:16px;">check</i>
+                                        <button type="button" class="icon-action ok" disabled="@_isConfirming"
+                                                title="Conferma i dati" @onclick="() => ConfirmReceipt(receipt.Id)">
+                                            <i class="material-icons">check</i>
                                         </button>
                                     }
-                                    <button @onclick="() => DeleteReceipt(receipt)"
-                                            class="btn btn-sm btn-outline-danger"
-                                            disabled="@_isDeleting" title="Elimina">
-                                        <i class="material-icons align-middle" style="font-size:16px;">delete</i>
+                                    <button type="button" class="icon-action danger" disabled="@_isDeleting"
+                                            title="Elimina" @onclick="() => DeleteReceipt(receipt)">
+                                        <i class="material-icons">delete</i>
                                     </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
+
         }
 
         @if (!Embedded)
@@ -264,21 +286,5 @@ else
     </div>
 }
 
-<style>
-    .expense-receipt-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .expense-receipt-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-    }
-
-    .expense-receipt-card .card-body {
-        min-height: 100%;
-    }
-
-    .expense-receipt-actions {
-        width: 100%;
-    }
-</style>
+@* Gli stili della tabella stanno in Index.razor.css: sono scoped, quindi non si prendono da
+   Overview.razor.css anche se le due tabelle devono somigliarsi. *@

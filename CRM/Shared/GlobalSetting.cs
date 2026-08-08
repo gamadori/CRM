@@ -88,6 +88,23 @@ namespace CRM.Shared
         [MaxLength(3)]
         public string BaseCurrency { get; set; } = "EUR";
 
+        /// <summary>
+        /// Ripiego sul modello quando ne' il tipo di documento ne' l'esercente dicono di che
+        /// spesa si tratta. Spento per scelta: i primi due livelli non costano niente e
+        /// funzionano sempre, questo ha un costo a chiamata e va acceso da chi lo paga.
+        /// </summary>
+        [Display(Name = "Tipologia note spese: ripiego sull'AI")]
+        public bool ExpenseCategoryAiEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Sotto questa confidenza la tipologia proposta viene scartata e il campo resta da
+        /// compilare. Vale per tutti i livelli, non solo per l'AI: una voce di rimborso sbagliata
+        /// falsa la deducibilita', e nessuno va a ricontrollare un campo che sembra gia' pieno.
+        /// </summary>
+        [Display(Name = "Tipologia note spese: confidenza minima per proporla")]
+        [Range(0, 1)]
+        public double ExpenseCategoryMinConfidence { get; set; } = 0.6;
+
         [Display(Name = "Input vocale assistente AI")]
         public VoiceInputMode VoiceInputMode { get; set; } = VoiceInputMode.Off;
 

@@ -1,7 +1,10 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using Anthropic;
 using Anthropic.Models.Messages;
+using CRM.Server.Services.Usage;
+using CRM.Shared;
 
 namespace CRM.Server.Services.Email
 {
@@ -16,12 +19,14 @@ namespace CRM.Server.Services.Email
         private const int MaxBodyChars = 6000;
 
         private readonly ILogger<InboundEmailAiService> _logger;
+        private readonly IUsageRecorder _usage;
         private readonly AnthropicClient? _client;
         private readonly string _model;
 
-        public InboundEmailAiService(IConfiguration configuration, ILogger<InboundEmailAiService> logger)
+        public InboundEmailAiService(IConfiguration configuration, ILogger<InboundEmailAiService> logger, IUsageRecorder usage)
         {
             _logger = logger;
+            _usage = usage;
 
             var apiKey = configuration["Anthropic:ApiKey"];
             _model = configuration["Anthropic:ChatModel"] ?? "claude-opus-4-8";
@@ -37,6 +42,8 @@ namespace CRM.Server.Services.Email
             if (_client == null)
                 return null;
 
+            var stopwatch = Stopwatch.StartNew();
+
             try
             {
                 var response = await _client.Messages.Create(new MessageCreateParams
@@ -50,6 +57,12 @@ namespace CRM.Server.Services.Email
                         new() { Role = Role.User, Content = BuildUserPrompt(subject, body) }
                     },
                 });
+
+                // Nessun utente: il triage gira sul polling della posta, e quella spesa non e'
+                // di nessuno in particolare.
+                await _usage.RecordTokensAsync(
+                    ExternalServiceFeature.InboundEmailTriage, _model, response.TokenUsageOf(),
+                    true, stopwatch.ElapsedMilliseconds);
 
                 var text = string.Concat(
                     response.Content
