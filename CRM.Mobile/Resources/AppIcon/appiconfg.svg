@@ -1,19 +1,37 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--
-  Primo piano dell'icona: il biglietto da visita, che e' quello che l'app fa.
+  Primo piano dell'icona: il biglietto da visita dentro le parentesi di scansione.
+
+  E' l'artwork ridotto all'elemento che sopravvive a 48 pixel. La scritta "CRM", l'arco e gli
+  smussi metallici sono rimasti sullo splash, dove l'immagine si vede grande: dentro un'icona di
+  launcher diventerebbero una macchia. Qui resta il gesto che distingue questa app dalle altre
+  del CRM - inquadrare un biglietto - disegnato in piatto.
 
   Sfondo trasparente e disegno centrato: e' il livello che Android muove rispetto allo sfondo
-  nell'effetto di profondita' delle icone adattive, e che ForegroundScale rimpicciolisce per
-  tenerlo dentro la zona che nessuna maschera ritaglia.
+  nelle icone adattive, che ForegroundScale rimpicciolisce per tenerlo dentro la zona sicura, e
+  da cui il sistema ricava la silhouette dell'icona a tema di Android 13.
+
+  Colori campionati dall'artwork: #0094FC il blu, #4ED6FC l'azzurro dei bagliori.
 -->
 <svg width="456" height="456" viewBox="0 0 456 456" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- Parentesi di scansione: dicono "inquadra", ed e' l'unica parte che va fino ai bordi -->
+  <g fill="none" stroke="#4ED6FC" stroke-width="16" stroke-linecap="round">
+    <path d="M36 148 L36 108 Q36 92 52 92 L92 92"/>
+    <path d="M420 148 L420 108 Q420 92 404 92 L364 92"/>
+    <path d="M36 308 L36 348 Q36 364 52 364 L92 364"/>
+    <path d="M420 308 L420 348 Q420 364 404 364 L364 364"/>
+  </g>
+
   <!-- Il cartoncino -->
-  <rect x="78" y="121" width="300" height="214" rx="36" fill="#FFFFFF"/>
+  <rect x="86" y="130" width="284" height="196" rx="20" fill="#F2F6FA"/>
 
-  <!-- Il nome, in evidenza: e' il campo che si legge per primo su un biglietto -->
-  <rect x="121" y="171" width="128" height="28" rx="14" fill="#0F766E"/>
+  <!-- La persona: testa e spalle -->
+  <circle cx="142" cy="204" r="26" fill="#0094FC"/>
+  <path d="M112 276c0-16.6 13.4-30 30-30s30 13.4 30 30z" fill="#0094FC"/>
 
-  <!-- Le righe secondarie (azienda, contatti) -->
-  <rect x="121" y="228" width="214" height="21" rx="10" fill="#94A3B8"/>
-  <rect x="121" y="271" width="150" height="21" rx="10" fill="#94A3B8"/>
+  <!-- Il nome in evidenza, poi le righe secondarie -->
+  <rect x="200" y="184" width="156" height="18" rx="9" fill="#334155"/>
+  <rect x="200" y="220" width="156" height="14" rx="7" fill="#94A3B8"/>
+  <rect x="200" y="250" width="104" height="14" rx="7" fill="#94A3B8"/>
 </svg>

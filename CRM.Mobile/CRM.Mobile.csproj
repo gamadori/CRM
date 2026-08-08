@@ -29,8 +29,16 @@
     <MauiIcon Include="Resources\AppIcon\appicon.svg"
               ForegroundFile="Resources\AppIcon\appiconfg.svg"
               ForegroundScale="0.65"
-              Color="#0F766E" />
-    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0F766E" BaseSize="128,128" />
+              Color="#081524" />
+
+    <!--
+      Sullo splash ci va l'artwork completo: si vede grande, per qualche istante e da fermo,
+      quindi il dettaglio che affonderebbe un'icona di launcher qui e' un pregio.
+      BaseSize 256 e' la misura a cui viene disegnato: dai 1024px del file si ricavano il 2x e il
+      3x senza mai ingrandire. Color e' il blu notte campionato dall'immagine, cosi' la cornice
+      attorno all'artwork non si stacca sugli schermi di proporzioni diverse.
+    -->
+    <MauiSplashScreen Include="Resources\Splash\splash.png" Color="#081524" BaseSize="256,256" />
     <MauiImage Include="Resources\Images\*" />
     <MauiFont Include="Resources\Fonts\*" />
   </ItemGroup>

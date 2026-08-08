@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--
-  Sfondo dell'icona: tinta piena e basta.
+  Sfondo dell'icona: il blu notte campionato dall'artwork (#081524).
 
-  Nessun angolo arrotondato di proposito. Android e iOS applicano gia' la loro maschera - lo
+  Nessun angolo arrotondato di proposito: Android e iOS applicano gia' la loro maschera - lo
   squircle di iOS, forme che cambiano da launcher a launcher su Android - e un arrotondamento
-  disegnato qui verrebbe arrotondato una seconda volta.
+  disegnato qui verrebbe arrotondato una seconda volta, lasciando un bordo scuro visibile.
 
-  456x456 e' la tela dell'icona adattiva Android: e' la misura su cui e' tarata la maschera.
-  Il colore viene comunque riapplicato dall'attributo Color di <MauiIcon>.
+  456x456 e' la tela dell'icona adattiva Android, la misura su cui e' tarata la maschera.
 -->
 <svg width="456" height="456" viewBox="0 0 456 456" xmlns="http://www.w3.org/2000/svg">
-  <rect width="456" height="456" fill="#0F766E"/>
+  <rect width="456" height="456" fill="#081524"/>
 </svg>
