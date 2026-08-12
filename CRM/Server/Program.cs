@@ -30,12 +30,37 @@ builder.Logging.AddDebug();
 // Configura licenza QuestPDF (Community - gratuita per progetti sotto $1M revenue)
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
+// ─── Chiavi di cifratura ────────────────────────────────────────────────────────────────
+// Le password della posta e le chiavi dei provider sono cifrate sul database (vedi
+// ISecretProtector). Le chiavi che le decifrano stanno in questa cartella: se sparisce, quei
+// segreti non sono piu' leggibili e vanno reinseriti a mano. VA NEL BACKUP.
+//
+// Il percorso e' obbligatorio di proposito. Lasciandolo vuoto, Data Protection userebbe una
+// posizione di default che in certi scenari (IIS senza profilo utente caricato) viene ricreata
+// a ogni riavvio: si cifrerebbe con chiavi che spariscono, cioe' il modo peggiore di perdere
+// dei dati - in silenzio e solo dopo un riavvio, quando ormai nessuno collega le due cose.
 var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
-if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+if (string.IsNullOrWhiteSpace(dataProtectionKeysPath))
 {
-    builder.Services.AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+    throw new InvalidOperationException(
+        "DataProtection:KeysPath non è configurato. Serve una cartella dove conservare le chiavi " +
+        "che cifrano i segreti sul database (password SMTP/IMAP, chiavi dei provider). " +
+        "Impostala in appsettings.json, per esempio \"DataProtection\": { \"KeysPath\": " +
+        "\"C:\\\\ProgramData\\\\CRM\\\\DataProtection-Keys\" }, su un percorso incluso nei backup " +
+        "e non accessibile agli utenti dell'applicazione. Perdere quella cartella significa " +
+        "reinserire a mano le credenziali della posta.");
 }
+
+dataProtectionKeysPath = Environment.ExpandEnvironmentVariables(dataProtectionKeysPath);
+Directory.CreateDirectory(dataProtectionKeysPath);
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+    // Senza un nome esplicito lo scopo include il percorso dell'applicazione: spostare
+    // l'installazione in un'altra cartella renderebbe illeggibile tutto il pregresso.
+    .SetApplicationName("CRM");
+
+builder.Services.AddSingleton<CRM.Server.Data.ISecretProtector, CRM.Server.Data.DataProtectionSecretProtector>();
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -43,6 +68,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(connectionString);
     options.UseOpenIddict();
+    // Il modello cambia a seconda che i segreti siano cifrati o no: la cache deve saperlo.
+    options.ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory,
+                           CRM.Server.Data.SecretAwareModelCacheKeyFactory>();
     // Le migration sono gestite a mano (il tool 'dotnet ef migrations add' e' incompatibile con
     // questo SDK .NET 10, vedi memoria ef-tooling): lo snapshot puo' non essere perfettamente
     // allineato, quindi si sopprime il blocco su modifiche pendenti in fase di database update.
@@ -477,6 +505,10 @@ using (var scope = scopeFactory.CreateScope())
     // ticket, impostazioni). Additivo e idempotente: gira anche in produzione senza toccare
     // nulla di gia' presente. Vedi DbInitializer.
     CRM.Server.Data.DbInitializer.SeedAsync(scope.ServiceProvider).GetAwaiter().GetResult();
+
+    // Porta sotto cifratura i segreti scritti prima che la cifratura esistesse, e segnala quelli
+    // che le chiavi attuali non riescono piu' a leggere.
+    CRM.Server.Data.SecretsProtectionStartup.RunAsync(scope.ServiceProvider).GetAwaiter().GetResult();
 }
 
 

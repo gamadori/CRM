@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Mono.TextTemplating;
 using Org.BouncyCastle.Math.EC.Rfc7748;
 using System;
@@ -17,13 +18,36 @@ namespace CRM.Server.Data
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+        private readonly ISecretProtector _secretProtector;
+
+        /// <summary>
+        /// Contesto <b>senza cifratura</b>: legge e scrive i segreti come sono. Serve ai test e
+        /// alla conversione delle righe vecchie, che ha bisogno di vedere il valore grezzo per
+        /// capire se e' gia' cifrato. In esecuzione normale il contenitore usa l'altro costruttore,
+        /// perche' sceglie sempre quello con piu' parametri che sa soddisfare.
+        /// </summary>
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : this(options, DisabledSecretProtector.Instance)
         {
-           
         }
+
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ISecretProtector secretProtector)
+            : base(options)
+        {
+            _secretProtector = secretProtector ?? DisabledSecretProtector.Instance;
+        }
+
+        /// <summary>
+        /// Se questo contesto cifra i segreti. Entra nella chiave della cache del modello
+        /// (<see cref="SecretAwareModelCacheKeyFactory"/>): senza, il primo modello costruito
+        /// varrebbe per tutti e un contesto in chiaro si ritroverebbe il convertitore dell'altro.
+        /// </summary>
+        public bool SecretsProtected => _secretProtector.Enabled;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            ConfigureSecrets(modelBuilder);
+
             modelBuilder.Entity<ApplicationUser>().HasMany(x => x.Tickets).WithOne(x => x.UserOpened).HasForeignKey(y => y.IdUserOpened);
             modelBuilder.Entity<ApplicationUser>().HasMany(x => x.UserClosedTickets).WithOne(x => x.UserClosed).HasForeignKey(y => y.IdUserClosed);
             modelBuilder.Entity<Contact>().HasMany(x => x.ApplicationUsers).WithOne(x => x.Contact).HasForeignKey(x => x.IdContact).OnDelete(DeleteBehavior.SetNull);
@@ -998,6 +1022,33 @@ namespace CRM.Server.Data
                 .WithMany()
                 .HasForeignKey(s => s.IdFallbackGroup)
                 .OnDelete(DeleteBehavior.NoAction);
+        }
+
+        /// <summary>
+        /// Cifratura trasparente dei segreti: si entra e si esce dal database gia' cifrati, e il
+        /// resto del codice non se ne accorge. E' l'unico posto che regge, perche' queste colonne
+        /// le leggono anche i servizi in sottofondo (outbox, IMAP, instradamento inbound) e non
+        /// solo le maschere: cifrare "nel controller" avrebbe lasciato scoperta meta' dei percorsi.
+        /// <para>
+        /// EF non chiama il convertitore sui NULL, quindi qui dentro non arrivano mai valori nulli.
+        /// I confronti per rilevare le modifiche avvengono sul valore in chiaro, quindi il fatto
+        /// che la cifratura produca ogni volta un testo diverso non genera salvataggi fantasma.
+        /// </para>
+        /// </summary>
+        private void ConfigureSecrets(ModelBuilder modelBuilder)
+        {
+            var conversione = new ValueConverter<string, string>(
+                v => _secretProtector.Protect(v),
+                v => _secretProtector.Unprotect(v));
+
+            modelBuilder.Entity<SmtpSetting>().Property(x => x.Password).HasConversion(conversione);
+            modelBuilder.Entity<SmtpSetting>().Property(x => x.ApiKey).HasConversion(conversione);
+
+            modelBuilder.Entity<EmailInbox>().Property(x => x.Password).HasConversion(conversione);
+
+            // Il token del webhook autentica chi ci scrive dentro la posta in arrivo: in chiaro su
+            // un backup vale come una password.
+            modelBuilder.Entity<EmailInbox>().Property(x => x.WebhookToken).HasConversion(conversione);
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

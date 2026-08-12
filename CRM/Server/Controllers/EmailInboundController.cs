@@ -39,8 +39,15 @@ namespace CRM.Server.Controllers
             if (string.IsNullOrEmpty(token))
                 return Unauthorized();
 
-            var inbox = await _context.EmailInboxes.AsNoTracking()
-                .FirstOrDefaultAsync(i => i.IsActive && i.Mode == EmailInboxMode.InboundParseEsp && i.WebhookToken == token, ct);
+            // Il token e' cifrato sulla colonna, quindi il confronto NON puo' stare nella query:
+            // ogni cifratura produce un testo diverso, e "WebhookToken == token" non troverebbe
+            // mai niente. Si caricano le caselle inbound (sono una manciata) e si confronta in
+            // memoria sul valore decifrato, a tempo costante perche' il token e' un segreto.
+            var candidate = await _context.EmailInboxes.AsNoTracking()
+                .Where(i => i.IsActive && i.Mode == EmailInboxMode.InboundParseEsp)
+                .ToListAsync(ct);
+
+            var inbox = candidate.FirstOrDefault(i => TokenMatches(i.WebhookToken, token));
 
             if (inbox == null)
                 return Unauthorized();
@@ -54,6 +61,20 @@ namespace CRM.Server.Controllers
 
             var ingested = await _router.IngestAsync(message, ct);
             return Ok(new { received = ingested ? 1 : 0 });
+        }
+
+        /// <summary>
+        /// Confronto del token del webhook a tempo costante: e' un segreto, e un confronto che si
+        /// ferma al primo carattere diverso racconta quanti ne ha indovinati chi prova.
+        /// </summary>
+        private static bool TokenMatches(string? salvato, string presentato)
+        {
+            if (string.IsNullOrEmpty(salvato))
+                return false;
+
+            return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+                System.Text.Encoding.UTF8.GetBytes(salvato),
+                System.Text.Encoding.UTF8.GetBytes(presentato));
         }
 
         private static InboundMessage ParseForm(IFormCollection form, EmailInbox inbox)
