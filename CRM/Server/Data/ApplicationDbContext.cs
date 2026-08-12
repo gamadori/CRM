@@ -1236,5 +1236,52 @@ namespace CRM.Server.Data
         public DbSet<ArticleLicenseFeatureDef> ArticleLicenseFeatureDefs => Set<ArticleLicenseFeatureDef>();
         public DbSet<ArticleLicense> ArticleLicenses => Set<ArticleLicense>();
         public DbSet<ArticleLicenseFeature> ArticleLicenseFeatures => Set<ArticleLicenseFeature>();
+
+        public override int SaveChanges()
+        {
+            NormalizeInterventionTimes();
+            return base.SaveChanges();
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            NormalizeInterventionTimes();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        /// <summary>
+        /// I tempi di intervento si salvano <b>sempre al minuto tondo</b>, secondi e millisecondi
+        /// azzerati.
+        /// <para>
+        /// Non e' un vezzo di presentazione: e' l'invariante da cui dipende la coerenza di tutti i
+        /// totali. I minuti di un segmento si calcolano in due modi diversi a seconda di chi
+        /// chiede - <c>DATEDIFF(minute, ...)</c> lato SQL per i totali del ticket e per la cache
+        /// <c>TicketIntervention.Minute</c>, la differenza fra i due orari in memoria per il
+        /// verbale PDF e per le ore di commessa - e le due strade danno la stessa risposta solo se
+        /// i secondi sono zero. Da 10:00:59 a 10:01:00 SQL conta un minuto e .NET zero: il verbale
+        /// firmato dal cliente e il totale del ticket comincerebbero a non tornare, di poco e
+        /// senza un errore.
+        /// </para>
+        /// <para>
+        /// Il troncamento c'era gia' nel dialogo dei tempi, cioe' in una maschera: qualunque altra
+        /// via di scrittura - un'importazione, l'app mobile, un endpoint nuovo - lo scavalcava
+        /// senza rompere niente di visibile. Qui invece non si aggira, perche' passa di qui
+        /// qualunque salvataggio.
+        /// </para>
+        /// </summary>
+        private void NormalizeInterventionTimes()
+        {
+            foreach (var voce in ChangeTracker.Entries<TicketInterventionTime>())
+            {
+                if (voce.State != EntityState.Added && voce.State != EntityState.Modified)
+                    continue;
+
+                voce.Entity.StartDateTime = TroncaAlMinuto(voce.Entity.StartDateTime);
+                voce.Entity.EndDateTime = TroncaAlMinuto(voce.Entity.EndDateTime);
+            }
+        }
+
+        private static DateTime TroncaAlMinuto(DateTime valore)
+            => new(valore.Year, valore.Month, valore.Day, valore.Hour, valore.Minute, 0, valore.Kind);
     }
 }

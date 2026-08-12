@@ -48,8 +48,10 @@ namespace CRM.Client.Pages.TicketInterventions
         }
 
         /// <summary>
-        /// Azzera secondi e millisecondi. Necessario perché il calcolo del tempo lato server
-        /// usa DATEDIFF(minute, ...) e i secondi residui falsano i totali di lavoro/viaggio.
+        /// Azzera secondi e millisecondi, così quello che si vede nella maschera è già quello che
+        /// verrà salvato. L'invariante vera però è garantita dal server (vedi
+        /// <c>ApplicationDbContext.NormalizeInterventionTimes</c>): qui è cortesia verso chi
+        /// guarda, non la difesa.
         /// </summary>
         private static DateTime TruncateToMinute(DateTime value)
             => new DateTime(value.Year, value.Month, value.Day, value.Hour, value.Minute, 0, value.Kind);
