@@ -337,7 +337,7 @@ else
                             <span class="info-value">@_ticket.UserOpened</span>
                         </div>
 
-                        @if (_ticket.HasPendingAiSuggestion)
+                        @if (_canViewAiRouting && _ticket.HasPendingAiSuggestion)
                         {
                             <!-- Suggerimento sotto soglia: la scelta resta all'operatore -->
                             <div class="ai-routing-panel">
@@ -387,7 +387,7 @@ else
                                     <div>
                                         <div class="claim-title">
                                             @(string.IsNullOrWhiteSpace(_ticket.GroupAssigned) ? "Coda operativa" : _ticket.GroupAssigned)
-                                            @if (_ticket.AiRoutingApplied && _ticket.IdGroupAssigned != null)
+                                            @if (_canViewAiRouting && _ticket.AiRoutingApplied && _ticket.IdGroupAssigned != null)
                                             {
                                                 <span class="ai-assigned-badge"
                                                       title="@($"Assegnato dallo smistamento AI con confidenza {Math.Round((_ticket.AiRoutingConfidence ?? 0) * 100)}%. {_ticket.AiRoutingReason}")">

@@ -255,6 +255,102 @@
     font-size: 0.85rem;
 }
 
+/* ─── Assegnazione ────────────────────────────────────────────────────── */
+.assigned-users-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--crm-border, #e8ecf1);
+    border-radius: 10px;
+    background: var(--crm-surface-muted, #f8f9fb);
+}
+
+.assigned-users-empty {
+    padding: 0.9rem;
+    border: 1px dashed var(--crm-border-strong, #d9e1e8);
+    border-radius: 10px;
+    background: var(--crm-surface-muted, #f8f9fb);
+    color: var(--crm-text-muted, #94a3b8);
+    font-size: 0.88rem;
+    text-align: center;
+}
+
+.assigned-user-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.55rem 0.35rem 0.35rem;
+    border: 1px solid var(--crm-border, #e8ecf1);
+    border-radius: 2rem;
+    background: var(--crm-surface-raised, #ffffff);
+    font-size: 0.85rem;
+    color: var(--crm-text, #374151);
+}
+
+/* Il primo scelto e' il responsabile: e' l'unica differenza che conta fra le pastiglie */
+.assigned-user-chip.main {
+    border-color: var(--crm-link, #0f4a8a);
+    background: color-mix(in srgb, var(--crm-link, #0f4a8a) 8%, var(--crm-surface-raised, #ffffff));
+}
+
+.chip-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--crm-link, #0f4a8a) 85%, #000);
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.chip-name {
+    font-weight: 500;
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chip-main-star {
+    color: var(--crm-link, #0f4a8a);
+    font-size: 0.85rem;
+}
+
+.chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--crm-text-muted, #94a3b8);
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+
+.chip-remove:hover {
+    background: color-mix(in srgb, #dc2626 12%, transparent);
+    color: #dc2626;
+}
+
+.chip-remove i {
+    font-size: 0.7rem;
+}
+
+.assign-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
 /* ─── Riepilogo ───────────────────────────────────────────────────────── */
 .recap-list {
     display: grid;

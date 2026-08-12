@@ -49,6 +49,9 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         NotificationService NotificationService { get; set; }
 
+        [Inject]
+        ICurrentUserService CurrentUserService { get; set; }
+
         [Parameter]
         public int? Id { get; set; }
 
@@ -96,8 +99,18 @@ namespace CRM.Client.Pages.Tickets
         /// <summary>Email in arrivo da cui è nato (o a cui è agganciato) il ticket, se presente.</summary>
         private int? _idInboundEmail;
 
+        /// <summary>
+        /// Lo smistamento AI si mostra a chi puo' assegnare il ticket ed e' dell'azienda madre:
+        /// sono due assi diversi e servono entrambi, perche' un utente di un'altra azienda puo'
+        /// avere ruolo Standard. Il server non manda nemmeno il dato, questo e' il secondo cancello.
+        /// </summary>
+        private bool _canViewAiRouting;
+
         protected override async Task OnInitializedAsync()
         {
+            var user = await CurrentUserService.Get();
+            _canViewAiRouting = user?.CanTicketAssign == true && user?.CanViewInternalData == true;
+
             await LoadData();
             await LoadInboundEmail();
             _pageHeader = await HeaderService.Create(PageMode);

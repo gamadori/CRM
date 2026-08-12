@@ -62,6 +62,9 @@ namespace CRM.Client.Pages.Tickets
         [Inject]
         private IHeaderService HeaderService { get; set; }
 
+        [Inject]
+        private DialogService DialogService { get; set; }
+
         [Parameter]
         public PageModality PageMode { get; set; } = PageModality.Visualization;
 
@@ -79,7 +82,16 @@ namespace CRM.Client.Pages.Tickets
         private TicketType _ticketType;
         private ProductDTO _product;
         private ArticleDTO _article;
-        private ApplicationUser _userAssigned = new ApplicationUser();
+        /// <summary>
+        /// Assegnatari scelti nel passo di assegnazione, nell'ordine di selezione. Il primo e' il
+        /// responsabile e finisce in <see cref="Ticket.IdUserAssigned"/>; tutti quanti vengono poi
+        /// salvati come assegnazioni multiple, come nella modifica del ticket.
+        /// </summary>
+        private HashSet<string> _selectedUserIds = new HashSet<string>();
+
+        /// <summary>Gli utenti selezionati risolti per nome: il dialogo restituisce solo gli id.</summary>
+        private List<ApplicationUser> _selectedUsers = new List<ApplicationUser>();
+
         private string _messageCancel = "Annullare inserimento nuovo Ticket?";
         private string _messageError;
 
@@ -204,7 +216,7 @@ namespace CRM.Client.Pages.Tickets
 
                 case TicketCreateSteps.Assign:
                     _backDisabled = false;
-                    await LoadUsers(new LoadDataArgs());
+                    await LoadUsers();
                     break;
 
                 default:
@@ -313,11 +325,17 @@ namespace CRM.Client.Pages.Tickets
         protected async void Submit()
         {
             _ticket.TicketType = null;
+            SyncMainAssignee();
             var result = await _service.Post(_ticket);
 
             if (result != null)
             {
                 _ticket = result.Data;
+
+                // Le assegnazioni multiple si scrivono solo ora: prima il ticket non aveva un id.
+                if (_ticket?.Id > 0 && _selectedUserIds.Any())
+                    await SaveMultipleAssignments(_ticket.Id);
+
                 await NextStep();
 
 
@@ -326,6 +344,37 @@ namespace CRM.Client.Pages.Tickets
             {
                 _messageError = "Si è verificato un errore durante il salvataggio del Ticket nel server";
                 MsgBoxError();
+            }
+        }
+
+        /// <summary>
+        /// Salva gli assegnatari del ticket appena creato. Un errore qui non annulla la creazione:
+        /// il ticket esiste, resta con il solo responsabile, e l'operatore deve saperlo.
+        /// </summary>
+        private async Task SaveMultipleAssignments(int ticketId)
+        {
+            try
+            {
+                var request = new AssignUsersRequest
+                {
+                    TicketId = ticketId,
+                    UserIds = _selectedUserIds.ToList()
+                };
+
+                var response = await _service.AssignUsers(ticketId, request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorMsg = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Errore assegnazione utenti: {errorMsg}");
+
+                    Notify(Localize["Failed to assign users"], NotificationSeverity.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore salvataggio assegnazioni: {ex.Message}");
+                Notify(Localize["Failed to assign users"], NotificationSeverity.Warning);
             }
         }
 
@@ -395,17 +444,21 @@ namespace CRM.Client.Pages.Tickets
         }
 
 
-        public async Task LoadUsers(LoadDataArgs args)
+        /// <summary>
+        /// Candidati all'assegnazione: gli stessi che propone il dialogo, cioe' chi puo' lavorare
+        /// questo tipo di ticket. Servono qui per dare un nome agli id che il dialogo restituisce.
+        /// </summary>
+        public async Task LoadUsers()
         {
-            UsersFilterModel request = new UsersFilterModel();
-
-            if (args != null && !string.IsNullOrEmpty(args.Filter))
+            UsersFilterModel request = new UsersFilterModel
             {
-                request.NameComplete = args.Filter;
-            }
+                TicketTypeToAssign = _ticket.IdType,
+                PageSize = 0
+            };
+
             var response = await _usersService.Get(request);
 
-            _users = response.Items;
+            _users = response?.Items?.ToList() ?? new List<ApplicationUser>();
 
             StateHasChanged();
         }
@@ -444,6 +497,12 @@ namespace CRM.Client.Pages.Tickets
             if (_ticket != null)
                 _ticket.TicketType = _ticketType;
 
+            // I candidati dipendono dal tipo di ticket: cambiandolo la scelta fatta prima non e'
+            // piu' detto che sia abilitata, quindi si riparte da zero.
+            _selectedUserIds.Clear();
+            _selectedUsers.Clear();
+            SyncMainAssignee();
+
             StateHasChanged();
         }
 
@@ -461,11 +520,126 @@ namespace CRM.Client.Pages.Tickets
             StateHasChanged();
         }
 
-        protected void OnChangeIdUser()
-        {
-            _userAssigned = _users.Where(x => x.Id == _ticket.IdUserAssigned).FirstOrDefault();
+        /// <summary>Nomi degli assegnatari, responsabile per primo: e' quel che va nel riepilogo.</summary>
+        private IEnumerable<string> SelectedUserNames
+            => _selectedUserIds.Select(GetUserName);
 
-            StateHasChanged();
+        /// <summary>
+        /// Apre lo stesso dialogo della modifica: multi selezione con il carico di lavoro della
+        /// giornata. Il ticket non esiste ancora (Id 0), quindi il dialogo restituisce la scelta
+        /// invece di salvarla: le assegnazioni si scrivono dopo la creazione.
+        /// </summary>
+        private async Task OpenUserSelectionDialog()
+        {
+            try
+            {
+                var parameters = new Dictionary<string, object>
+                {
+                    { "Id", 0 },
+                    { "TicketTypeId", _ticket.IdType },
+                    { "PreselectedUserIds", _selectedUserIds },
+                    // Senza data il dialogo nasconde il carico: un tipo di ticket che non prevede
+                    // la data si lavora comunque adesso, quindi si guarda la giornata di oggi.
+                    { "Date", _ticket.Date ?? DateTime.Today }
+                };
+
+                var options = new DialogOptions
+                {
+                    Width = "900px",
+                    Height = "80vh",
+                    Resizable = true,
+                    Draggable = true,
+                    CloseDialogOnEsc = true
+                };
+
+                var result = await DialogService.OpenAsync<Assign>(Localize["Assign Users"], parameters, options);
+
+                // Annullando, il dialogo chiude con false: la selezione precedente resta.
+                if (result is HashSet<string> selectedUsers)
+                {
+                    _selectedUserIds = selectedUsers;
+                    await ResolveSelectedUsersAsync();
+                    SyncMainAssignee();
+                    StateHasChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore apertura dialog assegnazione utenti: {ex.Message}");
+            }
+        }
+
+        private void RemoveAssignedUser(string userId)
+        {
+            _selectedUserIds.Remove(userId);
+            _selectedUsers.RemoveAll(u => u.Id == userId);
+            SyncMainAssignee();
+        }
+
+        /// <summary>
+        /// Il primo selezionato e' il responsabile: resta su IdUserAssigned, che e' il campo che
+        /// tutto il resto del CRM continua a leggere.
+        /// </summary>
+        private void SyncMainAssignee()
+        {
+            if (_ticket == null)
+                return;
+
+            _ticket.IdUserAssigned = _selectedUserIds.Any() ? _selectedUserIds.First() : null;
+        }
+
+        /// <summary>
+        /// Il dialogo restituisce solo gli id: chi non e' fra i candidati caricati qui (per esempio
+        /// dopo un cambio di tipo di ticket) si recupera singolarmente.
+        /// </summary>
+        private async Task ResolveSelectedUsersAsync()
+        {
+            var resolved = new List<ApplicationUser>();
+
+            foreach (var userId in _selectedUserIds)
+            {
+                var user = _users.FirstOrDefault(u => u.Id == userId)
+                           ?? _selectedUsers.FirstOrDefault(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    try
+                    {
+                        user = await _usersService.Get(userId);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Errore caricamento utente selezionato {userId}: {ex.Message}");
+                    }
+                }
+
+                if (user != null)
+                    resolved.Add(user);
+            }
+
+            _selectedUsers = resolved;
+        }
+
+        private string GetUserName(string userId)
+            => _selectedUsers.FirstOrDefault(u => u.Id == userId)?.NameComplete
+               ?? _users.FirstOrDefault(u => u.Id == userId)?.NameComplete
+               ?? Localize["User not available"];
+
+        /// <summary>Iniziali dal nome completo, per l'avatar della pastiglia.</summary>
+        private string GetInitials(string fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+                return "?";
+
+            var parts = fullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length == 0)
+                return "?";
+
+            if (parts.Length == 1)
+                return parts[0].Substring(0, Math.Min(2, parts[0].Length)).ToUpper();
+
+            return (parts[0][0].ToString() + parts[^1][0].ToString()).ToUpper();
         }
 
         protected async void OnSelectCompany(int idCompany)

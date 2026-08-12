@@ -81,6 +81,10 @@ namespace CRM.Server.Services
 
         Task<int> TicketPermits(int idTicket, int IdCompany, string idUserAssigned);
 
+        /// <summary>Come sopra, per chi ha gia' letto stato e assegnazione del ticket.</summary>
+        Task<int> TicketPermits(int idTicket, int IdCompany, string idUserAssigned,
+            bool isAssignedToCurrentUser, bool isClosed);
+
         Task<bool> CanGetTicket(int idTicket);
 
         Task<bool> CanReceveTicket(int idTicket, string idUser);

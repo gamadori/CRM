@@ -140,6 +140,14 @@ namespace CRM.Shared
         [NotMapped]
         public bool IsClient { get; set; }
 
+        /// <summary>
+        /// Appartiene all'azienda madre, quindi puo' vedere i dati interni (nota di chiusura,
+        /// smistamento AI). E' un'informazione diversa dal ruolo: un utente di un'altra azienda
+        /// puo' avere ruolo Standard e restare comunque fuori.
+        /// </summary>
+        [NotMapped]
+        public bool CanViewInternalData { get; set; }
+
         [NotMapped]
         public int CompanyPermits { get; set; }
 

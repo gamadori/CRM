@@ -40,18 +40,37 @@ namespace CRM.Server.Services
             
         }
 
+        // ----------------------------------------------------------------------------------
+        // Cache di richiesta
+        //
+        // Il servizio e' registrato Scoped: dentro una singola richiesta HTTP l'utente non cambia,
+        // e nemmeno i suoi ruoli o la sua azienda. Senza queste memorie una pagina di elenco che
+        // chiede i permessi riga per riga rifa' la stessa identica domanda al database decine di
+        // volte - la lista ticket arrivava a centinaia di query per una pagina da dieci righe.
+        // Stesso ragionamento (e stesso commento) di GetVisibleCompanyIds, che gia' faceva cosi'.
+        // ----------------------------------------------------------------------------------
+
+        private bool _currentUserLoaded;
+        private ApplicationUser _currentUser;
+
+        private bool _headCompanyIdLoaded;
+        private int? _headCompanyId;
+
+        private readonly Dictionary<ePolicy, AuthorizationResult> _policyResults = new();
+        private readonly Dictionary<(string, ePolicy), bool> _policyResultsByUser = new();
+
+        private bool _policyLoaded;
+        private ePolicy? _policy;
+
+        private readonly Dictionary<int, PermitResponse> _companyAccess = new();
+
         /// <summary>
         /// Id dell'utente corrente
         /// </summary>
         /// <returns></returns>
         public async Task<string> IdUser()
         {
-            var userName = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
-
-            if (userName == null)
-                return "";
-
-            var user = await _userManager.FindByNameAsync(userName);
+            var user = await GetUser();
 
             if (user != null)
                 return user.Id;
@@ -65,15 +84,27 @@ namespace CRM.Server.Services
         /// <returns></returns>
         public async Task<ApplicationUser> GetUser()
         {
+            if (_currentUserLoaded)
+                return _currentUser;
+
             var userName = _httpContextAccessor.HttpContext?.User?.Identity?.Name;
 
-            if (userName == null)
-                return null;
+            _currentUser = userName == null ? null : await _userManager.FindByNameAsync(userName);
+            _currentUserLoaded = true;
 
-            var user = await _userManager.FindByNameAsync(userName);
+            return _currentUser;
+        }
 
-            return user;
+        /// <summary>Id dell'azienda madre: e' un dato di configurazione, si legge una volta.</summary>
+        private async Task<int?> HeadCompanyIdAsync()
+        {
+            if (_headCompanyIdLoaded)
+                return _headCompanyId;
 
+            _headCompanyId = await _context.GetHeadCompanyIdAsync();
+            _headCompanyIdLoaded = true;
+
+            return _headCompanyId;
         }
         
         
@@ -83,7 +114,7 @@ namespace CRM.Server.Services
         /// <returns></returns>
         public async Task<bool> CanAccessOtherCompany()
         {
-            var user = await _userManager.FindByNameAsync(_httpContextAccessor.HttpContext?.User?.Identity?.Name);
+            var user = await GetUser();
 
             if (user != null && user.IdCompany != null && !user.IsDeleted)
             {
@@ -113,44 +144,64 @@ namespace CRM.Server.Services
 
         public async Task<AuthorizationResult> CheckPolicy(ePolicy policy)
         {
-            
+            if (_policyResults.TryGetValue(policy, out var cached))
+                return cached;
+
             ClaimsPrincipal user = _httpContextAccessor.HttpContext?.User;
-            
-            if (user != null)
-                return await _authorization.AuthorizeAsync(user, policy.ToString());
-            else
-            {
-                return AuthorizationResult.Failed();
-            }
+
+            var result = user != null
+                ? await _authorization.AuthorizeAsync(user, policy.ToString())
+                : AuthorizationResult.Failed();
+
+            _policyResults[policy] = result;
+            return result;
         }
 
         public async Task<bool> CheckPolicy(string idUser, ePolicy policy)
         {
+            if (_policyResultsByUser.TryGetValue((idUser, policy), out var cached))
+                return cached;
+
             ApplicationUser user = await _userManager.FindByIdAsync(idUser);
 
-            if (user == null || user.IsDeleted)
-                return false;
+            var result = false;
 
-            foreach (var role in PolicyRoles.vPoliyRoles[(int)policy])
+            if (user != null && !user.IsDeleted)
             {
-                if (await _userManager.IsInRoleAsync(user, role))
-                    return true;
+                foreach (var role in PolicyRoles.vPoliyRoles[(int)policy])
+                {
+                    if (await _userManager.IsInRoleAsync(user, role))
+                    {
+                        result = true;
+                        break;
+                    }
+                }
             }
-            return false;
 
-            
+            _policyResultsByUser[(idUser, policy)] = result;
+            return result;
         }
 
         public async Task<ePolicy?> GetPolicy()
         {
+            if (_policyLoaded)
+                return _policy;
+
+            _policy = null;
+
             foreach (var policy in Enum.GetValues(typeof(ePolicy)))
             {
                 var r = (await CheckPolicy((ePolicy)policy));
 
                 if (r != null && r.Succeeded)
-                    return (ePolicy)policy;
+                {
+                    _policy = (ePolicy)policy;
+                    break;
+                }
             }
-            return null;
+
+            _policyLoaded = true;
+            return _policy;
         }
 
         public async Task<List<ApplicationUser>> GetAdmins()
@@ -200,7 +251,7 @@ namespace CRM.Server.Services
 
         public async Task<bool> IsHeadCompany(int idCompany)
         {
-            return idCompany == await _context.GetHeadCompanyIdAsync();
+            return idCompany == await HeadCompanyIdAsync();
         }
 
         /// <summary>True se l'utente loggato appartiene all'azienda madre.</summary>
@@ -217,7 +268,7 @@ namespace CRM.Server.Services
             if (user == null || user.IsDeleted || user.IdCompany == null)
                 return false;
 
-            return user.IdCompany == await _context.GetHeadCompanyIdAsync();
+            return user.IdCompany == await HeadCompanyIdAsync();
         }
 
         public async Task<bool> BelongsToHeadCompany(string? idUser)
@@ -230,7 +281,7 @@ namespace CRM.Server.Services
 
         public async Task<List<string>> GetHeadCompanyUserIds()
         {
-            return await GetCompanyIdUsers(await _context.GetHeadCompanyIdAsync());
+            return await GetCompanyIdUsers(await HeadCompanyIdAsync());
         }
 
         public async Task<bool> BelongsToReseller()
@@ -248,7 +299,7 @@ namespace CRM.Server.Services
 
         public async Task<List<int>> GetIdCompanies()
         {
-            var user = await _userManager.FindByNameAsync(_httpContextAccessor.HttpContext?.User?.Identity?.Name);
+            var user = await GetUser();
 
             if (user != null && !user.IsDeleted && user.IdCompany != null)
             {
@@ -269,7 +320,7 @@ namespace CRM.Server.Services
             if (_visibleCompaniesComputed)
                 return _visibleCompanies;
 
-            var user = await _userManager.FindByNameAsync(_httpContextAccessor.HttpContext?.User?.Identity?.Name);
+            var user = await GetUser();
 
             // Fail-closed: utente non risolvibile, disattivato o senza azienda non vede nulla.
             if (user == null || user.IsDeleted || user.IdCompany == null)
@@ -401,6 +452,32 @@ namespace CRM.Server.Services
 
         public async Task<int> TicketPermits(int idTicket, int IdCompany, string idUserAssigned)
         {
+            // Le due sole cose che dipendono DAVVERO dal singolo ticket. Chiederle qui, una volta,
+            // evita le tre riletture della stessa riga che facevano CanCloseTicket e CanReOpenTicket.
+            var ticket = await _context.Tickets.AsNoTracking()
+                .Where(t => t.Id == idTicket)
+                .Select(t => new { t.Closed })
+                .FirstOrDefaultAsync();
+
+            if (ticket == null)
+                return await TicketPermits(idTicket, IdCompany, idUserAssigned, false, false, ticketExists: false);
+
+            return await TicketPermits(idTicket, IdCompany, idUserAssigned,
+                await IsAssignedToTicket(idTicket), ticket.Closed);
+        }
+
+        /// <summary>
+        /// Stessa decisione della versione sopra, ma con i due fatti del singolo ticket gia' in
+        /// mano: chi elenca una pagina di ticket li ha gia' letti tutti insieme e non deve tornare
+        /// sul database una riga alla volta.
+        /// </summary>
+        public Task<int> TicketPermits(int idTicket, int IdCompany, string idUserAssigned,
+            bool isAssignedToCurrentUser, bool isClosed)
+            => TicketPermits(idTicket, IdCompany, idUserAssigned, isAssignedToCurrentUser, isClosed, ticketExists: true);
+
+        private async Task<int> TicketPermits(int idTicket, int IdCompany, string idUserAssigned,
+            bool isAssignedToCurrentUser, bool isClosed, bool ticketExists)
+        {
             int permits = await ObjectPermits(IdCompany, idUserAssigned);
 
             permits = PermitsHelper.ResEdit(permits);
@@ -412,10 +489,12 @@ namespace CRM.Server.Services
             if (await CanAssignTicket())
                 permits = PermitsHelper.SetAssign(permits);
 
-            if (await CanCloseTicket(idTicket))
+            // Chiude chi ha il ticket in carico, oltre a SuperUser e Admin. Su un ticket che non
+            // esiste non si chiude e non si riapre nulla.
+            if (ticketExists && (await IsSuperUser() || isAssignedToCurrentUser))
                 permits = PermitsHelper.SetClose(permits);
 
-            if (await CanReOpenTicket(idTicket))
+            if (ticketExists && isClosed && await IsStandardUser() && await BelongsToHeadCompany())
                 permits = PermitsHelper.SetReOpen(permits);
 
             if (await CanViewInternalData())
@@ -529,21 +608,14 @@ namespace CRM.Server.Services
         /// <returns></returns>
         public async Task<bool> CanCloseTicket(int IdTicket)
         {
-            var user = await _userManager.FindByNameAsync(_httpContextAccessor.HttpContext.User.Identity.Name);
-
-            var roles = await _userManager.GetRolesAsync(user);
-
-            var ticket = await _context.Tickets.FindAsync(IdTicket);
-
-            if (ticket != null)
-            {
-                // Admin e SuperUser sempre; gli altri solo se il ticket e' assegnato a loro,
-                // comprese le assegnazioni multiple.
-                return await IsSuperUser() || await IsAssignedToTicket(IdTicket);
-
-            }
-            else
+            // L'utente e i suoi ruoli venivano letti qui e mai usati: la decisione e' tutta nelle
+            // due righe sotto. Il ticket serve solo per sapere che esiste.
+            if (!await _context.Tickets.AsNoTracking().AnyAsync(t => t.Id == IdTicket))
                 return false;
+
+            // Admin e SuperUser sempre; gli altri solo se il ticket e' assegnato a loro,
+            // comprese le assegnazioni multiple.
+            return await IsSuperUser() || await IsAssignedToTicket(IdTicket);
         }
 
         /// <summary>
@@ -1159,6 +1231,21 @@ namespace CRM.Server.Services
         ///
         /// <returns></returns>
         public async Task<PermitResponse> CompanyCanAccess(int? idCompany)
+        {
+            // La risposta dipende solo dall'utente e dall'azienda chiesta: in una pagina di elenco
+            // le aziende distinte sono poche, le righe molte. La chiave -1 sta per "nessuna azienda".
+            var cacheKey = idCompany ?? -1;
+
+            if (_companyAccess.TryGetValue(cacheKey, out var cachedResponse))
+                return cachedResponse;
+
+            var response = await ComputeCompanyCanAccess(idCompany);
+            _companyAccess[cacheKey] = response;
+
+            return response;
+        }
+
+        private async Task<PermitResponse> ComputeCompanyCanAccess(int? idCompany)
         {
             PermitResponse resp = new PermitResponse();
 

@@ -105,10 +105,10 @@
                             <dt><DisplayName For="@(() => _ticket.DateExpired)" /></dt>
                             <dd>@_ticket.DateExpired</dd>
                         }
-                        @if (_stepTicket > TicketCreateSteps.Assign && _user.CanTicketAssign && !string.IsNullOrWhiteSpace(_userAssigned?.NameComplete))
+                        @if (_stepTicket > TicketCreateSteps.Assign && _user.CanTicketAssign && _selectedUserIds.Any())
                         {
                             <dt><DisplayName For="@(() => _ticket.IdUserAssigned)" /></dt>
-                            <dd>@_userAssigned.NameComplete</dd>
+                            <dd>@string.Join(", ", SelectedUserNames)</dd>
                         }
                         @if (_stepTicket > TicketCreateSteps.DescriptionTicket && !string.IsNullOrWhiteSpace(_ticket.Description))
                         {
@@ -257,11 +257,49 @@
                             }
                             else if (_stepTicket == TicketCreateSteps.Assign)
                             {
+                                @* Stesso strumento della modifica: piu' assegnatari e carico di
+                                   lavoro della giornata sotto gli occhi di chi sceglie. *@
                                 <div class="field">
                                     <DisplayName For="@(() => _ticket.IdUserAssigned)" />
-                                    <RadzenDropDownDataGrid @bind-value="@_ticket.IdUserAssigned" TValue="string" LoadData="@LoadUsers" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                                            AllowClear="true" Data="@_users" Count="@_users.Count" TextProperty="NameComplete" ValueProperty="Id"
-                                                            Change="@OnChangeIdUser" Style="width:100%" />
+
+                                    @if (_selectedUserIds.Any())
+                                    {
+                                        <div class="assigned-users-box">
+                                            @foreach (var userId in _selectedUserIds.ToList())
+                                            {
+                                                var isMain = _selectedUserIds.First() == userId;
+                                                var name = GetUserName(userId);
+                                                <div class="assigned-user-chip @(isMain ? "main" : "")"
+                                                     title="@(isMain ? Localize["Responsabile del ticket"] : null)">
+                                                    <span class="chip-avatar">@GetInitials(name)</span>
+                                                    <span class="chip-name">@name</span>
+                                                    @if (isMain)
+                                                    {
+                                                        <span class="chip-main-star">★</span>
+                                                    }
+                                                    <button type="button" class="chip-remove"
+                                                            @onclick="() => RemoveAssignedUser(userId)"
+                                                            title="@Localize["Remove"]">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="assigned-users-empty">
+                                            <em>@Localize["No users assigned"]</em>
+                                        </div>
+                                    }
+
+                                    <div class="assign-actions">
+                                        <RadzenButton ButtonType="ButtonType.Button"
+                                                      Text="@(_selectedUserIds.Any() ? Localize["Manage Assignments"] : Localize["Assign Users"])"
+                                                      Icon="@(_selectedUserIds.Any() ? "edit" : "group_add")"
+                                                      Click="OpenUserSelectionDialog"
+                                                      ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" />
+                                    </div>
                                 </div>
                             }
                         </div>

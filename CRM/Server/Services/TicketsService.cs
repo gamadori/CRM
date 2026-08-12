@@ -367,7 +367,7 @@ namespace CRM.Server.Services
 
                 var totalWork = await TicketBillableMinutes.TotalAsync(_context, tickets);
 
-                int count = tickets != null ? tickets.Count() : 0;
+                int count = await tickets.CountAsync();
 
                 if (tickets != null && args?.Skip != null && args.Top != null)
                 {
@@ -422,7 +422,7 @@ namespace CRM.Server.Services
                     Closed = x.Closed,
                 });
 
-                var items = ticketModel.ToList();
+                var items = await ticketModel.ToListAsync();
 
                 // Una query sola per tutta la pagina, non una per riga.
                 var minutiPerTicket = await TicketBillableMinutes.ByTicketAsync(_context, items.Select(t => t.Id).ToList());
@@ -432,8 +432,10 @@ namespace CRM.Server.Services
                     TicketBillableMinutes.ApplyTo(t, minutiPerTicket.TryGetValue(t.Id, out var b)
                         ? b
                         : new TicketBillableMinutes.Breakdown());
-                    await SetTicketStateAsync(t);
                 }
+
+                // Stato, permessi e pulsanti per tutta la pagina in blocco: vedi ApplyListStateAsync.
+                await ApplyListStateAsync(items);
 
                 var paginationMetadata = new PagingHeaderModel
                 {
@@ -816,20 +818,256 @@ namespace CRM.Server.Services
 
         #region State
 
-        public async Task SetTicketStateAsync(TicketDTO ticket)
+        /// <summary>
+        /// Un ticket solo: stessa strada dell'elenco, con una pagina da un elemento. Tenere due
+        /// implementazioni delle stesse regole significherebbe vederle divergere, e la scheda
+        /// direbbe una cosa diversa dalla lista sullo stesso ticket.
+        /// </summary>
+        public Task SetTicketStateAsync(TicketDTO ticket)
+            => ApplyListStateAsync(new List<TicketDTO> { ticket });
+
+        /// <summary>
+        /// Stato, permessi e pulsanti di una pagina di elenco, calcolati in blocco.
+        /// <para>
+        /// Prima ogni riga passava da SetTicketStateAsync, che per ogni ticket rileggeva il ticket
+        /// stesso, la tabella degli stati, il tipo, le impostazioni, le assegnazioni e l'intera
+        /// catena dei permessi: una pagina da dieci righe faceva centinaia di viaggi al database, ed
+        /// e' il motivo per cui l'elenco era lento. Qui i fatti che dipendono dal singolo ticket si
+        /// leggono tutti insieme (una query), quelli che dipendono dall'utente una volta sola, e la
+        /// decisione per riga diventa un calcolo in memoria.
+        /// </para>
+        /// <para>
+        /// Le regole non cambiano: sono le stesse di GetTicketIdState, CanCurrentUserClaimTicketAsync
+        /// e CanCurrentUserManageBlockAsync, applicate agli stessi dati.
+        /// </para>
+        /// </summary>
+        private async Task ApplyListStateAsync(List<TicketDTO> items)
         {
-            TicketState? ticketState = await GetTicketIdState(ticket);
-            ticket.IdState = ticketState?.Id;
-            ticket.State = (ticketState?.idState)?.ToString();
-            ticket.StateColor = ticketState?.Color;
+            if (items.Count == 0)
+                return;
 
-            ticket.Permits = await _permitsService.TicketPermits(ticket.Id, ticket.IdCompany, ticket.IdUserAssigned);
-            ticket.IsAssignedToCurrentUser = await _permitsService.IsAssignedToTicket(ticket.Id);
-            ticket.CanClaim = await CanCurrentUserClaimTicketAsync(ticket.Id);
-            ticket.CanManageBlock = await CanCurrentUserManageBlockAsync(ticket.Id);
+            var ids = items.Select(x => x.Id).ToList();
+            var currentUserId = await _permitsService.IdUser();
 
-            if (!await _permitsService.CanViewInternalData())
+            var facts = (await _context.Tickets.AsNoTracking()
+                .Where(t => ids.Contains(t.Id))
+                .Select(t => new TicketListFacts
+                {
+                    Id = t.Id,
+                    Closed = t.Closed,
+                    Date = t.Date,
+                    DateExpired = t.DateExpired,
+                    IdState = t.IdState,
+                    IdType = t.IdType,
+                    IdGroupAssigned = t.IdGroupAssigned,
+                    IdUserAssigned = t.IdUserAssigned,
+                    // Come HasAssignedUserAsync: l'assegnatario storico vale solo se valorizzato
+                    // davvero - una stringa vuota non e' un assegnatario.
+                    HasAssignedUser = (t.IdUserAssigned != null && t.IdUserAssigned != "") || t.AssignedUsers.Any(),
+                    AssignedToCurrentUser = t.IdUserAssigned == currentUserId
+                        || t.AssignedUsers.Any(a => a.IdUser == currentUserId),
+                    CommessaResponsibleIsCurrentUser = t.CommessaFase != null
+                        && t.CommessaFase.Commessa != null
+                        && t.CommessaFase.Commessa.IdUserResponsible == currentUserId
+                })
+                .ToListAsync())
+                .ToDictionary(x => x.Id);
+
+            // Utente non risolvibile: niente e' "suo". Senza questo il confronto in query
+            // pareggerebbe con i ticket che hanno l'assegnatario a stringa vuota.
+            if (string.IsNullOrWhiteSpace(currentUserId))
+            {
+                foreach (var fact in facts.Values)
+                {
+                    fact.AssignedToCurrentUser = false;
+                    fact.CommessaResponsibleIsCurrentUser = false;
+                }
+            }
+
+            await RefreshExpiredDatesAsync(facts.Values.Where(x => !x.Closed).ToList());
+
+            // Fatti dell'utente: uguali per tutte le righe, quindi chiesti una volta.
+            var isClient = await _permitsService.IsClient();
+            var canViewInternalData = await _permitsService.CanViewInternalData();
+            var isAdminOrSuperUser = await _permitsService.IsAdmin() || await _permitsService.IsSuperUser();
+            var belongsToHeadCompany = await _permitsService.BelongsToHeadCompany();
+
+            var myGroupIds = string.IsNullOrWhiteSpace(currentUserId)
+                ? new List<int>()
+                : await _context.Groups.AsNoTracking()
+                    .Where(g => g.Users.Any(u => u.Id == currentUserId))
+                    .Select(g => g.Id)
+                    .ToListAsync();
+
+            foreach (var item in items)
+            {
+                if (!facts.TryGetValue(item.Id, out var fact))
+                    continue;
+
+                var state = await ResolveListStateAsync(fact, isClient);
+                item.IdState = state?.Id;
+                item.State = (state?.idState)?.ToString();
+                item.StateColor = state?.Color;
+
+                item.Permits = await _permitsService.TicketPermits(
+                    item.Id, item.IdCompany, item.IdUserAssigned, fact.AssignedToCurrentUser, fact.Closed);
+
+                item.IsAssignedToCurrentUser = fact.AssignedToCurrentUser;
+
+                item.CanClaim = await CanClaimAsync(
+                    fact, currentUserId, isAdminOrSuperUser, belongsToHeadCompany, myGroupIds);
+
+                item.CanManageBlock = await CanManageBlockAsync(
+                    item.IdCompany, fact, isAdminOrSuperUser, belongsToHeadCompany);
+
+                ApplyInternalDataVisibility(item, canViewInternalData, isClient);
+            }
+        }
+
+        /// <summary>
+        /// Allinea le scadenze della pagina: stessa regola di CheckTicketExpired, ma per tutti i
+        /// ticket in una volta e con una sola scrittura, solo per quelli davvero cambiati.
+        /// </summary>
+        private async Task RefreshExpiredDatesAsync(List<TicketListFacts> facts)
+        {
+            var stale = new List<TicketListFacts>();
+
+            foreach (var fact in facts)
+            {
+                var expected = await ExpectedDateExpiredAsync(fact.IdType, fact.Date);
+
+                if (fact.DateExpired == expected)
+                    continue;
+
+                fact.DateExpired = expected;
+                stale.Add(fact);
+            }
+
+            if (stale.Count == 0)
+                return;
+
+            var staleIds = stale.Select(x => x.Id).ToList();
+            var tickets = await _context.Tickets.Where(t => staleIds.Contains(t.Id)).ToListAsync();
+
+            foreach (var ticket in tickets)
+                ticket.DateExpired = stale.First(x => x.Id == ticket.Id).DateExpired;
+
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>Applica <see cref="TicketListRules.ResolveState"/> e traduce in riga di stato.</summary>
+        private async Task<TicketState?> ResolveListStateAsync(TicketListFacts fact, bool isClient)
+        {
+            var processingState = await GetIdState(eTicketStates.Processing);
+
+            var state = TicketListRules.ResolveState(
+                fact.Closed,
+                isClient,
+                fact.IdState == processingState?.Id,
+                fact.HasAssignedUser,
+                fact.DateExpired,
+                DateTime.Now.Date,
+                fact.IdUserAssigned != null || fact.IdGroupAssigned != null);
+
+            return state == eTicketStates.Processing ? processingState : await GetIdState(state);
+        }
+
+        private async Task<bool> CanClaimAsync(
+            TicketListFacts fact,
+            string currentUserId,
+            bool isAdminOrSuperUser,
+            bool belongsToHeadCompany,
+            List<int> myGroupIds)
+        {
+            var hasCurrentUser = !string.IsNullOrWhiteSpace(currentUserId);
+
+            // L'elenco degli assegnabili per tipo costa: si chiede solo se la regola ci arriva,
+            // cioe' se il ticket non e' su un gruppo e l'utente non e' Admin.
+            var amongTypeAssignees = hasCurrentUser
+                && !fact.Closed
+                && !fact.AssignedToCurrentUser
+                && !isAdminOrSuperUser
+                && belongsToHeadCompany
+                && fact.IdGroupAssigned == null
+                && await IsAmongTypeAssigneesAsync(fact.IdType, currentUserId);
+
+            return TicketListRules.CanClaim(
+                hasCurrentUser,
+                fact.Closed,
+                fact.AssignedToCurrentUser,
+                isAdminOrSuperUser,
+                belongsToHeadCompany,
+                fact.IdGroupAssigned,
+                fact.IdGroupAssigned != null && myGroupIds.Contains(fact.IdGroupAssigned.Value),
+                amongTypeAssignees);
+        }
+
+        private async Task<bool> CanManageBlockAsync(
+            int idCompany,
+            TicketListFacts fact,
+            bool isAdminOrSuperUser,
+            bool belongsToHeadCompany)
+            => TicketListRules.CanManageBlock(
+                await _permitsService.CanGetObject(idCompany),
+                isAdminOrSuperUser,
+                belongsToHeadCompany,
+                fact.AssignedToCurrentUser,
+                fact.CommessaResponsibleIsCurrentUser);
+
+        /// <summary>
+        /// Gli utenti assegnabili dipendono dal TIPO di ticket, non dal ticket: in una pagina i tipi
+        /// distinti sono pochi e l'elenco - che costa parecchie query - si calcola una volta per tipo.
+        /// </summary>
+        private readonly Dictionary<int, bool> _isAmongTypeAssignees = new();
+
+        private async Task<bool> IsAmongTypeAssigneesAsync(int idType, string currentUserId)
+        {
+            if (_isAmongTypeAssignees.TryGetValue(idType, out var cached))
+                return cached;
+
+            var candidates = await GetUsersCanAssignTicketTypeAsync(idType);
+            var result = candidates.Any(u => u.Id == currentUserId);
+
+            _isAmongTypeAssignees[idType] = result;
+            return result;
+        }
+
+        private static void ApplyInternalDataVisibility(TicketDTO ticket, bool canViewInternalData, bool isClient)
+        {
+            // Lo smistamento AI e' una decisione interna: la motivazione del modello parla di
+            // gruppi e competenze nostre. Servono tutte e due le condizioni, perche' sono assi
+            // diversi: il ruolo dice se puoi assegnare, l'azienda madre se sei di casa. Un utente
+            // di un'altra azienda puo' avere ruolo Standard e deve restare comunque fuori.
+            // Si azzera qui e non solo a video, altrimenti il dato viaggerebbe nel JSON.
+            if (!canViewInternalData || isClient)
+            {
+                ticket.AiSuggestedGroupId = null;
+                ticket.AiSuggestedGroup = null;
+                ticket.AiRoutingConfidence = null;
+                ticket.AiRoutingReason = null;
+                ticket.AiRoutedAt = null;
+                ticket.AiRoutingApplied = false;
+                ticket.AiRoutingOutcome = AiRoutingOutcome.None;
+            }
+
+            if (!canViewInternalData)
                 ticket.CloseNote = "";
+        }
+
+        /// <summary>Cio' che serve sapere di un ticket per deciderne stato e pulsanti.</summary>
+        private sealed class TicketListFacts
+        {
+            public int Id { get; set; }
+            public bool Closed { get; set; }
+            public DateTime? Date { get; set; }
+            public DateTime? DateExpired { get; set; }
+            public int? IdState { get; set; }
+            public int IdType { get; set; }
+            public int? IdGroupAssigned { get; set; }
+            public string? IdUserAssigned { get; set; }
+            public bool HasAssignedUser { get; set; }
+            public bool AssignedToCurrentUser { get; set; }
+            public bool CommessaResponsibleIsCurrentUser { get; set; }
         }
 
         public async Task SetTicketStateAsync(Ticket ticket)
@@ -875,75 +1113,59 @@ namespace CRM.Server.Services
             return null;
         }
 
-        private async Task<TicketState?> GetTicketIdState(TicketDTO ticketModel)
-        {
-            var ticket = await _context.Tickets.FindAsync(ticketModel.Id);
+        // ------------------------------------------------------------------------------------
+        // Memorie di richiesta. Il servizio e' Scoped: la tabella degli stati, i giorni di scadenza
+        // per tipo e l'impostazione generale sono configurazione, dentro una richiesta non cambiano.
+        // Prima venivano riletti a ogni riga di elenco, anche tre volte per riga.
+        // ------------------------------------------------------------------------------------
+        private List<TicketState>? _ticketStates;
+        private Dictionary<int, int>? _expiredDaysByType;
+        private int? _defaultExpiredDays;
 
-            if (ticket != null)
-            {
-                if (ticket.Closed)
-                    return await GetIdState(eTicketStates.Closed);
-                else
-                {
-                    await CheckTicketExpired(ticket.Id);
-                    var processingState = await GetIdState(eTicketStates.Processing);
-                    var hasAssignedUser = await HasAssignedUserAsync(ticket.Id, ticket.IdUserAssigned);
-
-                    if (await _permitsService.IsClient())
-                    {
-                        return processingState;
-                    }
-                    else if (ticket.IdState == processingState?.Id && hasAssignedUser)
-                        return processingState;
-                    else if (DateTime.Now.Date > ticket.DateExpired)
-                        return await GetIdState(eTicketStates.Expired);
-
-                    else if (ticket.IdUserAssigned != null || ticket.IdGroupAssigned != null)
-                        return await GetIdState(eTicketStates.Assigned);
-                    else
-                        return await GetIdState(eTicketStates.Created);
-                }
-            }
-            return null;
-        }
+        private async Task<List<TicketState>> GetTicketStatesAsync()
+            => _ticketStates ??= await _context.TicketStates.AsNoTracking().ToListAsync();
 
         private async Task<TicketState?> GetIdState(eTicketStates state)
         {
-            var ticketState = await _context.TicketStates.Where(x => x.State == (int)state).FirstOrDefaultAsync();
+            var ticketState = (await GetTicketStatesAsync()).FirstOrDefault(x => x.State == (int)state);
             if (ticketState != null)
                 ticketState.idState = state;
             return ticketState;
+        }
+
+        /// <summary>Giorni di scadenza per tipo ticket, con il ripiego sull'impostazione generale.</summary>
+        private async Task<int> ExpiredDaysForTypeAsync(int idType)
+        {
+            if (_expiredDaysByType == null)
+            {
+                _expiredDaysByType = await _context.TicketTypes.AsNoTracking()
+                    .Select(x => new { x.Id, x.ExpiredDate })
+                    .ToDictionaryAsync(x => x.Id, x => x.ExpiredDate);
+            }
+
+            if (!_expiredDaysByType.TryGetValue(idType, out var days))
+                return 3;
+
+            if (days > 0)
+                return days;
+
+            _defaultExpiredDays ??= (await _context.GlobalSettings.AsNoTracking().FirstOrDefaultAsync())?.TicketDaysExpired ?? 3;
+
+            return _defaultExpiredDays.Value;
+        }
+
+        /// <summary>La scadenza che il ticket dovrebbe avere, in base al tipo e alla data.</summary>
+        private async Task<DateTime?> ExpectedDateExpiredAsync(int idType, DateTime? date)
+        {
+            var days = await ExpiredDaysForTypeAsync(idType);
+
+            return days > 0 && date != null ? date.Value.AddDays(days) : null;
         }
 
         private async Task<bool> HasAssignedUserAsync(int ticketId, string? legacyAssignedUserId)
         {
             return !string.IsNullOrWhiteSpace(legacyAssignedUserId)
                 || await _context.TicketUserAssignments.AnyAsync(a => a.IdTicket == ticketId);
-        }
-
-        private async Task<bool> CanCurrentUserManageBlockAsync(int idTicket)
-        {
-            if (!await _permitsService.CanGetTicket(idTicket))
-                return false;
-
-            if (await _permitsService.IsAdmin() || await _permitsService.IsSuperUser())
-                return true;
-
-            if (!await _permitsService.BelongsToHeadCompany())
-                return false;
-
-            var currentUserId = await _permitsService.IdUser();
-            if (string.IsNullOrWhiteSpace(currentUserId))
-                return false;
-
-            return await _context.Tickets
-                .AsNoTracking()
-                .AnyAsync(t => t.Id == idTicket
-                    && (t.IdUserAssigned == currentUserId
-                        || t.AssignedUsers.Any(a => a.IdUser == currentUserId)
-                        || (t.CommessaFase != null
-                            && t.CommessaFase.Commessa != null
-                            && t.CommessaFase.Commessa.IdUserResponsible == currentUserId)));
         }
 
         /// <summary>
@@ -1035,49 +1257,28 @@ namespace CRM.Server.Services
         {
             var ticket = await _context.Tickets.FindAsync(id);
 
-            if (ticket != null)
-            {
-                int day = await GetDayBeforeExpired(id);
+            if (ticket == null)
+                return;
 
-                if (day > 0 && ticket.Date != null)
-                {
-                    ticket.DateExpired = ticket.Date.Value.AddDays(day);
-                }
-                else if (ticket.DateExpired != null)
-                    ticket.DateExpired = null;
+            var expected = await ExpectedDateExpiredAsync(ticket.IdType, ticket.Date);
 
-                await _context.SaveChangesAsync();
-            }
+            // Se la scadenza e' gia' quella giusta non c'e' niente da salvare: prima si passava
+            // comunque da SaveChanges, a ogni riga di ogni elenco.
+            if (ticket.DateExpired == expected)
+                return;
+
+            ticket.DateExpired = expected;
+            await _context.SaveChangesAsync();
         }
 
         public async Task<int> GetDayBeforeExpired(int id)
         {
-            int day = 3;
+            var idType = await _context.Tickets.AsNoTracking()
+                .Where(x => x.Id == id)
+                .Select(x => (int?)x.IdType)
+                .FirstOrDefaultAsync();
 
-            var ticket = await _context.Tickets.FindAsync(id);
-
-            if (ticket != null)
-            {
-                var ticketType = await _context.TicketTypes.FindAsync(ticket.IdType);
-
-                if (ticketType != null)
-                {
-                    if (ticketType.ExpiredDate > 0)
-                    {
-                        day = ticketType.ExpiredDate;
-                    }
-                    else
-                    {
-                        var settings = await _context.GlobalSettings.FirstOrDefaultAsync();
-
-                        if (settings != null)
-                        {
-                            day = settings.TicketDaysExpired;
-                        }
-                    }
-                }
-            }
-            return day;
+            return idType == null ? 3 : await ExpiredDaysForTypeAsync(idType.Value);
         }
 
         /// <summary>
@@ -1509,19 +1710,6 @@ namespace CRM.Server.Services
 
         private static CRM.Client.Models.APIResponseMessage<TicketDTO> FailClaim(string message, System.Net.HttpStatusCode code)
             => new() { State = false, Code = code, Message = message };
-
-        private async Task<bool> CanCurrentUserClaimTicketAsync(int idTicket)
-        {
-            var currentUserId = await _permitsService.IdUser();
-            if (string.IsNullOrWhiteSpace(currentUserId))
-                return false;
-
-            var ticket = await _context.Tickets
-                .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == idTicket);
-
-            return ticket != null && await CanCurrentUserClaimTicketAsync(ticket, currentUserId);
-        }
 
         private async Task<bool> CanCurrentUserClaimTicketAsync(Ticket ticket, string currentUserId)
         {
