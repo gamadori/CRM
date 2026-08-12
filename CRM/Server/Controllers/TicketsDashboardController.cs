@@ -187,10 +187,12 @@ namespace CRM.Server.Controllers
                 interventionsQuery = interventionsQuery.Where(x => x.AssignedUsers.Where(u => u.IdUser == filter.IdUser).Any());
             }
 
+            // "In attesa" ora vuol dire che la firma e' stata davvero chiesta: basta lo stato.
+            // La condizione sulla firma gia' presente era la toppa a un modello in cui ogni
+            // intervento nasceva Pending, e teneva fuori proprio i link mandati e mai firmati.
             model.InterventionsPendingSignature = await SafeCountAsync(
                 "interventi con firma in attesa",
-                interventionsQuery.Where(x => x.SignatureStatus == CRM.Shared.SignatureStatus.Pending
-                                            && !string.IsNullOrEmpty(x.CustomerSignature)));
+                interventionsQuery.Where(x => x.SignatureStatus == CRM.Shared.SignatureStatus.Pending));
 
             // ✅ Carica feedback non letti (solo per admin/superuser)
             if (!model.IsClient)

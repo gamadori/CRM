@@ -210,7 +210,59 @@ namespace CRM.Server.Controllers
                 return BadRequest();
             }
 
-            
+            var stored = await _context.TicketsInterventions.AsNoTracking()
+                .Where(x => x.Id == id)
+                .Select(x => new
+                {
+                    x.SignatureRequirement,
+                    x.SignatureStatus,
+                    x.CustomerSignature,
+                    x.SignatureDate,
+                    x.SignatureName,
+                    x.SignatureEmail,
+                    x.SignatureConfirmationToken,
+                    x.SignatureConfirmedDate,
+                    x.PendingSignature,
+                    x.PendingSignatureName,
+                    x.SignatureOtpHash,
+                    x.SignatureOtpChallengeId,
+                    x.SignatureOtpExpiry,
+                    x.SignatureOtpAttempts
+                })
+                .FirstOrDefaultAsync();
+
+            if (stored == null)
+                return NotFound();
+
+            // Il salvataggio della scheda non tocca la firma: quella la muove solo il flusso di
+            // firma. L'entita' arriva intera dal client e sovrascriverebbe tutto il blocco.
+            ticketIntervention.CustomerSignature = stored.CustomerSignature;
+            ticketIntervention.SignatureDate = stored.SignatureDate;
+            ticketIntervention.SignatureName = stored.SignatureName;
+            ticketIntervention.SignatureEmail = stored.SignatureEmail;
+            ticketIntervention.SignatureStatus = stored.SignatureStatus;
+            ticketIntervention.SignatureConfirmationToken = stored.SignatureConfirmationToken;
+            ticketIntervention.SignatureConfirmedDate = stored.SignatureConfirmedDate;
+            ticketIntervention.PendingSignature = stored.PendingSignature;
+            ticketIntervention.PendingSignatureName = stored.PendingSignatureName;
+            ticketIntervention.SignatureOtpHash = stored.SignatureOtpHash;
+            ticketIntervention.SignatureOtpChallengeId = stored.SignatureOtpChallengeId;
+            ticketIntervention.SignatureOtpExpiry = stored.SignatureOtpExpiry;
+            ticketIntervention.SignatureOtpAttempts = stored.SignatureOtpAttempts;
+
+            // Il requisito si ricalcola solo finche' non e' stato chiesto niente a nessuno: dopo
+            // resta quello congelato, altrimenti correggere il tipo intervento riscriverebbe che
+            // cosa il verbale prometteva.
+            ticketIntervention.SignatureRequirement = SignatureFlowStarted(stored.CustomerSignature, stored.PendingSignature, stored.SignatureConfirmationToken)
+                ? stored.SignatureRequirement
+                : await ResolveSignatureRequirementAsync(ticketIntervention.SupportType);
+
+            if (ticketIntervention.SignatureRequirement == SignatureRequirement.None
+                && ticketIntervention.SignatureStatus == SignatureStatus.Pending
+                && string.IsNullOrEmpty(stored.CustomerSignature))
+            {
+                ticketIntervention.SignatureStatus = SignatureStatus.NotRequired;
+            }
 
             _context.Entry(ticketIntervention).State = EntityState.Modified;
 
@@ -257,6 +309,24 @@ namespace CRM.Server.Controllers
                     return StatusCode(StatusCodes.Status403Forbidden, "Puoi registrare interventi solo sui ticket assegnati a te.");
 
                 ticketIntervention.IdUser = await _permitsService.IdUser();
+
+                // Che firma serva o no lo dicono le impostazioni del tipo intervento, non il
+                // client: qui il valore viene congelato sull'intervento e non cambia piu' da solo.
+                ticketIntervention.SignatureRequirement = await ResolveSignatureRequirementAsync(ticketIntervention.SupportType);
+
+                // Un intervento nasce non firmato, qualunque cosa arrivi dal client.
+                ticketIntervention.SignatureStatus = SignatureStatus.NotRequired;
+                ticketIntervention.CustomerSignature = null;
+                ticketIntervention.SignatureDate = null;
+                ticketIntervention.SignatureName = null;
+                ticketIntervention.SignatureConfirmationToken = null;
+                ticketIntervention.SignatureConfirmedDate = null;
+                ticketIntervention.PendingSignature = null;
+                ticketIntervention.PendingSignatureName = null;
+                ticketIntervention.SignatureOtpHash = null;
+                ticketIntervention.SignatureOtpChallengeId = null;
+                ticketIntervention.SignatureOtpExpiry = null;
+                ticketIntervention.SignatureOtpAttempts = 0;
 
                 _context.TicketsInterventions.Add(ticketIntervention);
                 await _context.SaveChangesAsync();
@@ -566,6 +636,11 @@ namespace CRM.Server.Controllers
                 if (!await _permitsService.CanGetTicket(intervention.IdTicket))
                     return Problem("Not Permits");
 
+                // La firma sul dispositivo si prende solo dove e' prevista: sugli altri tipi il
+                // cliente non e' davanti al tecnico, e la strada e' il link.
+                if (intervention.SignatureRequirement != SignatureRequirement.OnDevice)
+                    return StatusCode(409, new { error = "Per questo tipo di intervento non e' prevista la firma sul dispositivo." });
+
                 const int OtpTtlMinutes = 5;
                 const int OtpResendCooldownSeconds = 60;
 
@@ -823,15 +898,22 @@ namespace CRM.Server.Controllers
 
         /// <summary>
         /// (Tecnico) Genera un link di firma remota e lo invia al cliente via SMS/email.
+        /// <para>
+        /// I controlli stanno qui e non solo nell'interfaccia: prima l'endpoint guardava soltanto
+        /// i permessi sul ticket, quindi il link partiva anche per un tipo di intervento che la
+        /// firma non la prevede e anche a canale remoto spento.
+        /// </para>
         /// </summary>
         [HttpPost("RequestRemoteSignature/{id}")]
-        public async Task<ActionResult<RemoteSignatureRequestResponse>> RequestRemoteSignature(int id)
+        public async Task<ActionResult<RemoteSignatureRequestResponse>> RequestRemoteSignature(int id, [FromBody] RemoteSignatureRequest? request = null)
         {
             try
             {
                 var intervention = await _context.TicketsInterventions
                     .Include(x => x.Ticket)
                         .ThenInclude(t => t.Company)
+                    .Include(x => x.Ticket)
+                        .ThenInclude(t => t.Contact)
                     .FirstOrDefaultAsync(x => x.Id == id);
 
                 if (intervention == null)
@@ -840,18 +922,48 @@ namespace CRM.Server.Controllers
                 if (!await _permitsService.CanGetTicket(intervention.IdTicket))
                     return Problem("Not Permits");
 
+                // Su un intervento senza firma prevista non si chiede niente a nessuno. Con
+                // requisito "sul dispositivo" invece si passa di qui apposta: e' il ripiego per
+                // quando il cliente se n'e' andato prima che il tecnico chiudesse il verbale.
+                if (intervention.SignatureRequirement == SignatureRequirement.None)
+                    return StatusCode(409, new { error = "Per questo tipo di intervento non e' prevista la firma del cliente." });
+
+                if (!await RemoteSignatureEnabledAsync())
+                    return StatusCode(409, new { error = "La firma da remoto e' disattivata nelle impostazioni generali." });
+
+                // Un secondo invio su un verbale gia' firmato buttava lo stato in attesa lasciando
+                // in piedi la firma vecchia: adesso serve dirlo esplicitamente, e la firma
+                // precedente viene tolta di mezzo insieme al resto.
+                if (intervention.SignatureStatus == CRM.Shared.SignatureStatus.Verified)
+                {
+                    if (request?.Replace != true)
+                        return StatusCode(409, new { error = "Il verbale risulta gia' firmato.", alreadySigned = true });
+
+                    intervention.CustomerSignature = null;
+                    intervention.SignatureName = null;
+                    intervention.SignatureDate = null;
+                    intervention.SignatureConfirmedDate = null;
+                }
+
                 // Token monouso per la pagina pubblica di firma
                 var token = Guid.NewGuid().ToString("N");
                 intervention.SignatureConfirmationToken = token;
                 intervention.SignatureStatus = CRM.Shared.SignatureStatus.Pending;
-                await _context.SaveChangesAsync();
 
                 var link = $"{Request.Scheme}://{Request.Host}/RemoteSignature?token={token}&id={id}";
 
-                // Destinatario: recapiti dell'azienda del ticket
+                // Il recapito lo decide il tecnico. Senza indicazioni si prova il contatto del
+                // ticket, che e' la persona che ha davanti, e solo in ultimo il centralino e
+                // l'indirizzo generico dell'azienda.
                 var company = intervention.Ticket?.Company;
-                var phone = NormalizePhone(company?.Mobile ?? company?.Telefono);
-                var email = company?.Email;
+                var contact = intervention.Ticket?.Contact;
+
+                var phone = FirstFilled(
+                    NormalizePhone(request?.Phone),
+                    NormalizePhone(contact?.Mobile ?? contact?.Phone),
+                    NormalizePhone(company?.Mobile ?? company?.Telefono));
+
+                var email = FirstFilled(request?.Email, contact?.Email, company?.Email);
 
                 string channel;
                 string sentTo;
@@ -865,22 +977,9 @@ namespace CRM.Server.Controllers
                 }
                 else if (!string.IsNullOrWhiteSpace(email))
                 {
-                    var subject = $"Firma verbale intervento #{intervention.Ticket?.Id}";
-                    var message = $@"
-                        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-                            <h2 style='color: #0066cc;'>Firma del verbale di intervento</h2>
-                            <p>Gentile cliente,</p>
-                            <p>per firmare il verbale dell'intervento <strong>#{intervention.Ticket?.Id}</strong>, clicchi sul pulsante qui sotto:</p>
-                            <div style='text-align: center; margin: 30px 0;'>
-                                <a href='{link}'
-                                   style='background: #0066cc; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>
-                                    ✍️ FIRMA IL DOCUMENTO
-                                </a>
-                            </div>
-                            <p style='color: #6c757d; font-size: 12px;'>Se il pulsante non funziona, copi e incolli questo indirizzo: {link}</p>
-                        </div>";
+                    await SendRemoteSignatureEmailAsync(email, link, intervention.Ticket?.Id ?? 0,
+                        company?.RagioneSociale, contact?.NameComplete);
 
-                    await _emailSender.SendEmailAsync(email, subject, message);
                     channel = "email";
                     sentTo = MaskEmail(email);
                 }
@@ -888,6 +987,9 @@ namespace CRM.Server.Controllers
                 {
                     return StatusCode(422, new { error = "Nessun recapito disponibile per l'invio del link" });
                 }
+
+                intervention.SignatureEmail = channel == "email" ? email : intervention.SignatureEmail;
+                await _context.SaveChangesAsync();
 
                 await _logEventService.RegisterAsync(
                     nameof(TicketInterventionsController),
@@ -1001,6 +1103,93 @@ namespace CRM.Server.Controllers
         }
 
         /// <summary>Maschera un numero mostrando solo le ultime 3 cifre (es. "•••567").</summary>
+        /// <summary>Primo valore valorizzato della lista, altrimenti null.</summary>
+        private static string? FirstFilled(params string?[] values)
+            => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+
+        /// <summary>
+        /// Che firma serve per un intervento di questo tipo, secondo le impostazioni.
+        /// <para>
+        /// Un tipo senza riga di configurazione non chiede niente: cosi' un valore aggiunto in
+        /// futuro a TypesSupport non si mette a pretendere firme da solo.
+        /// </para>
+        /// <para>
+        /// L'interruttore generale spegne il canale remoto: se e' spento, un tipo configurato
+        /// "firma remota" nasce senza firma richiesta, perche' nessuno potrebbe raccoglierla e il
+        /// verbale la segnalerebbe mancante per sempre. Sulla firma sul dispositivo non incide:
+        /// li' l'interruttore toglie solo il ripiego remoto.
+        /// </para>
+        /// </summary>
+        private async Task<SignatureRequirement> ResolveSignatureRequirementAsync(int supportType)
+        {
+            var configured = await _context.SupportTypeSettings
+                .Where(x => x.SupportType == supportType)
+                .Select(x => (SignatureRequirement?)x.SignatureRequirement)
+                .FirstOrDefaultAsync() ?? SignatureRequirement.None;
+
+            if (configured == SignatureRequirement.Remote && !await RemoteSignatureEnabledAsync())
+                return SignatureRequirement.None;
+
+            return configured;
+        }
+
+        private async Task<bool> RemoteSignatureEnabledAsync()
+            => await _context.GlobalSettings.Select(x => x.RemoteSignatureEnabled).FirstOrDefaultAsync();
+
+        /// <summary>True se a qualcuno e' gia' stata chiesta (o e' gia' stata data) una firma.</summary>
+        private static bool SignatureFlowStarted(string? signature, string? pendingSignature, string? token)
+            => !string.IsNullOrEmpty(signature)
+               || !string.IsNullOrEmpty(pendingSignature)
+               || !string.IsNullOrEmpty(token);
+
+        /// <summary>
+        /// Manda il link di firma usando il template multilingua. Il testo scritto qui sotto e' solo
+        /// la rete di sicurezza per l'installazione che quel template non ce l'ha ancora: senza,
+        /// l'email non partirebbe e il cliente resterebbe in attesa di un link mai arrivato.
+        /// </summary>
+        private async Task SendRemoteSignatureEmailAsync(string email, string link, int ticketId, string? company, string? contactName)
+        {
+            var values = new Dictionary<string, string>
+            {
+                { "$URL", link },
+                { "$TICKET", ticketId.ToString() },
+                { "$COMPANY", company ?? string.Empty },
+                { "$NAME", contactName ?? string.Empty }
+            };
+
+            var sent = await _emailSender.SendEmailAsync(
+                new List<string> { email },
+                EmailsTypes.SignatureRequest,
+                null,
+                values);
+
+            if (sent != null)
+                return;
+
+            var subject = $"Firma verbale intervento #{ticketId}";
+            var message = $@"
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+                    <h2 style='color: #0066cc;'>Firma del verbale di intervento</h2>
+                    <p>Gentile cliente,</p>
+                    <p>per firmare il verbale dell'intervento <strong>#{ticketId}</strong>, clicchi sul pulsante qui sotto:</p>
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <a href='{link}'
+                           style='background: #0066cc; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>
+                            FIRMA IL DOCUMENTO
+                        </a>
+                    </div>
+                    <p style='color: #6c757d; font-size: 12px;'>Se il pulsante non funziona, copi e incolli questo indirizzo: {link}</p>
+                </div>";
+
+            await _emailSender.SendEmailAsync(email, subject, message);
+
+            await _logEventService.RegisterAsync(
+                nameof(TicketInterventionsController),
+                nameof(SendRemoteSignatureEmailAsync),
+                LogEvent.EventsTypes.Warning,
+                $"Template {EmailsTypes.SignatureRequest} non configurato: link di firma inviato con il testo di riserva.");
+        }
+
         private static string MaskPhone(string? phone)
         {
             if (string.IsNullOrWhiteSpace(phone)) return "***";

@@ -346,7 +346,7 @@ namespace CRM.Client.Pages.TicketInterventions
                     _signatureEmail = intervention.SignatureEmail ?? string.Empty;
                     _signerName = intervention.SignatureName ?? string.Empty;
 
-                    await ComputeSignatureModeAsync(intervention.SupportType);
+                    await ComputeSignatureModeAsync(intervention.SignatureRequirement);
                 }
             }
             catch (Exception ex)
@@ -359,20 +359,17 @@ namespace CRM.Client.Pages.TicketInterventions
         }
 
         /// <summary>
-        /// Decide come raccogliere la firma: in loco se il cliente è presente
-        /// (OnSite/Office); da remoto solo se l'apposita impostazione è attiva;
-        /// altrimenti nessuna firma richiesta.
+        /// Come si raccoglie la firma di questo intervento. Il requisito e' quello congelato
+        /// sull'intervento alla sua creazione, non piu' un ramo dedotto dal tipo: cosi' un verbale
+        /// vecchio continua a comportarsi come il giorno in cui e' stato scritto.
+        /// <para>
+        /// Con la firma sul dispositivo resta comunque disponibile la richiesta da remoto: e' il
+        /// caso del cliente che se n'e' andato prima che il tecnico chiudesse il verbale. Il
+        /// ripiego dipende pero' dall'interruttore generale, che spegne il canale remoto.
+        /// </para>
         /// </summary>
-        private async Task ComputeSignatureModeAsync(int supportType)
+        private async Task ComputeSignatureModeAsync(SignatureRequirement requirement)
         {
-            var support = (TypesSupport)supportType;
-
-            if (support == TypesSupport.OnSite || support == TypesSupport.Office)
-            {
-                _signatureMode = SignatureMode.OnSite;
-                return;
-            }
-
             try
             {
                 var settings = await RestClientServer.GetFirst<GlobalSetting>(ConstHelper.GlobalSettingsPath);
@@ -383,8 +380,17 @@ namespace CRM.Client.Pages.TicketInterventions
                 _remoteSignatureEnabled = false;
             }
 
-            _signatureMode = _remoteSignatureEnabled ? SignatureMode.Remote : SignatureMode.None;
+            _signatureMode = requirement switch
+            {
+                SignatureRequirement.OnDevice => SignatureMode.OnSite,
+                SignatureRequirement.Remote when _remoteSignatureEnabled => SignatureMode.Remote,
+                _ => SignatureMode.None
+            };
         }
+
+        /// <summary>Il ripiego remoto si offre dove la firma sul dispositivo non si e' potuta prendere.</summary>
+        private bool CanFallBackToRemote
+            => _signatureMode == SignatureMode.OnSite && _remoteSignatureEnabled && !_hasSignature;
 
         /// <summary>
         /// Apre dialog per rinviare email di conferma (con possibilità di modificare l'email)
@@ -849,13 +855,27 @@ Il cliente riceverà un'email con un link per confermare la firma.",
         /// </summary>
         private async Task RequestRemoteSignature()
         {
+            // Il recapito si vede e si corregge prima di partire: il link non se ne va piu' da
+            // solo verso l'indirizzo generico dell'azienda senza che nessuno lo sappia.
+            var scelta = await DialogService.OpenAsync<RemoteSignatureRecipientDialog>(
+                "Richiedi firma al cliente",
+                new Dictionary<string, object>
+                {
+                    { "Email", _signatureEmail ?? string.Empty },
+                    { "AlreadySigned", _hasSignature && _signatureStatus == nameof(CRM.Shared.SignatureStatus.Verified) }
+                },
+                new DialogOptions { Width = "520px", Height = "auto", CloseDialogOnEsc = true });
+
+            if (scelta is not CRM.Shared.Models.RemoteSignatureRequest request)
+                return;
+
             _isSendingRemote = true;
             StateHasChanged();
 
             try
             {
-                var resp = await Http.PostAsync(
-                    $"{ConstHelper.TicketsInterventionsPath}/RequestRemoteSignature/{Id}", null);
+                var resp = await Http.PostAsJsonAsync(
+                    $"{ConstHelper.TicketsInterventionsPath}/RequestRemoteSignature/{Id}", request);
 
                 if (resp.IsSuccessStatusCode)
                 {

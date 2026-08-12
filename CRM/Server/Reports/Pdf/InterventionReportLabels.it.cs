@@ -45,7 +45,13 @@
                 TickIfNoComments = "Barrare se non ci sono commenti.",
                 AcceptedOn = "Accettato in data:",
                 Page = "Pagina",
-                Of = "di"
+                Of = "di",
+                StampAndSignature = "Timbro e firma",
+                SignedOn = "Firmato il",
+                SignaturePending = "In attesa di firma",
+                SignatureVerified = "Firma confermata",
+                SignatureRejected = "Firma rifiutata",
+                SignatureNotCollected = "Firma non ancora acquisita"
             };
         }
     }

@@ -163,7 +163,13 @@ namespace CRM.Server.Services
                                 col.Item().PaddingTop(12).Element(c => NotesBlock(c, intervention.Note, labels));
                             }
 
-                            col.Item().PaddingTop(12).Element(c => RenderSignatureSection(c, labels, intervention.CustomerSignature, intervention.SignatureDate, intervention.SignatureName, intervention.SignatureStatus));
+                            // Il riquadro della firma compare solo dove una firma era prevista.
+                            // Su un intervento che non la richiede non ha senso stampare uno
+                            // spazio vuoto, e ancora meno segnalarlo come mancante.
+                            if (intervention.SignatureRequirement != SignatureRequirement.None)
+                            {
+                                col.Item().PaddingTop(12).Element(c => RenderSignatureSection(c, labels, intervention.CustomerSignature, intervention.SignatureDate, intervention.SignatureName, intervention.SignatureStatus));
+                            }
                         });
 
                         page.Footer().Element(c => FooterBlock(c, labels));
@@ -770,7 +776,7 @@ namespace CRM.Server.Services
                             ShowEmptySignatureSpace(signatureCol);
                         }
 
-                        signatureCol.Item().AlignCenter().Text("Stamp & Signature")
+                        signatureCol.Item().AlignCenter().Text(labels.StampAndSignature)
                             .FontSize(7)
                             .Italic()
                             .FontColor(Colors.Grey.Darken1);
@@ -789,26 +795,30 @@ namespace CRM.Server.Services
                         {
                             signatureCol.Item().AlignCenter()
                                 .PaddingTop(3)
-                                .Text($"Signed on: {signatureDate.Value:g}")
+                                .Text($"{labels.SignedOn}: {signatureDate.Value:g}")
                                 .FontSize(6)
                                 .FontColor(Colors.Grey.Darken2);
                         }
 
-                        if (signatureStatus.HasValue)
+                        // "In attesa" si scrive solo se qualcuno la firma l'ha davvero chiesta.
+                        // NotRequired qui vuol dire firma prevista ma non ancora richiesta a
+                        // nessuno: lo spazio resta bianco senza raccontare un'attesa che non c'e'.
+                        var statusText = signatureStatus switch
                         {
-                            var statusText = signatureStatus.Value switch
-                            {
-                                SignatureStatus.Pending => "⏳ Pending confirmation",
-                                SignatureStatus.Verified => "✅ Verified signature",
-                                SignatureStatus.Rejected => "❌ Rejected signature",
-                                _ => ""
-                            };
+                            SignatureStatus.Pending => labels.SignaturePending,
+                            SignatureStatus.Verified => labels.SignatureVerified,
+                            SignatureStatus.Rejected => labels.SignatureRejected,
+                            _ => string.IsNullOrWhiteSpace(customerSignatureBase64) ? labels.SignatureNotCollected : string.Empty
+                        };
 
-                            var statusColor = signatureStatus.Value switch
+                        if (!string.IsNullOrEmpty(statusText))
+                        {
+                            var statusColor = signatureStatus switch
                             {
                                 SignatureStatus.Verified => Colors.Green.Darken1,
                                 SignatureStatus.Rejected => Colors.Red.Darken1,
-                                _ => Colors.Orange.Darken1
+                                SignatureStatus.Pending => Colors.Orange.Darken1,
+                                _ => Colors.Grey.Darken1
                             };
 
                             signatureCol.Item().AlignCenter()
@@ -951,7 +961,13 @@ namespace CRM.Server.Services
                 TickIfNoComments = resourceManager.GetString("Tick if no comments", culture) ?? "Tick if no comments",
                 AcceptedOn = resourceManager.GetString("Accepted on", culture) ?? "Accepted on",
                 Page = resourceManager.GetString("Page", culture) ?? "Page",
-                Of = resourceManager.GetString("of", culture) ?? "of"
+                Of = resourceManager.GetString("of", culture) ?? "of",
+                StampAndSignature = resourceManager.GetString("Stamp and Signature", culture) ?? "Stamp & Signature",
+                SignedOn = resourceManager.GetString("Signed on", culture) ?? "Signed on",
+                SignaturePending = resourceManager.GetString("Signature pending", culture) ?? "Awaiting signature",
+                SignatureVerified = resourceManager.GetString("Signature verified", culture) ?? "Signature verified",
+                SignatureRejected = resourceManager.GetString("Signature rejected", culture) ?? "Signature rejected",
+                SignatureNotCollected = resourceManager.GetString("Signature not collected", culture) ?? "Signature not collected"
             };
 
             Console.WriteLine($"[PDF] Labels caricati - MinuteOfIntervention: '{labels.MinuteOfIntervention}'");

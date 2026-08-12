@@ -1254,4 +1254,22 @@
   <data name="Year" xml:space="preserve">
     <value>Anno</value>
   </data>
+  <data name="Stamp and Signature" xml:space="preserve">
+    <value>Timbro e firma</value>
+  </data>
+  <data name="Signed on" xml:space="preserve">
+    <value>Firmato il</value>
+  </data>
+  <data name="Signature pending" xml:space="preserve">
+    <value>In attesa di firma</value>
+  </data>
+  <data name="Signature verified" xml:space="preserve">
+    <value>Firma confermata</value>
+  </data>
+  <data name="Signature rejected" xml:space="preserve">
+    <value>Firma rifiutata</value>
+  </data>
+  <data name="Signature not collected" xml:space="preserve">
+    <value>Firma non ancora acquisita</value>
+  </data>
 </root>

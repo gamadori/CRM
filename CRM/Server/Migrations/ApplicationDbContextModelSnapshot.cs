@@ -3638,6 +3638,19 @@ namespace CRM.Server.Migrations
                     b.ToTable("SmtpSettings");
                 });
 
+            modelBuilder.Entity("CRM.Shared.SupportTypeSetting", b =>
+                {
+                    b.Property<int>("SupportType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SignatureRequirement")
+                        .HasColumnType("int");
+
+                    b.HasKey("SupportType");
+
+                    b.ToTable("SupportTypeSettings");
+                });
+
             modelBuilder.Entity("CRM.Shared.TelegramAppConfig", b =>
                 {
                     b.Property<int>("Id")
@@ -4037,6 +4050,9 @@ namespace CRM.Server.Migrations
 
                     b.Property<string>("SignatureOtpHash")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SignatureRequirement")
+                        .HasColumnType("int");
 
                     b.Property<int>("SignatureStatus")
                         .HasColumnType("int");

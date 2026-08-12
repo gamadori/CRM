@@ -89,6 +89,28 @@ namespace CRM.Shared.Models
 
     // ===== Firma remota (link inviato al cliente) =====
 
+    /// <summary>
+    /// Richiesta del link di firma remota.
+    /// <para>
+    /// Il recapito lo sceglie il tecnico: prima il link partiva in automatico verso i recapiti
+    /// dell'azienda, cioe' il centralino e l'indirizzo generico, senza che nessuno lo vedesse.
+    /// Lasciandoli vuoti si ripiega sul contatto del ticket e poi sull'azienda.
+    /// </para>
+    /// </summary>
+    public class RemoteSignatureRequest
+    {
+        public string? Email { get; set; }
+
+        public string? Phone { get; set; }
+
+        /// <summary>
+        /// Conferma esplicita a sostituire una firma gia' acquisita: senza, un secondo invio su un
+        /// verbale gia' firmato viene rifiutato invece di riportarlo in attesa lasciando in piedi
+        /// la firma vecchia.
+        /// </summary>
+        public bool Replace { get; set; }
+    }
+
     /// <summary>Esito dell'invio del link di firma remota.</summary>
     public class RemoteSignatureRequestResponse
     {

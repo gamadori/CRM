@@ -56,6 +56,10 @@ namespace CRM.Shared
         [Display(Name = "Reset Password")]
         PasswordReset,
 
+        /// <summary>Link con cui il cliente firma il verbale da remoto.</summary>
+        [Display(Name = "Richiesta Firma da Remoto")]
+        SignatureRequest,
+
     }
 
     [Table("EmailTemplates")]

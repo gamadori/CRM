@@ -10,7 +10,7 @@
             <span class="ps-2 text-secondary">Dati Intervento</span>
         </button>
 
-        <!-- Firma in loco: solo quando il cliente è presente (OnSite/Office) -->
+        @* Firma sul dispositivo: il cliente è davanti al tecnico e firma sullo schermo. *@
         @if (_signatureMode == SignatureMode.OnSite)
         {
             <button type="button" class="btn btn-sm btn-primary" @onclick="OpenSignatureOverlay" disabled="@_isSigning">
@@ -23,6 +23,16 @@
             <button type="button" class="btn btn-sm btn-outline-primary" @onclick="RequestRemoteSignature" disabled="@_isSendingRemote">
                 <i class="material-icons middle">@(_isSendingRemote ? "hourglass_empty" : "send")</i>
                 <span class="ps-2">@(_hasSignature ? "Reinvia link di firma" : "Richiedi firma al cliente")</span>
+            </button>
+        }
+
+        @* Ripiego: la firma era prevista sul dispositivo ma il cliente se n'è andato prima. *@
+        @if (CanFallBackToRemote)
+        {
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="RequestRemoteSignature" disabled="@_isSendingRemote"
+                    title="Il cliente non è più presente: mandagli il link e firma da remoto">
+                <i class="material-icons middle">@(_isSendingRemote ? "hourglass_empty" : "outgoing_mail")</i>
+                <span class="ps-2">Chiedi firma da remoto</span>
             </button>
         }
 

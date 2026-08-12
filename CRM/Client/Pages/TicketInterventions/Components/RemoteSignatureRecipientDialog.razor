@@ -1,0 +1,78 @@
+@using CRM.Shared.Models
+@using Radzen
+@inject DialogService DialogService
+
+@* Il recapito del link di firma si sceglie qui. Lasciando i campi vuoti il server ripiega sul
+   contatto del ticket e poi sull'azienda: prima quella scelta era automatica e invisibile, e il
+   link finiva sull'indirizzo generico dell'azienda. *@
+
+<div style="min-width: 460px;">
+    <p class="text-muted small">
+        Il cliente riceve un link e firma il verbale per conto suo.
+        Lasciando i campi vuoti si usano i recapiti del contatto del ticket, poi quelli dell'azienda.
+    </p>
+
+    @if (AlreadySigned)
+    {
+        <div class="alert alert-warning d-flex align-items-start gap-2">
+            <i class="material-icons">warning</i>
+            <div>
+                <strong>Il verbale risulta già firmato.</strong>
+                <div class="small">Proseguendo, la firma attuale viene rimossa e ne viene chiesta una nuova.</div>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="chkReplaceSignature" @bind="_replace" />
+                    <label class="form-check-label" for="chkReplaceSignature">Sostituisci la firma esistente</label>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="mb-3">
+        <label class="form-label small fw-semibold" for="txtSignEmail">Email</label>
+        <RadzenTextBox @bind-Value="_email" Name="txtSignEmail" Style="width:100%" Placeholder="Recapito del contatto o dell'azienda" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label small fw-semibold" for="txtSignPhone">Cellulare (per l'SMS)</label>
+        <RadzenTextBox @bind-Value="_phone" Name="txtSignPhone" Style="width:100%" Placeholder="Usato se il canale SMS è configurato" />
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <RadzenButton Text="Annulla" ButtonStyle="ButtonStyle.Light" Click="@(() => DialogService.Close(null))" />
+        <RadzenButton Text="Invia link" Icon="send" ButtonStyle="ButtonStyle.Primary"
+                      Disabled="@(AlreadySigned && !_replace)" Click="Send" />
+    </div>
+</div>
+
+@code {
+    /// <summary>Recapito già noto (per esempio quello di un invio precedente).</summary>
+    [Parameter]
+    public string Email { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Phone { get; set; } = string.Empty;
+
+    /// <summary>Il verbale ha già una firma confermata: serve una conferma esplicita a sostituirla.</summary>
+    [Parameter]
+    public bool AlreadySigned { get; set; }
+
+    private string _email = string.Empty;
+    private string _phone = string.Empty;
+    private bool _replace;
+
+    protected override void OnInitialized()
+    {
+        _email = Email ?? string.Empty;
+        _phone = Phone ?? string.Empty;
+    }
+
+    private void Send()
+    {
+        DialogService.Close(new RemoteSignatureRequest
+        {
+            Email = string.IsNullOrWhiteSpace(_email) ? null : _email.Trim(),
+            Phone = string.IsNullOrWhiteSpace(_phone) ? null : _phone.Trim(),
+            Replace = _replace
+        });
+    }
+}

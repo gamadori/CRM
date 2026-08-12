@@ -55,6 +55,14 @@ namespace CRM.Server.Reports.Pdf
         public string AcceptedOn { get; set; } = "Accepted on:";
         public string Page { get; set; } = "Page";
         public string Of { get; set; } = "of";
+
+        // Riquadro della firma. Erano scritte inglesi fisse in mezzo a un verbale tradotto.
+        public string StampAndSignature { get; set; } = "Stamp & Signature";
+        public string SignedOn { get; set; } = "Signed on";
+        public string SignaturePending { get; set; } = "Awaiting signature";
+        public string SignatureVerified { get; set; } = "Signature verified";
+        public string SignatureRejected { get; set; } = "Signature rejected";
+        public string SignatureNotCollected { get; set; } = "Signature not collected";
     }
 
     public static class InterventionReportPdf

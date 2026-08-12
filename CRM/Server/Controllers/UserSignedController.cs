@@ -54,6 +54,8 @@ namespace CRM.Server.Controllers
             
             user.IsClient = await _permitsService.IsClient();
 
+            user.CanViewInternalData = await _permitsService.CanViewInternalData();
+
             user.IsAdmin = await _permitsService.IsAdmin();
 
             user.IsSuperUser = await _permitsService.IsSuperUser();

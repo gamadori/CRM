@@ -62,7 +62,12 @@ namespace CRM.Shared
         [Display(Name = "Telegram")]
         public bool Telegram { get; set; }
 
-        [Display(Name = "Richiedi firma da remoto (interventi Telefono/Web/Remoto)")]
+        /// <summary>
+        /// Interruttore generale del canale di firma remota. Che firma serva per ogni tipo di
+        /// intervento si configura in <c>SupportTypeSettings</c>: qui si accende o si spegne la
+        /// possibilita' di mandare link di firma, ripiego incluso.
+        /// </summary>
+        [Display(Name = "Abilita la firma da remoto (invio del link al cliente)")]
         public bool RemoteSignatureEnabled { get; set; }
 
         [Display(Name = "Logo per i Reports")]

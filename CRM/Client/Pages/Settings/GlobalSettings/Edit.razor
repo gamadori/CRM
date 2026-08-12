@@ -99,6 +99,11 @@ else
                                     <div class="mb-3 form-check form-switch">
                                         <input class="form-check-input" type="checkbox" role="switch" @bind="@_settings.RemoteSignatureEnabled" id="switchRemoteSignature">
                                         <DisplayName For="@(() => _settings.RemoteSignatureEnabled)" CssClass="form-check-label" />
+                                        <div class="form-text">
+                                            Interruttore generale del canale remoto. Che firma serva per ogni tipo di
+                                            intervento si decide in
+                                            <a href="Settings/SignatureTypes">Firma degli interventi</a>.
+                                        </div>
                                     </div>
                                 </RadzenStack>
                             </RadzenStack>

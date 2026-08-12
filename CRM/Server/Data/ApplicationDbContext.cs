@@ -922,6 +922,7 @@ namespace CRM.Server.Data
             {
                 entity.Property(w => w.MinAmount).HasColumnType("Money");
                 entity.Property(w => w.IdAssignee).HasMaxLength(450);
+
                 entity.HasIndex(w => new { w.IsActive, w.Trigger });
                 entity.HasIndex(w => w.IdAssignee);
             });
@@ -1008,6 +1009,9 @@ namespace CRM.Server.Data
         
         public DbSet<GlobalSetting> GlobalSettings => Set<GlobalSetting>();
         public DbSet<TicketRoutingSetting> TicketRoutingSettings => Set<TicketRoutingSetting>();
+
+        /// <summary>Firma richiesta per ogni tipo di intervento: una riga per valore di TypesSupport.</summary>
+        public DbSet<SupportTypeSetting> SupportTypeSettings => Set<SupportTypeSetting>();
         public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
         public DbSet<CRM.Shared.Logo> Logos => Set<Logo>();
         public DbSet<CRM.Shared.Group> Groups => Set<Group>();

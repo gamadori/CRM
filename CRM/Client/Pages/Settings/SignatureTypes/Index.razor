@@ -1,0 +1,135 @@
+@page "/Settings/SignatureTypes"
+@using CRM.Shared
+@using CRM.Client.Helpers
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "SuperUserRole")]
+
+<PageHeader Model="_pageHeader" />
+
+@if (_loading)
+{
+    <Waiting />
+}
+else
+{
+    <div class="signature-types-page">
+
+        <section class="intro-card">
+            <div class="intro-icon">
+                <span class="material-icons">draw</span>
+            </div>
+            <div class="intro-copy">
+                <h2>Firma degli interventi</h2>
+                <p>
+                    Per ogni tipo di intervento si decide che firma serve al verbale. La scelta vale per gli
+                    interventi <strong>creati da qui in avanti</strong>: quelli già registrati mantengono la
+                    regola che avevano il giorno in cui sono stati scritti, così i verbali chiusi non cambiano
+                    significato.
+                </p>
+            </div>
+        </section>
+
+        @if (!_remoteEnabled)
+        {
+            <div class="alert alert-warning d-flex align-items-start gap-2">
+                <span class="material-icons">info</span>
+                <div>
+                    <strong>La firma da remoto è spenta nelle impostazioni generali.</strong>
+                    <div class="small">
+                        Finché resta spenta, i tipi impostati su &laquo;firma remota&raquo; nascono senza firma
+                        richiesta e sui tipi con firma sul dispositivo non compare il ripiego remoto.
+                        L'interruttore sta in <a href="GlobalSettings">Impostazioni globali</a>.
+                    </div>
+                </div>
+            </div>
+        }
+
+        <section class="types-card">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Tipo di intervento</th>
+                        <th style="width: 22rem;">Firma richiesta</th>
+                        <th>Come funziona</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in _settings)
+                    {
+                        <tr>
+                            <td class="fw-semibold">
+                                @UtilityHelper.GetDisplayName((TypesSupport)item.SupportType)
+                            </td>
+                            <td>
+                                <RadzenDropDown TValue="SignatureRequirement" @bind-Value="item.SignatureRequirement"
+                                                Data="_requirements" TextProperty="Text" ValueProperty="Value"
+                                                Style="width:100%" />
+                            </td>
+                            <td class="text-muted small">
+                                @Explain(item.SignatureRequirement)
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        <div class="d-flex gap-2 mt-3">
+            <RadzenButton Text="@(_saving ? "Salvataggio..." : "Salva")" Icon="save" ButtonStyle="ButtonStyle.Primary"
+                          Disabled="@_saving" Click="SaveAsync" />
+        </div>
+    </div>
+}
+
+<style>
+    .signature-types-page {
+        max-width: 1100px;
+        padding: 1.5rem;
+    }
+
+    .intro-card,
+    .types-card {
+        background: var(--crm-surface-raised, #fff);
+        border: 1px solid var(--crm-border, #e8ecf1);
+        border-radius: 12px;
+        box-shadow: var(--crm-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
+    }
+
+    .intro-card {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .intro-icon .material-icons {
+        font-size: 2rem;
+        color: #00695c;
+    }
+
+    .intro-copy h2 {
+        margin: 0 0 0.35rem;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: var(--crm-text, #2d3748);
+    }
+
+    .intro-copy p {
+        margin: 0;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        color: var(--crm-text-muted, #64748b);
+    }
+
+    .types-card {
+        padding: 0.5rem 0.75rem;
+        overflow-x: auto;
+    }
+
+    .types-card th {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--crm-text-muted, #64748b);
+    }
+</style>

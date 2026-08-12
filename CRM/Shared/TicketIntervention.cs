@@ -10,24 +10,67 @@ using System.Threading.Tasks;
 namespace CRM.Shared
 {
     /// <summary>
-    /// Stato di verifica della firma digitale
+    /// Stato di verifica della firma digitale.
     /// </summary>
+    /// <remarks>
+    /// I valori sono interi in tabella: aggiungere sempre in coda, mai in mezzo.
+    /// </remarks>
     public enum SignatureStatus
     {
         /// <summary>
         /// Firma in attesa di conferma via email
         /// </summary>
+        [Display(Name = "In attesa")]
         Pending = 0,
-        
+
         /// <summary>
         /// Firma confermata dal cliente
         /// </summary>
+        [Display(Name = "Confermata")]
         Verified = 1,
-        
+
         /// <summary>
         /// Firma rifiutata dal cliente
         /// </summary>
-        Rejected = 2
+        [Display(Name = "Rifiutata")]
+        Rejected = 2,
+
+        /// <summary>
+        /// Nessuna firma prevista per questo intervento, oppure prevista ma non ancora chiesta a
+        /// nessuno.
+        /// <para>
+        /// Mancava, ed e' il motivo per cui ogni intervento nasceva "in attesa di firma": il valore
+        /// di partenza di un enum e' lo zero, e lo zero era <see cref="Pending"/>. Da qui la
+        /// segnalazione sul verbale di una telefonata e il conteggio in dashboard corretto a mano
+        /// aggiungendo "...e la firma pero' c'e'".
+        /// </para>
+        /// </summary>
+        [Display(Name = "Non richiesta")]
+        NotRequired = 3
+    }
+
+    /// <summary>
+    /// Che firma serve per un intervento. Si configura per tipo di intervento e viene poi
+    /// congelata sul singolo intervento: cambiare le impostazioni non deve riscrivere il
+    /// significato dei verbali gia' chiusi.
+    /// </summary>
+    public enum SignatureRequirement
+    {
+        /// <summary>Nessuna firma: il verbale non la chiede e non la segnala mancante.</summary>
+        [Display(Name = "Nessuna firma")]
+        None = 0,
+
+        /// <summary>
+        /// Firma sul dispositivo del tecnico, con conferma OTP. Il cliente e' davanti a lui.
+        /// Resta comunque possibile ripiegare sulla firma remota, perche' il cliente puo'
+        /// essersene andato prima.
+        /// </summary>
+        [Display(Name = "Firma sul dispositivo")]
+        OnDevice = 1,
+
+        /// <summary>Firma da remoto: al cliente arriva un link e firma per conto suo.</summary>
+        [Display(Name = "Firma remota")]
+        Remote = 2
     }
 
     public class TicketIntervention
@@ -92,10 +135,23 @@ namespace CRM.Shared
         public string? SignatureEmail { get; set; }
 
         /// <summary>
-        /// Stato verifica firma: Pending, Verified, Rejected
+        /// Stato verifica firma. Parte da <see cref="SignatureStatus.NotRequired"/>: finche' non
+        /// si chiede niente a nessuno, non c'e' nessuna attesa da segnalare.
         /// </summary>
         [Display(Name = nameof(TicketIntervention.SignatureStatus), ResourceType = typeof(Resources.Models.TicketIntervention))]
-        public SignatureStatus SignatureStatus { get; set; } = SignatureStatus.Pending;
+        public SignatureStatus SignatureStatus { get; set; } = SignatureStatus.NotRequired;
+
+        /// <summary>
+        /// Che firma serve per questo intervento, copiata dalle impostazioni del tipo intervento
+        /// al momento della creazione.
+        /// <para>
+        /// E' congelata di proposito: se domani si cambia la configurazione, i verbali gia' chiusi
+        /// non devono cambiare significato ne' rigenerarsi con un'altra segnalazione. Si ricalcola
+        /// solo finche' non c'e' ancora nessuna firma, cioe' se il tecnico corregge il tipo.
+        /// </para>
+        /// </summary>
+        [Display(Name = "Firma richiesta")]
+        public SignatureRequirement SignatureRequirement { get; set; } = SignatureRequirement.None;
 
         // ✅ NUOVI CAMPI PER ESTRAZIONE AUTOMATICA RECEIPT/FATTURE (Azure Form Recognizer)
 
