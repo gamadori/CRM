@@ -918,7 +918,7 @@ namespace CRM.Server.Services
                 .Select(t => new { t.StartDateTime, t.EndDateTime })
                 .ToListAsync();
 
-            return segmenti.Sum(s => (int)(s.EndDateTime - s.StartDateTime).TotalMinutes);
+            return segmenti.Sum(s => InterventionMinutes.InMemoria(s.StartDateTime, s.EndDateTime));
         }
 
         private static APIResponseMessage<CommessaDTO> Fail(string m, HttpStatusCode c) => new() { State = false, Message = m, Code = c };

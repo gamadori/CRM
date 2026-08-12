@@ -35,7 +35,7 @@ namespace CRM.Server.Services
                 .Where(i => tickets.Contains(i.Ticket))
                 .SelectMany(i => i.TicketInterventionTime)
                 .Where(t => t.IsBillable)
-                .SumAsync(t => (int)EF.Functions.DateDiffMinute(t.StartDateTime, t.EndDateTime));
+                .SumAsync(InterventionMinutes.Sql);
 
         /// <summary>Ripartizione per un solo ticket (mai null: un ticket senza tempi vale zero).</summary>
         public static async Task<Breakdown> ForTicketAsync(ApplicationDbContext context, int idTicket)
@@ -70,6 +70,9 @@ namespace CRM.Server.Services
                 {
                     g.Key.IdTicket,
                     g.Key.TimeType,
+                    // Unico punto rimasto con la formula in chiaro: qui si somma dentro un
+                    // raggruppamento su una proiezione anonima, dove l'espressione di
+                    // InterventionMinutes.Sql non e' riutilizzabile. Deve restare identica a quella.
                     Minuti = g.Sum(x => (int)EF.Functions.DateDiffMinute(x.StartDateTime, x.EndDateTime))
                 })
                 .ToListAsync();
@@ -112,7 +115,7 @@ namespace CRM.Server.Services
 
             var minuti = await context.TicketInterventionTimes
                 .Where(t => t.IdTicketIntervention == idIntervention && t.IsBillable)
-                .SumAsync(t => (int)EF.Functions.DateDiffMinute(t.StartDateTime, t.EndDateTime));
+                .SumAsync(InterventionMinutes.Sql);
 
             if (intervention.Minute == minuti)
                 return;

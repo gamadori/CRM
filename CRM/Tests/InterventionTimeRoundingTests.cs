@@ -121,9 +121,12 @@ public class InterventionTimeRoundingTests
         => (int)(fine.Date.AddMinutes(fine.Hour * 60 + fine.Minute)
                - inizio.Date.AddMinutes(inizio.Hour * 60 + inizio.Minute)).TotalMinutes;
 
-    /// <summary>Quello che fa .NET in memoria: tronca il tempo trascorso.</summary>
+    /// <summary>
+    /// Quello che fa .NET in memoria: tronca il tempo trascorso. Non e' una copia della formula,
+    /// e' proprio il metodo di produzione - cosi' se cambia, questi test lo dicono.
+    /// </summary>
     private static int ComeDotNet(DateTime inizio, DateTime fine)
-        => (int)(fine - inizio).TotalMinutes;
+        => CRM.Server.Services.InterventionMinutes.InMemoria(inizio, fine);
 
     [Fact]
     public void Con_i_secondi_le_due_formule_non_dicono_la_stessa_cosa()

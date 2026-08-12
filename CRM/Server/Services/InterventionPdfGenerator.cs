@@ -439,10 +439,10 @@ namespace CRM.Server.Services
                     });
 
                     // Calcolo totali
-                    var totalWorkMinutes = allTimes.Where(t => t.TimeType == InterventionTimeType.Work).Sum(t => (int)(t.EndDateTime - t.StartDateTime).TotalMinutes);
-                    var totalTravelMinutes = allTimes.Where(t => t.TimeType == InterventionTimeType.Travel).Sum(t => (int)(t.EndDateTime - t.StartDateTime).TotalMinutes);
-                    var totalBreakMinutes = allTimes.Where(t => t.TimeType == InterventionTimeType.Break).Sum(t => (int)(t.EndDateTime - t.StartDateTime).TotalMinutes);
-                    var billableMinutes = allTimes.Where(t => t.IsBillable).Sum(t => (int)(t.EndDateTime - t.StartDateTime).TotalMinutes);
+                    var totalWorkMinutes = allTimes.Where(t => t.TimeType == InterventionTimeType.Work).Sum(InterventionMinutes.InMemoria);
+                    var totalTravelMinutes = allTimes.Where(t => t.TimeType == InterventionTimeType.Travel).Sum(InterventionMinutes.InMemoria);
+                    var totalBreakMinutes = allTimes.Where(t => t.TimeType == InterventionTimeType.Break).Sum(InterventionMinutes.InMemoria);
+                    var billableMinutes = allTimes.Where(t => t.IsBillable).Sum(InterventionMinutes.InMemoria);
                     var totalKm = allTimes.Where(t => t.TimeType == InterventionTimeType.Travel).Sum(t => t.TravelKilometers ?? 0);
 
                     // Riepilogo compatto
@@ -491,11 +491,13 @@ namespace CRM.Server.Services
         private static IContainer HeaderCell(IContainer c) =>
             c.PaddingVertical(3).PaddingRight(4).Background(Colors.Grey.Lighten3).DefaultTextStyle(x => x.SemiBold().FontSize(8));
 
+        /// <summary>
+        /// Durata di una riga della tabella tempi. Passa da <see cref="InterventionMinutes"/> e
+        /// dallo stesso formattatore dei totali: il numero in fondo alla colonna e quello nel
+        /// riepilogo devono venire dallo stesso calcolo, o il verbale non torna con se stesso.
+        /// </summary>
         private static string FormatDuration(DateTime start, DateTime end)
-        {
-            var duration = end - start;
-            return $"{(int)duration.TotalHours}h {duration.Minutes}m";
-        }
+            => FormatMinutes(InterventionMinutes.InMemoria(start, end));
 
         private static string FormatMinutes(int totalMinutes)
         {
