@@ -353,14 +353,11 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
-}
 
-// Seed database (roles, default data, admin user)
-using (var scopeSeed = app.Services.CreateScope())
-{
-    // run seeding synchronously to avoid changing method signature
-   // CRM.Server.Data.DbInitializer.SeedAsync(scopeSeed.ServiceProvider).GetAwaiter().GetResult();
+    // Le migration esistono solo su un database vero: la suite di prova monta l'applicazione
+    // intera su un provider in memoria, dove Migrate() non ha significato e fallisce.
+    if (db.Database.IsRelational())
+        db.Database.Migrate();
 }
 
 app.UseResponseCompression();
@@ -514,3 +511,9 @@ using (var scope = scopeFactory.CreateScope())
 
 app.Run();
 
+/// <summary>
+/// Reso visibile perche' la suite di prova monta l'applicazione intera (WebApplicationFactory) per
+/// verificare chi puo' chiamare cosa: e' l'unico modo di provare l'autorizzazione com'e' davvero,
+/// pipeline e attributi compresi, invece di rileggere gli attributi con la riflessione.
+/// </summary>
+public partial class Program { }
