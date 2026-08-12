@@ -93,8 +93,7 @@ namespace CRM.Server.Authentication
         {
             var usesBearerToken = context.Request.Headers.Authorization.ToString()
                 .StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
-            var isApiRequest = context.Request.Path.StartsWithSegments("/api")
-                || context.Request.Path.StartsWithSegments("/localApi");
+            var isApiRequest = context.Request.Path.StartsWithSegments("/api");
 
             return usesBearerToken || isApiRequest
                 ? OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme

@@ -33,14 +33,6 @@ public class PublicApiSurfaceTests
         "AuthorizationController.Exchange",
         "AuthorizationController.Logout",
 
-        // ⚠️ AuthController e' MORTO: il costruttore e' private, quindi il DI non riesce a
-        // istanziarlo e ogni chiamata fallisce. Sta qui perche' oggi il codice c'e', non perche'
-        // vada bene: sono quattro azioni anonime di scaffolding mai implementate, da rimuovere.
-        "AuthController.Delete",
-        "AuthController.Get",
-        "AuthController.Post",
-        "AuthController.Put",
-
         // Webhook degli ESP: si autenticano con il token della casella o del provider.
         "EmailInboundController.Receive",
         "EmailWebhooksController.Brevo",
