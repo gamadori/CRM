@@ -1,4 +1,6 @@
 @page "/Settings/Smtps"
+@attribute [Authorize(Policy = "AdminRole")]
+@using Microsoft.AspNetCore.Authorization
 @using CRM.Client.Helpers
 @using CRM.Client.Models
 @using CRM.Client.Services
@@ -74,7 +76,8 @@ else
                                     }
                                     else
                                     {
-                                        <span class="text-muted">API key @(string.IsNullOrEmpty(item.ApiKey) ? "—" : "••••")</span>
+                                        @* La chiave non arriva piu' al client: qui si sa solo se c'e'. *@
+                                        <span class="text-muted">API key @(item.HasApiKey ? "••••" : "—")</span>
                                     }
                                 </td>
                                 <td class="text-center">

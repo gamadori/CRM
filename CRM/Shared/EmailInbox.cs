@@ -81,6 +81,11 @@ namespace CRM.Shared
         [Display(Name = "Username")]
         public string? Username { get; set; }
 
+        /// <summary>
+        /// Password IMAP. <b>Non lascia mai il server</b>: le GET la restituiscono vuota e
+        /// segnalano la sua esistenza con <see cref="HasPassword"/>. In salvataggio, vuota
+        /// significa "tieni quella salvata", non "cancellala".
+        /// </summary>
         [PasswordPropertyText]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
@@ -103,6 +108,13 @@ namespace CRM.Shared
 
         [NotMapped]
         public string DisplayName => string.IsNullOrWhiteSpace(Name) ? Address : Name;
+
+        /// <summary>
+        /// Vero se sul server esiste una password salvata. Serve alla maschera per distinguere
+        /// "campo vuoto perché non c'è" da "campo vuoto perché non te la faccio vedere".
+        /// </summary>
+        [NotMapped]
+        public bool HasPassword { get; set; }
     }
 
     public class EmailInboxFilterModel : PagingParameterModel

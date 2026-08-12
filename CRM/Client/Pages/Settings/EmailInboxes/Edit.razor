@@ -1,5 +1,7 @@
 @page "/Settings/EmailInboxes/New"
 @page "/Settings/EmailInboxes/{Id:int}/Edit"
+@attribute [Authorize(Policy = "AdminRole")]
+@using Microsoft.AspNetCore.Authorization
 @using CRM.Shared
 @using Radzen
 @using Radzen.Blazor
@@ -72,6 +74,10 @@ else
                         </div>
                         <RedGTextBox For="@(() => _item.Username)" @bind-value="@_item.Username" />
                         <RedGPassword For="@(() => _item.Password)" @bind-value="@_item.Password" />
+                        @if (_item.HasPassword)
+                        {
+                            <div class="text-muted small">Password salvata sul server. Lascia il campo vuoto per non cambiarla.</div>
+                        }
                         <RedGTextBox For="@(() => _item.Folder)" @bind-value="@_item.Folder" />
                         <RedGNumeric For="@(() => _item.PollingSeconds)" @bind-value="@_item.PollingSeconds" />
                     }

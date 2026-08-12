@@ -1,4 +1,6 @@
 @page "/Settings/EmailInboxes"
+@attribute [Authorize(Policy = "AdminRole")]
+@using Microsoft.AspNetCore.Authorization
 @using CRM.Client.Helpers
 @using CRM.Client.Models
 @using CRM.Client.Services

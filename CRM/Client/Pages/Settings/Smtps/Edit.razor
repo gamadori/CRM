@@ -1,5 +1,7 @@
 @page "/Settings/Smtps/New"
 @page "/Settings/Smtps/{Id:int}/Edit"
+@attribute [Authorize(Policy = "AdminRole")]
+@using Microsoft.AspNetCore.Authorization
 @using CRM.Shared
 @using Radzen
 @using Radzen.Blazor
@@ -44,10 +46,18 @@ else
                         </div>
                         <RedGTextBox For="@(() => _item.Username)" @bind-value="@_item.Username" />
                         <RedGPassword For="@(() => _item.Password)" @bind-value="@_item.Password" />
+                        @if (_item.HasPassword)
+                        {
+                            <div class="text-muted small">Password salvata sul server. Lascia il campo vuoto per non cambiarla.</div>
+                        }
                     }
                     else
                     {
                         <RedGPassword For="@(() => _item.ApiKey)" @bind-value="@_item.ApiKey" />
+                        @if (_item.HasApiKey)
+                        {
+                            <div class="text-muted small">API key salvata sul server. Lascia il campo vuoto per non cambiarla.</div>
+                        }
                         <div class="text-muted small">
                             Per il pieno rendering del logo nei template, in alternativa all'API puoi configurare @_item.Provider come canale <b>SMTP</b> (relay <code>@(_item.Provider == EmailProvider.SendGrid ? "smtp.sendgrid.net" : "smtp-relay.brevo.com")</code>).
                         </div>

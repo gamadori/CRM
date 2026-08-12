@@ -51,6 +51,11 @@ namespace CRM.Shared
         [Display(Name = "Username")]
         public string Username { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Password SMTP. <b>Non lascia mai il server</b>: le GET la restituiscono vuota e
+        /// segnalano la sua esistenza con <see cref="HasPassword"/>. In salvataggio, vuota
+        /// significa "tieni quella salvata", non "cancellala".
+        /// </summary>
         [PasswordPropertyText]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
@@ -61,6 +66,7 @@ namespace CRM.Shared
 
         // ---- Provider API (es. Brevo) ----
 
+        /// <summary>Chiave del provider API. Stesso trattamento di <see cref="Password"/>.</summary>
         [Display(Name = "API Key")]
         public string? ApiKey { get; set; }
 
@@ -76,5 +82,16 @@ namespace CRM.Shared
         /// <summary>Etichetta leggibile del canale (per log/liste): il Nome se presente, altrimenti tipo+priorità.</summary>
         [System.ComponentModel.DataAnnotations.Schema.NotMapped]
         public string DisplayName => string.IsNullOrWhiteSpace(Name) ? $"{Provider} #{Priority}" : Name;
+
+        /// <summary>
+        /// Vero se sul server esiste una password salvata. Serve alla maschera per distinguere
+        /// "campo vuoto perché non c'è" da "campo vuoto perché non te la faccio vedere".
+        /// </summary>
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public bool HasPassword { get; set; }
+
+        /// <summary>Vero se sul server esiste una API key salvata. Vedi <see cref="HasPassword"/>.</summary>
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public bool HasApiKey { get; set; }
     }
 }
