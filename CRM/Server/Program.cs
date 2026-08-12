@@ -472,6 +472,11 @@ using (var scope = scopeFactory.CreateScope())
 {
     RolesHelper.CreateUserRoles(scope.ServiceProvider).Wait();
     CRM.Server.Authentication.OpenIddictSeeder.SeedAsync(scope.ServiceProvider).GetAwaiter().GetResult();
+
+    // Dati minimi senza i quali un database appena creato non e' utilizzabile (lingue, stati
+    // ticket, impostazioni). Additivo e idempotente: gira anche in produzione senza toccare
+    // nulla di gia' presente. Vedi DbInitializer.
+    CRM.Server.Data.DbInitializer.SeedAsync(scope.ServiceProvider).GetAwaiter().GetResult();
 }
 
 
