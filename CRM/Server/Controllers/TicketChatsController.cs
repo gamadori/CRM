@@ -56,7 +56,6 @@ namespace CRM.Server.Controllers
             try
             {
                 int totalPage = 1;
-                int? idCompany;
                 bool addTicketMsg = false;
                 
                 var  ticketChats = _context.TicketChats.AsQueryable();
@@ -64,11 +63,7 @@ namespace CRM.Server.Controllers
                 
                 ticketChats = ticketChats.OrderBy(x => x.Date);
 
-                if (!await _permitsService.CanAccessOtherCompany())
-                {
-                    idCompany = await _permitsService.GetIdCompany();
-                    ticketChats = ticketChats.Where(x => x.Ticket.IdCompany == idCompany);
-                }
+                ticketChats = ApplicaPerimetro(ticketChats, await _permitsService.GetVisibleCompanyIds());
 
                 if (args?.IdTicket != null)
                 {
@@ -151,7 +146,6 @@ namespace CRM.Server.Controllers
             {
 
                 int totalPage = 1;
-                int? idCompany;
 
 
                 var ticketChats = _context.TicketChats.AsQueryable();
@@ -160,11 +154,7 @@ namespace CRM.Server.Controllers
 
                 ticketChats = ticketChats.OrderByDescending(x => x.Date);
 
-                if (!await _permitsService.CanAccessOtherCompany())
-                {
-                    idCompany = await _permitsService.GetIdCompany();
-                    ticketChats = ticketChats.Where(x => x.Ticket.IdCompany == idCompany);
-                }
+                ticketChats = ApplicaPerimetro(ticketChats, await _permitsService.GetVisibleCompanyIds());
 
 
                 if (args?.IdTicket != null)
@@ -644,6 +634,30 @@ namespace CRM.Server.Controllers
         private bool TicketChatExists(int id)
         {
             return _context.TicketChats.Any(e => e.Id == id);
+        }
+
+        /// <summary>
+        /// Restringe la chat alle aziende che l'utente puo' vedere.
+        /// <para>
+        /// Prima il filtro passava da <c>CanAccessOtherCompany()</c>, che e' vero <b>anche per i
+        /// rivenditori</b>: a un rivenditore non veniva applicato nessun filtro, quindi leggeva la
+        /// conversazione col cliente di ticket di aziende che non erano sue. La chat contiene
+        /// quello che ci si dice davvero - prezzi, lamentele, cose concordate al telefono - quindi
+        /// non e' un dettaglio di comodo.
+        /// </para>
+        /// <para>
+        /// <c>GetVisibleCompanyIds()</c> e' la stessa fonte gia' usata da preventivi, ordini,
+        /// fatture e trattative: <c>null</c> = vede tutto (solo l'azienda madre), una lista = il
+        /// suo perimetro, lista vuota = niente. L'ultimo caso e' voluto: un utente non risolvibile
+        /// o senza azienda non deve vedere le chat di tutti, che e' quello che succedeva prima.
+        /// </para>
+        /// </summary>
+        private static IQueryable<TicketChat> ApplicaPerimetro(IQueryable<TicketChat> chats, List<int>? aziendeVisibili)
+        {
+            if (aziendeVisibili == null)
+                return chats;
+
+            return chats.Where(x => aziendeVisibili.Contains(x.Ticket.IdCompany));
         }
 
         private async Task<TicketChatViewModel?> GetTicket(int idTicket)
