@@ -105,6 +105,17 @@ else
                                             <a href="Settings/SignatureTypes">Firma degli interventi</a>.
                                         </div>
                                     </div>
+                                    @if (_settings.RemoteSignatureEnabled)
+                                    {
+                                        <div class="mb-3">
+                                            <DisplayName For="@(() => _settings.SignatureLinkValidityDays)" CssClass="form-label" />
+                                            <RadzenNumeric TValue="int" @bind-Value="_settings.SignatureLinkValidityDays" Min="1" Max="365" Style="width:100%" />
+                                            <div class="form-text">
+                                                Passati questi giorni il link non firma piu' niente e va rimandato.
+                                                Vale dal momento dell'invio, non da quello dell'intervento.
+                                            </div>
+                                        </div>
+                                    }
                                 </RadzenStack>
                             </RadzenStack>
                         </RadzenColumn>

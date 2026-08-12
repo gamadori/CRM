@@ -2015,6 +2015,9 @@ namespace CRM.Server.Migrations
                     b.Property<TimeOnly?>("ScheduleTimeStart")
                         .HasColumnType("time");
 
+                    b.Property<int>("SignatureLinkValidityDays")
+                        .HasColumnType("int");
+
                     b.Property<bool>("Telegram")
                         .HasColumnType("bit");
 
@@ -4056,6 +4059,9 @@ namespace CRM.Server.Migrations
 
                     b.Property<int>("SignatureStatus")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("SignatureTokenExpiry")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("StartDateTime")
                         .HasColumnType("datetime2");

@@ -70,6 +70,15 @@ namespace CRM.Shared
         [Display(Name = "Abilita la firma da remoto (invio del link al cliente)")]
         public bool RemoteSignatureEnabled { get; set; }
 
+        /// <summary>
+        /// Per quanti giorni resta valido il link di firma mandato al cliente. Scaduto, il link
+        /// non firma piu' niente e il tecnico deve rimandarlo: e' la differenza tra un permesso
+        /// dato una volta e un permesso dato per sempre. Zero o meno vale un giorno.
+        /// </summary>
+        [Display(Name = "Validità del link di firma (giorni)")]
+        [Range(1, 365)]
+        public int SignatureLinkValidityDays { get; set; } = 7;
+
         [Display(Name = "Logo per i Reports")]
         public int? LogoReport { get; set; }
 

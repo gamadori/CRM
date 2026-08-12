@@ -231,6 +231,18 @@ namespace CRM.Shared
         public string? SignatureConfirmationToken { get; set; }
 
         /// <summary>
+        /// Scadenza del token di firma. Un link mandato al cliente vale una finestra di giorni
+        /// (<see cref="GlobalSetting.SignatureLinkValidityDays"/>), non per sempre: un verbale di
+        /// marzo non deve poter essere firmato a ottobre da chi ritrova quella email.
+        /// <para>
+        /// Vuota vale <b>scaduto</b>, non "senza scadenza": un percorso che dimenticasse di
+        /// impostarla tornerebbe altrimenti in silenzio al link eterno. Le righe che avevano gia'
+        /// un token quando la colonna e' stata aggiunta hanno ricevuto una finestra di grazia.
+        /// </para>
+        /// </summary>
+        public DateTime? SignatureTokenExpiry { get; set; }
+
+        /// <summary>
         /// Data conferma firma
         /// </summary>
         [Display(Name = "Data Conferma Firma")]

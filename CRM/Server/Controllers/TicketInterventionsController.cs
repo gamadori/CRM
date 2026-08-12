@@ -221,6 +221,7 @@ namespace CRM.Server.Controllers
                     x.SignatureName,
                     x.SignatureEmail,
                     x.SignatureConfirmationToken,
+                    x.SignatureTokenExpiry,
                     x.SignatureConfirmedDate,
                     x.PendingSignature,
                     x.PendingSignatureName,
@@ -242,6 +243,7 @@ namespace CRM.Server.Controllers
             ticketIntervention.SignatureEmail = stored.SignatureEmail;
             ticketIntervention.SignatureStatus = stored.SignatureStatus;
             ticketIntervention.SignatureConfirmationToken = stored.SignatureConfirmationToken;
+            ticketIntervention.SignatureTokenExpiry = stored.SignatureTokenExpiry;
             ticketIntervention.SignatureConfirmedDate = stored.SignatureConfirmedDate;
             ticketIntervention.PendingSignature = stored.PendingSignature;
             ticketIntervention.PendingSignatureName = stored.PendingSignatureName;
@@ -320,6 +322,7 @@ namespace CRM.Server.Controllers
                 ticketIntervention.SignatureDate = null;
                 ticketIntervention.SignatureName = null;
                 ticketIntervention.SignatureConfirmationToken = null;
+                ticketIntervention.SignatureTokenExpiry = null;
                 ticketIntervention.SignatureConfirmedDate = null;
                 ticketIntervention.PendingSignature = null;
                 ticketIntervention.PendingSignatureName = null;
@@ -809,6 +812,7 @@ namespace CRM.Server.Controllers
                 intervention.SignatureStatus = CRM.Shared.SignatureStatus.Verified;
                 // Rimuove eventuale stato residuo del vecchio flusso email-link.
                 intervention.SignatureConfirmationToken = null;
+                intervention.SignatureTokenExpiry = null;
 
                 // Pulisci stato OTP
                 ClearOtpState(intervention);
@@ -945,9 +949,10 @@ namespace CRM.Server.Controllers
                     intervention.SignatureConfirmedDate = null;
                 }
 
-                // Token monouso per la pagina pubblica di firma
+                // Token monouso per la pagina pubblica di firma, valido per una finestra di giorni
                 var token = Guid.NewGuid().ToString("N");
                 intervention.SignatureConfirmationToken = token;
+                intervention.SignatureTokenExpiry = await SignatureTokenExpiryAsync();
                 intervention.SignatureStatus = CRM.Shared.SignatureStatus.Pending;
 
                 var link = $"{Request.Scheme}://{Request.Host}/RemoteSignature?token={token}&id={id}";
@@ -1022,8 +1027,7 @@ namespace CRM.Server.Controllers
                     .ThenInclude(t => t.Company)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
-            if (intervention == null || string.IsNullOrWhiteSpace(token) ||
-                intervention.SignatureConfirmationToken != token)
+            if (intervention == null || !SignatureTokenValid(intervention, token))
             {
                 return Ok(new RemoteSignatureInfoResponse { Valid = false });
             }
@@ -1051,8 +1055,8 @@ namespace CRM.Server.Controllers
             if (intervention == null)
                 return NotFound();
 
-            if (intervention.SignatureConfirmationToken != data.Token)
-                return StatusCode(401, new { error = "Link non valido o già utilizzato" });
+            if (!SignatureTokenValid(intervention, data.Token))
+                return StatusCode(401, new { error = "Link non valido, scaduto o già utilizzato" });
 
             if (string.IsNullOrWhiteSpace(data.Signature) || string.IsNullOrWhiteSpace(data.SignerName))
                 return BadRequest(new { error = "Firma e nome del firmatario sono obbligatori" });
@@ -1062,6 +1066,7 @@ namespace CRM.Server.Controllers
             intervention.SignatureDate = DateTime.Now;
             intervention.SignatureStatus = CRM.Shared.SignatureStatus.Verified;
             intervention.SignatureConfirmationToken = null; // monouso
+            intervention.SignatureTokenExpiry = null;
             await _context.SaveChangesAsync();
 
             try
@@ -1135,6 +1140,37 @@ namespace CRM.Server.Controllers
 
         private async Task<bool> RemoteSignatureEnabledAsync()
             => await _context.GlobalSettings.Select(x => x.RemoteSignatureEnabled).FirstOrDefaultAsync();
+
+        /// <summary>
+        /// Fin quando vale un link di firma generato adesso. Impostazione vuota o assurda (zero,
+        /// negativa) vale un giorno: la finestra si accorcia, non sparisce.
+        /// </summary>
+        private async Task<DateTime> SignatureTokenExpiryAsync()
+        {
+            var days = await _context.GlobalSettings
+                .Select(x => (int?)x.SignatureLinkValidityDays)
+                .FirstOrDefaultAsync() ?? 7;
+
+            return DateTime.Now.AddDays(days > 0 ? days : 1);
+        }
+
+        /// <summary>
+        /// Il token presentato apre davvero questo intervento. Confronto a tempo costante perche'
+        /// il token e' un segreto, e scadenza vuota = scaduta (vedi
+        /// <see cref="TicketIntervention.SignatureTokenExpiry"/>).
+        /// </summary>
+        private static bool SignatureTokenValid(TicketIntervention intervention, string? token)
+        {
+            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrEmpty(intervention.SignatureConfirmationToken))
+                return false;
+
+            if (!intervention.SignatureTokenExpiry.HasValue || intervention.SignatureTokenExpiry.Value < DateTime.Now)
+                return false;
+
+            return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+                System.Text.Encoding.UTF8.GetBytes(intervention.SignatureConfirmationToken),
+                System.Text.Encoding.UTF8.GetBytes(token));
+        }
 
         /// <summary>True se a qualcuno e' gia' stata chiesta (o e' gia' stata data) una firma.</summary>
         private static bool SignatureFlowStarted(string? signature, string? pendingSignature, string? token)
@@ -1269,7 +1305,8 @@ namespace CRM.Server.Controllers
                 intervention.SignatureDate = DateTime.Now;
                 intervention.SignatureStatus = CRM.Shared.SignatureStatus.Pending;
                 intervention.SignatureConfirmationToken = confirmationToken;
-                
+                intervention.SignatureTokenExpiry = await SignatureTokenExpiryAsync();
+
                 _context.Entry(intervention).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
 
@@ -1459,12 +1496,12 @@ namespace CRM.Server.Controllers
                 if (intervention == null)
                     return NotFound(new { error = "Intervento non trovato" });
 
-                if (intervention.SignatureConfirmationToken != token)
-                    return BadRequest(new { error = "Token non valido" });
+                if (!SignatureTokenValid(intervention, token))
+                    return BadRequest(new { error = "Token non valido o scaduto" });
 
                 if (intervention.SignatureStatus == CRM.Shared.SignatureStatus.Verified)
-                    return Ok(new { 
-                        success = true, 
+                    return Ok(new {
+                        success = true,
                         message = "Firma già confermata",
                         ticketId = intervention.Ticket.Id
                     });
@@ -1473,6 +1510,7 @@ namespace CRM.Server.Controllers
                 intervention.SignatureStatus = CRM.Shared.SignatureStatus.Verified;
                 intervention.SignatureConfirmedDate = DateTime.Now;
                 intervention.SignatureConfirmationToken = null; // Invalida token
+                intervention.SignatureTokenExpiry = null;
 
                 _context.Entry(intervention).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
@@ -1541,12 +1579,13 @@ namespace CRM.Server.Controllers
                     .Include(x => x.Ticket)
                     .FirstOrDefaultAsync(x => x.Id == id);
                 
-                if (intervention == null || intervention.SignatureConfirmationToken != token)
-                    return BadRequest(new { error = "Token non valido" });
+                if (intervention == null || !SignatureTokenValid(intervention, token))
+                    return BadRequest(new { error = "Token non valido o scaduto" });
 
                 intervention.SignatureStatus = CRM.Shared.SignatureStatus.Rejected;
                 intervention.SignatureConfirmedDate = DateTime.Now;
                 intervention.SignatureConfirmationToken = null;
+                intervention.SignatureTokenExpiry = null;
 
                 await _context.SaveChangesAsync();
 
@@ -1613,6 +1652,10 @@ namespace CRM.Server.Controllers
                 {
                     intervention.SignatureConfirmationToken = Guid.NewGuid().ToString("N");
                 }
+
+                // Il rinvio fa ripartire la finestra anche quando il token resta lo stesso:
+                // altrimenti si manderebbe un link gia' scaduto.
+                intervention.SignatureTokenExpiry = await SignatureTokenExpiryAsync();
 
                 _context.Entry(intervention).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
