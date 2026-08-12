@@ -41,6 +41,21 @@ namespace CRM.Shared
 
         public LeadStatus? LeadStatus { get; set; }
 
+        /// <summary>
+        /// Restringe la regola a una singola iniziativa: questa fiera, questa trasferta.
+        /// <para>
+        /// Facoltativo, e vuoto significa "qualsiasi": e' il comportamento che avevano tutte le
+        /// regole prima che questo campo esistesse, e non deve cambiare per nessuna di loro.
+        /// </para>
+        /// <para>
+        /// Serve perche' <see cref="LeadSource.Event"/> dice CHE il lead arriva da un evento, non
+        /// QUALE: senza questo filtro una regola pensata per il richiamo dei biglietti di una fiera
+        /// scatta anche sui lead di un webinar inseriti a mano.
+        /// </para>
+        /// </summary>
+        [Display(Name = "Iniziativa")]
+        public int? IdInitiative { get; set; }
+
         public DealStates? DealState { get; set; }
 
         public DealPhases? DealPhase { get; set; }

@@ -133,6 +133,7 @@ namespace CRM.Server.Services
                     existing.MinAmount = item.MinAmount;
                     existing.LeadSource = item.LeadSource;
                     existing.LeadStatus = item.LeadStatus;
+                    existing.IdInitiative = item.IdInitiative;
                     existing.DealState = item.DealState;
                     existing.DealPhase = item.DealPhase;
                     existing.ActivityKind = item.ActivityKind;
@@ -172,6 +173,15 @@ namespace CRM.Server.Services
                 if (!exists)
                 {
                     return "L'utente assegnatario selezionato non e' valido o e' disattivato.";
+                }
+            }
+
+            if (item.IdInitiative != null)
+            {
+                var initiativeExists = await _context.Initiatives.AnyAsync(x => x.Id == item.IdInitiative);
+                if (!initiativeExists)
+                {
+                    return "L'iniziativa selezionata non esiste piu'.";
                 }
             }
 
@@ -407,6 +417,20 @@ namespace CRM.Server.Services
                 _ => q
             };
 
+            // I filtri secchi vanno chiesti al database, non applicati dopo il Take: una regola
+            // ristretta a una fiera riguarda pochi lead su molti, e se i 50 candidati caricati sono
+            // tutti di altre iniziative il ciclo ricarica sempre gli stessi e il lead giusto non
+            // arriva mai. Matches() resta comunque il giudice finale.
+            if (rule.IdInitiative != null)
+            {
+                q = q.Where(x => x.IdInitiative == rule.IdInitiative);
+            }
+
+            if (rule.LeadSource != null)
+            {
+                q = q.Where(x => x.Source == rule.LeadSource);
+            }
+
             var leads = await q
                 .OrderBy(x => x.UpdatedAt ?? x.CreatedAt)
                 .Take(50)
@@ -442,6 +466,18 @@ namespace CRM.Server.Services
                 WorkflowTrigger.DealLost => q.Where(x => x.DateClosed != default && x.DateClosed.Date >= rule.CreatedAt.Date),
                 _ => q
             };
+
+            // Stesso motivo dei lead: il vincolo di iniziativa seleziona pochi record su tanti e
+            // deve entrare nella query, non filtrare le briciole rimaste dopo il Take.
+            if (rule.IdInitiative != null)
+            {
+                q = q.Where(x => x.IdInitiative == rule.IdInitiative);
+            }
+
+            if (rule.DealPhase != null)
+            {
+                q = q.Where(x => x.Phase == rule.DealPhase);
+            }
 
             var deals = await q
                 .OrderByDescending(x => x.Date)
@@ -490,6 +526,7 @@ namespace CRM.Server.Services
             {
                 if (rule.LeadSource != null && lead.Source != rule.LeadSource) return false;
                 if (rule.LeadStatus != null && lead.Status != rule.LeadStatus) return false;
+                if (rule.IdInitiative != null && lead.IdInitiative != rule.IdInitiative) return false;
                 if (rule.MinAmount != null && lead.EstimatedValue < rule.MinAmount) return false;
             }
 
@@ -497,6 +534,7 @@ namespace CRM.Server.Services
             {
                 if (rule.DealState != null && deal.State != rule.DealState) return false;
                 if (rule.DealPhase != null && deal.Phase != rule.DealPhase) return false;
+                if (rule.IdInitiative != null && deal.IdInitiative != rule.IdInitiative) return false;
                 if (rule.MinAmount != null && deal.Amount < rule.MinAmount) return false;
             }
 

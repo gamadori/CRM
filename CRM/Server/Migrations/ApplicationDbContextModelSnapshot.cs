@@ -4389,6 +4389,9 @@ namespace CRM.Server.Migrations
                         .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<int?>("IdInitiative")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -4419,6 +4422,8 @@ namespace CRM.Server.Migrations
                     b.HasIndex("IsActive", "Trigger");
 
                     b.HasIndex("IdAssignee");
+
+                    b.HasIndex("IdInitiative");
 
                     b.ToTable("WorkflowAutomations");
                 });
@@ -6303,6 +6308,13 @@ namespace CRM.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("Language");
+                });
+
+            modelBuilder.Entity("CRM.Shared.WorkflowAutomation", b =>
+                {
+                    b.HasOne("CRM.Shared.Initiative", null)
+                        .WithMany()
+                        .HasForeignKey("IdInitiative");
                 });
 
             modelBuilder.Entity("CRM.Shared.WorkflowAutomationExecution", b =>

@@ -8,11 +8,11 @@
         <Actions>
             <div class="header-actions">
                 <a class="secondary-action" href="WorkflowAutomations/Executions">
-                    <span class="action-icon history-icon" aria-hidden="true"></span>
+                    <span class="material-icons" aria-hidden="true">history</span>
                     <span>Registro esecuzioni</span>
                 </a>
                 <button type="button" class="secondary-action" @onclick="LoadRules" disabled="@_loading">
-                    <span class="action-icon refresh-icon" aria-hidden="true"></span>
+                    <span class="material-icons" aria-hidden="true">refresh</span>
                     <span>Aggiorna</span>
                 </button>
                 <button type="button" class="secondary-action" @onclick="RunNow" disabled="@(_running || _loading)">
@@ -20,7 +20,7 @@
                     <span>@(_running ? "Esecuzione..." : "Esegui ora")</span>
                 </button>
                 <button type="button" class="primary-action" @onclick="NewRule">
-                    <span class="action-icon add-icon" aria-hidden="true"></span>
+                    <span class="material-icons" aria-hidden="true">add</span>
                     <span>Nuova regola</span>
                 </button>
             </div>
@@ -92,7 +92,13 @@
                                     <button type="button" class="text-link" @onclick="@(() => EditRule(rule))">@rule.Name</button>
                                     <small>@(rule.IsActive ? "Attiva" : "Disattiva")</small>
                                 </td>
-                                <td>@TriggerText(rule.Trigger)</td>
+                                <td>
+                                    @TriggerText(rule.Trigger)
+                                    @if (RuleInitiativeText(rule) is string initiativeName)
+                                    {
+                                        <small>Solo @initiativeName</small>
+                                    }
+                                </td>
                                 <td>
                                     <strong>@rule.ActivitySubject</strong>
                                     <small>Scadenza +@rule.DueDays giorni</small>
@@ -198,6 +204,22 @@
                         </div>
                     }
 
+                    <label class="field">
+                        <span>Iniziativa</span>
+                        <InputSelect class="form-input" @bind-Value="_selected.IdInitiative">
+                            <option value="">Qualsiasi</option>
+                            @foreach (var initiative in _initiatives)
+                            {
+                                <option value="@initiative.Id">@InitiativeLabel(initiative)</option>
+                            }
+                        </InputSelect>
+                        <small class="field-hint">
+                            Facoltativo. Con "Qualsiasi" la regola vale per tutti i record, come prima.
+                            Scegliendo una fiera o una trasferta scatta solo su cio' che arriva da li':
+                            la fonte "Evento" da sola non distingue una fiera da un webinar.
+                        </small>
+                    </label>
+
                     <div class="two-cols">
                         <label class="field">
                             <span>Tipo attivita</span>
@@ -277,14 +299,9 @@
     .workflow-form { padding: 1rem; }
     .primary-action, .secondary-action, .row-actions button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid #bfd2e7; border-radius: 8px; padding: .55rem .8rem; background: #fff; color: #0f4a8a; font-weight: 800; text-decoration: none; }
     .primary-action { background: #0f4a8a; color: #fff; }
-    .action-icon { position: relative; display: inline-flex; width: 16px; height: 16px; flex: 0 0 16px; align-items: center; justify-content: center; }
-    .action-icon::before, .action-icon::after { content: ""; position: absolute; box-sizing: border-box; }
-    .history-icon::before { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; }
-    .history-icon::after { width: 6px; height: 6px; border-top: 2px solid currentColor; border-left: 2px solid currentColor; transform: translate(-5px, -4px) rotate(-25deg); }
-    .refresh-icon::before { width: 14px; height: 14px; border: 2px solid currentColor; border-left-color: transparent; border-radius: 50%; }
-    .refresh-icon::after { width: 6px; height: 6px; border-top: 2px solid currentColor; border-right: 2px solid currentColor; transform: translate(4px, -5px) rotate(25deg); }
-    .add-icon::before { width: 14px; height: 2px; background: currentColor; border-radius: 2px; }
-    .add-icon::after { width: 2px; height: 14px; background: currentColor; border-radius: 2px; }
+    /* Tutte le icone della barra alla stessa misura: erano tre disegnate a mano da 16px piu' una
+       material-icons da 24, e la differenza si vedeva. */
+    .primary-action .material-icons, .secondary-action .material-icons { font-size: 18px; line-height: 1; }
     .workflow-table { width: 100%; min-width: 760px; border-collapse: collapse; }
     .workflow-table th, .workflow-table td { padding: .78rem .85rem; border-bottom: 1px solid #e6edf5; vertical-align: middle; }
     .workflow-table th { color: #64748b; font-size: .76rem; text-transform: uppercase; letter-spacing: 0; background: #fbfdff; }
@@ -299,6 +316,7 @@
     .field { display: grid; gap: .35rem; margin-bottom: .8rem; min-width: 0; }
     .field span, .switch-line span { color: #526174; font-size: .82rem; font-weight: 800; }
     .form-input { width: 100%; min-height: 40px; border: 1px solid #d7e0ec; border-radius: 8px; background: #fff; padding: .48rem .6rem; }
+    .field-hint { color: #64748b; font-size: .76rem; font-weight: 600; line-height: 1.35; }
     .readonly-value { display: flex; align-items: center; min-height: 40px; border: 1px solid #d7e0ec; border-radius: 8px; background: #f8fafc; padding: .48rem .6rem; color: #526174; font-weight: 800; }
     .notes { min-height: 110px; resize: vertical; }
     .switch-line { display: flex; align-items: center; gap: .5rem; margin-bottom: .8rem; }

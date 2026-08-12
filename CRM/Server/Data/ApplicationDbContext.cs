@@ -923,8 +923,17 @@ namespace CRM.Server.Data
                 entity.Property(w => w.MinAmount).HasColumnType("Money");
                 entity.Property(w => w.IdAssignee).HasMaxLength(450);
 
+                // Nessuna navigazione verso l'iniziativa: alla regola serve il vincolo, non l'oggetto.
+                // NoAction come tutte le altre FK verso Initiative - la cancellazione dell'iniziativa
+                // passa dal servizio, che sgancia e disattiva le regole invece di lasciarle allargare.
+                entity.HasOne<Initiative>()
+                      .WithMany()
+                      .HasForeignKey(w => w.IdInitiative)
+                      .OnDelete(DeleteBehavior.NoAction);
+
                 entity.HasIndex(w => new { w.IsActive, w.Trigger });
                 entity.HasIndex(w => w.IdAssignee);
+                entity.HasIndex(w => w.IdInitiative);
             });
 
             modelBuilder.Entity<WorkflowAutomationExecution>(entity =>

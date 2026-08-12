@@ -8,11 +8,11 @@
         <Actions>
             <div class="header-actions">
                 <a class="secondary-action" href="WorkflowAutomations">
-                    <span class="action-icon rules-icon" aria-hidden="true"></span>
+                    <span class="material-icons" aria-hidden="true">rule</span>
                     <span>Regole</span>
                 </a>
                 <button type="button" class="primary-action" @onclick="LoadExecutions" disabled="@_executionsLoading">
-                    <span class="action-icon refresh-icon" aria-hidden="true"></span>
+                    <span class="material-icons" aria-hidden="true">refresh</span>
                     <span>@(_executionsLoading ? "Aggiorno..." : "Aggiorna")</span>
                 </button>
             </div>
@@ -165,12 +165,7 @@
     .metric.attention > .material-icons { color: #b42318; background: #fff1f1; }
     .primary-action, .secondary-action { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid #bfd2e7; border-radius: 8px; padding: .55rem .8rem; background: #fff; color: #0f4a8a; font-weight: 800; text-decoration: none; }
     .primary-action { background: #0f4a8a; color: #fff; }
-    .action-icon { position: relative; display: inline-flex; width: 16px; height: 16px; flex: 0 0 16px; align-items: center; justify-content: center; }
-    .action-icon::before, .action-icon::after { content: ""; position: absolute; box-sizing: border-box; }
-    .rules-icon::before { width: 13px; height: 13px; border: 2px solid currentColor; border-radius: 3px; }
-    .rules-icon::after { width: 7px; height: 2px; background: currentColor; box-shadow: 0 4px 0 currentColor; transform: translateY(-2px); }
-    .refresh-icon::before { width: 14px; height: 14px; border: 2px solid currentColor; border-left-color: transparent; border-radius: 50%; }
-    .refresh-icon::after { width: 6px; height: 6px; border-top: 2px solid currentColor; border-right: 2px solid currentColor; transform: translate(4px, -5px) rotate(25deg); }
+    .primary-action .material-icons, .secondary-action .material-icons { font-size: 18px; line-height: 1; }
     .execution-panel { border: 1px solid #dfe7f1; border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(31, 42, 68, .07); overflow: hidden; }
     .execution-filters { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(180px, .7fr) minmax(150px, .5fr); gap: .75rem; padding: 1rem 1rem .25rem; border-bottom: 1px solid #e6edf5; background: #fbfdff; }
     .field { display: grid; gap: .35rem; margin-bottom: .8rem; min-width: 0; }

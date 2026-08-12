@@ -611,6 +611,15 @@ namespace CRM.Server.Services
                 await _context.Deals.Where(x => x.IdInitiative == id)
                     .ExecuteUpdateAsync(s => s.SetProperty(x => x.IdInitiative, (int?)null));
 
+                // Le automazioni fanno eccezione: qui sganciare e basta non e' innocuo. Una regola
+                // ristretta a questa fiera, persa la restrizione, diventerebbe in silenzio "qualsiasi
+                // evento" e continuerebbe a creare attivita' su lead che non c'entrano. Si sgancia E
+                // si disattiva, cosi' chi la riaccende deve decidere di nuovo a cosa si applica.
+                await _context.WorkflowAutomations.Where(x => x.IdInitiative == id)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(x => x.IdInitiative, (int?)null)
+                        .SetProperty(x => x.IsActive, false));
+
                 _context.Initiatives.Remove(item);
                 await _context.SaveChangesAsync();
                 return true;

@@ -91,18 +91,16 @@ else
 
                 <div class="row g-3">
                     <div class="col-12 col-lg-6">
-                        <label class="form-label"><DisplayName For="@(() => _deal.IdCompany)" /></label>
+                        @* L'etichetta la mette RedGDropDown (RadzenFormField): niente label esterna, sarebbe doppia. *@
                         <RedGDropDown TItem="CompanyDTO" TValue="int?" ValueProperty="@nameof(CompanyDTO.Id)" TextProperty="@nameof(CompanyDTO.RagioneSociale)" @bind-Value="@_deal.IdCompany"
                                       Data="_companies" AllowFiltering="true" Change="OnChangeCompany" For="@(() => _deal.IdCompany)">
                             <End>
                                 <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem="OnGetCompany" DialogType="RedGDialog.DialogType.Companies"></RedGButtonDialog>
                             </End>
                         </RedGDropDown>
-                        <ValidationMessage For="@(() => _deal.IdCompany)" />
                     </div>
 
                     <div class="col-12 col-lg-6">
-                        <label class="form-label"><DisplayName For="@(() => _deal.IdContact)" /></label>
                         <RedGDropDown TItem="ContactDTO" TValue="int?" ValueProperty="@nameof(ContactDTO.Id)" TextProperty="@nameof(ContactDTO.NameComplete)" @bind-Value="@_deal.IdContact"
                                       Data="_contacts" AllowFiltering="true" Change="OnChangeContact" For="@(() => _deal.IdContact)">
                             <End>
@@ -115,18 +113,23 @@ else
                        cambia: spostarla altrove falserebbe il confronto fra iniziative, ed è la
                        stessa regola che applica il server. *@
                     <div class="col-12 col-lg-6">
-                        <label class="form-label">Iniziativa</label>
                         @if (InitiativeLocked)
                         {
+                            <label class="form-label">Iniziativa</label>
                             <div class="form-control-plaintext">@InitiativeName</div>
                         }
                         else
                         {
-                            <RadzenDropDown TValue="int?" @bind-Value="_deal.IdInitiative"
-                                            Data="_initiatives" TextProperty="Name" ValueProperty="Id"
-                                            AllowFiltering="true" AllowClear="true"
-                                            FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
-                                            Placeholder="Nessuna" Style="width:100%" />
+                            @* Stessa etichetta fluttuante di Ditta e Contatto, così la riga resta allineata. *@
+                            <RadzenFormField Text="Iniziativa" Variant="Variant.Text" class="remove-border" Style="width:100%">
+                                <ChildContent>
+                                    <RadzenDropDown TValue="int?" @bind-Value="_deal.IdInitiative"
+                                                    Data="_initiatives" TextProperty="Name" ValueProperty="Id"
+                                                    AllowFiltering="true" AllowClear="true"
+                                                    FilterCaseSensitivity="Radzen.FilterCaseSensitivity.CaseInsensitive"
+                                                    Placeholder="Nessuna" Style="width:100%" />
+                                </ChildContent>
+                            </RadzenFormField>
                         }
                     </div>
 

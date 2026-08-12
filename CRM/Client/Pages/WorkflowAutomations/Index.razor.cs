@@ -1,6 +1,7 @@
 using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Components;
 using Radzen;
 using System;
@@ -17,10 +18,12 @@ namespace CRM.Client.Pages.WorkflowAutomations
         [Inject] private DialogService DialogService { get; set; } = default!;
         [Inject] private IHeaderService HeaderService { get; set; } = default!;
         [Inject] private IBaseRestService<ApplicationUser, UsersFilterModel, string> UsersService { get; set; } = default!;
+        [Inject] private IInitiativeService InitiativeService { get; set; } = default!;
 
         private PageHeaderModel? _pageHeader;
         private List<WorkflowAutomation> _rules = new();
         private List<ApplicationUser> _users = new();
+        private List<InitiativeDTO> _initiatives = new();
         private WorkflowAutomation? _selected;
         private bool _loading;
         private bool _saving;
@@ -49,7 +52,7 @@ namespace CRM.Client.Pages.WorkflowAutomations
         protected override async Task OnInitializedAsync()
         {
             _pageHeader = await HeaderService.Create();
-            await Task.WhenAll(LoadRules(), LoadUsers());
+            await Task.WhenAll(LoadRules(), LoadUsers(), LoadInitiatives());
             NewRule();
         }
 
@@ -73,6 +76,15 @@ namespace CRM.Client.Pages.WorkflowAutomations
                 .Where(x => !x.IsDeleted)
                 .OrderBy(x => x.NameComplete)
                 .ToList() ?? new List<ApplicationUser>();
+        }
+
+        private async Task LoadInitiatives()
+        {
+            // Le piu' recenti in cima: una regola si scrive per la fiera che sta per aprire o che
+            // si e' appena chiusa, non per quella di tre anni fa.
+            _initiatives = (await InitiativeService.GetListAsync(new InitiativeFilter()))?
+                .OrderByDescending(x => x.DateFrom)
+                .ToList() ?? new List<InitiativeDTO>();
         }
 
         private void NewRule()
@@ -105,6 +117,7 @@ namespace CRM.Client.Pages.WorkflowAutomations
                 MinAmount = rule.MinAmount,
                 LeadSource = rule.LeadSource,
                 LeadStatus = rule.LeadStatus,
+                IdInitiative = rule.IdInitiative,
                 DealState = rule.DealState,
                 DealPhase = rule.DealPhase,
                 ActivityKind = rule.ActivityKind,
@@ -198,6 +211,24 @@ namespace CRM.Client.Pages.WorkflowAutomations
         private string DealStateText(DealStates value) => EnumService.Get(typeof(DealStates), value);
         private string DealPhaseText(DealPhases value) => EnumService.Get(typeof(DealPhases), value);
         private string ActivityKindText(ActivityKind value) => EnumService.Get(typeof(ActivityKind), value);
+        private static string InitiativeLabel(InitiativeDTO item)
+            => $"{Initiatives.Index.KindText(item.Kind)} - {item.Name} ({item.DateFrom:dd/MM/yyyy})";
+
+        /// <summary>
+        /// Il nome dell'iniziativa a cui una regola e' legata, per l'elenco. Se il vincolo c'e' ma
+        /// l'iniziativa non e' fra quelle caricate si dice che c'e' comunque: tacere farebbe leggere
+        /// la regola come se valesse per tutti.
+        /// </summary>
+        private string? RuleInitiativeText(WorkflowAutomation rule)
+        {
+            if (rule.IdInitiative == null)
+            {
+                return null;
+            }
+
+            var initiative = _initiatives.FirstOrDefault(x => x.Id == rule.IdInitiative);
+            return initiative == null ? $"Iniziativa #{rule.IdInitiative}" : initiative.Name;
+        }
 
         private bool ValidateSelectedRule()
         {
