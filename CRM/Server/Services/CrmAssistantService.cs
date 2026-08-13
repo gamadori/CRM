@@ -415,6 +415,7 @@ namespace CRM.Server.Services
             "find_machine_by_serial" => "Cerco la matricola nel parco macchine…",
             "search_contacts" => "Cerco il contatto…",
             "get_customer_machines" => "Recupero le macchine del cliente…",
+            "get_product_machines" => "Recupero le matricole del modello…",
             "get_customer_contacts" => "Recupero i contatti del cliente…",
             "search_products" => "Cerco nel catalogo prodotti…",
             "list_tickets" => "Recupero i ticket…",
@@ -480,6 +481,7 @@ CREAZIONE TICKET E ATTIVITÀ:
 REGOLE:
 - Non inventare mai dati: se un tool non restituisce risultati, dillo chiaramente. Se search_solutions non trova una soluzione applicabile, dillo in una frase e proponi di aprire un nuovo ticket.
 - Per identificare un cliente dal nome usa prima 'search_customers' per ottenerne l'id, poi gli altri tool.
+- Un nome citato dall'operatore può essere un CLIENTE o un MODELLO di macchina. ""Le matricole/macchine di X"": se X è un modello a catalogo usa 'get_product_machines', se è un'azienda usa 'get_customer_machines'. Se la ricerca del cliente non trova nulla, prova il catalogo prima di dire che non c'è.
 - Se sei solo parzialmente sicuro di una soluzione, dichiara l'incertezza invece di indovinare.
 - RISERVATEZZA DEI TICKET: il contenuto di un caso simile puoi sempre usarlo per proporre la soluzione, ma numero, link e nome cliente di un ticket li puoi citare SOLO se il tool te li ha restituiti (campi 'ticket'/'url'). I casi marcati ""accesso riservato"" appartengono ad aziende che l'utente non può vedere: descrivili in forma anonima (""in un caso analogo…""), senza numero, senza link, senza cliente e senza far capire di quale ticket si tratti. Non inventare né dedurre il numero di un ticket riservato, e se un tool risponde che un ticket non è accessibile non citarlo affatto.
 - I ticket di search_solutions sono ordinati per similarità testuale ma possono condividere col problema attuale SOLO il modello di macchina, non il guasto. Cita o menziona un ticket unicamente se il suo problema E la sua soluzione si applicano davvero al caso specifico. Se un ticket è solo tangenziale (stessa macchina, guasto diverso — es. un problema pneumatico contro uno di homing/azionamento), ignoralo del tutto: niente ""Nota da un caso simile"" generiche. Meglio nessun ticket citato che uno fuori tema.
@@ -535,6 +537,15 @@ REGOLE:
                     {
                         ["customer_id"] = Prop("integer", "Id del cliente (preferito se noto)"),
                         ["customer_name"] = Prop("string", "Nome del cliente, se l'id non è noto")
+                    }),
+
+                MakeTool("get_product_machines",
+                    "Elenca le macchine INSTALLATE (matricole/seriali) di un PRODOTTO a catalogo, su tutto il parco macchine accessibile, con il cliente proprietario di ciascuna. Fornisci product_id oppure product_name. Usalo quando il nome citato è un MODELLO/TIPO di macchina e non un cliente: 'quali matricole abbiamo del modello X', 'tutti i seriali del tipo X', 'chi ha la macchina X'. Se il nome corrisponde a più prodotti, la risposta elenca i candidati: richiama il tool con il product_id scelto.",
+                    new()
+                    {
+                        ["product_id"] = Prop("integer", "Id del prodotto a catalogo (preferito se noto)"),
+                        ["product_name"] = Prop("string", "Nome del prodotto/modello, anche parziale, se l'id non è noto"),
+                        ["limit"] = Prop("integer", "Numero massimo di matricole restituite (1-200, default 50)")
                     }),
 
                 MakeTool("get_customer_contacts",
@@ -759,6 +770,7 @@ REGOLE:
                 "find_machine_by_serial" => FindMachineBySerialAsync(input),
                 "search_contacts" => SearchContactsAsync(input),
                 "get_customer_machines" => GetCustomerMachinesAsync(input),
+                "get_product_machines" => GetProductMachinesAsync(input),
                 "get_customer_contacts" => GetCustomerContactsAsync(input),
                 "search_products" => SearchProductsAsync(input),
                 "list_tickets" => ListTicketsAsync(input),
@@ -821,6 +833,7 @@ REGOLE:
                     url = TicketUrl(t.TicketId),
                     cliente = t.CustomerName,
                     similarita = $"{t.SimilarityPercentage:F0}%",
+                    stessaMacchina = t.ProductMatch,
                     problema = Trim(t.Description, 600),
                     soluzione = string.IsNullOrWhiteSpace(t.Solution) ? "(non registrata)" : Trim(t.Solution, 600)
                 }
@@ -828,6 +841,7 @@ REGOLE:
                 {
                     ticket = "caso simile (accesso riservato: non citare cliente né numero)",
                     similarita = $"{t.SimilarityPercentage:F0}%",
+                    stessaMacchina = t.ProductMatch,
                     problema = Trim(t.Description, 600),
                     soluzione = string.IsNullOrWhiteSpace(t.Solution) ? "(non registrata)" : Trim(t.Solution, 600)
                 });
@@ -845,7 +859,7 @@ REGOLE:
                 ticketSimili = solutions,
                 knowledgeBase = kb,
                 nota = solutions.Any() || kb.Any()
-                    ? "Cita le fonti col link/titolo, ma SOLO i ticket il cui problema coincide davvero col caso: ignora quelli solo della stessa macchina con guasto diverso."
+                    ? "Cita le fonti col link/titolo. I ticket con stessaMacchina=true sono stati trovati perché riguardano la macchina che l'utente ha nominato, non perché il testo coincida: leggili e decidi tu. Se il guasto è lo stesso, citalo come caso risolto; se è diverso, non spacciarlo per lo stesso caso (al massimo segnalalo come precedente sulla stessa macchina). Gli altri vanno citati solo se il problema coincide davvero."
                     : "Nessun caso simile né voce di conoscenza trovata."
             });
         }
@@ -1066,6 +1080,69 @@ REGOLE:
             });
 
             return JsonSerializer.Serialize(new { companyId, companyUrl = $"/Companies/{companyId}", count = list.Count, machines = slim });
+        }
+
+        /// <summary>
+        /// Matricole installate di un modello, su tutto il parco visibile. Il taglio per azienda
+        /// lo applica <see cref="ArticlesService"/>: filtra sempre sulle aziende dell'utente, quindi
+        /// un rivenditore vede solo il proprio albero anche senza passare un cliente.
+        /// </summary>
+        private async Task<string> GetProductMachinesAsync(IReadOnlyDictionary<string, JsonElement> input)
+        {
+            var limit = Math.Clamp(GetInt(input, "limit") ?? 50, 1, 200);
+
+            var productId = GetInt(input, "product_id");
+            if (productId == null)
+            {
+                var name = GetString(input, "product_name");
+                if (string.IsNullOrWhiteSpace(name))
+                    return JsonSerializer.Serialize(new { error = "Indica product_id oppure product_name." });
+
+                var candidates = await _products.GetListAsync(new ProductFilter { Name = name }) ?? new();
+
+                if (candidates.Count == 0)
+                    return JsonSerializer.Serialize(new { error = $"Nessun prodotto a catalogo corrisponde a '{name}'. Usa search_products per cercarlo." });
+
+                // Più modelli con lo stesso nome di famiglia (es. le varie lunghezze della stessa
+                // macchina): non li fondiamo, sarebbero matricole di prodotti diversi in un elenco solo.
+                if (candidates.Count > 1)
+                    return JsonSerializer.Serialize(new
+                    {
+                        error = "Più prodotti corrispondono al nome: richiama get_product_machines con il product_id scelto, o chiedi all'utente quale.",
+                        prodotti = candidates.Take(20).Select(p => new
+                        {
+                            id = p.Id,
+                            url = $"/Catalog/Details/{p.Id}",
+                            nome = p.Name,
+                            codice = p.Code
+                        })
+                    });
+
+                productId = candidates[0].Id;
+            }
+
+            var list = await _articles.GetListAsync(new ArticleFilter { IdProduct = productId }) ?? new();
+
+            var slim = list.Take(limit).Select(a => new
+            {
+                id = a.Id,
+                url = $"/Articles/{a.Id}",
+                seriale = a.SerialNumber,
+                anno = a.Year,
+                cliente = a.CompanyName,
+                clienteUrl = a.IdCompany != null ? $"/Companies/{a.IdCompany}" : null,
+                venditaIl = a.SaleDate,
+                consegnaIl = a.DeliveryDate
+            });
+
+            return JsonSerializer.Serialize(new
+            {
+                productId,
+                productUrl = $"/Catalog/Details/{productId}",
+                count = list.Count,
+                mostrate = Math.Min(list.Count, limit),
+                machines = slim
+            });
         }
 
         private async Task<string> GetCustomerContactsAsync(IReadOnlyDictionary<string, JsonElement> input)

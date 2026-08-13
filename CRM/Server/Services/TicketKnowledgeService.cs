@@ -28,6 +28,21 @@ namespace CRM.Server.Services
     /// </summary>
     public class TicketKnowledgeService
     {
+        // Soglia ridotta per i ticket del modello citato nella domanda. Serve un valore molto
+        // più basso del floor generale perché il sintomo scritto dall'operatore ("battuta mobile
+        // non azzera") è corto e usa il nome della macchina, mentre il testo del ticket è lungo e
+        // descrive il guasto con altre parole ("la macchina non si muove"): sullo stesso caso
+        // misurato il coseno vale 38%, contro l'81% della stessa domanda scritta per esteso.
+        private const double ProductMatchMinSimilarity = 35.0;
+
+        // Bonus di ordinamento per i ticket del modello citato (stessa scala della KB).
+        private const double ProductMatchBonus = 15.0;
+
+        // Quanti ticket ammessi SOLO dalla soglia ridotta possono entrare al massimo. Senza
+        // questo tetto una macchina con centinaia di ticket chiusi riempirebbe il contesto con
+        // guasti diversi solo perché è la macchina giusta.
+        private const int MaxProductMatchBelowFloor = 3;
+
         private readonly ApplicationDbContext _context;
         private readonly IPermitsService _permits;
         private readonly OpenAIEmbeddingService _embeddings;
@@ -63,15 +78,24 @@ namespace CRM.Server.Services
             int topTickets = 5,
             double minSimilarity = 60.0)
         {
-            // Floor rigido: mai sotto il 60% (come la ricerca semantica manuale). Sotto questa
-            // soglia i ticket della stessa macchina ma con guasto diverso passano come falsi
-            // "casi simili" (cosine ~0.6 solo per il vocabolario di dominio condiviso).
+            // Floor rigido per i ticket di cui non sappiamo nient'altro che il testo: mai sotto il
+            // 60% (come la ricerca semantica manuale). Sotto questa soglia entrerebbero ticket
+            // affini solo per vocabolario di dominio (cosine ~0.6 senza alcun rapporto col guasto).
+            // I ticket del modello citato fanno eccezione: lì il modello è un secondo indizio, e
+            // la soglia scende a ProductMatchMinSimilarity con un tetto sul numero ammesso.
             minSimilarity = Math.Max(minSimilarity, 60.0);
 
-            var retrieval = await RetrieveSimilarClosedTicketsAsync(query, topTickets, minSimilarity);
+            // I modelli citati nella conversazione (o nel contesto) si ricavano PRIMA di cercare:
+            // sono un criterio di ricerca anche per i ticket, non solo un bonus per la KB. Un
+            // ticket sulla macchina nominata dall'operatore entra con soglia ridotta.
+            var contextProductIds = await BuildContextProductIdsAsync(
+                conversationText ?? query, idTicket, idProduct);
 
-            var relevantProductIds = await BuildRelevantProductIdsAsync(
-                retrieval.ProductIds, conversationText ?? query, idTicket, idProduct);
+            var retrieval = await RetrieveSimilarClosedTicketsAsync(
+                query, topTickets, minSimilarity, contextProductIds);
+
+            // Per la KB restano rilevanti anche i modelli dei ticket trovati.
+            var relevantProductIds = contextProductIds.Union(retrieval.ProductIds).ToList();
 
             // Soglia KB più permissiva dei ticket: con text-embedding-3-small una domanda
             // specifica in linguaggio naturale contro un blocco di manuale supera raramente il 55%.
@@ -92,9 +116,9 @@ namespace CRM.Server.Services
         /// anonimi (nessun nome cliente, nessun link).
         /// </summary>
         private async Task<InternalRetrieval> RetrieveSimilarClosedTicketsAsync(
-            string query, int topN, double minSimilarity)
+            string query, int topN, double minSimilarity, ICollection<int> contextProductIds)
         {
-            var scored = new List<(TicketSimilarityResult Result, int? IdProduct)>();
+            var scored = new List<(TicketSimilarityResult Result, int? IdProduct, double Score)>();
 
             if (string.IsNullOrWhiteSpace(query))
                 return new InternalRetrieval(new(), Array.Empty<float>(), new());
@@ -144,7 +168,16 @@ namespace CRM.Server.Services
                     var similarity = _embeddings.CalculateCosineSimilarity(queryEmbedding, ticketEmbedding);
                     var percentage = _embeddings.CosineSimilarityToPercentage(similarity);
 
-                    if (percentage >= minSimilarity)
+                    // Ticket del modello citato: soglia ridotta. Il nome della macchina nella
+                    // domanda è un segnale forte quanto il testo, e da solo il coseno non lo vede.
+                    var productMatch = ticket.IdProduct.HasValue
+                        && contextProductIds.Contains(ticket.IdProduct.Value);
+
+                    var effectiveThreshold = productMatch
+                        ? Math.Min(minSimilarity, ProductMatchMinSimilarity)
+                        : minSimilarity;
+
+                    if (percentage >= effectiveThreshold)
                     {
                         var canAccess = allowedCompanies == null || allowedCompanies.Contains(ticket.IdCompany);
 
@@ -165,8 +198,9 @@ namespace CRM.Server.Services
                             ClosedDate = ticket.DateClosed,
                             Solution = ticket.CloseDescription,
                             Priority = ticket.Priority,
-                            CanAccess = canAccess
-                        }, ticket.IdProduct));
+                            CanAccess = canAccess,
+                            ProductMatch = productMatch
+                        }, ticket.IdProduct, percentage + (productMatch ? ProductMatchBonus : 0)));
                     }
                 }
                 catch
@@ -181,15 +215,25 @@ namespace CRM.Server.Services
             // doppioni: ticket diversi ma con la STESSA soluzione registrata non aggiungono
             // informazione, riempirebbero solo il contesto a scapito di casi realmente diversi.
             var seenSolutions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var top = new List<(TicketSimilarityResult Result, int? IdProduct)>();
+            var top = new List<(TicketSimilarityResult Result, int? IdProduct, double Score)>();
+            var belowFloorTaken = 0;
             foreach (var s in scored
-                .OrderByDescending(s => s.Result.SimilarityPercentage)
+                .OrderByDescending(s => s.Score)
                 .ThenByDescending(s => s.Result.ClosedDate ?? DateTime.MinValue))
             {
+                // Ammessi solo dalla soglia ridotta: contingentati, altrimenti una macchina con
+                // molti ticket chiusi scaccerebbe i casi realmente somiglianti di altre macchine.
+                var belowFloor = s.Result.SimilarityPercentage < minSimilarity;
+                if (belowFloor && belowFloorTaken >= MaxProductMatchBelowFloor)
+                    continue;
+
                 // Deduplica solo le soluzioni non vuote: teniamo il primo occorso (più simile/recente).
                 var solutionKey = (s.Result.Solution ?? string.Empty).Trim();
                 if (solutionKey.Length > 0 && !seenSolutions.Add(solutionKey))
                     continue;
+
+                if (belowFloor)
+                    belowFloorTaken++;
 
                 top.Add(s);
                 if (top.Count >= Math.Max(1, topN))
@@ -211,15 +255,15 @@ namespace CRM.Server.Services
             List<int> ProductIds);
 
         /// <summary>
-        /// Costruisce l'insieme dei modelli "rilevanti" per il recupero della conoscenza, unendo:
-        /// i modelli dei ticket chiusi simili, quelli citati esplicitamente nel testo della domanda
-        /// (per nome o codice) e quello del contesto (ticket/prodotto di partenza della chat).
-        /// La conoscenza di questi modelli riceve il bonus di similarità in <see cref="KnowledgeService"/>.
+        /// Costruisce l'insieme dei modelli citati dall'utente: quelli nominati esplicitamente nel
+        /// testo della conversazione (per nome o codice) e quello del contesto (ticket/prodotto di
+        /// partenza della chat). Serve a due cose: ammettere con soglia ridotta i ticket chiusi di
+        /// quei modelli, e dare il bonus di similarità alla loro conoscenza in <see cref="KnowledgeService"/>.
         /// </summary>
-        private async Task<List<int>> BuildRelevantProductIdsAsync(
-            IEnumerable<int> fromSimilarTickets, string query, int? idTicket, int? idProduct)
+        private async Task<HashSet<int>> BuildContextProductIdsAsync(
+            string query, int? idTicket, int? idProduct)
         {
-            var ids = new HashSet<int>(fromSimilarTickets ?? Enumerable.Empty<int>());
+            var ids = new HashSet<int>();
 
             // Modello citato nella conversazione (es. "TABMACHINE 80100", ma anche solo "tabmachine"):
             // match su nome completo, codice, oppure token distintivo del nome (>=5 char, a parola intera).
@@ -272,7 +316,7 @@ namespace CRM.Server.Services
                     ids.Add(pid.Value);
             }
 
-            return ids.ToList();
+            return ids;
         }
 
         /// <summary>

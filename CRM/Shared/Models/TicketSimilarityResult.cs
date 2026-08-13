@@ -66,5 +66,12 @@ namespace CRM.Shared.Models
         /// True se l'utente corrente può accedere a questo ticket (mostra il link solo in tal caso).
         /// </summary>
         public bool CanAccess { get; set; } = true;
+
+        /// <summary>
+        /// True se il ticket riguarda un modello citato nella domanda (o nel contesto della chat).
+        /// Questi ticket entrano con soglia di similarità ridotta: possono quindi essere della
+        /// macchina giusta ma con un guasto diverso, e vanno presentati come tali.
+        /// </summary>
+        public bool ProductMatch { get; set; }
     }
 }
