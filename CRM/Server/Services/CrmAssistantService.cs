@@ -50,6 +50,22 @@ namespace CRM.Server.Services
         private readonly IDealsService _deals;
         private readonly IActivitiesService _activities;
         private readonly CRM.Server.Services.ICalendarService _calendar;
+        // Ampiezza della rosa passata al giudice. Non è una soglia travestita: è quanto materiale
+        // il giudice riesce a leggere in una chiamata. Con migliaia di ticket chiusi è il numero
+        // che decide il richiamo, e si alza senza toccare nessuna taratura di similarità.
+        private const int JudgeShortlistSize = 12;
+
+        // Soglia usata SOLO quando non c'è un giudice a filtrare (rerank spento) o quando il
+        // giudice non ha risposto. Allineata alla ricerca semantica manuale.
+        private const double UnjudgedMinSimilarity = 60.0;
+
+        // Le stesse due grandezze per i manuali. La rosa è più stretta di quella dei ticket perché
+        // una voce di manuale è molto più lunga di un ticket: otto estratti riempiono già la
+        // chiamata al giudice quanto dodici ticket.
+        private const int JudgeKnowledgeShortlistSize = 8;
+        private const int WantedKnowledge = 4;
+        private const double UnjudgedKnowledgeMinSimilarity = 45.0;
+
         private readonly TicketKnowledgeService _knowledge;
         private readonly ApplicationDbContext _context;
         private readonly IPermitsService _permits;
@@ -811,18 +827,43 @@ REGOLE:
             if (string.IsNullOrWhiteSpace(problem))
                 return JsonSerializer.Serialize(new { error = "Descrizione del problema mancante." });
 
+            // Col giudice a valle il recupero va LARGO: nessuna soglia, rosa più ampia, e a
+            // scartare è chi legge. Senza giudice l'unica difesa resta la soglia, e allora si
+            // recupera stretto come prima.
+            var judged = turn.RerankMode == TicketRerankMode.LlmJudge;
+            var wanted = Math.Max(1, turn.Request.TopTickets);
+
             var result = await _knowledge.RetrieveAsync(
                 problem,
                 conversationText: turn.ConversationText,
                 idTicket: turn.Request.IdTicket,
                 idProduct: turn.Request.IdProduct,
-                topTickets: turn.Request.TopTickets,
-                minSimilarity: turn.Request.MinSimilarityThreshold);
+                topTickets: judged ? Math.Max(wanted, JudgeShortlistSize) : wanted,
+                minSimilarity: judged ? 0.0 : Math.Max(turn.Request.MinSimilarityThreshold, UnjudgedMinSimilarity),
+                topKnowledge: judged ? JudgeKnowledgeShortlistSize : WantedKnowledge,
+                minKnowledgeSimilarity: judged ? 0.0 : UnjudgedKnowledgeMinSimilarity);
 
-            // Secondo stadio opzionale: un giudice AI rilegge i candidati e scarta i non pertinenti.
-            var tickets = turn.RerankMode == TicketRerankMode.LlmJudge && result.Tickets.Count > 0
-                ? await JudgeRelevanceAsync(problem, result.Tickets, ct)
-                : result.Tickets;
+            var tickets = result.Tickets;
+            var knowledge = result.Knowledge;
+
+            if (judged && (tickets.Count > 0 || knowledge.Count > 0))
+            {
+                var verdict = await JudgeRelevanceAsync(problem, tickets, knowledge, ct);
+
+                // Giudice non pervenuto (errore o risposta illeggibile): senza di lui la rosa larga
+                // è cruda, quindi rientrano le vecchie soglie come rete di sicurezza. Meglio pochi
+                // candidati prudenti che l'intero fondo della classifica spacciato per pertinente.
+                tickets = verdict?.Tickets
+                    ?? tickets.Where(t => t.SimilarityPercentage >= UnjudgedMinSimilarity).ToList();
+                knowledge = verdict?.Knowledge
+                    ?? knowledge.Where(k => k.SimilarityPercentage >= UnjudgedKnowledgeMinSimilarity).ToList();
+            }
+
+            // Le rose servivano al giudice; all'assistente ne arrivano quante ne servono a rispondere.
+            if (tickets.Count > wanted)
+                tickets = tickets.Take(wanted).ToList();
+            if (knowledge.Count > WantedKnowledge)
+                knowledge = knowledge.Take(WantedKnowledge).ToList();
 
             turn.AddReferencedTickets(tickets);
 
@@ -846,7 +887,7 @@ REGOLE:
                     soluzione = string.IsNullOrWhiteSpace(t.Solution) ? "(non registrata)" : Trim(t.Solution, 600)
                 });
 
-            var kb = result.Knowledge.Select(k => new
+            var kb = knowledge.Select(k => new
             {
                 titolo = k.Title,
                 modello = string.IsNullOrWhiteSpace(k.ProductName) ? "generale" : k.ProductName,
@@ -866,36 +907,60 @@ REGOLE:
 
         /// <summary>
         /// Secondo stadio di rerank (modalità LlmJudge): un modello veloce rilegge problema+soluzione
-        /// (versione ampia) di ogni ticket candidato e decide se affronta lo STESSO problema della
-        /// domanda. Restituisce solo i candidati pertinenti; su errore o parsing fallito restituisce
-        /// la lista originale (fallback non distruttivo: meglio qualche candidato in più che nessuno).
+        /// (versione ampia) di ogni ticket candidato e di ogni voce di manuale, e decide se affronta
+        /// lo STESSO problema della domanda. È il filtro vero della ricerca: i candidati arrivano
+        /// senza soglia, ordinati per classifica. Restituisce i soli pertinenti, oppure <c>null</c>
+        /// se il giudizio non è riuscito — chi chiama deve distinguere "nessuno è pertinente" da
+        /// "non lo so". Ticket e manuali si giudicano insieme: una chiamata sola, e il giudice vede
+        /// il quadro completo invece di due metà scollegate.
         /// </summary>
-        private async Task<List<TicketSimilarityResult>> JudgeRelevanceAsync(
-            string problem, List<TicketSimilarityResult> candidates, CancellationToken ct)
+        private async Task<JudgeVerdict?> JudgeRelevanceAsync(
+            string problem,
+            List<TicketSimilarityResult> candidates,
+            List<KnowledgeMatch> knowledge,
+            CancellationToken ct)
         {
+            var judgeStopwatch = System.Diagnostics.Stopwatch.StartNew();
+
             try
             {
                 var sb = new StringBuilder();
                 sb.AppendLine("PROBLEMA DELL'UTENTE:");
                 sb.AppendLine(Trim(problem, 800));
                 sb.AppendLine();
-                sb.AppendLine("TICKET CANDIDATI:");
+
+                if (candidates.Count > 0)
+                    sb.AppendLine("TICKET CANDIDATI:");
                 foreach (var t in candidates)
                 {
-                    sb.AppendLine($"--- id {t.TicketId} ---");
+                    sb.AppendLine($"--- id T{t.TicketId} ---");
                     sb.AppendLine($"Problema: {Trim(t.Description, 1000)}");
                     sb.AppendLine($"Soluzione: {(string.IsNullOrWhiteSpace(t.Solution) ? "(non registrata)" : Trim(t.Solution, 1000))}");
                     sb.AppendLine();
                 }
 
-                var judgeStopwatch = System.Diagnostics.Stopwatch.StartNew();
+                if (knowledge.Count > 0)
+                    sb.AppendLine("VOCI DI MANUALE CANDIDATE:");
+                foreach (var k in knowledge)
+                {
+                    // Estratto, non il blocco intero: al giudice serve capire DI COSA parla la voce,
+                    // e il testo completo lo riceve poi l'assistente per le voci approvate.
+                    var modello = string.IsNullOrWhiteSpace(k.ProductName) ? "generale" : k.ProductName;
+                    sb.AppendLine($"--- id K{k.Id} ---");
+                    sb.AppendLine($"Titolo: {k.Title} (macchina: {modello})");
+                    sb.AppendLine($"Contenuto: {Trim(k.Content, 800)}");
+                    sb.AppendLine();
+                }
 
+                // NIENTE OutputConfig/Effort qui: il giudice gira su un modello veloce (Haiku) che
+                // rifiuta quel parametro con un 400 "This model does not support the effort
+                // parameter". Passarlo faceva fallire OGNI giudizio in silenzio. L'assistente
+                // principale gira su un modello che invece lo supporta: l'Effort resta là.
                 var response = await _client.Messages.Create(new MessageCreateParams
                 {
                     Model = _judgeModel,
                     MaxTokens = 600,
                     System = JudgeSystemPrompt,
-                    OutputConfig = new OutputConfig { Effort = Effort.Medium },
                     Messages = new List<MessageParam>
                     {
                         new() { Role = Role.User, Content = sb.ToString() }
@@ -913,25 +978,47 @@ REGOLE:
 
                 var relevantIds = ParseRelevantIds(text);
                 if (relevantIds == null)
-                    return candidates; // parsing fallito → non filtrare
+                    return null; // risposta illeggibile: nessun giudizio, decide chi chiama
 
-                return candidates.Where(t => relevantIds.Contains(t.TicketId)).ToList();
+                return new JudgeVerdict(
+                    candidates.Where(t => relevantIds.Contains($"T{t.TicketId}")).ToList(),
+                    knowledge.Where(k => relevantIds.Contains($"K{k.Id}")).ToList());
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Rerank giudice AI non riuscito: uso i candidati originali");
-                return candidates;
+                _logger.LogWarning(ex, "Rerank giudice AI non riuscito: decide la soglia di sicurezza");
+
+                // Traccia il tentativo FALLITO accanto a quelli riusciti: un giudice rotto si vede
+                // dai consumi (Success = false) invece di restare nella sola console del server,
+                // dove era passato inosservato mentre ogni singolo giudizio andava in errore.
+                try
+                {
+                    await _usage.RecordTokensAsync(
+                        ExternalServiceFeature.AssistantRerank, _judgeModel, new TokenUsage(),
+                        false, judgeStopwatch.ElapsedMilliseconds);
+                }
+                catch { /* la registrazione del consumo non deve mai coprire l'errore vero */ }
+
+                return null;
             }
         }
 
         private const string JudgeSystemPrompt =
-            "Sei un filtro di pertinenza per l'assistenza tecnica. Ricevi il PROBLEMA di un utente e una lista di TICKET CANDIDATI chiusi (problema + soluzione).\n" +
-            "Per ciascun candidato decidi se affronta LO STESSO problema del caso dell'utente: stesso guasto/sintomo e soluzione applicabile. NON basta che sia la stessa macchina o lo stesso ambito: un guasto diverso (es. problema pneumatico contro un problema di homing/azionamento) NON è pertinente.\n" +
+            "Sei un filtro di pertinenza per l'assistenza tecnica. Ricevi il PROBLEMA di un utente e due liste di candidati: TICKET CANDIDATI chiusi (problema + soluzione) e VOCI DI MANUALE (titolo + estratto).\n" +
+            "I candidati NON sono prefiltrati: arrivano dai più vicini per somiglianza testuale, quindi è normale che molti non c'entrino nulla e che nessuno sia pertinente. Scartare tutto è una risposta legittima; non forzare un candidato solo perché è in lista.\n" +
+            "Per un TICKET decidi se affronta LO STESSO problema del caso dell'utente: stesso guasto/sintomo e soluzione applicabile. NON basta che sia la stessa macchina o lo stesso ambito: un guasto diverso (es. problema pneumatico contro un problema di homing/azionamento) NON è pertinente.\n" +
+            "Per una VOCE DI MANUALE il criterio è più largo: è pertinente se serve a capire o a risolvere il caso — la procedura, il parametro, il componente o l'allarme in questione. Una voce di una MACCHINA DIVERSA è pertinente solo se descrive un meccanismo che vale comunque; nel dubbio scartala.\n" +
+            "Usa gli id ESATTAMENTE come li ricevi, prefisso compreso (T… per i ticket, K… per i manuali).\n" +
             "Rispondi ESCLUSIVAMENTE con un oggetto JSON valido, senza testo prima/dopo né blocchi markdown, nella forma:\n" +
-            "{\"risultati\":[{\"id\":123,\"pertinente\":true},{\"id\":456,\"pertinente\":false}]}";
+            "{\"risultati\":[{\"id\":\"T123\",\"pertinente\":true},{\"id\":\"K456\",\"pertinente\":false}]}";
+
+        /// <summary>Esito del giudizio: i soli candidati ritenuti pertinenti, delle due specie.</summary>
+        private sealed record JudgeVerdict(
+            List<TicketSimilarityResult> Tickets,
+            List<KnowledgeMatch> Knowledge);
 
         /// <summary>Estrae gli id giudicati "pertinente" dal JSON del giudice; null se il parsing fallisce.</summary>
-        private static HashSet<int>? ParseRelevantIds(string text)
+        private static HashSet<string>? ParseRelevantIds(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
                 return null;
@@ -948,11 +1035,24 @@ REGOLE:
                 if (!doc.RootElement.TryGetProperty("risultati", out var arr) || arr.ValueKind != JsonValueKind.Array)
                     return null;
 
-                var ids = new HashSet<int>();
+                var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var item in arr.EnumerateArray())
                 {
-                    if (!item.TryGetProperty("id", out var idEl) || !idEl.TryGetInt32(out var id))
+                    if (!item.TryGetProperty("id", out var idEl))
                         continue;
+
+                    // Id atteso come stringa prefissata ("T4"/"K17"). Un numero nudo è la ricaduta
+                    // del vecchio formato: vale come ticket, così un giudice che risponde alla
+                    // vecchia maniera non fa sparire tutti i ticket.
+                    var id = idEl.ValueKind switch
+                    {
+                        JsonValueKind.String => idEl.GetString(),
+                        JsonValueKind.Number when idEl.TryGetInt32(out var n) => $"T{n}",
+                        _ => null
+                    };
+                    if (string.IsNullOrWhiteSpace(id))
+                        continue;
+
                     if (!item.TryGetProperty("pertinente", out var relEl))
                         continue;
 
@@ -961,7 +1061,7 @@ REGOLE:
                             && bool.TryParse(relEl.GetString(), out var b) && b);
 
                     if (relevant)
-                        ids.Add(id);
+                        ids.Add(id.Trim());
                 }
                 return ids;
             }

@@ -122,8 +122,11 @@ namespace CRM.Shared
         [Display(Name = "Input vocale assistente AI")]
         public VoiceInputMode VoiceInputMode { get; set; } = VoiceInputMode.Off;
 
+        // Default acceso: con il giudice la ricerca dei casi simili recupera per classifica e lascia
+        // a lui lo scarto. Spegnendolo si torna a filtrare per soglia di similarità, che sui sintomi
+        // scritti in breve perde i ticket giusti (misurato: 38% su un caso realmente pertinente).
         [Display(Name = "Verifica pertinenza ticket di riferimento (assistente AI)")]
-        public TicketRerankMode TicketRerankMode { get; set; } = TicketRerankMode.Off;
+        public TicketRerankMode TicketRerankMode { get; set; } = TicketRerankMode.LlmJudge;
 
         [Display(Name = "Preavviso ticket attivo")]
         public bool TicketReminderEnabled { get; set; } = true;

@@ -35,8 +35,8 @@ namespace CRM.Shared.Models
 
         /// <summary>
         /// Soglia minima di similarità (0-100) per considerare un ticket rilevante.
-        /// Allineata alla ricerca semantica manuale (60): sotto questo valore i ticket
-        /// della stessa macchina ma con guasto diverso generano falsi "casi simili".
+        /// Vale SOLO col rerank spento: con il giudice AI attivo la rosa si forma per classifica
+        /// e a scartare è lui, quindi questa soglia viene ignorata (vedi CrmAssistantService).
         /// </summary>
         public double MinSimilarityThreshold { get; set; } = 60.0;
 

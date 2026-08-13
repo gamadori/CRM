@@ -28,20 +28,13 @@ namespace CRM.Server.Services
     /// </summary>
     public class TicketKnowledgeService
     {
-        // Soglia ridotta per i ticket del modello citato nella domanda. Serve un valore molto
-        // più basso del floor generale perché il sintomo scritto dall'operatore ("battuta mobile
-        // non azzera") è corto e usa il nome della macchina, mentre il testo del ticket è lungo e
-        // descrive il guasto con altre parole ("la macchina non si muove"): sullo stesso caso
-        // misurato il coseno vale 38%, contro l'81% della stessa domanda scritta per esteso.
-        private const double ProductMatchMinSimilarity = 35.0;
-
-        // Bonus di ordinamento per i ticket del modello citato (stessa scala della KB).
+        // Bonus di ordinamento per i ticket del modello citato nella domanda (stessa scala della
+        // KB). NON è un permesso di entrare: è peso in classifica. Serve perché il sintomo scritto
+        // dall'operatore ("battuta mobile non azzera") è corto e nomina la MACCHINA, mentre il
+        // ticket è lungo e descrive il guasto con altre parole ("la macchina non si muove"): sullo
+        // stesso caso il coseno vale 38% contro l'81% della domanda scritta per esteso. Con
+        // migliaia di ticket chiusi è questo bonus a tirare il caso giusto dentro la rosa.
         private const double ProductMatchBonus = 15.0;
-
-        // Quanti ticket ammessi SOLO dalla soglia ridotta possono entrare al massimo. Senza
-        // questo tetto una macchina con centinaia di ticket chiusi riempirebbe il contesto con
-        // guasti diversi solo perché è la macchina giusta.
-        private const int MaxProductMatchBelowFloor = 3;
 
         private readonly ApplicationDbContext _context;
         private readonly IPermitsService _permits;
@@ -68,26 +61,25 @@ namespace CRM.Server.Services
         /// rilevare i modelli di macchina citati (anche in turni precedenti).</param>
         /// <param name="idTicket">Ticket di contesto opzionale: il suo modello riceve priorità.</param>
         /// <param name="idProduct">Prodotto di contesto opzionale: riceve priorità.</param>
-        /// <param name="topTickets">Numero massimo di ticket simili.</param>
-        /// <param name="minSimilarity">Soglia minima di similarità (0-100) per i ticket.</param>
+        /// <param name="topTickets">Ampiezza della rosa di candidati restituita.</param>
+        /// <param name="minSimilarity">Punteggio minimo (0-100) sotto il quale un ticket non entra
+        /// nemmeno tra i candidati. Passare 0 per il recupero largo: la rosa si forma per
+        /// CLASSIFICA e a scartare i non pertinenti è il giudice a valle, non una soglia tarata a
+        /// mano. Valori &gt; 0 solo per chi non ha un giudice dietro.</param>
+        /// <param name="topKnowledge">Quante voci di manuale restituire.</param>
+        /// <param name="minKnowledgeSimilarity">Come <paramref name="minSimilarity"/>, per i manuali.</param>
         public async Task<TicketKnowledgeResult> RetrieveAsync(
             string query,
             string? conversationText = null,
             int? idTicket = null,
             int? idProduct = null,
             int topTickets = 5,
-            double minSimilarity = 60.0)
+            double minSimilarity = 0.0,
+            int topKnowledge = 4,
+            double minKnowledgeSimilarity = 0.0)
         {
-            // Floor rigido per i ticket di cui non sappiamo nient'altro che il testo: mai sotto il
-            // 60% (come la ricerca semantica manuale). Sotto questa soglia entrerebbero ticket
-            // affini solo per vocabolario di dominio (cosine ~0.6 senza alcun rapporto col guasto).
-            // I ticket del modello citato fanno eccezione: lì il modello è un secondo indizio, e
-            // la soglia scende a ProductMatchMinSimilarity con un tetto sul numero ammesso.
-            minSimilarity = Math.Max(minSimilarity, 60.0);
-
             // I modelli citati nella conversazione (o nel contesto) si ricavano PRIMA di cercare:
-            // sono un criterio di ricerca anche per i ticket, non solo un bonus per la KB. Un
-            // ticket sulla macchina nominata dall'operatore entra con soglia ridotta.
+            // pesano sulla classifica dei ticket, non solo sulla conoscenza.
             var contextProductIds = await BuildContextProductIdsAsync(
                 conversationText ?? query, idTicket, idProduct);
 
@@ -97,11 +89,11 @@ namespace CRM.Server.Services
             // Per la KB restano rilevanti anche i modelli dei ticket trovati.
             var relevantProductIds = contextProductIds.Union(retrieval.ProductIds).ToList();
 
-            // Soglia KB più permissiva dei ticket: con text-embedding-3-small una domanda
-            // specifica in linguaggio naturale contro un blocco di manuale supera raramente il 55%.
-            // Il cap top:4 + l'ordinamento per punteggio evitano di introdurre rumore.
+            // Stessa regola dei ticket: a decidere quali voci di manuale sono pertinenti non è una
+            // soglia, è chi le legge. Qui si sceglie solo QUANTE portarne, per classifica.
             var knowledge = retrieval.QueryEmbedding.Length > 0
-                ? await _knowledge.SearchSimilarAsync(retrieval.QueryEmbedding, relevantProductIds, top: 4, minSimilarity: 45.0)
+                ? await _knowledge.SearchSimilarAsync(
+                    retrieval.QueryEmbedding, relevantProductIds, topKnowledge, minKnowledgeSimilarity)
                 : new List<KnowledgeMatch>();
 
             var context = BuildTicketContext(retrieval.Tickets) + BuildKnowledgeContext(knowledge);
@@ -168,16 +160,12 @@ namespace CRM.Server.Services
                     var similarity = _embeddings.CalculateCosineSimilarity(queryEmbedding, ticketEmbedding);
                     var percentage = _embeddings.CosineSimilarityToPercentage(similarity);
 
-                    // Ticket del modello citato: soglia ridotta. Il nome della macchina nella
-                    // domanda è un segnale forte quanto il testo, e da solo il coseno non lo vede.
+                    // Il modello citato pesa in classifica (vedi ProductMatchBonus), non decide
+                    // l'ammissione: chi entra nella rosa lo stabilisce l'ordinamento, non un taglio.
                     var productMatch = ticket.IdProduct.HasValue
                         && contextProductIds.Contains(ticket.IdProduct.Value);
 
-                    var effectiveThreshold = productMatch
-                        ? Math.Min(minSimilarity, ProductMatchMinSimilarity)
-                        : minSimilarity;
-
-                    if (percentage >= effectiveThreshold)
+                    if (percentage >= minSimilarity)
                     {
                         var canAccess = allowedCompanies == null || allowedCompanies.Contains(ticket.IdCompany);
 
@@ -216,24 +204,14 @@ namespace CRM.Server.Services
             // informazione, riempirebbero solo il contesto a scapito di casi realmente diversi.
             var seenSolutions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var top = new List<(TicketSimilarityResult Result, int? IdProduct, double Score)>();
-            var belowFloorTaken = 0;
             foreach (var s in scored
                 .OrderByDescending(s => s.Score)
                 .ThenByDescending(s => s.Result.ClosedDate ?? DateTime.MinValue))
             {
-                // Ammessi solo dalla soglia ridotta: contingentati, altrimenti una macchina con
-                // molti ticket chiusi scaccerebbe i casi realmente somiglianti di altre macchine.
-                var belowFloor = s.Result.SimilarityPercentage < minSimilarity;
-                if (belowFloor && belowFloorTaken >= MaxProductMatchBelowFloor)
-                    continue;
-
                 // Deduplica solo le soluzioni non vuote: teniamo il primo occorso (più simile/recente).
                 var solutionKey = (s.Result.Solution ?? string.Empty).Trim();
                 if (solutionKey.Length > 0 && !seenSolutions.Add(solutionKey))
                     continue;
-
-                if (belowFloor)
-                    belowFloorTaken++;
 
                 top.Add(s);
                 if (top.Count >= Math.Max(1, topN))

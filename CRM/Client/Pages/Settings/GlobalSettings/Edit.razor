@@ -153,9 +153,12 @@ else
                                         <option value="@TicketRerankMode.LlmJudge">Giudice AI dedicato (rilegge e filtra)</option>
                                     </select>
                                     <small class="text-muted">
-                                        Come l'assistente verifica i "Ticket di riferimento" prima di mostrarli. "Rilettura": l'assistente
-                                        rilegge il ticket completo prima di citarlo (nessun costo dedicato). "Giudice AI": un modello veloce
-                                        rilegge i candidati e scarta i non pertinenti (una chiamata extra a costo ridotto, massima precisione).
+                                        Chi decide quali "Ticket di riferimento" sono pertinenti. "Giudice AI" (consigliato): i candidati
+                                        vengono raccolti per somiglianza SENZA soglia e un modello veloce li rilegge scartando i non
+                                        pertinenti — costa una chiamata a basso costo per ricerca ed è l'unica modalità che non perde i
+                                        casi giusti quando il sintomo è scritto in poche parole. "Rilettura": l'assistente rilegge il ticket
+                                        completo prima di citarlo (nessun costo dedicato). "Nessuno": nessuna rilettura, filtra solo la
+                                        soglia di similarità, che sui sintomi brevi scarta anche ticket realmente pertinenti.
                                     </small>
                                 </RadzenStack>
                             </RadzenStack>
