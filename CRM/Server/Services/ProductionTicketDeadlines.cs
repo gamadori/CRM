@@ -5,23 +5,41 @@ using Microsoft.EntityFrameworkCore;
 namespace CRM.Server.Services
 {
     /// <summary>
-    /// Regola unica sulle date di fine dei ticket di produzione: un ticket collegato a una fase di
-    /// commessa finisce e scade quando finisce la fase. La fase e' il piano, il ticket ne e'
-    /// l'esecuzione: date diverse vorrebbero dire che il Gantt e l'elenco ticket raccontano
-    /// scadenze diverse, e il calcolo SLA per tipo ticket (giorni dall'apertura) non conosce la
-    /// data di consegna. Vale solo sui ticket aperti: su un chiuso le date sono storia.
+    /// Regola unica sulle date dei ticket di produzione: la fase e' il piano, il ticket ne e'
+    /// l'esecuzione.
+    /// <para>
+    /// La fase detta la <b>scadenza</b> (<see cref="Ticket.DateExpired"/>): date diverse vorrebbero
+    /// dire che il Gantt e l'elenco ticket raccontano scadenze diverse, e il calcolo SLA per tipo
+    /// ticket (giorni dall'apertura) non conosce la data di consegna.
+    /// </para>
+    /// <para>
+    /// Sull'<b>appuntamento</b> (<see cref="Ticket.Date"/>/<see cref="Ticket.DateEnd"/>) la fase e'
+    /// invece un <b>vincolo, non un'assegnazione</b>. Prima la fine del ticket veniva incollata alla
+    /// fine della fase: l'agenda, che disegna un blocco continuo da Date a DateEnd, mostrava il
+    /// tecnico occupato per tutta la durata della fase - una fase da 30 giorni lo occupava 30 giorni
+    /// su 30. Ma la durata pianificata di una fase e' una stima, non un'occupazione: quanto si e'
+    /// lavorato davvero lo dicono gli interventi. Quindi qui l'appuntamento viene solo riportato
+    /// dentro la finestra se ne esce, e chi pianifica resta libero di collocarlo dove vuole.
+    /// </para>
+    /// <para>Vale solo sui ticket aperti: su un chiuso le date sono storia.</para>
     /// </summary>
     internal static class ProductionTicketDeadlines
     {
         /// <summary>
-        /// Allinea in memoria fine e scadenza del ticket alla fine della fase, tirando indietro
-        /// anche l'inizio se resterebbe dopo la fine. Restituisce true se ha cambiato qualcosa:
-        /// spostare una data rimette in coda il preavviso che la riguarda, altrimenti quello
-        /// gia' inviato per la vecchia data varrebbe come inviato anche per la nuova.
+        /// Allinea in memoria le date del ticket alla finestra della fase. Restituisce true se ha
+        /// cambiato qualcosa: spostare una data rimette in coda il preavviso che la riguarda,
+        /// altrimenti quello gia' inviato per la vecchia data varrebbe come inviato anche per la nuova.
         /// </summary>
-        public static bool Apply(Ticket ticket, DateTime faseEnd)
+        public static bool Apply(Ticket ticket, DateTime faseStart, DateTime faseEnd)
         {
             var scadenza = faseEnd.Date;
+            var apertura = faseStart.Date;
+
+            // Finestra invertita (fine prima dell'inizio): si degrada a un giorno solo invece di
+            // produrre un vincolo che nessuna data puo' soddisfare.
+            if (apertura > scadenza)
+                apertura = scadenza;
+
             bool cambiato = false;
 
             if (ticket.DateExpired?.Date != scadenza)
@@ -33,82 +51,87 @@ namespace CRM.Server.Services
                 cambiato = true;
             }
 
-            // La fine dell'appuntamento cambia giorno ma tiene l'ora: se qualcuno ha pianificato
-            // il lavoro fino alle 17:30, spostare la fase non deve riportarlo a mezzanotte.
-            var fine = ticket.DateEnd == null ? scadenza : scadenza.Add(ticket.DateEnd.Value.TimeOfDay);
-            if (ticket.DateEnd != fine)
-            {
-                ticket.DateEnd = fine;
-                cambiato = true;
-            }
+            // Inizio: se il ticket non e' ancora pianificato lo si mette all'inizio della fase, cosi'
+            // in agenda compare il giorno in cui il piano dice di cominciare. Se invece qualcuno lo
+            // ha gia' collocato, si tocca solo quando e' fuori finestra - e cambia il giorno, non
+            // l'ora: chi ha pianificato alle 9:00 se le ritrova alle 9:00 del nuovo giorno.
+            var inizio = ticket.Date is { } pianificato
+                ? ClampGiorno(pianificato, apertura, scadenza)
+                : apertura;
 
-            // Riprogrammazione all'indietro: se la fase ora finisce prima dell'inizio pianificato,
-            // l'appuntamento resterebbe a cavallo (inizio dopo la fine). L'inizio viene tirato
-            // indietro con la stessa regola della fine — cambia il giorno, non l'ora — e il
-            // preavviso dell'appuntamento torna in coda perche' riguarda un'altra data.
-            if (ticket.Date is { } inizio && inizio.Date > scadenza)
+            if (ticket.Date != inizio)
             {
-                ticket.Date = scadenza.Add(inizio.TimeOfDay);
+                ticket.Date = inizio;
                 ticket.ReminderApptStatus = ReminderStatus.Pending;
                 ticket.ReminderApptRetryCount = 0;
                 ticket.ReminderApptLastAttemptAt = null;
                 cambiato = true;
             }
 
+            // La fine non viene mai creata: un ticket senza fine e' un appuntamento di durata
+            // predefinita in agenda, ed e' l'unica lettura onesta finche' nessuno ha deciso quanto
+            // durera' il lavoro. Se c'e', va tenuta dentro la finestra e mai prima dell'inizio.
+            if (ticket.DateEnd is { } fine)
+            {
+                var nuovaFine = ClampGiorno(fine, inizio.Date, scadenza);
+
+                if (nuovaFine < inizio)
+                    nuovaFine = inizio;
+
+                if (ticket.DateEnd != nuovaFine)
+                {
+                    ticket.DateEnd = nuovaFine;
+                    cambiato = true;
+                }
+            }
+
             return cambiato;
         }
 
         /// <summary>
+        /// Riporta il giorno dentro <paramref name="giornoMin"/>..<paramref name="giornoMax"/>
+        /// conservando l'ora. Chi e' gia' dentro non viene toccato.
+        /// </summary>
+        private static DateTime ClampGiorno(DateTime valore, DateTime giornoMin, DateTime giornoMax)
+        {
+            if (valore.Date < giornoMin)
+                return giornoMin.Add(valore.TimeOfDay);
+
+            if (valore.Date > giornoMax)
+                return giornoMax.Add(valore.TimeOfDay);
+
+            return valore;
+        }
+
+        /// <summary>
         /// Riallinea i ticket aperti di tutte le fasi della commessa e salva. Va chiamato DOPO
-        /// aver salvato le fasi: legge le scadenze dal database, non dalle entita' in memoria.
+        /// aver salvato le fasi: legge le finestre dal database, non dalle entita' in memoria.
         /// Restituisce quanti ticket ha spostato.
         /// </summary>
         public static async Task<int> SyncCommessaAsync(ApplicationDbContext context, int idCommessa)
         {
-            var scadenze = await context.CommessaFasi
+            var finestre = await context.CommessaFasi
                 .AsNoTracking()
                 .Where(f => f.IdCommessa == idCommessa)
-                .Select(f => new { f.Id, f.EndDate })
+                .Select(f => new { f.Id, f.StartDate, f.EndDate })
                 .ToListAsync();
 
-            return await SyncAsync(context, scadenze.ToDictionary(f => f.Id, f => f.EndDate));
-        }
-
-        /// <summary>
-        /// Riallinea i ticket aperti delle sole fasi indicate e salva. Stessa avvertenza di
-        /// <see cref="SyncCommessaAsync"/>: le fasi devono essere gia' salvate.
-        /// </summary>
-        public static async Task<int> SyncPhasesAsync(ApplicationDbContext context, ICollection<int> faseIds)
-        {
-            if (faseIds.Count == 0)
-                return 0;
-
-            var scadenze = await context.CommessaFasi
-                .AsNoTracking()
-                .Where(f => faseIds.Contains(f.Id))
-                .Select(f => new { f.Id, f.EndDate })
-                .ToListAsync();
-
-            return await SyncAsync(context, scadenze.ToDictionary(f => f.Id, f => f.EndDate));
-        }
-
-        private static async Task<int> SyncAsync(ApplicationDbContext context, Dictionary<int, DateTime> scadenzePerFase)
-        {
-            if (scadenzePerFase.Count == 0)
-                return 0;
-
-            var faseIds = scadenzePerFase.Keys.ToList();
             var tickets = await context.Tickets
                 .Where(t => t.IdCommessaFase != null
-                    && faseIds.Contains(t.IdCommessaFase.Value)
+                    && t.CommessaFase!.IdCommessa == idCommessa
                     && !t.Closed)
                 .ToListAsync();
+
+            var perFase = finestre.ToDictionary(f => f.Id, f => (f.StartDate, f.EndDate));
 
             int spostati = 0;
             foreach (var ticket in tickets)
             {
-                if (scadenzePerFase.TryGetValue(ticket.IdCommessaFase!.Value, out var fine) && Apply(ticket, fine))
+                if (perFase.TryGetValue(ticket.IdCommessaFase!.Value, out var finestra)
+                    && Apply(ticket, finestra.StartDate, finestra.EndDate))
+                {
                     spostati++;
+                }
             }
 
             if (spostati > 0)

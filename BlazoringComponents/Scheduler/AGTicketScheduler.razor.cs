@@ -150,6 +150,45 @@ namespace BlazoringComponents.Scheduler
             return string.Join(", ", Ticket.AssignedUserNames);
         }
 
+        private string GetPhaseWindowTitle()
+        {
+            if (!Ticket.HasPhaseWindow)
+                return string.Empty;
+
+            var title = $"Finestra fase: {Ticket.CommessaFaseStartDate:dd/MM/yyyy} - {Ticket.CommessaFaseEndDate:dd/MM/yyyy}";
+            if (!string.IsNullOrWhiteSpace(Ticket.CommessaFaseName))
+                title += $" · {Ticket.CommessaFaseName}";
+            return title;
+        }
+
+        private string BuildCardTitle()
+        {
+            var lines = new List<string>
+            {
+                $"Ticket #{Ticket.Id}"
+            };
+
+            if (Ticket.TimeStart.HasValue && Ticket.TimeStart.Value != TimeOnly.MinValue)
+                lines.Add($"Ora: {Ticket.TimeStart.Value:HH\\:mm}");
+
+            if (Ticket.HasExplicitEnd)
+                lines.Add($"Fine: {Ticket.DateEnd:dd/MM/yyyy HH:mm}");
+
+            if (Ticket.DateExpired.HasValue)
+                lines.Add($"Scadenza: {Ticket.DateExpired:dd/MM/yyyy}");
+
+            if (Ticket.IsCommessa)
+                lines.Add($"Commessa: {Ticket.CommessaCode}");
+
+            if (Ticket.HasPhaseWindow)
+                lines.Add(GetPhaseWindowTitle());
+
+            if (!string.IsNullOrWhiteSpace(Ticket.Description))
+                lines.Add(Ticket.Description);
+
+            return string.Join(Environment.NewLine, lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+        }
+
         /// <summary>
         /// ✅ NUOVO: Estrae le iniziali dal nome completo dell'utente
         /// </summary>

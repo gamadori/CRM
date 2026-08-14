@@ -51,12 +51,22 @@ namespace CRM.Shared.DTOs
         public bool HasBaseline => EndDateBaseline.HasValue;
 
         /// <summary>
-        /// Giorni fra la consegna promessa all'avvio e quella effettiva. Positivo = in ritardo.
-        /// Finché la commessa è aperta il confronto usa oggi: è la proiezione del ritardo, non un consuntivo.
+        /// Giorni fra la consegna promessa all'avvio e quella in cui si consegna davvero.
+        /// Positivo = in ritardo sulla promessa.
+        /// <para>
+        /// A commessa chiusa il confronto è con la fine effettiva. Finché è aperta è con la data
+        /// prevista dalle fasi, cioè dove il piano dice che si andrà a finire.
+        /// </para>
+        /// <para>
+        /// Prima il confronto da aperta usava OGGI, e il risultato era il conto alla rovescia alla
+        /// promessa: su una commessa appena avviata diceva "-29 giorni" come se fosse un anticipo,
+        /// mentre voleva solo dire che mancavano 29 giorni. Lo stesso numero compariva gia' come
+        /// "giorni alla consegna", per giunta contato su un'altra data.
+        /// </para>
         /// </summary>
         public int? DeliveryDeltaDays => EndDateBaseline == null
             ? null
-            : ((EndDateActual ?? DateTime.Today).Date - EndDateBaseline.Value.Date).Days;
+            : ((EndDateActual ?? ExpectedEndDate ?? EndDatePlanned).Date - EndDateBaseline.Value.Date).Days;
 
         public decimal SpentHours => Math.Round(SpentMinutes / 60m, 1);
 

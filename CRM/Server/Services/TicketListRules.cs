@@ -15,14 +15,21 @@ namespace CRM.Server.Services
     public static class TicketListRules
     {
         /// <summary>
-        /// Lo stato da mostrare. L'ordine dei casi e' significativo: "in lavorazione" vince sulla
-        /// scadenza (chi ci sta lavorando non e' in ritardo), e il cliente vede sempre e solo
-        /// "in lavorazione", perche' i nostri stati interni non lo riguardano.
+        /// Lo stato da mostrare.
+        /// <para>
+        /// Dentro l'azienda "in lavorazione" non esiste piu' come stato a se': un ticket assegnato
+        /// a qualcuno e' un ticket su cui si sta lavorando, e distinguere le due cose voleva dire
+        /// raccontare chi aveva premuto quale pulsante invece di dire a che punto e' il lavoro.
+        /// Chi lo ha in mano lo si legge dall'assegnatario, quanto ci ha lavorato dagli interventi.
+        /// </para>
+        /// <para>
+        /// Il cliente resta un caso a parte: vede sempre e solo "in lavorazione", perche' i nostri
+        /// stati interni - aperto, assegnato, scaduto - non lo riguardano.
+        /// </para>
         /// </summary>
         public static eTicketStates ResolveState(
             bool closed,
             bool isClient,
-            bool isInProcessingState,
             bool hasAssignedUser,
             DateTime? dateExpired,
             DateTime today,
@@ -32,9 +39,6 @@ namespace CRM.Server.Services
                 return eTicketStates.Closed;
 
             if (isClient)
-                return eTicketStates.Processing;
-
-            if (isInProcessingState && hasAssignedUser)
                 return eTicketStates.Processing;
 
             if (dateExpired != null && today > dateExpired)

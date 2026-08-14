@@ -80,10 +80,10 @@ namespace CRM.Server.Controllers
                 items = items.Where(x => x.IdUserAssigned == filter.IdUser);
 
             if (model.IsClient)
-                model.TicketsWorking = await items.CountAsync();
+                model.TicketsAssigned = await items.CountAsync();
             else
             {
-                model.TicketsWorking = await items.Where(x => x.IdUserAssigned != null).CountAsync();
+                model.TicketsAssigned = await items.Where(x => x.IdUserAssigned != null).CountAsync();
                 model.TicketsExpired = await items.Where(x => date > x.DateExpired).CountAsync();
             }
             
@@ -232,7 +232,7 @@ namespace CRM.Server.Controllers
 
             if (stateClosed != null)
             {
-                model.TicketsWorking = await tickets.Where(x=>x.IdState != stateClosed.Id).CountAsync();
+                model.TicketsAssigned = await tickets.Where(x=>x.IdState != stateClosed.Id).CountAsync();
                 model.Tickets = await tickets.OrderBy(x=>x.DateOpened).ToListAsync();
             }
             try

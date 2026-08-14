@@ -535,9 +535,12 @@ namespace CRM.Server.Services
                 IdGroupAssigned = plan.IdGroupAssigned,
                 IdUserOpened = idUserOpened,
                 DateOpened = DateTime.Now,
-                Date = DateTime.Today,
-                // Fine e scadenza sono quelle della fase, non il calcolo SLA per tipo ticket.
-                DateEnd = fase.EndDate.Date,
+                // Il ticket si pianifica dove il piano dice di cominciare, e la scadenza e' quella
+                // della fase, non il calcolo SLA per tipo ticket. La fine resta vuota: la durata
+                // della fase e' una stima, non un'occupazione dell'agenda del tecnico - decidera'
+                // lui quanto lavorarci, dentro la finestra.
+                Date = fase.StartDate.Date,
+                DateEnd = null,
                 DateExpired = fase.EndDate.Date,
                 Description = description,
                 Numero = string.Empty,

@@ -1,0 +1,247 @@
+@page "/Lavori"
+@using CRM.Client.Helpers
+@using CRM.Client.Models
+@using CRM.Client.Services
+@using CRM.Shared.DTOs
+@using Microsoft.AspNetCore.Authorization
+@using Radzen
+@using Radzen.Blazor
+@attribute [Authorize]
+@inject ITicketsService TicketsService
+@inject NavigationManager Nav
+@inject NotificationService Notification
+@inject IHeaderService HeaderService
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+@* La schermata che il tecnico apre la mattina: cosa deve fare, in ordine.
+   Non e' una griglia con i filtri, e' un elenco che si legge dall'alto. L'ordine lo decide il
+   server, perche' e' a due livelli: prima il gruppo, poi la data dentro il gruppo. *@
+
+<PageHeader Model="@_pageHeader"></PageHeader>
+
+<div class="work-list">
+    <div class="work-list-head">
+        <div>
+            <strong>@Localize["I miei lavori"]</strong>
+            <small>@Sottotitolo</small>
+        </div>
+        <RadzenButton Icon="refresh" Text="@Localize["Aggiorna"]" ButtonStyle="ButtonStyle.Light"
+                      Size="ButtonSize.Small" Disabled="@_loading" Click="@Carica" />
+    </div>
+
+    @if (_loading)
+    {
+        <Waiting />
+    }
+    else if (!string.IsNullOrWhiteSpace(_errore))
+    {
+        <div class="work-list-error">@_errore</div>
+    }
+    else if (_items.Count == 0)
+    {
+        <div class="work-list-empty">
+            <span class="material-icons">check_circle</span>
+            <span>@Localize["Non hai lavori aperti."]</span>
+        </div>
+    }
+    else
+    {
+        @foreach (var gruppo in Gruppi)
+        {
+            var righe = _items.Where(i => i.Group == gruppo).ToList();
+            if (righe.Count == 0)
+            {
+                continue;
+            }
+
+            <div class="work-group @ClasseGruppo(gruppo)">
+                <div class="work-group-title">
+                    @TitoloGruppo(gruppo)
+                    <span class="work-group-count">@righe.Count</span>
+                </div>
+
+                @foreach (var item in righe)
+                {
+                    <div class="work-row @(item.InRitardo ? "in-ritardo" : "")" @onclick="@(() => Apri(item))">
+                        <div class="work-row-main">
+                            <div class="work-row-title">
+                                <span class="work-num">@item.Numero</span>
+                                <span>@Descrizione(item)</span>
+                            </div>
+                            <div class="work-row-meta">
+                                <span>@item.Cliente</span>
+                                @if (!string.IsNullOrWhiteSpace(item.CommessaCode))
+                                {
+                                    <span> · @item.CommessaCode</span>
+                                    @if (!string.IsNullOrWhiteSpace(item.FaseName))
+                                    {
+                                        <span> · @item.FaseName</span>
+                                    }
+                                }
+                                @if (item.BloccatoDa.Count > 0)
+                                {
+                                    <span class="work-blocco"> · @Localize["Aspetta"]: @string.Join(", ", item.BloccatoDa)</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="work-row-side">
+                            @if (item.Scadenza != null)
+                            {
+                                <span class="work-scadenza">@Localize["entro"] @item.Scadenza.Value.ToString("dd/MM")</span>
+                            }
+                            @if (item.DaPrendere)
+                            {
+                                <RadzenButton Text="@Localize["Prendi"]" Icon="front_hand" Size="ButtonSize.ExtraSmall"
+                                              ButtonStyle="ButtonStyle.Primary" Disabled="@(_prendendo == item.IdTicket)"
+                                              Click="@(async args => await Prendi(item))" @onclick:stopPropagation="true" />
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .work-list { display: grid; gap: 1rem; }
+    .work-list-head { align-items: center; display: flex; justify-content: space-between; }
+    .work-list-head strong { display: block; font-size: 1.05rem; }
+    .work-list-head small { color: var(--crm-text-muted, #6b7280); }
+    .work-list-empty {
+        align-items: center; color: var(--crm-text-muted, #6b7280);
+        display: flex; gap: .5rem; justify-content: center; padding: 2.5rem;
+    }
+    .work-list-error { color: #b91c1c; padding: 1rem; }
+    .work-group { border: 1px solid var(--crm-border, #e5e7eb); border-radius: 6px; overflow: hidden; }
+    .work-group-title {
+        align-items: center; background: var(--crm-surface-2, #f8fafc);
+        border-bottom: 1px solid var(--crm-border, #e5e7eb);
+        display: flex; font-size: .8rem; font-weight: 700; gap: .5rem;
+        letter-spacing: .03em; padding: .55rem .8rem; text-transform: uppercase;
+    }
+    .work-group-count {
+        background: var(--crm-border, #e5e7eb); border-radius: 10px;
+        font-size: .75rem; padding: 0 .5rem;
+    }
+    .work-group.bloccate { opacity: .72; }
+    .work-row {
+        align-items: center; border-bottom: 1px solid var(--crm-border-soft, #f1f5f9);
+        cursor: pointer; display: flex; gap: 1rem; justify-content: space-between; padding: .7rem .8rem;
+    }
+    .work-row:last-child { border-bottom: 0; }
+    .work-row:hover { background: var(--crm-surface-2, #f8fafc); }
+    .work-row-main { min-width: 0; }
+    .work-row-title { align-items: baseline; display: flex; gap: .5rem; }
+    .work-num { color: var(--crm-text-muted, #9ca3af); font-size: .78rem; }
+    .work-row-meta { color: var(--crm-text-muted, #6b7280); font-size: .8rem; margin-top: .15rem; }
+    .work-row-side { align-items: center; display: flex; gap: .6rem; white-space: nowrap; }
+    .work-scadenza { color: var(--crm-text-muted, #6b7280); font-size: .8rem; }
+    .work-row.in-ritardo .work-scadenza { color: #dc2626; font-weight: 700; }
+    .work-blocco { color: #b45309; }
+</style>
+
+@code {
+    private List<WorkListItemDTO> _items = new();
+    private bool _loading = true;
+    private string? _errore;
+    private int? _prendendo;
+    private PageHeaderModel? _pageHeader;
+
+    private static readonly WorkListGroup[] Gruppi =
+    {
+        WorkListGroup.Assistenza,
+        WorkListGroup.Commessa,
+        WorkListGroup.CommessaBloccata
+    };
+
+    private string Sottotitolo => _loading
+        ? string.Empty
+        : $"{_items.Count} {Localize["lavori aperti"]}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _pageHeader = await HeaderService.Create();
+        await Carica();
+    }
+
+    private async Task Carica()
+    {
+        _loading = true;
+        _errore = null;
+
+        var risposta = await TicketsService.GetWorkListAsync();
+        _items = risposta.Items;
+        _errore = risposta.ErrorMessage;
+
+        _loading = false;
+    }
+
+    private string TitoloGruppo(WorkListGroup gruppo) => gruppo switch
+    {
+        WorkListGroup.Assistenza => Localize["Assistenza"],
+        WorkListGroup.Commessa => Localize["Commesse"],
+        _ => Localize["Da fare piu' avanti"]
+    };
+
+    private static string ClasseGruppo(WorkListGroup gruppo)
+        => gruppo == WorkListGroup.CommessaBloccata ? "bloccate" : string.Empty;
+
+    /// <summary>
+    /// Prima riga della descrizione: in elenco serve il titolo, non il testo intero.
+    /// <para>
+    /// I ticket generati da una fase hanno la descrizione gia' composta come
+    /// "COMMESSA - Fase - Titolo". Commessa e fase stanno anche nella riga sotto, quindi qui si
+    /// tolgono: altrimenti la stessa cosa si legge tre volte.
+    /// </para>
+    /// </summary>
+    private static string Descrizione(WorkListItemDTO item)
+    {
+        var testo = (item.Descrizione ?? string.Empty).Trim();
+        if (testo.Length == 0)
+            return "-";
+
+        var fine = testo.IndexOfAny(new[] { '\r', '\n' });
+        if (fine > 0)
+            testo = testo[..fine];
+
+        foreach (var prefisso in new[] { $"{item.CommessaCode} - {item.FaseName} - ", $"{item.CommessaCode} - " })
+        {
+            if (prefisso.Length > 3 && testo.StartsWith(prefisso, StringComparison.OrdinalIgnoreCase))
+            {
+                testo = testo[prefisso.Length..].Trim();
+                break;
+            }
+        }
+
+        if (testo.Length == 0)
+            testo = item.FaseName;
+
+        return testo.Length > 120 ? testo[..120] + "…" : testo;
+    }
+
+    /// <summary>
+    /// Apre la scheda Info, la stessa a cui porta l'elenco ticket. Le schede del ticket sono due,
+    /// Info e Details: da qui si va dove va anche il percorso principale, cosi' chi lavora vede
+    /// sempre la stessa pagina.
+    /// </summary>
+    private void Apri(WorkListItemDTO item) => Nav.NavigateTo($"/Tickets/{item.IdTicket}/Info");
+
+    private async Task Prendi(WorkListItemDTO item)
+    {
+        _prendendo = item.IdTicket;
+        var esito = await TicketsService.ClaimAsync(item.IdTicket);
+        _prendendo = null;
+
+        if (esito?.State == true)
+        {
+            Notification.Notify(NotificationSeverity.Success, Localize["Ticket"], Localize["Preso in carico"]);
+            await Carica();
+            return;
+        }
+
+        Notification.Notify(NotificationSeverity.Error, Localize["Ticket"],
+            esito?.Message ?? Localize["Impossibile prendere il ticket"]);
+    }
+}

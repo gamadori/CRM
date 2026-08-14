@@ -102,13 +102,13 @@ else
                 </div>
             </div>
 
-            <!-- Working Tickets Card -->
-            <div class="dashboard-card" @onclick="TicketWorking">
+            <!-- Assigned Tickets Card -->
+            <div class="dashboard-card" @onclick="TicketAssigned">
                 <div class="card-icon-wrapper">
                     <div class="card-icon card-icon-success">
                         <span class="material-icons">support_agent</span>
                     </div>
-                    <div class="card-badge">@_tickets.TicketsWorking</div>
+                    <div class="card-badge">@_tickets.TicketsAssigned</div>
                 </div>
                 <div class="card-content">
                     <h3 class="card-title">@Localize["Tickets in Process"]</h3>

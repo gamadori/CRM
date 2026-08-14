@@ -182,6 +182,9 @@ namespace CRM.Server.Services
                     Id = x.Id,
                     Date = x.Date,
                     DateEnd = x.DateEnd,
+                    // La scadenza mancava anche qui: la scheda e l'anteprima non potevano dire
+                    // entro quando il ticket va chiuso.
+                    DateExpired = x.DateExpired,
                     DateOpened = x.DateOpened,
                     DateClosed = x.DateClosed,
                     Time = x.Time,
@@ -260,6 +263,7 @@ namespace CRM.Server.Services
             try
             {
                 string idUser = await _permitsService.IdUser();
+                var isClient = await _permitsService.IsClient();
                 DateTime dateTo;
 
                 IQueryable<Ticket> tickets = _context.Tickets;
@@ -353,12 +357,24 @@ namespace CRM.Server.Services
                     tickets = tickets.Where(x => x.CommessaFase != null && x.CommessaFase.IdCommessa == args.IdCommessa);
                 }
 
+                // Natura del lavoro: separa la produzione dall'assistenza. Esisteva solo
+                // sull'endpoint della pianificazione; nell'elenco il parametro arrivava e veniva
+                // ignorato in silenzio. Null lascia passare tutto.
+                if (args.HasCommessa == true)
+                {
+                    tickets = tickets.Where(x => x.IdCommessaFase != null);
+                }
+                else if (args.HasCommessa == false)
+                {
+                    tickets = tickets.Where(x => x.IdCommessaFase == null);
+                }
+
                 if (args.IsBlocked != null)
                 {
                     tickets = tickets.Where(x => x.IsBlocked == args.IsBlocked);
                 }
 
-                tickets = FilterByType(tickets, (TicketTypeSearch)args.TypeSearch, idUser);
+                tickets = FilterByType(tickets, (TicketTypeSearch)args.TypeSearch, idUser, isClient);
 
                 if (args.Filter != null && args.Filter.Length > 0)
                 {
@@ -380,6 +396,9 @@ namespace CRM.Server.Services
                     Date = x.Date,
                     DateOpened = x.DateOpened,
                     DateEnd = x.DateEnd,
+                    // La scadenza mancava nella proiezione dell'elenco: e' l'informazione che dice
+                    // cosa fare per primo, e senza di essa la colonna resta vuota.
+                    DateExpired = x.DateExpired,
                     DateClosed = x.DateClosed,
                     Company = x.Company!.RagioneSociale,
                     Product = (x.Product != null) ? x.Product.Name : "",
@@ -861,6 +880,7 @@ namespace CRM.Server.Services
                     IdType = t.IdType,
                     IdGroupAssigned = t.IdGroupAssigned,
                     IdUserAssigned = t.IdUserAssigned,
+                    IdCommessaFase = t.IdCommessaFase,
                     // Come HasAssignedUserAsync: l'assegnatario storico vale solo se valorizzato
                     // davvero - una stringa vuota non e' un assegnatario.
                     HasAssignedUser = (t.IdUserAssigned != null && t.IdUserAssigned != "") || t.AssignedUsers.Any(),
@@ -927,6 +947,12 @@ namespace CRM.Server.Services
         /// <summary>
         /// Allinea le scadenze della pagina: stessa regola di CheckTicketExpired, ma per tutti i
         /// ticket in una volta e con una sola scrittura, solo per quelli davvero cambiati.
+        /// <para>
+        /// I ticket di produzione sono esclusi: la loro scadenza la detta la fase di commessa
+        /// (<see cref="ProductionTicketDeadlines"/>), e il calcolo SLA per tipo non conosce il piano.
+        /// Senza questa esclusione bastava aprire un elenco per riscrivere la data di consegna del
+        /// Gantt con "apertura + N giorni", per giunta in silenzio.
+        /// </para>
         /// </summary>
         private async Task RefreshExpiredDatesAsync(List<TicketListFacts> facts)
         {
@@ -934,6 +960,9 @@ namespace CRM.Server.Services
 
             foreach (var fact in facts)
             {
+                if (fact.IdCommessaFase != null)
+                    continue;
+
                 var expected = await ExpectedDateExpiredAsync(fact.IdType, fact.Date);
 
                 if (fact.DateExpired == expected)
@@ -950,7 +979,15 @@ namespace CRM.Server.Services
             var tickets = await _context.Tickets.Where(t => staleIds.Contains(t.Id)).ToListAsync();
 
             foreach (var ticket in tickets)
+            {
                 ticket.DateExpired = stale.First(x => x.Id == ticket.Id).DateExpired;
+
+                // La scadenza si e' spostata: il preavviso gia' inviato riguardava un'altra data e
+                // va rimesso in coda, come fa ProductionTicketDeadlines quando muove le sue.
+                ticket.ReminderExpiryStatus = ReminderStatus.Pending;
+                ticket.ReminderExpiryRetryCount = 0;
+                ticket.ReminderExpiryLastAttemptAt = null;
+            }
 
             await _context.SaveChangesAsync();
         }
@@ -958,18 +995,15 @@ namespace CRM.Server.Services
         /// <summary>Applica <see cref="TicketListRules.ResolveState"/> e traduce in riga di stato.</summary>
         private async Task<TicketState?> ResolveListStateAsync(TicketListFacts fact, bool isClient)
         {
-            var processingState = await GetIdState(eTicketStates.Processing);
-
             var state = TicketListRules.ResolveState(
                 fact.Closed,
                 isClient,
-                fact.IdState == processingState?.Id,
                 fact.HasAssignedUser,
                 fact.DateExpired,
                 DateTime.Now.Date,
                 fact.IdUserAssigned != null || fact.IdGroupAssigned != null);
 
-            return state == eTicketStates.Processing ? processingState : await GetIdState(state);
+            return await GetIdState(state);
         }
 
         private async Task<bool> CanClaimAsync(
@@ -1065,6 +1099,7 @@ namespace CRM.Server.Services
             public int IdType { get; set; }
             public int? IdGroupAssigned { get; set; }
             public string? IdUserAssigned { get; set; }
+            public int? IdCommessaFase { get; set; }
             public bool HasAssignedUser { get; set; }
             public bool AssignedToCurrentUser { get; set; }
             public bool CommessaResponsibleIsCurrentUser { get; set; }
@@ -1092,22 +1127,20 @@ namespace CRM.Server.Services
                 else
                 {
                     await CheckTicketExpired(ticket.Id);
-                    var processingState = await GetIdState(eTicketStates.Processing);
-                    var hasAssignedUser = await HasAssignedUserAsync(ticket.Id, ticket.IdUserAssigned);
 
+                    // Stesse regole di TicketListRules.ResolveState: "in lavorazione" non e' piu'
+                    // uno stato a se' dentro l'azienda, un ticket assegnato e' un ticket su cui si
+                    // lavora. Resta solo per il cliente, a cui i nostri stati interni non servono.
                     if (await _permitsService.IsClient())
-                    {
-                        return processingState;
-                    }
-                    else if (ticket.IdState == processingState?.Id && hasAssignedUser)
-                        return processingState;
-                    else if (ticket.DateExpired != null && DateTime.Now.Date > ticket.DateExpired)
+                        return await GetIdState(eTicketStates.Processing);
+
+                    if (ticket.DateExpired != null && DateTime.Now.Date > ticket.DateExpired)
                         return await GetIdState(eTicketStates.Expired);
 
-                    else if (ticket.IdUserAssigned != null || ticket.IdGroupAssigned != null)
+                    if (ticket.IdUserAssigned != null || ticket.IdGroupAssigned != null)
                         return await GetIdState(eTicketStates.Assigned);
-                    else
-                        return await GetIdState(eTicketStates.Created);
+
+                    return await GetIdState(eTicketStates.Created);
                 }
             }
             return null;
@@ -1154,12 +1187,18 @@ namespace CRM.Server.Services
             return _defaultExpiredDays.Value;
         }
 
-        /// <summary>La scadenza che il ticket dovrebbe avere, in base al tipo e alla data.</summary>
+        /// <summary>
+        /// La scadenza che il ticket dovrebbe avere, in base al tipo e alla data. I giorni sono
+        /// lavorativi, come alla creazione del ticket: prima qui si contavano solari, quindi il
+        /// valore atteso non coincideva mai con quello scritto alla nascita e ogni caricamento di
+        /// elenco riscriveva le scadenze - il contrario del motivo per cui ApplyListStateAsync
+        /// calcola tutto in blocco.
+        /// </summary>
         private async Task<DateTime?> ExpectedDateExpiredAsync(int idType, DateTime? date)
         {
             var days = await ExpiredDaysForTypeAsync(idType);
 
-            return days > 0 && date != null ? date.Value.AddDays(days) : null;
+            return days > 0 && date != null ? date.Value.AddWorkdays(days) : null;
         }
 
         private async Task<bool> HasAssignedUserAsync(int ticketId, string? legacyAssignedUserId)
@@ -1206,7 +1245,7 @@ namespace CRM.Server.Services
             var fase = await _context.CommessaFasi
                 .AsNoTracking()
                 .Where(t => t.Id == ticket.IdCommessaFase)
-                .Select(t => new { t.EndDate })
+                .Select(t => new { t.StartDate, t.EndDate })
                 .FirstOrDefaultAsync();
 
             if (fase == null)
@@ -1228,11 +1267,11 @@ namespace CRM.Server.Services
                 throw new ProductionSequenceException(
                     $"La fase non e' avviabile: fasi precedenti non completate ({string.Join(", ", blockers)}).");
 
-            // Un ticket di produzione finisce e scade con la sua fase: il calcolo SLA per tipo
-            // ticket (giorni dall'apertura) non conosce il piano e darebbe date scollegate.
-            // Su un ticket gia' chiuso le date sono storia e non si riscrivono.
+            // Un ticket di produzione scade con la sua fase e si pianifica dentro la sua finestra:
+            // il calcolo SLA per tipo ticket (giorni dall'apertura) non conosce il piano e darebbe
+            // date scollegate. Su un ticket gia' chiuso le date sono storia e non si riscrivono.
             if (!ticket.Closed)
-                ProductionTicketDeadlines.Apply(ticket, fase.EndDate);
+                ProductionTicketDeadlines.Apply(ticket, fase.StartDate, fase.EndDate);
         }
 
         #endregion
@@ -1260,6 +1299,10 @@ namespace CRM.Server.Services
             if (ticket == null)
                 return;
 
+            // Ticket di produzione: la scadenza la detta la fase, non la SLA per tipo.
+            if (ticket.IdCommessaFase != null)
+                return;
+
             var expected = await ExpectedDateExpiredAsync(ticket.IdType, ticket.Date);
 
             // Se la scadenza e' gia' quella giusta non c'e' niente da salvare: prima si passava
@@ -1268,7 +1311,160 @@ namespace CRM.Server.Services
                 return;
 
             ticket.DateExpired = expected;
+            ticket.ReminderExpiryStatus = ReminderStatus.Pending;
+            ticket.ReminderExpiryRetryCount = 0;
+            ticket.ReminderExpiryLastAttemptAt = null;
             await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// L'elenco dei lavori di chi sta guardando: quello che apre la mattina per sapere cosa
+        /// deve fare.
+        /// <para>
+        /// Non e' il lavoro "di oggi": e' il lavoro aperto. Quello che non finisce oggi si ritrova
+        /// domani. Per l'assistenza la data la decide chi assegna, quindi entrano i ticket di oggi
+        /// e quelli arretrati; i ticket di una fase di commessa una data di lavoro non ce l'hanno,
+        /// quindi entrano tutti quelli aperti.
+        /// </para>
+        /// <para>
+        /// L'ordine e' a due livelli e per questo l'elenco si costruisce qui e non in una griglia:
+        /// prima il gruppo (assistenza, poi commessa, in fondo le fasi bloccate), poi la data
+        /// dentro ogni gruppo. Le fasi bloccate stanno in fondo perche' sono lavoro che oggi non
+        /// si puo' cominciare: le fasi precedenti non sono finite.
+        /// </para>
+        /// </summary>
+        public async Task<WorkListDTO> GetWorkListAsync()
+        {
+            try
+            {
+                var idUser = await _permitsService.IdUser();
+                if (string.IsNullOrWhiteSpace(idUser))
+                    return new WorkListDTO { ErrorMessage = "Utente non riconosciuto." };
+
+                var myGroupIds = await _context.Groups.AsNoTracking()
+                    .Where(g => g.Users.Any(u => u.Id == idUser))
+                    .Select(g => g.Id)
+                    .ToListAsync();
+
+                var query = await ApplyVisibilityScopeAsync(_context.Tickets.AsNoTracking());
+
+                // Suoi: quelli che ha in mano, piu' quelli fermi sul suo gruppo che nessuno ha
+                // ancora preso. Questi ultimi sono lavoro suo a tutti gli effetti: se non li prende
+                // lui non li prende nessuno.
+                query = query.Where(t => !t.Closed
+                    && (t.IdUserAssigned == idUser
+                        || t.AssignedUsers.Any(a => a.IdUser == idUser)
+                        || (t.IdUserAssigned == null
+                            && t.IdGroupAssigned != null
+                            && myGroupIds.Contains(t.IdGroupAssigned.Value))));
+
+                // L'assistenza entra se la sua data e' oggi o e' gia' passata: il lavoro futuro
+                // non serve stamattina. La produzione entra sempre, non avendo una data di lavoro.
+                var fineGiornata = DateTime.Today.AddDays(1);
+                query = query.Where(t => t.IdCommessaFase != null
+                    || (t.Date != null && t.Date < fineGiornata));
+
+                var righe = await query
+                    .Select(t => new
+                    {
+                        t.Id,
+                        t.Date,
+                        t.DateExpired,
+                        t.Description,
+                        t.IdCommessaFase,
+                        t.IdUserAssigned,
+                        Cliente = t.Company != null ? t.Company.RagioneSociale : string.Empty,
+                        FaseName = t.CommessaFase != null ? t.CommessaFase.Name : string.Empty,
+                        FaseStato = t.CommessaFase != null ? (CommessaFaseStates?)t.CommessaFase.State : null,
+                        FaseFine = t.CommessaFase != null ? (DateTime?)t.CommessaFase.EndDate : null,
+                        IdCommessa = t.CommessaFase != null ? (int?)t.CommessaFase.IdCommessa : null,
+                        CommessaCode = t.CommessaFase != null && t.CommessaFase.Commessa != null
+                            ? (t.CommessaFase.Commessa.Code ?? string.Empty)
+                            : string.Empty
+                    })
+                    .ToListAsync();
+
+                var bloccantiPerFase = await LoadBlockersAsync(righe
+                    .Where(r => r.IdCommessaFase != null && r.FaseStato == CommessaFaseStates.Pending)
+                    .Select(r => r.IdCommessaFase!.Value)
+                    .Distinct()
+                    .ToList());
+
+                var oggi = DateTime.Today;
+                var items = righe.Select(r =>
+                {
+                    var bloccanti = r.IdCommessaFase != null
+                        && bloccantiPerFase.TryGetValue(r.IdCommessaFase.Value, out var nomi)
+                            ? nomi
+                            : new List<string>();
+
+                    var gruppo = r.IdCommessaFase == null
+                        ? WorkListGroup.Assistenza
+                        : bloccanti.Count > 0 ? WorkListGroup.CommessaBloccata : WorkListGroup.Commessa;
+
+                    return new WorkListItemDTO
+                    {
+                        IdTicket = r.Id,
+                        Group = gruppo,
+                        Numero = r.Id.ToString("000000"),
+                        Descrizione = r.Description ?? string.Empty,
+                        Cliente = r.Cliente,
+                        Data = r.Date,
+                        // Sulla produzione la scadenza e' la fine della fase: se sul ticket manca,
+                        // si legge dalla fase invece di lasciare la riga senza riferimento.
+                        Scadenza = r.DateExpired ?? r.FaseFine,
+                        CommessaCode = r.CommessaCode,
+                        IdCommessa = r.IdCommessa,
+                        FaseName = r.FaseName,
+                        DaPrendere = r.IdUserAssigned == null,
+                        BloccatoDa = bloccanti
+                    };
+                }).ToList();
+
+                foreach (var item in items)
+                    item.InRitardo = item.Scadenza != null && item.Scadenza.Value.Date < oggi;
+
+                // Il criterio di ordinamento dentro il gruppo: l'assistenza per la data che le ha
+                // dato chi assegna, la produzione per la scadenza della fase.
+                return new WorkListDTO
+                {
+                    Items = items
+                        .OrderBy(i => (int)i.Group)
+                        .ThenBy(i => i.Group == WorkListGroup.Assistenza
+                            ? i.Data ?? DateTime.MaxValue
+                            : i.Scadenza ?? DateTime.MaxValue)
+                        .ThenBy(i => i.IdTicket)
+                        .ToList()
+                };
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsService), nameof(GetWorkListAsync), EventsTypes.Error, ex);
+                return new WorkListDTO { ErrorMessage = "Impossibile caricare l'elenco dei lavori." };
+            }
+        }
+
+        /// <summary>
+        /// Per ogni fase indicata, i nomi delle fasi precedenti non ancora finite. Stessa regola di
+        /// CommessaFasiService.GetStartBlockersAsync, chiesta pero' per tutte le fasi in una volta:
+        /// una query per riga d'elenco sarebbe una interrogazione per ogni lavoro mostrato.
+        /// </summary>
+        private async Task<Dictionary<int, List<string>>> LoadBlockersAsync(List<int> faseIds)
+        {
+            if (faseIds.Count == 0)
+                return new Dictionary<int, List<string>>();
+
+            var dipendenze = await _context.CommessaFaseDependencies
+                .AsNoTracking()
+                .Where(d => faseIds.Contains(d.IdFase)
+                    && d.PredecessorFase != null
+                    && d.PredecessorFase.State != CommessaFaseStates.Done)
+                .Select(d => new { d.IdFase, Nome = d.PredecessorFase!.Name })
+                .ToListAsync();
+
+            return dipendenze
+                .GroupBy(d => d.IdFase)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.Nome).ToList());
         }
 
         public async Task<int> GetDayBeforeExpired(int id)
@@ -1301,7 +1497,7 @@ namespace CRM.Server.Services
             return tickets.Where(x => allowed.Contains(x.IdCompany));
         }
 
-        private IQueryable<Ticket> FilterByType(IQueryable<Ticket> tickets, TicketTypeSearch filter, string idUser)
+        private IQueryable<Ticket> FilterByType(IQueryable<Ticket> tickets, TicketTypeSearch filter, string idUser, bool isClient)
         {
             switch (filter)
             {
@@ -1326,10 +1522,6 @@ namespace CRM.Server.Services
                     tickets = tickets.Where(x => !x.Closed);
                     DateTime date = DateTime.Now.Date;
                     tickets = tickets.Where(x => date > x.DateExpired);
-                    break;
-
-                case TicketTypeSearch.Working:
-                    tickets = tickets.Where(x => !x.Closed);
                     break;
 
                 case TicketTypeSearch.NewMessage:
@@ -1503,6 +1695,8 @@ namespace CRM.Server.Services
                     ticket.IdUserAssigned = null;
                 }
 
+                await ApplyAssignmentStateAsync(ticket);
+
                 await _context.SaveChangesAsync();
 
                 var addedUsers = newlyAssignedUserIds.Except(previouslyAssignedUserIds).ToList();
@@ -1566,10 +1760,7 @@ namespace CRM.Server.Services
                 });
 
                 ticket.IdUserAssigned ??= currentUserId;
-                ticket.IdState = await _context.TicketStates
-                    .Where(s => s.State == (int)eTicketStates.Processing)
-                    .Select(s => (int?)s.Id)
-                    .FirstOrDefaultAsync() ?? ticket.IdState;
+                await ApplyAssignmentStateAsync(ticket);
 
                 await _context.SaveChangesAsync();
                 return await OkClaim(idTicket, "Ticket preso in carico");
@@ -1645,14 +1836,10 @@ namespace CRM.Server.Services
                 ticket.IdUserAssigned ??= toClaim.First();
 
                 // Su un ticket chiuso l'assegnazione resta solo una traccia di chi ha lavorato:
-                // riportarlo "in lavorazione" lo riaprirebbe di fatto.
-                if (!ticket.Closed)
-                {
-                    ticket.IdState = await _context.TicketStates
-                        .Where(s => s.State == (int)eTicketStates.Processing)
-                        .Select(s => (int?)s.Id)
-                        .FirstOrDefaultAsync() ?? ticket.IdState;
-                }
+                // cambiarne lo stato lo riaprirebbe di fatto. Su un ticket aperto, invece,
+                // assegnare qualcuno significa solo "assegnato": la lavorazione vera parte dal
+                // comando esplicito StartProcessing.
+                await ApplyAssignmentStateAsync(ticket);
 
                 await _context.SaveChangesAsync();
 
@@ -1679,6 +1866,89 @@ namespace CRM.Server.Services
 
         private static EnsureAssignedResult FailEnsure(EnsureAssignedError error, string message)
             => new() { Success = false, Error = error, ErrorMessage = message };
+
+        public async Task<bool> StartWorkAsync(int idTicket, IEnumerable<string>? userIds, string? currentUserId)
+        {
+            try
+            {
+                var ticket = await _context.Tickets
+                    .Include(t => t.AssignedUsers)
+                    .FirstOrDefaultAsync(t => t.Id == idTicket);
+
+                if (ticket == null || ticket.Closed)
+                    return false;
+
+                var workUserIds = (userIds ?? Enumerable.Empty<string>())
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Distinct()
+                    .ToList();
+
+                if (workUserIds.Count == 0 && !string.IsNullOrWhiteSpace(currentUserId))
+                    workUserIds.Add(currentUserId);
+
+                foreach (var idUser in workUserIds)
+                {
+                    if (ticket.AssignedUsers.Any(a => a.IdUser == idUser) || ticket.IdUserAssigned == idUser)
+                        continue;
+
+                    _context.TicketUserAssignments.Add(new TicketUserAssignment
+                    {
+                        IdTicket = ticket.Id,
+                        IdUser = idUser,
+                        AssignedDate = DateTime.Now,
+                        AssignedBy = currentUserId
+                    });
+
+                    ticket.IdUserAssigned ??= idUser;
+                }
+
+                if (!HasAssignedUserInMemory(ticket))
+                    return false;
+
+                // Registrare un intervento assegna chi ci ha lavorato, e basta. Prima portava il
+                // ticket in uno stato "in lavorazione" a se': quello stato non esiste piu' dentro
+                // l'azienda, perche' un ticket assegnato e' gia' un ticket su cui si lavora.
+                await ApplyAssignmentStateAsync(ticket);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(TicketsService), nameof(StartWorkAsync), EventsTypes.Error, ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Lo stato segue l'assegnazione: assegnato a qualcuno o a un gruppo, il ticket e'
+        /// "assegnato"; senza nessuno sopra torna "aperto". Su un ticket chiuso non si tocca niente,
+        /// perche' cambiargli stato lo riaprirebbe di fatto.
+        /// <para>
+        /// Prima qui si preservava anche "in lavorazione". Quello stato non esiste piu' dentro
+        /// l'azienda: un ticket assegnato e' un ticket su cui si lavora, e distinguere le due cose
+        /// raccontava chi aveva premuto quale pulsante invece del punto a cui e' il lavoro.
+        /// </para>
+        /// </summary>
+        private async Task ApplyAssignmentStateAsync(Ticket ticket)
+        {
+            if (ticket.Closed)
+                return;
+
+            var target = HasAnyAssigneeInMemory(ticket)
+                ? eTicketStates.Assigned
+                : eTicketStates.Created;
+
+            ticket.IdState = (await GetIdState(target))?.Id ?? ticket.IdState;
+        }
+
+        private bool HasAssignedUserInMemory(Ticket ticket)
+            => !string.IsNullOrWhiteSpace(ticket.IdUserAssigned)
+                || (ticket.AssignedUsers?.Any(a =>
+                    !string.IsNullOrWhiteSpace(a.IdUser)
+                    && _context.Entry(a).State != EntityState.Deleted) ?? false);
+
+        private bool HasAnyAssigneeInMemory(Ticket ticket)
+            => HasAssignedUserInMemory(ticket) || ticket.IdGroupAssigned != null;
 
         /// <summary>
         /// Un utente puo' lavorare sul ticket se e' nel gruppo a cui e' smistato oppure se e' fra

@@ -30,6 +30,13 @@
                 <span class="material-icons nav-icon">event</span>
                 <span class="nav-text">@Localize["Agenda"]</span>
             </NavLink>
+
+            @* Quello che si apre la mattina per sapere cosa fare. Sta al primo livello perche' si
+               usa ogni giorno, e non dentro Service perche' contiene sia assistenza sia commesse. *@
+            <NavLink class="nav-link" href="Lavori" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                <span class="material-icons nav-icon">checklist</span>
+                <span class="nav-text">@Localize["Lavori"]</span>
+            </NavLink>
         </div>
 
         <!-- CRM Section -->
@@ -142,6 +149,13 @@
                     <NavLink class="nav-link submenu-link" href="Tickets/Schedule" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">event_note</span>
                         <span class="nav-text">Pianificazione</span>
+                    </NavLink>
+
+                    @* Il lavoro registrato: chi ha fatto cosa, e quando. Prima la pagina esisteva
+                       ma bisognava scrivere l'indirizzo a mano. *@
+                    <NavLink class="nav-link submenu-link" href="TicketInterventions" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">construction</span>
+                        <span class="nav-text">@Localize["Interventi"]</span>
                     </NavLink>
 
                     @* Prima le note spese si vedevano solo scendendo dentro un intervento: di

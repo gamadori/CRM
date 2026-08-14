@@ -17,7 +17,7 @@ else
                     <h3>Ticket #@_ticket.Id</h3>
                 </div>
                 <div class="ticket-status" style="background: @GetContrastBackgroundColor(_ticket.StateColor); color: @GetContrastTextColor(_ticket.StateColor);">
-                    <span class="status-text">@_ticket.StateDesc</span>
+                    <span class="status-text">@_ticket.State</span>
                 </div>
             </div>
         </div>
@@ -33,51 +33,69 @@ else
             </div>
         </div>
 
-        <!-- Info Grid -->
+        @* Stessa disposizione della scheda completa: i dati del ticket in una colonna, il cliente
+           nelle altre. Divisi in tre schedine corte lasciavano buchi in fondo alla riga. *@
         <div class="info-grid">
-            <!-- Date/Time Section -->
-            @if (_ticket.TicketType.Date != (int)PropertyStates.No)
-            {
-                <div class="info-card">
-                    <div class="info-card-header">
-                        <span class="material-icons">event</span>
-                        <span class="info-label">Data e Orario</span>
+            <div class="info-card">
+                <div class="info-card-header">
+                    <span class="material-icons">category</span>
+                    <span class="info-label">Dati del ticket</span>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-row">
+                        <span class="info-key"><DisplayName For="@(() => _ticket.DescType)" /></span>
+                        <span class="info-value">@_ticket.DescType</span>
                     </div>
-                    <div class="info-card-body">
+                    <div class="info-row">
+                        <span class="info-key"><DisplayName For="@(() => _ticket.DateOpened)" /></span>
+                        <span class="info-value">@_ticket.DateOpened.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+
+                    @if (_ticket.TicketType?.Date != (int)PropertyStates.No)
+                    {
                         <div class="info-row">
                             <span class="info-key"><DisplayName For="@(() => _ticket.Date)" /></span>
                             <span class="info-value">@(_ticket.Date?.ToShortDateString() ?? "-")</span>
                         </div>
-                        @if (_ticket.TicketType.Time != (int)PropertyStates.No)
+
+                        @if (_ticket.TicketType?.Time != (int)PropertyStates.No)
                         {
                             <div class="info-row">
                                 <span class="info-key"><DisplayName For="@(() => _ticket.Time)" /></span>
-                                <span class="info-value time-badge">
-                                    @if (_ticket.Time.HasValue)
-                                    {
+                                @* La cornice solo se un orario c'e' davvero: su un trattino sembrava
+                                   un campo da compilare. *@
+                                @if (_ticket.Time.HasValue)
+                                {
+                                    <span class="info-value time-badge">
                                         <span class="material-icons">schedule</span>
                                         @_ticket.Time.Value.ToString("HH:mm")
-                                    }
-                                    else
-                                    {
-                                        <text>-</text>
-                                    }
-                                </span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="info-value">-</span>
+                                }
                             </div>
                         }
-                        @if (_ticket.TicketType.DateEnd != (int)PropertyStates.No)
+
+                        @if (_ticket.TicketType?.DateEnd != (int)PropertyStates.No)
                         {
                             <div class="info-row">
                                 <span class="info-key"><DisplayName For="@(() => _ticket.DateEnd)" /></span>
                                 <span class="info-value">@(_ticket.DateEnd?.ToShortDateString() ?? "-")</span>
                             </div>
                         }
+                    }
+
+                    <div class="info-row">
+                        <span class="info-key"><DisplayName For="@(() => _ticket.DateExpired)" /></span>
+                        <span class="info-value">@(_ticket.DateExpired?.ToShortDateString() ?? "-")</span>
                     </div>
                 </div>
-            }
+            </div>
 
-            <!-- Company & Contact -->
-            <div class="info-card">
+            @* Il cliente occupa due colonne: chiude la riga e i suoi valori sono i piu' lunghi. *@
+            <div class="info-card client-card">
                 <div class="info-card-header">
                     <span class="material-icons">business</span>
                     <span class="info-label">Cliente</span>
@@ -85,33 +103,42 @@ else
                 <div class="info-card-body">
                     <div class="info-row">
                         <span class="info-key"><DisplayName For="@(() => _ticket.Company)" /></span>
-                        <span class="info-value company-name">@_ticket.Company.RagioneSociale</span>
+                        <span class="info-value company-name">@_ticket.Company</span>
                     </div>
-                    @if (!string.IsNullOrEmpty(_ticket.Article?.NameComplete) && _ticket.TicketType.IdArticolo != (int)PropertyStates.No)
+
+                    @if (!string.IsNullOrWhiteSpace(_ticket.Product))
                     {
                         <div class="info-row">
-                            <span class="info-key"><DisplayName For="@(() => _ticket.IdArticle)" /></span>
-                            <span class="info-value">@_ticket.Article?.NameComplete</span>
+                            <span class="info-key"><DisplayName For="@(() => _ticket.Product)" /></span>
+                            <span class="info-value">@_ticket.Product</span>
                         </div>
                     }
-                </div>
-            </div>
 
-            <!-- Ticket Type -->
-            <div class="info-card">
-                <div class="info-card-header">
-                    <span class="material-icons">category</span>
-                    <span class="info-label">Tipo e Dettagli</span>
-                </div>
-                <div class="info-card-body">
-                    <div class="info-row">
-                        <span class="info-key"><DisplayName For="@(() => _ticket.IdType)" /></span>
-                        <span class="info-value">@_ticket.TicketType.Desc</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-key"><DisplayName For="@(() => _ticket.DateOpened)" /></span>
-                        <span class="info-value">@_ticket.DateOpened.ToString("dd/MM/yyyy HH:mm")</span>
-                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_ticket.Article) && _ticket.TicketType?.IdArticolo != (int)PropertyStates.No)
+                    {
+                        <div class="info-row">
+                            <span class="info-key"><DisplayName For="@(() => _ticket.Article)" /></span>
+                            <span class="info-value">@_ticket.Article</span>
+                        </div>
+                    }
+
+                    @* Di che lavoro si tratta: con l'entita' questi due campi non arrivavano, e
+                       l'anteprima di un ticket di produzione non diceva di quale commessa fosse. *@
+                    @if (!string.IsNullOrWhiteSpace(_ticket.CommessaCode))
+                    {
+                        <div class="info-row">
+                            <span class="info-key">@Localize["Commessa"]</span>
+                            <span class="info-value">@_ticket.CommessaCode</span>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(_ticket.CommessaFaseName))
+                    {
+                        <div class="info-row">
+                            <span class="info-key"><DisplayName For="@(() => _ticket.CommessaFaseName)" /></span>
+                            <span class="info-value">@_ticket.CommessaFaseName</span>
+                        </div>
+                    }
                 </div>
             </div>
 

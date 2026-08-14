@@ -140,6 +140,12 @@ namespace CRM.Client.Pages.Tickets
 
         private int? _claimingTicketId = null;
 
+        /// <summary>
+        /// Natura del lavoro: null = tutto, true = solo commessa, false = solo assistenza. Il filtro
+        /// e' applicato dal server (TicketFilter.HasCommessa), come nella pianificazione ticket.
+        /// </summary>
+        private bool? _hasCommessa = null;
+
         /// <summary>Filtri di rotta con cui la griglia e' stata caricata l'ultima volta.</summary>
         private int? _loadedTypeSearch = null;
 
@@ -243,6 +249,16 @@ namespace CRM.Client.Pages.Tickets
             await LoadData();
         }
 
+        /// <summary>Cambia la natura del lavoro mostrata e ricarica dal server.</summary>
+        private async Task SetCommessaFilter(bool? hasCommessa)
+        {
+            if (_hasCommessa == hasCommessa)
+                return;
+
+            _hasCommessa = hasCommessa;
+            await LoadData();
+        }
+
         private async Task LoadDataTickets(object param = null)
         {
            
@@ -259,11 +275,18 @@ namespace CRM.Client.Pages.Tickets
             try
             {
                 
+                // Ordine di partenza: la scadenza piu' vicina in cima, cioe' cosa va fatto per
+                // primo. Va imposto qui perche' al primo caricamento la griglia non manda ancora
+                // alcun ordinamento, e il servizio ripiegherebbe sulla data del ticket.
+                paging.OrderBy = "DateExpired asc";
+
                 if (args != null)
                 {
                     paging.Skip = args.Skip;
                     paging.Top = args.Top;
-                    paging.OrderBy = args.OrderBy;
+
+                    if (!string.IsNullOrWhiteSpace(args.OrderBy))
+                        paging.OrderBy = args.OrderBy;
 
                     if (args.Filters != null && args.Filters.Any())
                     {
@@ -280,6 +303,7 @@ namespace CRM.Client.Pages.Tickets
                 paging.IdDeal = IdDeal;
                 paging.IdCommessaFase = IdCommessaFase;
                 paging.IdCommessa = IdCommessa;
+                paging.HasCommessa = _hasCommessa;
 
                 if (_idUser != null)
                     paging.IdUserAssigned = _idUser;
@@ -506,9 +530,6 @@ namespace CRM.Client.Pages.Tickets
         {
             switch ((TicketTypeSearch)TypeSearch)
             {
-                case TicketTypeSearch.Working:
-                    return Localize["Tickets in Lavorazioni"];
-
                 case TicketTypeSearch.Closed:
                     return Localize["Tickets Chiusi"];
 
@@ -520,6 +541,18 @@ namespace CRM.Client.Pages.Tickets
 
             }
             return "Tickets";
+        }
+
+        private string DisplayState(TicketDTO? ticket)
+        {
+            var state = ticket?.State ?? eTicketStates.Created.ToString();
+
+            // A questo stato ci arriva soltanto il cliente: dentro l'azienda "in lavorazione" non
+            // esiste piu', un ticket assegnato e' un ticket su cui si lavora.
+            if (state == eTicketStates.Processing.ToString())
+                return Localize["In lavorazione"];
+
+            return Localize[state];
         }
 
         private void CellRender(DataGridCellRenderEventArgs<TicketDTO> args)

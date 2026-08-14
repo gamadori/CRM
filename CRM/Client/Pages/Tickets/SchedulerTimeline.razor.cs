@@ -200,7 +200,7 @@ namespace CRM.Client.Pages.Tickets
 
             foreach (var ticket in _allTickets)
             {
-                if (ticket.Time.HasValue)
+                if (ticket.Time.HasValue && ticket.Time.Value != TimeOnly.MinValue)
                 {
                     var slot = _timeSlots.FirstOrDefault(s =>
                         ticket.Time.Value >= s.Start && ticket.Time.Value < s.End);
@@ -243,8 +243,14 @@ namespace CRM.Client.Pages.Tickets
                 Description = ticket.Description ?? string.Empty,
                 Status = ticket.IdState ?? 0,
                 Expired = ticket.DateExpired.HasValue && ticket.DateExpired.Value < DateTime.Now,
+                DateExpired = ticket.DateExpired,
                 StatusColor = ticket.StateColor ?? string.Empty,
-                StatusText = ticket.State ?? string.Empty
+                StatusText = ticket.State ?? string.Empty,
+                IdCommessa = ticket.IdCommessa,
+                CommessaFaseName = ticket.CommessaFaseName ?? string.Empty,
+                CommessaFaseStartDate = ticket.CommessaFaseStartDate,
+                CommessaFaseEndDate = ticket.CommessaFaseEndDate,
+                CommessaCode = ticket.CommessaCode ?? string.Empty
             };
         }
 

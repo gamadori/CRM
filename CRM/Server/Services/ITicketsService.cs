@@ -53,6 +53,19 @@ namespace CRM.Server.Services
         /// </summary>
         Task<EnsureAssignedResult> EnsureUsersAssignedAsync(int idTicket, IEnumerable<string> userIds, string? currentUserId);
 
+        /// <summary>
+        /// Evento operativo: qualcuno sta registrando lavoro vero sul ticket, e va assegnato al
+        /// ticket se non lo era. Non porta piu' a uno stato "in lavorazione" separato: dentro
+        /// l'azienda quello stato non esiste, un ticket assegnato e' un ticket su cui si lavora.
+        /// </summary>
+        Task<bool> StartWorkAsync(int idTicket, IEnumerable<string>? userIds, string? currentUserId);
+
+        /// <summary>
+        /// L'elenco dei lavori di chi sta guardando, gia' raggruppato e ordinato: assistenza,
+        /// commesse, e in fondo le fasi che non si possono ancora cominciare.
+        /// </summary>
+        Task<WorkListDTO> GetWorkListAsync();
+
         // Helpers
         Task<bool> TicketChangeAssigned(int id, string? idAssigned);
         Task CheckTicketExpired(int id);

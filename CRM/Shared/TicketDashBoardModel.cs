@@ -19,7 +19,7 @@ namespace CRM.Shared
         /// </summary>
         public int TicketsToClaim { get; set; }
 
-        public int TicketsWorking { get; set; }
+        public int TicketsAssigned { get; set; }
 
         public int TicketAssigned { get; set; }
 

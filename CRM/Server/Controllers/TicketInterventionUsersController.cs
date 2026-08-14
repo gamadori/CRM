@@ -212,6 +212,7 @@ namespace CRM.Server.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await _ticketsService.StartWorkAsync(intervention.IdTicket, assignUsers.UserIds, currentUserId);
 
                 return Ok(new {
                     message = "Utenti assegnati con successo all'intervento",

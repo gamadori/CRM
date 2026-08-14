@@ -52,25 +52,10 @@
                             <label>@Localize["User"]</label>
                         </div>
 
-                        @* Natura del lavoro. Il filtro va al server (TicketFilter.HasCommessa): con
-                           mesi carichi filtrare in memoria significherebbe scaricare tutto per
-                           mostrarne una parte. *@
-                        <div class="work-kind-filter" role="group" aria-label="Natura del lavoro">
-                            <button type="button" class="kind-btn @(_hasCommessa == null ? "active" : "")"
-                                    @onclick="@(() => SetCommessaFilter(null))">
-                                Tutti
-                            </button>
-                            <button type="button" class="kind-btn kind-assistenza @(_hasCommessa == false ? "active" : "")"
-                                    title="Ticket non legati ad alcuna commessa"
-                                    @onclick="@(() => SetCommessaFilter(false))">
-                                <span class="kind-dot"></span>Assistenza
-                            </button>
-                            <button type="button" class="kind-btn kind-commessa @(_hasCommessa == true ? "active" : "")"
-                                    title="Ticket legati a una fase di commessa"
-                                    @onclick="@(() => SetCommessaFilter(true))">
-                                <span class="kind-dot"></span>Commessa
-                            </button>
-                        </div>
+                        @* Qui non c'e' piu' il filtro fra assistenza e commessa: in questa pagina
+                           passano solo i ticket di assistenza. Quelli di una fase di commessa non
+                           hanno un giorno in cui qualcuno ha deciso di lavorarci, quindi su un
+                           calendario non ci stanno. Si leggono dall'elenco dei lavori, per scadenza. *@
                     </div>
                 </Filter>
                 <Details>

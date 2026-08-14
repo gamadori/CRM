@@ -42,12 +42,51 @@
 
                     <RedGSelectEnum TValue="TicketTypeSearch" TEnum="TicketTypeSearch" @bind-Value="TypeSearch" Change=OnChangeFilter Style="width: 200px;" Label="@Localize["Filter by State"]" AllowClear>
                     </RedGSelectEnum>
+
+                    @* Natura del lavoro, come nella pianificazione ticket. Il filtro va al server
+                       (TicketFilter.HasCommessa): filtrare in memoria vorrebbe dire scaricare tutto
+                       l'elenco per mostrarne una parte. *@
+                    <RadzenButton Text="@Localize["Tutti"]" Size="ButtonSize.Small"
+                                  ButtonStyle="@(_hasCommessa == null ? ButtonStyle.Primary : ButtonStyle.Light)"
+                                  Click="@(() => SetCommessaFilter(null))" />
+                    <RadzenButton Text="@Localize["Assistenza"]" Size="ButtonSize.Small"
+                                  ButtonStyle="@(_hasCommessa == false ? ButtonStyle.Primary : ButtonStyle.Light)"
+                                  Click="@(() => SetCommessaFilter(false))" />
+                    <RadzenButton Text="@Localize["Commessa"]" Size="ButtonSize.Small"
+                                  ButtonStyle="@(_hasCommessa == true ? ButtonStyle.Primary : ButtonStyle.Light)"
+                                  Click="@(() => SetCommessaFilter(true))" />
                 }
             </div>
         </HeaderTemplate>
         <Columns>
             <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Id)" FormatString="{0:000000}" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Id), typeof(Ticket))" />
             <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Date)" FormatString="{0:d}" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.Date), typeof(Ticket))" />
+
+            @* Scadenza: e' l'informazione che dice cosa fare per primo, e nell'elenco non c'era.
+               Ordinabile perche' DateExpired esiste anche sull'entita' Ticket, che e' cio' su cui
+               il servizio applica l'OrderBy dinamico. *@
+            <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.DateExpired)" FormatString="{0:d}"
+                                  Title="@TranslateHelper.GetDisplayName(nameof(Ticket.DateExpired), typeof(Ticket))"
+                                  SortOrder="SortOrder.Ascending" Filterable="false" />
+
+            @* Di che lavoro si tratta: per un ticket di produzione, commessa e fase. NON ordinabile
+               ne' filtrabile: sono campi del DTO che sull'entita' Ticket non esistono, e l'OrderBy
+               dinamico del servizio lavora sull'entita' - ordinarla svuoterebbe l'elenco. *@
+            <RadzenDataGridColumn TItem="TicketDTO" Context="item" Title="@Localize["Commessa"]"
+                                  Sortable="false" Filterable="false">
+                <Template Context="item">
+                    @if (!string.IsNullOrWhiteSpace(item.CommessaCode))
+                    {
+                        <div>
+                            <a href="@($"/Commesse/{item.IdCommessa}")">@item.CommessaCode</a>
+                            @if (!string.IsNullOrWhiteSpace(item.CommessaFaseName))
+                            {
+                                <div style="font-size:.85em;color:var(--crm-text-muted,#9e9e9e);">@item.CommessaFaseName</div>
+                            }
+                        </div>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
 
 
             <RadzenDataGridColumn TItem="TicketDTO" Property="@nameof(TicketDTO.Company)" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdCompany), typeof(Ticket))" Type="typeof(string)" FilterProperty="@nameof(TicketDTO.IdCompany)" FilterValue="@_companyFilter" FilterOperator="FilterOperator.Equals">
@@ -111,7 +150,7 @@
             <RadzenDataGridColumn Context="item" TItem="TicketDTO" Property="@nameof(TicketDTO.State)" SortProperty="IdState" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdState), typeof(Ticket))" Filterable="false" Sortable="true" TextAlign="Radzen.TextAlign.Center">
                 <Template Context="item">
                     <span class="ticket-state-text" style="@GetStateTextStyle(item?.StateColor)">
-                        @Localize[item?.State ?? eTicketStates.Created.ToString()]
+                        @DisplayState(item)
                     </span>
                     @if (item?.IsBlocked == true)
                     {

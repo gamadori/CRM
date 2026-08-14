@@ -40,6 +40,8 @@ namespace CRM.Client.Models
 
         public bool Expired { get; set; }
 
+        public DateTime? DateExpired { get; set; }
+
         /// <summary>
         /// ✅ NUOVO: Colore dello stato del ticket (es. #28a745 per "Aperto")
         /// </summary>
@@ -51,6 +53,22 @@ namespace CRM.Client.Models
         public string StatusText { get; set; }
 
         public int? IdCommessa { get; set; }
+
+        public string CommessaFaseName { get; set; } = string.Empty;
+
+        public DateTime? CommessaFaseStartDate { get; set; }
+
+        public DateTime? CommessaFaseEndDate { get; set; }
+
+        public bool HasExplicitEnd => DateEnd.HasValue;
+
+        public bool HasTime => Time.HasValue && Time.Value != TimeOnly.MinValue;
+
+        /// <summary>
+        /// True quando il ticket rappresenta un impegno deciso in agenda. Una data senza ora e
+        /// senza fine resta un promemoria da pianificare, non occupazione reale.
+        /// </summary>
+        public bool IsScheduled => HasTime || (DateEnd.HasValue && Date.HasValue && DateEnd.Value > Date.Value.Date);
 
         /// <summary>
         /// Codice commessa (es. CM-2026-0001), vuoto sui ticket di assistenza. Lo scheduler legge

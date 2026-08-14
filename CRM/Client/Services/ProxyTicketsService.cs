@@ -148,31 +148,36 @@ namespace CRM.Client.Services
             }
         }
 
-        public async Task<bool> UpdateScheduleAsync(int idTicket, TicketScheduleUpdateRequest request)
+        public async Task<TicketScheduleUpdateResult> UpdateScheduleAsync(int idTicket, TicketScheduleUpdateRequest request)
         {
             try
             {
                 var response = await _http.PutAsJsonAsync($"{_pathService}/{idTicket}/schedule", request);
-                return response.IsSuccessStatusCode;
+
+                if (!response.IsSuccessStatusCode)
+                    return new TicketScheduleUpdateResult { Saved = false };
+
+                return await response.Content.ReadFromJsonAsync<TicketScheduleUpdateResult>()
+                    ?? new TicketScheduleUpdateResult { Saved = true };
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Errore aggiornamento pianificazione ticket: {ex.Message}");
-                return false;
+                return new TicketScheduleUpdateResult { Saved = false };
             }
         }
 
-        public async Task<bool> StartProcessingAsync(int idTicket)
+        public async Task<WorkListDTO> GetWorkListAsync()
         {
             try
             {
-                var response = await _http.PutAsync($"{_pathService}/{idTicket}/start-processing", null);
-                return response.IsSuccessStatusCode;
+                return await _http.GetFromJsonAsync<WorkListDTO>($"{_pathService}/work-list")
+                    ?? new WorkListDTO { ErrorMessage = "Nessuna risposta dal server." };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Errore avvio lavorazione ticket: {ex.Message}");
-                return false;
+                Console.WriteLine($"Errore caricamento elenco lavori: {ex.Message}");
+                return new WorkListDTO { ErrorMessage = "Impossibile caricare l'elenco dei lavori." };
             }
         }
 

@@ -363,9 +363,6 @@
   <data name="Week" xml:space="preserve">
     <value>Week</value>
   </data>
-  <data name="Working" xml:space="preserve">
-    <value>In Progress</value>
-  </data>
   <data name="Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>

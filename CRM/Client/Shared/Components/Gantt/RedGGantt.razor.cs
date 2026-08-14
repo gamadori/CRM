@@ -31,7 +31,7 @@ namespace CRM.Client.Shared.Components.Gantt
         // +1: il bordo inferiore dell'asse, che va contato per tenere allineate le due teste
         private const int HeaderHeightPx = MonthBandPx + DayBandPx + 1;
         private const int BarHeightPx = 22;
-        private const int SummaryBarPx = 10;
+        private const int SummaryBarPx = BarHeightPx;
         private const int MilestonePx = 14;
         private const int MinDayPx = 8;
         private const int MaxDayPx = 96;
@@ -480,7 +480,8 @@ namespace CRM.Client.Shared.Components.Gantt
             var left = start * _dayPx + BarInset;
             var width = Math.Max(6, (end - start + 1) * _dayPx - (BarInset * 2));
             var top = _rows.IndexOf(row) * RowHeightPx + ((RowHeightPx - height) / 2);
-            return $"left:{left}px;top:{top}px;width:{width}px;height:{height}px;{BarColorStyle(row.Task)}";
+            var colorStyle = row.IsSummary ? string.Empty : BarColorStyle(row.Task);
+            return $"left:{left}px;top:{top}px;width:{width}px;height:{height}px;{colorStyle}";
         }
 
         /// <summary>
@@ -492,7 +493,6 @@ namespace CRM.Client.Shared.Components.Gantt
             var start = DisplayStartIndex(row);
             var end = DisplayEndIndex(row);
             var width = (end - start + 1) * _dayPx;
-            if (row.IsSummary) return "outside" + (EndsNearRightEdge(end) ? " flip" : string.Empty);
             if (width >= 68) return string.Empty;
             return "outside" + (EndsNearRightEdge(end) ? " flip" : string.Empty);
         }

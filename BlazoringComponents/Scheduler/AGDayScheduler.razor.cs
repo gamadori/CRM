@@ -65,24 +65,15 @@ namespace BlazoringComponents.Scheduler
 
             foreach (var item in Items)
             {
-                var model = new SchedulerTicket();
-
-                model.Id = item.GetPropertyValue<object>("Id").ToString();
-                model.DateStart = item.GetPropertyValue<DateTime>(DateProperty).Date;
-                model.TimeStart = item.GetPropertyValue<TimeOnly>(TimeProperty);
-                model.DateEnd = item.GetPropertyValue<DateTime>(DateEndProperty);
-                model.User = item.GetPropertyValue<string>(UserProperty);
-                model.Company = item.GetPropertyValue<string>(CompanyProperty);
-                model.Description = item.GetPropertyValue<string>(DescriptionProperty);
-                model.BackGroundColor = item.GetPropertyValue<string>(BackColorProperty);
-                
-                // ✅ REFACTORED: Usa GetPropertyValueSafe per gestione sicura reflection
-                model.AssignedUserNames = item.GetPropertyValueSafe<List<string>>("AssignedUserNames", new List<string>());
-                model.StatusColor = item.GetPropertyValueSafe<string>("StatusColor", string.Empty);
-                model.StatusText = item.GetPropertyValueSafe<string>("StatusText", string.Empty);
-                model.CommessaCode = item.GetPropertyValueSafe<string>("CommessaCode", string.Empty);
-
-                tickets.Add(model);
+                tickets.Add(SchedulerTicket.FromItem(
+                    item,
+                    DateProperty,
+                    TimeProperty,
+                    DateEndProperty,
+                    UserProperty,
+                    CompanyProperty,
+                    DescriptionProperty,
+                    BackColorProperty));
             }
 
             Calendar c = new Italy(Italy.Market.Settlement);
@@ -91,7 +82,12 @@ namespace BlazoringComponents.Scheduler
             _dayTickets.NameDay = _dayTickets.Date.GetDayName();
             _dayTickets.IsHoliday = c.isHoliday(DateCurrent.Date);
            // _dayTickets.Tickets = tickets.Where(x => x.DateStart >= DateCurrent.Date && x.DateStart < DateCurrent.Date.AddDays(1)).OrderBy(x=>x.TimeStart).ToList();
-            _dayTickets.Tickets = tickets.Where(x => DateCurrent.Date >= x.DateStart.Date && DateCurrent.Date <= x.DateEnd || x.DateStart.Date == DateCurrent.Date).OrderBy(x => x.TimeStart).ToList();
+            _dayTickets.Tickets = tickets
+                .Where(x => DateCurrent.Date >= x.DateStart.Date && DateCurrent.Date <= x.EffectiveDateEnd.Date
+                    || x.DateStart.Date == DateCurrent.Date)
+                .OrderBy(x => x.IsScheduled)
+                .ThenBy(x => x.TimeStart)
+                .ToList();
             _dayTickets.BgHead = DayHelper.GetBgHeader(_dayTickets.IsHoliday, true, true);
             _dayTickets.BgBody = DayHelper.GetBgBody(_dayTickets.IsHoliday);
             _dayTickets.IsMonthCurrent = true;

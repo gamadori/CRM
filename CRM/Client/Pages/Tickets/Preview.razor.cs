@@ -1,6 +1,7 @@
 ﻿using CRM.Client.Helpers;
 using CRM.Client.Services;
 using CRM.Shared;
+using CRM.Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -47,7 +48,13 @@ namespace CRM.Client.Pages.Tickets
         [Parameter]
         public bool ViewCommands { get; set; } = true;
 
-        private Ticket _ticket = null;
+        /// <summary>
+        /// Il DTO, non l'entita'. L'entita' arriva con solo cliente e tipo ticket popolati: prodotto,
+        /// commessa e fase restano vuoti, e l'anteprima di un ticket di produzione non diceva di che
+        /// lavoro si trattasse. Il DTO li porta gia' pronti, ed e' lo stesso che usa la scheda
+        /// completa, quindi le due schermate mostrano gli stessi dati.
+        /// </summary>
+        private TicketDTO _ticket = null;
 
         private ApplicationUser _userOpened = null;
 
@@ -88,7 +95,7 @@ namespace CRM.Client.Pages.Tickets
                 if (Id != null)
                 {
 
-                    _ticket = await _service.Get(Id.Value);
+                    _ticket = await _service.GetDetails(Id.Value);
                     _userOpened = await GetUserOrNull(_ticket.IdUserOpened);
 
                     // ⚠️ LEGACY: Mantieni per retrocompatibilità
@@ -98,7 +105,7 @@ namespace CRM.Client.Pages.Tickets
                     await LoadAssignedUsers();
                 }
                 else
-                    _ticket = new Ticket();
+                    _ticket = new TicketDTO();
 
 
             }

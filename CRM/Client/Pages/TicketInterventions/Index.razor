@@ -16,16 +16,61 @@
     PageSize="10" PagerHorizontalAlign="Radzen.HorizontalAlign.Center" TItem="TicketIntervention">
 
         <HeaderTemplate>
-            @if (_user != null && _user.CompanyPermits.Insert())
-            {
-                <div class="d-flex align-items-center gap-5">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                @if (_user != null && _user.CompanyPermits.Insert())
+                {
                     <RedGButton RGButtonType="RGButtonType.New" Click="@NewItem"></RedGButton>
-               
+                }
+
+                @* Chi e quando: la domanda "cosa ha fatto Tizio quel giorno" si pone qui, non
+                   aprendo due filtri di colonna. Dentro un ticket non servono. *@
+                @if (IdTicket == null)
+                {
+                    <RadzenDropDown TValue="string" @bind-Value="_idUserFiltro" Data="@_utenti"
+                                    TextProperty="NameComplete" ValueProperty="Id" AllowClear="true"
+                                    AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                    Placeholder="@Localize["Chi"]" Style="width: 220px;"
+                                    Change="@(async _ => await CambiaFiltroLavoro())" />
+
+                    <RadzenDatePicker TValue="DateTime?" @bind-Value="_giornoFiltro" DateFormat="dd/MM/yyyy"
+                                      AllowClear="true" Placeholder="@Localize["Giorno"]" Style="width: 170px;"
+                                      Change="@(async _ => await CambiaFiltroLavoro())" />
+
+                    @if (_idUserFiltro != null || _giornoFiltro != null)
+                    {
+                        <RadzenButton Icon="close" Text="@Localize["Azzera"]" ButtonStyle="ButtonStyle.Light"
+                                      Size="ButtonSize.Small" Click="@AzzeraFiltroLavoro" />
+                        <span class="ms-2">@_paging.TotalCount @Localize["interventi"]</span>
+                    }
+                }
             </div>
-            }
         </HeaderTemplate>
     <Columns>
         <RadzenDataGridColumn TItem="TicketIntervention" Property="@nameof(TicketIntervention.StartDateTime)" Title="@Localize["Date"]"  />
+
+        @* Su cosa ha lavorato. Senza queste, l'elenco dice quante ore ma non su quale macchina.
+           Non ordinabili ne' filtrabili: sono campi di comodo, sull'entita' non esistono e
+           l'ordinamento del server lavora sull'entita'. *@
+        @if (IdTicket == null)
+        {
+            <RadzenDataGridColumn TItem="TicketIntervention" Context="item" Title="@Localize["Ticket"]"
+                                  Sortable="false" Filterable="false" Width="220px">
+                <Template Context="item">
+                    <a href="@($"/Tickets/{item.IdTicket}/Info")">@item.TicketNumero</a>
+                    @if (!string.IsNullOrWhiteSpace(item.Cliente))
+                    {
+                        <div style="font-size:.85em;color:var(--crm-text-muted,#9e9e9e);">@item.Cliente</div>
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="TicketIntervention" Context="item" Title="@Localize["Commessa"]"
+                                  Sortable="false" Filterable="false" Width="150px">
+                <Template Context="item">
+                    @item.Commessa
+                </Template>
+            </RadzenDataGridColumn>
+        }
        
         @* <RadzenDataGridColumn TItem="TicketIntervention" Property="@nameof(TicketIntervention.EndDateTime)" Title="@Localize["Data Fine"]" /> *@
         <RadzenDataGridColumn  TItem="TicketIntervention"  Property="UserName" Title="@Localize["User Name"]"  Filterable="true" FilterProperty="User.UserName" FilterValue="@_filterUserName" FilterOperator="FilterOperator.Contains"  

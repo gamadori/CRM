@@ -276,8 +276,11 @@
 /* Info Grid */
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
     gap: 1.25rem;
+    /* Ogni scheda alta quanto il suo contenuto. Senza questo la griglia le allunga tutte
+       all'altezza della piu' alta, e quelle con due righe restano mezze vuote. */
+    align-items: start;
 }
 
 /* Info Cards */
@@ -350,19 +353,19 @@
     font-size: 0.9rem;
     color: var(--crm-text, #1e293b);
     font-weight: 500;
-    text-align: right;
+    text-align: left;
     word-break: break-word;
     /* Senza questi il valore non puo' restringersi nel flex e i contenuti lunghi
-       (es. il nome della fase di commessa) escono dalla card e vengono tagliati. */
+       (es. il nome della fase di commessa) escono dalla scheda e vengono tagliati. */
     min-width: 0;
     flex: 1 1 auto;
     overflow-wrap: anywhere;
 }
 
-/* Un badge dentro info-value va a capo invece di sforare la card. */
+/* Un badge dentro info-value va a capo invece di sforare la scheda. */
 .info-value .badge {
     white-space: normal;
-    text-align: right;
+    text-align: left;
 }
 
 /* La riga della commessa e' un link con icona: teniamoli sulla stessa riga, allineati. */
@@ -374,6 +377,12 @@
 .company-name {
     color: var(--crm-link, #3b82f6);
     font-weight: 600;
+}
+
+/* Scadenza gia' passata su un ticket aperto. */
+.value-scaduto {
+    color: var(--crm-danger, #dc2626);
+    font-weight: 700;
 }
 
 .time-badge {
@@ -647,8 +656,15 @@
     grid-column: span 1;
 }
 
+/* Il cliente chiude la prima riga: con tre colonne, i dati del ticket ne occupano una e il cliente
+   le altre due. Senza, la terza colonna restava vuota e la riga sembrava tagliata a meta'. */
+.client-card {
+    grid-column: span 1;
+}
+
 @media (min-width: 992px) {
-    .users-card {
+    .users-card,
+    .client-card {
         grid-column: span 2;
     }
 }

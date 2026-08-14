@@ -30,6 +30,7 @@
 }
 else
 {
+    <div class="commessa-details-page">
     <!-- Header -->
     <div class="card border-0 shadow-sm mb-3">
         <div class="card-body">
@@ -82,37 +83,23 @@ else
                         }
                     </div>
                 </div>
-                <div class="text-end" style="min-width:230px;">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <div class="progress flex-grow-1" style="height:10px;">
+                @* Avanzamento, stato e comandi stanno insieme: sono le cose che si fanno alla
+                   commessa. Prima i due pulsanti erano in fondo alla riga delle date, come se
+                   fossero una settima data. *@
+                <div class="commessa-azioni">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="progress flex-grow-1" style="height:8px;">
                             <div class="progress-bar bg-success" style="width:@(_c.Progress)%"></div>
                         </div>
-                        <strong>@_c.Progress%</strong>
+                        <strong class="small">@_c.Progress%</strong>
                     </div>
                     <RadzenDropDown TValue="CommessaStates" Value="_c.State" Data="_stateOptions" TextProperty="Text" ValueProperty="Value"
-                                    Style="width:210px" Change="@(args => OnChangeState((CommessaStates)args))" />
-                </div>
-            </div>
-
-            <hr class="my-3" />
-            <div class="row g-3 small">
-                <div class="col-6 col-md-2"><div class="text-muted">@Localize["Inizio piano"]</div><strong>@_c.StartDatePlanned.ToString("dd/MM/yyyy")</strong></div>
-                <div class="col-6 col-md-2"><div class="text-muted">@Localize["Consegna"]</div><strong>@_c.EndDatePlanned.ToString("dd/MM/yyyy")</strong></div>
-                <div class="col-6 col-md-2">
-                    <div class="text-muted">@Localize["Data prevista"]</div>
-                    <strong class="@(_c.IsExpectedLate ? "text-danger" : "")">@(_c.ExpectedEndDate?.ToString("dd/MM/yyyy") ?? "-")</strong>
-                    @if (_c.IsExpectedLate)
-                    {
-                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">+@_c.ExpectedDelayDays gg</span>
-                    }
-                </div>
-                <div class="col-6 col-md-2"><div class="text-muted">@Localize["Inizio effettivo"]</div><strong>@(_c.StartDateActual?.ToString("dd/MM/yyyy") ?? "-")</strong></div>
-                <div class="col-6 col-md-2"><div class="text-muted">@Localize["Fine effettiva"]</div><strong>@(_c.EndDateActual?.ToString("dd/MM/yyyy") ?? "-")</strong></div>
-                <div class="col-6 col-md-2"><div class="text-muted">@Localize["Ore a budget"]</div><strong>@(_c.BudgetHours?.ToString() ?? "-")</strong></div>
-                <div class="col-6 col-md-2 text-md-end d-flex gap-2 justify-content-md-end">
-                    <RadzenButton Icon="event_repeat" Text="@Localize["Riprogramma"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
-                                  Click="OpenReschedule" Disabled="@(_c.State is CommessaStates.Delivered or CommessaStates.Cancelled)" />
-                    <RadzenButton Icon="edit" Text="@Localize["Modifica"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="ToggleEdit" />
+                                    Style="width:100%" Change="@(args => OnChangeState((CommessaStates)args))" />
+                    <div class="d-flex gap-2">
+                        <RadzenButton Icon="event_repeat" Text="@Localize["Riprogramma"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                      Click="OpenReschedule" Disabled="@(_c.State is CommessaStates.Delivered or CommessaStates.Cancelled)" />
+                        <RadzenButton Icon="edit" Text="@Localize["Modifica"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="ToggleEdit" />
+                    </div>
                 </div>
             </div>
 
@@ -261,20 +248,20 @@ else
                                     }
                                     else
                                     {
+                                        @* A commessa chiusa: promessa contro fine effettiva. Aperta:
+                                           promessa contro dove il piano dice che si andra' a finire.
+                                           Prima il secondo termine era OGGI, e usciva il conto alla
+                                           rovescia travestito da scostamento. *@
                                         <div class="d-flex flex-wrap align-items-baseline gap-2">
                                             <strong class="fs-5">@_c.EndDateBaseline!.Value.ToString("dd/MM/yyyy")</strong>
                                             <span class="material-icons text-muted" style="font-size:16px;">arrow_forward</span>
-                                            <strong class="fs-5">@(_c.EndDateActual?.ToString("dd/MM/yyyy") ?? DateTime.Today.ToString("dd/MM/yyyy"))</strong>
+                                            <strong class="fs-5">@((_c.EndDateActual ?? _c.ExpectedEndDate ?? _c.EndDatePlanned).ToString("dd/MM/yyyy"))</strong>
                                             <span class="badge @DeltaBadge(_c.DeliveryDeltaDays)">@DeltaDaysText(_c.DeliveryDeltaDays)</span>
                                         </div>
                                         <div class="small text-muted mt-1">
                                             @(_c.EndDateActual == null
-                                                ? Localize["promessa all'avvio, confrontata con oggi"]
+                                                ? Localize["promessa all'avvio, confrontata con la fine prevista dalle fasi"]
                                                 : Localize["promessa all'avvio, confrontata con la fine effettiva"])
-                                            @if (_c.EndDateBaseline!.Value.Date != _c.EndDatePlanned.Date)
-                                            {
-                                                <text> · @Localize["consegna operativa"] @_c.EndDatePlanned.ToString("dd/MM/yyyy")</text>
-                                            }
                                         </div>
                                     }
                                 </div>
@@ -306,14 +293,91 @@ else
                     </div>
                 </div>
 
-                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
-                    <div class="text-muted small">@Localize["Fasi"]</div><div class="fs-3 fw-bold">@_c.PhaseCount</div></div></div></div>
-                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
-                    <div class="text-muted small">@Localize["Ticket"]</div><div class="fs-3 fw-bold">@_c.TicketCount</div></div></div></div>
-                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
-                    <div class="text-muted small">@Localize["Fasi completate"]</div><div class="fs-3 fw-bold">@_fasi.Count(f => f.State == CommessaFaseStates.Done)/@_fasi.Count</div></div></div></div>
-                <div class="col-md-3"><div class="card border-0 shadow-sm h-100"><div class="card-body text-center">
-                    <div class="text-muted small">@Localize["Giorni alla consegna"]</div><div class="fs-3 fw-bold @( (_c.EndDatePlanned.Date - DateTime.Today).Days < 0 ? "text-danger" : "")">@((_c.EndDatePlanned.Date - DateTime.Today).Days)</div></div></div></div>
+                @* Le date e i numeri con lo stesso modello a schede del resto dell'applicazione.
+                   Le date stavano in testa alla pagina, sparse su sei colonne larghe mezzo schermo;
+                   i numeri erano quattro riquadri enormi per quattro cifre. *@
+                <div class="col-12">
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-card-header">
+                                <span class="material-icons">event</span>
+                                <span class="info-label">@Localize["Date"]</span>
+                            </div>
+                            <div class="info-card-body">
+                                @* Tre date diverse che prima si chiamavano quasi tutte "consegna".
+                                   Qui ognuna dice il suo ruolo: cosa e' stato promesso, su cosa si
+                                   sta lavorando adesso, dove il piano dice che si andra' a finire. *@
+                                @if (_c.HasBaseline)
+                                {
+                                    <div class="info-row">
+                                        <span class="info-key">@Localize["Consegna promessa"]</span>
+                                        <span class="info-value">@_c.EndDateBaseline!.Value.ToString("dd/MM/yyyy")</span>
+                                    </div>
+                                }
+                                <div class="info-row">
+                                    <span class="info-key">@Localize["Consegna pianificata"]</span>
+                                    <span class="info-value">@_c.EndDatePlanned.ToString("dd/MM/yyyy")</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-key">@Localize["Fine prevista dalle fasi"]</span>
+                                    <span class="info-value @(_c.IsExpectedLate ? "value-late" : "")">
+                                        @(_c.ExpectedEndDate?.ToString("dd/MM/yyyy") ?? "-")
+                                        @if (_c.IsExpectedLate)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1">+@_c.ExpectedDelayDays gg</span>
+                                        }
+                                    </span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-key">@Localize["Inizio piano"]</span>
+                                    <span class="info-value">@_c.StartDatePlanned.ToString("dd/MM/yyyy")</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-key">@Localize["Inizio effettivo"]</span>
+                                    <span class="info-value">@(_c.StartDateActual?.ToString("dd/MM/yyyy") ?? "-")</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-key">@Localize["Fine effettiva"]</span>
+                                    <span class="info-value">@(_c.EndDateActual?.ToString("dd/MM/yyyy") ?? "-")</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-card">
+                            <div class="info-card-header">
+                                <span class="material-icons">tag</span>
+                                <span class="info-label">@Localize["Numeri"]</span>
+                            </div>
+                            <div class="info-card-body">
+                                <div class="info-row">
+                                    <span class="info-key">@Localize["Fasi"]</span>
+                                    <span class="info-value">@_c.PhaseCount</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-key">@Localize["Fasi completate"]</span>
+                                    <span class="info-value">@_fasi.Count(f => f.State == CommessaFaseStates.Done)/@_fasi.Count</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-key">@Localize["Ticket"]</span>
+                                    <span class="info-value">@_c.TicketCount</span>
+                                </div>
+                                @* Contato sulla consegna pianificata, cioe' quella su cui lavora
+                                   l'officina adesso. Detto nell'etichetta, perche' con tre date in
+                                   giro "giorni alla consegna" da solo non dice quale. *@
+                                <div class="info-row">
+                                    <span class="info-key">@Localize["Giorni alla pianificata"]</span>
+                                    <span class="info-value @((_c.EndDatePlanned.Date - DateTime.Today).Days < 0 ? "value-late" : "")">
+                                        @((_c.EndDatePlanned.Date - DateTime.Today).Days)
+                                    </span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-key">@Localize["Ore a budget"]</span>
+                                    <span class="info-value">@(_c.BudgetHours?.ToString() ?? "-")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 @if (!string.IsNullOrWhiteSpace(_c.Description) || !string.IsNullOrWhiteSpace(_c.Note))
                 {
                     <div class="col-12"><div class="card border-0 shadow-sm"><div class="card-body">
@@ -444,6 +508,7 @@ else
                                             OnClickDetails="OpenTicket" OnClickEdit="EditTicket" />
             break;
     }
+    </div>
 }
 
 @code {

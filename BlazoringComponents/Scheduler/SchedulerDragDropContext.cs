@@ -13,7 +13,7 @@ namespace BlazoringComponents.Scheduler
 
         public TimeOnly? Time { get; set; }
 
-        public DateTime DateEnd { get; set; }
+        public DateTime? DateEnd { get; set; }
     }
 
     public class SchedulerDragDropContext
@@ -37,10 +37,11 @@ namespace BlazoringComponents.Scheduler
             if (DraggedTicket == null || !OnTicketMove.HasDelegate)
                 return;
 
+            var dropHasTime = time.HasValue;
             var effectiveTime = time ?? DraggedTicket.TimeStart;
             var newStart = date.Date + (effectiveTime?.ToTimeSpan() ?? TimeSpan.Zero);
             var oldStart = DraggedTicket.DateStart.Date + (DraggedTicket.TimeStart?.ToTimeSpan() ?? TimeSpan.Zero);
-            var duration = DraggedTicket.DateEnd > oldStart
+            var duration = DraggedTicket.HasExplicitEnd && DraggedTicket.DateEnd > oldStart
                 ? DraggedTicket.DateEnd - oldStart
                 : TimeSpan.FromHours(1);
 
@@ -49,7 +50,9 @@ namespace BlazoringComponents.Scheduler
                 Ticket = DraggedTicket,
                 Date = date.Date,
                 Time = effectiveTime,
-                DateEnd = newStart.Add(duration)
+                DateEnd = dropHasTime || DraggedTicket.IsScheduled
+                    ? newStart.Add(duration)
+                    : null
             });
 
             Clear();

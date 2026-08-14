@@ -33,6 +33,13 @@ public class TicketChatVisibilityTests
     private const int IdAziendaMadre = 1;
     private const int IdRivenditore = 2;
     private const int IdClienteAltrui = 3;
+    private const int IdClienteDelRivenditore = 4;
+
+    /// <summary>Messaggio sul ticket del cliente di un altro.</summary>
+    private const int IdChatAltrui = 100;
+
+    /// <summary>Messaggio sul ticket di un cliente che il rivenditore segue davvero.</summary>
+    private const int IdChatSua = 200;
 
     private static ApplicationDbContext Db(string nome) => new(
         new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -49,18 +56,38 @@ public class TicketChatVisibilityTests
         db.Companies.AddRange(
             new Company { Id = IdAziendaMadre, RagioneSociale = "Noi", CompanyType = CompanyTypes.HeadCompany },
             new Company { Id = IdRivenditore, RagioneSociale = "Rivenditore", CompanyType = CompanyTypes.Reseller },
-            new Company { Id = IdClienteAltrui, RagioneSociale = "Cliente di un altro", CompanyType = CompanyTypes.Customer });
+            new Company { Id = IdClienteAltrui, RagioneSociale = "Cliente di un altro", CompanyType = CompanyTypes.Customer },
+            // Cliente seguito dal rivenditore: e' l'appartenenza all'albero (IdReseller) a metterlo
+            // nel suo perimetro, non il tipo di azienda.
+            new Company
+            {
+                Id = IdClienteDelRivenditore,
+                RagioneSociale = "Cliente del rivenditore",
+                CompanyType = CompanyTypes.Customer,
+                IdReseller = IdRivenditore
+            });
 
-        db.Tickets.Add(new Ticket { Id = 10, IdCompany = IdClienteAltrui, IdType = 1, Description = "Guasto" });
+        db.Tickets.AddRange(
+            new Ticket { Id = 10, IdCompany = IdClienteAltrui, IdType = 1, Description = "Guasto" },
+            new Ticket { Id = 20, IdCompany = IdClienteDelRivenditore, IdType = 1, Description = "Guasto" });
 
-        db.TicketChats.Add(new TicketChat
-        {
-            Id = 100,
-            IdTicket = 10,
-            IdUser = "tecnico",
-            Date = DateTime.Now,
-            Message = "Le confermo il preventivo di 4.500 euro"
-        });
+        db.TicketChats.AddRange(
+            new TicketChat
+            {
+                Id = IdChatAltrui,
+                IdTicket = 10,
+                IdUser = "tecnico",
+                Date = DateTime.Now,
+                Message = "Le confermo il preventivo di 4.500 euro"
+            },
+            new TicketChat
+            {
+                Id = IdChatSua,
+                IdTicket = 20,
+                IdUser = "tecnico",
+                Date = DateTime.Now,
+                Message = "Passiamo giovedi"
+            });
 
         await db.SaveChangesAsync();
         return nome;
@@ -121,6 +148,10 @@ public class TicketChatVisibilityTests
 
         Assert.NotNull(perimetro);
         Assert.DoesNotContain(IdClienteAltrui, perimetro!);
+
+        // ...ma il cliente che segue davvero c'e', altrimenti il perimetro sarebbe solo un modo
+        // elegante di non far vedere niente a nessuno.
+        Assert.Contains(IdClienteDelRivenditore, perimetro!);
     }
 
     [Fact]
@@ -218,6 +249,72 @@ public class TicketChatVisibilityTests
         var soloLaPropria = new List<int> { 99 };
 
         Assert.False(await LeggeIlPrezzoAsync(db, soloLaPropria, 99));
+    }
+
+    // ─── Il singolo messaggio, che passa da un'altra regola ──────────────────
+
+    /// <summary>
+    /// Controller con i permessi <b>veri</b>: qui non si prova il filtro della lista ma
+    /// <c>CanGetTicket</c>, quindi sostituirlo vorrebbe dire non provare niente.
+    /// </summary>
+    private static TicketChatsController ControllerConPermessiVeri(ApplicationDbContext db, ApplicationUser utente) =>
+        new(db,
+            Permessi(db, utente),
+            Substitute.For<ILogEventService>(),
+            Substitute.For<ITicketChatNotificationService>(),
+            Substitute.For<IArchiveService>());
+
+    [Fact]
+    public async Task Il_singolo_messaggio_di_un_cliente_altrui_e_negato_al_rivenditore()
+    {
+        // La lista e il singolo messaggio seguono due regole diverse: se questa fosse piu'
+        // permissiva, chiudere la lista non servirebbe a niente - basterebbe conoscere l'id.
+        var nome = await BancoAsync();
+        using var db = Db(nome);
+
+        var risposta = await ControllerConPermessiVeri(db, Utente("venditore", IdRivenditore))
+            .GetTicketChat(IdChatAltrui);
+
+        Assert.Null(risposta.Value);
+        Assert.IsType<Microsoft.AspNetCore.Mvc.BadRequestResult>(risposta.Result);
+    }
+
+    [Fact]
+    public async Task Il_singolo_messaggio_di_un_cliente_suo_arriva_al_rivenditore()
+    {
+        var nome = await BancoAsync();
+        using var db = Db(nome);
+
+        var risposta = await ControllerConPermessiVeri(db, Utente("venditore", IdRivenditore))
+            .GetTicketChat(IdChatSua);
+
+        Assert.NotNull(risposta.Value);
+        Assert.Contains("giovedi", risposta.Value!.Message);
+    }
+
+    [Fact]
+    public async Task Il_singolo_messaggio_arriva_sempre_all_azienda_madre()
+    {
+        var nome = await BancoAsync();
+        using var db = Db(nome);
+
+        var risposta = await ControllerConPermessiVeri(db, Utente("interno", IdAziendaMadre))
+            .GetTicketChat(IdChatAltrui);
+
+        Assert.NotNull(risposta.Value);
+    }
+
+    [Fact]
+    public async Task Il_singolo_messaggio_di_un_altra_azienda_e_negato_al_cliente()
+    {
+        var nome = await BancoAsync();
+        using var db = Db(nome);
+
+        var risposta = await ControllerConPermessiVeri(db, Utente("cliente", IdClienteDelRivenditore))
+            .GetTicketChat(IdChatAltrui);
+
+        Assert.Null(risposta.Value);
+        Assert.IsType<Microsoft.AspNetCore.Mvc.BadRequestResult>(risposta.Result);
     }
 
     [Fact]

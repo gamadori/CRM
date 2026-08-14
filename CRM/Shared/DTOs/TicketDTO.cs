@@ -242,6 +242,12 @@ namespace CRM.Shared.DTOs
         /// <summary>Commessa a cui il ticket appartiene tramite la fase; null se non e' lavoro di commessa.</summary>
         public int? IdCommessa { get; set; }
 
+        public string? CommessaFaseName { get; set; }
+
+        public DateTime? CommessaFaseStartDate { get; set; }
+
+        public DateTime? CommessaFaseEndDate { get; set; }
+
         /// <summary>
         /// Codice leggibile della commessa (es. CM-2026-0001). La sua presenza e' il discrimine fra
         /// lavoro pianificato di produzione e assistenza: lo scheduler distingue i due su questo.
@@ -263,6 +269,25 @@ namespace CRM.Shared.DTOs
     public class TicketScheduleUpdateRequest
     {
         public DateTime Date { get; set; }
+
+        public TimeOnly? Time { get; set; }
+
+        public DateTime? DateEnd { get; set; }
+    }
+
+    /// <summary>
+    /// Esito di una ripianificazione. Serve perche' un ticket di produzione va tenuto dentro la
+    /// finestra della sua fase: se la collocazione chiesta ne esce viene riportata dentro, e chi ha
+    /// trascinato deve sapere che il ticket non e' finito dove l'aveva lasciato.
+    /// </summary>
+    public class TicketScheduleUpdateResult
+    {
+        public bool Saved { get; set; }
+
+        /// <summary>Valorizzato solo se la collocazione chiesta e' stata corretta.</summary>
+        public string? Message { get; set; }
+
+        public DateTime? Date { get; set; }
 
         public TimeOnly? Time { get; set; }
 

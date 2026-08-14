@@ -81,6 +81,12 @@ namespace CRM.Client.Pages.Tickets
 
         private bool _isDownloadingPdf = false;
         private TicketDTO _ticket = null;
+
+        /// <summary>Scadenza superata su un ticket ancora aperto: su uno chiuso non e' un ritardo.</summary>
+        private bool IsScaduto => _ticket?.DateExpired != null
+            && !_ticket.Closed
+            && _ticket.DateExpired.Value.Date < DateTime.Today;
+        private ApplicationUser? _user = null;
         private List<ApplicationUser> _assignedUsers = new List<ApplicationUser>();
         private bool _isLoadingUsers = false;
         private PageHeaderModel? _pageHeader = null;
@@ -108,8 +114,8 @@ namespace CRM.Client.Pages.Tickets
 
         protected override async Task OnInitializedAsync()
         {
-            var user = await CurrentUserService.Get();
-            _canViewAiRouting = user?.CanTicketAssign == true && user?.CanViewInternalData == true;
+            _user = await CurrentUserService.Get();
+            _canViewAiRouting = _user?.CanTicketAssign == true && _user?.CanViewInternalData == true;
 
             await LoadData();
             await LoadInboundEmail();
@@ -511,6 +517,18 @@ namespace CRM.Client.Pages.Tickets
             await LoadData();
             Console.WriteLine($"[Details] Utenti assegnati dopo reload: {_assignedUsers.Count}");
             await InvokeAsync(StateHasChanged);
+        }
+
+        private string DisplayState(TicketDTO? ticket)
+        {
+            var state = ticket?.State ?? eTicketStates.Created.ToString();
+
+            // A questo stato ci arriva soltanto il cliente: dentro l'azienda "in lavorazione" non
+            // esiste piu', un ticket assegnato e' un ticket su cui si lavora.
+            if (state == eTicketStates.Processing.ToString())
+                return Localize["In lavorazione"];
+
+            return Localize[state];
         }
 
         private async Task ClaimTicket()

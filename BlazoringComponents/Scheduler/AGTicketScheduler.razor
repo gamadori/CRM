@@ -5,6 +5,7 @@
    resta a priorita' e scadenza, che sono dati veri. Il colore di fondo continua a dire "di chi e'". *@
 <div class="modern-ticket-card @(Ticket.IsCommessa ? "is-commessa" : "is-assistenza")"
      style="border-left-color: @Ticket.BackGroundColor"
+     title="@BuildCardTitle()"
      draggable="true"
      data-scheduler-ticket
      @onclick="HandleCardClick"
@@ -69,6 +70,17 @@
                 <span class="material-icons">precision_manufacturing</span>
                 <span class="commessa-code">@Ticket.CommessaCode</span>
             </div>
+            @if (Ticket.HasPhaseWindow)
+            {
+                <div class="ticket-phase-window" title="@GetPhaseWindowTitle()">
+                    <span class="material-icons">date_range</span>
+                    <span>@Ticket.PhaseWindowText</span>
+                    @if (!string.IsNullOrWhiteSpace(Ticket.CommessaFaseName))
+                    {
+                        <span class="phase-name">@Ticket.CommessaFaseName</span>
+                    }
+                </div>
+            }
         }
         <div class="ticket-description" title="@Ticket.Description">@Ticket.Description</div>
     </div>
@@ -81,7 +93,7 @@
              @onclick:stopPropagation="true">
             <div class="users-panel" @onclick:stopPropagation="true">
                 <div class="users-panel-header">
-                    <strong>👥 Utenti Assegnati (@Ticket.AssignedUserNames.Count)</strong>
+                    <strong>Utenti assegnati (@Ticket.AssignedUserNames.Count)</strong>
                     <button type="button" class="btn-close-custom" @onclick="ToggleUsersPanel">×</button>
                 </div>
                 <ul class="users-list">
@@ -162,6 +174,33 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .ticket-phase-window {
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+        color: #475569;
+        font-size: 0.68rem;
+        min-width: 0;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 0.08rem 0.25rem;
+    }
+
+    .ticket-phase-window .material-icons {
+        font-size: 0.78rem;
+        color: #64748b;
+        flex-shrink: 0;
+    }
+
+    .phase-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #64748b;
     }
 
     .modern-ticket-card:hover {

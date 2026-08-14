@@ -54,14 +54,6 @@ else
                     <span><strong>@Localize["Sposta"]</strong><small>@Localize["Modifica data e orario pianificati"]</small></span>
                     <span class="material-icons ticket-action-arrow">chevron_right</span>
                 </button>
-                <button type="button" class="ticket-action" disabled="@(_saving || !CanEditTicket || Item.IsCompleted || !HasAssignedUser)" @onclick="StartProcessing">
-                    <span class="material-icons">play_circle</span>
-                    <span>
-                        <strong>@Localize["Segna in lavorazione"]</strong>
-                        <small>@ProcessingAvailabilityText</small>
-                    </span>
-                    <span class="material-icons ticket-action-arrow">chevron_right</span>
-                </button>
                 <button type="button" class="ticket-action" @onclick="CreateFollowUp">
                     <span class="material-icons">add_task</span>
                     <span><strong>@Localize["Crea attività follow-up"]</strong><small>@Localize["Collega una nuova attività a questo ticket"]</small></span>
@@ -163,14 +155,6 @@ else
 
     private bool CanEditTicket => Item.Permits.Edit();
 
-    private bool HasAssignedUser => !string.IsNullOrWhiteSpace(Item.AssigneeName);
-
-    private string ProcessingAvailabilityText => Item.IsCompleted
-        ? Localize["Non disponibile per un ticket chiuso"]
-        : !HasAssignedUser
-            ? Localize["Assegna prima almeno un utente"]
-            : Localize["Comunica che il ticket è stato preso in carico"];
-
     private string CurrentSchedule => Item.Start.TimeOfDay == TimeSpan.Zero
         ? Item.Start.ToString("dd/MM/yyyy")
         : $"{Item.Start:dd/MM/yyyy HH:mm} - {Item.End:dd/MM/yyyy HH:mm}";
@@ -186,7 +170,7 @@ else
     private void OpenTicket()
     {
         DialogService.Close(false);
-        Navigation.NavigateTo($"/Tickets/{Item.SourceId}/Details");
+        Navigation.NavigateTo($"/Tickets/{Item.SourceId}/Info");
     }
 
     private async Task Assign()
@@ -245,39 +229,20 @@ else
             });
         _saving = false;
 
-        if (saved)
+        if (saved.Saved)
         {
-            Notification.Notify(NotificationSeverity.Success, Localize["Pianificazione"], Localize["Ticket spostato"]);
+            // Se il ticket appartiene a una fase di commessa puo' essere stato riportato dentro la
+            // finestra della fase: in quel caso l'orario scelto non e' quello che resta.
+            if (!string.IsNullOrWhiteSpace(saved.Message))
+                Notification.Notify(NotificationSeverity.Warning, Localize["Pianificazione"], saved.Message, 8000);
+            else
+                Notification.Notify(NotificationSeverity.Success, Localize["Pianificazione"], Localize["Ticket spostato"]);
+
             DialogService.Close(true);
         }
         else
         {
             Notification.Notify(NotificationSeverity.Error, Localize["Pianificazione"], Localize["Impossibile spostare il ticket"]);
-        }
-    }
-
-    private async Task StartProcessing()
-    {
-        var confirmed = await DialogService.Confirm(
-            string.Format(Localize["Segnare {0} come In lavorazione?"], Item.Title),
-            Localize["Conferma presa in carico"],
-            new ConfirmOptions { OkButtonText = Localize["Inizia lavorazione"], CancelButtonText = Localize["Annulla"] });
-
-        if (confirmed != true)
-            return;
-
-        _saving = true;
-        var saved = await TicketsService.StartProcessingAsync(Item.SourceId);
-        _saving = false;
-
-        if (saved)
-        {
-            Notification.Notify(NotificationSeverity.Success, Localize["Ticket"], Localize["Ticket segnato come In lavorazione"]);
-            DialogService.Close(true);
-        }
-        else
-        {
-            Notification.Notify(NotificationSeverity.Error, Localize["Ticket"], Localize["Impossibile aggiornare lo stato del ticket"]);
         }
     }
 

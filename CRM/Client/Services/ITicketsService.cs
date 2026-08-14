@@ -28,9 +28,10 @@ namespace CRM.Client.Services
 
         Task<List<TicketScheduleItemDTO>> GetScheduleItemsAsync(TicketFilter args);
 
-        Task<bool> UpdateScheduleAsync(int idTicket, TicketScheduleUpdateRequest request);
+        Task<TicketScheduleUpdateResult> UpdateScheduleAsync(int idTicket, TicketScheduleUpdateRequest request);
 
-        Task<bool> StartProcessingAsync(int idTicket);
+        /// <summary>I lavori dell'utente corrente, gia' raggruppati e ordinati dal server.</summary>
+        Task<WorkListDTO> GetWorkListAsync();
 
         Task<SemanticSearchResponse> SemanticSearch(SemanticSearchRequest request);
 

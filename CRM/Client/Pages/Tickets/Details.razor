@@ -27,7 +27,7 @@ else
                         <h3>Ticket #@_ticket.Id</h3>
                     </div>
                     <div class="ticket-status" style="background: @GetContrastBackgroundColor(_ticket.StateColor); color: @GetContrastTextColor(_ticket.StateColor);">
-                        <span class="status-text">@_ticket.State</span>
+                        <span class="status-text">@DisplayState(_ticket)</span>
                     </div>
                 </div>
             </div>
@@ -178,11 +178,13 @@ else
             </div>
 
             <div class="info-grid">
-                <!-- Ticket Type -->
+                @* Tipo, apertura e date stanno in una scheda sola. Divisi in due, la prima aveva due
+                   righe e la seconda tre: accanto alla scheda del cliente, che ne ha cinque,
+                   lasciavano un buco alto mezza pagina. Insieme sono cinque righe come il cliente. *@
                 <div class="info-card">
                     <div class="info-card-header">
                         <span class="material-icons">category</span>
-                        <span class="info-label">Tipo e Dettagli</span>
+                        <span class="info-label">Dati del ticket</span>
                     </div>
                     <div class="info-card-body">
                         <div class="info-row">
@@ -193,18 +195,9 @@ else
                             <span class="info-key"><DisplayName For="@(() => _ticket.DateOpened)" /></span>
                             <span class="info-value">@_ticket.DateOpened.ToString("dd/MM/yyyy HH:mm")</span>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Date/Time Section -->
-                @if (_ticket.TicketType.Date != (int)PropertyStates.No)
-                {
-                    <div class="info-card">
-                        <div class="info-card-header">
-                            <span class="material-icons">event</span>
-                            <span class="info-label">Data e Orario</span>
-                        </div>
-                        <div class="info-card-body">
+                        @if (_ticket.TicketType.Date != (int)PropertyStates.No)
+                        {
                             <div class="info-row">
                                 <span class="info-key"><DisplayName For="@(() => _ticket.Date)" /></span>
                                 <span class="info-value">@(_ticket.Date?.ToShortDateString() ?? "-")</span>
@@ -214,17 +207,20 @@ else
                             {
                                 <div class="info-row">
                                     <span class="info-key"><DisplayName For="@(() => _ticket.Time)" /></span>
-                                    <span class="info-value time-badge">
-                                        @if (_ticket.Time.HasValue)
-                                        {
+                                    @* La cornice del riquadro orario solo quando un orario c'e'
+                                       davvero: su un trattino sembrava un campo da compilare, e gli
+                                       altri valori vuoti della pagina sono trattini nudi. *@
+                                    @if (_ticket.Time.HasValue)
+                                    {
+                                        <span class="info-value time-badge">
                                             <span class="material-icons">schedule</span>
                                             @_ticket.Time.Value.ToString("HH:mm")
-                                        }
-                                        else
-                                        {
-                                            <text>-</text>
-                                        }
-                                    </span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="info-value">-</span>
+                                    }
                                 </div>
                             }
 
@@ -235,12 +231,23 @@ else
                                     <span class="info-value">@(_ticket.DateEnd?.ToShortDateString() ?? "-")</span>
                                 </div>
                             }
+                        }
+
+                        @* Entro quando va chiuso. Sui ticket di commessa e' la fine della fase, sugli
+                           altri i giorni concessi dal tipo. In rosso quando e' gia' passata. *@
+                        <div class="info-row">
+                            <span class="info-key"><DisplayName For="@(() => _ticket.DateExpired)" /></span>
+                            <span class="info-value @(IsScaduto ? "value-scaduto" : "")">
+                                @(_ticket.DateExpired?.ToShortDateString() ?? "-")
+                            </span>
                         </div>
                     </div>
-                }
+                </div>
 
-                <!-- Company & Contact -->
-                <div class="info-card">
+                @* Il cliente occupa due colonne: chiude la riga accanto ai dati del ticket, e i suoi
+                   valori - ragione sociale e prodotto - sono i piu' lunghi della pagina, quindi lo
+                   spazio in piu' serve davvero e non e' solo riempitivo. *@
+                <div class="info-card client-card">
                     <div class="info-card-header">
                         <span class="material-icons">business</span>
                         <span class="info-label">Cliente</span>

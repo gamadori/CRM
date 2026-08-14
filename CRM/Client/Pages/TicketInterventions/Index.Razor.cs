@@ -33,6 +33,9 @@ namespace CRM.Client.Pages.TicketInterventions
         ICurrentUserService userSigned { get; set; }
 
         [Inject]
+        IBaseRestService<ApplicationUser, UsersFilterModel, string> ServiceUsers { get; set; }
+
+        [Inject]
         IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
 
         [Inject]
@@ -102,13 +105,57 @@ namespace CRM.Client.Pages.TicketInterventions
 
         private int? _supportTypes;
 
+        /// <summary>
+        /// Chi e quando: i due filtri della domanda "cosa ha fatto Tizio in quel giorno". Vanno al
+        /// server, non alla griglia.
+        /// </summary>
+        private string _idUserFiltro = null;
+
+        private DateTime? _giornoFiltro = null;
+
+        /// <summary>Utenti fra cui scegliere. Caricati una volta sola, all'apertura.</summary>
+        private List<ApplicationUser> _utenti = new();
+
         private string _test = "";
         protected override async Task OnInitializedAsync()
         {
             pagingSummaryFormat = Localize["Displaying page {0} of {1} (total {2} records)"];
             _user = await userSigned.Get();
-      
+
+            // Il selettore utente serve solo nell'elenco generale: dentro un ticket si guardano
+            // gli interventi di quel ticket, chiunque li abbia fatti.
+            if (IdTicket == null)
+                await CaricaUtenti();
+
             await LoadData();
+        }
+
+        private async Task CaricaUtenti()
+        {
+            try
+            {
+                var risposta = await ServiceUsers.Get(new UsersFilterModel { PageSize = 200 });
+                _utenti = risposta.Items.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore caricamento utenti: {ex.Message}");
+            }
+        }
+
+        /// <summary>Cambia chi o quando e ricarica dal server.</summary>
+        private async Task CambiaFiltroLavoro()
+        {
+            _filter.Skip = 0;
+            await LoadData();
+            StateHasChanged();
+        }
+
+        private async Task AzzeraFiltroLavoro()
+        {
+            _idUserFiltro = null;
+            _giornoFiltro = null;
+            await CambiaFiltroLavoro();
         }
 
         public async Task LoadData(LoadDataArgs args = null)
@@ -143,6 +190,11 @@ namespace CRM.Client.Pages.TicketInterventions
 
 
                 _filter.IdTicket = IdTicket;
+                _filter.IdUser = _idUserFiltro;
+
+                // Un giorno solo: dall'inizio della giornata all'inizio di quella dopo.
+                _filter.DateFrom = _giornoFiltro?.Date;
+                _filter.DateTo = _giornoFiltro?.Date.AddDays(1);
 
                 if (args != null)
                 {

@@ -114,27 +114,19 @@ namespace BlazoringComponents.Scheduler
 
             foreach (var item in Items)
             {
-                var model = new SchedulerTicket
-                {
-                    Id = item.GetPropertyValue<object>("Id").ToString(),
-                    DateStart = item.GetPropertyValue<DateTime>(DateProperty).Date,
-                    TimeStart = item.GetPropertyValue<TimeOnly>(TimeProperty),
-                    DateEnd = item.GetPropertyValue<DateTime>(DateEndProperty),
-                    User = item.GetPropertyValue<string>(UserProperty),
-                    Company = item.GetPropertyValue<string>(CompanyProperty),
-                    Description = item.GetPropertyValue<string>(DescriptionProperty),
-                    BackGroundColor = item.GetPropertyValue<string>(BackColorProperty),
-                    AssignedUserNames = item.GetPropertyValueSafe<List<string>>("AssignedUserNames", new List<string>()),
-                    
-                    // ? NUOVO: Popola STATO del ticket
-                    StatusColor = item.GetPropertyValueSafe<string>("StatusColor", string.Empty),
-                    StatusText = item.GetPropertyValueSafe<string>("StatusText", string.Empty),
-                    CommessaCode = item.GetPropertyValueSafe<string>("CommessaCode", string.Empty)
-                };
+                var model = SchedulerTicket.FromItem(
+                    item,
+                    DateProperty,
+                    TimeProperty,
+                    DateEndProperty,
+                    UserProperty,
+                    CompanyProperty,
+                    DescriptionProperty,
+                    BackColorProperty);
 
                 // Filtra solo i ticket del giorno corrente
                 if (model.DateStart.Date == DateCurrent.Date || 
-                    (model.DateStart.Date <= DateCurrent.Date && model.DateEnd.Date >= DateCurrent.Date))
+                    (model.DateStart.Date <= DateCurrent.Date && model.EffectiveDateEnd.Date >= DateCurrent.Date))
                 {
                     _allTickets.Add(model);
                 }

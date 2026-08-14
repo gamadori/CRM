@@ -76,7 +76,7 @@ namespace CRM.Client.Pages.DashBoard
         private List<CalendarItemDTO> _todayAppointments = new();
         private CalendarItemDTO _nextAppointment = null;
 
-        private int OpenTicketsCount => (_model?.TicketsWorking ?? 0) + (_model?.TicketsNotAssigned ?? 0);
+        private int OpenTicketsCount => (_model?.TicketsAssigned ?? 0) + (_model?.TicketsNotAssigned ?? 0);
 
         private int OpenLoadPercent => Math.Min(100, OpenTicketsCount * 4);
 
@@ -212,9 +212,9 @@ namespace CRM.Client.Pages.DashBoard
             NavigationManager.NavigateTo("/Tickets/Create");
         }
 
-        protected void TicketWorking()
+        protected void TicketAssigned()
         {
-            NavigationManager.NavigateTo(Url($"/Tickets/Index/{(int)TicketTypeSearch.Working}"));
+            NavigationManager.NavigateTo(Url($"/Tickets/Index/{(int)TicketTypeSearch.Assigned}"));
         }
 
         protected void TicketExpired()
@@ -336,7 +336,7 @@ namespace CRM.Client.Pages.DashBoard
                 // Ignora errori nel segnare come letto
             }
 
-            NavigationManager.NavigateTo($"/Tickets/{ticketId}/Details");
+            NavigationManager.NavigateTo($"/Tickets/{ticketId}/Info");
         }
 
         /// <summary>

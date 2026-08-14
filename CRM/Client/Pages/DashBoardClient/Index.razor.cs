@@ -139,9 +139,9 @@ namespace CRM.Client.Pages.DashBoardClient
             NavigationManager.NavigateTo("/Companies/Customer/Details");
         }
 
-        private void TicketWorking()
+        private void TicketAssigned()
         {
-            NavigationManager.NavigateTo($"/Tickets/Index/{(int)TicketTypeSearch.Working}");
+            NavigationManager.NavigateTo($"/Tickets/Index/{(int)TicketTypeSearch.Assigned}");
         }
 
         private void Tickets()

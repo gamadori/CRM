@@ -125,9 +125,6 @@ namespace CRM.Client.Pages.Tickets.Customer
         {
             switch ((TicketTypeSearch)TypeSearch)
             {
-                case TicketTypeSearch.Working:
-                    return Localize["Tickets in Lavorazioni"];
-
                 case TicketTypeSearch.Closed:
                     return Localize["Tickets Chiusi"];
 

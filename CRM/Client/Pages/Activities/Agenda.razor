@@ -196,7 +196,7 @@
                 <span><i style="background:#455a64"></i> @Localize["Ticket"]</span>
                 <span><i style="background:#2563eb"></i> @Localize["Iniziative"]</span>
             </div>
-            <RadzenScheduler @ref="_scheduler" TItem="CalendarItemDTO" Data="_filteredItems" class="agenda-scheduler"
+            <RadzenScheduler @ref="_scheduler" TItem="CalendarItemDTO" Data="_calendarItems" class="agenda-scheduler"
                              StartProperty="Start" EndProperty="End" TextProperty="Title" SelectedIndex="0"
                              AppointmentSelect="OnAppointmentSelect" AppointmentRender="OnAppointmentRender">
                 <RadzenMonthView />
@@ -489,6 +489,14 @@
     private RadzenScheduler<CalendarItemDTO>? _scheduler;
     private List<CalendarItemDTO> _items = new();
     private List<CalendarItemDTO> _filteredItems = new();
+
+    /// <summary>
+    /// Sottoinsieme di <see cref="_filteredItems"/> che ha senso disegnare sul calendario. Un ticket
+    /// di commessa ne resta fuori: la sua data e' la scadenza della fase, non un momento in cui il
+    /// tecnico e' occupato. Resta pero' nell'elenco a sinistra, che e' dove si guarda cosa c'e' da
+    /// fare - per questo la distinzione si fa qui e non nella sorgente dei dati.
+    /// </summary>
+    private List<CalendarItemDTO> _calendarItems = new();
     private CalendarSummaryDTO _summary = new();
     private List<CalendarTeamMemberDTO> _users = new();
     private bool _loading = true;
@@ -645,6 +653,8 @@
             .ThenBy(i => i.Source)
             .ThenBy(i => i.SourceId)
             .ToList();
+
+        _calendarItems = _filteredItems.Where(i => i.PlacedOnCalendar).ToList();
 
         _summary = BuildSummary(_filteredItems);
     }

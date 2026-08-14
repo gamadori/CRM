@@ -67,21 +67,18 @@ namespace CRM.Shared
         [Display(Name = "Closed")]
         Closed,
 
-        [Display(Name = "Working")]
-        Working,
-
         [Display(Name = "NewMessage")]
-        NewMessage,
+        NewMessage = 6,
 
         [Display(Name = "ToBeInvoiced")]
-        ToBeInvoiced,
+        ToBeInvoiced = 7,
 
         [Display(Name = "Blocked")]
-        Blocked,
+        Blocked = 8,
 
         /// <summary>Assegnati a un gruppo e non ancora presi in carico: la coda del tecnico.</summary>
         [Display(Name = "ToClaim")]
-        ToClaim
+        ToClaim = 9
     }
 
    

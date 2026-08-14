@@ -1,3 +1,4 @@
+using CRM.Server.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -5,9 +6,13 @@ using Microsoft.EntityFrameworkCore;
 namespace CRM.Tests;
 
 /// <summary>
-/// Fine e scadenza di un ticket di produzione sono quelle della fase che esegue: qui si verifica
-/// che restino tali anche quando la fase si sposta (modifica diretta, cascata sui successori,
-/// riprogrammazione in blocco) e che i ticket chiusi restino con le loro date storiche.
+/// La fase di commessa detta la <b>scadenza</b> del ticket che la esegue, e sull'appuntamento e'
+/// un <b>vincolo</b>: lo riporta dentro la finestra se ne esce, ma non lo assegna. Prima la fine del
+/// ticket veniva incollata alla fine della fase, e l'agenda - che disegna un blocco da Date a
+/// DateEnd - mostrava il tecnico occupato per tutta la durata della fase, 30 giorni su 30 per una
+/// fase da 30 giorni. Qui si verifica che le due cose restino separate quando la fase si sposta
+/// (modifica diretta, cascata sui successori, riprogrammazione in blocco) e che i ticket chiusi
+/// restino con le loro date storiche.
 /// </summary>
 public class PhaseTicketDeadlineTests
 {
@@ -33,15 +38,114 @@ public class PhaseTicketDeadlineTests
         return ctx.Db.Tickets.AsNoTracking().Single(t => t.Id == id);
     }
 
+    // ─── La regola in isolamento ─────────────────────────────────────────────
+    // E' la stessa che applicano il salvataggio della fase, il collegamento del ticket e la
+    // ripianificazione dallo scheduler: provata qui una volta, non tre.
+
+    private static Ticket TicketNudo() => new()
+    {
+        Id = 1,
+        Description = string.Empty,
+        Numero = string.Empty,
+        CloseDescription = string.Empty,
+        CloseNote = string.Empty
+    };
+
     [Fact]
-    public async Task Spostare_la_fase_sposta_fine_e_scadenza_dei_suoi_ticket_aperti()
+    public void Una_fine_oltre_la_scadenza_viene_riportata_dentro_conservando_l_ora()
+    {
+        var inizio = new DateTime(2026, 3, 2);
+        var fine = new DateTime(2026, 3, 20);
+        var ticket = TicketNudo();
+        ticket.Date = inizio.AddHours(9);
+        ticket.DateEnd = new DateTime(2026, 4, 15, 17, 30, 0);
+
+        Assert.True(ProductionTicketDeadlines.Apply(ticket, inizio, fine));
+
+        Assert.Equal(fine.AddHours(17).AddMinutes(30), ticket.DateEnd);
+    }
+
+    [Fact]
+    public void Una_fine_dentro_la_finestra_non_viene_toccata()
+    {
+        var inizio = new DateTime(2026, 3, 2);
+        var fine = new DateTime(2026, 3, 20);
+        var ticket = TicketNudo();
+        ticket.Date = inizio.AddHours(9);
+        ticket.DateEnd = new DateTime(2026, 3, 10, 17, 30, 0);
+        ticket.DateExpired = fine;
+
+        Assert.False(ProductionTicketDeadlines.Apply(ticket, inizio, fine));
+
+        Assert.Equal(new DateTime(2026, 3, 10, 17, 30, 0), ticket.DateEnd);
+    }
+
+    /// <summary>Il punto di tutta la modifica: la fase non crea occupazione in agenda.</summary>
+    [Fact]
+    public void Una_fine_mai_pianificata_resta_vuota()
+    {
+        var inizio = new DateTime(2026, 3, 2);
+        var fine = new DateTime(2026, 3, 20);
+        var ticket = TicketNudo();
+        ticket.Date = inizio;
+        ticket.DateExpired = fine;
+
+        ProductionTicketDeadlines.Apply(ticket, inizio, fine);
+
+        Assert.Null(ticket.DateEnd);
+    }
+
+    [Fact]
+    public void Un_inizio_pianificato_dentro_la_finestra_non_viene_toccato()
+    {
+        var inizio = new DateTime(2026, 3, 2);
+        var fine = new DateTime(2026, 3, 20);
+        var scelto = new DateTime(2026, 3, 11, 14, 0, 0);
+        var ticket = TicketNudo();
+        ticket.Date = scelto;
+        ticket.DateExpired = fine;
+
+        Assert.False(ProductionTicketDeadlines.Apply(ticket, inizio, fine));
+
+        Assert.Equal(scelto, ticket.Date);
+    }
+
+    [Fact]
+    public void Un_inizio_prima_della_fase_viene_portato_all_apertura_conservando_l_ora()
+    {
+        var inizio = new DateTime(2026, 3, 2);
+        var fine = new DateTime(2026, 3, 20);
+        var ticket = TicketNudo();
+        ticket.Date = new DateTime(2026, 2, 10, 14, 0, 0);
+
+        Assert.True(ProductionTicketDeadlines.Apply(ticket, inizio, fine));
+
+        Assert.Equal(inizio.AddHours(14), ticket.Date);
+    }
+
+    [Fact]
+    public void Un_ticket_non_ancora_pianificato_si_colloca_all_inizio_della_fase()
+    {
+        var inizio = new DateTime(2026, 3, 2);
+        var fine = new DateTime(2026, 3, 20);
+        var ticket = TicketNudo();
+
+        Assert.True(ProductionTicketDeadlines.Apply(ticket, inizio, fine));
+
+        Assert.Equal(inizio, ticket.Date);
+        Assert.Equal(fine, ticket.DateExpired);
+    }
+
+    // ─── La regola attraverso il salvataggio della fase ──────────────────────
+
+    [Fact]
+    public async Task Spostare_la_fase_sposta_la_scadenza_dei_suoi_ticket_aperti()
     {
         using var ctx = ProductionTestContext.ComeAdmin();
         ctx.CreaCommessa();
         var fase = ctx.CreaFase(1);
         var ticket = ctx.CreaTicket(10, idFase: 1);
         ticket.DateExpired = fase.EndDate;
-        ticket.DateEnd = fase.EndDate;
         ctx.Db.SaveChanges();
 
         var nuovaFine = fase.EndDate.AddDays(7);
@@ -49,30 +153,34 @@ public class PhaseTicketDeadlineTests
 
         var aggiornato = RileggiTicket(ctx, 10);
         Assert.Equal(nuovaFine.Date, aggiornato.DateExpired);
-        Assert.Equal(nuovaFine.Date, aggiornato.DateEnd);
+        // La fase si e' allungata, ma nessuno ha pianificato quando lavorarci: l'agenda del tecnico
+        // non deve riempirsi da sola.
+        Assert.Null(aggiornato.DateEnd);
     }
 
-    /// <summary>La fine dell'appuntamento cambia giorno, non ora: chi ha pianificato fino alle
-    /// 17:30 se la ritrova alle 17:30 del nuovo giorno, non a mezzanotte.</summary>
+    /// <summary>Un appuntamento vero dentro la finestra sopravvive allo spostamento della fase.</summary>
     [Fact]
-    public async Task La_fine_dell_appuntamento_conserva_l_ora()
+    public async Task Un_appuntamento_dentro_la_finestra_non_si_muove_se_la_fase_si_allunga()
     {
         using var ctx = ProductionTestContext.ComeAdmin();
         ctx.CreaCommessa();
         var fase = ctx.CreaFase(1);
         var ticket = ctx.CreaTicket(10, idFase: 1);
-        ticket.DateEnd = fase.EndDate.Date.AddHours(17).AddMinutes(30);
+        var appuntamento = fase.StartDate.Date.AddHours(9);
+        ticket.Date = appuntamento;
+        ticket.DateEnd = fase.StartDate.Date.AddHours(17).AddMinutes(30);
         ctx.Db.SaveChanges();
 
-        var nuovaFine = fase.EndDate.AddDays(7);
-        Assert.True((await ctx.Service.SaveAsync(Dto(fase, end: nuovaFine))).State);
+        Assert.True((await ctx.Service.SaveAsync(Dto(fase, end: fase.EndDate.AddDays(7)))).State);
 
-        Assert.Equal(nuovaFine.Date.AddHours(17).AddMinutes(30), RileggiTicket(ctx, 10).DateEnd);
+        var aggiornato = RileggiTicket(ctx, 10);
+        Assert.Equal(appuntamento, aggiornato.Date);
+        Assert.Equal(appuntamento.Date.AddHours(17).AddMinutes(30), aggiornato.DateEnd);
     }
 
-    /// <summary>Fase tirata indietro: l'inizio pianificato non puo' restare dopo la fine.</summary>
+    /// <summary>Fase tirata indietro: l'appuntamento non puo' restare dopo la scadenza.</summary>
     [Fact]
-    public async Task Se_la_fase_finisce_prima_dell_inizio_anche_l_inizio_torna_indietro()
+    public async Task Se_la_fase_finisce_prima_dell_appuntamento_l_appuntamento_torna_indietro()
     {
         using var ctx = ProductionTestContext.ComeAdmin();
         ctx.CreaCommessa();
@@ -87,29 +195,9 @@ public class PhaseTicketDeadlineTests
         Assert.True((await ctx.Service.SaveAsync(Dto(fase, start: fase.StartDate.AddDays(-10), end: nuovaFine))).State);
 
         var aggiornato = RileggiTicket(ctx, 10);
-        Assert.Equal(nuovaFine.Date.AddHours(9), aggiornato.Date);      // l'ora dell'inizio resta
+        Assert.Equal(nuovaFine.Date.AddHours(9), aggiornato.Date);      // l'ora resta
         Assert.Equal(nuovaFine.Date.AddHours(18), aggiornato.DateEnd);
         Assert.Equal(ReminderStatus.Pending, aggiornato.ReminderApptStatus);
-    }
-
-    /// <summary>Fase spostata in avanti: l'inizio resta dov'e', non c'e' nulla da correggere.</summary>
-    [Fact]
-    public async Task Spostando_la_fase_in_avanti_l_inizio_resta_dov_e()
-    {
-        using var ctx = ProductionTestContext.ComeAdmin();
-        ctx.CreaCommessa();
-        var fase = ctx.CreaFase(1);
-        var ticket = ctx.CreaTicket(10, idFase: 1);
-        var inizio = fase.StartDate.Date.AddHours(9);
-        ticket.Date = inizio;
-        ticket.ReminderApptStatus = ReminderStatus.Sent;
-        ctx.Db.SaveChanges();
-
-        Assert.True((await ctx.Service.SaveAsync(Dto(fase, end: fase.EndDate.AddDays(7)))).State);
-
-        var aggiornato = RileggiTicket(ctx, 10);
-        Assert.Equal(inizio, aggiornato.Date);
-        Assert.Equal(ReminderStatus.Sent, aggiornato.ReminderApptStatus);
     }
 
     [Fact]
@@ -155,29 +243,29 @@ public class PhaseTicketDeadlineTests
         Assert.True(secondaAggiornata.EndDate.Date > scadenzaIniziale, "la cascata non ha spostato il successore");
         var ticketAggiornato = RileggiTicket(ctx, 20);
         Assert.Equal(secondaAggiornata.EndDate.Date, ticketAggiornato.DateExpired);
-        Assert.Equal(secondaAggiornata.EndDate.Date, ticketAggiornato.DateEnd);
+        Assert.Equal(secondaAggiornata.StartDate.Date, ticketAggiornato.Date);
     }
 
     [Fact]
-    public async Task Il_salvataggio_massivo_allinea_fine_e_scadenza()
+    public async Task Il_salvataggio_massivo_allinea_la_scadenza()
     {
         using var ctx = ProductionTestContext.ComeAdmin();
         ctx.CreaCommessa();
         var fase = ctx.CreaFase(1);
         var ticket = ctx.CreaTicket(10, idFase: 1);
         ticket.DateExpired = fase.EndDate.Date;
-        ticket.DateEnd = fase.EndDate.Date;
         ctx.Db.SaveChanges();
 
+        var nuovoInizio = fase.StartDate.AddDays(3);
         var nuovaFine = fase.EndDate.AddDays(3);
         Assert.True(await ctx.Service.BulkSaveAsync(new List<CommessaFaseDTO>
         {
-            Dto(fase, start: fase.StartDate.AddDays(3), end: nuovaFine)
+            Dto(fase, start: nuovoInizio, end: nuovaFine)
         }));
 
         var aggiornato = RileggiTicket(ctx, 10);
         Assert.Equal(nuovaFine.Date, aggiornato.DateExpired);
-        Assert.Equal(nuovaFine.Date, aggiornato.DateEnd);
+        Assert.Equal(nuovoInizio.Date, aggiornato.Date);
     }
 
     [Fact]
@@ -210,6 +298,7 @@ public class PhaseTicketDeadlineTests
         ctx.CreaCommessa();
         var fase = ctx.CreaFase(1);
         var ticket = ctx.CreaTicket(10, idFase: 1);
+        ticket.Date = fase.StartDate.Date;
         ticket.DateExpired = fase.EndDate.Date;
         ticket.ReminderExpiryStatus = ReminderStatus.Sent;
         ctx.Db.SaveChanges();
@@ -223,7 +312,7 @@ public class PhaseTicketDeadlineTests
     }
 
     [Fact]
-    public async Task Il_ticket_generato_dal_piano_nasce_con_le_date_della_fase()
+    public async Task Il_ticket_generato_dal_piano_nasce_pianificato_all_inizio_della_fase()
     {
         using var ctx = ProductionTestContext.ComeAdmin();
         ctx.CreaCommessa();
@@ -235,7 +324,10 @@ public class PhaseTicketDeadlineTests
         Assert.True(resp.State);
         ctx.Db.ChangeTracker.Clear();
         var ticket = ctx.Db.Tickets.AsNoTracking().Single(t => t.IdCommessaFase == 1);
+        Assert.Equal(fase.StartDate.Date, ticket.Date);
         Assert.Equal(fase.EndDate.Date, ticket.DateExpired);
-        Assert.Equal(fase.EndDate.Date, ticket.DateEnd);
+        // La durata della fase e' una stima, non un appuntamento: il ticket non occupa l'agenda
+        // finche' qualcuno non decide quando lavorarci.
+        Assert.Null(ticket.DateEnd);
     }
 }

@@ -118,7 +118,7 @@ namespace CRM.Client.Pages.Activities
             ActivityEntityType.Contact => $"/Contacts/{_activity.EntityId}",
             ActivityEntityType.Lead => $"/Leads/{_activity.EntityId}/Edit",
             ActivityEntityType.Deal => $"/Deals/{_activity.EntityId}",
-            ActivityEntityType.Ticket => $"/Tickets/{_activity.EntityId}/Details",
+            ActivityEntityType.Ticket => $"/Tickets/{_activity.EntityId}/Info",
             _ => null
         };
 

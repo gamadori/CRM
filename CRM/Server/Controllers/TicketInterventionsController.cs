@@ -46,11 +46,12 @@ namespace CRM.Server.Controllers
         private readonly IStringLocalizer<TicketInterventionsController> _localizer;
         private readonly ISmsSender _smsSender;
         private readonly SmsOptions _smsOptions;
+        private readonly CRM.Server.Services.ITicketsService _ticketsService;
 
         public TicketInterventionsController(ApplicationDbContext context, IPermitsService permitsService, IArchiveService archiveService,
             IWebHostEnvironment hostEnvironment, ILogEventService logEventService, IEmailSenderPlus emailSender, IInterventionPdfGenerator pdfGenerator,
             ISignatureOtpService otpService, IStringLocalizer<TicketInterventionsController> localizer,
-            ISmsSender smsSender, IOptions<SmsOptions> smsOptions)
+            ISmsSender smsSender, IOptions<SmsOptions> smsOptions, CRM.Server.Services.ITicketsService ticketsService)
         {
             _context = context;
             _permitsService = permitsService;
@@ -64,6 +65,7 @@ namespace CRM.Server.Controllers
             _localizer = localizer;
             _smsSender = smsSender;
             _smsOptions = smsOptions.Value;
+            _ticketsService = ticketsService;
         }
 
         // GET: api/TicketInterventions
@@ -73,23 +75,55 @@ namespace CRM.Server.Controllers
             try
             {
                 
-                var items = await Filter(args);
+                var query = await Filter(args);
 
-                if (items == null)
+                if (query == null)
                     return new List<TicketIntervention>();
 
-                
+                var items = await query.ToListAsync();
+
+                // Numero ticket, cliente e commessa in una query sola invece che una per riga.
+                var idTicket = items.Select(x => x.IdTicket).Distinct().ToList();
+                var datiTicket = await _context.Tickets
+                    .AsNoTracking()
+                    .Where(t => idTicket.Contains(t.Id))
+                    .Select(t => new
+                    {
+                        t.Id,
+                        Cliente = t.Company != null ? t.Company.RagioneSociale : string.Empty,
+                        Commessa = t.CommessaFase != null && t.CommessaFase.Commessa != null
+                            ? (t.CommessaFase.Commessa.Code ?? string.Empty)
+                            : string.Empty
+                    })
+                    .ToDictionaryAsync(t => t.Id);
+
+                // Chi ha fatto l'intervento. La colonna esisteva ma restava vuota: il campo non lo
+                // riempiva nessuno, e in un elenco di lavoro svolto e' il dato principale.
+                var idUtenti = items.Select(x => x.IdUser).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
+                var nomiUtenti = await _context.Users
+                    .AsNoTracking()
+                    .Where(u => idUtenti.Contains(u.Id))
+                    .Select(u => new { u.Id, u.Name, u.Surname })
+                    .ToDictionaryAsync(u => u.Id, u => $"{u.Surname} {u.Name}".Trim());
+
                 foreach (var item in items)
                 {
+                    if (!string.IsNullOrWhiteSpace(item.IdUser) && nomiUtenti.TryGetValue(item.IdUser, out var nome))
+                        item.UserName = nome;
+
                     int? idCompany = await TicketGetIdCompany(item.IdTicket);
 
                     if (idCompany != null)
                     {
-                       
-                        var mainUserId = item.AssignedUsers.FirstOrDefault()?.IdUser;
                         item.Permits = await _permitsService.ObjectPermits(idCompany, item.IdUser);
-                        
-                       
+                    }
+
+                    item.TicketNumero = item.IdTicket.ToString("000000");
+
+                    if (datiTicket.TryGetValue(item.IdTicket, out var dati))
+                    {
+                        item.Cliente = dati.Cliente;
+                        item.Commessa = dati.Commessa;
                     }
                 }
 
@@ -279,6 +313,10 @@ namespace CRM.Server.Controllers
                 await _context.SaveChangesAsync();
 
                 await InterventionType(id, ticketIntervention.InterventionsTypesId);
+                await _ticketsService.StartWorkAsync(
+                    ticketIntervention.IdTicket,
+                    new[] { ticketIntervention.IdUser },
+                    await _permitsService.IdUser());
              
                 
             }
@@ -335,6 +373,10 @@ namespace CRM.Server.Controllers
                 await _context.SaveChangesAsync();
                 await InterventionType(ticketIntervention.Id, ticketIntervention.InterventionsTypesId);
                 await UpdateArticles(ticketIntervention);
+                await _ticketsService.StartWorkAsync(
+                    ticketIntervention.IdTicket,
+                    new[] { ticketIntervention.IdUser },
+                    ticketIntervention.IdUser);
 
                 return CreatedAtAction("GetTicketIntervention", new { id = ticketIntervention.Id }, ticketIntervention);
             }
@@ -430,6 +472,8 @@ namespace CRM.Server.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                if (userIds?.Any() == true)
+                    await _ticketsService.StartWorkAsync(ticket.IdTicket, userIds, currentUserId);
 
                 // Log operazione
                 var action = userIds?.Any() == true
@@ -872,6 +916,18 @@ namespace CRM.Server.Controllers
 
                     if (args.IdTicket != null)
                         items = items.Where(x => x.IdTicket == args.IdTicket);
+
+                    // Chi ha lavorato e quando. Erano gia' previsti nel filtro ma non venivano
+                    // applicati: la domanda "cosa ha fatto Mario il 18" non si poteva porre.
+                    if (!string.IsNullOrWhiteSpace(args.IdUser))
+                        items = items.Where(x => x.IdUser == args.IdUser
+                            || x.AssignedUsers.Any(u => u.IdUser == args.IdUser));
+
+                    if (args.DateFrom != null)
+                        items = items.Where(x => x.StartDateTime >= args.DateFrom);
+
+                    if (args.DateTo != null)
+                        items = items.Where(x => x.StartDateTime < args.DateTo);
 
                     if (args.Filter != null)
                         items = items.Where(args.Filter);

@@ -73,7 +73,7 @@ else
                 <div class="dash-card-body ops-card-body">
                     <div class="ops-load">
                         <div class="ops-load-copy">
-                            <span>@_model.TicketsWorking in lavorazione</span>
+                            <span>@_model.TicketsAssigned assegnati</span>
                             <span>@_model.TicketsNotAssigned da assegnare</span>
                         </div>
                         <div class="ops-load-track">
@@ -132,11 +132,11 @@ else
                 </div>
             }
 
-            <div class="metric-tile tile-success" @onclick="TicketWorking">
+            <div class="metric-tile tile-success" @onclick="TicketAssigned">
                 <div class="metric-icon"><span class="material-icons">engineering</span></div>
                 <div class="metric-text">
-                    <div class="metric-value">@_model.TicketsWorking</div>
-                    <div class="metric-label">In lavorazione</div>
+                    <div class="metric-value">@_model.TicketsAssigned</div>
+                    <div class="metric-label">Assegnati</div>
                 </div>
             </div>
 

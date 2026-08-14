@@ -91,12 +91,35 @@ public class CommessaBaselineTests
         Assert.Equal(15, dto.DeliveryDeltaDays);
     }
 
+    /// <summary>
+    /// Da aperta, lo scostamento guarda dove il piano dice che si andra' a finire, non che giorno e'
+    /// oggi. Prima usava oggi, e su una commessa appena avviata usciva un "anticipo" che era solo il
+    /// conto alla rovescia alla promessa.
+    /// </summary>
     [Fact]
-    public void Finche_la_commessa_e_aperta_lo_scostamento_e_una_proiezione_su_oggi()
+    public void Finche_la_commessa_e_aperta_si_confronta_con_la_fine_prevista()
     {
-        var dto = new CommessaDTO { EndDateBaseline = DateTime.Today.AddDays(-3) };
+        var dto = new CommessaDTO
+        {
+            EndDateBaseline = new DateTime(2026, 11, 30),
+            EndDatePlanned = new DateTime(2026, 11, 30),
+            ExpectedEndDate = new DateTime(2026, 12, 4)
+        };
 
-        Assert.Equal(3, dto.DeliveryDeltaDays);
+        Assert.Equal(4, dto.DeliveryDeltaDays);
+    }
+
+    /// <summary>Senza fasi non c'e' una previsione: si ripiega sulla consegna pianificata.</summary>
+    [Fact]
+    public void Senza_fine_prevista_si_usa_la_consegna_pianificata()
+    {
+        var dto = new CommessaDTO
+        {
+            EndDateBaseline = new DateTime(2026, 11, 30),
+            EndDatePlanned = new DateTime(2026, 12, 10)
+        };
+
+        Assert.Equal(10, dto.DeliveryDeltaDays);
     }
 
     [Fact]

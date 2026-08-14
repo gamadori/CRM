@@ -116,12 +116,6 @@ namespace CRM.Client.Pages.Tickets
 
         private string? _idUser;
 
-        /// <summary>
-        /// Natura del lavoro da mostrare: null = tutti, true = solo commessa, false = solo
-        /// assistenza. Il filtro e' sulla presenza del legame, non su una commessa specifica.
-        /// </summary>
-        private bool? _hasCommessa;
-
         private bool _loading = true;
 
         private PageHeaderModel? _pageHeader;
@@ -158,7 +152,6 @@ namespace CRM.Client.Pages.Tickets
                 filter.IdUserAssigned = _idUser;
             }
             filter.ViewNotAssigned = ViewMode == SchedulerViewMode.Calendar;
-            filter.HasCommessa = _hasCommessa;
 
             filter.DateFrom = _dateStart;
             filter.DateTo = _dateEnd;
@@ -188,9 +181,13 @@ namespace CRM.Client.Pages.Tickets
                 Description = ticket.Description ?? string.Empty,
                 Status = ticket.IdState ?? 0,
                 Expired = ticket.DateExpired.HasValue && ticket.DateExpired.Value < DateTime.Now,
+                DateExpired = ticket.DateExpired,
                 StatusColor = ticket.StateColor ?? string.Empty,
                 StatusText = ticket.State ?? string.Empty,
                 IdCommessa = ticket.IdCommessa,
+                CommessaFaseName = ticket.CommessaFaseName ?? string.Empty,
+                CommessaFaseStartDate = ticket.CommessaFaseStartDate,
+                CommessaFaseEndDate = ticket.CommessaFaseEndDate,
                 CommessaCode = ticket.CommessaCode ?? string.Empty
             };
         }
@@ -221,16 +218,6 @@ namespace CRM.Client.Pages.Tickets
         protected async void OnChangeIdUser()
         {
             //StateHasChanged();
-            await schedulerTickets.Update();
-        }
-
-        /// <summary>Cambia la natura del lavoro mostrata e ricarica: il filtro e' applicato dal server.</summary>
-        private async Task SetCommessaFilter(bool? hasCommessa)
-        {
-            if (_hasCommessa == hasCommessa)
-                return;
-
-            _hasCommessa = hasCommessa;
             await schedulerTickets.Update();
         }
 
@@ -266,7 +253,7 @@ namespace CRM.Client.Pages.Tickets
 
             var currentDate = args.Ticket.DateStart.Date;
             var currentTime = args.Ticket.TimeStart;
-            var currentEnd = args.Ticket.DateEnd;
+            var currentEnd = args.Ticket.HasExplicitEnd ? args.Ticket.DateEnd : (DateTime?)null;
 
             if (currentDate == args.Date.Date &&
                 currentTime == args.Time &&
@@ -297,9 +284,15 @@ namespace CRM.Client.Pages.Tickets
             };
 
             var updated = await _serviceTicket.UpdateScheduleAsync(idTicket, request);
-            if (updated)
+            if (updated.Saved)
             {
-                NotificationService.Notify(NotificationSeverity.Success, "Pianificazione", $"Ticket #{idTicket} spostato");
+                // Il ticket puo' essere stato riportato dentro la finestra della sua fase di
+                // commessa: in quel caso non e' finito dove l'utente l'ha lasciato, e va detto.
+                if (!string.IsNullOrWhiteSpace(updated.Message))
+                    NotificationService.Notify(NotificationSeverity.Warning, "Pianificazione", updated.Message, 8000);
+                else
+                    NotificationService.Notify(NotificationSeverity.Success, "Pianificazione", $"Ticket #{idTicket} spostato");
+
                 await schedulerTickets.Update();
                 return;
             }
@@ -308,16 +301,16 @@ namespace CRM.Client.Pages.Tickets
             await schedulerTickets.Update();
         }
 
-        private static string FormatSchedule(DateTime date, TimeOnly? time, DateTime dateEnd)
+        private static string FormatSchedule(DateTime date, TimeOnly? time, DateTime? dateEnd)
         {
             var start = time.HasValue
                 ? $"{date:dd/MM/yyyy} alle {time.Value:HH\\:mm}"
                 : $"{date:dd/MM/yyyy}, senza orario";
 
-            if (dateEnd <= date.Date)
+            if (!dateEnd.HasValue || dateEnd.Value <= date.Date)
                 return start;
 
-            return $"{start} - fine {dateEnd:dd/MM/yyyy HH:mm}";
+            return $"{start} - fine {dateEnd.Value:dd/MM/yyyy HH:mm}";
         }
 
         private void  CloseDialog()

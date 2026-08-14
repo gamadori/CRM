@@ -2060,15 +2060,6 @@ namespace CRM.Shared.Resources {
         }
         
         /// <summary>
-        ///   Cerca una stringa localizzata simile a In Progress.
-        /// </summary>
-        public static string Working {
-            get {
-                return ResourceManager.GetString("Working", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Cerca una stringa localizzata simile a Work Time.
         /// </summary>
         public static string WorkTime {

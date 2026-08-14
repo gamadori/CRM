@@ -375,13 +375,66 @@
     align-items: flex-start;
 }
 
+/* L'etichetta prende lo spazio che le serve, non 220px fissi.
+   Con 220px fissi, in una scheda da 480px al valore ne restavano altrettanti: nomi come
+   "DIGITECH SOLUZIONI di ZAVOLI DENNIS" si spezzavano su tre righe e la scheda diventava
+   altissima. Il minimo tiene le etichette incolonnate fra loro; niente tetto in percentuale,
+   perche' con quello un'etichetta lunga come "Ore fatturabili (hh:mm)" andava a capo dentro una
+   scheda quasi vuota. */
 .ticket-details-page .info-key {
-    flex: 0 0 220px;
+    flex: 0 0 auto;
+    min-width: 8rem;
+    padding-right: 1rem;
+    white-space: nowrap;
 }
 
 .ticket-details-page .info-value {
     flex: 1 1 auto;
     text-align: left;
+}
+
+/* L'anteprima segue la scheda completa: stessa etichetta, stesso allineamento.
+   Senza queste, nel dialogo l'etichetta non aveva una larghezza minima e parole come "Prodotto"
+   si spezzavano a meta' ("Prodott / o"), e i valori restavano incolonnati a destra mentre nella
+   scheda stanno a sinistra. */
+.ticket-preview-dialog .info-key {
+    flex: 0 0 auto;
+    min-width: 8rem;
+    padding-right: 1rem;
+    white-space: nowrap;
+}
+
+.ticket-preview-dialog .info-value {
+    flex: 1 1 auto;
+    text-align: left;
+}
+
+/* Anche la scheda della commessa usa lo stesso modello: prima erano riquadri Bootstrap generici,
+   diversi da tutto il resto dell'applicazione. */
+.commessa-details-page .info-key {
+    flex: 0 0 auto;
+    min-width: 9rem;
+    padding-right: 1rem;
+    white-space: nowrap;
+}
+
+.commessa-details-page .info-value {
+    flex: 1 1 auto;
+    text-align: left;
+}
+
+/* Una data o un numero fuori tempo. */
+.commessa-details-page .value-late {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+/* Avanzamento, stato e comandi in colonna, a destra del titolo. */
+.commessa-azioni {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 260px;
 }
 
 .ticket-details-page .assigned-user-item .user-avatar {

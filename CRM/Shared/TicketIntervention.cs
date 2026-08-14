@@ -291,6 +291,20 @@ namespace CRM.Shared
         [NotMapped]
         public string SupportTypeDesc { get; set; }
 
+        /// <summary>
+        /// Su cosa si e' lavorato. Riempiti dall'elenco interventi: guardando cosa ha fatto una
+        /// persona in un giorno, sapere le ore senza sapere su quale ticket e per quale cliente non
+        /// serve a niente.
+        /// </summary>
+        [NotMapped]
+        public string TicketNumero { get; set; } = string.Empty;
+
+        [NotMapped]
+        public string Cliente { get; set; } = string.Empty;
+
+        [NotMapped]
+        public string Commessa { get; set; } = string.Empty;
+
         [NotMapped]
         public List<TicketInterventionArticleModel> InterventionArticles { get; set; } = new List<TicketInterventionArticleModel>();
 

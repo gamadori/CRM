@@ -166,13 +166,21 @@ namespace CRM.Server.Services
             if (!string.IsNullOrWhiteSpace(assigneeId))
                 query = query.Where(t => t.IdUserAssigned == assigneeId || t.AssignedUsers.Any(a => a.IdUser == assigneeId));
 
+            // Un ticket di produzione entra nel periodo con la sua SCADENZA, non con la data di
+            // inizio: e' la scadenza che lo colloca fra le cose da fare, ed e' quella che l'elenco
+            // mostra. Senza questo, una fase iniziata prima del periodo mostrato sparirebbe anche
+            // dall'elenco, pur scadendo dentro il periodo.
             if (filter.DateFrom.HasValue)
-                query = query.Where(t => t.Date >= filter.DateFrom || t.DateEnd >= filter.DateFrom);
+                query = query.Where(t => t.Date >= filter.DateFrom
+                    || t.DateEnd >= filter.DateFrom
+                    || (t.IdCommessaFase != null && t.DateExpired >= filter.DateFrom));
 
             if (filter.DateTo.HasValue)
             {
                 var dateTo = NormalizeDateTo(filter.DateTo.Value);
-                query = query.Where(t => t.Date < dateTo || t.DateEnd < dateTo);
+                query = query.Where(t => t.Date < dateTo
+                    || t.DateEnd < dateTo
+                    || (t.IdCommessaFase != null && t.DateExpired < dateTo));
             }
 
             var tickets = await query
@@ -188,10 +196,28 @@ namespace CRM.Server.Services
                 if (canEditTickets)
                     permits = PermitsHelper.SetEdit(permits);
 
-                var start = ticket.Date!.Value.Date + (ticket.Time?.ToTimeSpan() ?? TimeSpan.Zero);
-                var end = ticket.DateEnd ?? start.AddHours(1);
-                if (end <= start)
-                    end = start.AddHours(1);
+                // Un ticket di fase di commessa non e' un appuntamento: la sua data utile e' la
+                // scadenza della fase, e non ha una durata da occupare. Vive negli elenchi, non sul
+                // calendario - vedi CalendarItemDTO.PlacedOnCalendar.
+                var isProduction = ticket.IdCommessaFase != null;
+
+                DateTime start;
+                DateTime end;
+
+                if (isProduction)
+                {
+                    // Ripiego sulla data del ticket se la scadenza manca: meglio collocarlo
+                    // all'inizio della fase che farlo sparire dall'elenco.
+                    start = (ticket.DateExpired ?? ticket.Date!.Value).Date;
+                    end = start;
+                }
+                else
+                {
+                    start = ticket.Date!.Value.Date + (ticket.Time?.ToTimeSpan() ?? TimeSpan.Zero);
+                    end = ticket.DateEnd ?? start.AddHours(1);
+                    if (end <= start)
+                        end = start.AddHours(1);
+                }
 
                 var assignees = ticket.AssignedUsers
                     .OrderBy(a => a.AssignedDate)
@@ -214,8 +240,9 @@ namespace CRM.Server.Services
                     Subtitle = ticket.Company?.RagioneSociale ?? string.Empty,
                     Start = start,
                     End = end,
+                    PlacedOnCalendar = !isProduction,
                     Color = string.IsNullOrWhiteSpace(ticket.State?.Color) ? "#455a64" : ticket.State.Color,
-                    Url = $"/Tickets/{ticket.Id}/Details",
+                    Url = $"/Tickets/{ticket.Id}/Info",
                     IdAssignee = mainAssignee?.IdUser ?? ticket.IdUserAssigned,
                     AssigneeName = assignees.Count > 0 ? string.Join(", ", assignees) : string.Empty,
                     StateText = ticket.State?.Description ?? string.Empty,
@@ -377,7 +404,7 @@ namespace CRM.Server.Services
             ActivityEntityType.Company => $"/Companies/{entityId}",
             ActivityEntityType.Contact => $"/Contacts/{entityId}",
             ActivityEntityType.Lead => $"/Leads/{entityId}/Edit",
-            ActivityEntityType.Ticket => $"/Tickets/{entityId}/Details",
+            ActivityEntityType.Ticket => $"/Tickets/{entityId}/Info",
             _ => string.Empty
         };
 

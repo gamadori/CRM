@@ -210,6 +210,13 @@ namespace CRM.Server.Controllers
                     tickets = tickets.Where(t => t.IdCompany == idCompany);
                 }
 
+                // I ticket di una fase di commessa non compaiono nella pianificazione. La loro data
+                // e' l'inizio della fase, cioe' "da qui si puo' cominciare": non e' un giorno in cui
+                // qualcuno ha deciso di lavorarci. Su un calendario diventa un appuntamento, e
+                // l'appuntamento non c'e'. Il lavoro di produzione si legge dall'elenco dei lavori
+                // ordinato per scadenza, non da qui.
+                tickets = tickets.Where(t => t.IdCommessaFase == null);
+
                 if (args.DateFrom.HasValue)
                     tickets = tickets.Where(t => t.Date >= args.DateFrom || t.DateEnd >= args.DateFrom);
 
@@ -233,15 +240,8 @@ namespace CRM.Server.Controllers
                 if (args.IdDeal != null)
                     tickets = tickets.Where(t => t.IdDeal == args.IdDeal);
 
-                if (args.IdCommessaFase != null)
-                    tickets = tickets.Where(t => t.IdCommessaFase == args.IdCommessaFase);
-
-                // Presenza del legame con una commessa: separa il lavoro di produzione pianificato
-                // dall'assistenza. Null lascia passare tutto.
-                if (args.HasCommessa == true)
-                    tickets = tickets.Where(t => t.IdCommessaFase != null);
-                else if (args.HasCommessa == false)
-                    tickets = tickets.Where(t => t.IdCommessaFase == null);
+                // Qui non si filtra piu' per fase o per natura del lavoro: i ticket di commessa sono
+                // gia' fuori tutti, quindi quei filtri non potrebbero trovare nulla.
 
                 var items = await tickets
                     .OrderBy(t => t.Date)
@@ -261,6 +261,9 @@ namespace CRM.Server.Controllers
                         StateColor = t.State != null ? t.State.Color : string.Empty,
                         // Il legame con la commessa passa dalla fase: Ticket -> CommessaFase -> Commessa.
                         IdCommessa = t.CommessaFase != null ? (int?)t.CommessaFase.IdCommessa : null,
+                        CommessaFaseName = t.CommessaFase != null ? t.CommessaFase.Name : null,
+                        CommessaFaseStartDate = t.CommessaFase != null ? t.CommessaFase.StartDate : null,
+                        CommessaFaseEndDate = t.CommessaFase != null ? t.CommessaFase.EndDate : null,
                         CommessaCode = t.CommessaFase != null && t.CommessaFase.Commessa != null
                             ? t.CommessaFase.Commessa.Code
                             : null,
@@ -448,6 +451,14 @@ namespace CRM.Server.Controllers
             return NoContent();
         }
 
+        /// <summary>I lavori di chi chiama: la schermata che il tecnico apre la mattina.</summary>
+        [AuthorizeRole(ePolicy.StandardRole)]
+        [HttpGet("work-list")]
+        public async Task<ActionResult<WorkListDTO>> GetWorkList()
+        {
+            return Ok(await _ticketsService.GetWorkListAsync());
+        }
+
         [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPut("{id}/schedule")]
         public async Task<IActionResult> UpdateSchedule(int id, TicketScheduleUpdateRequest request)
@@ -473,8 +484,43 @@ namespace CRM.Server.Controllers
                 ticket.Time = request.Time;
                 ticket.DateEnd = end;
 
+                // Un ticket di produzione si pianifica dentro la finestra della sua fase: senza
+                // questo passaggio lo scheduler sarebbe il modo per aggirare il vincolo che ogni
+                // altro percorso rispetta. Non si rifiuta lo spostamento - si riporta dentro, che e'
+                // quasi sempre quello che chi trascina voleva - ma lo si dice.
+                string? avviso = null;
+                if (ticket.IdCommessaFase != null && !ticket.Closed)
+                {
+                    var fase = await _context.CommessaFasi
+                        .AsNoTracking()
+                        .Where(f => f.Id == ticket.IdCommessaFase)
+                        .Select(f => new { f.StartDate, f.EndDate })
+                        .FirstOrDefaultAsync();
+
+                    if (fase != null)
+                    {
+                        var chiesto = (ticket.Date, ticket.DateEnd);
+                        ProductionTicketDeadlines.Apply(ticket, fase.StartDate, fase.EndDate);
+
+                        if (chiesto != (ticket.Date, ticket.DateEnd))
+                        {
+                            avviso = $"Il ticket appartiene a una fase di commessa che va dal "
+                                + $"{fase.StartDate:dd/MM/yyyy} al {fase.EndDate:dd/MM/yyyy}: "
+                                + "la pianificazione e' stata riportata dentro quel periodo.";
+                        }
+                    }
+                }
+
                 await _context.SaveChangesAsync();
-                return NoContent();
+
+                return Ok(new TicketScheduleUpdateResult
+                {
+                    Saved = true,
+                    Message = avviso,
+                    Date = ticket.Date,
+                    Time = ticket.Time,
+                    DateEnd = ticket.DateEnd
+                });
             }
             catch (Exception ex)
             {
@@ -483,45 +529,9 @@ namespace CRM.Server.Controllers
             }
         }
 
-        [AuthorizeRole(ePolicy.StandardRole)]
-        [HttpPut("{id}/start-processing")]
-        public async Task<IActionResult> StartProcessing(int id)
-        {
-            try
-            {
-                var ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == id);
-                if (ticket == null)
-                    return NotFound();
-
-                if (!await _permits.CanWriteCompanyData(ticket.IdCompany))
-                    return Forbid();
-
-                if (ticket.Closed)
-                    return BadRequest("Un ticket chiuso non puo essere messo in lavorazione.");
-
-                var hasAssignedUser = !string.IsNullOrWhiteSpace(ticket.IdUserAssigned)
-                    || await _context.TicketUserAssignments.AnyAsync(a => a.IdTicket == id);
-                if (!hasAssignedUser)
-                    return BadRequest("Assegna almeno un utente prima di mettere il ticket in lavorazione.");
-
-                var processingStateId = await _context.TicketStates
-                    .Where(s => s.State == (int)eTicketStates.Processing)
-                    .Select(s => (int?)s.Id)
-                    .FirstOrDefaultAsync();
-
-                if (!processingStateId.HasValue)
-                    return Problem("Lo stato In lavorazione non e configurato.");
-
-                ticket.IdState = processingStateId.Value;
-                await _context.SaveChangesAsync();
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                await _logEventService.RegisterAsync(nameof(TicketsController), nameof(StartProcessing), LogEvent.EventsTypes.Error, ex);
-                return Problem(ex.Message);
-            }
-        }
+        // Qui c'era "metti in lavorazione", il comando dietro il pulsante omonimo. Dentro l'azienda
+        // "in lavorazione" non e' piu' uno stato a se': un ticket assegnato e' un ticket su cui si
+        // lavora. Il comando scriveva uno stato che nessuno legge piu'.
 
         [AuthorizeRole(ePolicy.StandardRole)]
         [HttpPost("{id}/claim")]

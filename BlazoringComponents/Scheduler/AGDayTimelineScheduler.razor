@@ -2,13 +2,13 @@
 @typeparam TItem
 
 <div class="day-timeline-container">
-    <!-- Ticket senza orario -->
+    <!-- Ticket da pianificare -->
     @if (_ticketsWithoutTime.Any())
     {
         <div class="no-time-section">
             <div class="section-header">
-                <span class="material-icons">event_available</span>
-                <h5>Ticket senza orario specifico (@_ticketsWithoutTime.Count)</h5>
+                <span class="material-icons">event_note</span>
+                <h5>Ticket del giorno (@_ticketsWithoutTime.Count)</h5>
             </div>
             <div class="tickets-grid">
                 @foreach (var ticket in _ticketsWithoutTime)
@@ -95,6 +95,10 @@
         margin-bottom: 2rem;
         padding-bottom: 2rem;
         border-bottom: 2px solid #e5e7eb;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 10px;
+        padding: 1rem;
     }
 
     .section-header {
@@ -102,7 +106,7 @@
         align-items: center;
         gap: 0.75rem;
         margin-bottom: 1rem;
-        color: #667eea;
+        color: #92400e;
     }
 
     .section-header .material-icons {

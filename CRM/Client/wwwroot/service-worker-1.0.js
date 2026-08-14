@@ -1,7 +1,7 @@
 // Service Worker per Push Notifications CRM
-// Versione: 2.30 - Production-safe cache strategy
+// Versione: 2.31 - Production-safe cache strategy
 
-const SERVICE_WORKER_VERSION = '2.30';
+const SERVICE_WORKER_VERSION = '2.31';
 const CACHE_NAME = `crm-cache-v${SERVICE_WORKER_VERSION}`;
 
 const urlsToCache = [
@@ -42,9 +42,19 @@ async function putInCache(request, response) {
         return;
     }
 
+    // La copia va fatta subito, prima di qualunque await: chi ha chiamato restituisce
+    // la risposta al browser senza aspettare, e appena il corpo e' stato letto clone() fallisce.
+    let copy;
+    try {
+        copy = response.clone();
+    } catch (error) {
+        console.warn('[Service Worker] Cache put skipped:', request.url, error);
+        return;
+    }
+
     try {
         const cache = await caches.open(CACHE_NAME);
-        await cache.put(request, response.clone());
+        await cache.put(request, copy);
     } catch (error) {
         console.warn('[Service Worker] Cache put skipped:', request.url, error);
     }

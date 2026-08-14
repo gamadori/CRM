@@ -58,6 +58,24 @@ namespace CRM.Shared.DTOs
 
         public DateTime End { get; set; }
 
+        /// <summary>
+        /// Se l'elemento puo' essere collocato su un calendario. Falso significa "ha una data, ma
+        /// quella data non e' un momento in cui qualcuno sara' occupato": va mostrato negli elenchi,
+        /// dove la data e' un'informazione, e non nel calendario, dove sarebbe una posizione.
+        /// <para>
+        /// Serve ai ticket di produzione: la loro data e' la scadenza della fase di commessa, non un
+        /// appuntamento. Disegnarli sul calendario ha prodotto prima un blocco continuo per tutta la
+        /// durata della fase - il tecnico risultava occupato trenta giorni su trenta - e poi, tolta
+        /// la fine, un'ora a mezzanotte: due affermazioni false, una piu' vistosa dell'altra.
+        /// </para>
+        /// <para>
+        /// Non si risolve escludendoli a monte: elenco delle scadenze e calendario leggono la stessa
+        /// lista, e toglierli dalla sorgente svuota anche l'elenco, che e' proprio il posto dove
+        /// l'operaio va a vedere cosa deve fare.
+        /// </para>
+        /// </summary>
+        public bool PlacedOnCalendar { get; set; } = true;
+
         public string Color { get; set; } = "#607d8b";
 
         /// <summary>

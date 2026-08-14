@@ -19,11 +19,10 @@ public class TicketListRulesTests
     private static eTicketStates Stato(
         bool closed = false,
         bool isClient = false,
-        bool isInProcessingState = false,
         bool hasAssignedUser = false,
         DateTime? dateExpired = null,
         bool hasAssignee = false)
-        => TicketListRules.ResolveState(closed, isClient, isInProcessingState, hasAssignedUser, dateExpired, Oggi, hasAssignee);
+        => TicketListRules.ResolveState(closed, isClient, hasAssignedUser, dateExpired, Oggi, hasAssignee);
 
     [Fact]
     public void Un_ticket_chiuso_e_chiuso_qualunque_altra_cosa_sia_vera()
@@ -39,20 +38,19 @@ public class TicketListRulesTests
         Assert.Equal(eTicketStates.Processing, Stato(isClient: true));
     }
 
+    /// <summary>
+    /// Dentro l'azienda "in lavorazione" non esiste piu': un ticket assegnato e' un ticket su cui si
+    /// lavora. Cambia anche una conseguenza: prima chi ci stava lavorando non risultava in ritardo,
+    /// ora un ticket oltre la scadenza si vede scaduto anche se qualcuno lo ha in mano - ed e' vero,
+    /// perche' in ritardo lo e'.
+    /// </summary>
     [Fact]
-    public void Chi_ci_sta_lavorando_non_risulta_in_ritardo()
+    public void In_lavorazione_non_e_piu_uno_stato_a_se()
     {
-        // In lavorazione e con qualcuno sopra: la scadenza passata non lo fa diventare scaduto.
-        Assert.Equal(eTicketStates.Processing, Stato(
-            isInProcessingState: true, hasAssignedUser: true, dateExpired: Oggi.AddDays(-3), hasAssignee: true));
-    }
+        Assert.Equal(eTicketStates.Assigned, Stato(hasAssignedUser: true, hasAssignee: true));
 
-    [Fact]
-    public void Lo_stato_in_lavorazione_senza_nessuno_sopra_non_vale()
-    {
-        // Stato "in lavorazione" rimasto sul record ma nessun assegnatario: conta la scadenza.
         Assert.Equal(eTicketStates.Expired, Stato(
-            isInProcessingState: true, hasAssignedUser: false, dateExpired: Oggi.AddDays(-3), hasAssignee: true));
+            hasAssignedUser: true, dateExpired: Oggi.AddDays(-3), hasAssignee: true));
     }
 
     [Fact]
