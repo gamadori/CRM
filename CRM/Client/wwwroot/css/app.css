@@ -210,7 +210,7 @@ a.mat-stroked-button .mat-icon {
     
 }
 
-@@media (max-width: 900px) {
+@media (max-width: 900px) {
     .control-wrapper {
         width: 300px;
     }
@@ -2481,16 +2481,21 @@ body.dark-theme .topbar-language .imagedropdown-item.selected {
     }
 
 /* Responsive adjustments */
-@@media (max-width: 768px) {
+@media (max-width: 768px) {
     .product-icon {
         width: 32px;
         height: 32px;
     }
 }
 
-.rz-dropdown {
-    width: max-content !important;
-}
+/* Qui c'era ".rz-dropdown { width: max-content !important }", valida per tutte le tendine
+   dell'applicazione. Faceva danno: la tendina si dimensionava sul campo nascosto che Radzen
+   tiene dentro per i lettori di schermo - circa 180px sempre uguali - e ignorava la colonna
+   che la conteneva, anche quando la pagina le aveva scritto width:100%. Dove la colonna era
+   piu' stretta di 180px la casella sbordava e si disegnava sopra al campo accanto (in agenda:
+   Tipo sopra Stato, Stato sopra Cerca).
+   Senza quella riga la tendina occupa la larghezza disponibile e non esce dai suoi confini,
+   e le larghezze dichiarate dalle singole pagine tornano a valere. */
 
 #uploadWithDragAndDrop {
     left: 0;
