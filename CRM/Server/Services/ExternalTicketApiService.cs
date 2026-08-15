@@ -1,6 +1,7 @@
 ﻿using CRM.Server.Data;
 using CRM.Shared;
 using CRM.Shared.DTOs;
+using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -36,6 +37,12 @@ namespace CRM.Server.Services
             await ValidateTicketReferencesAsync(idCompany, request);
 
             var now = DateTime.Now;
+
+            // Quando ci si lavora. La data chiesta da fuori vale com'e', festiva o no: e' una
+            // scelta di chi apre il ticket. Il ripiego invece non puo' cadere in un giorno in cui
+            // non c'e' nessuno, e da qui parte anche il calcolo della scadenza.
+            var workDate = request.Date ?? now.NextBusinessDay();
+
             var state = await _context.TicketStates.FirstOrDefaultAsync(x => x.State == (int)eTicketStates.Created);
             var ownerUserId = await ResolveOwnerUserIdAsync();
             var ticket = new Ticket
@@ -50,9 +57,9 @@ namespace CRM.Server.Services
                 Priority = (int)request.Priority,
                 Description = BuildDescription(request),
                 DateOpened = now,
-                Date = request.Date ?? now,
+                Date = workDate,
                 DateEnd = request.DateEnd,
-                DateExpired = request.DateExpired ?? await CalculateExpirationDateAsync(request.IdType, request.Date ?? now),
+                DateExpired = request.DateExpired ?? await CalculateExpirationDateAsync(request.IdType, workDate),
                 Numero = string.Empty,
                 CloseDescription = string.Empty,
                 CloseNote = string.Empty,

@@ -4,6 +4,7 @@ using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
+using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -248,7 +249,11 @@ namespace CRM.Client.Pages.Tickets
                 else
                 {
                     _header = Localize["New Ticket"];
-                    _ticket = new Ticket() { Date = Date ?? DateTime.Now, Time = null};
+                    // La data proposta salta i festivi e i fine settimana: aprire un ticket a
+                    // Ferragosto e vederselo datato Ferragosto obbliga a correggere ogni volta.
+                    // Se la data arriva da fuori (agenda, scheduler) resta quella: e' una scelta
+                    // gia' fatta da qualcuno, non un valore di comodo.
+                    _ticket = new Ticket() { Date = Date ?? DateTime.Now.NextBusinessDay(), Time = null};
                    
 
                     if (IdCompany != null)

@@ -3,6 +3,7 @@ using CRM.Client.Models;
 using CRM.Client.Services;
 using CRM.Shared;
 using CRM.Shared.DTOs;
+using CRM.Shared.Helper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -206,7 +207,9 @@ namespace CRM.Client.Pages.Tickets
                     await LoadTicketType(new LoadDataArgs());
                     break;
                 case TicketCreateSteps.DateTicket:
-                    _ticket.Date = DateTime.Now;
+                    // Primo giorno lavorativo: di sabato, di domenica o a Ferragosto proporre
+                    // oggi vuol dire far correggere la data a chi apre il ticket.
+                    _ticket.Date = DateTime.Now.NextBusinessDay();
                     break;
                 case TicketCreateSteps.ProductTicket:
                     _backDisabled = false;

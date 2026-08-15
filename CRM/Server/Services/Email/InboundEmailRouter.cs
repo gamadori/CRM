@@ -3,6 +3,7 @@ using CRM.Client.Services;
 using CRM.Server;
 using CRM.Server.Data;
 using CRM.Shared;
+using CRM.Shared.Helper;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using static CRM.Shared.LogEvent;
@@ -291,8 +292,11 @@ namespace CRM.Server.Services.Email
                 IdUserOpened = inbox.IdDefaultOwner!,
                 IdContact = idContact,
                 Description = BuildTicketDescription(subject, body, triage, senderName),
+                // DateOpened e' un fatto: la mail e' arrivata in quel momento, festivo o no.
+                // Date invece dice quando ci si lavora, e nessuno lavora a Ferragosto: una mail
+                // del sabato apre un ticket datato lunedi'.
                 DateOpened = now,
-                Date = now,
+                Date = now.NextBusinessDay(),
                 Numero = string.Empty,
                 CloseDescription = string.Empty,
                 CloseNote = string.Empty
