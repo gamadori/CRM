@@ -76,11 +76,10 @@
                                 Placeholder="@Localize["Tutto il team"]" Style="width:100%" />
             </div>
         }
-        <div class="agenda-filter-field">
-            <label>@Localize["Tipo"]</label>
-            <RadzenDropDown TValue="CalendarSourceFilter" @bind-Value="_sourceFilter" Data="SourceOptions"
-                            TextProperty="Text" ValueProperty="Value" Style="width:100%" />
-        </div>
+        @* Qui c'era la tendina "Tipo". Diceva la stessa cosa dei tre pulsanti in alto - quali
+           sorgenti mostrare - ma sapeva nominarne una sola: "attivita' + ticket" per lei era
+           "Tutto". Due comandi per la stessa scelta, e uno dei due che mente. Comandano i
+           pulsanti, che le combinazioni le sanno dire e le mostrano accese o spente. *@
         <div class="agenda-filter-field">
             <label>@Localize["Stato"]</label>
             <RadzenDropDown TValue="CalendarStateFilter" @bind-Value="_stateFilter" Data="StateOptions"
@@ -509,19 +508,10 @@
     private DateTime? _dateTo = DateTime.Today.AddDays(120);
     private string? _idUser;
     private string? _searchText;
-    private CalendarSourceFilter _sourceFilter = CalendarSourceFilter.All;
     private CalendarStateFilter _stateFilter = CalendarStateFilter.Open;
 
     private record Group(string Title, string Class, List<CalendarItemDTO> Items);
     private List<Group> _groups = new();
-
-    private enum CalendarSourceFilter
-    {
-        All,
-        Activities,
-        Tickets,
-        Initiatives
-    }
 
     private enum CalendarStateFilter
     {
@@ -532,14 +522,6 @@
     }
 
     private record FilterOption<T>(string Text, T Value);
-
-    private List<FilterOption<CalendarSourceFilter>> SourceOptions => new()
-    {
-        new(Localize["Tutto"], CalendarSourceFilter.All),
-        new(Localize["Attività"], CalendarSourceFilter.Activities),
-        new(Localize["Ticket"], CalendarSourceFilter.Tickets),
-        new(Localize["Iniziative"], CalendarSourceFilter.Initiatives)
-    };
 
     private List<FilterOption<CalendarStateFilter>> StateOptions => new()
     {
@@ -583,8 +565,6 @@
     private async Task Load()
     {
         _loading = true;
-
-        SyncSourceToggles();
 
         var agenda = await CalendarService.GetAgendaAsync(new CalendarFilter
         {
@@ -829,24 +809,21 @@
     private async Task ToggleActivities()
     {
         _includeActivities = !_includeActivities;
-        EnsureOneSourceSelected();
-        SyncSourceFilter();
+        KeepAtLeastOneSource(ref _includeActivities);
         await Load();
     }
 
     private async Task ToggleTickets()
     {
         _includeTickets = !_includeTickets;
-        EnsureOneSourceSelected();
-        SyncSourceFilter();
+        KeepAtLeastOneSource(ref _includeTickets);
         await Load();
     }
 
     private async Task ToggleInitiatives()
     {
         _includeInitiatives = !_includeInitiatives;
-        EnsureOneSourceSelected();
-        SyncSourceFilter();
+        KeepAtLeastOneSource(ref _includeInitiatives);
         await Load();
     }
 
@@ -875,7 +852,6 @@
         _idUser = null;
         _scope = CalendarScope.Mine;
         _searchText = null;
-        _sourceFilter = CalendarSourceFilter.All;
         _stateFilter = CalendarStateFilter.Open;
         _includeActivities = true;
         _includeTickets = true;
@@ -884,32 +860,15 @@
         await Load();
     }
 
-    private void SyncSourceToggles()
-    {
-        (_includeActivities, _includeTickets, _includeInitiatives) = _sourceFilter switch
-        {
-            CalendarSourceFilter.Activities => (true, false, false),
-            CalendarSourceFilter.Tickets => (false, true, false),
-            CalendarSourceFilter.Initiatives => (false, false, true),
-            _ => (true, true, true)
-        };
-    }
-
-    private void SyncSourceFilter()
-    {
-        _sourceFilter = (_includeActivities, _includeTickets, _includeInitiatives) switch
-        {
-            (true, false, false) => CalendarSourceFilter.Activities,
-            (false, true, false) => CalendarSourceFilter.Tickets,
-            (false, false, true) => CalendarSourceFilter.Initiatives,
-            _ => CalendarSourceFilter.All
-        };
-    }
-
-    private void EnsureOneSourceSelected()
+    /// <summary>
+    /// Spegnere l'ultima sorgente accesa lascerebbe l'agenda vuota. In quel caso il pulsante
+    /// appena premuto si riaccende. Prima ne veniva accesa un'altra al posto suo - si spegneva
+    /// Attivita' e ci si ritrovava con le sole Iniziative, che nessuno aveva chiesto.
+    /// </summary>
+    private void KeepAtLeastOneSource(ref bool justPressed)
     {
         if (!_includeActivities && !_includeTickets && !_includeInitiatives)
-            _includeInitiatives = true;
+            justPressed = true;
     }
 
     private static CalendarSummaryDTO BuildSummary(List<CalendarItemDTO> items)
