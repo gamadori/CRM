@@ -1,9 +1,9 @@
 ﻿@using Radzen
 @using Radzen.Blazor
 
-@* La barra a sinistra dice la NATURA del lavoro (commessa o assistenza), non l'urgenza: quella
-   resta a priorita' e scadenza, che sono dati veri. Il colore di fondo continua a dire "di chi e'". *@
-<div class="modern-ticket-card @(Ticket.IsCommessa ? "is-commessa" : "is-assistenza")"
+@* Il bordo a sinistra porta il colore dell'utente assegnato: dice DI CHI e' il lavoro.
+   L'urgenza non sta nei colori della card, resta a priorita' e scadenza, che sono dati veri. *@
+<div class="modern-ticket-card"
      style="border-left-color: @Ticket.BackGroundColor"
      title="@BuildCardTitle()"
      draggable="true"
@@ -119,7 +119,10 @@
     .modern-ticket-card {
         background: white;
         border-radius: 8px;
-        padding: 0.45rem 0.55rem;
+        /* Sopra si sta piu' stretti che sotto, e non e' una svista: la prima riga porta il
+           tondino dell'utente, che e' alto 25px e si porta dietro il suo spazio. Con lo stesso
+           margine su tutti i lati la card sembrava iniziare in ritardo. */
+        padding: 0.25rem 0.55rem 0.45rem;
         border-left: 4px solid #667eea;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
         transition: all 0.3s ease;
@@ -133,26 +136,11 @@
         opacity: .72;
     }
 
-    /* Natura del lavoro: una fascia sottile sul bordo superiore, cosi' non litiga con il bordo
-       sinistro che porta il colore dell'utente assegnato. Due tinte neutre e di pari peso: nessuna
-       delle due deve sembrare "piu' urgente" dell'altra. */
-    .modern-ticket-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        border-radius: 8px 8px 0 0;
-    }
-
-    .modern-ticket-card.is-commessa::before {
-        background: #6366f1;
-    }
-
-    .modern-ticket-card.is-assistenza::before {
-        background: #0ea5e9;
-    }
+    /* Qui c'era una fascia di 3px in cima alla card: azzurra per l'assistenza, indaco per la
+       commessa. Diceva la natura del lavoro, ma su questi calendari i ticket di commessa non
+       arrivano piu' - li esclude la query in TicketsController.GetScheduleItems - quindi era
+       sempre dello stesso colore. Un colore che non cambia mai non distingue niente, e in una
+       cella del mese quei pixel servono al testo. */
 
     /* Riga commessa */
     .ticket-commessa {

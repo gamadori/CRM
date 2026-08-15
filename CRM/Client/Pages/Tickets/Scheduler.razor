@@ -98,58 +98,9 @@
         position: relative;
     }
 
-    /* Natura del lavoro: segmented control */
-    .work-kind-filter {
-        display: inline-flex;
-        border: 1px solid var(--crm-border, #e5e7eb);
-        border-radius: 8px;
-        overflow: hidden;
-        background: var(--crm-surface, #fff);
-    }
-
-    .kind-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: .3rem;
-        border: none;
-        background: transparent;
-        padding: .3rem .6rem;
-        font-size: .78rem;
-        font-weight: 600;
-        color: var(--crm-text-muted, #64748b);
-        cursor: pointer;
-        white-space: nowrap;
-        transition: background-color .15s ease, color .15s ease;
-    }
-
-    .kind-btn + .kind-btn {
-        border-left: 1px solid var(--crm-border, #e5e7eb);
-    }
-
-    .kind-btn:hover {
-        background: var(--crm-surface-hover, #f1f5f9);
-    }
-
-    .kind-btn.active {
-        background: color-mix(in srgb, #6366f1 12%, var(--crm-surface, #fff));
-        color: var(--crm-text, #1f2937);
-    }
-
-    /* Gli stessi due toni della fascia sulla card: il filtro e la legenda coincidono */
-    .kind-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-    .kind-assistenza .kind-dot {
-        background: #0ea5e9;
-    }
-
-    .kind-commessa .kind-dot {
-        background: #6366f1;
-    }
+    /* Qui c'erano gli stili del filtro assistenza/commessa e della sua legenda a pallini.
+       Il filtro e' stato tolto quando i ticket di commessa sono usciti da questo calendario, e
+       questi stili sono rimasti indietro senza piu' un pezzo di pagina da vestire. */
 
     @@media (max-width: 768px) {
         .ticket-planning-page {
