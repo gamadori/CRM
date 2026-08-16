@@ -100,11 +100,11 @@
                                 <dd>@_ticket.DateEnd?.ToString("d")</dd>
                             }
                         }
-                        @if (_stepTicket > TicketCreateSteps.Expired && _ticketType != null && PropertyVisible(_ticketType.ExpiredDate))
-                        {
-                            <dt><DisplayName For="@(() => _ticket.DateExpired)" /></dt>
-                            <dd>@_ticket.DateExpired</dd>
-                        }
+                        @* Qui il riepilogo mostrava la scadenza, sempre vuota: la calcola il
+                           server alla nascita del ticket, quindi mentre si compila la procedura
+                           non esiste ancora. La riga compariva perche' la condizione leggeva
+                           ExpiredDate - che sono i GIORNI concessi dal tipo - come se fosse uno
+                           stato di visibilita': 1 e 2 giorni valevano "Opzionale" e "Richiesto". *@
                         @if (_stepTicket > TicketCreateSteps.Assign && _user.CanTicketAssign && _selectedUserIds.Any())
                         {
                             <dt><DisplayName For="@(() => _ticket.IdUserAssigned)" /></dt>
@@ -246,13 +246,6 @@
                                     <DisplayName For="@(() => _ticket.Description)" />
                                     <RadzenTextArea @bind-value="@_ticket.Description" Rows="8" Style="width:100%"
                                                     Placeholder="@Localize["Descrivi il problema o la richiesta."]" />
-                                </div>
-                            }
-                            else if (_stepTicket == TicketCreateSteps.Expired)
-                            {
-                                <div class="field">
-                                    <DisplayName For="@(() => _ticket.DateExpired)" />
-                                    <InputDate class="form-control" @bind-Value="@_ticket.DateExpired" />
                                 </div>
                             }
                             else if (_stepTicket == TicketCreateSteps.Assign)

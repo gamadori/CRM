@@ -1,4 +1,5 @@
 ﻿using CRM.Server.Data;
+using CRM.Server.Extensions;
 using CRM.Shared;
 using CRM.Shared.DTOs;
 using CRM.Shared.Helper;
@@ -59,7 +60,7 @@ namespace CRM.Server.Services
                 DateOpened = now,
                 Date = workDate,
                 DateEnd = request.DateEnd,
-                DateExpired = request.DateExpired ?? await CalculateExpirationDateAsync(request.IdType, workDate),
+                DateExpired = await CalculateExpirationDateAsync(request.IdType, workDate),
                 Numero = string.Empty,
                 CloseDescription = string.Empty,
                 CloseNote = string.Empty,
@@ -177,7 +178,11 @@ namespace CRM.Server.Services
                     .FirstOrDefaultAsync();
             }
 
-            return days > 0 ? date.AddDays(days) : null;
+            // Giorni LAVORATIVI, come ovunque nel CRM: sabato, domenica e i festivi italiani non
+            // contano. Qui si contavano solari, quindi un ticket aperto da fuori nasceva con una
+            // scadenza che il primo caricamento di elenco gli cambiava sotto - la stessa data
+            // raccontata in due modi a seconda di chi la guardava.
+            return days > 0 ? date.AddWorkdays(days) : null;
         }
 
         private static string BuildDescription(ExternalTicketCreateRequest request)

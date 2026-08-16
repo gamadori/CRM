@@ -79,7 +79,7 @@ About
 Cuore operativo del sistema.
 
 **Ciclo ticket**
-- Creazione guidata a step (`TicketCreateSteps`: azienda → tipo → prodotto → data → descrizione → scadenza → assegnazione → conferma → risultato).
+- Creazione guidata a step (`TicketCreateSteps`: azienda → tipo → prodotto → data → descrizione → assegnazione → conferma → risultato).
 - Assegnazione multipla utenti (`TicketUserAssignment`, `Assign.razor`), gruppi e tipi ticket per gruppo/utente.
 - Stati configurabili (`TicketStates`), priorità `Low/Medium/High…`, tipi supporto `Phone, Web, OnSite, Office, Remote, Workshop`.
 - Filtri predefiniti (`TicketTypeSearch`): tutti, non assegnati, assegnati, scaduti, chiusi, in lavorazione, nuovo messaggio, da fatturare.

@@ -97,7 +97,11 @@ namespace CRM.Shared
         ProductTicket,
         DateTicket,
         DescriptionTicket,
-        Expired,
+        // Qui c'era Expired, un passo per digitare la scadenza a mano. Non e' mai stato messo
+        // nella sequenza dei passi, quindi non lo raggiungeva nessuno; e comunque la scadenza la
+        // calcola il server alla nascita del ticket, percio' un valore digitato sarebbe stato
+        // sovrascritto senza dirlo. I passi si confrontano fra loro con < e >: l'ordine di questo
+        // elenco e' l'ordine della procedura, e va tenuto tale.
         Assign,
         DataConfirm,
         Result,

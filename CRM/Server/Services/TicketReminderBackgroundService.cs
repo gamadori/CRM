@@ -84,6 +84,7 @@ namespace CRM.Server.Services
                 log,
                 Math.Max(0, settings.TicketExpiryReminderMinutes),
                 expiryOverrides,
+                TicketExpirySchedule.FineGiornata(settings.ScheduleTimeEnd),
                 ct);
         }
 
@@ -175,17 +176,23 @@ namespace CRM.Server.Services
             ILogEventService log,
             int globalMinutes,
             IReadOnlyDictionary<int, int> overrides,
+            TimeSpan fineGiornata,
             CancellationToken ct)
         {
             var now = DateTime.Now;
             var retryThreshold = now - RetryDelay;
-            var upperBound = now.AddMinutes(MaxReminderLead(globalMinutes, overrides));
+
+            // Si pesca per GIORNO di scadenza, non per l'istante scritto nel campo: l'ora vera la
+            // decide fineGiornata, e puo' cadere sia prima sia dopo quella memorizzata. Filtrando
+            // sull'istante grezzo, un ticket scaduto alle 22:30 con chiusura alle 18:00 sarebbe
+            // maturo quattro ore prima di entrare fra i candidati.
+            var ultimoGiorno = now.AddMinutes(MaxReminderLead(globalMinutes, overrides)).Date.AddDays(1);
 
             var candidates = await db.Tickets
                 .Include(x => x.Company)
                 .Where(x => !x.Closed
                          && x.DateExpired != null
-                         && x.DateExpired <= upperBound
+                         && x.DateExpired < ultimoGiorno
                          && (x.ReminderExpiryStatus == ReminderStatus.Pending
                              || (x.ReminderExpiryStatus == ReminderStatus.Failed
                                  && x.ReminderExpiryRetryCount < MaxRetries
@@ -196,18 +203,25 @@ namespace CRM.Server.Services
 
             foreach (var ticket in candidates)
             {
-                var reminderAt = ticket.DateExpired!.Value - TimeSpan.FromMinutes(EffectiveMinutes(ticket.IdType, globalMinutes, overrides));
+                var minuti = EffectiveMinutes(ticket.IdType, globalMinutes, overrides);
+                var scadenzaAt = TicketExpirySchedule.ScadenzaAt(ticket.DateExpired!.Value, fineGiornata);
+                var reminderAt = TicketExpirySchedule.PreavvisoAt(ticket.DateExpired.Value, fineGiornata, minuti);
+
                 if (reminderAt > now)
                     continue;
 
                 ticket.ReminderExpiryRetryCount++;
                 ticket.ReminderExpiryLastAttemptAt = DateTime.Now;
 
-                var expired = ticket.DateExpired.Value < now;
+                var expired = scadenzaAt < now;
                 var title = expired ? "Ticket scaduto non chiuso" : "Ticket in scadenza";
+
+                // Solo il giorno: l'ora dentro DateExpired non l'ha scelta nessuno, e scriverla
+                // nell'avviso significava annunciare una scadenza "alle 22:30" che in nessun'altra
+                // schermata del programma esisteva.
                 var when = expired
-                    ? $"Scaduto il {ticket.DateExpired:dd/MM/yyyy HH:mm}"
-                    : $"Scadenza {ticket.DateExpired:dd/MM/yyyy HH:mm}";
+                    ? $"Scaduto il {ticket.DateExpired:dd/MM/yyyy}"
+                    : $"Scadenza {ticket.DateExpired:dd/MM/yyyy}";
                 var body = BuildBody(when, ticket);
 
                 try

@@ -28,7 +28,11 @@ namespace CRM.Shared.DTOs
 
         public DateTime? DateEnd { get; set; }
 
-        public DateTime? DateExpired { get; set; }
+        // La scadenza non si manda da fuori: la calcola il CRM dai giorni concessi dal tipo di
+        // ticket. Accettarla era una promessa falsa - il riallineamento delle scadenze la
+        // riscriveva alla prima apertura di un elenco, quindi il valore chiesto durava finche'
+        // qualcuno non guardava. In lettura la scadenza c'e' ancora: e' cio' che il chiamante deve
+        // sapere, ed e' quella vera.
 
         public string? ExternalReference { get; set; }
     }

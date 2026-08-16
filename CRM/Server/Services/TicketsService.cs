@@ -480,7 +480,13 @@ namespace CRM.Server.Services
             try
             {
                 string idUserOpened = await _permitsService.IdUser();
-                int day = await GetDayBeforeExpired(ticket.Id);
+
+                // I giorni concessi si leggono dal TIPO del ticket. Prima si passava da un metodo
+                // che il tipo andava a cercarlo per id di TICKET: qui il ticket non e' ancora
+                // salvato, l'id vale 0, nessuna riga corrispondeva e il ripiego fisso di 3 giorni
+                // valeva per tutti. Un tipo con SLA di 1 giorno nasceva con 3, e su quella data
+                // sbagliata veniva programmato il preavviso.
+                int day = await ExpiredDaysForTypeAsync(ticket.IdType);
 
                 ticket.DateOpened = DateTime.Now;
 
@@ -1465,16 +1471,6 @@ namespace CRM.Server.Services
             return dipendenze
                 .GroupBy(d => d.IdFase)
                 .ToDictionary(g => g.Key, g => g.Select(x => x.Nome).ToList());
-        }
-
-        public async Task<int> GetDayBeforeExpired(int id)
-        {
-            var idType = await _context.Tickets.AsNoTracking()
-                .Where(x => x.Id == id)
-                .Select(x => (int?)x.IdType)
-                .FirstOrDefaultAsync();
-
-            return idType == null ? 3 : await ExpiredDaysForTypeAsync(idType.Value);
         }
 
         /// <summary>

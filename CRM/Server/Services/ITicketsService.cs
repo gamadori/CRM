@@ -69,7 +69,6 @@ namespace CRM.Server.Services
         // Helpers
         Task<bool> TicketChangeAssigned(int id, string? idAssigned);
         Task CheckTicketExpired(int id);
-        Task<int> GetDayBeforeExpired(int id);
     }
 
     public class AssignUsersResult
