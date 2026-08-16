@@ -120,7 +120,7 @@ Cuore operativo del sistema.
 - **Knowledge di prodotto** (`ProductKnowledge`).
 
 ### 3.8 Macchine / IoT
-- **API macchina** `api/machine` protetta da API key con permessi (`MachineParameterApiKeys`, gestite in `Settings/MachineParameterApiKeys`): elenco articoli, download ultimo backup per prodotto/articolo, upload backup.
+- **API macchina** `api/machine` protetta da API key di ambito `MachineBackup` (gestite in `Settings/ApiKeys`): elenco macchine, ultimo backup della macchina, ultimo backup di riferimento del modello, upload backup. Si parla per **matricola**, non per id interno; la chiave è intestata a una ditta e vede solo le macchine di quella ditta (senza ditta non apre niente).
 - **Backup macchina** (`MachineBackups`): versionamento, SHA-256, dimensione, origine `Manual/…`, riferimento esterno.
 - **Parametri macchina** (`MachineParameters`, `ArticleParameters`).
 

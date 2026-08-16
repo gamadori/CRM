@@ -1,0 +1,78 @@
+/* Colori dalle variabili del tema: la pagina deve reggere chiaro e scuro senza ritocchi. */
+.backup-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-width: 900px;
+}
+
+.backup-card {
+    border: 1px solid var(--crm-border, rgba(128, 128, 128, 0.3));
+    border-radius: 12px;
+    background: var(--crm-surface, transparent);
+    overflow: hidden;
+}
+
+.card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--crm-border, rgba(128, 128, 128, 0.3));
+}
+
+.card-head .material-icons {
+    font-size: 1.75rem;
+    color: var(--crm-primary, #0f4a8a);
+}
+
+.card-head h3 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.card-head p {
+    margin: 0.15rem 0 0;
+    font-size: 0.875rem;
+    color: var(--crm-text-muted, rgba(128, 128, 128, 0.9));
+}
+
+.card-switch {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+.backup-card.is-off .card-head .material-icons {
+    color: var(--crm-text-muted, rgba(128, 128, 128, 0.9));
+}
+
+.card-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--crm-text-muted, rgba(128, 128, 128, 0.9));
+}
+
+.warn {
+    margin: 0;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--crm-warning, #ed6c02) 12%, transparent);
+    color: var(--crm-warning, #ed6c02);
+}
+
+.backup-actions {
+    display: flex;
+    justify-content: flex-end;
+}

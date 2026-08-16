@@ -49,7 +49,8 @@ public class PublicApiSurfaceTests
         "MachineParametersController.Download",
         "MachineParametersController.GetArticles",
         "MachineParametersController.GetLatestArticleBackup",
-        "MachineParametersController.GetLatestProductBackup",
+        "MachineParametersController.GetLatestModelBackup",
+        "MachineParametersController.PostStatus",
         "MachineParametersController.UploadArticleBackup",
 
         // Licenze macchina: si presentano con la loro MachineKey.

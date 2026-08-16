@@ -137,6 +137,52 @@ namespace CRM.Shared
         [Display(Name = "Preavviso scadenza ticket (minuti prima)")]
         public int TicketExpiryReminderMinutes { get; set; } = 120;
 
+        // ─── Backup delle macchine ───────────────────────────────────────────────
+        // Due impostazioni che nascono spente: finche' valgono zero non si cancella nessun file e
+        // non parte nessun avviso. Il giorno che le macchine cominceranno a mandare il backup da
+        // sole servira' accenderle, ma quando succede deve deciderlo una persona.
+
+        /// <summary>
+        /// Quante versioni di backup tenere per macchina. Zero = tutte.
+        /// <para>
+        /// La prima versione non si cancella mai: e' la configurazione con cui la macchina e'
+        /// partita, il riferimento per capire cosa e' cambiato da allora. Il conteggio riguarda le
+        /// altre.
+        /// </para>
+        /// </summary>
+        [Display(Name = "Versioni di backup da tenere per macchina (0 = tutte)")]
+        public int MachineBackupKeepVersions { get; set; }
+
+        /// <summary>
+        /// Interruttore del controllo sul silenzio delle macchine. Spento non parte niente, anche se
+        /// giorni e destinatari sono compilati: cosi' si sospende il controllo senza cancellare la
+        /// configurazione e doverla riscrivere per riaccenderlo.
+        /// </summary>
+        [Display(Name = "Controllo backup macchine attivo")]
+        public bool MachineBackupCheckEnabled { get; set; }
+
+        /// <summary>
+        /// Dopo quanti giorni di silenzio una macchina va segnalata. Zero = nessuna segnalazione.
+        /// Riguarda solo le macchine che un backup lo hanno gia' mandato: quelle non sono mai state
+        /// sotto backup, e segnalarle sarebbe rumore.
+        /// </summary>
+        [Display(Name = "Giorni di silenzio prima di segnalare una macchina (0 = mai)")]
+        public int MachineBackupSilenceDays { get; set; }
+
+        /// <summary>
+        /// Chi riceve il riepilogo delle macchine in silenzio. Piu' indirizzi separati da punto e
+        /// virgola. Vuoto = nessun invio.
+        /// </summary>
+        [Display(Name = "Email per il riepilogo (piu' indirizzi separati da ;)")]
+        [MaxLength(500)]
+        public string? MachineBackupSilenceEmail { get; set; }
+
+        /// <summary>
+        /// Giorno dell'ultimo controllo sul silenzio delle macchine. Sta in archivio e non in
+        /// memoria: altrimenti ogni riavvio del server farebbe ripartire il riepilogo di oggi.
+        /// </summary>
+        public DateTime? MachineBackupSilenceLastSentOn { get; set; }
+
         // ─── Default preavviso attività per tipo (minuti prima della scadenza) ───
         // Precompilano il Promemoria alla creazione dell'attività; null = nessun default.
         [Display(Name = "Preavviso Chiamata (minuti prima)")]

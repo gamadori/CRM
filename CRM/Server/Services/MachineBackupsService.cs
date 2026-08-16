@@ -89,6 +89,23 @@ namespace CRM.Server.Services
                 backup.Size = stored.Size;
                 backup.Sha256 = stored.Sha256;
                 await _context.SaveChangesAsync(cancellationToken);
+
+                // Stesso file dell'ultima volta: non e' una versione nuova, e' la stessa
+                // configurazione rimandata. L'impronta si conosce solo dopo aver scritto il file,
+                // quindi la versione appena creata si butta ora. Chi ha caricato riceve la versione
+                // buona, cosi' rimandare lo stesso backup non e' un errore: semplicemente non
+                // cambia niente.
+                var precedente = await FindPreviousIdenticalAsync(backup, cancellationToken);
+                if (precedente != null)
+                {
+                    _context.MachineBackups.Remove(backup);
+                    await _context.SaveChangesAsync(cancellationToken);
+                    _archive.Delete(backup.Id, backup.FileName);
+                    return (await GetAsync(precedente.Id))!;
+                }
+
+                await ApplyRetentionAsync(ownerType, ownerId, cancellationToken);
+
                 return (await GetAsync(backup.Id))!;
             }
             catch
@@ -123,6 +140,65 @@ namespace CRM.Server.Services
             await _context.SaveChangesAsync();
             _archive.Delete(backup.Id, backup.FileName);
             return true;
+        }
+
+        /// <summary>
+        /// La versione precedente con la stessa impronta, se il file appena arrivato e' identico a
+        /// quello di prima. Si guarda solo l'ultima: due backup uguali a distanza di mesi, con
+        /// altri diversi in mezzo, raccontano che la configurazione e' tornata indietro - e questo
+        /// va tenuto.
+        /// </summary>
+        private async Task<MachineBackup?> FindPreviousIdenticalAsync(MachineBackup backup, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(backup.Sha256))
+                return null;
+
+            var ownerId = backup.IdArticle ?? backup.IdProduct ?? 0;
+
+            var ultimo = await FilterByOwner(backup.OwnerType, ownerId)
+                .AsNoTracking()
+                .Where(x => x.Id != backup.Id)
+                .OrderByDescending(x => x.Version)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            return ultimo != null && ultimo.Sha256 == backup.Sha256 ? ultimo : null;
+        }
+
+        /// <summary>
+        /// Tiene le ultime N versioni e butta le eccedenti. La PRIMA non si tocca mai: e' la
+        /// configurazione con cui la macchina e' partita, e serve per capire cosa e' cambiato da
+        /// allora. Con l'impostazione a zero non si cancella niente.
+        /// </summary>
+        private async Task ApplyRetentionAsync(MachineBackupOwnerType ownerType, int ownerId, CancellationToken cancellationToken)
+        {
+            var keep = (await _context.GlobalSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken))?.MachineBackupKeepVersions ?? 0;
+            if (keep <= 0)
+                return;
+
+            var versioni = await FilterByOwner(ownerType, ownerId)
+                .OrderByDescending(x => x.Version)
+                .ToListAsync(cancellationToken);
+
+            if (versioni.Count <= keep)
+                return;
+
+            var primaVersione = versioni[^1].Id;
+            var daButtare = versioni
+                .Skip(keep)
+                .Where(x => x.Id != primaVersione)
+                .ToList();
+
+            if (daButtare.Count == 0)
+                return;
+
+            _context.MachineBackups.RemoveRange(daButtare);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            // I file dopo il salvataggio: se qui qualcosa va storto restano dei file orfani, che
+            // costano spazio. Nell'ordine inverso resterebbero righe che puntano a file spariti, e
+            // un backup che non si scarica piu' e' peggio.
+            foreach (var backup in daButtare)
+                _archive.Delete(backup.Id, backup.FileName);
         }
 
         private IQueryable<MachineBackup> FilterByOwner(MachineBackupOwnerType ownerType, int ownerId)

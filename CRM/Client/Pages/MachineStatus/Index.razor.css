@@ -1,0 +1,131 @@
+/* Colori dalle variabili del tema: la scheda deve reggere chiaro e scuro senza ritocchi. */
+.machine-status {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.ms-card {
+    border: 1px solid var(--crm-border, rgba(128, 128, 128, 0.3));
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--crm-surface, transparent);
+}
+
+.ms-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid var(--crm-border, rgba(128, 128, 128, 0.3));
+}
+
+.ms-head h3 {
+    margin: 0;
+    font-size: 1rem;
+    flex: 1;
+}
+
+.ms-head .material-icons {
+    color: var(--crm-primary, #0f4a8a);
+}
+
+.ms-count {
+    font-size: 0.8rem;
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--crm-primary, #0f4a8a) 15%, transparent);
+    color: var(--crm-primary, #0f4a8a);
+}
+
+.ms-empty {
+    margin: 0;
+    padding: 1.1rem;
+    font-size: 0.9rem;
+    color: var(--crm-text-muted, rgba(128, 128, 128, 0.9));
+}
+
+/* La tabella scorre per conto suo: una linea con venti schede non deve far scorrere la pagina. */
+.ms-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    display: block;
+    overflow-x: auto;
+}
+
+.ms-table th,
+.ms-table td {
+    padding: 0.5rem 1.1rem;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid color-mix(in srgb, var(--crm-border, gray) 50%, transparent);
+}
+
+.ms-table th {
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--crm-text-muted, rgba(128, 128, 128, 0.9));
+}
+
+.ms-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.ms-kind {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.1rem 0.45rem;
+    border-radius: 5px;
+    border: 1px solid var(--crm-border, rgba(128, 128, 128, 0.4));
+}
+
+.ms-version {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 0.85rem;
+}
+
+.ms-sub {
+    font-size: 0.8rem;
+    color: var(--crm-text-muted, rgba(128, 128, 128, 0.9));
+}
+
+/* Non parla da piu' di una settimana: la versione qui e' l'ultima nota, non quella di adesso. */
+.ms-stale {
+    color: var(--crm-warning, #ed6c02);
+    font-weight: 600;
+}
+
+.ms-reset {
+    margin-left: 0.4rem;
+    font-size: 0.7rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--crm-warning, #ed6c02) 18%, transparent);
+    color: var(--crm-warning, #ed6c02);
+}
+
+.ms-totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 1rem 1.1rem;
+}
+
+.ms-total {
+    display: flex;
+    flex-direction: column;
+}
+
+.ms-total-value {
+    font-size: 1.6rem;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.ms-total-label {
+    font-size: 0.8rem;
+    color: var(--crm-text-muted, rgba(128, 128, 128, 0.9));
+}

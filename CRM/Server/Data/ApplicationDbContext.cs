@@ -415,6 +415,32 @@ namespace CRM.Server.Data
                     "([OwnerType] = 1 AND [IdProduct] IS NOT NULL AND [IdArticle] IS NULL) OR ([OwnerType] = 2 AND [IdArticle] IS NOT NULL AND [IdProduct] IS NULL)"));
             });
 
+            modelBuilder.Entity<MachineComponent>(entity =>
+            {
+                entity.HasOne(x => x.Article).WithMany().HasForeignKey(x => x.IdArticle).OnDelete(DeleteBehavior.Cascade);
+
+                // L'identita' di un componente e' la sua posizione dentro la macchina: due PLC-1
+                // sulla stessa linea vorrebbero dire due storie di versioni per lo stesso punto.
+                entity.HasIndex(x => new { x.IdArticle, x.Code }).IsUnique();
+            });
+
+            modelBuilder.Entity<MachineComponentVersionChange>(entity =>
+            {
+                entity.HasOne(x => x.Component).WithMany().HasForeignKey(x => x.IdMachineComponent).OnDelete(DeleteBehavior.Cascade);
+
+                // La domanda vera e' "cosa e' cambiato su questo componente, dal piu' recente".
+                entity.HasIndex(x => new { x.IdMachineComponent, x.DetectedAt });
+            });
+
+            modelBuilder.Entity<MachineDailyReading>(entity =>
+            {
+                entity.HasOne(x => x.Article).WithMany().HasForeignKey(x => x.IdArticle).OnDelete(DeleteBehavior.Cascade);
+
+                // Una lettura per macchina e per giorno: due letture dello stesso giorno sarebbero
+                // due differenze calcolate sulla stessa giornata, cioe' produzione contata due volte.
+                entity.HasIndex(x => new { x.IdArticle, x.Day }).IsUnique();
+            });
+
             // Le due domande che la tabella dei consumi deve reggere: "quanto nel periodo" e
             // "quanto per funzione nel periodo". Nessun altro indice: cresce a ogni chiamata AI.
             modelBuilder.Entity<ExternalServiceUsage>(entity =>
@@ -1083,6 +1109,12 @@ namespace CRM.Server.Data
         public DbSet<ProductCatalogAsset> ProductCatalogAssets => Set<ProductCatalogAsset>();
 
         public DbSet<MachineBackup> MachineBackups => Set<MachineBackup>();
+
+        public DbSet<MachineComponent> MachineComponents => Set<MachineComponent>();
+
+        public DbSet<MachineComponentVersionChange> MachineComponentVersionChanges => Set<MachineComponentVersionChange>();
+
+        public DbSet<MachineDailyReading> MachineDailyReadings => Set<MachineDailyReading>();
         public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
         public DbSet<CRM.Shared.Article> Articles => Set<Article>();
         public DbSet<CRM.Shared.TicketState> TicketStates => Set<TicketState>();

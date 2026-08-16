@@ -1,0 +1,94 @@
+@page "/Settings/MachineBackups"
+@using CRM.Shared
+@using CRM.Client.Models
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Policy = "AdminRole")]
+
+<PageHeader Model="_pageHeader" />
+
+@if (_loading || _settings == null)
+{
+    <Waiting />
+}
+else
+{
+    @* I campi RedG* portano dentro la validazione, e senza un EditForm attorno la pagina non si
+       apre nemmeno: cercano un EditContext e sollevano un errore in fase di disegno. *@
+    <EditForm Model="@_settings" OnValidSubmit="SaveAsync">
+    <div class="backup-page">
+
+        @* Conservazione: qui si cancellano file dei clienti, quindi la conseguenza va scritta
+           accanto al campo, non nascosta in un manuale. *@
+        <section class="backup-card">
+            <div class="card-head">
+                <span class="material-icons">inventory_2</span>
+                <div>
+                    <h3>Versioni da conservare</h3>
+                    <p>Quanti backup tenere per ogni macchina.</p>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <RedGNumeric @bind-Value="@_settings.MachineBackupKeepVersions" For="@(() => _settings.MachineBackupKeepVersions)" />
+
+                <p class="hint">
+                    <b>Zero significa tenerle tutte.</b> Con un numero diverso da zero, le versioni oltre quel numero
+                    vengono <b>cancellate</b>, file compreso.
+                </p>
+                <p class="hint">
+                    La prima versione di ogni macchina non si cancella mai: è la configurazione con cui la macchina è
+                    partita. Un backup identico al precedente non crea comunque una versione nuova.
+                </p>
+            </div>
+        </section>
+
+        @* Sorveglianza: interruttore in evidenza, come nello smistamento ticket. Spegnendolo la
+           configurazione resta scritta, così sospendere non costa doverla riscrivere. *@
+        <section class="backup-card @(_settings.MachineBackupCheckEnabled ? "is-on" : "is-off")">
+            <div class="card-head">
+                <span class="material-icons">notifications_active</span>
+                <div>
+                    <h3>Macchine che smettono di mandare il backup</h3>
+                    <p>Un riepilogo al giorno, la mattina, con l'elenco di chi tace da troppo tempo.</p>
+                </div>
+                <div class="card-switch">
+                    <RadzenSwitch @bind-Value="_settings.MachineBackupCheckEnabled" />
+                    <span>@(_settings.MachineBackupCheckEnabled ? "Attivo" : "Disattivo")</span>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <RedGNumeric @bind-Value="@_settings.MachineBackupSilenceDays"
+                             For="@(() => _settings.MachineBackupSilenceDays)"
+                             ReadOnly="@(!_settings.MachineBackupCheckEnabled)" />
+
+                <RedGTextBox @bind-Value="@_settings.MachineBackupSilenceEmail"
+                             For="@(() => _settings.MachineBackupSilenceEmail)"
+                             ReadOnly="@(!_settings.MachineBackupCheckEnabled)" />
+
+                <p class="hint">
+                    Più indirizzi si separano con il punto e virgola. Arriva una email sola con l'elenco, non una per
+                    macchina: un guasto di rete ne zittisce venti insieme.
+                </p>
+                <p class="hint">
+                    Riguarda solo le macchine che un backup lo hanno già mandato almeno una volta. Le altre non sono mai
+                    state sotto backup.
+                </p>
+
+                @if (_settings.MachineBackupCheckEnabled && _settings.MachineBackupSilenceDays <= 0)
+                {
+                    <p class="warn">Con zero giorni non viene segnalata nessuna macchina.</p>
+                }
+
+                @if (_settings.MachineBackupCheckEnabled && string.IsNullOrWhiteSpace(_settings.MachineBackupSilenceEmail))
+                {
+                    <p class="warn">Senza destinatari il riepilogo non parte.</p>
+                }
+            </div>
+        </section>
+
+        <div class="backup-actions">
+            <RedGButton RGButtonType="RGButtonType.Submit" AutoLabel="true" Disabled="@_saving" />
+        </div>
+    </div>
+    </EditForm>
+}

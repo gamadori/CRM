@@ -1,0 +1,172 @@
+@using CRM.Shared
+@using CRM.Shared.DTOs
+
+@if (_loading)
+{
+    <Waiting />
+}
+else if (_data == null)
+{
+    <p class="text-muted">Dati non disponibili.</p>
+}
+else
+{
+    <div class="machine-status">
+
+        @* Com'e' fatta la macchina adesso. Prima cosa che serve a chi risponde al telefono:
+           "che versione hai sul PLC?" *@
+        <section class="ms-card">
+            <div class="ms-head">
+                <span class="material-icons">memory</span>
+                <h3>Elettronica di bordo</h3>
+                <span class="ms-count">@_data.Components.Count</span>
+            </div>
+
+            @if (_data.Components.Count == 0)
+            {
+                <p class="ms-empty">
+                    Questa macchina non ha ancora mandato la sua configurazione. Succede al primo
+                    collegamento, se sulla macchina è impostata la matricola <b>@SerialNumber</b>.
+                </p>
+            }
+            else
+            {
+                <table class="ms-table">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Posizione</th>
+                            <th>Versione</th>
+                            <th>Matricola pezzo</th>
+                            <th>Ultimo cambio</th>
+                            <th>Visto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in _data.Components)
+                        {
+                            <tr>
+                                <td><span class="ms-kind">@Tipo(c.Kind)</span></td>
+                                <td>
+                                    <b>@c.Code</b>
+                                    @if (!string.IsNullOrWhiteSpace(c.Name))
+                                    {
+                                        <div class="ms-sub">@c.Name</div>
+                                    }
+                                </td>
+                                <td><span class="ms-version">@(c.CurrentVersion ?? "—")</span></td>
+                                <td>@(c.SerialNumber ?? "—")</td>
+                                <td>@(c.LastVersionChangeAt?.ToLocalTime().ToString("dd/MM/yyyy") ?? "—")</td>
+                                @* Un dato vecchio non e' un dato: se la macchina non parla da un
+                                   pezzo, la versione qui sopra e' un ricordo, non lo stato. *@
+                                <td class="@(Vecchio(c.LastSeenAt) ? "ms-stale" : "")">
+                                    @Quando(c.LastSeenAt)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+
+        @* Ore e produzione: il totale in cima, il dettaglio sotto. *@
+        <section class="ms-card">
+            <div class="ms-head">
+                <span class="material-icons">insights</span>
+                <h3>Lavoro e produzione</h3>
+                <RadzenDropDown TValue="int" Value="@_days" Data="@_periodi" TextProperty="Text" ValueProperty="Value"
+                                Change="@(async args => await CambiaPeriodo((int)args))" Style="width:150px" />
+            </div>
+
+            @if (_data.Readings.Count == 0)
+            {
+                <p class="ms-empty">Nessuna giornata registrata nel periodo.</p>
+            }
+            else
+            {
+                <div class="ms-totals">
+                    <div class="ms-total">
+                        <span class="ms-total-value">@(_data.PeriodHours?.ToString("N1") ?? "—")</span>
+                        <span class="ms-total-label">ore lavorate</span>
+                    </div>
+                    <div class="ms-total">
+                        <span class="ms-total-value">@(_data.PeriodPieces?.ToString("N0") ?? "—")</span>
+                        <span class="ms-total-label">pezzi prodotti</span>
+                    </div>
+                    <div class="ms-total">
+                        <span class="ms-total-value">@_data.Readings.Count</span>
+                        <span class="ms-total-label">giorni con dati</span>
+                    </div>
+                </div>
+
+                <table class="ms-table">
+                    <thead>
+                        <tr>
+                            <th>Giorno</th>
+                            <th>Ore</th>
+                            <th>Pezzi</th>
+                            <th>Contaore macchina</th>
+                            <th>Contapezzi macchina</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in _data.Readings)
+                        {
+                            <tr>
+                                <td>@r.Day.ToString("ddd dd/MM/yyyy")</td>
+                                <td>@(r.Hours?.ToString("N1") ?? "—")</td>
+                                <td>@(r.Pieces?.ToString("N0") ?? "—")</td>
+                                <td class="ms-sub">@(r.TotalHours?.ToString("N1") ?? "—")</td>
+                                <td class="ms-sub">
+                                    @(r.TotalPieces?.ToString("N0") ?? "—")
+                                    @if (r.CounterReset)
+                                    {
+                                        <span class="ms-reset" title="Il contatore è ripartito da zero: quel giorno non entra nei totali">azzerato</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+
+        @* Lo storico dei cambi: è la domanda "da quando ha questa versione?", che salta fuori
+           ogni volta che una macchina comincia a fare i capricci. *@
+        <section class="ms-card">
+            <div class="ms-head">
+                <span class="material-icons">history</span>
+                <h3>Cambi di versione</h3>
+            </div>
+
+            @if (_data.RecentChanges.Count == 0)
+            {
+                <p class="ms-empty">Nessun cambio registrato.</p>
+            }
+            else
+            {
+                <table class="ms-table">
+                    <thead>
+                        <tr>
+                            <th>Quando</th>
+                            <th>Posizione</th>
+                            <th>Da</th>
+                            <th>A</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var v in _data.RecentChanges)
+                        {
+                            <tr>
+                                <td>@v.DetectedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                                <td><span class="ms-kind">@Tipo(v.Kind)</span> <b>@v.Code</b></td>
+                                <td>@(v.FromVersion ?? "prima installazione")</td>
+                                <td><span class="ms-version">@(v.ToVersion ?? "—")</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+    </div>
+}

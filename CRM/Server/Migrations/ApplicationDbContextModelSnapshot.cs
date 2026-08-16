@@ -2000,6 +2000,22 @@ namespace CRM.Server.Migrations
                     b.Property<int?>("LogoSiteHeader")
                         .HasColumnType("int");
 
+                    b.Property<bool>("MachineBackupCheckEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MachineBackupKeepVersions")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MachineBackupSilenceEmail")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("MachineBackupSilenceLastSentOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MachineBackupSilenceDays")
+                        .HasColumnType("int");
+
                     b.Property<int>("MonthlySchedulerMaxNumTickets")
                         .HasColumnType("int");
 
@@ -2793,6 +2809,127 @@ namespace CRM.Server.Migrations
                         {
                             t.HasCheckConstraint("CK_MachineBackups_Owner", "([OwnerType] = 1 AND [IdProduct] IS NOT NULL AND [IdArticle] IS NULL) OR ([OwnerType] = 2 AND [IdArticle] IS NOT NULL AND [IdProduct] IS NULL)");
                         });
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineComponent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("CurrentVersion")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime>("FirstSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdArticle")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastVersionChangeAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("SerialNumber")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdArticle", "Code")
+                        .IsUnique();
+
+                    b.ToTable("MachineComponents");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineComponentVersionChange", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DetectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FromVersion")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int>("IdMachineComponent")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Source")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("ToVersion")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdMachineComponent", "DetectedAt");
+
+                    b.ToTable("MachineComponentVersionChanges");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineDailyReading", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("CounterReset")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<decimal?>("Hours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("IdArticle")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("Pieces")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("TotalHours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<long?>("TotalPieces")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdArticle", "Day")
+                        .IsUnique();
+
+                    b.ToTable("MachineDailyReadings");
                 });
 
             modelBuilder.Entity("CRM.Shared.Order", b =>
@@ -5694,6 +5831,39 @@ namespace CRM.Server.Migrations
                     b.Navigation("Article");
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineComponent", b =>
+                {
+                    b.HasOne("CRM.Shared.Article", "Article")
+                        .WithMany()
+                        .HasForeignKey("IdArticle")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Article");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineComponentVersionChange", b =>
+                {
+                    b.HasOne("CRM.Shared.MachineComponent", "Component")
+                        .WithMany()
+                        .HasForeignKey("IdMachineComponent")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Component");
+                });
+
+            modelBuilder.Entity("CRM.Shared.MachineDailyReading", b =>
+                {
+                    b.HasOne("CRM.Shared.Article", "Article")
+                        .WithMany()
+                        .HasForeignKey("IdArticle")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Article");
                 });
 
             modelBuilder.Entity("CRM.Shared.Order", b =>

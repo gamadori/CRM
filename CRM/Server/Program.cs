@@ -229,6 +229,7 @@ builder.Services.AddScoped<ICompaniesService, CompaniesService>();
 builder.Services.AddScoped<IProductsService, ProductsService>();
 builder.Services.AddScoped<IExternalTicketApiService, ExternalTicketApiService>();
 builder.Services.AddScoped<CRM.Server.Services.IMachineBackupsService, MachineBackupsService>();
+builder.Services.AddScoped<CRM.Server.Services.IMachineStatusService, MachineStatusService>();
 
 builder.Services.AddScoped<IProductTypesService, ProductTypesService>();
 
@@ -276,6 +277,7 @@ builder.Services.AddHostedService<TicketReminderBackgroundService>();
 builder.Services.AddHostedService<WorkflowAutomationBackgroundService>();
 builder.Services.AddHostedService<EmailOutboxBackgroundService>();
 builder.Services.AddHostedService<EmailInboxBackgroundService>();
+builder.Services.AddHostedService<MachineBackupSilenceBackgroundService>();
 
 // Provider di fatturazione elettronica: di default nessuno (genera XML ma non trasmette).
 // Sostituire con un adapter specifico del provider adottato (Aruba, InfoCert, TeamSystem, ...).

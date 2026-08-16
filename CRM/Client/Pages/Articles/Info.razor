@@ -21,6 +21,10 @@ else
                 <RadzenSelectBarItem Text="@Localize["Data Product"]" Value="ProductViews.Product" />
                 <RadzenSelectBarItem Text="@Localize["Documenti Macchina"]" Value="ProductViews.Attachments" />
                 <RadzenSelectBarItem Text="Backup macchina" Value="ProductViews.Backups" />
+                @* Le voci qui sono scritte a mano e valgono per il desktop; _viewOptions serve
+                   alla tendina del telefono. Aggiungerne una in un posto solo la fa sparire
+                   dall'altro. *@
+                <RadzenSelectBarItem Text="Elettronica e produzione" Value="ProductViews.Status" />
                 <RadzenSelectBarItem Text="@($"{Localize["Documenti"]} {_article.ProductName}")" Value="ProductViews.ProductAttachments" />
                 <RadzenSelectBarItem Text="@Localize["Tickets"]" Value="ProductViews.Ticket" />
             </Items>
@@ -85,6 +89,10 @@ else
     else if (selectView == ProductViews.Backups)
     {
         <CRM.Client.Pages.MachineBackups.Index OwnerType="MachineBackupOwnerType.Article" OwnerId="@Id" />
+    }
+    else if (selectView == ProductViews.Status)
+    {
+        <CRM.Client.Pages.MachineStatus.Index Id="@Id" SerialNumber="@_article?.SerialNumber" />
     }
     else if (selectView == ProductViews.Ticket)
     {
