@@ -37,6 +37,25 @@ namespace CRM.Shared
     }
 
     /// <summary>
+    /// Da quale estremo si costruisce il piano di una commessa nuova.
+    /// </summary>
+    public enum ProductionScheduleMode
+    {
+        /// <summary>
+        /// Si parte dalla consegna e si va a ritroso: il piano finisce entro quella data e
+        /// l'inizio è quello che serve per arrivarci. Si usa quando la data è già promessa.
+        /// </summary>
+        FromDelivery = 0,
+
+        /// <summary>
+        /// Si parte dalla data in cui il lavoro comincia e si va in avanti: la fine la decide la
+        /// durata delle fasi. Si usa quando è la disponibilità della produzione a comandare —
+        /// e in questo caso la consegna promessa resta un dato a parte, per misurare lo scarto.
+        /// </summary>
+        FromStart = 1
+    }
+
+    /// <summary>
     /// Commessa di produzione: il fascicolo di lavorazione di UNA singola unità (matricola).
     /// Nasce dalla riga d'ordine ("Avvia produzione") copiando le fasi dal template del prodotto
     /// (<see cref="GanttPlan"/>). Entità dedicata ed estensibile. Perimetro aziende fail-closed.

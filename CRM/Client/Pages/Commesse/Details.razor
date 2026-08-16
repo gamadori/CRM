@@ -98,6 +98,11 @@ else
                     <div class="d-flex gap-2">
                         <RadzenButton Icon="event_repeat" Text="@Localize["Riprogramma"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
                                       Click="OpenReschedule" Disabled="@(_c.State is CommessaStates.Delivered or CommessaStates.Cancelled)" />
+                        @* Il tempo guadagnato da una fase chiusa in anticipo non si recupera da solo:
+                           lo decide chi governa la commessa, qui, non il tecnico che chiude il ticket. *@
+                        <RadzenButton Icon="compress" Text="@(_compactBusy ? Localize["Calcolo..."] : Localize["Compatta il piano"])"
+                                      ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="CompactPlan"
+                                      Disabled="@(_compactBusy || _c.State is CommessaStates.Delivered or CommessaStates.Cancelled)" />
                         <RadzenButton Icon="edit" Text="@Localize["Modifica"]" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="ToggleEdit" />
                     </div>
                 </div>
@@ -768,6 +773,7 @@ else
 
     private RescheduleModel? _reschedule;
     private bool _rescheduleBusy;
+    private bool _compactBusy;
 
     /// <summary>
     /// Valorizzato solo mentre la tab Pianificazione è aperta: il Gantt carica le fasi
@@ -825,6 +831,50 @@ else
             _reschedule = null;
             await RefreshPlanAsync();
             Notification.Notify(NotificationSeverity.Success, Localize["Piano spostato"], resp.Message ?? string.Empty, 8000);
+        }
+        else Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Operazione fallita"], 8000);
+    }
+
+    /// <summary>
+    /// Recupera l'anticipo maturato. Prima si guarda quanto si recupera, poi si decide: le date
+    /// non si spostano all'indietro senza che qualcuno le abbia viste.
+    /// </summary>
+    private async Task CompactPlan()
+    {
+        if (_c == null) return;
+
+        _compactBusy = true;
+        var anteprima = await CommessaService.CompactPlanAsync(Id, preview: true);
+        _compactBusy = false;
+
+        if (!anteprima.State)
+        {
+            Notification.Notify(NotificationSeverity.Error, Localize["Errore"], anteprima.Message ?? Localize["Operazione fallita"], 8000);
+            return;
+        }
+
+        // Niente da recuperare: si dice e basta, senza far confermare il nulla.
+        if (anteprima.Message?.Contains("gia' compatto") == true)
+        {
+            Notification.Notify(NotificationSeverity.Info, Localize["Piano già compatto"], anteprima.Message, 6000);
+            return;
+        }
+
+        var conferma = await DialogService.Confirm(
+            $"{anteprima.Message} {Localize["Le fasi già avviate e quelle senza fasi precedenti restano dove sono."]}",
+            Localize["Compattare il piano?"],
+            new ConfirmOptions { OkButtonText = Localize["Compatta"], CancelButtonText = Localize["Annulla"] });
+
+        if (conferma != true) return;
+
+        _compactBusy = true;
+        var resp = await CommessaService.CompactPlanAsync(Id, preview: false);
+        _compactBusy = false;
+
+        if (resp.State)
+        {
+            await RefreshPlanAsync();
+            Notification.Notify(NotificationSeverity.Success, Localize["Piano compattato"], resp.Message ?? string.Empty, 8000);
         }
         else Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Operazione fallita"], 8000);
     }

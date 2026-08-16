@@ -44,6 +44,16 @@ namespace CRM.Shared.DTOs
         public string TakenByName { get; set; } = string.Empty;
         public DateTime? TakenAt { get; set; }
 
+        /// <summary>Quando il lavoro è finito davvero. È da qui che slittano le fasi successive.</summary>
+        public DateTime? EndDateActual { get; set; }
+
+        /// <summary>
+        /// Vero se la fase ha sforato la data prevista. Niente conteggio di giorni qui: il calendario
+        /// di produzione conta in giorni lavorativi, e quel conto sa farlo solo il server.
+        /// Un numero in giorni solari accanto a date lavorative si legge male e inganna.
+        /// </summary>
+        public bool EndedLate => EndDateActual != null && EndDateActual.Value.Date > EndDate.Date;
+
         public int TicketCount { get; set; }
         public int OpenTicketCount { get; set; }
         public int ClosedTicketCount { get; set; }
@@ -112,6 +122,7 @@ namespace CRM.Shared.DTOs
                 IdUserTakenBy = fase.IdUserTakenBy,
                 TakenByName = fase.UserTakenBy != null ? fase.UserTakenBy.NameComplete : string.Empty,
                 TakenAt = fase.TakenAt,
+                EndDateActual = fase.EndDateActual,
                 TicketCount = total,
                 OpenTicketCount = total - closed,
                 ClosedTicketCount = closed,
@@ -158,6 +169,7 @@ namespace CRM.Shared.DTOs
             Description = dto.Description,
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
+            EndDateActual = dto.EndDateActual,
             Progress = dto.Progress,
             SortOrder = dto.SortOrder,
             IsMilestone = dto.IsMilestone,

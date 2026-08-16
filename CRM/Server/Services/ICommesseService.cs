@@ -18,12 +18,16 @@ namespace CRM.Server.Services
 
         Task<APIResponseMessage<CommessaDTO>> ChangeStateAsync(int id, CommessaStates state);
 
-        /// <summary>Avvia produzione da una riga d'ordine: crea una commessa per unità clonando le
-        /// fasi dal template del prodotto, con schedulazione all'indietro dalla consegna.</summary>
+        /// <summary>Avvia produzione da una riga d'ordine con le date dell'ordine: una commessa per
+        /// unità clonando le fasi del template, all'indietro dalla consegna.</summary>
         Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(int orderRowId);
 
+        /// <summary>Come sopra, ma il piano si costruisce dalla data e nel verso indicati: dalla
+        /// consegna a ritroso, oppure dalla partenza in avanti con la fine calcolata.</summary>
+        Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(StartProductionRequestDTO req);
+
         /// <summary>Avvia produzione interna (magazzino, prototipi, ricambi, rilavorazioni): crea
-        /// commesse senza riga d'ordine, schedulate all'indietro dalla data obiettivo indicata.</summary>
+        /// commesse senza riga d'ordine, dalla consegna a ritroso o dalla partenza in avanti.</summary>
         Task<APIResponseMessage<List<CommessaDTO>>> StartInternalProductionAsync(InternalProductionRequestDTO req);
 
         /// <summary>
@@ -44,6 +48,14 @@ namespace CRM.Server.Services
         /// indietro si spostano anche quelle, altrimenti le fasi da fare finirebbero sopra di esse.
         /// </summary>
         Task<APIResponseMessage<CommessaDTO>> RescheduleAsync(int id, DateTime newDelivery);
+
+        /// <summary>
+        /// Recupera l'anticipo maturato: tira avanti le fasi non ancora avviate fino al primo giorno
+        /// utile dopo i loro predecessori, usandone la fine effettiva. Non tocca chi ha gia'
+        /// cominciato ne' le fasi senza predecessori. Con <paramref name="preview"/> non salva:
+        /// dice solo quanti giorni si recupererebbero, cosi' la decisione resta a chi guarda.
+        /// </summary>
+        Task<APIResponseMessage<CommessaDTO>> CompactPlanAsync(int id, bool preview);
 
         /// <summary>
         /// Ricostruisce le fasi dal template del prodotto, ripianificate all'indietro dalla consegna

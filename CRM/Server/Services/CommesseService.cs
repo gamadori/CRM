@@ -312,13 +312,17 @@ namespace CRM.Server.Services
                 if (template.Count == 0)
                     return FailList("Il template di produzione non ha fasi", HttpStatusCode.BadRequest);
 
-                // Nessuna consegna da ordine: la data obiettivo la fornisce l'utente.
-                var target = (req.TargetDate ?? DateTime.Today.AddDays(30)).Date;
+                // Nessuna consegna da ordine: le date le fornisce l'utente, nel verso che ha scelto.
+                var (anchor, promised, scheduleError) = ResolveSchedule(req, null);
+                if (scheduleError != null)
+                    return FailList(scheduleError, HttpStatusCode.BadRequest);
+
                 int units = Math.Clamp(req.Quantity, 1, 100);
                 var now = DateTime.Now;
                 var currentUser = await _permitsService.IdUser();
                 var responsibleUserId = await ResolveDefaultResponsibleAsync(product.Id, req.IdUserResponsible, currentUser);
                 var created = new List<int>();
+                var esito = string.Empty;
 
                 // Commessa, fasi, dipendenze e ticket iniziali sono un'unica unita': senza
                 // transazione un errore a meta' lascia commesse senza dipendenze, gia' visibili.
@@ -342,12 +346,14 @@ namespace CRM.Server.Services
                         Progress = 0
                     };
 
-                    var (startPlan, phases) = BuildPhasesBackward(template, target);
+                    var (startPlan, endPlan, phases) = BuildPhases(template, anchor, req.ScheduleMode);
                     commessa.StartDatePlanned = startPlan;
-                    commessa.EndDatePlanned = target;
-                    // La data obiettivo di oggi è la promessa su cui si misurerà il consuntivo.
-                    commessa.EndDateBaseline = target;
+                    commessa.EndDatePlanned = endPlan;
+                    // La promessa di oggi è quella su cui si misurerà il consuntivo. A ritroso è la
+                    // data obiettivo; in avanti, se non è stata dichiarata, vale la fine calcolata.
+                    commessa.EndDateBaseline = promised ?? endPlan;
                     commessa.Phases = phases.Select(p => p.Fase).ToList();
+                    esito = ScheduleOutcome(req.ScheduleMode, endPlan, promised);
 
                     _context.Commesse.Add(commessa);
                     await _context.SaveChangesAsync(); // per avere gli Id delle fasi
@@ -371,7 +377,7 @@ namespace CRM.Server.Services
                 {
                     State = true,
                     Data = dtos,
-                    Message = $"{units} commessa/e interna/e create",
+                    Message = $"{units} commessa/e interna/e create.{esito}",
                     Code = HttpStatusCode.OK
                 };
             }
@@ -382,10 +388,21 @@ namespace CRM.Server.Services
             }
         }
 
-        public async Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(int orderRowId)
+        /// <summary>
+        /// Avvio con le date dell'ordine: resta la forma breve, usata da chi non deve scegliere nulla.
+        /// </summary>
+        public Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(int orderRowId)
+            => StartProductionAsync(new StartProductionRequestDTO { IdOrderRow = orderRowId });
+
+        public async Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(StartProductionRequestDTO req)
         {
             try
             {
+                if (req == null || req.IdOrderRow <= 0)
+                    return FailList("Riga d'ordine obbligatoria", HttpStatusCode.BadRequest);
+
+                var orderRowId = req.IdOrderRow;
+
                 var row = await _context.OrderRows
                     .Include(r => r.Order)
                     .Include(r => r.Product)
@@ -414,12 +431,17 @@ namespace CRM.Server.Services
                 if (template.Count == 0)
                     return FailList("Il template di produzione non ha fasi", HttpStatusCode.BadRequest);
 
-                var delivery = (row.Order.DeliveryDate ?? DateTime.Today.AddDays(30)).Date;
+                // Senza indicazioni vale la consegna dell'ordine, come e' sempre stato.
+                var (anchor, promised, scheduleError) = ResolveSchedule(req, row.Order.DeliveryDate);
+                if (scheduleError != null)
+                    return FailList(scheduleError, HttpStatusCode.BadRequest);
+
                 int units = (int)Math.Max(1, Math.Ceiling(row.Quantity));
                 var now = DateTime.Now;
                 var currentUser = await _permitsService.IdUser();
                 var responsibleUserId = await ResolveDefaultResponsibleAsync(row.IdProduct, null, currentUser);
                 var created = new List<int>();
+                var esito = string.Empty;
 
                 // Tutte le unita' + la riga d'ordine in un'unica transazione: o la produzione parte
                 // per intero, o non parte.
@@ -442,13 +464,16 @@ namespace CRM.Server.Services
                         Progress = 0
                     };
 
-                    var (startPlan, phases) = BuildPhasesBackward(template, delivery);
+                    var (startPlan, endPlan, phases) = BuildPhases(template, anchor, req.ScheduleMode);
                     commessa.StartDatePlanned = startPlan;
-                    commessa.EndDatePlanned = delivery;
-                    // La consegna dell'ordine è la promessa: Riprogramma muoverà EndDatePlanned,
+                    commessa.EndDatePlanned = endPlan;
+                    // La consegna promessa è quella dell'ordine: Riprogramma muoverà EndDatePlanned,
                     // questa resta ferma ed è quella con cui si misura il ritardo a fine commessa.
-                    commessa.EndDateBaseline = delivery;
+                    // Partendo dalla data d'inizio le due date non coincidono più, ed è esattamente
+                    // la distanza fra loro il ritardo che si vuole vedere.
+                    commessa.EndDateBaseline = promised ?? endPlan;
                     commessa.Phases = phases.Select(p => p.Fase).ToList();
+                    esito = ScheduleOutcome(req.ScheduleMode, endPlan, promised);
 
                     _context.Commesse.Add(commessa);
                     await _context.SaveChangesAsync(); // per avere gli Id delle fasi
@@ -470,7 +495,7 @@ namespace CRM.Server.Services
                     if (dto != null) dtos.Add(dto);
                 }
 
-                return new APIResponseMessage<List<CommessaDTO>> { State = true, Data = dtos, Message = $"{units} commessa/e create", Code = HttpStatusCode.OK };
+                return new APIResponseMessage<List<CommessaDTO>> { State = true, Data = dtos, Message = $"{units} commessa/e create.{esito}", Code = HttpStatusCode.OK };
             }
             catch (Exception ex)
             {
@@ -506,11 +531,17 @@ namespace CRM.Server.Services
                 if (req.IdTicketType != null && !await _context.TicketTypes.AnyAsync(t => t.Id == req.IdTicketType))
                     return Fail("Tipo ticket non valido", HttpStatusCode.BadRequest);
 
-                var target = (req.TargetDate ?? row.Order.DeliveryDate ?? DateTime.Today.AddDays(30)).Date;
+                var (anchor, promised, scheduleError) = ResolveSchedule(req, row.Order.DeliveryDate);
+                if (scheduleError != null)
+                    return Fail(scheduleError, HttpStatusCode.BadRequest);
+
                 var now = DateTime.Now;
+
                 // Qui non c'è un template da cui derivare le date, ma il calendario è lo stesso
                 // della schedulazione: la finestra della fase va sui giorni lavorativi.
-                var (start, end) = OpenPlanWindow(target, now.Date);
+                var (start, end) = req.ScheduleMode == ProductionScheduleMode.FromStart
+                    ? OpenPlanWindowForward(anchor, req.DurationDays)
+                    : OpenPlanWindow(anchor, now.Date);
 
                 var currentUser = await _permitsService.IdUser();
                 var responsibleUserId = await ResolveDefaultResponsibleAsync(row.IdProduct, req.IdUserResponsible, currentUser);
@@ -536,11 +567,12 @@ namespace CRM.Server.Services
                     Note = req.Note,
                     State = CommessaStates.Planned,
                     StartDatePlanned = start,
-                    // La consegna resta quella richiesta anche se cade di sabato: è la promessa,
-                    // e arretrarla la falserebbe. Ad arretrare è la fine del lavoro, non la data
-                    // concordata — come nelle commesse generate dal template.
-                    EndDatePlanned = target,
-                    EndDateBaseline = target,
+                    // A ritroso la consegna resta quella richiesta anche se cade di sabato: è la
+                    // promessa, e arretrarla la falserebbe. Ad arretrare è la fine del lavoro, non
+                    // la data concordata — come nelle commesse generate dal template.
+                    // In avanti la pianificata è la fine della lavorazione, e la promessa resta a sé.
+                    EndDatePlanned = req.ScheduleMode == ProductionScheduleMode.FromStart ? end : anchor,
+                    EndDateBaseline = promised ?? end,
                     BudgetHours = req.BudgetHours,
                     BudgetHoursBaseline = req.BudgetHours,
                     IdUserResponsible = responsibleUserId,
@@ -577,7 +609,8 @@ namespace CRM.Server.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return Ok(await GetItemAsync(commessa.Id), $"Commessa {commessa.Code} aperta");
+                return Ok(await GetItemAsync(commessa.Id),
+                    $"Commessa {commessa.Code} aperta.{ScheduleOutcome(req.ScheduleMode, end, promised)}");
             }
             catch (Exception ex)
             {
@@ -815,6 +848,155 @@ namespace CRM.Server.Services
             }
         }
 
+        public async Task<APIResponseMessage<CommessaDTO>> CompactPlanAsync(int id, bool preview)
+        {
+            try
+            {
+                var commessa = await _context.Commesse
+                    .Include(c => c.Phases)
+                    .FirstOrDefaultAsync(c => c.Id == id);
+
+                if (commessa == null || !await CanAccessAsync(commessa.IdCompany))
+                    return Fail("Commessa non trovata", HttpStatusCode.NotFound);
+
+                if (commessa.State is CommessaStates.Delivered or CommessaStates.Cancelled)
+                    return Fail("Una commessa consegnata o annullata non si compatta", HttpStatusCode.BadRequest);
+
+                var fasi = commessa.Phases.ToList();
+                if (fasi.Count == 0)
+                    return Fail("La commessa non ha fasi da compattare", HttpStatusCode.BadRequest);
+
+                var deps = await _context.CommessaFaseDependencies
+                    .AsNoTracking()
+                    .Where(d => d.Fase!.IdCommessa == id)
+                    .Select(d => new { d.IdFase, d.IdPredecessorFase, d.LagDays })
+                    .ToListAsync();
+
+                var finePrima = fasi.Max(f => f.EndDate.Date);
+
+                var spostate = CompactPlan(
+                    fasi,
+                    deps.Select(d => (d.IdFase, d.IdPredecessorFase, d.LagDays)).ToList(),
+                    DateTime.Today);
+
+                var fineDopo = fasi.Max(f => f.EndDate.Date);
+                var recuperati = fineDopo.WorkdayDelta(finePrima);
+
+                if (spostate == 0)
+                {
+                    // Le entita' sono tracciate: senza scarto non c'e' niente da salvare, ma un
+                    // eventuale ritocco in memoria non deve sopravvivere alla richiesta.
+                    _context.ChangeTracker.Clear();
+                    return Ok(await GetItemAsync(id), "Il piano e' gia' compatto: non ci sono giorni da recuperare");
+                }
+
+                var giorni = recuperati == 1 ? "1 giorno lavorativo" : $"{recuperati} giorni lavorativi";
+                var quante = spostate == 1 ? "1 fase" : $"{spostate} fasi";
+
+                if (preview)
+                {
+                    // Anteprima: si e' calcolato su entita' tracciate, quindi le modifiche vanno
+                    // buttate via prima che qualcun altro faccia SaveChanges su questo contesto.
+                    _context.ChangeTracker.Clear();
+                    return Ok(await GetItemAsync(id),
+                        recuperati > 0
+                            ? $"Compattando il piano si anticipano {quante} e si recuperano {giorni}."
+                            : $"Compattando il piano si anticipano {quante}, senza cambiare la data di fine.");
+                }
+
+                await _context.SaveChangesAsync();
+
+                var ticketSpostati = await ProductionTicketDeadlines.SyncCommessaAsync(_context, id);
+
+                var note = ticketSpostati > 0
+                    ? ticketSpostati == 1
+                        ? " 1 ticket aperto ha seguito la sua fase."
+                        : $" {ticketSpostati} ticket aperti hanno seguito la loro fase."
+                    : string.Empty;
+
+                await _logEventService.RegisterAsync(nameof(CommesseService), nameof(CompactPlanAsync), EventsTypes.Info,
+                    $"Commessa {commessa.Code}: piano compattato, {quante} anticipate, {giorni} recuperati.");
+
+                return Ok(await GetItemAsync(id),
+                    recuperati > 0
+                        ? $"Piano compattato: {quante} anticipate, {giorni} recuperati.{note}"
+                        : $"Piano compattato: {quante} anticipate.{note}");
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(CommesseService), nameof(CompactPlanAsync), EventsTypes.Error, ex);
+                return Fail("Errore nella compattazione del piano", HttpStatusCode.InternalServerError);
+            }
+        }
+
+        /// <summary>
+        /// Chiude i buchi che il lavoro reale ha lasciato nel piano: ogni fase non ancora avviata
+        /// viene tirata avanti fino al primo giorno utile dopo i suoi predecessori.
+        /// <para>
+        /// Si muovono SOLO le fasi che hanno predecessori. Una fase senza vincoli sta dov'e' per una
+        /// ragione che il piano non conosce — materiale ordinato, reparto impegnato, cliente da
+        /// avvisare — e anticiparla d'ufficio significherebbe rifare la pianificazione al posto di
+        /// chi l'ha fatta. Qui si recupera l'anticipo maturato, non si ripianifica.
+        /// </para>
+        /// <para>Restituisce quante fasi sono state spostate. Modifica in memoria, non salva.</para>
+        /// </summary>
+        internal static int CompactPlan(
+            List<CommessaFase> fasi,
+            List<(int IdFase, int IdPredecessorFase, int LagDays)> deps,
+            DateTime today)
+        {
+            var byId = fasi.ToDictionary(f => f.Id);
+            var predecessori = deps
+                .GroupBy(d => d.IdFase)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var primoGiornoUtile = today.Date.NextWorkday();
+            int spostate = 0;
+
+            // In ordine di inizio: quando si valuta una fase, i suoi predecessori sono gia' stati
+            // eventualmente anticipati, e l'anticipo si propaga lungo la catena in una passata sola.
+            foreach (var fase in fasi.OrderBy(f => f.StartDate).ThenBy(f => f.SortOrder))
+            {
+                if (fase.State != CommessaFaseStates.Pending)
+                    continue;
+
+                if (!predecessori.TryGetValue(fase.Id, out var links) || links.Count == 0)
+                    continue;
+
+                DateTime? earliest = null;
+                foreach (var link in links)
+                {
+                    if (!byId.TryGetValue(link.IdPredecessorFase, out var pred))
+                        continue;
+
+                    var dopoIlPredecessore = CommessaFasiService.EffectiveEnd(pred)
+                        .AddWorkdays(1 + Math.Max(0, link.LagDays));
+
+                    if (earliest == null || dopoIlPredecessore > earliest)
+                        earliest = dopoIlPredecessore;
+                }
+
+                if (earliest == null)
+                    continue;
+
+                // Mai nel passato: una fase che deve ancora cominciare non puo' iniziare ieri.
+                if (earliest < primoGiornoUtile)
+                    earliest = primoGiornoUtile;
+
+                if (fase.StartDate.Date <= earliest.Value)
+                    continue;
+
+                var durata = fase.StartDate.CountWorkdays(fase.EndDate);
+                fase.StartDate = earliest.Value;
+                fase.EndDate = fase.IsMilestone
+                    ? earliest.Value
+                    : earliest.Value.AddWorkdays(Math.Max(1, durata) - 1);
+                spostate++;
+            }
+
+            return spostate;
+        }
+
         public async Task<APIResponseMessage<CommessaDTO>> RebuildPlanFromTemplateAsync(int id, DateTime? newDelivery)
         {
             try
@@ -897,6 +1079,56 @@ namespace CRM.Server.Services
 
         // ─── Helper ──────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Traduce la richiesta nelle due grandezze che servono al piano: da dove parte il calcolo
+        /// e qual è la consegna promessa.
+        /// <para>
+        /// A ritroso sono la stessa data: si promette la consegna e il piano si arrangia. In avanti
+        /// sono due cose diverse — si parte quando la produzione è libera e la fine viene fuori dal
+        /// calcolo — e proprio perché sono diverse ha senso misurarne lo scarto.
+        /// </para>
+        /// </summary>
+        private static (DateTime anchor, DateTime? promised, string? error) ResolveSchedule(
+            IProductionScheduleRequest req, DateTime? deliveryFallback)
+        {
+            if (req.ScheduleMode == ProductionScheduleMode.FromStart)
+            {
+                if (req.StartDate == null)
+                    return (default, null, "Con il calcolo in avanti serve la data di partenza");
+
+                // La promessa può mancare (produzione a magazzino, nessuno l'aspetta): in quel caso
+                // la scrive il piano, e lo scarto nasce a zero invece che su un confronto inventato.
+                var promessa = (req.TargetDate ?? deliveryFallback)?.Date;
+                return (req.StartDate.Value.Date, promessa, null);
+            }
+
+            var consegna = (req.TargetDate ?? deliveryFallback ?? DateTime.Today.AddDays(30)).Date;
+            return (consegna, consegna, null);
+        }
+
+        /// <summary>
+        /// Nel calcolo in avanti la fine è un risultato, non un dato: va detta subito, insieme allo
+        /// scarto dalla promessa. Chi crea la commessa lo scopre qui, non aprendo la scheda.
+        /// </summary>
+        private static string ScheduleOutcome(ProductionScheduleMode mode, DateTime end, DateTime? promised)
+        {
+            if (mode != ProductionScheduleMode.FromStart)
+                return string.Empty;
+
+            var testo = $" Fine calcolata: {end:dd/MM/yyyy}.";
+            if (promised == null)
+                return testo + " Nessuna consegna promessa: vale la fine calcolata.";
+
+            var scarto = promised.Value.Date.WorkdayDelta(end.Date);
+            if (scarto == 0)
+                return testo + " In linea con la consegna promessa.";
+
+            var giorni = Math.Abs(scarto) == 1 ? "1 giorno lavorativo" : $"{Math.Abs(scarto)} giorni lavorativi";
+            return testo + (scarto > 0
+                ? $" ATTENZIONE: {giorni} oltre la consegna promessa del {promised.Value:dd/MM/yyyy}."
+                : $" {giorni} di anticipo sulla consegna promessa del {promised.Value:dd/MM/yyyy}.");
+        }
+
         private static string FirstNotEmpty(params string?[] candidates)
             => candidates.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c))?.Trim() ?? string.Empty;
 
@@ -947,14 +1179,50 @@ namespace CRM.Server.Services
         }
 
         /// <summary>
-        /// Costruisce le fasi con date assolute, schedulazione all'indietro dalla consegna.
-        /// Restituisce l'accoppiamento fase-modello → fase creata: e' quello che permette di
-        /// ricostruire dipendenze e gerarchia senza passare dal SortOrder, che non e' univoco.
+        /// Finestra della fase unica quando è la partenza a comandare. Senza template non c'è un
+        /// ciclo che dica quanto dura il lavoro: la durata la dichiara chi apre la commessa, ed è
+        /// l'unico modo per avere una fine calcolata da confrontare con la consegna promessa.
+        /// </summary>
+        internal static (DateTime start, DateTime end) OpenPlanWindowForward(DateTime start, int? durationDays)
+        {
+            var s = start.Date.NextWorkday();
+
+            // Giorni lavorativi, estremi inclusi: 1 giorno significa "inizia e finisce lo stesso
+            // giorno", quindi lo scarto da aggiungere è uno in meno.
+            var giorni = Math.Max(1, durationDays ?? 1);
+            return (s, s.AddWorkdays(giorni - 1));
+        }
+
+        /// <summary>
+        /// Schedulazione all'indietro dalla consegna: il piano finisce entro quella data.
+        /// Scorciatoia storica di <see cref="BuildPhases"/>, che è la forma completa.
         /// </summary>
         internal static (DateTime start, List<(GanttPhase Template, CommessaFase Fase)> phases) BuildPhasesBackward(List<GanttPhase> template, DateTime delivery)
         {
+            var (start, _, phases) = BuildPhases(template, delivery, ProductionScheduleMode.FromDelivery);
+            return (start, phases);
+        }
+
+        /// <summary>
+        /// Costruisce le fasi con date assolute a partire da un'ancora.
+        /// <para>
+        /// La disposizione delle fasi è la stessa nei due versi: gli scarti fra una fase e l'altra
+        /// si calcolano sempre in avanti dalla prima. Cambia solo dove si appoggia il piano —
+        /// sulla consegna, e allora l'inizio è quel che serve per arrivarci; oppure sulla partenza,
+        /// e allora la fine è quella che viene.
+        /// </para>
+        /// <para>
+        /// Restituisce anche la fine del piano, che nel calcolo in avanti è il risultato principale:
+        /// diventa la consegna pianificata, mentre quella promessa la dichiara chi crea la commessa.
+        /// </para>
+        /// Restituisce l'accoppiamento fase-modello → fase creata: e' quello che permette di
+        /// ricostruire dipendenze e gerarchia senza passare dal SortOrder, che non e' univoco.
+        /// </summary>
+        internal static (DateTime start, DateTime end, List<(GanttPhase Template, CommessaFase Fase)> phases)
+            BuildPhases(List<GanttPhase> template, DateTime anchor, ProductionScheduleMode mode)
+        {
             if (template.Count == 0)
-                return (delivery, new List<(GanttPhase, CommessaFase)>());
+                return (anchor, anchor, new List<(GanttPhase, CommessaFase)>());
 
             var byId = template.ToDictionary(t => t.Id);
             var preds = template.ToDictionary(t => t.Id, t => t.Dependencies.Select(d => (d.IdPredecessorPhase, d.LagDays)).ToList());
@@ -991,9 +1259,22 @@ namespace CRM.Server.Services
             // altrimenti una fase di 5 giorni a cavallo del weekend scade di sabato e l'errore si
             // accumula fase dopo fase fino a settimane sull'intera commessa.
             int projectDuration = template.Max(t => es[t.Id] + Math.Max(t.IsMilestone ? 0 : 1, t.DurationDays));
-            var start = delivery.SubtractWorkdays(projectDuration);
-            if (start < DateTime.Today) start = DateTime.Today; // fallback in avanti se in ritardo
-            start = start.NextWorkday();
+
+            DateTime start;
+            if (mode == ProductionScheduleMode.FromStart)
+            {
+                // La partenza l'ha scelta chi crea la commessa: si sposta solo se cade in un giorno
+                // che nessuno lavora. Nessun riallineamento a oggi — una partenza nel passato è una
+                // dichiarazione legittima (lavoro già cominciato), e correggerla di nascosto
+                // butterebbe via il dato che l'utente ha appena scritto.
+                start = anchor.NextWorkday();
+            }
+            else
+            {
+                start = anchor.SubtractWorkdays(projectDuration);
+                if (start < DateTime.Today) start = DateTime.Today; // fallback in avanti se in ritardo
+                start = start.NextWorkday();
+            }
 
             var phases = new List<(GanttPhase Template, CommessaFase Fase)>();
             foreach (var t in template.OrderBy(t => t.SortOrder))
@@ -1053,7 +1334,14 @@ namespace CRM.Server.Services
 
                 phases.Add((t, fase));
             }
-            return (start, phases);
+
+            // A ritroso la consegna resta quella richiesta: e' la data concordata, e il piano le si
+            // adatta. In avanti invece la fine e' il risultato del calcolo, cioe' l'ultima fase.
+            var end = mode == ProductionScheduleMode.FromStart
+                ? phases.Max(p => p.Fase.EndDate)
+                : anchor;
+
+            return (start, end, phases);
         }
 
         /// <summary>

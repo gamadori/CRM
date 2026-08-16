@@ -113,6 +113,18 @@ namespace CRM.Shared
 
         public DateTime? TakenAt { get; set; }
 
+        /// <summary>
+        /// Quando il lavoro è finito davvero. Si scrive quando la fase passa a conclusa, ricavandola
+        /// dall'ultimo tempo registrato sugli interventi dei suoi ticket, e resta correggibile.
+        /// <para>
+        /// Senza, il piano non poteva sapere di essere in ritardo: <see cref="EndDate"/> è la
+        /// previsione e non si muove da sola, quindi una fase chiusa con una settimana di ritardo
+        /// lasciava le successive alle date di partenza e la commessa sembrava puntuale.
+        /// </para>
+        /// </summary>
+        [Display(Name = "Fine effettiva")]
+        public DateTime? EndDateActual { get; set; }
+
         /// <summary>Calcolato a runtime dal grafo dipendenze: true se sul percorso critico.</summary>
         [NotMapped]
         public bool IsCriticalPath { get; set; }

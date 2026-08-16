@@ -20,6 +20,9 @@ public sealed class ProductionTestContext : IDisposable
     public IPermitsService Permits { get; }
     public CommessaFasiService Service { get; }
 
+    /// <summary>Registro eventi finto: serve ai test che verificano cosa viene segnalato.</summary>
+    public ILogEventService Log { get; }
+
     public const string Utente = "utente-corrente";
 
     /// <summary>Primo lunedi' da oggi in poi: ancora stabile per i test che pesano i giorni
@@ -63,7 +66,8 @@ public sealed class ProductionTestContext : IDisposable
             Db.SaveChanges();
         }
 
-        Service = new CommessaFasiService(Db, Permits, Substitute.For<ILogEventService>());
+        Log = Substitute.For<ILogEventService>();
+        Service = new CommessaFasiService(Db, Permits, Log);
     }
 
     /// <summary>Admin: nessun vincolo di gruppo né di perimetro aziende.</summary>

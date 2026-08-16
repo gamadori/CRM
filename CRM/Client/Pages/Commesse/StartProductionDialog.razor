@@ -1,0 +1,100 @@
+@using CRM.Client.Services
+@using CRM.Shared
+@using CRM.Shared.DTOs
+@using Radzen
+@using Radzen.Blazor
+@inject ICommessaService CommessaService
+@inject DialogService DialogService
+@inject NotificationService Notification
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+@* Avvio della produzione da una riga d'ordine. Prima era una sola conferma e le date le dettava
+   l'ordine; ora si sceglie da dove parte il piano, perche' la consegna concordata e la disponibilita'
+   della produzione non sono la stessa cosa e su un ordine possono non coincidere. *@
+
+<div class="start-production">
+    <div class="alert alert-light border d-flex align-items-start gap-2 py-2">
+        <span class="material-icons" style="font-size:20px;">precision_manufacturing</span>
+        <div class="small">
+            <div class="fw-semibold">@RowDescription</div>
+            @Localize["Le fasi vengono clonate dal template del prodotto."]
+            @if (Units > 1)
+            {
+                <text> @Localize["Viene creata una commessa per ognuna delle"] @Units @Localize["unità."]</text>
+            }
+        </div>
+    </div>
+
+    <SchedulePicker @bind-Mode="_req.ScheduleMode" @bind-TargetDate="_targetDate"
+                    @bind-StartDate="_startDate" DeliveryLabel="@Localize["Consegna"]" />
+
+    @if (_req.ScheduleMode == ProductionScheduleMode.FromDelivery && DefaultDate == null)
+    {
+        <div class="form-text text-warning-emphasis mt-2">
+            <span class="material-icons align-middle" style="font-size:14px;">warning</span>
+            @Localize["L'ordine non ha una data di consegna: quella proposta è fra 30 giorni."]
+        </div>
+    }
+
+    <div class="d-flex gap-2 mt-4">
+        <RadzenButton Icon="precision_manufacturing" Text="@(_saving ? Localize["Avvio..."] : Localize["Avvia produzione"])"
+                      ButtonStyle="ButtonStyle.Primary" Disabled="@(_saving || !DatesReady)" Click="Start" />
+        <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light"
+                      Disabled="@_saving" Click="@(() => DialogService.Close(false))" />
+    </div>
+</div>
+
+@code {
+    /// <summary>Riga d'ordine da mandare in produzione.</summary>
+    [Parameter] public int IdOrderRow { get; set; }
+
+    /// <summary>Descrizione della riga: serve solo a far vedere su cosa si sta lavorando.</summary>
+    [Parameter] public string RowDescription { get; set; } = string.Empty;
+
+    /// <summary>Unità da produrre: una commessa per ciascuna.</summary>
+    [Parameter] public int Units { get; set; } = 1;
+
+    /// <summary>Consegna dell'ordine, se c'è: è la data proposta.</summary>
+    [Parameter] public DateTime? DefaultDate { get; set; }
+
+    private readonly StartProductionRequestDTO _req = new();
+    private DateTime? _targetDate;
+    private DateTime? _startDate;
+    private bool _saving;
+
+    protected override void OnInitialized()
+    {
+        _req.IdOrderRow = IdOrderRow;
+        _targetDate = DefaultDate?.Date ?? DateTime.Today.AddDays(30);
+    }
+
+    private bool DatesReady => _req.ScheduleMode == ProductionScheduleMode.FromStart
+        ? _startDate != null
+        : _targetDate != null;
+
+    private async Task Start()
+    {
+        if (!DatesReady) return;
+
+        _saving = true;
+        try
+        {
+            _req.TargetDate = _targetDate;
+            _req.StartDate = _startDate;
+            var resp = await CommessaService.StartProductionAsync(_req);
+
+            if (!resp.State)
+            {
+                Notification.Notify(NotificationSeverity.Error, Localize["Errore"], resp.Message ?? Localize["Avvio fallito"]);
+                return;
+            }
+
+            Notification.Notify(NotificationSeverity.Success, Localize["Fatto"], resp.Message ?? Localize["Produzione avviata"]);
+            DialogService.Close(true);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

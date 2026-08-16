@@ -14,6 +14,10 @@ namespace CRM.Client.Services
         /// <summary>Avvia produzione: crea le commesse (una per unità) dalla riga d'ordine.</summary>
         Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(int orderRowId);
 
+        /// <summary>Avvia produzione scegliendo da dove parte il piano: dalla consegna a ritroso,
+        /// oppure dalla data di partenza in avanti con la fine calcolata dalle fasi.</summary>
+        Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(StartProductionRequestDTO req);
+
         /// <summary>Avvia produzione interna: commesse senza ordine (magazzino, prototipi, ricambi).</summary>
         Task<APIResponseMessage<List<CommessaDTO>>> StartInternalProductionAsync(InternalProductionRequestDTO req);
 
@@ -26,6 +30,10 @@ namespace CRM.Client.Services
         /// <summary>Sposta il piano su una nuova consegna: le fasi traslano dello stesso numero di
         /// giorni lavorativi, quelle già avviate solo se la consegna anticipa.</summary>
         Task<APIResponseMessage<CommessaDTO>> RescheduleAsync(int id, DateTime delivery);
+
+        /// <summary>Recupera l'anticipo maturato tirando avanti le fasi non ancora avviate.
+        /// Con preview=true non salva niente: risponde solo quanti giorni si recupererebbero.</summary>
+        Task<APIResponseMessage<CommessaDTO>> CompactPlanAsync(int id, bool preview);
 
         /// <summary>Ricostruisce le fasi dal template del prodotto: scarta le modifiche al piano.</summary>
         Task<APIResponseMessage<CommessaDTO>> RebuildPlanFromTemplateAsync(int id, DateTime delivery);

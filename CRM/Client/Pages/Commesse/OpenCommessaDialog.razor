@@ -34,13 +34,19 @@
             <div class="form-text">@Localize["Se lo lasci vuoto viene usata la descrizione della riga d'ordine."]</div>
         </div>
 
-        <div class="col-sm-6">
-            <label class="form-label small mb-1 d-block">@Localize["Consegna prevista"]</label>
-            <RadzenDatePicker TValue="DateTime?" @bind-Value="_targetDate" DateFormat="dd/MM/yyyy" Style="width:100%" />
-            <div class="form-text">
-                <span class="material-icons align-middle" style="font-size:14px;">flag</span>
-                @Localize["Resta congelata come promessa iniziale: riprogrammare la commessa non la cambia."]
-            </div>
+        <div class="col-12">
+            <SchedulePicker @bind-Mode="_req.ScheduleMode" @bind-TargetDate="_targetDate"
+                            @bind-StartDate="_startDate" DeliveryLabel="@Localize["Consegna prevista"]">
+                <ExtraFields>
+                    @* Senza ciclo di produzione non c'e' nulla da cui dedurre quanto dura il lavoro:
+                       partendo dall'inizio, la fine esiste solo se la durata la dichiara qualcuno. *@
+                    <div class="col-sm-6">
+                        <label class="form-label small mb-1 d-block">@Localize["Durata (giorni lavorativi)"]</label>
+                        <RadzenNumeric TValue="int?" @bind-Value="_req.DurationDays" Min="1" Style="width:100%" />
+                        <div class="form-text">@Localize["Quanto dura la lavorazione. Sabati, domeniche e festivi non contano."]</div>
+                    </div>
+                </ExtraFields>
+            </SchedulePicker>
         </div>
 
         <div class="col-sm-6">
@@ -87,7 +93,7 @@
 
     <div class="d-flex gap-2 mt-4">
         <RadzenButton Icon="folder_open" Text="@(_saving ? Localize["Apertura..."] : Localize["Apri commessa"])"
-                      ButtonStyle="ButtonStyle.Primary" Disabled="@(_saving || _targetDate == null)" Click="Create" />
+                      ButtonStyle="ButtonStyle.Primary" Disabled="@(_saving || !DatesReady)" Click="Create" />
         <RadzenButton Icon="close" Text="@Localize["Annulla"]" ButtonStyle="ButtonStyle.Light"
                       Disabled="@_saving" Click="@(() => DialogService.Close(false))" />
     </div>
@@ -105,6 +111,7 @@
 
     private readonly OpenCommessaRequestDTO _req = new();
     private DateTime? _targetDate;
+    private DateTime? _startDate;
     private List<TicketType> _ticketTypes = new();
     private List<CRM.Shared.Group> _groups = new();
     private List<ApplicationUser> _headCompanyUsers = new();
@@ -140,14 +147,23 @@
         _headCompanyUsers = response?.Items?.OrderBy(user => user.NameComplete).ToList() ?? new();
     }
 
+    /// <summary>
+    /// A ritroso basta la consegna. In avanti servono partenza e durata: la consegna promessa può
+    /// mancare (lavoro senza una data attesa), e allora vale la fine calcolata.
+    /// </summary>
+    private bool DatesReady => _req.ScheduleMode == ProductionScheduleMode.FromStart
+        ? _startDate != null && _req.DurationDays is > 0
+        : _targetDate != null;
+
     private async Task Create()
     {
-        if (_targetDate == null) return;
+        if (!DatesReady) return;
 
         _saving = true;
         try
         {
             _req.TargetDate = _targetDate;
+            _req.StartDate = _startDate;
             var resp = await CommessaService.OpenCommessaAsync(_req);
 
             if (!resp.State)

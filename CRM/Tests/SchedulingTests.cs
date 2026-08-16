@@ -211,6 +211,110 @@ public class SchedulingTests
         Assert.Equal(fa.EndDate.AddWorkdays(4), fb.StartDate);   // 1 giorno + 3 di lag
     }
 
+    // ─── Calcolo in avanti dalla data di partenza ────────────────────────────
+
+    private static DateTime Partenza => DateTime.Today.AddDays(30).NextWorkday();
+
+    [Fact]
+    public void In_avanti_il_piano_comincia_il_giorno_dichiarato()
+    {
+        var (start, _, phases) = CommesseService.BuildPhases(TemplateAB(), Partenza, ProductionScheduleMode.FromStart);
+
+        Assert.Equal(Partenza, start);
+        Assert.Equal(Partenza, phases.Min(p => p.Fase.StartDate));
+    }
+
+    /// <summary>
+    /// È la differenza che conta fra i due versi: qui la fine non è un dato di ingresso, esce dal
+    /// calcolo. Deve coincidere con l'ultima fase, altrimenti la consegna pianificata direbbe una
+    /// data in cui c'è ancora lavoro aperto.
+    /// </summary>
+    [Fact]
+    public void In_avanti_la_fine_e_quella_dell_ultima_fase()
+    {
+        var (_, end, phases) = CommesseService.BuildPhases(TemplateAB(), Partenza, ProductionScheduleMode.FromStart);
+
+        Assert.Equal(phases.Max(p => p.Fase.EndDate), end);
+        Assert.True(end > Partenza);
+    }
+
+    /// <summary>
+    /// A ritroso la consegna resta il dato dichiarato: il piano le si adatta, non la sposta.
+    /// </summary>
+    [Fact]
+    public void A_ritroso_la_fine_resta_la_consegna_richiesta()
+    {
+        var consegna = Consegna;
+
+        var (_, end, _) = CommesseService.BuildPhases(TemplateAB(), consegna, ProductionScheduleMode.FromDelivery);
+
+        Assert.Equal(consegna, end);
+    }
+
+    /// <summary>
+    /// I due versi sono lo stesso calcolo appoggiato a estremi diversi: partendo dall'inizio che il
+    /// calcolo a ritroso ha trovato si devono riottenere esattamente le stesse fasi. Se qui le date
+    /// divergessero, la stessa commessa durerebbe di più o di meno a seconda di come la si crea.
+    /// </summary>
+    [Fact]
+    public void I_due_versi_producono_lo_stesso_piano()
+    {
+        var (start, _, aRitroso) = CommesseService.BuildPhases(TemplateAB(), Consegna, ProductionScheduleMode.FromDelivery);
+        var (_, _, inAvanti) = CommesseService.BuildPhases(TemplateAB(), start, ProductionScheduleMode.FromStart);
+
+        Assert.Equal(
+            aRitroso.Select(p => (p.Template.Name, p.Fase.StartDate, p.Fase.EndDate)),
+            inAvanti.Select(p => (p.Template.Name, p.Fase.StartDate, p.Fase.EndDate)));
+    }
+
+    [Fact]
+    public void Una_partenza_nel_weekend_slitta_al_primo_giorno_feriale()
+    {
+        var sabato = ProssimoSabato(DateTime.Today.AddDays(30));
+
+        var (start, _, _) = CommesseService.BuildPhases(TemplateAB(), sabato, ProductionScheduleMode.FromStart);
+
+        Assert.True(start > sabato);
+        Assert.DoesNotContain(start.DayOfWeek, new[] { DayOfWeek.Saturday, DayOfWeek.Sunday });
+    }
+
+    /// <summary>
+    /// Una partenza già passata è una dichiarazione ("il lavoro è cominciato lunedì scorso"), non
+    /// un errore da correggere: a ritroso il piano si riallinea a oggi perché la consegna è un
+    /// vincolo esterno, qui no — spostarla in silenzio cambierebbe il dato appena scritto.
+    /// </summary>
+    [Fact]
+    public void In_avanti_una_partenza_nel_passato_non_viene_riallineata_a_oggi()
+    {
+        var passato = DateTime.Today.AddDays(-20).NextWorkday();
+
+        var (start, _, _) = CommesseService.BuildPhases(TemplateAB(), passato, ProductionScheduleMode.FromStart);
+
+        Assert.Equal(passato, start);
+    }
+
+    /// <summary>
+    /// Commessa aperta senza template: la durata è l'unico dato da cui può nascere una fine, e va
+    /// contata in giorni lavorativi come tutto il resto del calendario di produzione.
+    /// </summary>
+    [Fact]
+    public void La_fase_unica_in_avanti_dura_i_giorni_lavorativi_dichiarati()
+    {
+        var (start, end) = CommesseService.OpenPlanWindowForward(Partenza, 10);
+
+        Assert.Equal(Partenza, start);
+        Assert.Equal(10, start.CountWorkdays(end));
+    }
+
+    /// <summary>Un giorno solo: inizia e finisce lo stesso giorno, non il giorno dopo.</summary>
+    [Fact]
+    public void La_fase_unica_di_un_giorno_inizia_e_finisce_nello_stesso_giorno()
+    {
+        var (start, end) = CommesseService.OpenPlanWindowForward(Partenza, 1);
+
+        Assert.Equal(start, end);
+    }
+
     // ─── Spostamento del piano su una nuova consegna ─────────────────────────
 
     /// <summary>

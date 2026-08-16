@@ -51,6 +51,8 @@ namespace CRM.Server.Services
                     .AsNoTracking()
                     .ToListAsync();
 
+                await HealStoredProgressAsync(idCommessa, fasi);
+
                 var dtos = fasi.Select(f => f.ToDTO()).ToList();
                 ComputeCriticalPath(dtos);
 
@@ -65,6 +67,63 @@ namespace CRM.Server.Services
             {
                 await _logEventService.RegisterAsync(nameof(CommessaFasiService), nameof(GetTreeAsync), EventsTypes.Error, ex);
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Rimette in discussione l'avanzamento memorizzato a ogni lettura del piano.
+        /// <para>
+        /// Stato e avanzamento sono valori scritti, e finora nessuno li rileggeva criticamente:
+        /// bastava un salvataggio andato storto una volta sola e la fase restava sbagliata per
+        /// sempre, perché riaprire la pagina mostrava di nuovo lo stesso numero. Qui il conto si
+        /// rifà sui dati appena caricati — piani, ticket e regola di completamento ci sono già —
+        /// e se non torna si corregge.
+        /// </para>
+        /// <para>
+        /// È una rete, non una cura: ogni divergenza viene registrata a log come difetto da
+        /// rintracciare, perché significa che qualcuno ha scritto un valore che i dati smentiscono.
+        /// </para>
+        /// </summary>
+        private async Task HealStoredProgressAsync(int idCommessa, List<CommessaFase> fasi)
+        {
+            var conFigli = fasi.Where(f => f.ParentId != null)
+                .Select(f => f.ParentId!.Value)
+                .ToHashSet();
+
+            var divergenti = new List<(CommessaFase Fase, int Progress, CommessaFaseStates Stato)>();
+
+            foreach (var f in fasi)
+            {
+                // Un raggruppamento non ha lavoro proprio: il suo valore è la sintesi dei figli,
+                // e ricalcolarlo dai (pochi o nulli) ticket appesi al padre lo azzererebbe.
+                if (conFigli.Contains(f.Id))
+                    continue;
+
+                var progressPrima = f.Progress;
+                var statoPrima = f.State;
+
+                // Le fasi arrivano da una query senza tracciamento: qui si lavora su copie, e la
+                // lettura non scrive niente per conto suo.
+                ApplyStateAndProgress(f);
+
+                if (f.Progress != progressPrima || f.State != statoPrima)
+                    divergenti.Add((f, progressPrima, statoPrima));
+            }
+
+            if (divergenti.Count == 0)
+                return;
+
+            foreach (var (fase, progressPrima, statoPrima) in divergenti)
+            {
+                await _logEventService.RegisterAsync(nameof(CommessaFasiService), nameof(HealStoredProgressAsync), EventsTypes.Warning,
+                    $"Avanzamento incoerente sulla fase {fase.Id} '{fase.Name}' (commessa {idCommessa}): "
+                    + $"in archivio {progressPrima}% {statoPrima}, dai ticket {fase.Progress}% {fase.State}. "
+                    + $"{DescribeWork(fase)} Corretto durante la lettura: risalire al salvataggio che ha scritto il valore sbagliato.");
+
+                // La correzione passa dal ricalcolo vero, non da una scrittura diretta: cosi'
+                // seguono anche i raggruppamenti sopra, l'avanzamento della commessa e la riga
+                // d'ordine, che erano sbagliati per la stessa ragione.
+                await RecomputeFaseProgressAsync(fase.Id);
             }
         }
 
@@ -149,6 +208,12 @@ namespace CRM.Server.Services
                     entity.ParentId = dto.ParentId;
                     entity.StartDate = dto.StartDate;
                     entity.EndDate = dto.EndDate;
+
+                    // La fine effettiva la scrive il sistema alla chiusura, ma resta correggibile:
+                    // e' una data ricavata, e chi c'era sa meglio del calcolo quando si e' finito.
+                    // La propagazione che segue riparte da qui, quindi correggerla rimette a posto
+                    // anche le fasi successive.
+                    entity.EndDateActual = dto.EndDateActual;
                     entity.SortOrder = dto.SortOrder;
                     entity.IsMilestone = dto.IsMilestone;
                     entity.Color = dto.Color;
@@ -164,8 +229,14 @@ namespace CRM.Server.Services
                     entity.IdTicketType = dto.IdTicketType;
 
                     wasDone = entity.State == CommessaFaseStates.Done;
+                    // Prima che il DTO ci scriva sopra: e' il valore in archivio, il termine di
+                    // paragone per accorgersi se questo salvataggio sta facendo retrocedere la fase.
+                    var progressPrima = entity.Progress;
+                    var statoPrima = entity.State;
+
                     entity.Progress = Math.Clamp(dto.Progress, 0, 100);
                     ApplyStateAndProgress(entity);
+                    await AuditRegressionAsync(entity, progressPrima, statoPrima, nameof(SaveAsync));
                 }
                 else
                 {
@@ -248,10 +319,14 @@ namespace CRM.Server.Services
                     e.AutoCreateTicketOnTake = dto.AutoCreateTicketOnTake;
                     e.RequiresTicket = dto.RequiresTicket;
 
+                    var progressPrima = e.Progress;
+                    var statoPrima = e.State;
+
                     e.Progress = Math.Clamp(dto.Progress, 0, 100);
                     if (e.Progress >= 100 && HasOpenBlockedTicket(e))
                         return false;
                     ApplyStateAndProgress(e);
+                    await AuditRegressionAsync(e, progressPrima, statoPrima, nameof(BulkSaveAsync));
                 }
 
                 await _context.SaveChangesAsync();
@@ -374,13 +449,35 @@ namespace CRM.Server.Services
                 if (fase == null) return;
 
                 var wasDone = fase.State == CommessaFaseStates.Done;
+                var progressPrima = fase.Progress;
+                var statoPrima = fase.State;
+
                 ApplyStateAndProgress(fase);
+                await AuditRegressionAsync(fase, progressPrima, statoPrima, nameof(RecomputeFaseProgressAsync));
+
+                var appenaConclusa = !wasDone && fase.State == CommessaFaseStates.Done;
+
+                if (appenaConclusa)
+                    fase.EndDateActual ??= await ResolveActualEndAsync(fase.Id);
+                else if (wasDone && fase.State != CommessaFaseStates.Done)
+                    // Riaperta: la fine effettiva non vale piu' e si ricalcolera' alla prossima
+                    // chiusura, sul lavoro nuovo. Le date gia' slittate restano dove sono: il
+                    // sistema non tira mai indietro il piano da solo.
+                    fase.EndDateActual = null;
+
                 await _context.SaveChangesAsync();
 
-                // Appena la fase si chiude, le successive che non hanno piu' vincoli aperti
-                // ricevono i ticket previsti "a inizio fase".
-                if (!wasDone && fase.State == CommessaFaseStates.Done)
+                if (appenaConclusa)
+                {
+                    // Prima si spostano le date, poi nascono i ticket delle fasi successive.
+                    // Nell'ordine inverso quei ticket nascerebbero nella finestra che il piano
+                    // prevedeva prima di sapere com'e' andata: su una fase chiusa in ritardo,
+                    // con una scadenza gia' passata il giorno stesso in cui li apri.
+                    await CascadeSuccessorDatesAsync(fase.IdCommessa, new List<int> { fase.Id });
                     await GenerateStartTicketsForSuccessorsAsync(fase.Id);
+                    await ProductionTicketDeadlines.SyncCommessaAsync(_context, fase.IdCommessa);
+                    await AuditActualEndShiftAsync(fase);
+                }
                 // Parte dalla fase stessa: se ha figli e' un raggruppamento e il valore appena
                 // calcolato dai suoi ticket va sostituito dalla sintesi dei figli.
                 await RecomputeRollupFromAsync(fase.Id);
@@ -695,6 +792,141 @@ namespace CRM.Server.Services
             return string.IsNullOrWhiteSpace(first.IdUserAssigned) ? first.IdUserOpened : first.IdUserAssigned;
         }
 
+        /// <summary>
+        /// Registra le fasi che tornano indietro: da conclusa a non conclusa, o con l'avanzamento
+        /// che cala.
+        /// <para>
+        /// Esiste un caso legittimo — un ticket riaperto — e infatti la riga di log non dice
+        /// "errore" ma racconta su quali dati la decisione è stata presa. Serve al caso opposto:
+        /// una fase completata che risulta di nuovo a zero senza che nessuno abbia riaperto niente.
+        /// Finora un salvataggio del genere non lasciava traccia, e l'unico modo per accorgersene
+        /// era guardare il Gantt e non credere ai propri occhi.
+        /// </para>
+        /// </summary>
+        private async Task AuditRegressionAsync(CommessaFase fase, int progressPrima, CommessaFaseStates statoPrima, string subroutine)
+        {
+            var indietro = fase.Progress < progressPrima
+                || (statoPrima == CommessaFaseStates.Done && fase.State != CommessaFaseStates.Done);
+
+            if (!indietro)
+                return;
+
+            await _logEventService.RegisterAsync(nameof(CommessaFasiService), subroutine, EventsTypes.Warning,
+                $"Fase {fase.Id} '{fase.Name}' (commessa {fase.IdCommessa}) tornata indietro: "
+                + $"{progressPrima}% {statoPrima} -> {fase.Progress}% {fase.State}. {DescribeWork(fase)}");
+        }
+
+        /// <summary>
+        /// Quando il lavoro è finito davvero, in ordine di fedeltà.
+        /// <para>
+        /// Prima l'ultimo tempo registrato sugli interventi dei ticket della fase, pause escluse:
+        /// è il dato più vicino alla realtà, e c'è sempre, perché tutti i tipi di ticket pretendono
+        /// un intervento per poter chiudere. Poi la chiusura del ticket, che dice quando qualcuno
+        /// se n'è ricordato. Infine adesso, che è l'ultima spiaggia.
+        /// </para>
+        /// </summary>
+        private async Task<DateTime> ResolveActualEndAsync(int faseId)
+        {
+            var ultimoLavoro = await _context.TicketsInterventions
+                .Where(i => i.Ticket.IdCommessaFase == faseId)
+                .SelectMany(i => i.TicketInterventionTime)
+                .Where(t => t.TimeType != InterventionTimeType.Break)
+                .MaxAsync(t => (DateTime?)t.EndDateTime);
+
+            if (ultimoLavoro != null)
+                return ultimoLavoro.Value;
+
+            var ultimaChiusura = await _context.Tickets
+                .Where(t => t.IdCommessaFase == faseId && t.Closed)
+                .MaxAsync(t => t.DateClosed);
+
+            return ultimaChiusura ?? DateTime.Now;
+        }
+
+        /// <summary>
+        /// Racconta com'è finita la fase e cosa ha smosso. Le date che cambiano da sole vanno
+        /// spiegate: chi riapre il piano il giorno dopo deve poter capire perché il Gantt non è
+        /// più quello che ricordava.
+        /// </summary>
+        private async Task AuditActualEndShiftAsync(CommessaFase fase)
+        {
+            if (fase.EndDateActual == null)
+                return;
+
+            var scarto = fase.EndDate.Date.WorkdayDelta(fase.EndDateActual.Value.Date);
+            if (scarto == 0)
+                return;
+
+            var giorni = Math.Abs(scarto) == 1 ? "1 giorno lavorativo" : $"{Math.Abs(scarto)} giorni lavorativi";
+            var esito = scarto > 0
+                ? $"in ritardo di {giorni}: le fasi successive non ancora avviate sono state spostate in avanti"
+                : $"in anticipo di {giorni}: il piano resta invariato, il tempo si recupera con 'Compatta il piano'";
+
+            await _logEventService.RegisterAsync(nameof(CommessaFasiService), nameof(RecomputeFaseProgressAsync), EventsTypes.Info,
+                $"Fase {fase.Id} '{fase.Name}' (commessa {fase.IdCommessa}) conclusa il "
+                + $"{fase.EndDateActual.Value:dd/MM/yyyy} contro il {fase.EndDate:dd/MM/yyyy} previsto, {esito}.");
+        }
+
+        /// <summary>
+        /// Segnala il lavoro proprio di un raggruppamento, che il rollup butta via.
+        /// <para>
+        /// Una fase con sotto-fasi vale la sintesi dei figli: è giusto, ma se quella stessa fase ha
+        /// anche un ticket suo, quel ticket non conta più niente — né nel Gantt, né nell'avanzamento
+        /// della commessa, che scarta le fasi con figli per non pesare due volte lo stesso lavoro.
+        /// È il caso in cui "Recupero e verifica materiale" è rimasta a 0% con il suo unico ticket
+        /// chiuso: il lavoro c'era, e non compariva da nessuna parte.
+        /// </para>
+        /// <para>
+        /// Si segnala solo quando il valore proprio direbbe una cosa diversa dal rollup: altrimenti
+        /// non si sta perdendo nulla e la riga sarebbe rumore a ogni ricalcolo.
+        /// </para>
+        /// </summary>
+        private async Task AuditIgnoredOwnWorkAsync(CommessaFase node)
+        {
+            var (closed, total) = TicketProgressNumbers(node);
+            if (total == 0)
+                return;
+
+            var proprio = TicketDrivenProgress(node.CompletionMode, closed, total);
+            if (proprio == node.Progress)
+                return;
+
+            await _logEventService.RegisterAsync(nameof(CommessaFasiService), nameof(RecomputeRollupFromAsync), EventsTypes.Warning,
+                $"La fase {node.Id} '{node.Name}' (commessa {node.IdCommessa}) ha sotto-fasi E lavoro proprio: "
+                + $"il suo avanzamento vale {node.Progress}% per la sintesi dei figli, mentre i suoi ticket direbbero {proprio}%. "
+                + $"Il lavoro proprio non viene conteggiato da nessuna parte. {DescribeWork(node)} "
+                + "Di norma è un annidamento sbagliato: la sotto-fase non appartiene a questa fase, oppure il ticket va spostato su una sotto-fase.");
+        }
+
+        /// <summary>
+        /// I dati su cui si è deciso stato e avanzamento, scritti per esteso.
+        /// <para>
+        /// "non caricato" non è un dettaglio tecnico: è la differenza fra un ticket ancora aperto e
+        /// un ticket che il calcolo non ha visto perché la query non lo aveva incluso. Nel secondo
+        /// caso il conto è sbagliato pur essendo il codice giusto, e senza questa parola la riga di
+        /// log direbbe le stesse identiche cose nei due casi.
+        /// </para>
+        /// </summary>
+        private static string DescribeWork(CommessaFase fase)
+        {
+            var (closed, total) = TicketProgressNumbers(fase);
+
+            var piani = (fase.TicketPlans ?? new List<CommessaFaseTicketPlan>())
+                .Where(p => p.Required)
+                .Select(p => p.IdTicket == null
+                    ? $"piano {p.Id}: nessun ticket"
+                    : $"piano {p.Id}: ticket {p.IdTicket} {(p.Ticket == null ? "NON CARICATO" : p.Ticket.Closed ? "chiuso" : "aperto")}")
+                .ToList();
+
+            var collegati = (fase.Tickets ?? new List<Ticket>())
+                .Select(t => $"ticket {t.Id} {(t.Closed ? "chiuso" : "aperto")}")
+                .ToList();
+
+            return $"Regola {fase.CompletionMode}, conteggio {closed}/{total}."
+                + (piani.Count > 0 ? $" Piani richiesti: {string.Join("; ", piani)}." : " Nessun piano richiesto.")
+                + (collegati.Count > 0 ? $" Ticket collegati: {string.Join("; ", collegati)}." : " Nessun ticket collegato.");
+        }
+
         private static bool HasClosedTicket(CommessaFase fase)
             => (fase.Tickets?.Any(t => t.Closed) ?? false)
                 || (fase.TicketPlans?.Any(p => p.Ticket != null && p.Ticket.Closed) ?? false);
@@ -786,9 +1018,22 @@ namespace CRM.Server.Services
         }
 
         /// <summary>
+        /// La fine da cui parte chi viene dopo: quella vera se la fase è conclusa, altrimenti la
+        /// previsione. È il punto in cui il piano smette di raccontare le proprie intenzioni e
+        /// comincia a raccontare com'è andata.
+        /// </summary>
+        internal static DateTime EffectiveEnd(CommessaFase fase)
+            => (fase.EndDateActual ?? fase.EndDate).Date;
+
+        /// <summary>
         /// Algoritmo di propagazione, separato dall'accesso al database per poterlo verificare:
         /// sposta in avanti i successori che violano il vincolo e restituisce true se ha cambiato
         /// qualcosa. Modifica le entita' in memoria, non salva.
+        /// <para>
+        /// Solo in avanti, e mai su fasi gia' avviate. Una fase chiusa in anticipo non tira avanti
+        /// nessuno: il tempo guadagnato si recupera da "Compatta il piano", che è una decisione di
+        /// chi governa la commessa, non una conseguenza automatica di un ticket chiuso.
+        /// </para>
         /// </summary>
         internal static bool CascadeDates(
             List<CommessaFase> fasi,
@@ -816,9 +1061,16 @@ namespace CRM.Server.Services
                 {
                     if (!byId.TryGetValue(link.IdFase, out var succ)) continue;
 
+                    // Chi ha gia' cominciato tiene le sue date: spostarle vorrebbe dire cambiare la
+                    // scadenza di un ticket su cui qualcuno sta lavorando. E' la stessa regola che
+                    // applica Riprogramma; prima qui valeva il contrario, e lo stesso piano si
+                    // comportava in due modi a seconda di come lo si toccava.
+                    if (succ.State != CommessaFaseStates.Pending)
+                        continue;
+
                     // Finish-to-Start: il successore non puo' iniziare prima del primo giorno
                     // lavorativo dopo la fine del predecessore, piu' l'eventuale lag.
-                    var earliest = current.EndDate.Date.AddWorkdays(1 + Math.Max(0, link.LagDays));
+                    var earliest = EffectiveEnd(current).AddWorkdays(1 + Math.Max(0, link.LagDays));
                     if (succ.StartDate.Date >= earliest)
                         continue;
 
@@ -877,7 +1129,14 @@ namespace CRM.Server.Services
             int guard = 0;
             while (nodeId != null && guard++ < 50)
             {
-                var node = await _context.CommessaFasi.FirstOrDefaultAsync(f => f.Id == nodeId.Value);
+                // Ticket e piani servono a riconoscere il caso storto: un raggruppamento che ha
+                // anche lavoro suo. Senza caricarli, quel lavoro sparirebbe senza che nessuno
+                // se ne accorga — ed è esattamente quello che è successo.
+                var node = await _context.CommessaFasi
+                    .Include(f => f.Tickets)
+                    .Include(f => f.TicketPlans)
+                        .ThenInclude(p => p.Ticket)
+                    .FirstOrDefaultAsync(f => f.Id == nodeId.Value);
                 if (node == null)
                     return;
 
@@ -893,6 +1152,14 @@ namespace CRM.Server.Services
                     node.Progress = WeightedProgress(children
                         .Select(c => (c.StartDate, c.EndDate, c.Progress, c.IsMilestone))
                         .ToList());
+
+                    await AuditIgnoredOwnWorkAsync(node);
+
+                    // Anche le date sono una sintesi dei figli, non solo l'avanzamento. Finora
+                    // restavano quelle di partenza: bastava che un figlio slittasse perche' la
+                    // barra di riepilogo dicesse una cosa e le barre sotto un'altra.
+                    node.StartDate = children.Min(c => c.StartDate);
+                    node.EndDate = children.Max(c => c.EndDate);
 
                     node.State = RollupState(children.Select(c => c.State));
 

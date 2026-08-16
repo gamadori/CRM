@@ -19,14 +19,37 @@
 
 <PageHeader Model="@_pageHeader"></PageHeader>
 
-<div class="work-list">
-    <div class="work-list-head">
-        <div>
-            <strong>@Localize["I miei lavori"]</strong>
-            <small>@Sottotitolo</small>
+<div class="work-page">
+    <div class="work-head">
+        <div class="work-head-title">
+            <span class="work-head-icon"><span class="material-icons">assignment_turned_in</span></span>
+            <div>
+                <h2>@Localize["I miei lavori"]</h2>
+                <p>@Sottotitolo</p>
+            </div>
         </div>
-        <RadzenButton Icon="refresh" Text="@Localize["Aggiorna"]" ButtonStyle="ButtonStyle.Light"
-                      Size="ButtonSize.Small" Disabled="@_loading" Click="@Carica" />
+
+        <div class="work-head-side">
+            @if (!_loading && _items.Count > 0)
+            {
+                @if (InRitardo > 0)
+                {
+                    <span class="work-stat stat-late">
+                        <span class="material-icons">error_outline</span>
+                        <strong>@InRitardo</strong> @Localize["in ritardo"]
+                    </span>
+                }
+                @if (DaPrendere > 0)
+                {
+                    <span class="work-stat stat-free">
+                        <span class="material-icons">front_hand</span>
+                        <strong>@DaPrendere</strong> @Localize["da prendere"]
+                    </span>
+                }
+            }
+            <RadzenButton Icon="refresh" Text="@Localize["Aggiorna"]" ButtonStyle="ButtonStyle.Light"
+                          Size="ButtonSize.Small" Disabled="@_loading" Click="@Carica" />
+        </div>
     </div>
 
     @if (_loading)
@@ -35,13 +58,17 @@
     }
     else if (!string.IsNullOrWhiteSpace(_errore))
     {
-        <div class="work-list-error">@_errore</div>
+        <div class="work-error">
+            <span class="material-icons">report_problem</span>
+            <span>@_errore</span>
+        </div>
     }
     else if (_items.Count == 0)
     {
-        <div class="work-list-empty">
+        <div class="work-empty">
             <span class="material-icons">check_circle</span>
-            <span>@Localize["Non hai lavori aperti."]</span>
+            <strong>@Localize["Non hai lavori aperti."]</strong>
+            <span>@Localize["Quando ti assegnano qualcosa lo trovi qui."]</span>
         </div>
     }
     else
@@ -55,32 +82,45 @@
             }
 
             <div class="work-group @ClasseGruppo(gruppo)">
-                <div class="work-group-title">
-                    @TitoloGruppo(gruppo)
+                <div class="work-group-head">
+                    <span class="work-group-icon"><span class="material-icons">@IconaGruppo(gruppo)</span></span>
+                    <span class="work-group-name">@TitoloGruppo(gruppo)</span>
                     <span class="work-group-count">@righe.Count</span>
+                    @if (gruppo == WorkListGroup.CommessaBloccata)
+                    {
+                        <span class="work-group-note">@Localize["Aspettano un'altra fase"]</span>
+                    }
                 </div>
 
                 @foreach (var item in righe)
                 {
                     <div class="work-row @(item.InRitardo ? "in-ritardo" : "")" @onclick="@(() => Apri(item))">
+                        <span class="work-row-bar"></span>
+                        <span class="work-num">@item.Numero</span>
+
                         <div class="work-row-main">
-                            <div class="work-row-title">
-                                <span class="work-num">@item.Numero</span>
-                                <span>@Descrizione(item)</span>
-                            </div>
+                            <div class="work-row-title">@Descrizione(item)</div>
                             <div class="work-row-meta">
-                                <span>@item.Cliente</span>
+                                @if (!string.IsNullOrWhiteSpace(item.Cliente))
+                                {
+                                    <span class="work-tag">
+                                        <span class="material-icons">business</span>
+                                        <span>@item.Cliente</span>
+                                    </span>
+                                }
                                 @if (!string.IsNullOrWhiteSpace(item.CommessaCode))
                                 {
-                                    <span> · @item.CommessaCode</span>
-                                    @if (!string.IsNullOrWhiteSpace(item.FaseName))
-                                    {
-                                        <span> · @item.FaseName</span>
-                                    }
+                                    <span class="work-tag tag-commessa">
+                                        <span class="material-icons">precision_manufacturing</span>
+                                        <span>@item.CommessaCode@(string.IsNullOrWhiteSpace(item.FaseName) ? "" : $" · {item.FaseName}")</span>
+                                    </span>
                                 }
                                 @if (item.BloccatoDa.Count > 0)
                                 {
-                                    <span class="work-blocco"> · @Localize["Aspetta"]: @string.Join(", ", item.BloccatoDa)</span>
+                                    <span class="work-tag tag-blocco">
+                                        <span class="material-icons">hourglass_top</span>
+                                        <span>@Localize["Aspetta"]: @string.Join(", ", item.BloccatoDa)</span>
+                                    </span>
                                 }
                             </div>
                         </div>
@@ -88,7 +128,10 @@
                         <div class="work-row-side">
                             @if (item.Scadenza != null)
                             {
-                                <span class="work-scadenza">@Localize["entro"] @item.Scadenza.Value.ToString("dd/MM")</span>
+                                <span class="work-scadenza">
+                                    <span class="material-icons">@(item.InRitardo ? "event_busy" : "event")</span>
+                                    @Localize["entro"] @item.Scadenza.Value.ToString("dd/MM")
+                                </span>
                             }
                             @if (item.DaPrendere)
                             {
@@ -96,6 +139,7 @@
                                               ButtonStyle="ButtonStyle.Primary" Disabled="@(_prendendo == item.IdTicket)"
                                               Click="@(async args => await Prendi(item))" @onclick:stopPropagation="true" />
                             }
+                            <span class="material-icons work-arrow">chevron_right</span>
                         </div>
                     </div>
                 }
@@ -103,44 +147,6 @@
         }
     }
 </div>
-
-<style>
-    .work-list { display: grid; gap: 1rem; }
-    .work-list-head { align-items: center; display: flex; justify-content: space-between; }
-    .work-list-head strong { display: block; font-size: 1.05rem; }
-    .work-list-head small { color: var(--crm-text-muted, #6b7280); }
-    .work-list-empty {
-        align-items: center; color: var(--crm-text-muted, #6b7280);
-        display: flex; gap: .5rem; justify-content: center; padding: 2.5rem;
-    }
-    .work-list-error { color: #b91c1c; padding: 1rem; }
-    .work-group { border: 1px solid var(--crm-border, #e5e7eb); border-radius: 6px; overflow: hidden; }
-    .work-group-title {
-        align-items: center; background: var(--crm-surface-2, #f8fafc);
-        border-bottom: 1px solid var(--crm-border, #e5e7eb);
-        display: flex; font-size: .8rem; font-weight: 700; gap: .5rem;
-        letter-spacing: .03em; padding: .55rem .8rem; text-transform: uppercase;
-    }
-    .work-group-count {
-        background: var(--crm-border, #e5e7eb); border-radius: 10px;
-        font-size: .75rem; padding: 0 .5rem;
-    }
-    .work-group.bloccate { opacity: .72; }
-    .work-row {
-        align-items: center; border-bottom: 1px solid var(--crm-border-soft, #f1f5f9);
-        cursor: pointer; display: flex; gap: 1rem; justify-content: space-between; padding: .7rem .8rem;
-    }
-    .work-row:last-child { border-bottom: 0; }
-    .work-row:hover { background: var(--crm-surface-2, #f8fafc); }
-    .work-row-main { min-width: 0; }
-    .work-row-title { align-items: baseline; display: flex; gap: .5rem; }
-    .work-num { color: var(--crm-text-muted, #9ca3af); font-size: .78rem; }
-    .work-row-meta { color: var(--crm-text-muted, #6b7280); font-size: .8rem; margin-top: .15rem; }
-    .work-row-side { align-items: center; display: flex; gap: .6rem; white-space: nowrap; }
-    .work-scadenza { color: var(--crm-text-muted, #6b7280); font-size: .8rem; }
-    .work-row.in-ritardo .work-scadenza { color: #dc2626; font-weight: 700; }
-    .work-blocco { color: #b45309; }
-</style>
 
 @code {
     private List<WorkListItemDTO> _items = new();
@@ -159,6 +165,12 @@
     private string Sottotitolo => _loading
         ? string.Empty
         : $"{_items.Count} {Localize["lavori aperti"]}";
+
+    /// <summary>Quanti sono gia' fuori tempo: e' il numero che si guarda per primo.</summary>
+    private int InRitardo => _items.Count(i => i.InRitardo);
+
+    /// <summary>Quanti sono del gruppo e non li ha ancora presi nessuno.</summary>
+    private int DaPrendere => _items.Count(i => i.DaPrendere);
 
     protected override async Task OnInitializedAsync()
     {
@@ -185,8 +197,20 @@
         _ => Localize["Da fare piu' avanti"]
     };
 
-    private static string ClasseGruppo(WorkListGroup gruppo)
-        => gruppo == WorkListGroup.CommessaBloccata ? "bloccate" : string.Empty;
+    private static string IconaGruppo(WorkListGroup gruppo) => gruppo switch
+    {
+        WorkListGroup.Assistenza => "support_agent",
+        WorkListGroup.Commessa => "precision_manufacturing",
+        _ => "hourglass_top"
+    };
+
+    /// <summary>La classe porta il colore del gruppo: le righe dentro lo ereditano.</summary>
+    private static string ClasseGruppo(WorkListGroup gruppo) => gruppo switch
+    {
+        WorkListGroup.Assistenza => "group-assistenza",
+        WorkListGroup.Commessa => "group-commessa",
+        _ => "group-bloccate"
+    };
 
     /// <summary>
     /// Prima riga della descrizione: in elenco serve il titolo, non il testo intero.

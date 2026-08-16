@@ -82,6 +82,38 @@
                     </div>
                 }
 
+                @* La fine effettiva la scrive il sistema quando la fase si chiude, ricavandola
+                   dall'ultimo lavoro registrato. Resta modificabile perche' chi c'era sa meglio
+                   del calcolo quando si e' finito, ed e' da questa data che slittano le successive. *@
+                @if (_editing.Id > 0 && (_editing.State == CommessaFaseStates.Done || _editing.EndDateActual != null))
+                {
+                    <div class="row g-2 align-items-end mt-1">
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1 d-block">Fine effettiva</label>
+                            <RadzenDatePicker TValue="DateTime?" @bind-Value="_editing.EndDateActual" DateFormat="dd/MM/yyyy"
+                                              AllowClear="true" Style="width:100%" />
+                        </div>
+                        <div class="col-md-8">
+                            <div class="small text-muted">
+                                <span class="material-icons align-middle" style="font-size:14px;">info</span>
+                                @if (_editing.EndDateActual is DateTime fine && fine.Date != _editing.EndDate.Date)
+                                {
+                                    <span>
+                                        Chiusa il @fine.ToString("dd/MM/yyyy") invece del @_editing.EndDate.ToString("dd/MM/yyyy").
+                                        @(_editing.EndedLate
+                                            ? "Le fasi successive non ancora avviate sono state spostate in avanti."
+                                            : "Il piano non si accorcia da solo: il tempo guadagnato si recupera con «Compatta il piano».")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>Da questa data ripartono le fasi successive non ancora avviate.</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
                 @if (_editing.Id > 0)
                 {
                     <div class="mt-3">

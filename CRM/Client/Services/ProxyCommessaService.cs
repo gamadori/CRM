@@ -26,6 +26,9 @@ namespace CRM.Client.Services
         public Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(int orderRowId)
             => PostAction<List<CommessaDTO>>($"{_pathService}/from-orderrow/{orderRowId}");
 
+        public Task<APIResponseMessage<List<CommessaDTO>>> StartProductionAsync(StartProductionRequestDTO req)
+            => PostBody<StartProductionRequestDTO, List<CommessaDTO>>($"{_pathService}/from-orderrow", req);
+
         public Task<APIResponseMessage<List<CommessaDTO>>> StartInternalProductionAsync(InternalProductionRequestDTO req)
             => PostBody<InternalProductionRequestDTO, List<CommessaDTO>>($"{_pathService}/internal", req);
 
@@ -39,6 +42,9 @@ namespace CRM.Client.Services
         // ambiguo al binding del controller (03/04 giorno o mese?).
         public Task<APIResponseMessage<CommessaDTO>> RescheduleAsync(int id, DateTime delivery)
             => PostAction<CommessaDTO>($"{_pathService}/{id}/reschedule?delivery={delivery:yyyy-MM-dd}");
+
+        public Task<APIResponseMessage<CommessaDTO>> CompactPlanAsync(int id, bool preview)
+            => PostAction<CommessaDTO>($"{_pathService}/{id}/compact-plan?preview={(preview ? "true" : "false")}");
 
         public Task<APIResponseMessage<CommessaDTO>> RebuildPlanFromTemplateAsync(int id, DateTime delivery)
             => PostAction<CommessaDTO>($"{_pathService}/{id}/rebuild-plan?delivery={delivery:yyyy-MM-dd}");

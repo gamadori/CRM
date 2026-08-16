@@ -254,23 +254,32 @@ else
                              .ToDictionary(g => g.Key, g => g.ToList());
     }
 
+    /// <summary>
+    /// Avvio produzione: il dialogo chiede da dove costruire il piano. Prima era una conferma
+    /// secca sulla consegna dell'ordine, ma quando la produzione parte in una data sua la fine
+    /// non coincide con la consegna concordata, e quello scarto va visto subito.
+    /// </summary>
     private async Task StartProduction(OrderRowDTO r)
     {
-        if (await DialogService.Confirm($"Avviare la produzione della riga \"{r.Description}\" (x{r.Quantity})? Verranno create le commesse dal template del prodotto.", "Conferma") != true)
-            return;
-        _busyRow = r.Id;
-        try
+        var parameters = new Dictionary<string, object>
         {
-            var resp = await CommessaService.StartProductionAsync(r.Id);
-            if (resp.State)
-            {
-                Notification.Notify(NotificationSeverity.Success, "Fatto", resp.Message ?? "Produzione avviata");
-                _order = await OrderService.GetItemAsync(Id);
-                await LoadCommesse();
-            }
-            else Notification.Notify(NotificationSeverity.Error, "Errore", resp.Message ?? "Operazione fallita");
-        }
-        finally { _busyRow = null; }
+            { nameof(CRM.Client.Pages.Commesse.StartProductionDialog.IdOrderRow), r.Id },
+            { nameof(CRM.Client.Pages.Commesse.StartProductionDialog.RowDescription), r.Description ?? string.Empty },
+            { nameof(CRM.Client.Pages.Commesse.StartProductionDialog.Units), (int)Math.Max(1, Math.Ceiling(r.Quantity)) }
+        };
+
+        if (_order?.DeliveryDate != null)
+            parameters[nameof(CRM.Client.Pages.Commesse.StartProductionDialog.DefaultDate)] = _order.DeliveryDate.Value;
+
+        var started = await DialogService.OpenAsync<CRM.Client.Pages.Commesse.StartProductionDialog>(
+            $"Avvia produzione — {r.Description}",
+            parameters,
+            new DialogOptions { Width = "720px", CloseDialogOnOverlayClick = false });
+
+        if (started is not true) return;
+
+        _order = await OrderService.GetItemAsync(Id);
+        await LoadCommesse();
     }
 
     /// <summary>

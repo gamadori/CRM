@@ -92,16 +92,39 @@ namespace CRM.Shared.DTOs
     }
 
     /// <summary>
-    /// Richiesta di produzione interna: commesse senza riga d'ordine (magazzino, prototipi,
-    /// ricambi, rilavorazioni). La data obiettivo sostituisce la consegna dell'ordine come
-    /// riferimento per la schedulazione all'indietro.
+    /// Le due date con cui nasce un piano, qualunque sia la porta da cui si crea la commessa.
+    /// <para>
+    /// A ritroso conta solo <see cref="TargetDate"/>: è insieme l'ancora del calcolo e la promessa.
+    /// In avanti l'ancora è <see cref="StartDate"/> e la fine la calcola il piano, quindi
+    /// <see cref="TargetDate"/> resta la consegna promessa — il termine di paragone con cui si
+    /// misura il ritardo, che senza di essa non esisterebbe.
+    /// </para>
     /// </summary>
-    public class InternalProductionRequestDTO
+    public interface IProductionScheduleRequest
+    {
+        ProductionScheduleMode ScheduleMode { get; }
+
+        /// <summary>Consegna: ancora del calcolo a ritroso, promessa da rispettare in quello in avanti.</summary>
+        DateTime? TargetDate { get; }
+
+        /// <summary>Giorno in cui la lavorazione comincia. Solo nel calcolo in avanti.</summary>
+        DateTime? StartDate { get; }
+    }
+
+    /// <summary>
+    /// Richiesta di produzione interna: commesse senza riga d'ordine (magazzino, prototipi,
+    /// ricambi, rilavorazioni). Qui la consegna non arriva da un ordine: la dichiara chi crea.
+    /// </summary>
+    public class InternalProductionRequestDTO : IProductionScheduleRequest
     {
         public int IdProduct { get; set; }
 
         /// <summary>Data entro cui la produzione deve essere pronta.</summary>
         public DateTime? TargetDate { get; set; }
+
+        public ProductionScheduleMode ScheduleMode { get; set; } = ProductionScheduleMode.FromDelivery;
+
+        public DateTime? StartDate { get; set; }
 
         public int Quantity { get; set; } = 1;
 
@@ -111,16 +134,44 @@ namespace CRM.Shared.DTOs
     }
 
     /// <summary>
+    /// Avvio della produzione da una riga d'ordine con template: una commessa per unità.
+    /// Senza date esplicite vale la consegna dell'ordine, com'è sempre stato.
+    /// </summary>
+    public class StartProductionRequestDTO : IProductionScheduleRequest
+    {
+        public int IdOrderRow { get; set; }
+
+        public ProductionScheduleMode ScheduleMode { get; set; } = ProductionScheduleMode.FromDelivery;
+
+        /// <summary>Null = la consegna dell'ordine.</summary>
+        public DateTime? TargetDate { get; set; }
+
+        public DateTime? StartDate { get; set; }
+    }
+
+    /// <summary>
     /// Apertura di una commessa da una riga d'ordine senza template di produzione: lavori che non
     /// hanno un ciclo predefinito (sviluppo software, consulenza, servizi su misura). Nasce con una
     /// sola fase di lavorazione e i ticket si aggiungono a mano strada facendo.
     /// </summary>
-    public class OpenCommessaRequestDTO
+    public class OpenCommessaRequestDTO : IProductionScheduleRequest
     {
         public int IdOrderRow { get; set; }
 
         /// <summary>Consegna prevista. Diventa anche la baseline: è la promessa su cui si misura.</summary>
         public DateTime? TargetDate { get; set; }
+
+        public ProductionScheduleMode ScheduleMode { get; set; } = ProductionScheduleMode.FromDelivery;
+
+        /// <summary>Giorno in cui la lavorazione comincia. Solo nel calcolo in avanti.</summary>
+        public DateTime? StartDate { get; set; }
+
+        /// <summary>
+        /// Durata della lavorazione in giorni lavorativi. Serve solo nel calcolo in avanti: qui non
+        /// c'è un ciclo di fasi da cui dedurre quanto dura, quindi senza questo numero la fine non
+        /// sarebbe calcolabile.
+        /// </summary>
+        public int? DurationDays { get; set; }
 
         /// <summary>Ore stimate all'avvio, congelate come baseline per il consuntivo.</summary>
         public int? BudgetHours { get; set; }

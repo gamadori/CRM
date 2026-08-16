@@ -62,6 +62,11 @@ namespace CRM.Server.Controllers
         public async Task<ActionResult<APIResponseMessage<List<CommessaDTO>>>> StartProduction(int orderRowId)
             => Ok(await _service.StartProductionAsync(orderRowId));
 
+        /// <summary>Avvio con date scelte: consegna a ritroso o partenza in avanti.</summary>
+        [HttpPost("from-orderrow")]
+        public async Task<ActionResult<APIResponseMessage<List<CommessaDTO>>>> StartProductionScheduled(StartProductionRequestDTO req)
+            => Ok(await _service.StartProductionAsync(req));
+
         /// <summary>Apre una commessa a fasi libere da una riga senza template di produzione.</summary>
         [HttpPost("open-from-orderrow")]
         public async Task<ActionResult<APIResponseMessage<CommessaDTO>>> OpenFromOrderRow(OpenCommessaRequestDTO req)
@@ -75,6 +80,11 @@ namespace CRM.Server.Controllers
         [HttpPost("{id}/reschedule")]
         public async Task<ActionResult<APIResponseMessage<CommessaDTO>>> Reschedule(int id, [FromQuery] DateTime delivery)
             => Ok(await _service.RescheduleAsync(id, delivery));
+
+        /// <summary>Recupera l'anticipo: con preview=true dice solo quanto, senza toccare il piano.</summary>
+        [HttpPost("{id}/compact-plan")]
+        public async Task<ActionResult<APIResponseMessage<CommessaDTO>>> CompactPlan(int id, [FromQuery] bool preview = false)
+            => Ok(await _service.CompactPlanAsync(id, preview));
 
         /// <summary>Ricostruisce le fasi dal template del prodotto, scartando le modifiche al piano.</summary>
         [HttpPost("{id}/rebuild-plan")]

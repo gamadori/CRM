@@ -1,0 +1,95 @@
+@using CRM.Shared
+@using Radzen
+@using Radzen.Blazor
+@inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
+
+@* Le due date con cui nasce un piano, uguali in tutte le porte da cui si crea una commessa.
+   A ritroso si dichiara la consegna e l'inizio lo calcola il piano; in avanti si dichiara la
+   partenza e la fine la calcola il piano — e allora la consegna promessa resta un campo a parte,
+   perche' e' il termine di paragone su cui si misura il ritardo. *@
+
+<div class="schedule-picker">
+    <label class="form-label small mb-1 d-block">@Localize["Come si costruisce il piano"]</label>
+    <RadzenSelectBar TValue="ProductionScheduleMode" Value="@Mode" ValueChanged="@OnModeChanged" Size="ButtonSize.Small" class="mb-2">
+        <Items>
+            <RadzenSelectBarItem Text="@Localize["Dalla consegna, a ritroso"]" Value="ProductionScheduleMode.FromDelivery" Icon="event_available" />
+            <RadzenSelectBarItem Text="@Localize["Dalla partenza, in avanti"]" Value="ProductionScheduleMode.FromStart" Icon="play_arrow" />
+        </Items>
+    </RadzenSelectBar>
+
+    <div class="row g-3">
+        @if (Mode == ProductionScheduleMode.FromDelivery)
+        {
+            <div class="col-sm-6">
+                <label class="form-label small mb-1 d-block">@DeliveryLabel</label>
+                <RadzenDatePicker TValue="DateTime?" Value="@TargetDate" ValueChanged="@OnTargetChanged"
+                                  DateFormat="dd/MM/yyyy" Style="width:100%" />
+                <div class="form-text">@Localize["Il lavoro viene disposto a ritroso: l'ultima fase chiude entro questa data."]</div>
+            </div>
+        }
+        else
+        {
+            <div class="col-sm-6">
+                <label class="form-label small mb-1 d-block">@Localize["Data di partenza"]</label>
+                <RadzenDatePicker TValue="DateTime?" Value="@StartDate" ValueChanged="@OnStartChanged"
+                                  DateFormat="dd/MM/yyyy" Style="width:100%" />
+                <div class="form-text">@Localize["Il giorno in cui la lavorazione comincia. La fine la calcola il piano."]</div>
+            </div>
+
+            <div class="col-sm-6">
+                <label class="form-label small mb-1 d-block">@Localize["Consegna promessa"]</label>
+                <RadzenDatePicker TValue="DateTime?" Value="@TargetDate" ValueChanged="@OnTargetChanged"
+                                  DateFormat="dd/MM/yyyy" Style="width:100%" AllowClear="true" />
+                <div class="form-text">
+                    <span class="material-icons align-middle" style="font-size:14px;">flag</span>
+                    @Localize["La data attesa da chi riceve. Resta ferma, e il ritardo e' quanto la fine calcolata la supera."]
+                </div>
+            </div>
+
+            @ExtraFields
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>Verso del calcolo.</summary>
+    [Parameter] public ProductionScheduleMode Mode { get; set; }
+    [Parameter] public EventCallback<ProductionScheduleMode> ModeChanged { get; set; }
+
+    /// <summary>Consegna: ancora del calcolo a ritroso, promessa in quello in avanti.</summary>
+    [Parameter] public DateTime? TargetDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> TargetDateChanged { get; set; }
+
+    /// <summary>Partenza della lavorazione. Usata solo nel calcolo in avanti.</summary>
+    [Parameter] public DateTime? StartDate { get; set; }
+    [Parameter] public EventCallback<DateTime?> StartDateChanged { get; set; }
+
+    /// <summary>Come si chiama la consegna in questa pagina ("Data obiettivo", "Consegna prevista"...).</summary>
+    [Parameter] public string DeliveryLabel { get; set; } = "Consegna";
+
+    /// <summary>Campi che servono solo nel calcolo in avanti, es. la durata dove non c'e' un ciclo.</summary>
+    [Parameter] public RenderFragment? ExtraFields { get; set; }
+
+    private async Task OnModeChanged(ProductionScheduleMode mode)
+    {
+        Mode = mode;
+        await ModeChanged.InvokeAsync(mode);
+
+        // Passando al calcolo in avanti senza una partenza il pulsante resterebbe spento e non si
+        // capirebbe perche': si propone il primo giorno utile, che e' quasi sempre quello giusto.
+        if (mode == ProductionScheduleMode.FromStart && StartDate == null)
+            await OnStartChanged(DateTime.Today);
+    }
+
+    private async Task OnTargetChanged(DateTime? value)
+    {
+        TargetDate = value;
+        await TargetDateChanged.InvokeAsync(value);
+    }
+
+    private async Task OnStartChanged(DateTime? value)
+    {
+        StartDate = value;
+        await StartDateChanged.InvokeAsync(value);
+    }
+}
