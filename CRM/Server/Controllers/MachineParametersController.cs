@@ -264,7 +264,7 @@ namespace CRM.Server.Controllers
         private async Task<ApiKey?> Authorize(ApiKeyPermission permission)
         {
             var value = Request.Headers.TryGetValue(ApiKeyHeader, out var values) ? values.FirstOrDefault() : null;
-            var key = await _apiKeys.ValidateAsync(value, ApiKeyScope.MachineBackup, permission);
+            var key = await _apiKeys.ValidateAsync(value, ApiKeyScope.Machine, permission);
 
             return key?.IdCompany == null ? null : key;
         }

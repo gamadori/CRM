@@ -58,7 +58,7 @@
                     <span>Ambito</span>
                     <select @bind="_draft.Scope">
                         <option value="@ApiKeyScope.Field">App fiera</option>
-                        <option value="@ApiKeyScope.MachineBackup">Backup macchina</option>
+                        <option value="@ApiKeyScope.Machine">Macchina (backup, versioni, produzione)</option>
                         <option value="@ApiKeyScope.ExternalTicket">Ticket esterni</option>
                     </select>
                 </label>
@@ -125,7 +125,7 @@
 
     <section class="api-keys-filters">
         <button type="button" class="chip-filter @(_filter == null ? "active" : "")" @onclick="@(() => Filter(null))">Tutte</button>
-        @foreach (var scope in new[] { ApiKeyScope.Field, ApiKeyScope.MachineBackup, ApiKeyScope.ExternalTicket })
+        @foreach (var scope in new[] { ApiKeyScope.Field, ApiKeyScope.Machine, ApiKeyScope.ExternalTicket })
         {
             <button type="button" class="chip-filter @(_filter == scope ? "active" : "")" @onclick="@(() => Filter(scope))">@ScopeText(scope)</button>
         }
@@ -161,7 +161,7 @@
                             <td><span class="scope-chip">@ScopeText(key.Scope)</span></td>
                             <td>
                                 @key.Holder
-                                @if (key.Scope == ApiKeyScope.MachineBackup)
+                                @if (key.Scope == ApiKeyScope.Machine)
                                 {
                                     <small>@(key.Permission == ApiKeyPermission.ReadOnly ? "solo lettura" : "lettura e scrittura")</small>
                                 }
@@ -328,7 +328,7 @@
     {
         ApiKeyScope.Field => "App fiera",
         ApiKeyScope.ExternalTicket => "Ticket esterni",
-        _ => "Backup macchina"
+        _ => "Macchina"
     };
 }
 

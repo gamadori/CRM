@@ -24,7 +24,7 @@ namespace CRM.Server.Services
         /// <summary>La sigla dice l'ambito a colpo d'occhio, anche fuori dal CRM.</summary>
         private static string PrefixFor(ApiKeyScope scope) => scope switch
         {
-            ApiKeyScope.MachineBackup => "crmbk",
+            ApiKeyScope.Machine => "crmbk",
             ApiKeyScope.ExternalTicket => "crmtk",
             _ => "crmfd"
         };
@@ -83,7 +83,7 @@ namespace CRM.Server.Services
                 Name = request.Name.Trim(),
                 KeyHash = Hash(plainTextKey),
                 KeyPrefix = plainTextKey.Length > 12 ? plainTextKey[..12] : plainTextKey,
-                Permission = request.Scope == ApiKeyScope.MachineBackup ? request.Permission : ApiKeyPermission.ReadWrite,
+                Permission = request.Scope == ApiKeyScope.Machine ? request.Permission : ApiKeyPermission.ReadWrite,
                 IdCompany = request.IdCompany,
                 IdUser = request.IdUser,
                 IsActive = true,

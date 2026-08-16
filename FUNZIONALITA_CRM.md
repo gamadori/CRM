@@ -120,7 +120,8 @@ Cuore operativo del sistema.
 - **Knowledge di prodotto** (`ProductKnowledge`).
 
 ### 3.8 Macchine / IoT
-- **API macchina** `api/machine` protetta da API key di ambito `MachineBackup` (gestite in `Settings/ApiKeys`): elenco macchine, ultimo backup della macchina, ultimo backup di riferimento del modello, upload backup. Si parla per **matricola**, non per id interno; la chiave è intestata a una ditta e vede solo le macchine di quella ditta (senza ditta non apre niente).
+- **API macchina** `api/machine` protetta da API key di ambito `Machine` (gestite in `Settings/ApiKeys`): elenco macchine, ultimo backup della macchina, ultimo backup di riferimento del modello, upload backup, e `POST articles/{matricola}/status` con la fotografia della macchina (componenti con le loro versioni, totalizzatori di ore e produzione). Si parla per **matricola**, non per id interno; la chiave è intestata a una ditta e vede solo le macchine di quella ditta (senza ditta non apre niente). Una sola chiave per macchina copre backup, versioni e contatori.
+- **Elettronica e produzione** (`MachineComponents`, `MachineComponentVersionChanges`, `MachineDailyReadings`): versioni di PLC/HMI/schede con storico dei cambi dedotto dal CRM, ore e pezzi per giorno calcolati dai totalizzatori. Visibili nella scheda macchina.
 - **Backup macchina** (`MachineBackups`): versionamento, SHA-256, dimensione, origine `Manual/…`, riferimento esterno.
 - **Parametri macchina** (`MachineParameters`, `ArticleParameters`).
 

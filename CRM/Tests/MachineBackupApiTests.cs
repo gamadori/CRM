@@ -63,12 +63,12 @@ public class MachineBackupApiTests : IDisposable
         {
             Id = 77,
             Name = "Linea collaudo",
-            Scope = ApiKeyScope.MachineBackup,
+            Scope = ApiKeyScope.Machine,
             Permission = permesso,
             IdCompany = idCompany
         };
 
-        _apiKeys.ValidateAsync(ChiaveInChiaro, ApiKeyScope.MachineBackup, Arg.Any<ApiKeyPermission?>())
+        _apiKeys.ValidateAsync(ChiaveInChiaro, ApiKeyScope.Machine, Arg.Any<ApiKeyPermission?>())
             .Returns(call =>
             {
                 var richiesto = call.ArgAt<ApiKeyPermission?>(2);

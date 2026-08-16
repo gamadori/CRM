@@ -11,8 +11,12 @@ namespace CRM.Shared
     /// </summary>
     public enum ApiKeyScope
     {
-        /// <summary>Macchine e sistemi esterni che leggono o caricano backup.</summary>
-        MachineBackup = 1,
+        /// <summary>
+        /// Quello che una macchina fa da sola: backup, versioni dei suoi componenti, ore e
+        /// produzione. Si chiamava <c>MachineBackup</c> quando il backup era l'unica cosa che
+        /// sapeva mandare. Il numero resta 1: e' scritto in archivio su ogni chiave gia' emessa.
+        /// </summary>
+        Machine = 1,
 
         /// <summary>Cliente esterno che apre e consulta i propri ticket.</summary>
         ExternalTicket = 2,
