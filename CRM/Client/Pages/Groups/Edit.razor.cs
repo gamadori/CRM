@@ -36,8 +36,15 @@ namespace CRM.Client.Pages.Groups
         [Parameter]
         public int? Id { get; set; }
 
+        /// <summary>
+        /// Da dove si e' arrivati alla pagina: "info" per la scheda del gruppo, altrimenti l'elenco.
+        /// Serve a riportare l'utente al punto di partenza dopo il salvataggio.
+        /// </summary>
+        [SupplyParameterFromQuery(Name = "from")]
+        public string From { get; set; }
+
         [Parameter]
-        public Action OnClickSave { get; set; }
+        public EventCallback OnClickSave { get; set; }
 
         [Parameter]
         public Action OnClickCancel { get; set; }
@@ -76,14 +83,16 @@ namespace CRM.Client.Pages.Groups
             _messageState = "";
             try
             {
-                var resp = await RestClientService.Post<Group, GroupFilter>(_group, ConstHelper.GroupsPath);
+                // Il secondo tipo e' quello dell'Id: con un tipo diverso la lettura fallisce,
+                // l'Id risulta assente e la modifica di un gruppo esistente parte come creazione.
+                var resp = await RestClientService.Post<Group, int>(_group, ConstHelper.GroupsPath);
 
                 if (resp != null && resp.State)
                 {
-                    if (OnClickSave != null)
-                        OnClickSave();
+                    if (OnClickSave.HasDelegate)
+                        await OnClickSave.InvokeAsync();
                     else
-                        NavigationManager.NavigateTo("/Settings/Groups");
+                        NavigationManager.NavigateTo(ReturnUrl);
                 }
                 else
                     _messageState = "Errore durante il salvataggio";
@@ -99,8 +108,15 @@ namespace CRM.Client.Pages.Groups
             if (OnClickCancel != null)
                 OnClickCancel();
             else
-                NavigationManager.NavigateTo("/Settings/Groups/Index");
+                NavigationManager.NavigateTo(ReturnUrl);
         }
+
+        /// <summary>
+        /// Si torna alla scheda del gruppo se si e' arrivati da li', all'elenco in tutti gli altri casi.
+        /// </summary>
+        private string ReturnUrl => Id != null && string.Equals(From, "info", StringComparison.OrdinalIgnoreCase)
+            ? $"/Settings/Groups/{Id}/Info"
+            : "/Settings/Groups";
 
         void Change(string value, string name)
         {

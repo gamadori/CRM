@@ -12,6 +12,12 @@ else
     </PageHeader>
 
      <EditForm Model="@_group" OnValidSubmit="HandleValidSubmit">
+        @if (!string.IsNullOrEmpty(_messageState))
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false" class="mb-3">
+                @_messageState
+            </RadzenAlert>
+        }
         <RadzenRow Gap="1rem" class="mb-3">
             <RadzenColumn Size="12" SizeSM="6">
                 <RadzenStack>

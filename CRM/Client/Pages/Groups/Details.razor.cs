@@ -87,7 +87,7 @@ namespace CRM.Client.Pages.Groups
             if (OnClickEdit != null)
                 OnClickEdit();
             else
-                NavigationManager.NavigateTo($"/Settings/Groups/{Id}/Edit");
+                NavigationManager.NavigateTo($"/Settings/Groups/{Id}/Edit?from=info");
         }
         protected void Annulla()
         {

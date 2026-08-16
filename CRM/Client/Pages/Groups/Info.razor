@@ -32,7 +32,7 @@ else
         }
         else
         {
-            <Edit Id="@Id" PageMode=PageModality.Child OnClickSave="(async () => await SaveGroup())" OnClickCancel="CancelGroup"></Edit>
+            <Edit Id="@Id" PageMode=PageModality.Child OnClickSave="SaveGroup" OnClickCancel="CancelGroup"></Edit>
         }
     }
     else if (selectView == GroupViews.Users)
