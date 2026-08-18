@@ -355,11 +355,14 @@
     pointer-events: none;
 }
 
+/* Sopra le barre, non sotto: un connettore costretto ad attraversare una barra resta leggibile
+   invece di sparirci dentro. Il disegno non intercetta il mouse, quindi trascinare le barre
+   continua a funzionare. */
 .rg-deps {
     position: absolute;
     left: 0;
     top: 0;
-    z-index: 2;
+    z-index: 4;
     pointer-events: none;
     overflow: visible;
 }

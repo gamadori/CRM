@@ -33,6 +33,7 @@ namespace CRM.Client.Shared.Components.Gantt
         private const int BarHeightPx = 22;
         private const int SummaryBarPx = BarHeightPx;
         private const int MilestonePx = 14;
+        private const int ElbowPx = 12;    // quanto il connettore gira al largo quando non c'e' varco
         private const int MinDayPx = 8;
         private const int MaxDayPx = 96;
         private const int FallbackDayPx = 44;
@@ -517,9 +518,16 @@ namespace CRM.Client.Shared.Components.Gantt
             if (Math.Abs(y1 - y2) < 1)
                 return $"M {fromX} {y1} L {Math.Max(fromX + 10, toX)} {y2}";
 
-            var middleX = arc.ToIndex >= arc.FromIndex
-                ? Math.Max(fromX + 12, fromX + ((toX - fromX) / 2))
-                : Math.Min(fromX - 12, fromX - 18);
+            // La salita verticale sta a meta' del varco fra le due barre. Prima stava 12 pixel dopo
+            // la fine della fase precedente: con due fasi attaccate quel punto cade DENTRO la barra
+            // che segue, e il connettore spariva sotto di essa, perche' le barre sono disegnate sopra
+            // le dipendenze. Fra due barre il varco c'e' sempre e vale 2*BarInset, quindi il punto di
+            // mezzo e' l'unico che non finisce mai coperto.
+            // Quando la fase che segue comincia prima che la precedente finisca (barre sovrapposte,
+            // dipendenze non Finish-to-Start) il varco non esiste: li' si gira al largo, a sinistra.
+            var middleX = toX > fromX
+                ? fromX + ((toX - fromX) / 2)
+                : Math.Min(fromX, toX) - ElbowPx;
 
             return $"M {fromX} {y1} L {middleX} {y1} L {middleX} {y2} L {toX} {y2}";
         }

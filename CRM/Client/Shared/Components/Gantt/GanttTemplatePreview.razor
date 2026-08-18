@@ -76,7 +76,9 @@
                                 }
                                 else
                                 {
-                                    <div class="tpl-gantt-bar" style="left:@Pct(r.Start);width:calc(@Pct(r.Days) - 3px);top:@(top + (RowH - BarH) / 2)px;@BarColor(r.Phase)"
+                                    @* La barra si ferma prima della colonna successiva: quel varco e' lo spazio
+                                       in cui passa il connettore verso la fase che segue. *@
+                                    <div class="tpl-gantt-bar" style="left:@Pct(r.Start);width:calc(@Pct(r.Days) - @(BarGap)px);top:@(top + (RowH - BarH) / 2)px;@BarColor(r.Phase)"
                                          title="@r.Phase.Name — giorni @(r.Start + 1)–@(r.Start + r.Days)">
                                         <span class="tpl-gantt-bar-label">@r.Phase.Name</span>
                                     </div>
@@ -84,16 +86,20 @@
                             }
 
                             <!-- Frecce dipendenze (connettori a gomito, in percentuale) -->
+                            @* Il connettore si stacca dalla fase precedente e scende SUBITO DOPO di essa,
+                               nel varco fra le barre. Prima scendeva appena prima della fase di arrivo: quando
+                               le due fasi erano attaccate quel punto cadeva dentro la barra precedente, e la
+                               freccia spariva. La corsa lunga viaggia sulla riga di destinazione, dove prima
+                               della sua barra non c'e' nient'altro. *@
                             @foreach (var a in _arcs)
                             {
-                                var yTop = Math.Min(a.Y1, a.Y2);
-                                var h = Math.Abs(a.Y2 - a.Y1);
-                                @* La salita verticale sta sempre appena prima del target: cosi' il connettore
-                                   resta corretto anche quando la fase inizia dove finisce la precedente. *@
-                                <div class="tpl-dep-seg" style="left:@Pct(a.FromDay);width:calc(@Pct(a.ToDay) - @Pct(a.FromDay) - @(Elbow)px);top:@(a.Y1)px"></div>
-                                <div class="tpl-dep-seg v" style="left:calc(@Pct(a.ToDay) - @(Elbow)px);top:@(yTop)px;height:@(h)px"></div>
-                                <div class="tpl-dep-seg" style="left:calc(@Pct(a.ToDay) - @(Elbow)px);width:@(Elbow - ArrowW)px;top:@(a.Y2)px"></div>
-                                <div class="tpl-dep-arrow" style="left:calc(@Pct(a.ToDay) - @(ArrowW)px);top:@(a.Y2 - 3)px"></div>
+                                var yArrive = a.Y2 + a.Lane;
+                                var yTop = Math.Min(a.Y1, yArrive);
+                                var h = Math.Abs(yArrive - a.Y1);
+                                <div class="tpl-dep-seg" style="left:@X(a.FromDay, a.EdgePx);width:@(Stub)px;top:@(a.Y1)px"></div>
+                                <div class="tpl-dep-seg v" style="left:@X(a.FromDay, a.EdgePx + Stub);top:@(yTop)px;height:@(h)px"></div>
+                                <div class="tpl-dep-seg" style="left:@X(a.FromDay, a.EdgePx + Stub);width:@RunWidth(a);top:@(yArrive)px"></div>
+                                <div class="tpl-dep-arrow" style="left:@X(a.ToDay, -ArrowW);top:@(yArrive - 3)px"></div>
                             }
                         </div>
                     </div>
@@ -112,11 +118,19 @@
     private const int HeaderH = 28;
     private const int MinDayPx = 30;   // sotto questa soglia la timeline scorre orizzontalmente
     private const int MaxDayPx = 120;  // sopra questa soglia i piani corti non si dilatano all'eccesso
-    private const int Elbow = 8;       // sporgenza orizzontale del connettore
+    private const int BarGap = 6;      // varco fra la fine di una barra e l'inizio della colonna dopo
+    private const int Stub = 3;        // tratto che stacca il connettore dal bordo della barra
     private const int ArrowW = 5;      // larghezza della punta della freccia
+    private const int LaneStep = 5;    // distanza fra due frecce che arrivano alla stessa fase
+    private const int MsHalf = 7;      // mezza larghezza del rombo di milestone
 
     private record Row(GanttPhaseDTO Phase, int Start, int Days, int Depth);
-    private record Arc(int FromDay, int ToDay, double Y1, double Y2);
+
+    /// <param name="EdgePx">Dove finisce davvero il disegno della fase precedente, in pixel rispetto
+    /// al confine del suo ultimo giorno: una barra si ferma prima, un rombo di milestone sporge oltre.</param>
+    /// <param name="Lane">Scostamento verticale della freccia in arrivo, per non sovrapporre fra loro
+    /// le dipendenze che finiscono sulla stessa fase.</param>
+    private record Arc(int FromDay, int ToDay, int Y1, int Y2, int EdgePx, int Lane);
 
     private List<Row> _rows = new();
     private List<Arc> _arcs = new();
@@ -188,6 +202,8 @@
     private void BuildArcs()
     {
         var rowIndex = _rows.Select((r, i) => (r.Phase.Id, i)).ToDictionary(x => x.Id, x => x.i);
+
+        var raccolte = new List<(int FromDay, int ToDay, int Y1, int Y2, int EdgePx)>();
         foreach (var r in _rows)
         {
             foreach (var dep in r.Phase.Dependencies)
@@ -197,10 +213,22 @@
                 var ti = rowIndex[r.Phase.Id];
 
                 int fromDay = pred.Phase.IsMilestone ? pred.Start : pred.Start + pred.Days;
-                double y1 = pi * RowH + RowH / 2.0;
-                double y2 = ti * RowH + RowH / 2.0;
+                int edgePx = pred.Phase.IsMilestone ? MsHalf : -BarGap;
 
-                _arcs.Add(new Arc(fromDay, r.Start, y1, y2));
+                raccolte.Add((fromDay, r.Start, pi * RowH + RowH / 2, ti * RowH + RowH / 2, edgePx));
+            }
+        }
+
+        // Le corsie si assegnano alla fine: quanto scostare una freccia dipende da quante altre
+        // arrivano alla stessa fase. In ordine di riga di partenza, cosi' non si incrociano fra loro.
+        foreach (var arrivi in raccolte.GroupBy(a => a.Y2))
+        {
+            var incoming = arrivi.OrderBy(a => a.Y1).ToList();
+            int span = (incoming.Count - 1) * LaneStep;
+            for (int k = 0; k < incoming.Count; k++)
+            {
+                var a = incoming[k];
+                _arcs.Add(new Arc(a.FromDay, a.ToDay, a.Y1, a.Y2, a.EdgePx, k * LaneStep - span / 2));
             }
         }
     }
@@ -208,6 +236,22 @@
     /// <summary>Posizione orizzontale in percentuale della larghezza totale del grafico.</summary>
     private string Pct(int days)
         => (100.0 * days / _projectDays).ToString("0.###", CultureInfo.InvariantCulture) + "%";
+
+    /// <summary>
+    /// Ascissa nel grafico: la percentuale del giorno, corretta di qualche pixel per appoggiarsi
+    /// al bordo di una barra invece che al confine del giorno.
+    /// </summary>
+    private string X(int day, int px) => px == 0 ? Pct(day) : $"calc({Pct(day)}{Px(px)})";
+
+    /// <summary>Lunghezza della corsa orizzontale: dal punto di discesa fino alla punta della freccia.</summary>
+    private string RunWidth(Arc a)
+        => $"calc({Pct(a.ToDay)} - {Pct(a.FromDay)}{Px(-(a.EdgePx + Stub + ArrowW))})";
+
+    /// <summary>
+    /// Correzione in pixel dentro una calc(): il segno va scritto come operatore, altrimenti
+    /// una correzione negativa produrrebbe "calc(50% + -6px)" e il browser scarterebbe la regola.
+    /// </summary>
+    private static string Px(int v) => v >= 0 ? $" + {v}px" : $" - {-v}px";
 
     private static bool IsWeekBoundary(int day) => day % 5 == 0; // settimana lavorativa di 5 giorni
 
