@@ -53,11 +53,16 @@ namespace CRM.Server.Services
 
             // Ogni ambito ha il suo intestatario obbligatorio: e' la regola che impedisce di
             // creare una chiave "fiera" senza persona, cioe' lead che nascono di nessuno.
+            // Anche la chiave macchina e' di un'azienda: l'API macchina risolve la
+            // matricola solo fra le macchine di quella ditta, e senza ditta rifiuta tutto.
             switch (request.Scope)
             {
                 case ApiKeyScope.ExternalTicket:
+                case ApiKeyScope.Machine:
                     if (request.IdCompany == null || !await _context.Companies.AnyAsync(x => x.Id == request.IdCompany))
-                        throw new InvalidOperationException("Serve un'azienda esistente per una chiave dei ticket esterni.");
+                        throw new InvalidOperationException(request.Scope == ApiKeyScope.Machine
+                            ? "Serve un'azienda esistente per una chiave macchina: e' quella che possiede le macchine."
+                            : "Serve un'azienda esistente per una chiave dei ticket esterni.");
                     request.IdUser = null;
                     break;
 
@@ -68,8 +73,6 @@ namespace CRM.Server.Services
                     break;
 
                 default:
-                    // Il backup non ha intestatario: eventuali riferimenti si scartano invece di
-                    // restare a suggerire un legame che nessuno controlla.
                     request.IdCompany = null;
                     request.IdUser = null;
                     break;

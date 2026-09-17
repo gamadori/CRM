@@ -26,6 +26,12 @@ namespace CRM.Client.Pages.TicketInterventions
         [Parameter]
         public int IdIntervention { get; set; }
 
+        /// <summary>
+        /// Data dell'intervento: e' il giorno da cui parte il primo periodo.
+        /// </summary>
+        [Parameter]
+        public DateTime InterventionDate { get; set; }
+
         [Parameter]
         public List<TicketInterventionTimeModel> Times { get; set; } = new();
 
@@ -88,11 +94,13 @@ namespace CRM.Client.Pages.TicketInterventions
         /// </summary>
         private async Task OpenAddDialog()
         {
+            var start = GetDefaultStart();
+
             var newTime = new TicketInterventionTimeModel
             {
                 IdTicketIntervention = IdIntervention,
-                StartDateTime = DateTime.Now,
-                EndDateTime = DateTime.Now.AddHours(1),
+                StartDateTime = start,
+                EndDateTime = start.AddHours(1),
                 TimeType = InterventionTimeType.Work,
                 IsBillable = true
             };
@@ -119,6 +127,26 @@ namespace CRM.Client.Pages.TicketInterventions
                 await _timesGrid.RefreshDataAsync(); //
                 await CreateTime(timeModel);
             }
+        }
+
+        /// <summary>
+        /// Ora di partenza proposta per un nuovo periodo.
+        /// <para>
+        /// Il primo periodo parte dal giorno dell'intervento alle 8:00. Chi arriva dopo riparte
+        /// da dove e' finito il precedente, cosi' una giornata si compila di seguito senza
+        /// riscrivere ogni volta data e ora. Prima partivano tutti da adesso: se l'intervento
+        /// si scrive la sera, ogni periodo nasceva con l'ora sbagliata.
+        /// </para>
+        /// </summary>
+        private DateTime GetDefaultStart()
+        {
+            if (Times != null && Times.Count > 0)
+            {
+                return Times.Max(t => t.EndDateTime);
+            }
+
+            var day = InterventionDate == default ? DateTime.Today : InterventionDate.Date;
+            return day.AddHours(8);
         }
 
         /// <summary>

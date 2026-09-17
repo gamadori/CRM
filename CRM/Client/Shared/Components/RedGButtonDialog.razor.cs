@@ -29,6 +29,13 @@ namespace CRM.Client.Shared.Components
         [Parameter]
         public object? IdParent { get; set; }
 
+        /// <summary>
+        /// Solo per <see cref="RedGDialog.DialogType.Contacts"/>: aggiunge all'elenco i contatti
+        /// del rivenditore dell'azienda. Viene passato tale e quale al dialogo.
+        /// </summary>
+        [Parameter]
+        public bool IncludeReseller { get; set; } = false;
+
         private string _icon = "search";
 
         private string _tile = string.Empty;
@@ -50,7 +57,8 @@ namespace CRM.Client.Shared.Components
                 { "Type", DialogType },
                 { "Mode", DialogMode },
                 { "OnAddNewItem", EventCallback.Factory.Create(this, OnAddNewItem) },
-                 { "IdParent", IdParent } },
+                { "IdParent", IdParent },
+                { "IncludeReseller", IncludeReseller } },
     new SideDialogOptions { Position = DialogPosition.Top, ShowMask = false, Height = "auto", Style = "max-height: 90%;" });
 
             if (OnSelectItem.HasDelegate)

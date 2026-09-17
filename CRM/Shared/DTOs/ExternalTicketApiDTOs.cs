@@ -8,10 +8,16 @@ namespace CRM.Shared.DTOs
 
     public class ExternalTicketCreateRequest
     {
-        [Required]
-        public int IdType { get; set; }
+        // Facoltativo: senza tipo il CRM assegna il tipo di assistenza predefinito
+        // (ExternalTickets:DefaultTicketTypeId, altrimenti il primo tipo aperto ai clienti).
+        // Un pannello macchina non conosce gli ID del CRM e non deve conoscerli.
+        public int? IdType { get; set; }
 
         public int? IdArticle { get; set; }
+
+        // Matricola della macchina: in alternativa a IdArticle, il CRM risale all'articolo
+        // dell'azienda della chiave. E' cio' che una macchina sa di se'.
+        public string? SerialNumber { get; set; }
 
         public int? IdProduct { get; set; }
 
@@ -74,5 +80,22 @@ namespace CRM.Shared.DTOs
         public string? OperationalSummary { get; set; }
 
         public string? CloseDescription { get; set; }
+    }
+
+    /// <summary>
+    /// Un file allegato a un ticket esterno dopo la sua apertura: per esempio lo storico
+    /// allarmi che il pannello macchina manda insieme alla richiesta di assistenza.
+    /// </summary>
+    public class ExternalTicketAttachmentResponse
+    {
+        public int IdTicket { get; set; }
+
+        public int IdAttachment { get; set; }
+
+        public int IdFile { get; set; }
+
+        public string FileName { get; set; } = string.Empty;
+
+        public long Size { get; set; }
     }
 }

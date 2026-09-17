@@ -99,6 +99,54 @@ namespace CRM.Server.Controllers
             }
         }
 
+        /// <summary>
+        /// Allega un file a un ticket gia' aperto con la stessa chiave: il pannello macchina lo
+        /// usa per mandare lo storico allarmi delle ultime 24 ore insieme alla richiesta. Un
+        /// ticket di un'altra azienda non si vede e risponde 404, come nella lettura.
+        /// </summary>
+        [HttpPost("{id:int}/attachments")]
+        [RequestSizeLimit(20_971_520)]
+        public async Task<ActionResult<ExternalTicketAttachmentResponse>> Attach(
+            int id,
+            IFormFile file,
+            [FromForm] string? description,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var apiKey = await AuthorizeAsync();
+                if (apiKey == null)
+                {
+                    return Unauthorized();
+                }
+
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest(new { message = "Nessun file allegato." });
+                }
+
+                byte[] content;
+                await using (var stream = file.OpenReadStream())
+                await using (var buffer = new MemoryStream())
+                {
+                    await stream.CopyToAsync(buffer, cancellationToken);
+                    content = buffer.ToArray();
+                }
+
+                var result = await _service.AttachFileAsync(apiKey, id, file.FileName, file.ContentType, content, description);
+                return result == null ? NotFound() : Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                await _logEventService.RegisterAsync(nameof(ExternalTicketsController), nameof(Attach), LogEvent.EventsTypes.Error, ex);
+                return Problem(ex.Message);
+            }
+        }
+
         private Task<ApiKey?> AuthorizeAsync()
         {
             var key = Request.Headers.TryGetValue(ApiKeyHeader, out var values)

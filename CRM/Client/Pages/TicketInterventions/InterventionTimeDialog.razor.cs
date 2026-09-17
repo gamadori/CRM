@@ -85,6 +85,24 @@ namespace CRM.Client.Pages.TicketInterventions
             StateHasChanged();
         }
 
+        /// <summary>
+        /// Su un periodo nuovo la fine segue l'inizio a un'ora di distanza: si corregge l'ora di
+        /// partenza e la fine e' gia' pronta, di solito basta ritoccarla.
+        /// <para>
+        /// Su un periodo gia' registrato non si tocca niente: chi corregge l'ora di inizio di un
+        /// periodo di tre ore non vuole vederselo accorciare a una.
+        /// </para>
+        /// </summary>
+        private void OnStartDateTimeChanged()
+        {
+            if (IsNew)
+            {
+                Time.EndDateTime = Time.StartDateTime.AddHours(1);
+            }
+
+            StateHasChanged();
+        }
+
         private string GetTimeTypeIcon(InterventionTimeType timeType)
         {
             return timeType switch

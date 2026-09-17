@@ -68,8 +68,9 @@
                     <input @bind="_draft.Name" placeholder="@NamePlaceholder" />
                 </label>
 
-                @* L'intestatario cambia con l'ambito, e per il backup non esiste: mostrare un
-                   campo che non verrà usato è il modo più rapido per farlo compilare a vuoto. *@
+                @* L'intestatario cambia con l'ambito: una persona per la fiera, un'azienda per
+                   ticket e macchine (l'API macchina cerca la matricola solo fra le macchine di
+                   quella ditta). *@
                 @if (_draft.Scope == ApiKeyScope.Field)
                 {
                     <label>
@@ -81,7 +82,7 @@
                                         Placeholder="Scegli la persona" Style="width:100%" />
                     </label>
                 }
-                else if (_draft.Scope == ApiKeyScope.ExternalTicket)
+                else
                 {
                     <label>
                         <span>Azienda</span>
@@ -92,7 +93,7 @@
                                         Placeholder="Scegli l'azienda" Style="width:100%" />
                     </label>
                 }
-                else
+                @if (_draft.Scope == ApiKeyScope.Machine)
                 {
                     <label>
                         <span>Permesso</span>

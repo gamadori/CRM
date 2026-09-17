@@ -81,7 +81,14 @@ namespace CRM.Client.Pages.Contacts
         [Parameter]
         public int? IdCompany { get; set; }
 
-        
+        /// <summary>
+        /// Mostra, oltre ai contatti dell'azienda, quelli del rivenditore a cui appartiene.
+        /// Vale solo se <see cref="IdCompany"/> e' valorizzato.
+        /// </summary>
+        [Parameter]
+        public bool IncludeReseller { get; set; } = false;
+
+
 
         private List<ContactDTO> _contacts = null;
 
@@ -143,7 +150,10 @@ namespace CRM.Client.Pages.Contacts
                 
                 
                 if (IdCompany != null)
+                {
                     _filter.IdCompany = IdCompany;
+                    _filter.IncludeReseller = IncludeReseller;
+                }
 
                 if (_search.Length > 0)
                 {

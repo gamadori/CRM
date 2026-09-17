@@ -41,7 +41,7 @@ namespace CRM.Shared.DTOs
         /// <summary>A chi e' intestata, in chiaro: azienda, persona o niente secondo l'ambito.</summary>
         public string Holder => Scope switch
         {
-            ApiKeyScope.ExternalTicket => string.IsNullOrWhiteSpace(CompanyName) ? "-" : CompanyName,
+            ApiKeyScope.ExternalTicket or ApiKeyScope.Machine => string.IsNullOrWhiteSpace(CompanyName) ? "-" : CompanyName,
             ApiKeyScope.Field => string.IsNullOrWhiteSpace(UserName) ? "-" : UserName,
             _ => "-"
         };

@@ -58,9 +58,12 @@ else
                                         <ChildColumns>
                                             <RadzenDropDownDataGridColumn Property="@nameof(ContactDTO.Surname)" Title="@Localize[nameof(ContactDTO.Surname)]" Width="auto" />
                                             <RadzenDropDownDataGridColumn Property="@nameof(ContactDTO.Name)" Title="@Localize[nameof(ContactDTO.Name)]" Width="auto" />
+                                            @* L'elenco contiene anche i referenti del rivenditore: senza l'azienda
+                                               due nomi qualsiasi sarebbero indistinguibili. *@
+                                            <RadzenDropDownDataGridColumn Property="@nameof(ContactDTO.CompanyName)" Title="@TranslateHelper.GetDisplayName(nameof(ContactDTO.IdCompany), typeof(ContactDTO))" Width="auto" />
                                         </ChildColumns>
                                         <End>
-                                            <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetContact DialogType="RedGDialog.DialogType.Contacts" IdParent=@_ticket?.IdCompany></RedGButtonDialog>
+                                            <RedGButtonDialog DialogMode="RedGDialog.DialogMode.Selection" OnSelectItem=OnGetContact DialogType="RedGDialog.DialogType.Contacts" IdParent=@_ticket?.IdCompany IncludeReseller="true"></RedGButtonDialog>
                                         </End>
                                     </RedGDropDownGrid>
                                 </RadzenStack>

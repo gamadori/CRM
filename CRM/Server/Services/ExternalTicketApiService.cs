@@ -16,15 +16,18 @@ namespace CRM.Server.Services
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _configuration;
+        private readonly IArchiveService _archiveService;
 
         public ExternalTicketApiService(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IArchiveService archiveService)
         {
             _context = context;
             _userManager = userManager;
             _configuration = configuration;
+            _archiveService = archiveService;
         }
 
         public async Task<ExternalTicketResponse> CreateTicketAsync(ApiKey apiKey, ExternalTicketCreateRequest request)
@@ -35,6 +38,8 @@ namespace CRM.Server.Services
             var idCompany = apiKey.IdCompany
                 ?? throw new InvalidOperationException("La chiave non e' associata a nessuna azienda.");
 
+            var idType = await ResolveTicketTypeAsync(request);
+            var article = await ResolveArticleAsync(idCompany, request);
             await ValidateTicketReferencesAsync(idCompany, request);
 
             var now = DateTime.Now;
@@ -49,9 +54,9 @@ namespace CRM.Server.Services
             var ticket = new Ticket
             {
                 IdCompany = idCompany,
-                IdType = request.IdType,
-                IdArticle = request.IdArticle,
-                IdProduct = request.IdProduct,
+                IdType = idType,
+                IdArticle = article?.Id ?? request.IdArticle,
+                IdProduct = request.IdProduct ?? article?.IdProduct,
                 IdContact = request.IdContact,
                 IdUserOpened = ownerUserId,
                 IdState = state?.Id,
@@ -60,7 +65,7 @@ namespace CRM.Server.Services
                 DateOpened = now,
                 Date = workDate,
                 DateEnd = request.DateEnd,
-                DateExpired = await CalculateExpirationDateAsync(request.IdType, workDate),
+                DateExpired = await CalculateExpirationDateAsync(idType, workDate),
                 Numero = string.Empty,
                 CloseDescription = string.Empty,
                 CloseNote = string.Empty,
@@ -102,6 +107,68 @@ namespace CRM.Server.Services
                 .ToListAsync();
         }
 
+        // Lo stesso meccanismo degli allegati caricati a mano e di quelli ricevuti via email:
+        // un Attachment di tipo Ticket con dentro il file, salvato nell'archivio. Il
+        // proprietario e' chi ha aperto il ticket, cioe' l'utente di servizio dei ticket
+        // esterni: la chiave API non e' una persona.
+        public async Task<ExternalTicketAttachmentResponse?> AttachFileAsync(ApiKey apiKey, int idTicket, string fileName, string contentType, byte[] content, string? description)
+        {
+            var ticket = await QueryTickets(apiKey).FirstOrDefaultAsync(x => x.Id == idTicket);
+            if (ticket == null)
+            {
+                return null;
+            }
+
+            var name = Path.GetFileName(fileName);
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new InvalidOperationException("Nome del file mancante.");
+            }
+
+            var ext = Path.GetExtension(name);
+            var attachment = new Attachment
+            {
+                IdParent = ticket.Id,
+                AttchmentType = AttachmentTypes.Ticket,
+                Name = Truncate(Path.GetFileNameWithoutExtension(name), 100),
+                Description = Truncate(description ?? string.Empty, 100),
+                CreatedOn = DateTime.Now,
+                IdUser = ticket.IdUserOpened ?? await ResolveOwnerUserIdAsync(),
+                Visibility = AttachmentVisibilities.Public
+            };
+            _context.Attachments.Add(attachment);
+            await _context.SaveChangesAsync();
+
+            var file = new AttachmentFile
+            {
+                IdAttachment = attachment.Id,
+                Name = name,
+                ContentType = Truncate(string.IsNullOrWhiteSpace(contentType) ? ext : contentType, 100),
+                FileType = ext,
+                Size = content.LongLength
+            };
+            _context.AttachmentFiles.Add(file);
+            await _context.SaveChangesAsync();
+
+            _archiveService.TypeArchive = ArchiveTypes.Attachments;
+            if (!_archiveService.SaveAttachments(file.Id, ext, content))
+            {
+                throw new IOException("Salvataggio del file nell'archivio non riuscito.");
+            }
+
+            return new ExternalTicketAttachmentResponse
+            {
+                IdTicket = ticket.Id,
+                IdAttachment = attachment.Id,
+                IdFile = file.Id,
+                FileName = name,
+                Size = content.LongLength
+            };
+        }
+
+        private static string Truncate(string value, int max) =>
+            value.Length <= max ? value : value.Substring(0, max);
+
         private IQueryable<Ticket> QueryTickets(ApiKey apiKey)
         {
             return _context.Tickets
@@ -111,14 +178,58 @@ namespace CRM.Server.Services
                 .Where(x => x.IdCompany == apiKey.IdCompany);
         }
 
-        private async Task ValidateTicketReferencesAsync(int idCompany, ExternalTicketCreateRequest request)
+        // Il tipo lo sceglie il CRM quando il chiamante non lo indica: prima la configurazione,
+        // poi il primo tipo aperto ai clienti. Un tipo indicato deve esistere.
+        private async Task<int> ResolveTicketTypeAsync(ExternalTicketCreateRequest request)
         {
-            var typeExists = await _context.TicketTypes.AnyAsync(x => x.Id == request.IdType);
-            if (!typeExists)
+            if (request.IdType is int requested)
             {
-                throw new InvalidOperationException("Tipo ticket non trovato.");
+                if (!await _context.TicketTypes.AnyAsync(x => x.Id == requested))
+                {
+                    throw new InvalidOperationException("Tipo ticket non trovato.");
+                }
+
+                return requested;
             }
 
+            if (int.TryParse(_configuration["ExternalTickets:DefaultTicketTypeId"], out var configured)
+                && await _context.TicketTypes.AnyAsync(x => x.Id == configured))
+            {
+                return configured;
+            }
+
+            var customerType = await _context.TicketTypes
+                .Where(x => x.CustomerEnabled)
+                .OrderBy(x => x.Id)
+                .Select(x => (int?)x.Id)
+                .FirstOrDefaultAsync();
+
+            return customerType
+                ?? throw new InvalidOperationException("Nessun tipo ticket predefinito per le richieste esterne.");
+        }
+
+        // Dalla matricola all'articolo, solo fra quelli dell'azienda della chiave: una
+        // matricola sconosciuta e' un errore, non un ticket senza macchina.
+        private async Task<Article?> ResolveArticleAsync(int idCompany, ExternalTicketCreateRequest request)
+        {
+            if (request.IdArticle.HasValue || string.IsNullOrWhiteSpace(request.SerialNumber))
+            {
+                return null;
+            }
+
+            var serialNumber = request.SerialNumber.Trim();
+            var article = await _context.Articles
+                .AsNoTracking()
+                .Where(x => x.IdCompany == idCompany && x.SerialNumber == serialNumber)
+                .OrderBy(x => x.Id)
+                .FirstOrDefaultAsync();
+
+            return article
+                ?? throw new InvalidOperationException("Matricola non trovata per la company associata alla API key.");
+        }
+
+        private async Task ValidateTicketReferencesAsync(int idCompany, ExternalTicketCreateRequest request)
+        {
             if (request.IdContact.HasValue)
             {
                 var contactExists = await _context.Contacts.AnyAsync(x => x.Id == request.IdContact.Value && x.IdCompany == idCompany);

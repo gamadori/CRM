@@ -173,7 +173,8 @@ else
                                     </h2>
                                     <div id="collapseTimes" class="accordion-collapse collapse" aria-labelledby="headingTimes">
                                         <div class="accordion-body">
-                                            <InterventionTimesManager IdIntervention="@_ticketIntervention.Id" 
+                                            <InterventionTimesManager IdIntervention="@_ticketIntervention.Id"
+                                                                      InterventionDate="@_ticketIntervention.StartDateTime"
                                                                       @bind-Times="_interventionTimes" />
                                         </div>
                                     </div>

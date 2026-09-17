@@ -62,5 +62,16 @@ namespace CRM.Shared
         public int? IdCompany { get; set; }
 
         public string? Name { get; set; }
+
+        /// <summary>
+        /// Aggiunge ai contatti dell'azienda quelli del rivenditore a cui appartiene.
+        /// <para>
+        /// Serve dove chi chiama non e' per forza il cliente: su un ticket la richiesta arriva
+        /// spesso dal rivenditore che segue quella ditta, e il suo referente non compariva da
+        /// nessuna parte. Si chiede caso per caso: gli elenchi di anagrafica continuano a
+        /// mostrare i contatti della sola azienda scelta.
+        /// </para>
+        /// </summary>
+        public bool IncludeReseller { get; set; } = false;
     }
 }

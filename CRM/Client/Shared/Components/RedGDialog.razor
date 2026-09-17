@@ -32,7 +32,7 @@ else if (Type == DialogType.Contacts)
 {
     @if (Mode == DialogMode.Selection)
     {
-        <CRM.Client.Pages.Contacts.Index IdCompany="@(IdParent as int?)" OnClickSelect="OnSelect" OnClickNew="OnAddNew" PageMode="PageModality.Dialog"></CRM.Client.Pages.Contacts.Index>
+        <CRM.Client.Pages.Contacts.Index IdCompany="@(IdParent as int?)" IncludeReseller="@IncludeReseller" OnClickSelect="OnSelect" OnClickNew="OnAddNew" PageMode="PageModality.Dialog"></CRM.Client.Pages.Contacts.Index>
     }
     else if (Mode == DialogMode.Addition)
     {

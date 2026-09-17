@@ -229,7 +229,26 @@ namespace CRM.Server.Services
 
                 if (args.IdCompany != null)
                 {
-                    contacts = contacts.Where(x => x.IdCompany == args.IdCompany);
+                    int idCompany = args.IdCompany.Value;
+
+                    // Il rivenditore si aggiunge solo se chi chiama lo chiede. Resta comunque
+                    // dentro il perimetro di visibilita' filtrato sopra: se l'utente non vede
+                    // l'azienda del rivenditore, i suoi contatti non compaiono lo stesso.
+                    int? idReseller = null;
+
+                    if (args.IncludeReseller)
+                    {
+                        idReseller = await _context.Companies
+                            .AsNoTracking()
+                            .Where(x => x.Id == idCompany)
+                            .Select(x => x.IdReseller)
+                            .FirstOrDefaultAsync();
+                    }
+
+                    if (idReseller != null)
+                        contacts = contacts.Where(x => x.IdCompany == idCompany || x.IdCompany == idReseller);
+                    else
+                        contacts = contacts.Where(x => x.IdCompany == idCompany);
                 }
 
                 if (args.Name != null && args.Name.Trim().Length > 0)
@@ -243,6 +262,16 @@ namespace CRM.Server.Services
                 if (args.OrderBy != null && args.OrderBy.Length > 0)
                 {
                     contacts = contacts.OrderBy(args.OrderBy);
+                }
+                else if (args.IdCompany != null)
+                {
+                    // Prima i contatti dell'azienda scelta, poi quelli del rivenditore: chi cerca
+                    // il referente del cliente lo trova in cima e non deve scorrere.
+                    int idCompany = args.IdCompany.Value;
+                    contacts = contacts
+                        .OrderBy(x => x.IdCompany == idCompany ? 0 : 1)
+                        .ThenBy(x => x.Surname)
+                        .ThenBy(x => x.Name);
                 }
                 else
                     contacts = contacts.OrderBy(x => x.Surname).ThenBy(x => x.Name);

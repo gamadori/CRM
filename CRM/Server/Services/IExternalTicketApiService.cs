@@ -18,5 +18,11 @@ namespace CRM.Server.Services
         Task<ExternalTicketResponse?> GetTicketAsync(ApiKey apiKey, int id);
 
         Task<List<ExternalTicketResponse>> GetTicketsAsync(ApiKey apiKey, bool includeClosed, int skip, int top);
+
+        /// <summary>
+        /// Allega un file a un ticket dell'azienda della chiave. Restituisce <c>null</c> se il
+        /// ticket non esiste o non appartiene a quell'azienda.
+        /// </summary>
+        Task<ExternalTicketAttachmentResponse?> AttachFileAsync(ApiKey apiKey, int idTicket, string fileName, string contentType, byte[] content, string? description);
     }
 }

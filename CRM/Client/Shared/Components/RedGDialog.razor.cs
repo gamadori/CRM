@@ -38,6 +38,15 @@ namespace CRM.Client.Shared.Components
         [Parameter]
         public object? IdParent { get; set; }
 
+        /// <summary>
+        /// Solo per <see cref="DialogType.Contacts"/>: all'elenco dell'azienda si aggiungono i
+        /// contatti del suo rivenditore. Chi apre il dialogo decide, perche' dipende da cosa si
+        /// sta compilando: su un ticket il richiedente puo' essere il rivenditore, in anagrafica
+        /// no.
+        /// </summary>
+        [Parameter]
+        public bool IncludeReseller { get; set; } = false;
+
         
 
 

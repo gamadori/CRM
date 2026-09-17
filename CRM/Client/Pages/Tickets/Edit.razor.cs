@@ -566,6 +566,11 @@ namespace CRM.Client.Pages.Tickets
 
 
             request.IdCompany = _ticket?.IdCompany;
+
+            // Chi apre il ticket non e' sempre il cliente: se la ditta e' seguita da un
+            // rivenditore, la chiamata arriva spesso da un suo referente.
+            request.IncludeReseller = true;
+
             _contactsCustomer = await ContactsService.GetListAsync(request);
 
            
