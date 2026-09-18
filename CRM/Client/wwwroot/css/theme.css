@@ -925,68 +925,117 @@ label.rz-label {
 .crm-chip-danger  { color: var(--crm-danger);  background: var(--crm-danger-soft);  border-color: transparent; }
 .crm-chip-info    { color: var(--crm-info);    background: var(--crm-info-soft);    border-color: transparent; }
 
-/* Intestazione di pagina (PageHeader.razor) */
+/* Intestazione di pagina (PageHeader.razor): una riga sola, ~44px.
+   Percorso e titolo sono lo stesso breadcrumb: i genitori piccoli e grigi, l'ultima voce
+   e' il titolo. Sottotitolo a fianco, azioni a destra. */
 .page-header-wrapper {
-    animation: crm-fade-down 0.25s ease-out;
+    animation: crm-fade-down 0.2s ease-out;
 }
 
-.page-header-wrapper .breadcrumb {
-    padding: 0.25rem 0;
-    margin: 0;
-    font-size: 0.82rem;
-    background: transparent;
-    --bs-breadcrumb-divider-color: var(--crm-text-disabled);
-    --bs-breadcrumb-item-active-color: var(--crm-text-muted);
+.page-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 44px;
 }
 
-.page-header-wrapper .breadcrumb-item + .breadcrumb-item::before {
-    content: "›";
-    font-size: 1rem;
-    line-height: 1;
-    color: var(--crm-text-disabled);
+.page-header-main {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
-.page-header-wrapper .breadcrumb-link {
-    color: var(--crm-text-muted);
-    cursor: pointer;
-    transition: color 120ms ease;
-}
-
-.page-header-wrapper .breadcrumb-link:hover {
-    color: var(--crm-primary);
-}
-
-.page-header-wrapper .breadcrumb-item.active {
-    color: var(--crm-text-secondary);
-    font-weight: 500;
+.page-header-actions {
+    flex: 0 0 auto;
 }
 
 .page-header-wrapper .header-icon-box {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 52px;
-    min-height: 52px;
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
     color: var(--crm-primary);
-    background: var(--crm-primary-soft) !important;
-    border-radius: var(--crm-radius) !important;
+    background: var(--crm-primary-soft);
+    border-radius: var(--crm-radius-sm);
 }
 
 .page-header-wrapper .header-icon-box .material-icons {
-    font-size: 28px !important;
-    color: var(--crm-primary) !important;
+    font-size: 20px;
+    color: var(--crm-primary);
 }
 
-.page-header-wrapper h4,
-.page-header-wrapper h5 {
-    color: var(--crm-text) !important;
-    font-size: 1.35rem;
+.page-header-path {
+    min-width: 0;
+}
+
+.page-header-wrapper .breadcrumb {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    font-size: 0.84rem;
+    background: transparent;
+    --bs-breadcrumb-divider-color: var(--crm-text-disabled);
+    --bs-breadcrumb-item-active-color: var(--crm-text);
+}
+
+.page-header-wrapper .breadcrumb-item {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.page-header-wrapper .breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    padding: 0 0.45rem;
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--crm-text-disabled);
+}
+
+.page-header-wrapper .breadcrumb-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--crm-text-muted);
+    cursor: pointer;
+    transition: color 120ms ease;
+}
+
+.page-header-wrapper .breadcrumb-link .material-icons {
+    font-size: 17px;
+}
+
+.page-header-wrapper .breadcrumb-link:hover {
+    color: var(--crm-primary);
+}
+
+.page-header-title {
+    margin: 0;
+    color: var(--crm-text);
+    font-size: 1.15rem;
     font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.page-header-wrapper p {
-    color: var(--crm-text-muted) !important;
-    font-size: 0.9rem;
+/* Seconda riga sotto il titolo, allineata al titolo (dopo l'icona) */
+.page-header-subtitle {
+    margin-top: 0.15rem;
+    color: var(--crm-text-muted);
+    font-size: 0.82rem;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .page-header-wrapper .card {
@@ -994,23 +1043,17 @@ label.rz-label {
 }
 
 @keyframes crm-fade-down {
-    from { opacity: 0; transform: translateY(-6px); }
+    from { opacity: 0; transform: translateY(-4px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 768px) {
-    .page-header-wrapper .header-icon-box {
-        min-width: 42px;
-        min-height: 42px;
-        padding: 0.5rem !important;
+    .page-header-row {
+        flex-wrap: wrap;
     }
 
-    .page-header-wrapper .header-icon-box .material-icons {
-        font-size: 22px !important;
-    }
-
-    .page-header-wrapper h4 {
-        font-size: 1.15rem;
+    .page-header-title {
+        font-size: 1.05rem;
     }
 }
 

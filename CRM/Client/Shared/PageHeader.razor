@@ -13,101 +13,84 @@
     @if (Model.DialogTitle != null)
     {
         <!-- ? Rendering semplificato per pagine child -->
-        <div class="page-header-wrapper mb-4">
-            <div class="container-fluid px-0">
-                <h5 class="fw-bold text-dark mb-1">@Model.DialogTitle</h5>
-            </div>
+        <div class="page-header-wrapper mb-3">
+            <h2 class="page-header-title">@Model.DialogTitle</h2>
         </div>
     }
 }
 else
 {
-    <div class="page-header-wrapper mb-4">
-        <div class="container-fluid px-0">
-            <!-- Breadcrumb -->
-        
-            @if (Model.BreadcrumbItems != null && Model.BreadcrumbItems.Any())
-            {
-                <nav aria-label="breadcrumb" class="mb-2">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item">
-                            <a href="/" 
-                               class="text-decoration-none breadcrumb-link"
-                               @onclick="@(() => NavigateToUrl("/"))"
-                               @onclick:preventDefault="true">
-                                <span class="material-icons" style="font-size: 16px; vertical-align: middle;">home</span>
-                            </a>
-                        </li>
-                        @foreach (var item in Model.BreadcrumbItems)
-                        {
-                            @if (item == Model.BreadcrumbItems.Last())
-                            {
-                                <li class="breadcrumb-item active" aria-current="page">@item.Text</li>
-                            }
-                            else
-                            {
-                                <li class="breadcrumb-item">
-                                    @if (!string.IsNullOrEmpty(item.Url))
-                                    {
-                                        <a href="@item.Url" 
-                                           class="text-decoration-none breadcrumb-link"
-                                           @onclick="@(() => NavigateToUrl(item.Url))"
-                                           @onclick:preventDefault="true">
-                                            @item.Text
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <span>@item.Text</span>
-                                    }
-                                </li>
-                            }
-                        }
-                    </ol>
-                </nav>
-            }
-
-            <!-- Header Section -->
-            <div class="row align-items-center">
-                <div class="col">
-                    <div class="d-flex align-items-center justify-content-start">
-                        @if (!string.IsNullOrEmpty(Model.Icon))
-                        {
-                            <div class="header-icon-box me-3">
-                                <span class="material-icons">@Model.Icon</span>
-                            </div>
-                        }
-                        <div class="text-start">
-                            <h4 class="fw-bold text-dark mb-1 text-start">@Model.Title</h4>
-                            @if (!string.IsNullOrEmpty(Model.Subtitle))
-                            {
-                                <p class="text-muted mb-0 text-start">@Model.Subtitle</p>
-                            }
-                        </div>
-                    </div>
-                </div>
-            
-                @if (Actions != null)
+    @* Una riga sola: percorso e titolo insieme. Il breadcrumb finiva con lo stesso testo
+       del titolo ("Ticket" › poi "Ticket" in grande) e con l'icona da 52px l'intestazione
+       costava ~110px per pagina. Qui i genitori stanno piccoli prima del titolo, il
+       sottotitolo in grigio a fianco, le azioni a destra: ~44px. *@
+    <div class="page-header-wrapper mb-3">
+        <div class="page-header-row">
+            <div class="page-header-main">
+                @if (!string.IsNullOrEmpty(Model.Icon))
                 {
-                    <div class="col-auto">
-                        @Actions
+                    <div class="header-icon-box">
+                        <span class="material-icons">@Model.Icon</span>
                     </div>
                 }
+                <nav aria-label="breadcrumb" class="page-header-path">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item">
+                            <a href="/"
+                               class="text-decoration-none breadcrumb-link"
+                               title="Home"
+                               @onclick="@(() => NavigateToUrl("/"))"
+                               @onclick:preventDefault="true">
+                                <span class="material-icons">home</span>
+                            </a>
+                        </li>
+                        @foreach (var item in ParentItems)
+                        {
+                            <li class="breadcrumb-item">
+                                @if (!string.IsNullOrEmpty(item.Url))
+                                {
+                                    <a href="@item.Url"
+                                       class="text-decoration-none breadcrumb-link"
+                                       @onclick="@(() => NavigateToUrl(item.Url))"
+                                       @onclick:preventDefault="true">
+                                        @item.Text
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span>@item.Text</span>
+                                }
+                            </li>
+                        }
+                        <li class="breadcrumb-item active" aria-current="page">
+                            <h1 class="page-header-title">@CurrentTitle</h1>
+                        </li>
+                    </ol>
+                    @* Il sottotitolo sta su una riga sua, sotto il titolo: in riga, corto si
+                       confondeva col percorso e lungo si sovrapponeva al titolo. *@
+                    @if (!string.IsNullOrEmpty(Model.Subtitle))
+                    {
+                        <div class="page-header-subtitle">@Model.Subtitle</div>
+                    }
+                </nav>
             </div>
 
-            @if (Filters != null)
+            @if (Actions != null)
             {
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-body p-3">
-                                @Filters
-                            </div>
-                        </div>
-                    </div>
+                <div class="page-header-actions">
+                    @Actions
                 </div>
             }
         </div>
+
+        @if (Filters != null)
+        {
+            <div class="card border-0 shadow-sm mt-2">
+                <div class="card-body p-3">
+                    @Filters
+                </div>
+            </div>
+        }
     </div>
 }
 
@@ -123,6 +106,37 @@ else
 
     [Parameter]
     public bool Visible { get; set; } = true;
+
+    /// <summary>
+    /// Il percorso e' il breadcrumb: i genitori piccoli, l'ultima voce in grassetto come
+    /// titolo. Elenco: "Home › Ticket" con "Ticket" in grassetto. Scheda: "Home › Ticket › 2"
+    /// con "2" in grassetto. Prima il titolo del modello si ripeteva sotto ("Ticket › 2" e poi
+    /// "Ticket" grande): l'ultima voce e' gia' la pagina corrente, non serve dirlo due volte.
+    /// Senza breadcrumb resta il titolo del modello.
+    /// </summary>
+    private IEnumerable<BreadcrumbItem> ParentItems
+    {
+        get
+        {
+            var items = Model?.BreadcrumbItems;
+            if (items == null || items.Count == 0)
+                return Array.Empty<BreadcrumbItem>();
+
+            return items.Take(items.Count - 1);
+        }
+    }
+
+    private string CurrentTitle
+    {
+        get
+        {
+            var items = Model?.BreadcrumbItems;
+            if (items != null && items.Count > 0 && !string.IsNullOrWhiteSpace(items[items.Count - 1].Text))
+                return items[items.Count - 1].Text;
+
+            return Model?.Title ?? string.Empty;
+        }
+    }
 
     /// <summary>
     /// Render Fragment per azioni (pulsanti, dropdown, etc.)

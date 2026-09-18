@@ -15,6 +15,7 @@
 @inject NotificationService Notification
 @inject DialogService DialogService
 @inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
+@inject IJSRuntime Js
 
 <PageHeader Model="_pageHeader">
     <Actions>
@@ -112,9 +113,27 @@
         </div>
     </div>
 
-    <div class="agenda-layout">
-        <section class="agenda-list">
-            <div class="agenda-section-title">@ListTitle</div>
+    @* Il calendario prende la larghezza; le scadenze stanno in un pannello che si apre e si
+       chiude. Aperto/chiuso lo decide l'utente (ricordato); finche' non decide, e' aperto solo
+       se c'e' qualcosa da mostrare: prima la colonna si allargava fino a 440px anche vuota. *@
+    <div class="agenda-layout @(ListOpen ? "list-open" : "list-closed")">
+        @if (!ListOpen)
+        {
+            <button type="button" class="agenda-list-collapsed" @onclick="ToggleList"
+                    title="@ListTitle" aria-label="@ListTitle">
+                <span class="material-icons">chevron_right</span>
+                <span class="agenda-list-collapsed-count @(_summary.Overdue > 0 ? "has-overdue" : "")">@_filteredItems.Count</span>
+                <span class="agenda-list-collapsed-label">@ListTitle</span>
+            </button>
+        }
+        <section class="agenda-list" hidden="@(!ListOpen)">
+            <div class="agenda-section-title">
+                <span>@ListTitle</span>
+                <button type="button" class="agenda-list-toggle" @onclick="ToggleList"
+                        title="@Localize["Nascondi"]" aria-label="@Localize["Nascondi"]">
+                    <span class="material-icons">chevron_left</span>
+                </button>
+            </div>
             @if (_loading)
             {
                 <Waiting></Waiting>
@@ -211,16 +230,12 @@
         padding: 1.25rem;
     }
 
+    /* Niente riquadro attorno ai pulsanti: stanno nell'intestazione, che ora e' alta una riga. */
     .agenda-toolbar {
         align-items: center;
-        background: var(--crm-surface);
-        border: 1px solid var(--crm-border);
-        border-radius: var(--crm-radius);
         display: flex;
         gap: 1rem;
         justify-content: space-between;
-        margin-bottom: 1rem;
-        padding: 1rem 1.25rem;
     }
 
     .agenda-actions {
@@ -315,7 +330,14 @@
         align-items: start;
         display: grid;
         gap: 1rem;
-        grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
+    }
+
+    .agenda-layout.list-open {
+        grid-template-columns: 320px minmax(0, 1fr);
+    }
+
+    .agenda-layout.list-closed {
+        grid-template-columns: auto minmax(0, 1fr);
     }
 
     .agenda-list,
@@ -327,11 +349,81 @@
     }
 
     .agenda-section-title {
+        align-items: center;
         color: var(--crm-text-secondary);
+        display: flex;
         font-size: .84rem;
         font-weight: 700;
+        justify-content: space-between;
         margin-bottom: .75rem;
         text-transform: uppercase;
+    }
+
+    .agenda-list-toggle {
+        align-items: center;
+        background: transparent;
+        border: 0;
+        border-radius: var(--crm-radius-sm);
+        color: var(--crm-text-muted);
+        display: inline-flex;
+        height: 28px;
+        justify-content: center;
+        padding: 0;
+        width: 28px;
+    }
+
+    .agenda-list-toggle:hover {
+        background: var(--crm-surface-hover);
+        color: var(--crm-text);
+    }
+
+    /* Pannello chiuso: una striscia verticale con il contatore; il titolo corre in verticale. */
+    .agenda-list-collapsed {
+        align-items: center;
+        align-self: stretch;
+        background: var(--crm-surface);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
+        color: var(--crm-text-muted);
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: .6rem;
+        min-height: 220px;
+        padding: .6rem .4rem;
+        width: 44px;
+    }
+
+    .agenda-list-collapsed:hover {
+        border-color: var(--crm-primary);
+        color: var(--crm-primary);
+    }
+
+    .agenda-list-collapsed-count {
+        background: var(--crm-surface-muted);
+        border: 1px solid var(--crm-border);
+        border-radius: 999px;
+        color: var(--crm-text-secondary);
+        font-size: .74rem;
+        font-weight: 700;
+        min-width: 24px;
+        padding: .1rem .35rem;
+        text-align: center;
+    }
+
+    .agenda-list-collapsed-count.has-overdue {
+        background: var(--crm-danger-soft);
+        border-color: transparent;
+        color: var(--crm-danger);
+    }
+
+    .agenda-list-collapsed-label {
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        writing-mode: vertical-rl;
     }
 
     .agenda-empty {
@@ -447,8 +539,21 @@
 
     @@media (max-width: 992px) {
         .agenda-layout,
+        .agenda-layout.list-open,
+        .agenda-layout.list-closed,
         .agenda-metrics {
             grid-template-columns: 1fr;
+        }
+
+        /* Su schermo stretto le colonne si impilano: la striscia verticale diventa una riga. */
+        .agenda-list-collapsed {
+            flex-direction: row;
+            min-height: 0;
+            width: 100%;
+        }
+
+        .agenda-list-collapsed-label {
+            writing-mode: horizontal-tb;
         }
 
         .agenda-filter-field,
@@ -535,10 +640,52 @@
         ? Localize["Le mie scadenze"]
         : _idUser == null ? Localize["Scadenze del team"] : Localize["Scadenze del responsabile"];
 
+    private const string ListStorageKey = "crm-agenda-list";
+
+    /// <summary>
+    /// Scelta esplicita dell'utente sul pannello delle scadenze; null finche' non ha mai
+    /// cliccato. In quel caso decide il contenuto: aperto se c'e' almeno una scadenza.
+    /// </summary>
+    private bool? _listOpenChoice;
+
+    private bool ListOpen => _listOpenChoice ?? (_loading || _filteredItems.Any());
+
     protected override async Task OnInitializedAsync()
     {
         _pageHeader = await HeaderService.Create();
+        await LoadListChoiceAsync();
         await Load();
+    }
+
+    private async Task ToggleList()
+    {
+        _listOpenChoice = !ListOpen;
+        try
+        {
+            await Js.InvokeVoidAsync("localStorage.setItem", ListStorageKey, _listOpenChoice.Value ? "open" : "closed");
+        }
+        catch
+        {
+            // Senza localStorage la scelta vale solo per questa visita.
+        }
+    }
+
+    private async Task LoadListChoiceAsync()
+    {
+        try
+        {
+            var saved = await Js.InvokeAsync<string?>("localStorage.getItem", ListStorageKey);
+            _listOpenChoice = saved switch
+            {
+                "open" => true,
+                "closed" => false,
+                _ => null
+            };
+        }
+        catch
+        {
+            _listOpenChoice = null;
+        }
     }
 
     /// <summary>
