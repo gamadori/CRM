@@ -1,3 +1,5 @@
+@* Sezione di una scheda di dettaglio: titolo piccolo maiuscolo con icona, poi i campi in
+   griglia fluida (la griglia e' definita in theme.css, "Scheda di dettaglio"). *@
 <section class="@CssClass">
     @if (!string.IsNullOrWhiteSpace(Title) || HeaderContent != null)
     {
@@ -25,24 +27,22 @@
 </section>
 
 <style>
-    .rg-detail-section {
-        min-width: 0;
-    }
-
     .rg-detail-section-header {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
-        color: var(--crm-text, #101828);
-        font-size: 0.95rem;
+        gap: 0.4rem;
+        margin-bottom: 0.25rem;
+        color: var(--crm-text-muted);
+        font-size: 0.74rem;
         font-weight: 700;
+        letter-spacing: 0.06em;
         line-height: 1.25;
+        text-transform: uppercase;
     }
 
     .rg-detail-section-icon {
-        color: var(--crm-primary, #4258d6);
-        font-size: 1.15rem !important;
+        color: var(--crm-primary);
+        font-size: 1rem !important;
         line-height: 1;
     }
 
@@ -55,19 +55,15 @@
         min-width: 0;
     }
 
-    .rg-detail-section + .rg-detail-section {
-        padding-top: 1rem;
-        border-top: 1px solid var(--crm-border, #e9ecef);
+    /* Spazio fra le sezioni. Sta sulla sezione stessa e non su "sezione + sezione" perche'
+       nelle pagine spesso c'e' un contenitore in mezzo (AuthorizeView, div condizionali). */
+    .rg-detail-section {
+        min-width: 0;
+        margin-bottom: 1.5rem;
     }
 
-    @@media (prefers-color-scheme: dark) {
-        .rg-detail-section-header {
-            color: var(--crm-text, #f2f4f7);
-        }
-
-        .rg-detail-section + .rg-detail-section {
-            border-top-color: var(--crm-border, #303947);
-        }
+    .rg-detail-section:last-child {
+        margin-bottom: 0;
     }
 </style>
 

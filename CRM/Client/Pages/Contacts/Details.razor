@@ -1,4 +1,4 @@
-﻿@page "/Contacts/{Id:int}/Details"
+@page "/Contacts/{Id:int}/Details"
 @page "/Contacts/{Id:int}"
 @page "/Companies/{CompanyId:int}/Contacts/{Id:int}/Details"
 @page "/Companies/{CompanyId:int}/Contacts/{Id:int}"
@@ -10,14 +10,50 @@
 
 @if (_contact == null)
 {
-    <Waiting></Waiting>     
+    <Waiting></Waiting>
 }
 else
 {
+    @* Testata: nome e cognome sono il titolo, l'azienda un chip che porta alla sua scheda,
+       telefono/cellulare/email gia' cliccabili. Le azioni stanno qui, non in fondo. *@
+    <RedGDetailHeader Initials="@Initials" Kicker="@Localize["Contatto"]" Title="@_contact.NameComplete">
+        <Chips>
+            @if (!string.IsNullOrWhiteSpace(_contact.CompanyName))
+            {
+                @if (_contact.IdCompany > 0)
+                {
+                    <a class="crm-chip crm-chip-primary text-decoration-none" href="/Companies/@_contact.IdCompany">
+                        <span class="material-icons" style="font-size: 14px;">business</span>
+                        @_contact.CompanyName
+                    </a>
+                }
+                else
+                {
+                    <span class="crm-chip">@_contact.CompanyName</span>
+                }
+            }
+        </Chips>
+        <Facts>
+            <RedGDetailFact Icon="phone" Value="@_contact.Phone" Href="@TelHref(_contact.Phone)">
+                <LabelContent><DisplayName For="@(() => _contact.Phone)" /></LabelContent>
+            </RedGDetailFact>
+            <RedGDetailFact Icon="smartphone" Value="@_contact.Mobile" Href="@TelHref(_contact.Mobile)">
+                <LabelContent><DisplayName For="@(() => _contact.Mobile)" /></LabelContent>
+            </RedGDetailFact>
+            <RedGDetailFact Icon="mail_outline" Value="@_contact.Email" Href="@(string.IsNullOrWhiteSpace(_contact.Email) ? null : $"mailto:{_contact.Email}")">
+                <LabelContent><DisplayName For="@(() => _contact.Email)" /></LabelContent>
+            </RedGDetailFact>
+        </Facts>
+        <Actions>
+            <RedGButton RGButtonType="RGButtonType.Back" Click="Annulla" Text="@Localize["Lista Contatti"]" />
+            <RedGButton RGButtonType="RGButtonType.Edit" Click="Edit" AutoLabel=true />
+        </Actions>
+    </RedGDetailHeader>
+
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-4">
-            
-            <RedGDetailField Icon="person" ContainerClass="mb-4">
+
+            <RedGDetailField Icon="person">
                 <LabelContent><DisplayName For="@(() => _contact.Name)" /></LabelContent>
                 <ChildContent><p class="mb-0 text-dark">@_contact.Name</p></ChildContent>
             </RedGDetailField>
@@ -47,17 +83,22 @@ else
                 <ChildContent>
                     @if (!string.IsNullOrWhiteSpace(_contact.Email))
                     {
-                        <a href="mailto:@_contact.Email" class="text-primary text-decoration-none">
-                            <span class="material-icons" style="font-size: 18px; vertical-align: middle;">mail_outline</span>
-                            @_contact.Email
-                        </a>
+                        <a href="mailto:@_contact.Email">@_contact.Email</a>
                     }
                     else
                     {
-                        <p class="mb-0 text-muted">-</p>
+                        <p class="mb-0"></p>
                     }
                 </ChildContent>
             </RedGDetailField>
+
+            @if (!string.IsNullOrWhiteSpace(_contact.Note))
+            {
+                <RedGDetailField Icon="note" ContainerClass="full">
+                    <LabelContent><DisplayName For="@(() => _contact.Note)" /></LabelContent>
+                    <ChildContent><p class="mb-0 text-dark">@_contact.Note</p></ChildContent>
+                </RedGDetailField>
+            }
 
             <!-- Social Links -->
             @if (!string.IsNullOrWhiteSpace(_contact.FacebookUrl) || !string.IsNullOrWhiteSpace(_contact.LinkedInUrl) || !string.IsNullOrWhiteSpace(_contact.TwitterUrl))
@@ -89,15 +130,26 @@ else
                 </RedGDetailField>
             }
         </div>
-
-        <!-- Footer con azioni -->
-        <div class="card-footer bg-light border-top py-3">
-            <div class="d-flex gap-2">
-                <RedGButton RGButtonType="RGButtonType.Cancel" Click="Annulla" Text="@Localize["Lista Contatti"]" />
-                <RedGButton RGButtonType="RGButtonType.Edit" Click="Edit" AutoLabel=true />
-
-                
-            </div>
-        </div>
     </div>
+}
+
+@code {
+    /// <summary>Iniziali per il simbolo in testata: "MP" per Maroncelli Piero.</summary>
+    private string Initials
+    {
+        get
+        {
+            if (_contact == null)
+                return string.Empty;
+
+            var parts = new[] { _contact.Surname, _contact.Name }
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => char.ToUpperInvariant(s.Trim()[0]).ToString());
+
+            return string.Concat(parts);
+        }
+    }
+
+    private static string TelHref(string phone)
+        => string.IsNullOrWhiteSpace(phone) ? null : $"tel:{phone.Replace(" ", "")}";
 }

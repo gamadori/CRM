@@ -1,0 +1,121 @@
+@* Un dato chiave nella testata (RedGDetailHeader.Facts): icona piccola, etichetta, valore.
+   Se il valore e' vuoto il dato non si vede: in testata si mostrano solo le cose che ci sono. *@
+
+@if (HasValue)
+{
+    <div class="rg-detail-fact">
+        @if (!string.IsNullOrWhiteSpace(Icon))
+        {
+            <span class="material-icons rg-detail-fact-icon">@Icon</span>
+        }
+        <span class="rg-detail-fact-body">
+            @if (!string.IsNullOrWhiteSpace(Label))
+            {
+                <span class="rg-detail-fact-label">@Label</span>
+            }
+            else if (LabelContent != null)
+            {
+                <span class="rg-detail-fact-label">@LabelContent</span>
+            }
+            <span class="rg-detail-fact-value">
+                @if (!string.IsNullOrWhiteSpace(Href))
+                {
+                    <a href="@Href" target="@Target" rel="@(Target == "_blank" ? "noopener noreferrer" : null)">@Value</a>
+                }
+                else if (ChildContent != null)
+                {
+                    @ChildContent
+                }
+                else
+                {
+                    @Value
+                }
+            </span>
+        </span>
+    </div>
+}
+
+<style>
+    .rg-detail-fact {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        min-width: 0;
+        padding: 0.1rem 0;
+    }
+
+    /* Il filo separa un dato dal precedente. Selettore "~" e non ":last-child" perche' fra
+       un dato e l'altro Blazor mette anche il blocco style di questo componente. */
+    .rg-detail-fact ~ .rg-detail-fact {
+        margin-left: 1.1rem;
+        padding-left: 1.1rem;
+        border-left: 1px solid var(--crm-border-strong);
+    }
+
+    .rg-detail-fact-icon {
+        flex: 0 0 auto;
+        font-size: 17px;
+        color: var(--crm-text-muted);
+    }
+
+    .rg-detail-fact-body {
+        display: inline-flex;
+        flex-direction: column;
+        min-width: 0;
+        line-height: 1.2;
+    }
+
+    .rg-detail-fact-label {
+        color: var(--crm-text-muted);
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    /* DisplayName rende una label con classe label-floating (16px in app.css): qui e'
+       un'etichetta piccola. */
+    .rg-detail-fact-label .label-floating,
+    .rg-detail-fact-label label {
+        margin: 0;
+        color: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        line-height: inherit;
+    }
+
+    .rg-detail-fact-value {
+        color: var(--crm-text);
+        font-size: 0.9rem;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .rg-detail-fact-value a {
+        color: var(--crm-link);
+        text-decoration: none;
+    }
+
+    .rg-detail-fact-value a:hover {
+        text-decoration: underline;
+    }
+
+    @@media (max-width: 768px) {
+        .rg-detail-fact ~ .rg-detail-fact {
+            margin-left: 0.75rem;
+            padding-left: 0.75rem;
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public string Icon { get; set; }
+    [Parameter] public string Label { get; set; }
+    /// <summary>Etichetta come contenuto (es. DisplayName), in alternativa a Label.</summary>
+    [Parameter] public RenderFragment LabelContent { get; set; }
+    [Parameter] public string Value { get; set; }
+    /// <summary>Se presente il valore diventa un link (mailto:, tel:, https://).</summary>
+    [Parameter] public string Href { get; set; }
+    [Parameter] public string Target { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    private bool HasValue => !string.IsNullOrWhiteSpace(Value) || ChildContent != null;
+}

@@ -1,20 +1,22 @@
+@* Contenitore di una scheda di dettaglio. Le azioni stanno in alto a destra, come nella
+   scheda Commessa: prima erano in un pie' di pagina grigio sotto tutto. *@
 @if (IsLoading)
 {
     <Waiting></Waiting>
 }
 else if (IsEmpty)
 {
-    <div class="@CardClass">
-        <div class="card-body p-4 text-center text-muted">
+    <div class="@CardClass rg-detail-page">
+        <div class="rg-detail-page-empty">
             @if (!string.IsNullOrWhiteSpace(EmptyIcon))
             {
-                <span class="material-icons d-block mb-2 rg-detail-page-empty-icon">@EmptyIcon</span>
+                <span class="material-icons rg-detail-page-empty-icon">@EmptyIcon</span>
             }
             <strong>@EmptyText</strong>
         </div>
         @if (ActionsContent != null)
         {
-            <div class="card-footer bg-light border-top py-3">
+            <div class="rg-detail-page-toolbar rg-detail-page-toolbar-bottom">
                 @ActionsContent
             </div>
         }
@@ -22,29 +24,65 @@ else if (IsEmpty)
 }
 else
 {
-    <div class="@CardClass">
-        <div class="card-body p-4 rg-detail-page-body">
-            @ChildContent
-        </div>
-
+    <div class="@CardClass rg-detail-page">
         @if (ActionsContent != null)
         {
-            <div class="card-footer bg-light border-top py-3">
+            <div class="rg-detail-page-toolbar">
                 @ActionsContent
             </div>
         }
+        <div class="rg-detail-page-body">
+            @ChildContent
+        </div>
     </div>
 }
 
 <style>
-    .rg-detail-page-body {
+    .rg-detail-page {
+        overflow: hidden;
+    }
+
+    .rg-detail-page-toolbar {
         display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        padding: 0.65rem 1.25rem;
+        background: var(--crm-surface-muted);
+        border-bottom: 1px solid var(--crm-border);
+    }
+
+    .rg-detail-page-toolbar-bottom {
+        border-top: 1px solid var(--crm-border);
+        border-bottom: 0;
+    }
+
+    .rg-detail-page-body {
+        padding: 1.25rem 1.5rem 1.5rem;
+    }
+
+    .rg-detail-page-empty {
+        padding: 2.5rem 1.5rem;
+        color: var(--crm-text-muted);
+        text-align: center;
     }
 
     .rg-detail-page-empty-icon {
+        display: block;
+        margin-bottom: 0.5rem;
         font-size: 42px;
+    }
+
+    @@media (max-width: 768px) {
+        .rg-detail-page-body {
+            padding: 1rem;
+        }
+
+        .rg-detail-page-toolbar {
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            padding: 0.6rem 1rem;
+        }
     }
 </style>
 

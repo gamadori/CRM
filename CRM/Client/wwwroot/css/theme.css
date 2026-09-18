@@ -1062,3 +1062,30 @@ label.rz-label {
         animation: none;
     }
 }
+
+/* ---------------------------------------------------------------------
+   Scheda di dettaglio (RedGDetailField / Section / Page).
+   I campi si dispongono in colonne fluide: la regola sta sul CONTENITORE
+   perche' i campi sono figli diretti o di una sezione o - nelle pagine piu'
+   vecchie - del card-body. Cosi' le 20 pagine di dettaglio cambiano senza
+   toccarle. Niente larghezze fisse: le colonne si contano da sole.
+   --------------------------------------------------------------------- */
+.rg-detail-section-content,
+.card-body:has(> .rg-detail-field) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    column-gap: 2rem;
+    row-gap: 1.1rem;
+    /* Le celle di una riga sono alte uguali (stretch, il default): un valore su due righe
+       non fa scendere solo la sua cella. Il testo resta in alto. */
+    align-items: stretch;
+}
+
+/* Un campo lungo che da solo occupa tutta la griglia non deve chiedere due colonne
+   che non ci sono: sotto i 560px la griglia e' a una colonna e lo span rientra. */
+@media (max-width: 560px) {
+    .rg-detail-section-content,
+    .card-body:has(> .rg-detail-field) {
+        grid-template-columns: 1fr;
+    }
+}

@@ -4,16 +4,74 @@
 <PageHeader PageMode="@PageMode">
 </PageHeader>
 
+@if (_company != null)
+{
+    @* Testata: il nome dell'azienda e' il titolo, non il primo campo. Sotto, i dati che si
+       cercano per primi (P.IVA, citta', telefono, email) gia' cliccabili. *@
+    <RedGDetailHeader Icon="business" Kicker="@Localize["Azienda"]" Title="@_company.RagioneSociale">
+        <Symbol>
+            @if (!string.IsNullOrWhiteSpace(_logo))
+            {
+                <img src="@_logo" alt="@_company.RagioneSociale" />
+            }
+            else
+            {
+                <span class="material-icons">business</span>
+            }
+        </Symbol>
+        <Chips>
+            <span class="crm-chip crm-chip-primary">@LocalizeCompanyTypes[_company.CompanyType.ToString()]</span>
+            @if (!string.IsNullOrWhiteSpace(_company.Stato))
+            {
+                <span class="crm-chip">@_company.Stato</span>
+            }
+            @if (_company.IdReseller != null && _company.IdReseller > 0 && !string.IsNullOrWhiteSpace(_company.ResellerName))
+            {
+                <span class="crm-chip" title="@Localize["Reseller"]">
+                    <span class="material-icons" style="font-size: 14px;">store</span>
+                    @_company.ResellerName
+                </span>
+            }
+        </Chips>
+        <Facts>
+            <RedGDetailFact Icon="receipt_long" Value="@_company.PIva">
+                <LabelContent><DisplayName For="@(() => _company.PIva)" /></LabelContent>
+            </RedGDetailFact>
+            <RedGDetailFact Icon="location_on" Value="@CityLine">
+                <LabelContent><DisplayName For="@(() => _company.Citta)" /></LabelContent>
+            </RedGDetailFact>
+            <RedGDetailFact Icon="phone" Value="@_company.Telefono" Href="@TelHref(_company.Telefono)">
+                <LabelContent><DisplayName For="@(() => _company.Telefono)" /></LabelContent>
+            </RedGDetailFact>
+            <RedGDetailFact Icon="mail_outline" Value="@_company.Email" Href="@(string.IsNullOrWhiteSpace(_company.Email) ? null : $"mailto:{_company.Email}")">
+                <LabelContent><DisplayName For="@(() => _company.Email)" /></LabelContent>
+            </RedGDetailFact>
+            <RedGDetailFact Icon="language" Value="@_company.Web" Href="@WebHref(_company.Web)" Target="_blank">
+                <LabelContent><DisplayName For="@(() => _company.Web)" /></LabelContent>
+            </RedGDetailFact>
+        </Facts>
+        <Actions>
+            <RedGButton RGButtonType="RGButtonType.Back" Click="@(() => NavigationManager.NavigateTo("/Companies"))" Text="@Localize["Companies"]" />
+            @if (_hasChildren)
+            {
+                <RadzenButton Icon="account_tree" ButtonStyle="Radzen.ButtonStyle.Light"
+                              Text="@Localize["Struttura Aziende"]"
+                              Click="OpenTreeDialog" />
+            }
+            <AuthorizeView Policy="@ePolicy.SuperUserRole.ToString()">
+                <Authorized Context="AuthorizeRole">
+                    <RedGButton RGButtonType="RGButtonType.Edit" Click="EditCompany" AutoLabel=true></RedGButton>
+                </Authorized>
+            </AuthorizeView>
+        </Actions>
+    </RedGDetailHeader>
+}
+
 <RedGDetailPage IsLoading="@(_company == null)">
     <ChildContent>
         @if (_company != null)
         {
             <RedGDetailSection Title="Anagrafica" Icon="business">
-                <RedGDetailField Icon="business">
-                    <LabelContent><DisplayName For="@(() => _company.RagioneSociale)" /></LabelContent>
-                    <ChildContent><p class="mb-0 text-dark">@_company.RagioneSociale</p></ChildContent>
-                </RedGDetailField>
-
                 <RedGDetailField Icon="receipt_long">
                     <LabelContent><DisplayName For="@(() => _company.PIva)" /></LabelContent>
                     <ChildContent><p class="mb-0 text-dark">@_company.PIva</p></ChildContent>
@@ -98,14 +156,11 @@
                     <ChildContent>
                         @if (!string.IsNullOrWhiteSpace(_company.Email))
                         {
-                            <a href="mailto:@_company.Email" class="text-primary text-decoration-none">
-                                <span class="material-icons" style="font-size: 18px; vertical-align: middle;">mail_outline</span>
-                                @_company.Email
-                            </a>
+                            <a href="mailto:@_company.Email">@_company.Email</a>
                         }
                         else
                         {
-                            <p class="mb-0 text-muted">-</p>
+                            <p class="mb-0"></p>
                         }
                     </ChildContent>
                 </RedGDetailField>
@@ -115,18 +170,11 @@
                     <ChildContent>
                         @if (!string.IsNullOrWhiteSpace(_company.Web))
                         {
-                            var webUrl = _company.Web.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                                         _company.Web.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-                                         ? _company.Web
-                                         : $"https://{_company.Web}";
-                            <a href="@webUrl" target="_blank" rel="noopener noreferrer" class="text-primary text-decoration-none">
-                                <span class="material-icons" style="font-size: 18px; vertical-align: middle;">open_in_new</span>
-                                @_company.Web
-                            </a>
+                            <a href="@WebHref(_company.Web)" target="_blank" rel="noopener noreferrer">@_company.Web</a>
                         }
                         else
                         {
-                            <p class="mb-0 text-muted">-</p>
+                            <p class="mb-0"></p>
                         }
                     </ChildContent>
                 </RedGDetailField>
@@ -135,38 +183,34 @@
             @if (!string.IsNullOrWhiteSpace(_company.Note))
             {
                 <RedGDetailSection Title="Note" Icon="note">
-                    <RedGDetailField Icon="note">
+                    <RedGDetailField Icon="note" ContainerClass="full">
                         <LabelContent><DisplayName For="@(() => _company.Note)" /></LabelContent>
                         <ChildContent>@((MarkupString)_company.Note)</ChildContent>
                     </RedGDetailField>
                 </RedGDetailSection>
             }
-
-            @if (!string.IsNullOrWhiteSpace(_logo))
-            {
-                <RedGDetailSection Title="@Localize["Logo"]" Icon="image">
-                    <RedGDetailField Icon="image">
-                        <LabelContent>@Localize["Logo"]</LabelContent>
-                        <ChildContent><img src="@_logo" style="max-width: 500px" /></ChildContent>
-                    </RedGDetailField>
-                </RedGDetailSection>
-            }
         }
     </ChildContent>
-    <ActionsContent>
-        <RedGDetailActions>
-            <RedGButton RGButtonType="RGButtonType.Back" Click="@(() => NavigationManager.NavigateTo("/Companies"))" Text="@Localize["Companies"]" />
-            <AuthorizeView Policy="@ePolicy.SuperUserRole.ToString()">
-                <Authorized Context="AuthorizeRole">
-                    <RedGButton RGButtonType="RGButtonType.Edit" Click="EditCompany" AutoLabel=true></RedGButton>
-                </Authorized>
-            </AuthorizeView>
-            @if (_hasChildren)
-            {
-                <RadzenButton Icon="account_tree" ButtonStyle="Radzen.ButtonStyle.Info" Size="Radzen.ButtonSize.Small"
-                              Text="@Localize["Struttura Aziende"]"
-                              Click="OpenTreeDialog" />
-            }
-        </RedGDetailActions>
-    </ActionsContent>
 </RedGDetailPage>
+
+@code {
+    /// <summary>Citta' e CAP insieme, come si scrive su una busta: "BARBERINO - TAVERNELLE (50028)".</summary>
+    private string CityLine => _company == null
+        ? string.Empty
+        : string.Join(" ", new[] { _company.Citta, string.IsNullOrWhiteSpace(_company.Cap) ? null : $"({_company.Cap})" }
+            .Where(s => !string.IsNullOrWhiteSpace(s)));
+
+    private static string TelHref(string phone)
+        => string.IsNullOrWhiteSpace(phone) ? null : $"tel:{phone.Replace(" ", "")}";
+
+    private static string WebHref(string web)
+    {
+        if (string.IsNullOrWhiteSpace(web))
+            return null;
+
+        return web.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+               web.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            ? web
+            : $"https://{web}";
+    }
+}

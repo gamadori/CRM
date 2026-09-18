@@ -12,47 +12,45 @@
 
         <!-- Center: Navigation & Date -->
         <div class="toolbar-section toolbar-center">
+            @* Cinque pezzi allo stesso livello, senza contenitore intermedio: cosi' sul
+               telefono si possono ridisporre a griglia (frecce ai lati del periodo, data e
+               Oggi sotto) invece di impilarsi a barre intere. *@
             <div class="date-navigation">
-                <!-- Previous Button -->
-                <RadzenButton Icon="chevron_left" 
-                             ButtonStyle="ButtonStyle.Light" 
-                             Variant="Variant.Flat" 
-                             Size="ButtonSize.Medium" 
+                <RadzenButton Icon="chevron_left"
+                             ButtonStyle="ButtonStyle.Light"
+                             Variant="Variant.Flat"
+                             Size="ButtonSize.Medium"
                              Disabled="@DateLocked"
                              Click="Previous"
-                             class="nav-btn" />
+                             class="nav-btn nav-prev" />
 
-                <!-- Date Picker & Period -->
-                <div class="date-info-container">
-                    <div class="date-picker-wrapper">
-                        <input type="date" 
-                               @onchange="OnChangeDate" 
-                               class="form-control date-input" 
-                               id="dataCurrent" 
-                               value="@DateCurrent.Date.ToString("yyyy-MM-dd")" 
-                               disabled="@DateLocked" />
-                        <span class="material-icons date-icon">calendar_today</span>
-                    </div>
-                    <div class="period-display">
-                        <h5 class="period-text">@_period</h5>
-                    </div>
+                <div class="date-picker-wrapper">
+                    <input type="date"
+                           @onchange="OnChangeDate"
+                           class="form-control date-input"
+                           id="dataCurrent"
+                           value="@DateCurrent.Date.ToString("yyyy-MM-dd")"
+                           disabled="@DateLocked" />
+                    <span class="material-icons date-icon">calendar_today</span>
                 </div>
 
-                <!-- Next Button -->
-                <RadzenButton Icon="chevron_right" 
-                             ButtonStyle="ButtonStyle.Light" 
-                             Variant="Variant.Flat" 
-                             Size="ButtonSize.Medium" 
+                <div class="period-display">
+                    <h5 class="period-text">@_period</h5>
+                </div>
+
+                <RadzenButton Icon="chevron_right"
+                             ButtonStyle="ButtonStyle.Light"
+                             Variant="Variant.Flat"
+                             Size="ButtonSize.Medium"
                              Disabled="@DateLocked"
                              Click="Next"
-                             class="nav-btn" />
+                             class="nav-btn nav-next" />
 
-                <!-- Today Button -->
-                <RadzenButton Text="@Localize["Today"]" 
+                <RadzenButton Text="@Localize["Today"]"
                              Icon="today"
                              ButtonStyle="ButtonStyle.Light"
-                             Variant="Variant.Flat" 
-                             Size="ButtonSize.Medium" 
+                             Variant="Variant.Flat"
+                             Size="ButtonSize.Medium"
                              Disabled="@DateLocked"
                              Click="Today"
                              class="today-btn" />
@@ -200,17 +198,6 @@
         transition: background-color 120ms ease;
     }
 
-    /* Date Info Container
-       In riga, non in colonna: il selettore data e l'etichetta del periodo sono entrambi corti e
-       impilarli raddoppiava l'altezza della toolbar senza guadagnare leggibilita'. */
-    .date-info-container {
-        display: flex;
-        flex-direction: row;
-        gap: 0.6rem;
-        align-items: center;
-        min-width: 0;
-    }
-
     /* Date Picker */
     .date-picker-wrapper {
         position: relative;
@@ -313,19 +300,38 @@
             padding: 0.75rem;
         }
 
+        /* Telefono: griglia su due righe.
+           [ < ]  [ periodo, centrato ]  [ > ]
+           [ data                 ]  [ Oggi ]
+           Prima frecce e Oggi erano quattro barre a tutta larghezza una sotto l'altra. */
         .date-navigation {
-            flex-direction: column;
-            gap: 0.6rem;
+            display: grid;
+            width: 100%;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            grid-template-areas:
+                "prev period next"
+                "date date today";
+            gap: 0.5rem;
         }
 
-        .date-info-container {
-            width: 100%;
-            justify-content: center;
+        .date-navigation .nav-prev { grid-area: prev; }
+        .date-navigation .nav-next { grid-area: next; }
+        .date-navigation .today-btn { grid-area: today; }
+        .date-navigation .period-display { grid-area: period; min-width: 0; }
+        .date-navigation .date-picker-wrapper { grid-area: date; }
+
+        .period-text {
+            font-size: 0.95rem;
+            white-space: normal;
         }
 
-        .nav-btn,
-        .today-btn {
+        .toolbar-right .view-selector {
+            display: flex;
             width: 100%;
+        }
+
+        .toolbar-right .view-selector .rz-button {
+            flex: 1 1 0;
         }
 
         /* Hide Month view option on mobile */

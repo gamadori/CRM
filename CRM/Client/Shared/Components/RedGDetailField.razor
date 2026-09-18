@@ -1,123 +1,84 @@
-@* Campo dettaglio compatto, pensato per comporsi in griglie leggibili. *@
+@* Campo di una scheda di dettaglio: etichetta piccola sopra, valore in evidenza sotto, un filo
+   sotto ogni riga. Nessun riquadro e nessuna icona per campo: prima ogni campo era una scatola
+   con bordo, ombra e icona (34 scatole nella scheda azienda) e l'etichetta pesava piu' del valore.
+   I campi si dispongono in una griglia fluida governata dal contenitore (vedi theme.css,
+   "Scheda di dettaglio"): larghezza a colonne, non 296px fissi.
+   Il parametro Icon resta per compatibilita' con le pagine: decide solo se il campo e' "largo"
+   (descrizioni, note, email), non disegna piu' nulla. *@
 
 <div class="@CssClass">
-    <div class="rg-field-container">
-        @if (!string.IsNullOrWhiteSpace(Icon))
+    <div class="rg-field-label">
+        <span class="rg-label-text">
+            @if (!string.IsNullOrWhiteSpace(Label))
+            {
+                @Label
+            }
+            else if (LabelContent != null)
+            {
+                @LabelContent
+            }
+        </span>
+    </div>
+
+    <div class="rg-field-value">
+        @if (!string.IsNullOrWhiteSpace(Value))
         {
-            <span class="material-icons rg-field-icon">@Icon</span>
+            @Value
         }
-
-        <div class="rg-field-content">
-            <div class="rg-field-label">
-                <span class="rg-label-text">
-                    @if (!string.IsNullOrWhiteSpace(Label))
-                    {
-                        @Label
-                    }
-                    else if (LabelContent != null)
-                    {
-                        @LabelContent
-                    }
-                </span>
-            </div>
-
-            <div class="rg-field-value">
-                @if (!string.IsNullOrWhiteSpace(Value))
-                {
-                    @Value
-                }
-                else if (ChildContent != null)
-                {
-                    @ChildContent
-                }
-                else
-                {
-                    <span class="rg-empty-value">-</span>
-                }
-            </div>
-        </div>
+        else if (ChildContent != null)
+        {
+            @ChildContent
+        }
+        else
+        {
+            <span class="rg-empty-value">-</span>
+        }
     </div>
 </div>
 
 <style>
+    /* Niente linea sotto la cella: con 3-4 colonne le sottolineature spezzate sembravano
+       campi di un modulo, e con altezze diverse fra celle della stessa riga si vedevano a
+       gradini. Le righe si separano con lo spazio (row-gap della griglia in theme.css). */
     .rg-detail-field {
-        --rg-color-label: var(--crm-text-muted, #667085);
-        --rg-color-value: var(--crm-text, #101828);
-        --rg-color-icon: var(--crm-primary, #4258d6);
-        --rg-color-icon-bg: color-mix(in srgb, var(--rg-color-icon) 10%, transparent);
-        --rg-color-border: var(--crm-border, #d9e2ec);
-        --rg-color-surface: var(--crm-surface, #ffffff);
-        --rg-color-hover: var(--crm-surface-hover, #f7f9fc);
-        --rg-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
-        display: inline-flex;
-        width: min(100%, 18.5rem);
-        min-height: 5.25rem;
-        margin: 0 0.75rem 0.75rem 0;
-        vertical-align: top;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        min-width: 0;
+        /* Le pagine passano ancora mb-3/mb-4 come ContainerClass: la spaziatura la da' la
+           griglia, il margine aprirebbe buchi diversi da campo a campo. */
+        margin: 0 !important;
+        padding: 0;
     }
 
     .rg-detail-field.rg-detail-field-wide,
     .rg-detail-field.details-wide,
     .rg-detail-field.wide {
-        width: min(100%, 37.75rem);
+        grid-column: span 2;
     }
 
     .rg-detail-field.rg-detail-field-full,
     .rg-detail-field.details-full,
     .rg-detail-field.full {
-        display: flex;
-        width: 100%;
-    }
-
-    .rg-detail-field.rg-detail-field-no-icon .rg-field-container {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .rg-field-container {
-        display: grid;
-        grid-template-columns: 2rem minmax(0, 1fr);
-        gap: 0.75rem;
-        width: 100%;
-        padding: 0.875rem 0.95rem;
-        border: 1px solid var(--rg-color-border);
-        border-radius: 0.5rem;
-        background: var(--rg-color-surface);
-        box-shadow: var(--rg-shadow);
-        transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .rg-field-container:hover {
-        border-color: color-mix(in srgb, var(--rg-color-icon) 28%, var(--rg-color-border));
-        background-color: var(--rg-color-hover);
-        box-shadow: 0 3px 8px rgba(16, 24, 40, 0.08);
-    }
-
-    .rg-field-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 2rem;
-        height: 2rem;
-        border-radius: 0.45rem;
-        background: var(--rg-color-icon-bg);
-        color: var(--rg-color-icon);
-        font-size: 1.05rem !important;
-        line-height: 1;
-    }
-
-    .rg-field-content {
-        min-width: 0;
+        grid-column: 1 / -1;
     }
 
     .rg-field-label {
-        display: flex;
-        align-items: center;
-        min-height: 1rem;
-        color: var(--rg-color-label);
-        font-size: 0.78rem;
+        color: var(--crm-text-muted);
+        font-size: 0.76rem;
         font-weight: 600;
         line-height: 1.25;
-        letter-spacing: 0;
+    }
+
+    /* Le etichette arrivano spesso come label con classe label-floating (16px in app.css):
+       qui devono essere l'etichetta piccola del campo, non un titolo. */
+    .rg-field-label .label-floating,
+    .rg-field-label label {
+        margin: 0;
+        color: inherit;
+        font-size: inherit;
+        font-weight: inherit;
+        line-height: inherit;
     }
 
     .rg-label-text {
@@ -126,11 +87,10 @@
     }
 
     .rg-field-value {
-        margin-top: 0.35rem;
-        color: var(--rg-color-value);
+        color: var(--crm-text);
         font-size: 0.95rem;
-        line-height: 1.45;
-        font-weight: 500;
+        font-weight: 600;
+        line-height: 1.4;
         overflow-wrap: anywhere;
     }
 
@@ -138,69 +98,43 @@
         margin-bottom: 0;
     }
 
-    .rg-field-value .text-dark {
+    .rg-field-value .text-dark,
+    .rg-field-value .text-muted {
         color: inherit !important;
     }
 
     .rg-empty-value {
-        color: var(--rg-color-label);
+        color: var(--crm-text-disabled);
+        font-weight: 400;
+    }
+
+    /* Molte pagine passano il valore come paragrafo e quando e' vuoto restava un buco: il campo
+       vuoto mostra "-" come gli altri, cosi' la scheda si legge uguale dappertutto. */
+    .rg-field-value > p:empty::before {
+        content: "-";
+        color: var(--crm-text-disabled);
         font-weight: 400;
     }
 
     .rg-field-value a {
-        color: var(--crm-link, #0d6efd);
+        color: var(--crm-link);
         text-decoration: none;
         font-weight: 600;
-        transition: opacity 0.15s ease, text-decoration-color 0.15s ease;
     }
 
     .rg-field-value a:hover {
-        opacity: 0.85;
         text-decoration: underline;
     }
 
-    @@supports not (color: color-mix(in srgb, #000 10%, transparent)) {
-        .rg-detail-field {
-            --rg-color-icon-bg: #eef2ff;
-        }
-    }
-
-    @@media (prefers-color-scheme: dark) {
-        .rg-detail-field {
-            --rg-color-surface: var(--crm-surface, #161b22);
-            --rg-color-hover: var(--crm-surface-hover, #1f2630);
-            --rg-color-border: var(--crm-border, #303947);
-            --rg-color-value: var(--crm-text, #f2f4f7);
-            --rg-color-label: var(--crm-text-muted, #a8b3c1);
-            --rg-shadow: none;
-        }
+    .rg-field-value .badge {
+        font-weight: 600;
     }
 
     @@media (max-width: 768px) {
-        .rg-detail-field,
-        .rg-detail-field.rg-detail-field-wide {
-            display: flex;
-            width: 100%;
-            margin-right: 0;
-        }
-
-        .rg-field-container {
-            grid-template-columns: 1.85rem minmax(0, 1fr);
-            padding: 0.8rem 0.85rem;
-        }
-
-        .rg-field-icon {
-            width: 1.85rem;
-            height: 1.85rem;
-            font-size: 1rem !important;
-        }
-
-        .rg-field-label {
-            font-size: 0.74rem;
-        }
-
-        .rg-field-value {
-            font-size: 0.9rem;
+        .rg-detail-field.rg-detail-field-wide,
+        .rg-detail-field.details-wide,
+        .rg-detail-field.wide {
+            grid-column: auto;
         }
     }
 </style>
@@ -231,17 +165,15 @@
             var sizeClass = !string.IsNullOrWhiteSpace(Icon) && WideIcons.Contains(Icon)
                 ? "rg-detail-field-wide"
                 : string.Empty;
-            var iconClass = string.IsNullOrWhiteSpace(Icon)
-                ? "rg-detail-field-no-icon"
-                : string.Empty;
 
-            return string.Join(" ", new[] { ContainerClass, "rg-detail-field", sizeClass, iconClass }
+            return string.Join(" ", new[] { ContainerClass, "rg-detail-field", sizeClass }
                 .Where(value => !string.IsNullOrWhiteSpace(value)));
         }
     }
 
     /// <summary>
-    /// Icona Material Icons da visualizzare (es. "business", "email", "phone")
+    /// Icona Material (es. "business", "email"). Non viene piu' disegnata: serve solo a
+    /// riconoscere i campi lunghi (descrizioni, email, note) che occupano due colonne.
     /// </summary>
     [Parameter]
     public string Icon { get; set; }
@@ -271,7 +203,8 @@
     public RenderFragment ChildContent { get; set; }
 
     /// <summary>
-    /// Classi CSS del container (default: "mb-3")
+    /// Classi CSS del contenitore. "details-full"/"full" fa occupare tutta la riga,
+    /// "details-wide"/"wide" due colonne. I margini Bootstrap (mb-*) vengono ignorati.
     /// </summary>
     [Parameter]
     public string ContainerClass { get; set; } = "mb-3";

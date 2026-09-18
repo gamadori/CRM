@@ -1,0 +1,213 @@
+@* Testata di una scheda di dettaglio, sul modello dei CRM piu' diffusi (Salesforce, Stripe):
+   a sinistra il simbolo dell'oggetto (icona, logo o iniziali), poi una riga piccola sopra il
+   nome (tipo di oggetto o codice), il nome grande, una riga di chip (stato, tipo, categoria);
+   a destra le azioni. Sotto, se servono, i 3-5 dati che uno cerca per primi (P.IVA, citta',
+   telefono, email), gia' cliccabili dove ha senso. Il corpo della scheda non li ripete come
+   titolo: il nome e' QUI, non nel primo campo. *@
+
+<div class="rg-detail-header @Class">
+    <div class="rg-detail-header-top">
+        <div class="rg-detail-header-symbol">
+            @if (Symbol != null)
+            {
+                @Symbol
+            }
+            else if (!string.IsNullOrWhiteSpace(Initials))
+            {
+                <span class="rg-detail-header-initials">@Initials</span>
+            }
+            else if (!string.IsNullOrWhiteSpace(Icon))
+            {
+                <span class="material-icons">@Icon</span>
+            }
+        </div>
+
+        <div class="rg-detail-header-main">
+            @if (!string.IsNullOrWhiteSpace(Kicker))
+            {
+                <div class="rg-detail-header-kicker">@Kicker</div>
+            }
+            <h2 class="rg-detail-header-title">@Title</h2>
+            @if (!string.IsNullOrWhiteSpace(Subtitle))
+            {
+                <div class="rg-detail-header-subtitle">@Subtitle</div>
+            }
+            @if (Chips != null)
+            {
+                <div class="rg-detail-header-chips">@Chips</div>
+            }
+        </div>
+
+        @if (Actions != null)
+        {
+            <div class="rg-detail-header-actions">@Actions</div>
+        }
+    </div>
+
+    @if (Facts != null)
+    {
+        <div class="rg-detail-header-facts">@Facts</div>
+    }
+</div>
+
+<style>
+    .rg-detail-header {
+        margin-bottom: 1rem;
+        color: var(--crm-text);
+        background: var(--crm-surface);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
+    }
+
+    .rg-detail-header-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.1rem 1.25rem;
+    }
+
+    .rg-detail-header-symbol {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        width: 56px;
+        height: 56px;
+        overflow: hidden;
+        color: var(--crm-primary);
+        background: var(--crm-primary-soft);
+        border-radius: var(--crm-radius);
+    }
+
+    .rg-detail-header-symbol .material-icons {
+        font-size: 28px;
+    }
+
+    .rg-detail-header-symbol img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #fff;
+    }
+
+    .rg-detail-header-initials {
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+
+    .rg-detail-header-main {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .rg-detail-header-kicker {
+        margin-bottom: 0.15rem;
+        color: var(--crm-text-muted);
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .rg-detail-header-title {
+        margin: 0;
+        color: var(--crm-text);
+        font-size: 1.35rem;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: -0.01em;
+        overflow-wrap: anywhere;
+    }
+
+    .rg-detail-header-subtitle {
+        margin-top: 0.2rem;
+        color: var(--crm-text-muted);
+        font-size: 0.9rem;
+    }
+
+    .rg-detail-header-chips {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.55rem;
+    }
+
+    .rg-detail-header-actions {
+        display: flex;
+        flex: 0 0 auto;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
+    }
+
+    /* Dati chiave: una riga sotto, separati da un filo verticale */
+    .rg-detail-header-facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 0;
+        padding: 0.7rem 1.25rem;
+        background: var(--crm-surface-muted);
+        border-top: 1px solid var(--crm-border);
+        border-radius: 0 0 var(--crm-radius) var(--crm-radius);
+    }
+
+    @@media (max-width: 768px) {
+        .rg-detail-header-top {
+            flex-wrap: wrap;
+            padding: 0.9rem 1rem;
+        }
+
+        .rg-detail-header-symbol {
+            width: 44px;
+            height: 44px;
+        }
+
+        .rg-detail-header-symbol .material-icons {
+            font-size: 22px;
+        }
+
+        .rg-detail-header-title {
+            font-size: 1.15rem;
+        }
+
+        .rg-detail-header-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .rg-detail-header-facts {
+            padding: 0.6rem 1rem;
+        }
+    }
+</style>
+
+@code {
+    /// <summary>Icona Material dell'oggetto (usata se non c'e' un simbolo o le iniziali).</summary>
+    [Parameter] public string Icon { get; set; }
+
+    /// <summary>Iniziali da mostrare al posto dell'icona (es. "MP" per una persona).</summary>
+    [Parameter] public string Initials { get; set; }
+
+    /// <summary>Simbolo personalizzato (es. il logo dell'azienda). Vince su iniziali e icona.</summary>
+    [Parameter] public RenderFragment Symbol { get; set; }
+
+    /// <summary>Riga piccola sopra il nome: il tipo di oggetto ("Azienda") o un codice.</summary>
+    [Parameter] public string Kicker { get; set; }
+
+    [Parameter] public string Title { get; set; }
+
+    [Parameter] public string Subtitle { get; set; }
+
+    /// <summary>Chip sotto il nome: stato, tipo, categoria. Usare le classi crm-chip di theme.css.</summary>
+    [Parameter] public RenderFragment Chips { get; set; }
+
+    /// <summary>I 3-5 dati che si cercano per primi, come RedGDetailFact.</summary>
+    [Parameter] public RenderFragment Facts { get; set; }
+
+    [Parameter] public RenderFragment Actions { get; set; }
+
+    [Parameter] public string Class { get; set; }
+}
