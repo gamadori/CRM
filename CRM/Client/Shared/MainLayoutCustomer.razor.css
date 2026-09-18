@@ -10,17 +10,21 @@
 }
 
 .sidebarMain {
-    background-image: linear-gradient(180deg, #222e3c 0%, #222e3c 100%);
+    background: var(--crm-nav-bg);
+    border-right: 1px solid var(--crm-nav-border);
 }
 
 .top-row {
-    border-bottom: 1px solid var(--crm-border, #d6d5d5);
+    border-bottom: 1px solid var(--crm-border);
     justify-content: space-between;
     height: 3.5rem;
     display: flex;
     align-items: center;
-    background: var(--crm-surface, #f7f7f7);
-    background-position-x: 1.5rem;
+    background: var(--crm-surface);
+}
+
+.top-row ::deep .logo {
+    height: 40px;
 }
 
    

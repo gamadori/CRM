@@ -1,8 +1,33 @@
-﻿
-<div class="alert p-1 bg-secondary text-white"  style="cursor: pointer;"
-      role="alert" data-bs-toggle="tooltip" data-bs-placement="top" title="Altri Ticket" @onclick="()=>OpenDaylyScheduler?.Invoke(Day)">
-        <div class="row">
-            <div class="col fw-bold textDay">@Desc ...</div>
-        </div>
-</div>
 
+@* "Altri N ticket" in fondo alla cella del mese: un link discreto, non piu' un alert grigio. *@
+<button type="button" class="more-tickets-link" title="Altri Ticket"
+        @onclick="()=>OpenDaylyScheduler?.Invoke(Day)" @onclick:stopPropagation="true">
+    <span class="material-icons">unfold_more</span>
+    <span>@Desc</span>
+</button>
+
+<style>
+    .more-tickets-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        width: 100%;
+        padding: 0.2rem 0.4rem;
+        color: var(--crm-primary);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: left;
+        background: transparent;
+        border: 0;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .more-tickets-link .material-icons {
+        font-size: 16px;
+    }
+
+    .more-tickets-link:hover {
+        background: var(--crm-primary-soft);
+    }
+</style>

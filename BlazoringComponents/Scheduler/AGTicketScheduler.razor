@@ -1,4 +1,4 @@
-﻿@using Radzen
+@using Radzen
 @using Radzen.Blazor
 
 @* Il bordo a sinistra porta il colore dell'utente assegnato: dice DI CHI e' il lavoro.
@@ -115,17 +115,20 @@
     }
 </div>
 
+@* Colori solo dalle variabili del tema (--crm-*): la card segue chiaro e scuro da sola.
+   L'unico colore "dato" e' il bordo sinistro, che porta il colore dell'utente assegnato. *@
 <style>
     .modern-ticket-card {
-        background: white;
-        border-radius: 8px;
+        background: var(--crm-surface-raised);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius-sm);
         /* Sopra si sta piu' stretti che sotto, e non e' una svista: la prima riga porta il
            tondino dell'utente, che e' alto 25px e si porta dietro il suo spazio. Con lo stesso
            margine su tutti i lati la card sembrava iniziare in ritardo. */
         padding: 0.25rem 0.55rem 0.45rem;
-        border-left: 4px solid #667eea;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
-        transition: all 0.3s ease;
+        border-left: 4px solid var(--crm-primary);
+        box-shadow: var(--crm-shadow-sm);
+        transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
         cursor: grab;
         position: relative;
         animation: slideIn 0.3s ease-out;
@@ -147,7 +150,7 @@
         display: flex;
         align-items: center;
         gap: 0.2rem;
-        color: #4f46e5;
+        color: var(--crm-primary);
         font-size: 0.7rem;
         font-weight: 600;
         min-width: 0;
@@ -168,18 +171,18 @@
         display: flex;
         align-items: center;
         gap: 0.2rem;
-        color: #475569;
+        color: var(--crm-text-secondary);
         font-size: 0.68rem;
         min-width: 0;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: var(--crm-surface-muted);
+        border: 1px solid var(--crm-border);
         border-radius: 4px;
         padding: 0.08rem 0.25rem;
     }
 
     .ticket-phase-window .material-icons {
         font-size: 0.78rem;
-        color: #64748b;
+        color: var(--crm-text-muted);
         flex-shrink: 0;
     }
 
@@ -188,12 +191,13 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        color: #64748b;
+        color: var(--crm-text-muted);
     }
 
     .modern-ticket-card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-        transform: translateX(4px);
+        box-shadow: var(--crm-shadow);
+        border-color: var(--crm-border-strong);
+        transform: translateX(2px);
     }
 
     @@keyframes slideIn {
@@ -220,8 +224,8 @@
     .ticket-time {
         font-size: 0.8rem;
         font-weight: 700;
-        color: #667eea;
-        background: rgba(102, 126, 234, 0.1);
+        color: var(--crm-primary);
+        background: var(--crm-primary-soft);
         padding: 0.1rem 0.3rem;
         border-radius: 4px;
         white-space: nowrap;
@@ -230,8 +234,9 @@
     .ticket-id {
         font-size: 0.75rem;
         font-weight: 600;
-        color: #6b7280;
-        background: #f3f4f6;
+        color: var(--crm-text-muted);
+        background: var(--crm-surface-muted);
+        border: 1px solid var(--crm-border);
         padding: 0.1rem 0.3rem;
         border-radius: 4px;
         white-space: nowrap;
@@ -243,7 +248,7 @@
         height: 9px;
         border-radius: 50%;
         flex-shrink: 0;
-        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 0 0 1px color-mix(in srgb, var(--crm-text) 20%, transparent);
     }
 
     .assigned-users {
@@ -261,13 +266,13 @@
         justify-content: center;
         width: 21px;
         height: 21px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: var(--crm-primary);
+        color: var(--crm-text-on-primary);
         border-radius: 50%;
         font-size: 0.6rem;
         font-weight: 600;
-        border: 2px solid white;
-        transition: all 0.3s ease;
+        border: 2px solid var(--crm-surface-raised);
+        transition: transform 0.2s ease;
         margin-left: -6px;
     }
 
@@ -277,17 +282,16 @@
 
     .user-badge:hover {
         transform: scale(1.15);
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
     }
 
     .user-badge.more {
-        background: #9ca3af;
+        background: var(--crm-text-muted);
         font-size: 0.7rem;
         cursor: pointer;
     }
 
     .user-badge.more:hover {
-        background: #6b7280;
+        background: var(--crm-text-secondary);
     }
 
     /* Body */
@@ -300,7 +304,7 @@
 
     .ticket-company {
         font-weight: 600;
-        color: #374151;
+        color: var(--crm-text);
         font-size: 0.8rem;
         white-space: nowrap;
         overflow: hidden;
@@ -311,7 +315,7 @@
        ~18px per ticket e conteneva quasi sempre la coda troncata della prima. Il testo intero
        resta nel title e nel preview. */
     .ticket-description {
-        color: #6b7280;
+        color: var(--crm-text-muted);
         font-size: 0.75rem;
         display: -webkit-box;
         -webkit-line-clamp: 1;
@@ -327,7 +331,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.3);
+        background: rgba(9, 12, 18, 0.5);
         z-index: 2000;
         display: flex;
         align-items: center;
@@ -346,9 +350,11 @@
 
     /* Users Panel */
     .users-panel {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        background: var(--crm-surface);
+        color: var(--crm-text);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
+        box-shadow: var(--crm-shadow-lg);
         min-width: 320px;
         max-width: 400px;
         animation: slideUp 0.3s ease-out;
@@ -369,11 +375,9 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 1rem 1.25rem;
-        border-bottom: 2px solid #e5e7eb;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 12px 12px 0 0;
+        padding: 0.9rem 1.1rem;
+        border-bottom: 1px solid var(--crm-border);
+        color: var(--crm-text);
     }
 
     .users-panel-header strong {
@@ -384,7 +388,7 @@
     .btn-close-custom {
         background: transparent;
         border: none;
-        color: white;
+        color: var(--crm-text-muted);
         font-size: 1.5rem;
         line-height: 1;
         cursor: pointer;
@@ -399,7 +403,8 @@
     }
 
     .btn-close-custom:hover {
-        background: rgba(255, 255, 255, 0.2);
+        color: var(--crm-text);
+        background: var(--crm-surface-hover);
     }
 
     /* Users List */
@@ -415,18 +420,18 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        padding: 0.75rem;
-        border-radius: 8px;
+        padding: 0.6rem 0.75rem;
+        border-radius: var(--crm-radius-sm);
         transition: background 0.2s ease;
     }
 
     .user-item:hover {
-        background: #f9fafb;
+        background: var(--crm-surface-hover);
     }
 
     .user-item.main-user {
-        background: linear-gradient(90deg, #f0f9ff 0%, white 100%);
-        border-left: 3px solid #667eea;
+        background: var(--crm-primary-soft);
+        border-left: 3px solid var(--crm-primary);
     }
 
     .user-avatar {
@@ -435,30 +440,26 @@
         justify-content: center;
         width: 36px;
         height: 36px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: var(--crm-primary);
+        color: var(--crm-text-on-primary);
         border-radius: 50%;
         font-size: 0.85rem;
         font-weight: 600;
         flex-shrink: 0;
     }
 
-    .user-item.main-user .user-avatar {
-        border: 2px solid #667eea;
-    }
-
     .user-name {
         flex: 1;
         font-size: 0.95rem;
-        color: #374151;
+        color: var(--crm-text);
         font-weight: 500;
     }
 
     .main-badge {
         font-size: 0.75rem;
         font-weight: 600;
-        color: #667eea;
-        background: rgba(102, 126, 234, 0.1);
+        color: var(--crm-primary);
+        background: var(--crm-primary-soft);
         padding: 0.25rem 0.5rem;
         border-radius: 4px;
     }
@@ -469,16 +470,11 @@
     }
 
     .users-list::-webkit-scrollbar-track {
-        background: #f3f4f6;
-        border-radius: 3px;
+        background: transparent;
     }
 
     .users-list::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+        background: var(--crm-border-strong);
         border-radius: 3px;
-    }
-
-    .users-list::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
     }
 </style>

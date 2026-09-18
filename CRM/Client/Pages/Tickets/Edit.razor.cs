@@ -779,15 +779,16 @@ namespace CRM.Client.Pages.Tickets
             if (_ticket?.Time == null)
                 return true;
 
-            // Se non ci sono impostazioni globali o orari non configurati, permetti tutto
-            if (_globalSettings == null || 
-                !_globalSettings.ScheduleTimeStart.HasValue || 
-                !_globalSettings.ScheduleTimeEnd.HasValue)
+            // Orario di lavoro non configurato: nessun vincolo. La regola di cosa vuol dire
+            // "configurato" sta in GlobalSetting.OrarioDiLavoro(): qui prima si guardava solo
+            // HasValue, e con 00:00-00:00 in archivio ogni orario risultava "fuori intervallo".
+            var orario = _globalSettings?.OrarioDiLavoro();
+            if (orario == null)
                 return true;
 
             var ticketTime = _ticket.Time.Value;
-            var scheduleStart = _globalSettings.ScheduleTimeStart.Value;
-            var scheduleEnd = _globalSettings.ScheduleTimeEnd.Value;
+            var scheduleStart = orario.Inizio;
+            var scheduleEnd = orario.Fine;
 
             // Controlla se l'orario è fuori range
             if (ticketTime < scheduleStart || ticketTime > scheduleEnd)

@@ -239,8 +239,9 @@ namespace CRM.Client.Pages.Tickets
                     filters.Add(userName);
             }
 
-            if (filters.Any())
-                _pageHeader.Subtitle = string.Join(" · ", filters);
+            // Va assegnato anche quando non c'e' nessun filtro: altrimenti, tolto l'utente dal
+            // filtro, il sottotitolo continuava a mostrare il nominativo precedente.
+            _pageHeader.Subtitle = filters.Any() ? string.Join(" · ", filters) : null;
         }
 
         private async Task LoadDataAllUser()
@@ -557,26 +558,29 @@ namespace CRM.Client.Pages.Tickets
 
         private void CellRender(DataGridCellRenderEventArgs<TicketDTO> args)
         {
-            if (args.Column?.Property == nameof(TicketDTO.State) && args.Data != null)
-            {
-                var textColor = GetContrastColor(args.Data.StateColor);
-                var backgroundColor = string.IsNullOrWhiteSpace(args.Data.StateColor)
-                    ? "transparent"
-                    : args.Data.StateColor;
+            // Lo stato non colora piu' l'intera cella: il colore sta sulla pillola
+            // (vedi GetStateTextStyle), cosi' la riga resta leggibile in entrambi i temi.
+            if (args.Column?.Property == nameof(TicketDTO.State))
+                return;
 
-                args.Attributes.Add(
-                    "style",
-                    $"background-color: {backgroundColor} !important; color: {textColor} !important;");
-            }
-            else if (args.Data != null && _selectedTicket?.Any(i => i.Id == args.Data.Id) == true)
+            if (args.Data != null && _selectedTicket?.Any(i => i.Id == args.Data.Id) == true)
             {
-                args.Attributes.Add("style", $"background-color: var(--rz-secondary-lighter);");
+                args.Attributes.Add("style", $"background-color: var(--crm-primary-soft);");
             }
         }
 
+        /// <summary>
+        /// Pillola dello stato: sfondo col colore scelto nelle impostazioni, testo col
+        /// contrasto migliore. Senza colore resta una pillola neutra del tema.
+        /// </summary>
         private static string GetStateTextStyle(string? backgroundColor)
         {
-            return $"color: {GetContrastColor(backgroundColor)} !important; font-weight: 700;";
+            if (string.IsNullOrWhiteSpace(backgroundColor))
+                return "color: var(--crm-text-secondary); background: var(--crm-surface-muted); border-color: var(--crm-border);";
+
+            // Il bordo prende un po' del grigio del tema: uno stato bianco (o nero, in scuro)
+            // resta visibile invece di sparire nello sfondo.
+            return $"color: {GetContrastColor(backgroundColor)}; background: {backgroundColor}; border-color: color-mix(in srgb, {backgroundColor} 60%, var(--crm-border-strong));";
         }
 
         /// <summary>

@@ -28,9 +28,9 @@
 
 /* Header Card - Simplified */
 .preview-header-card {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    background: var(--crm-surface-muted);
+    border: 1px solid var(--crm-border);
+    border-radius: var(--crm-radius);
     padding: 1rem 1.5rem;
     margin-bottom: 1.5rem;
     box-sizing: border-box;
@@ -48,12 +48,12 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #495057;
+    color: var(--crm-text-secondary);
 }
 
 .ticket-number .material-icons {
     font-size: 1.5rem;
-    color: #6c757d;
+    color: var(--crm-text-muted);
 }
 
 .ticket-number h3 {
@@ -61,7 +61,7 @@
     font-size: 1.25rem;
     font-weight: 600;
     word-break: break-word;
-    color: #212529;
+    color: var(--crm-text);
 }
 
 .ticket-status {
@@ -79,17 +79,17 @@
 
 /* Description Card - Simplified */
 .description-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    background: var(--crm-surface);
+    border: 1px solid var(--crm-border);
+    border-radius: var(--crm-radius);
     margin-bottom: 1.5rem;
     overflow: hidden;
     box-sizing: border-box;
 }
 
 .card-header-modern {
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+    background: var(--crm-surface-muted);
+    border-bottom: 1px solid var(--crm-border);
     padding: 1rem 1.5rem;
     display: flex;
     align-items: center;
@@ -97,13 +97,13 @@
 }
 
 .card-header-modern .material-icons {
-    color: #6c757d;
+    color: var(--crm-text-muted);
     font-size: 1.5rem;
 }
 
 .card-header-modern h5 {
     margin: 0;
-    color: #495057;
+    color: var(--crm-text-secondary);
     font-weight: 600;
 }
 
@@ -114,7 +114,7 @@
 
 .description-text {
     margin: 0;
-    color: #495057;
+    color: var(--crm-text-secondary);
     font-size: 1rem;
     line-height: 1.6;
     white-space: pre-wrap;
@@ -131,17 +131,17 @@
 }
 
 .info-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    background: var(--crm-surface);
+    border: 1px solid var(--crm-border);
+    border-radius: var(--crm-radius);
     overflow: hidden;
     box-sizing: border-box;
     min-width: 0;
 }
 
 .info-card-header {
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
+    background: var(--crm-surface-muted);
+    border-bottom: 1px solid var(--crm-border);
     padding: 1rem 1.25rem;
     display: flex;
     align-items: center;
@@ -149,13 +149,13 @@
 }
 
 .info-card-header .material-icons {
-    color: #6c757d;
+    color: var(--crm-text-muted);
     font-size: 1.25rem;
 }
 
 .info-label {
     font-weight: 600;
-    color: #495057;
+    color: var(--crm-text-secondary);
     font-size: 0.95rem;
 }
 
@@ -169,7 +169,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem 0;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--crm-border);
     gap: 1rem;
     min-width: 0;
 }
@@ -179,15 +179,24 @@
 }
 
 .info-key {
-    color: #6b7280;
+    color: var(--crm-text-muted);
     font-size: 0.9rem;
     font-weight: 500;
     word-break: break-word;
     min-width: 0;
 }
 
+/* Alcune etichette arrivano come .label-floating (16px): qui devono avere la
+   stessa misura delle altre chiavi della scheda. */
+.info-key .label-floating,
+.assigned-label .label-floating {
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+}
+
 .info-value {
-    color: #212529;
+    color: var(--crm-text);
     font-weight: 500;
     text-align: right;
     word-break: break-word;
@@ -195,17 +204,17 @@
 }
 
 .company-name {
-    color: #0d6efd;
+    color: var(--crm-primary);
 }
 
 .time-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    background: #e7f1ff;
+    background: var(--crm-primary-soft);
     padding: 0.25rem 0.75rem;
     border-radius: 4px;
-    color: #0d6efd !important;
+    color: var(--crm-primary) !important;
 }
 
 .time-badge .material-icons {
@@ -229,7 +238,7 @@
     justify-content: center;
     width: 24px;
     height: 24px;
-    background: #6c757d;
+    background: var(--crm-text-muted);
     color: #fff;
     border-radius: 50%;
     font-size: 0.7rem;
@@ -240,7 +249,7 @@
 .assigned-users-section {
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid #dee2e6;
+    border-top: 1px solid var(--crm-border);
 }
 
 .assigned-header {
@@ -249,7 +258,7 @@
 
 .assigned-label {
     font-weight: 600;
-    color: #495057;
+    color: var(--crm-text-secondary);
     font-size: 0.95rem;
 }
 
@@ -264,13 +273,13 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem;
-    background: #f8f9fa;
+    background: var(--crm-surface-muted);
     border-radius: 6px;
 }
 
 .assigned-user-item.main-user {
-    background: #e7f1ff;
-    border-left: 3px solid #0d6efd;
+    background: var(--crm-primary-soft);
+    border-left: 3px solid var(--crm-primary);
 }
 
 .user-avatar {
@@ -279,7 +288,7 @@
     justify-content: center;
     width: 36px;
     height: 36px;
-    background: #6c757d;
+    background: var(--crm-text-muted);
     color: #fff;
     border-radius: 50%;
     font-size: 0.85rem;
@@ -288,7 +297,7 @@
 }
 
 .assigned-user-item.main-user .user-avatar {
-    background: #0d6efd;
+    background: var(--crm-primary);
 }
 
 .user-info {
@@ -300,7 +309,7 @@
 }
 
 .user-name {
-    color: #495057;
+    color: var(--crm-text-secondary);
     font-weight: 500;
     word-break: break-word;
     min-width: 0;
@@ -309,8 +318,8 @@
 .main-badge {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #0d6efd;
-    background: rgba(13, 110, 253, 0.1);
+    color: var(--crm-primary);
+    background: var(--crm-primary-soft);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     flex-shrink: 0;
@@ -322,7 +331,7 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 2rem;
-    color: #9ca3af;
+    color: var(--crm-text-muted);
 }
 
 .no-users .material-icons {
@@ -341,7 +350,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    background: #6c757d;
+    background: var(--crm-text-muted);
     border-radius: 6px;
     color: white;
     font-size: 0.9rem;
@@ -353,7 +362,7 @@
 }
 
 .badge-primary-indicator {
-    color: #ffc107;
+    color: var(--crm-warning);
     font-size: 1rem;
     margin-left: 0.25rem;
 }
@@ -425,7 +434,7 @@
 
 /* Una data o un numero fuori tempo. */
 .commessa-details-page .value-late {
-    color: #dc2626;
+    color: var(--crm-danger);
     font-weight: 700;
 }
 
@@ -438,12 +447,12 @@
 }
 
 .ticket-details-page .assigned-user-item .user-avatar {
-    background: #6c757d;
+    background: var(--crm-text-muted);
     color: #fff;
 }
 
 .ticket-details-page .assigned-user-item.main-user .user-avatar {
-    background: #0d6efd;
+    background: var(--crm-primary);
 }
 
 /* Responsive */
@@ -542,78 +551,4 @@
         min-width: 0;
         width: 100%;
     }
-}
-
-/* Scheduler dialog preview */
-body.dark-theme .ticket-preview-dialog {
-    color: var(--crm-dark-text, #eef2f6);
-}
-
-body.dark-theme .ticket-preview-dialog .preview-header-card,
-body.dark-theme .ticket-preview-dialog .description-card,
-body.dark-theme .ticket-preview-dialog .info-card {
-    color: var(--crm-dark-text, #eef2f6);
-    background: var(--crm-dark-surface, #1d2227);
-    border-color: var(--crm-dark-border, #343c44);
-}
-
-body.dark-theme .ticket-preview-dialog .card-header-modern,
-body.dark-theme .ticket-preview-dialog .info-card-header {
-    background: var(--crm-dark-surface-raised, #242a30);
-    border-color: var(--crm-dark-border, #343c44);
-}
-
-body.dark-theme .ticket-preview-dialog .ticket-number,
-body.dark-theme .ticket-preview-dialog .ticket-number h3,
-body.dark-theme .ticket-preview-dialog .card-header-modern h5,
-body.dark-theme .ticket-preview-dialog .info-label,
-body.dark-theme .ticket-preview-dialog .card-header-modern .material-icons,
-body.dark-theme .ticket-preview-dialog .info-card-header .material-icons {
-    color: var(--crm-dark-text, #eef2f6);
-}
-
-body.dark-theme .ticket-preview-dialog .description-text,
-body.dark-theme .ticket-preview-dialog .info-value,
-body.dark-theme .ticket-preview-dialog .user-name,
-body.dark-theme .ticket-preview-dialog .user-badge-inline {
-    color: var(--crm-dark-text, #eef2f6);
-}
-
-body.dark-theme .ticket-preview-dialog .info-key,
-body.dark-theme .ticket-preview-dialog .info-key .label-floating,
-body.dark-theme .ticket-preview-dialog .assigned-label,
-body.dark-theme .ticket-preview-dialog .assigned-label .label-floating,
-body.dark-theme .ticket-preview-dialog .no-users {
-    color: #c7d3dd;
-}
-
-body.dark-theme .ticket-preview-dialog .info-row,
-body.dark-theme .ticket-preview-dialog .assigned-users-section {
-    border-color: var(--crm-dark-border, #343c44);
-}
-
-body.dark-theme .ticket-preview-dialog .assigned-user-item {
-    color: var(--crm-dark-text, #eef2f6);
-    background: var(--crm-dark-surface-raised, #242a30);
-    border: 1px solid var(--crm-dark-border, #343c44);
-}
-
-body.dark-theme .ticket-preview-dialog .assigned-user-item.main-user {
-    background: #173554;
-    border-color: #5aa7ff;
-    border-left-width: 3px;
-}
-
-body.dark-theme .ticket-preview-dialog .main-badge {
-    color: #b9dcff;
-    background: #244b73;
-}
-
-body.dark-theme .ticket-preview-dialog .time-badge {
-    color: #c9e4ff !important;
-    background: #29445f;
-}
-
-body.dark-theme .ticket-preview-dialog .company-name {
-    color: #80bdff;
 }

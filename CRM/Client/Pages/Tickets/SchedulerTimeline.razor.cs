@@ -121,13 +121,14 @@ namespace CRM.Client.Pages.Tickets
             {
                 var settings = await RestClientService.GetFirst<GlobalSetting>(ConstHelper.GlobalSettingsPath);
 
-                if (settings != null)
+                // Orario non configurato: restano le 08:00-20:00 di default, le stesse della
+                // vista Giorno del calendario. Prima si prendeva il campo grezzo, e con
+                // 00:00-00:00 in archivio la pagina usciva senza nemmeno una fascia.
+                var orario = settings?.OrarioDiLavoro();
+                if (orario != null)
                 {
-                    if (settings.ScheduleTimeStart.HasValue)
-                        _workDayStart = settings.ScheduleTimeStart.Value;
-
-                    if (settings.ScheduleTimeEnd.HasValue)
-                        _workDayEnd = settings.ScheduleTimeEnd.Value;
+                    _workDayStart = orario.Inizio;
+                    _workDayEnd = orario.Fine;
                 }
             }
             catch (Exception ex)

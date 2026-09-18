@@ -43,9 +43,37 @@ namespace CRM.Shared
         LlmJudge = 2
     }
 
+    /// <summary>L'orario di lavoro dell'azienda, quando e' configurato davvero.</summary>
+    public sealed record OrarioDiLavoro(TimeOnly Inizio, TimeOnly Fine);
+
     public class GlobalSetting
     {
         public int Id { get; set; }
+
+        /// <summary>
+        /// L'orario di lavoro, oppure <c>null</c> se non e' configurato.
+        /// <para>
+        /// E' l'unico posto che decide cosa vuol dire "configurato". Prima ogni lettore
+        /// decideva da solo, e con lo stesso valore in archivio (00:00-00:00, lasciato da
+        /// una migration del gennaio 2026 al posto di NULL) i preavvisi ripiegavano sulle
+        /// 18:00, la Timeline restava senza fasce orarie e il salvataggio di un ticket con
+        /// orario veniva respinto come "fuori dall'intervallo 00:00-00:00".
+        /// </para>
+        /// <para>
+        /// Non configurato = manca uno dei due estremi, uno dei due e' mezzanotte, oppure
+        /// l'inizio non viene prima della fine. Chi lo chiama sceglie il suo ripiego.
+        /// </para>
+        /// </summary>
+        public OrarioDiLavoro? OrarioDiLavoro()
+        {
+            if (ScheduleTimeStart is not { } inizio || ScheduleTimeEnd is not { } fine)
+                return null;
+
+            if (inizio == TimeOnly.MinValue || fine == TimeOnly.MinValue || inizio >= fine)
+                return null;
+
+            return new OrarioDiLavoro(inizio, fine);
+        }
 
         [Display(Name = "Giorni Scadenza Ticket")]
         public int TicketDaysExpired { get; set; } = 1;

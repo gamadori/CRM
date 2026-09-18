@@ -1,4 +1,4 @@
-﻿@page "/Agenda"
+@page "/Agenda"
 @using CRM.Client.Models
 @using CRM.Client.Services
 @using CRM.Client.Helpers
@@ -213,9 +213,9 @@
 
     .agenda-toolbar {
         align-items: center;
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        background: var(--crm-surface);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
         display: flex;
         gap: 1rem;
         justify-content: space-between;
@@ -239,9 +239,9 @@
 
     .agenda-filters {
         align-items: end;
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        background: var(--crm-surface);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
         display: flex;
         flex-wrap: wrap;
         gap: .75rem;
@@ -259,7 +259,7 @@
     }
 
     .agenda-filter-field label {
-        color: #4b5563;
+        color: var(--crm-text-secondary);
         display: block;
         font-size: .76rem;
         font-weight: 700;
@@ -282,21 +282,21 @@
     }
 
     .agenda-metric {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        background: var(--crm-surface);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
         padding: .85rem 1rem;
     }
 
     .agenda-metric span {
-        color: #6b7280;
+        color: var(--crm-text-muted);
         display: block;
         font-size: .78rem;
         font-weight: 600;
     }
 
     .agenda-metric strong {
-        color: #111827;
+        color: var(--crm-text);
         display: block;
         font-size: 1.6rem;
         line-height: 1.1;
@@ -304,11 +304,11 @@
     }
 
     .agenda-metric-danger strong {
-        color: #c62828;
+        color: var(--crm-danger);
     }
 
     .agenda-metric-primary strong {
-        color: #1976d2;
+        color: var(--crm-primary);
     }
 
     .agenda-layout {
@@ -320,14 +320,14 @@
 
     .agenda-list,
     .agenda-calendar {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        background: var(--crm-surface);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
         padding: 1rem;
     }
 
     .agenda-section-title {
-        color: #374151;
+        color: var(--crm-text-secondary);
         font-size: .84rem;
         font-weight: 700;
         margin-bottom: .75rem;
@@ -335,7 +335,7 @@
     }
 
     .agenda-empty {
-        color: #6b7280;
+        color: var(--crm-text-muted);
         padding: 2rem 1rem;
         text-align: center;
     }
@@ -355,16 +355,16 @@
     }
 
     .agenda-group-title span {
-        background: #f3f4f6;
+        background: var(--crm-surface-muted);
         border-radius: 999px;
-        color: #374151;
+        color: var(--crm-text-secondary);
         font-size: .72rem;
         padding: .05rem .45rem;
     }
 
     .agenda-row {
         align-items: center;
-        border-bottom: 1px solid #eef2f7;
+        border-bottom: 1px solid var(--crm-border);
         display: flex;
         gap: .65rem;
         min-height: 56px;
@@ -386,7 +386,7 @@
     }
 
     .agenda-row-title {
-        color: #111827;
+        color: var(--crm-text);
         display: block;
         font-weight: 700;
         overflow: hidden;
@@ -396,11 +396,11 @@
     }
 
     .agenda-row-title:hover {
-        color: #1976d2;
+        color: var(--crm-primary);
     }
 
     .agenda-row-meta {
-        color: #6b7280;
+        color: var(--crm-text-muted);
         font-size: .78rem;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -415,7 +415,7 @@
     }
 
         .agenda-row-entity:hover {
-            color: var(--crm-primary, #2563eb);
+            color: var(--crm-primary);
             text-decoration: underline;
         }
 
@@ -428,7 +428,7 @@
 
     .agenda-legend span {
         align-items: center;
-        color: #6b7280;
+        color: var(--crm-text-muted);
         display: inline-flex;
         font-size: .78rem;
         gap: .35rem;

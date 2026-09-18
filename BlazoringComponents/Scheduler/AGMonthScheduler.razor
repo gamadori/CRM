@@ -1,4 +1,4 @@
-﻿@using BlazoringComponents.Helpers
+@using BlazoringComponents.Helpers
 @using Models
 @typeparam TItem
 
@@ -12,7 +12,7 @@
             </div>
         }
     </div>
-    
+
     <!-- Griglia calendario -->
     <div class="scheduler-grid">
         @foreach (var week in _monthTickets)
@@ -28,7 +28,7 @@
                         <div class="day-cell-header">
                             <AGDayHead Day="@day" OnSelect="OnSelect"></AGDayHead>
                         </div>
-                       
+
                         <!-- Contenuto ticket -->
                         <div class="day-cell-content">
                             @if (day.Tickets.Any())
@@ -41,7 +41,7 @@
                                         </CascadingValue>
                                     </div>
                                 }
-                                
+
                                 @if (day.Tickets.Count > MaxNumDaylyTicket)
                                 {
                                     <div class="more-tickets">
@@ -66,12 +66,14 @@
     </div>
 </div>
 
+@* Colori solo dalle variabili del tema (--crm-*): cosi' il calendario segue chiaro e scuro
+   da solo, senza uno strato di eccezioni in app.css. *@
 <style>
     .modern-scheduler-container {
-        background: #f8f9fa;
-        border-radius: 12px;
+        background: var(--crm-surface);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
         overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         min-width: 900px;
     }
 
@@ -79,33 +81,32 @@
     .scheduler-header {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 0.35rem 0.5rem;
-        gap: 1px;
+        background: var(--crm-surface-muted);
+        border-bottom: 1px solid var(--crm-border);
     }
 
     .day-header {
         text-align: center;
-        padding: 0.3rem 0.5rem;
-        color: white;
+        padding: 0.5rem 0.5rem;
+        color: var(--crm-text-muted);
         font-weight: 600;
-        font-size: 0.85rem;
+        font-size: 0.74rem;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.06em;
     }
 
     .day-header.holiday-header {
-        background: rgba(220, 38, 38, 0.2);
-        border-radius: 8px;
+        color: var(--crm-danger);
     }
 
     .day-name {
         display: block;
     }
 
-    /* Griglia settimane */
+    /* Griglia settimane: le linee fra le celle sono il colore del bordo che
+       traspare dal gap di 1px. */
     .scheduler-grid {
-        background: white;
+        background: var(--crm-border);
         padding: 0;
     }
 
@@ -113,7 +114,11 @@
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         gap: 1px;
-        background: #e5e7eb;
+        background: var(--crm-border);
+    }
+
+    .scheduler-week + .scheduler-week {
+        margin-top: 1px;
     }
 
     /* Celle giorno
@@ -121,49 +126,46 @@
        senza ticket costava quanto una piena. 76px restano un bersaglio comodo per il drop e per il
        click che crea il ticket; le settimane con contenuto crescono da sole. */
     .day-cell {
-        background: white;
+        background: var(--crm-surface);
         min-height: 76px;
         padding: 0;
         display: flex;
         flex-direction: column;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: background-color 120ms ease, box-shadow 120ms ease;
         cursor: pointer;
         position: relative;
         overflow: hidden;
     }
 
     .day-cell:hover {
-        background: #f9fafb;
-        box-shadow: inset 0 0 0 2px #667eea;
+        background: var(--crm-surface-hover);
+        box-shadow: inset 0 0 0 1px var(--crm-primary);
         z-index: 10;
-        transform: scale(1.02);
     }
 
     /* Tipi di giorni */
     .day-cell.holiday {
-        background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        background: color-mix(in srgb, var(--crm-danger) 5%, var(--crm-surface));
     }
 
     .day-cell.holiday:hover {
-        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        background: color-mix(in srgb, var(--crm-danger) 9%, var(--crm-surface));
     }
 
     .day-cell.other-month {
-        background: #f3f4f6;
-        opacity: 0.6;
+        background: var(--crm-surface-muted);
     }
 
-    .day-cell.other-month:hover {
-        opacity: 0.8;
+    .day-cell.other-month .day-cell-content {
+        opacity: 0.7;
     }
 
     .day-cell.today {
-        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        box-shadow: inset 0 0 0 2px #3b82f6;
+        background: color-mix(in srgb, var(--crm-primary) 7%, var(--crm-surface));
     }
 
     .day-cell.today:hover {
-        background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+        background: color-mix(in srgb, var(--crm-primary) 11%, var(--crm-surface));
     }
 
     /* Header cella */
@@ -188,12 +190,8 @@
     }
 
     .day-cell-content::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+        background: var(--crm-border-strong);
         border-radius: 2px;
-    }
-
-    .day-cell-content::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
     }
 
     /* Ticket items */
@@ -220,7 +218,7 @@
     .more-tickets {
         margin-top: 0.3rem;
         padding-top: 0.3rem;
-        border-top: 2px dashed #e5e7eb;
+        border-top: 1px dashed var(--crm-border-strong);
     }
 
     /* .empty-day rimossa insieme al segnaposto delle celle libere */
@@ -230,11 +228,6 @@
         .day-cell {
             min-height: 100px;
         }
-
-        .day-header {
-            font-size: 0.85rem;
-            padding: 0.5rem;
-        }
     }
 
     @@media (max-width: 900px) {
@@ -243,12 +236,8 @@
             border-radius: 0;
         }
 
-        .scheduler-header {
-            padding: 0.75rem 0.25rem;
-        }
-
         .day-header {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             padding: 0.5rem 0.25rem;
         }
 

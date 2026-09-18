@@ -1,17 +1,16 @@
-﻿using BlazoringComponents.Models;
+using BlazoringComponents.Models;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Localization;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace BlazoringComponents.Scheduler
 {
     public partial class AGDayHead: ComponentBase
     {
+        [Inject]
+        IStringLocalizer<CRM.Shared.Resources.App> Localize { get; set; }
+
         [Parameter]
         public DayTickets Day { get; set; }
 
@@ -24,21 +23,8 @@ namespace BlazoringComponents.Scheduler
         [CascadingParameter(Name = "OnNewTicket")]
         public EventCallback<DateTime> OnNewTicket { get; set; }
 
-
         [Parameter]
         public EventCallback<DateTime> OnSelect { get; set; }
-
-        
-
-        private string _color = "color: white;";
-        protected override void OnInitialized()
-        {
-            if (!Day.IsMonthCurrent)
-            {
-                _color = "color: gray;";
-            }
-            base.OnInitialized();
-        }
 
         private async Task OnSelectDate(DateTime date)
         {

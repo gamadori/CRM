@@ -33,7 +33,11 @@ namespace CRM.Server.Services
         /// </summary>
         public static readonly TimeSpan FineGiornataPredefinita = TimeSpan.FromHours(18);
 
-        /// <summary>L'ora a cui si considera finita la giornata, dall'orario di lavoro aziendale.</summary>
+        /// <summary>
+        /// L'ora a cui si considera finita la giornata, dall'orario di lavoro aziendale.
+        /// Chi chiama passa di norma <c>settings.OrarioDiLavoro()?.Fine</c>, che e' gia' pulito;
+        /// il controllo su mezzanotte resta come rete di sicurezza per chi passa il campo grezzo.
+        /// </summary>
         public static TimeSpan FineGiornata(TimeOnly? orarioDiChiusura)
             => orarioDiChiusura is { } chiusura && chiusura != TimeOnly.MinValue
                 ? chiusura.ToTimeSpan()

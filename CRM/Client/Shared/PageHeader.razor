@@ -73,8 +73,8 @@ else
                     <div class="d-flex align-items-center justify-content-start">
                         @if (!string.IsNullOrEmpty(Model.Icon))
                         {
-                            <div class="header-icon-box bg-primary bg-opacity-10 rounded-3 p-2 me-3">
-                                <span class="material-icons text-primary" style="font-size: 32px;">@Model.Icon</span>
+                            <div class="header-icon-box me-3">
+                                <span class="material-icons">@Model.Icon</span>
                             </div>
                         }
                         <div class="text-start">
@@ -111,93 +111,8 @@ else
     </div>
 }
 
-<style>
-    .page-header-wrapper {
-        animation: fadeInDown 0.4s ease-out;
-    }
-
-    .header-icon-box {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 64px;
-        min-height: 64px;
-    }
-
-    .breadcrumb {
-        background-color: transparent;
-        padding: 0.5rem 0;
-        font-size: 0.875rem;
-    }
-
-    .breadcrumb-item + .breadcrumb-item::before {
-        content: "›";
-        font-size: 1.2rem;
-        color: #6c757d;
-    }
-
-    .breadcrumb-link {
-        color: #667eea;
-        transition: all 0.2s ease;
-        position: relative;
-        cursor: pointer;
-    }
-
-    .breadcrumb-link:hover {
-        color: #5a67d8;
-    }
-
-    .breadcrumb-link:active {
-        transform: scale(0.95);
-    }
-
-    .breadcrumb-item.active {
-        color: #6c757d;
-        font-weight: 500;
-    }
-
-    /* Loading animation quando si forza il reload */
-    @@keyframes pulse {
-        0%, 100% {
-            opacity: 1;
-        }
-        50% {
-            opacity: 0.6;
-        }
-    }
-
-    .breadcrumb-link.loading {
-        animation: pulse 0.5s ease-in-out;
-        pointer-events: none;
-    }
-
-    @@keyframes fadeInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @@media (max-width: 768px) {
-        .header-icon-box {
-            min-width: 48px;
-            min-height: 48px;
-            padding: 0.75rem !important;
-        }
-
-        .header-icon-box .material-icons {
-            font-size: 24px !important;
-        }
-
-        .page-header-wrapper h2 {
-            font-size: 1.5rem;
-        }
-    }
-</style>
+@* Lo stile dell'intestazione sta in css/theme.css (sezione "Intestazione di pagina"):
+   cosi' segue il tema chiaro/scuro come tutto il resto. *@
 
 @code {
 

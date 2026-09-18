@@ -8,22 +8,28 @@ namespace BlazoringComponents.Helpers
 {
     public static class DayHelper
     {
+        /// <summary>
+        /// Classe dell'intestazione del giorno. Prima erano blocchi Bootstrap pieni
+        /// (bg-primary, bg-danger, bg-success): un calendario tutto blu e rosso, e in tema
+        /// scuro illeggibile. Ora sono classi proprie, vestite in AGDayHead con i colori
+        /// del tema (--crm-*): il tipo di giorno si legge dal colore del testo e da un filo.
+        /// </summary>
         public static string GetBgHeader(bool isHoliday, bool isMonth = true, bool currentDate = false)
         {
             if (currentDate)
             {
-                return "bg-success bg-gradient text-white";
+                return "day-head-today";
             }
             else if (!isMonth)
             {
-                return "bg-black-50 bg-gradient text-secondary";
+                return "day-head-other";
             }
             else if (isHoliday)
             {
-                return "bg-danger bg-gradient text-white";
+                return "day-head-holiday";
             }
             else
-                return "bg-primary bg-gradient text-light";
+                return "day-head-work";
         }
 
         public static string GetBgBody(bool isHoliday, bool isMonth = true)

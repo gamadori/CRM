@@ -1,63 +1,58 @@
-﻿@using CRM.Client.Services
+@using CRM.Client.Services
+@implements IDisposable
 @inject Microsoft.Extensions.Localization.IStringLocalizer<CRM.Shared.Resources.App> Localize
+@inject NavigationManager Navigation
+@inject IJSRuntime Js
 
-<!-- Modern Top Bar -->
 <div class="top-row navbar modern-topbar">
-    <div class="container-fluid px-3">
-        <div class="d-flex justify-content-center align-items-center w-100">
-            <a class="navbar-brand d-flex align-items-center" href="">
-                <img src="/img/logoCrm.png?v=4" height="48" alt="CRM Logo" />
-            </a>
-        </div>
-        <button class="navbar-toggler border-0 position-absolute end-0 me-3" @onclick="ToggleNavMenu">
-            <span class="material-icons">@(collapseNavMenu ? "menu" : "close")</span>
-        </button>
-    </div>
+    @* Marchio in CSS: il vecchio PNG aveva le lettere bianche e spariva sulla barra chiara. *@
+    <a class="navbar-brand brand" href="" aria-label="CRM">
+        <span class="brand-mark"><span class="material-icons">hub</span></span>
+        <span class="brand-text">CRM</span>
+    </a>
+    <button class="navbar-toggler" aria-label="Apri o chiudi il menu" @onclick="ToggleNavMenu">
+        <span class="material-icons">@(collapseNavMenu ? "menu" : "close")</span>
+    </button>
 </div>
 
-<!-- Modern Navigation Menu -->
 <div class="@NavMenuCssClass nav-scrollable modern-nav">
-    <nav class="flex-column">
+    <nav class="nav-root">
 
-        <!-- Primary Section -->
-        <div class="nav-section">
-            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
-                <span class="material-icons nav-icon">dashboard</span>
-                <span class="nav-text">@Localize["DashBoard"]</span>
-            </NavLink>
+        @* Quello che si apre ogni giorno sta in cima, senza gruppo. *@
+        <NavLink class="nav-link" href="/" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+            <span class="material-icons nav-icon">dashboard</span>
+            <span class="nav-text">@Localize["DashBoard"]</span>
+        </NavLink>
 
-            <NavLink class="nav-link" href="Agenda" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
-                <span class="material-icons nav-icon">event</span>
-                <span class="nav-text">@Localize["Agenda"]</span>
-            </NavLink>
+        <NavLink class="nav-link" href="Agenda" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+            <span class="material-icons nav-icon">event</span>
+            <span class="nav-text">@Localize["Agenda"]</span>
+        </NavLink>
 
-            @* Quello che si apre la mattina per sapere cosa fare. Sta al primo livello perche' si
-               usa ogni giorno, e non dentro Service perche' contiene sia assistenza sia commesse. *@
-            <NavLink class="nav-link" href="Lavori" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
-                <span class="material-icons nav-icon">checklist</span>
-                <span class="nav-text">@Localize["Lavori"]</span>
-            </NavLink>
-        </div>
+        @* Contiene sia assistenza sia commesse: per questo non sta dentro Service. *@
+        <NavLink class="nav-link" href="Lavori" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+            <span class="material-icons nav-icon">checklist</span>
+            <span class="nav-text">@Localize["Lavori"]</span>
+        </NavLink>
 
-        <!-- CRM Section -->
-        <div class="nav-section">
-            <div class="nav-item">
-                <div class="nav-link @(_expandCRM ? "active" : "")" @onclick="()=>_expandCRM = !_expandCRM">
-                    <span class="material-icons nav-icon">groups</span>
-                    <span class="nav-text">CRM</span>
-                    <span class="material-icons expand-icon">@(_expandCRM ? "expand_less" : "expand_more")</span>
-                </div>
-            </div>
+        <div class="nav-divider"></div>
 
-            @if (_expandCRM)
+        @* ---- Gruppi. L'intestazione apre/chiude, i link stanno sotto. ---- *@
+
+        <div class="nav-group @GroupClass("crm")">
+            <button type="button" class="nav-group-header" @onclick="@(() => Toggle("crm"))" aria-expanded="@IsOpen("crm").ToString().ToLower()">
+                <span class="material-icons nav-icon">groups</span>
+                <span class="nav-text">CRM</span>
+                <span class="material-icons nav-chevron">expand_more</span>
+            </button>
+            @if (IsOpen("crm"))
             {
-                <div class="nav-submenu">
-                    <NavLink class="nav-link submenu-link" href="Companies" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                <div class="nav-group-items">
+                    <NavLink class="nav-link nav-sub" href="Companies" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">domain</span>
                         <span class="nav-text">@Localize["Aziende"]</span>
                     </NavLink>
-
-                    <NavLink class="nav-link submenu-link" href="Contacts" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                    <NavLink class="nav-link nav-sub" href="Contacts" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">contacts</span>
                         <span class="nav-text">@Localize["Contacts"]</span>
                     </NavLink>
@@ -65,62 +60,54 @@
             }
         </div>
 
-        <!-- Commercial Section -->
-        <div class="nav-section">
-            <div class="nav-item">
-                <div class="nav-link @(_expandCommerciale ? "active" : "")" @onclick="() => _expandCommerciale = !_expandCommerciale">
-                    <span class="material-icons nav-icon">trending_up</span>
-                    <span class="nav-text">Commerciale</span>
-                    <span class="material-icons expand-icon">@(_expandCommerciale ? "expand_less" : "expand_more")</span>
-                </div>
-            </div>
-
-            @if (_expandCommerciale)
+        <div class="nav-group @GroupClass("sales")">
+            <button type="button" class="nav-group-header" @onclick="@(() => Toggle("sales"))" aria-expanded="@IsOpen("sales").ToString().ToLower()">
+                <span class="material-icons nav-icon">trending_up</span>
+                <span class="nav-text">Commerciale</span>
+                <span class="material-icons nav-chevron">expand_more</span>
+            </button>
+            @if (IsOpen("sales"))
             {
-                <div class="nav-submenu">
-                    <NavLink class="nav-link submenu-link" href="Leads" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                <div class="nav-group-items">
+                    <NavLink class="nav-link nav-sub" href="Leads" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">person_search</span>
                         <span class="nav-text">Lead</span>
                     </NavLink>
-
-                    <NavLink class="nav-link submenu-link" href="Deals" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                    <NavLink class="nav-link nav-sub" href="Deals" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">handshake</span>
                         <span class="nav-text">@Localize["Deals"]</span>
                     </NavLink>
-
-                    @* Due voci per la stessa pagina: fiere e trasferte condividono la tabella ma
-                       si leggono con due resoconti diversi, e nel menu vanno cercate separate. *@
-                    <NavLink class="nav-link submenu-link" href="Initiatives/List/Fair" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">storefront</span>
-                        <span class="nav-text">Fiere e campagne</span>
-                    </NavLink>
-
-                    <NavLink class="nav-link submenu-link" href="Initiatives/List/Trip" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
-                        <span class="material-icons nav-icon">flight_takeoff</span>
-                        <span class="nav-text">Trasferte</span>
-                    </NavLink>
-
-                    <NavLink class="nav-link submenu-link" href="Deals/Forecast" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                    <NavLink class="nav-link nav-sub" href="Deals/Forecast" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">query_stats</span>
                         <span class="nav-text">Forecast</span>
                     </NavLink>
 
-                    <NavLink class="nav-link submenu-link" href="Quotes" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                    <div class="nav-sub-label">Documenti</div>
+                    <NavLink class="nav-link nav-sub" href="Quotes" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">request_quote</span>
                         <span class="nav-text">@Localize["Quotes"]</span>
                     </NavLink>
-
-                    <NavLink class="nav-link submenu-link" href="Orders" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                    <NavLink class="nav-link nav-sub" href="Orders" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">shopping_cart</span>
                         <span class="nav-text">@Localize["Orders"]</span>
                     </NavLink>
-
-                    <NavLink class="nav-link submenu-link" href="Invoices" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                    <NavLink class="nav-link nav-sub" href="Invoices" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">receipt_long</span>
                         <span class="nav-text">@Localize["Invoices"]</span>
                     </NavLink>
 
-                    <NavLink class="nav-link submenu-link" href="WorkflowAutomations" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                    @* Due voci per la stessa pagina: fiere e trasferte condividono la tabella ma
+                       si leggono con due resoconti diversi, e nel menu vanno cercate separate. *@
+                    <div class="nav-sub-label">Iniziative</div>
+                    <NavLink class="nav-link nav-sub" href="Initiatives/List/Fair" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">storefront</span>
+                        <span class="nav-text">Fiere e campagne</span>
+                    </NavLink>
+                    <NavLink class="nav-link nav-sub" href="Initiatives/List/Trip" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                        <span class="material-icons nav-icon">flight_takeoff</span>
+                        <span class="nav-text">Trasferte</span>
+                    </NavLink>
+                    <NavLink class="nav-link nav-sub" href="WorkflowAutomations" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">rule</span>
                         <span class="nav-text">Automazioni</span>
                     </NavLink>
@@ -128,50 +115,42 @@
             }
         </div>
 
-        <!-- Service Section -->
-        <div class="nav-section">
-            <div class="nav-item">
-                <div class="nav-link @(_expandService ? "active" : "")" @onclick="()=>_expandService = !_expandService">
-                    <span class="material-icons nav-icon">support_agent</span>
-                    <span class="nav-text">Service</span>
-                    <span class="material-icons expand-icon">@(_expandService ? "expand_less" : "expand_more")</span>
-                </div>
-            </div>
-
-            @if (_expandService)
+        <div class="nav-group @GroupClass("service")">
+            <button type="button" class="nav-group-header" @onclick="@(() => Toggle("service"))" aria-expanded="@IsOpen("service").ToString().ToLower()">
+                <span class="material-icons nav-icon">support_agent</span>
+                <span class="nav-text">Service</span>
+                @if (_unreadFeedbacksCount > 0 && !IsOpen("service"))
+                {
+                    <span class="nav-badge">@_unreadFeedbacksCount</span>
+                }
+                <span class="material-icons nav-chevron">expand_more</span>
+            </button>
+            @if (IsOpen("service"))
             {
-                <div class="nav-submenu">
-                    <NavLink class="nav-link submenu-link" href="Tickets" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                <div class="nav-group-items">
+                    <NavLink class="nav-link nav-sub" href="Tickets" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">confirmation_number</span>
                         <span class="nav-text">@Localize["Tickets"]</span>
                     </NavLink>
-
-                    <NavLink class="nav-link submenu-link" href="Tickets/Schedule" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                    <NavLink class="nav-link nav-sub" href="Tickets/Schedule" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">event_note</span>
                         <span class="nav-text">Pianificazione</span>
                     </NavLink>
-
-                    @* Il lavoro registrato: chi ha fatto cosa, e quando. Prima la pagina esisteva
-                       ma bisognava scrivere l'indirizzo a mano. *@
-                    <NavLink class="nav-link submenu-link" href="TicketInterventions" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                    <NavLink class="nav-link nav-sub" href="TicketInterventions" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">construction</span>
                         <span class="nav-text">@Localize["Interventi"]</span>
                     </NavLink>
-
-                    @* Prima le note spese si vedevano solo scendendo dentro un intervento: di
-                       fatto esistevano ma erano invisibili. *@
-                    <NavLink class="nav-link submenu-link" href="ExpenseReceipts" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                    <NavLink class="nav-link nav-sub" href="ExpenseReceipts" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">receipt_long</span>
                         <span class="nav-text">Note Spese</span>
                     </NavLink>
-
                     <AuthorizeView Policy="@ePolicy.AdminRole.ToString()">
-                        <NavLink class="nav-link submenu-link" href="TicketFeedbacks" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                        <NavLink class="nav-link nav-sub" href="TicketFeedbacks" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                             <span class="material-icons nav-icon">rate_review</span>
                             <span class="nav-text">Feedback Clienti</span>
                             @if (_unreadFeedbacksCount > 0)
                             {
-                                <span class="badge bg-danger ms-auto">@_unreadFeedbacksCount</span>
+                                <span class="nav-badge">@_unreadFeedbacksCount</span>
                             }
                         </NavLink>
                     </AuthorizeView>
@@ -179,38 +158,29 @@
             }
         </div>
 
-        <!-- Production Section -->
-        <div class="nav-section">
-            <NavLink class="nav-link" href="Commesse" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
-                <span class="material-icons nav-icon">precision_manufacturing</span>
-                <span class="nav-text">Commesse</span>
-            </NavLink>
-        </div>
+        <NavLink class="nav-link" href="Commesse" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+            <span class="material-icons nav-icon">precision_manufacturing</span>
+            <span class="nav-text">Commesse</span>
+        </NavLink>
 
-        <!-- Catalog Section -->
-        <div class="nav-section">
-            <div class="nav-item">
-                <div class="nav-link @(_expandMenuProdotti ? "active" : "")" @onclick="()=>_expandMenuProdotti = !_expandMenuProdotti">
-                    <span class="material-icons nav-icon">inventory_2</span>
-                    <span class="nav-text">Catalogo</span>
-                    <span class="material-icons expand-icon">@(_expandMenuProdotti ? "expand_less" : "expand_more")</span>
-                </div>
-            </div>
-
-            @if (_expandMenuProdotti)
+        <div class="nav-group @GroupClass("catalog")">
+            <button type="button" class="nav-group-header" @onclick="@(() => Toggle("catalog"))" aria-expanded="@IsOpen("catalog").ToString().ToLower()">
+                <span class="material-icons nav-icon">inventory_2</span>
+                <span class="nav-text">Catalogo</span>
+                <span class="material-icons nav-chevron">expand_more</span>
+            </button>
+            @if (IsOpen("catalog"))
             {
-                <div class="nav-submenu">
-                    <NavLink class="nav-link submenu-link" href="Catalog" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                <div class="nav-group-items">
+                    <NavLink class="nav-link nav-sub" href="Catalog" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">category</span>
                         <span class="nav-text">@Localize["Catalog"]</span>
                     </NavLink>
-
-                    <NavLink class="nav-link submenu-link" href="Products" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                    <NavLink class="nav-link nav-sub" href="Products" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">inventory_2</span>
                         <span class="nav-text">@Localize["Products"]</span>
                     </NavLink>
-
-                    <NavLink class="nav-link submenu-link" href="Articles" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                    <NavLink class="nav-link nav-sub" href="Articles" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">precision_manufacturing</span>
                         <span class="nav-text">@Localize["Articles"]</span>
                     </NavLink>
@@ -218,25 +188,20 @@
             }
         </div>
 
-        <!-- AI Section -->
-        <div class="nav-section">
-            <div class="nav-item">
-                <div class="nav-link highlight-ai @(_expandAI ? "active" : "")" @onclick="()=>_expandAI = !_expandAI">
-                    <span class="material-icons nav-icon">auto_awesome</span>
-                    <span class="nav-text">AI</span>
-                    <span class="material-icons expand-icon">@(_expandAI ? "expand_less" : "expand_more")</span>
-                </div>
-            </div>
-
-            @if (_expandAI)
+        <div class="nav-group @GroupClass("ai")">
+            <button type="button" class="nav-group-header" @onclick="@(() => Toggle("ai"))" aria-expanded="@IsOpen("ai").ToString().ToLower()">
+                <span class="material-icons nav-icon">auto_awesome</span>
+                <span class="nav-text">Assistente AI</span>
+                <span class="material-icons nav-chevron">expand_more</span>
+            </button>
+            @if (IsOpen("ai"))
             {
-                <div class="nav-submenu">
-                    <NavLink class="nav-link submenu-link highlight-ai" href="Tickets/Assistant" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                <div class="nav-group-items">
+                    <NavLink class="nav-link nav-sub" href="Tickets/Assistant" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">smart_toy</span>
                         <span class="nav-text">@Localize["Assistant"]</span>
                     </NavLink>
-
-                    <NavLink class="nav-link submenu-link highlight-ai" href="Tickets/Search" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                    <NavLink class="nav-link nav-sub" href="Tickets/Search" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                         <span class="material-icons nav-icon">psychology</span>
                         <span class="nav-text">@Localize["Search"] AI</span>
                     </NavLink>
@@ -244,24 +209,20 @@
             }
         </div>
 
-        <!-- Settings Section -->
+        <div class="nav-spacer"></div>
+        <div class="nav-divider"></div>
+
         <AuthorizeView Policy="@ePolicy.SuperUserRole.ToString()">
-            <div class="nav-section">
-                <NavLink class="nav-link" href="Settings" @onclick="CloseNavMenu">
-                    <span class="material-icons nav-icon">settings</span>
-                    <span class="nav-text">@Localize["Settings"]</span>
-                </NavLink>
-            </div>
+            <NavLink class="nav-link" href="Settings" Match="NavLinkMatch.Prefix" @onclick="CloseNavMenu">
+                <span class="material-icons nav-icon">settings</span>
+                <span class="nav-text">@Localize["Settings"]</span>
+            </NavLink>
         </AuthorizeView>
 
-        <!-- About Section -->
-        <div class="nav-section">
-            <NavLink class="nav-link" href="About" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
-                <span class="material-icons nav-icon">info</span>
-                <span class="nav-text">@Localize["About"]</span>
-            </NavLink>
-        </div>
-
+        <NavLink class="nav-link nav-quiet" href="About" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+            <span class="material-icons nav-icon">info</span>
+            <span class="nav-text">@Localize["About"]</span>
+        </NavLink>
     </nav>
 </div>
 
@@ -269,21 +230,45 @@
     [Inject]
     ITicketFeedbackService TicketFeedbacksService { get; set; }
 
+    private const string StorageKey = "crm-nav-open";
+
     private bool collapseNavMenu = true;
 
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
-    private bool _expandCRM = false;
-
-    private bool _expandCommerciale = false;
-
-    private bool _expandService = false;
-
-    private bool _expandMenuProdotti = false;
-
-    private bool _expandAI = false;
+    // Gruppi aperti. Si ricordano fra le pagine (localStorage) e il gruppo che
+    // contiene la pagina corrente si apre da solo: prima ogni cambio di pagina
+    // richiudeva tutto e l'utente riapriva la stessa voce ogni volta.
+    private HashSet<string> _open = new();
 
     private int _unreadFeedbacksCount = 0;
+
+    // Percorsi che appartengono a ogni gruppo, per aprirlo quando ci si trova dentro.
+    private static readonly Dictionary<string, string[]> GroupRoutes = new()
+    {
+        ["crm"] = new[] { "companies", "contacts" },
+        ["sales"] = new[] { "leads", "deals", "quotes", "orders", "invoices", "initiatives", "workflowautomations" },
+        ["service"] = new[] { "tickets", "ticketinterventions", "expensereceipts", "ticketfeedbacks" },
+        ["catalog"] = new[] { "catalog", "products", "articles" },
+        ["ai"] = new[] { "tickets/assistant", "tickets/search" },
+    };
+
+    private bool IsOpen(string key) => _open.Contains(key);
+
+    private string GroupClass(string key)
+    {
+        var css = IsOpen(key) ? "is-open" : "";
+        if (GroupOf(Navigation.Uri) == key)
+            css += " has-active";
+        return css;
+    }
+
+    private async Task Toggle(string key)
+    {
+        if (!_open.Remove(key))
+            _open.Add(key);
+        await SaveAsync();
+    }
 
     private void ToggleNavMenu()
     {
@@ -297,23 +282,89 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Navigation.LocationChanged += OnLocationChanged;
+        await LoadOpenGroupsAsync();
+        OpenGroupOfCurrentPage();
         await LoadUnreadFeedbacksCount();
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        OpenGroupOfCurrentPage();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OpenGroupOfCurrentPage()
+    {
+        var group = GroupOf(Navigation.Uri);
+        if (group != null)
+            _open.Add(group);
+    }
+
+    private string? GroupOf(string uri)
+    {
+        var path = Navigation.ToBaseRelativePath(uri).Trim('/').ToLowerInvariant();
+        if (path.Length == 0)
+            return null;
+
+        // Le voci piu' specifiche ("tickets/assistant") vincono su quelle generiche ("tickets").
+        string? best = null;
+        var bestLength = -1;
+        foreach (var (key, routes) in GroupRoutes)
+        {
+            foreach (var route in routes)
+            {
+                var match = path == route || path.StartsWith(route + "/");
+                if (match && route.Length > bestLength)
+                {
+                    best = key;
+                    bestLength = route.Length;
+                }
+            }
+        }
+        return best;
+    }
+
+    private async Task LoadOpenGroupsAsync()
+    {
+        try
+        {
+            var saved = await Js.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+            if (!string.IsNullOrWhiteSpace(saved))
+                _open = new HashSet<string>(saved.Split(',', StringSplitOptions.RemoveEmptyEntries));
+        }
+        catch
+        {
+            // localStorage non disponibile: il menu parte con i gruppi chiusi.
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("localStorage.setItem", StorageKey, string.Join(',', _open));
+        }
+        catch
+        {
+        }
     }
 
     private async Task LoadUnreadFeedbacksCount()
     {
         try
         {
-            // TODO: Implementare chiamata API per ottenere il count dei feedback non letti
-            // var count = await HttpClient.GetFromJsonAsync<int>("api/TicketFeedback/pending/count");
-            // _unreadFeedbacksCount = count;
             var unread = await TicketFeedbacksService.GetListAsync(new TicketFeedbackFilterModel { IsRead = false });
-
-            _unreadFeedbacksCount = unread.Count(); // Placeholder per ora
+            _unreadFeedbacksCount = unread.Count();
         }
         catch
         {
             _unreadFeedbacksCount = 0;
         }
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 }

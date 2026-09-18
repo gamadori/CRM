@@ -37,8 +37,10 @@
         width: 40px;
         height: 40px;
         min-width: 40px;
-        background: var(--crm-surface-muted, #f8fafc);
-        border: 1px solid var(--crm-border, #e9ecef);
+        /* Il colore della voce si vede subito, non solo al passaggio del mouse:
+           aiuta a trovare la scheda a colpo d'occhio. */
+        background: color-mix(in srgb, var(--card-color) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--card-color) 18%, transparent);
         border-radius: 9px;
         transition: all 0.15s ease;
     }
@@ -50,7 +52,7 @@
 
     .card-icon {
         font-size: 22px;
-        color: var(--crm-text-muted, #64748b);
+        color: var(--card-color);
         transition: color 0.15s ease;
     }
 

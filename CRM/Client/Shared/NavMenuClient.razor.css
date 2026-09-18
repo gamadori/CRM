@@ -1,23 +1,42 @@
-.modern-topbar,
-.client-nav {
-    --nav-surface: #1d2227;
-    --nav-hover: #2b3239;
-    --nav-border: #343c44;
-    --nav-text: #eef2f6;
-    --nav-accent: #5aa7ff;
-}
+/* Menu del portale cliente. Stessi colori della barra interna (theme.css). */
 
 .modern-topbar {
-    height: 60px;
-    padding: 0 12px;
-    background: var(--nav-surface);
-    border-bottom: 1px solid var(--nav-border);
-    box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
+    display: flex;
+    align-items: center;
+    height: 3.5rem;
+    padding: 0 1rem;
+    background: var(--crm-nav-bg);
+    border-bottom: 1px solid var(--crm-nav-border);
 }
 
 .navbar-brand {
     display: inline-flex;
     align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    text-decoration: none;
+}
+
+.brand-mark {
+    display: inline-grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    color: #fff;
+    background: linear-gradient(135deg, var(--crm-primary), var(--crm-primary-hover));
+    border-radius: 9px;
+}
+
+.brand-mark .material-icons {
+    font-size: 20px;
+}
+
+.brand-text {
+    color: var(--crm-text);
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
 .navbar-toggler {
@@ -27,65 +46,69 @@
     margin-left: auto;
     padding: 0;
     place-items: center;
-    color: var(--nav-text);
+    color: var(--crm-nav-text);
     background: transparent;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--crm-radius-sm);
 }
 
 .navbar-toggler:hover {
-    background: var(--nav-hover);
+    background: var(--crm-nav-hover);
 }
 
 .client-nav {
-    height: calc(100vh - 60px);
-    padding: 12px 0;
+    height: calc(100vh - 3.5rem);
+    padding: 0.75rem 0.6rem;
     overflow-y: auto;
-    background: var(--nav-surface) !important;
-    border-right: 1px solid var(--nav-border);
+    background: var(--crm-nav-bg);
 }
 
 .client-nav ::deep .nav-link {
     position: relative;
     display: flex;
-    min-height: 44px;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    margin: 2px 10px;
-    color: var(--nav-text) !important;
+    gap: 0.7rem;
+    min-height: 38px;
+    padding: 0.45rem 0.7rem;
+    margin-bottom: 2px;
+    color: var(--crm-nav-text);
+    font-size: 0.9rem;
     font-weight: 500;
     line-height: 1.25;
     text-decoration: none;
-    border-radius: 6px;
-    transition: background-color 150ms ease, color 150ms ease;
+    border-radius: var(--crm-radius-sm);
+    transition: background-color 120ms ease, color 120ms ease;
 }
 
 .client-nav ::deep .nav-link:hover {
-    color: var(--nav-accent) !important;
-    background: var(--nav-hover);
+    color: var(--crm-nav-text);
+    background: var(--crm-nav-hover);
 }
 
 .client-nav ::deep .nav-link.active {
-    color: var(--nav-accent) !important;
+    color: var(--crm-nav-active-text);
     font-weight: 600;
-    background: color-mix(in srgb, var(--nav-accent) 12%, var(--nav-surface));
+    background: var(--crm-nav-active-bg);
 }
 
 .client-nav ::deep .nav-link.active::before {
     position: absolute;
-    inset-block: 8px;
-    inset-inline-start: 0;
+    inset-block: 9px;
+    inset-inline-start: -0.6rem;
     width: 3px;
     content: "";
-    background: var(--nav-accent);
+    background: var(--crm-primary);
     border-radius: 0 3px 3px 0;
 }
 
 .client-nav ::deep .material-icons {
     flex: 0 0 auto;
-    color: currentColor;
-    font-size: 22px;
+    font-size: 21px;
+    color: var(--crm-nav-text-muted);
+}
+
+.client-nav ::deep .nav-link.active .material-icons {
+    color: var(--crm-nav-active-text);
 }
 
 .client-nav ::deep .nav-text {
@@ -104,11 +127,8 @@
 }
 
 @media (max-width: 640px) {
-    .modern-topbar {
-        height: 56px;
-    }
-
     .client-nav {
-        height: calc(100vh - 56px);
+        height: auto;
+        max-height: calc(100vh - 3.5rem);
     }
 }

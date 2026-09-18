@@ -84,7 +84,7 @@ namespace CRM.Server.Services
                 log,
                 Math.Max(0, settings.TicketExpiryReminderMinutes),
                 expiryOverrides,
-                TicketExpirySchedule.FineGiornata(settings.ScheduleTimeEnd),
+                TicketExpirySchedule.FineGiornata(settings.OrarioDiLavoro()?.Fine),
                 ct);
         }
 

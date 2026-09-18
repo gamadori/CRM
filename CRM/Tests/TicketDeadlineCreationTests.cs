@@ -158,7 +158,8 @@ public class TicketDeadlineCreationTests : IDisposable
         var service = new ExternalTicketApiService(
             _db,
             userManager,
-            Substitute.For<IConfiguration>());
+            Substitute.For<IConfiguration>(),
+            Substitute.For<IArchiveService>());
 
         var risposta = await service.CreateTicketAsync(
             new ApiKey { Id = 1, Name = "Portale", Scope = ApiKeyScope.ExternalTicket, IdCompany = IdCompany },

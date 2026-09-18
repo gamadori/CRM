@@ -1,0 +1,1021 @@
+/* =====================================================================
+   THEME - unica fonte dei colori dell'applicazione.
+
+   Regola: le pagine NON scrivono colori fissi. Usano le variabili --crm-*
+   e cosi' funzionano in chiaro e in scuro senza eccezioni per pagina.
+   Il tema scuro si attiva con body.dark-theme (vedi js/theme.js): qui
+   sotto si ridefiniscono SOLO le variabili, non le regole.
+
+   Le variabili --rz-* sono quelle di Radzen: le rimappiamo sui nostri
+   colori cosi' griglie, tendine, dialoghi seguono lo stesso tema. Sono
+   dichiarate su body (non su :root) perche' il foglio Radzen viene
+   inserito dopo il nostro e le dichiara su :root: body vince sui
+   discendenti senza bisogno di !important.
+   ===================================================================== */
+
+body {
+    /* Superfici */
+    --crm-page-bg: #f4f6fa;
+    --crm-surface: #ffffff;
+    --crm-surface-raised: #ffffff;
+    --crm-surface-muted: #f8fafc;
+    --crm-surface-hover: #f1f4f8;
+    --crm-surface-active: #e9eef5;
+
+    /* Bordi */
+    --crm-border: #e4e8ef;
+    --crm-border-strong: #cfd6e0;
+
+    /* Testo */
+    --crm-text: #1b2430;
+    --crm-text-secondary: #4a5563;
+    --crm-text-muted: #6f7a89;
+    --crm-text-disabled: #a2abb8;
+    --crm-text-on-primary: #ffffff;
+
+    /* Colore primario e semantici */
+    --crm-primary: #2f6fed;
+    --crm-primary-hover: #245cd0;
+    --crm-primary-soft: rgba(47, 111, 237, 0.10);
+    --crm-primary-soft-strong: rgba(47, 111, 237, 0.18);
+    --crm-link: #2f6fed;
+
+    --crm-success: #1f9d55;
+    --crm-success-soft: rgba(31, 157, 85, 0.12);
+    --crm-warning: #d97706;
+    --crm-warning-soft: rgba(217, 119, 6, 0.14);
+    --crm-danger: #dc3545;
+    --crm-danger-soft: rgba(220, 53, 69, 0.12);
+    --crm-info: #0e8ab3;
+    --crm-info-soft: rgba(14, 138, 179, 0.12);
+    /* Tutto cio' che e' proposto dall'AI ha questo colore, cosi' si riconosce a colpo d'occhio */
+    --crm-ai: #7c3aed;
+    --crm-ai-soft: rgba(124, 58, 237, 0.12);
+
+    /* Forma */
+    --crm-radius: 10px;
+    --crm-radius-sm: 6px;
+    --crm-radius-pill: 999px;
+    --crm-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+    --crm-shadow: 0 2px 10px rgba(16, 24, 40, 0.06);
+    --crm-shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12);
+    --crm-focus-ring: 0 0 0 3px var(--crm-primary-soft-strong);
+
+    /* Barra laterale: segue il tema */
+    --crm-nav-bg: #ffffff;
+    --crm-nav-border: var(--crm-border);
+    --crm-nav-text: #2b3646;
+    --crm-nav-text-muted: #6f7a89;
+    --crm-nav-hover: #f1f4f8;
+    --crm-nav-active-bg: var(--crm-primary-soft);
+    --crm-nav-active-text: var(--crm-primary);
+    --crm-nav-section: #8a94a3;
+
+    /* Font */
+    --crm-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --crm-font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, Consolas, monospace;
+
+    /* Alias storici usati da vecchie pagine */
+    --crm-shadow-legacy: var(--crm-shadow);
+    --hover-bg: var(--crm-surface-hover);
+}
+
+body.dark-theme {
+    --crm-page-bg: #0f1216;
+    --crm-surface: #171b21;
+    --crm-surface-raised: #1d2229;
+    --crm-surface-muted: #141820;
+    --crm-surface-hover: #222830;
+    --crm-surface-active: #2a313b;
+
+    --crm-border: #262c35;
+    --crm-border-strong: #384050;
+
+    --crm-text: #e6eaf0;
+    --crm-text-secondary: #b3bcc8;
+    --crm-text-muted: #8791a0;
+    --crm-text-disabled: #5b6572;
+    --crm-text-on-primary: #ffffff;
+
+    --crm-primary: #5b9cff;
+    --crm-primary-hover: #7ab0ff;
+    --crm-primary-soft: rgba(91, 156, 255, 0.14);
+    --crm-primary-soft-strong: rgba(91, 156, 255, 0.26);
+    --crm-link: #7ab0ff;
+
+    --crm-success: #3fbf74;
+    --crm-success-soft: rgba(63, 191, 116, 0.16);
+    --crm-warning: #f0a33a;
+    --crm-warning-soft: rgba(240, 163, 58, 0.16);
+    --crm-danger: #f0616d;
+    --crm-danger-soft: rgba(240, 97, 109, 0.16);
+    --crm-info: #3fb6dc;
+    --crm-info-soft: rgba(63, 182, 220, 0.16);
+    --crm-ai: #a78bfa;
+    --crm-ai-soft: rgba(167, 139, 250, 0.16);
+
+    --crm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --crm-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+    --crm-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+
+    --crm-nav-bg: #12161b;
+    --crm-nav-border: #232a33;
+    --crm-nav-text: #d5dce6;
+    --crm-nav-text-muted: #8791a0;
+    --crm-nav-hover: #1c2129;
+    --crm-nav-active-bg: rgba(91, 156, 255, 0.14);
+    --crm-nav-active-text: #8fbdff;
+    --crm-nav-section: #6c7683;
+
+    /* Alias delle vecchie variabili "dark" ancora citate da qualche pagina */
+    --crm-dark-canvas: var(--crm-page-bg);
+    --crm-dark-surface: var(--crm-surface);
+    --crm-dark-surface-raised: var(--crm-surface-raised);
+    --crm-dark-surface-hover: var(--crm-surface-hover);
+    --crm-dark-border: var(--crm-border);
+    --crm-dark-text: var(--crm-text);
+    --crm-dark-muted: var(--crm-text-muted);
+    --crm-dark-primary: var(--crm-primary);
+    --crm-dark-primary-hover: var(--crm-primary-hover);
+}
+
+/* ---------------------------------------------------------------------
+   Mappa verso Radzen. Vale per entrambi i temi perche' punta alle
+   variabili --crm-* che cambiano da sole.
+   --------------------------------------------------------------------- */
+body {
+    --rz-text-font-family: var(--crm-font);
+    --rz-primary: var(--crm-primary);
+    --rz-primary-light: var(--crm-primary-hover);
+    --rz-primary-lighter: var(--crm-primary-soft);
+    --rz-primary-dark: var(--crm-primary-hover);
+    --rz-primary-darker: var(--crm-primary-hover);
+    --rz-secondary: #6b7a90;
+    --rz-secondary-light: #8b98aa;
+    --rz-secondary-lighter: rgba(107, 122, 144, 0.14);
+    --rz-secondary-dark: #56637a;
+    --rz-secondary-darker: #414c60;
+    --rz-info: var(--crm-info);
+    --rz-info-lighter: var(--crm-info-soft);
+    --rz-success: var(--crm-success);
+    --rz-success-lighter: var(--crm-success-soft);
+    --rz-warning: var(--crm-warning);
+    --rz-warning-lighter: var(--crm-warning-soft);
+    --rz-danger: var(--crm-danger);
+    --rz-danger-lighter: var(--crm-danger-soft);
+
+    --rz-base-background-color: var(--crm-surface);
+    --rz-body-background-color: var(--crm-page-bg);
+    --rz-text-color: var(--crm-text);
+    --rz-text-secondary-color: var(--crm-text-secondary);
+    --rz-text-tertiary-color: var(--crm-text-muted);
+    --rz-text-title-color: var(--crm-text);
+    --rz-text-disabled-color: var(--crm-text-disabled);
+    --rz-link-color: var(--crm-link);
+    --rz-link-hover-color: var(--crm-primary-hover);
+
+    --rz-border-radius: var(--crm-radius-sm);
+    --rz-border-normal: 1px solid var(--crm-border-strong);
+    --rz-border-hover: 1px solid var(--crm-border-strong);
+    --rz-border-focus: 1px solid var(--crm-primary);
+
+    /* Pulsanti: niente maiuscolo, niente ombra */
+    --rz-text-button-text-transform: none;
+    --rz-text-button-letter-spacing: 0;
+    --rz-text-button-font-weight: 600;
+    --rz-button-shadow: none;
+    --rz-button-hover-shadow: none;
+    --rz-button-active-shadow: none;
+    --rz-button-border-radius: var(--crm-radius-sm);
+
+    /* Griglie */
+    --rz-grid-background-color: var(--crm-surface);
+    --rz-grid-header-background-color: var(--crm-surface-muted);
+    --rz-grid-header-color: var(--crm-text-muted);
+    --rz-grid-header-font-weight: 600;
+    --rz-grid-header-font-size: 0.78rem;
+    --rz-grid-header-text-transform: uppercase;
+    --rz-grid-header-cell-border: 1px solid var(--crm-border);
+    --rz-grid-header-cell-border-bottom: 1px solid var(--crm-border);
+    --rz-grid-border: 1px solid var(--crm-border);
+    --rz-grid-cell-border: 1px solid var(--crm-border);
+    --rz-grid-cell-color: var(--crm-text);
+    --rz-grid-hover-background-color: var(--crm-surface-hover);
+    --rz-grid-hover-color: var(--crm-text);
+    --rz-grid-selected-background-color: var(--crm-primary-soft);
+    --rz-grid-selected-color: var(--crm-text);
+    --rz-grid-stripe-background-color: var(--crm-surface);
+    --rz-grid-stripe-odd-background-color: var(--crm-surface);
+    --rz-grid-foot-background-color: var(--crm-surface-muted);
+    --rz-grid-filter-background-color: var(--crm-surface);
+    --rz-grid-toolbar-background-color: var(--crm-surface);
+    --rz-grid-border-radius: var(--crm-radius);
+    --rz-grid-shadow: none;
+    --rz-grid-cell-padding: 0.55rem 0.75rem;
+    --rz-grid-header-cell-padding: 0.6rem 0;
+    --rz-grid-sort-icon-color: var(--crm-text-muted);
+
+    /* Campi */
+    --rz-input-background-color: var(--crm-surface);
+    --rz-input-border: 1px solid var(--crm-border-strong);
+    --rz-input-border-block-end: 1px solid var(--crm-border-strong);
+    --rz-input-hover-border: 1px solid var(--crm-primary);
+    --rz-input-hover-border-block-end: 1px solid var(--crm-primary);
+    --rz-input-focus-border: 1px solid var(--crm-primary);
+    --rz-input-focus-border-block-end: 1px solid var(--crm-primary);
+    --rz-input-focus-shadow: var(--crm-focus-ring);
+    --rz-input-focus-outline: none;
+    --rz-input-border-radius: var(--crm-radius-sm);
+    --rz-input-placeholder-color: var(--crm-text-muted);
+    --rz-input-value-color: var(--crm-text);
+    --rz-input-disabled-background-color: var(--crm-surface-muted);
+
+    /* Contenitori */
+    --rz-panel-background-color: var(--crm-surface);
+    --rz-panel-shadow: none;
+    --rz-panel-border-radius: var(--crm-radius);
+    --rz-card-background-color: var(--crm-surface);
+    --rz-card-shadow: none;
+    --rz-card-border: 1px solid var(--crm-border);
+    --rz-card-border-radius: var(--crm-radius);
+    --rz-dialog-background-color: var(--crm-surface);
+    --rz-dialog-border-radius: var(--crm-radius);
+    --rz-dialog-shadow: var(--crm-shadow-lg);
+    --rz-dialog-title-background-color: var(--crm-surface);
+    --rz-dialog-title-color: var(--crm-text);
+    --rz-dialog-title-border: 1px solid var(--crm-border);
+    --rz-dialog-mask-background-color: rgba(9, 12, 18, 0.55);
+    --rz-dropdown-panel-shadow: var(--crm-shadow-lg);
+    --rz-dropdown-panel-border: 1px solid var(--crm-border);
+    --rz-dropdown-item-hover-background-color: var(--crm-surface-hover);
+    --rz-dropdown-item-hover-color: var(--crm-text);
+    --rz-dropdown-item-selected-background-color: var(--crm-primary-soft);
+    --rz-dropdown-item-selected-color: var(--crm-primary);
+    --rz-dropdown-item-selected-hover-background-color: var(--crm-primary-soft-strong);
+    --rz-dropdown-item-selected-hover-color: var(--crm-primary);
+
+    /* Schede */
+    --rz-tabs-tab-text-transform: none;
+    --rz-tabs-tab-letter-spacing: 0;
+    --rz-tabs-tab-font-weight: 600;
+    --rz-tabs-background-color: transparent;
+    --rz-tabs-tab-color: var(--crm-text-muted);
+    --rz-tabs-tab-hover-color: var(--crm-text);
+    --rz-tabs-tab-hover-background-color: var(--crm-surface-hover);
+    --rz-tabs-tab-selected-color: var(--crm-primary);
+    --rz-tabs-tab-selected-background-color: transparent;
+    --rz-tabs-tab-selected-top-border-color: var(--crm-primary);
+    --rz-tabs-border: 1px solid var(--crm-border);
+
+    /* Selettori a bottoni */
+    --rz-selectbar-background-color: var(--crm-surface-muted);
+    --rz-selectbar-border: 1px solid var(--crm-border);
+    --rz-selectbar-color: var(--crm-text-secondary);
+    --rz-selectbar-selected-background-color: var(--crm-primary);
+    --rz-selectbar-selected-color: var(--crm-text-on-primary);
+    --rz-selectbar-selected-border: 1px solid var(--crm-primary);
+
+    /* Calendario */
+    --rz-scheduler-background-color: var(--crm-surface);
+    --rz-scheduler-header-background-color: var(--crm-surface-muted);
+    --rz-scheduler-toolbar-background-color: var(--crm-surface);
+    --rz-scheduler-border-color: var(--crm-border);
+    --rz-scheduler-minor-border-color: var(--crm-border);
+    --rz-scheduler-border: 1px solid var(--crm-border);
+    --rz-scheduler-color: var(--crm-text);
+    --rz-scheduler-header-color: var(--crm-text-muted);
+    --rz-scheduler-toolbar-title-color: var(--crm-text);
+    --rz-scheduler-other-month-background-color: var(--crm-surface-muted);
+    --rz-scheduler-weekend-background-color: var(--crm-surface-muted);
+    --rz-scheduler-highlight-background-color: var(--crm-primary-soft);
+    --rz-scheduler-view-button-background-color: var(--crm-surface-muted);
+    --rz-scheduler-view-button-color: var(--crm-text-secondary);
+    --rz-scheduler-view-button-border: 1px solid var(--crm-border);
+    --rz-scheduler-view-selected-background-color: var(--crm-primary);
+    --rz-scheduler-view-selected-color: var(--crm-text-on-primary);
+    --rz-scheduler-view-selected-border-color: var(--crm-primary);
+    --rz-scheduler-prev-next-button-background-color: var(--crm-surface-muted);
+    --rz-scheduler-prev-next-button-color: var(--crm-text-secondary);
+    --rz-scheduler-shadow: none;
+
+    /* Notifiche e chip */
+    --rz-notification-shadow: var(--crm-shadow-lg);
+    --rz-notification-border-radius: var(--crm-radius);
+    --rz-badge-text-transform: none;
+    --rz-badge-letter-spacing: 0;
+    --rz-badge-font-weight: 600;
+    --rz-fieldset-border: 1px solid var(--crm-border);
+    --rz-fieldset-border-radius: var(--crm-radius);
+    --rz-fieldset-legend-color: var(--crm-text-secondary);
+
+    /* Bootstrap: le sue variabili seguono le nostre, cosi' card, tendine e
+       campi Bootstrap non hanno bisogno di regole per il tema scuro. */
+    --bs-body-bg: var(--crm-page-bg);
+    --bs-body-color: var(--crm-text);
+    --bs-secondary-color: var(--crm-text-muted);
+    --bs-tertiary-bg: var(--crm-surface-muted);
+    --bs-secondary-bg: var(--crm-surface-hover);
+    --bs-border-color: var(--crm-border);
+    --bs-border-color-translucent: var(--crm-border);
+    --bs-link-color: var(--crm-link);
+    --bs-link-hover-color: var(--crm-primary-hover);
+    --bs-link-color-rgb: 47, 111, 237;
+    --bs-primary: var(--crm-primary);
+    --bs-primary-rgb: 47, 111, 237;
+    --bs-emphasis-color: var(--crm-text);
+    --bs-heading-color: var(--crm-text);
+    --bs-border-radius: var(--crm-radius-sm);
+    --bs-border-radius-lg: var(--crm-radius);
+    --bs-box-shadow-sm: var(--crm-shadow-sm);
+    --bs-box-shadow: var(--crm-shadow);
+}
+
+body.dark-theme {
+    --bs-primary-rgb: 91, 156, 255;
+    --bs-link-color-rgb: 122, 176, 255;
+}
+
+/* ---------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------- */
+html {
+    font-size: 14px;
+}
+
+html,
+body {
+    font-family: var(--crm-font);
+    color: var(--crm-text);
+    background: var(--crm-page-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    transition: background-color 160ms ease, color 160ms ease;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    color: var(--crm-text);
+    letter-spacing: -0.01em;
+}
+
+a {
+    color: var(--crm-link);
+}
+
+a:hover {
+    color: var(--crm-primary-hover);
+}
+
+::selection {
+    color: var(--crm-text-on-primary);
+    background: var(--crm-primary);
+}
+
+/* Scrollbar discreta ovunque */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--crm-border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--crm-border-strong);
+    border-radius: 8px;
+}
+
+/* Bootstrap: utilita' di colore che ignorano data-bs-theme */
+.text-dark,
+.text-body {
+    color: var(--crm-text) !important;
+}
+
+.text-muted,
+.text-secondary {
+    color: var(--crm-text-muted) !important;
+}
+
+.text-primary {
+    color: var(--crm-primary) !important;
+}
+
+.bg-light {
+    background-color: var(--crm-surface-muted) !important;
+}
+
+.bg-white {
+    background-color: var(--crm-surface) !important;
+}
+
+.border,
+.border-top,
+.border-bottom,
+.border-start,
+.border-end {
+    border-color: var(--crm-border) !important;
+}
+
+.shadow-sm {
+    box-shadow: var(--crm-shadow-sm) !important;
+}
+
+.shadow {
+    box-shadow: var(--crm-shadow) !important;
+}
+
+.card {
+    --bs-card-bg: var(--crm-surface);
+    --bs-card-color: var(--crm-text);
+    --bs-card-border-color: var(--crm-border);
+    --bs-card-cap-bg: var(--crm-surface-muted);
+    --bs-card-cap-color: var(--crm-text);
+    --bs-card-border-radius: var(--crm-radius);
+    --bs-card-inner-border-radius: calc(var(--crm-radius) - 1px);
+    transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.card:hover {
+    box-shadow: var(--crm-shadow) !important;
+}
+
+.dropdown-menu {
+    --bs-dropdown-bg: var(--crm-surface);
+    --bs-dropdown-color: var(--crm-text);
+    --bs-dropdown-border-color: var(--crm-border);
+    --bs-dropdown-link-color: var(--crm-text);
+    --bs-dropdown-link-hover-bg: var(--crm-surface-hover);
+    --bs-dropdown-link-hover-color: var(--crm-text);
+    --bs-dropdown-link-active-bg: var(--crm-primary-soft);
+    --bs-dropdown-link-active-color: var(--crm-primary);
+    --bs-dropdown-border-radius: var(--crm-radius);
+    box-shadow: var(--crm-shadow-lg);
+}
+
+.modal-content,
+.offcanvas,
+.list-group-item,
+.accordion-item,
+.accordion-button {
+    color: var(--crm-text);
+    background-color: var(--crm-surface);
+    border-color: var(--crm-border);
+}
+
+.accordion-button:not(.collapsed) {
+    color: var(--crm-primary);
+    background-color: var(--crm-primary-soft);
+}
+
+.table {
+    --bs-table-color: var(--crm-text);
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--crm-border);
+    --bs-table-striped-bg: var(--crm-surface-muted);
+    --bs-table-hover-bg: var(--crm-surface-hover);
+    --bs-table-hover-color: var(--crm-text);
+}
+
+.form-control,
+.form-select,
+.input-group-text {
+    color: var(--crm-text);
+    background-color: var(--crm-surface);
+    border-color: var(--crm-border-strong);
+    border-radius: var(--crm-radius-sm);
+}
+
+.form-control:focus,
+.form-select:focus {
+    color: var(--crm-text);
+    background-color: var(--crm-surface);
+    border-color: var(--crm-primary);
+    box-shadow: var(--crm-focus-ring);
+}
+
+.form-control::placeholder {
+    color: var(--crm-text-muted);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+    background-color: var(--crm-surface-muted);
+    color: var(--crm-text-muted);
+}
+
+body.dark-theme input[type="date"],
+body.dark-theme input[type="time"],
+body.dark-theme input[type="datetime-local"],
+body.dark-theme select {
+    color-scheme: dark;
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--crm-primary);
+    --bs-btn-border-color: var(--crm-primary);
+    --bs-btn-hover-bg: var(--crm-primary-hover);
+    --bs-btn-hover-border-color: var(--crm-primary-hover);
+    --bs-btn-active-bg: var(--crm-primary-hover);
+    --bs-btn-active-border-color: var(--crm-primary-hover);
+}
+
+.btn-light,
+.btn-outline-secondary {
+    --bs-btn-color: var(--crm-text);
+    --bs-btn-bg: var(--crm-surface);
+    --bs-btn-border-color: var(--crm-border-strong);
+    --bs-btn-hover-bg: var(--crm-surface-hover);
+    --bs-btn-hover-color: var(--crm-text);
+    --bs-btn-hover-border-color: var(--crm-border-strong);
+    --bs-btn-active-bg: var(--crm-surface-active);
+    --bs-btn-active-color: var(--crm-text);
+}
+
+.badge {
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+/* ---------------------------------------------------------------------
+   Radzen: dettagli che le variabili da sole non coprono
+   --------------------------------------------------------------------- */
+/* Il tema material scrive il maiuscolo sulle classi di dimensione (.rz-button-md ecc.),
+   non nella variabile: va tolto qui. */
+.rz-button,
+.rz-button.rz-button-xs,
+.rz-button.rz-button-sm,
+.rz-button.rz-button-md,
+.rz-button.rz-button-lg {
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.rz-button.rz-button-md {
+    font-size: 0.875rem;
+}
+
+.rz-button.rz-button-sm,
+.rz-button.rz-button-xs {
+    font-size: 0.8rem;
+}
+
+.rz-button.rz-light,
+.rz-button.rz-base {
+    color: var(--crm-text) !important;
+    background: var(--crm-surface) !important;
+    border: 1px solid var(--crm-border-strong) !important;
+}
+
+.rz-button.rz-light:hover,
+.rz-button.rz-base:hover {
+    background: var(--crm-surface-hover) !important;
+    border-color: var(--crm-border-strong) !important;
+}
+
+.rz-button.rz-light:active,
+.rz-button.rz-base:active {
+    background: var(--crm-surface-active) !important;
+}
+
+.rz-button.rz-light .rz-button-text,
+.rz-button.rz-light .rzi,
+.rz-button.rz-base .rz-button-text,
+.rz-button.rz-base .rzi {
+    color: var(--crm-text) !important;
+}
+
+.rz-button.rz-variant-outlined.rz-primary {
+    color: var(--crm-primary);
+    border-color: var(--crm-primary-soft-strong);
+}
+
+.rz-button.rz-variant-outlined.rz-primary:hover {
+    background: var(--crm-primary-soft);
+}
+
+/* Pulsanti di riga nelle griglie: icone discrete, colore solo al passaggio */
+.rz-data-grid td .rz-button.rz-button-icon-only,
+.rz-datatable td .rz-button.rz-button-icon-only,
+.rz-grid-table td .rz-button.rz-button-icon-only {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    padding: 0;
+    margin: 0 1px;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: var(--crm-radius-sm);
+    box-shadow: none !important;
+}
+
+.rz-grid-table td .rz-button.rz-button-icon-only .rzi {
+    font-size: 1.15rem;
+}
+
+.rz-grid-table td .rz-button.rz-button-icon-only.rz-info .rzi,
+.rz-grid-table td .rz-button.rz-button-icon-only.rz-primary .rzi {
+    color: var(--crm-primary) !important;
+}
+
+.rz-grid-table td .rz-button.rz-button-icon-only.rz-secondary .rzi,
+.rz-grid-table td .rz-button.rz-button-icon-only.rz-light .rzi,
+.rz-grid-table td .rz-button.rz-button-icon-only.rz-base .rzi {
+    color: var(--crm-text-secondary) !important;
+}
+
+.rz-grid-table td .rz-button.rz-button-icon-only.rz-danger .rzi {
+    color: var(--crm-danger) !important;
+}
+
+.rz-grid-table td .rz-button.rz-button-icon-only.rz-success .rzi {
+    color: var(--crm-success) !important;
+}
+
+.rz-grid-table td .rz-button.rz-button-icon-only.rz-warning .rzi {
+    color: var(--crm-warning) !important;
+}
+
+.rz-grid-table td .rz-button.rz-button-icon-only:hover {
+    background: var(--crm-surface-hover) !important;
+    border-color: var(--crm-border) !important;
+}
+
+.rz-grid-table td .rz-button.rz-button-icon-only.rz-danger:hover {
+    background: var(--crm-danger-soft) !important;
+}
+
+.rz-grid-table td .rz-button.rz-button-icon-only.rz-info:hover,
+.rz-grid-table td .rz-button.rz-button-icon-only.rz-primary:hover {
+    background: var(--crm-primary-soft) !important;
+}
+
+/* Griglia: contenitore, intestazione, celle */
+.rz-data-grid {
+    overflow: hidden;
+    border: 1px solid var(--crm-border);
+    border-radius: var(--crm-radius);
+    background: var(--crm-surface);
+}
+
+.rz-data-grid .rz-data-grid-data {
+    border: 0;
+}
+
+.rz-data-grid .rz-datatable-header,
+.rz-data-grid .rz-grid-header {
+    padding: 0.75rem 1rem;
+    background: var(--crm-surface);
+    border-bottom: 1px solid var(--crm-border);
+}
+
+.rz-grid-table thead th {
+    letter-spacing: 0.03em;
+    background: var(--crm-surface-muted);
+}
+
+.rz-grid-table thead th .rz-column-title {
+    color: var(--crm-text-muted);
+}
+
+.rz-grid-table thead th.rz-sortable-column:hover .rz-column-title {
+    color: var(--crm-text);
+}
+
+.rz-grid-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.rz-grid-table tbody td {
+    color: var(--crm-text);
+}
+
+.rz-grid-table tbody td a:not(.rz-button) {
+    color: var(--crm-link);
+    font-weight: 500;
+    text-decoration: none;
+    text-transform: none;
+}
+
+.rz-grid-table tbody td a:not(.rz-button):hover {
+    text-decoration: underline;
+}
+
+.rz-grid-table tbody td .link-primary {
+    color: var(--crm-link) !important;
+}
+
+.rz-data-grid .rz-pager,
+.rz-paginator {
+    padding: 0.5rem 0.75rem;
+    background: var(--crm-surface);
+    border-top: 1px solid var(--crm-border);
+}
+
+.rz-pager .rz-pager-element,
+.rz-paginator .rz-paginator-element {
+    color: var(--crm-text-secondary);
+    border-radius: var(--crm-radius-sm);
+}
+
+.rz-pager .rz-pager-element:hover,
+.rz-paginator .rz-paginator-element:hover {
+    color: var(--crm-text);
+    background: var(--crm-surface-hover);
+}
+
+.rz-pager .rz-pager-element.rz-state-active,
+.rz-paginator .rz-paginator-page.rz-state-active {
+    color: var(--crm-text-on-primary);
+    background: var(--crm-primary);
+}
+
+.rz-grid-table .rz-cell-filter,
+.rz-data-grid .rz-grid-filter {
+    background: var(--crm-surface);
+}
+
+/* Etichette dei campi */
+.rz-form-field-label,
+.label-floating,
+.form-label,
+label.rz-label {
+    color: var(--crm-text-secondary);
+    font-weight: 500;
+}
+
+.rz-textbox,
+.rz-dropdown,
+.rz-multiselect,
+.rz-spinner,
+.rz-calendar,
+.rz-datepicker,
+.rz-numeric,
+.rz-textarea,
+.rz-lookup {
+    color: var(--crm-text);
+}
+
+.rz-textbox::placeholder,
+.rz-textarea::placeholder {
+    color: var(--crm-text-muted);
+}
+
+.rz-dropdown-panel,
+.rz-multiselect-panel,
+.rz-datepicker-panel,
+.rz-autocomplete-panel {
+    color: var(--crm-text);
+    background: var(--crm-surface);
+}
+
+.rz-dialog {
+    border: 1px solid var(--crm-border);
+}
+
+.rz-dialog-titlebar {
+    padding-block: 0.9rem;
+}
+
+.rz-dialog-title {
+    font-weight: 700;
+}
+
+.rz-tabview-nav {
+    border-bottom: 1px solid var(--crm-border);
+}
+
+.rz-tabview .rz-tabview-panels {
+    background: transparent;
+}
+
+.rz-badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--crm-radius-pill);
+}
+
+/* Calendario: i tre pulsanti di vista (mese/settimana/giorno) come segmenti,
+   acceso solo quello scelto. Radzen li dipingeva tutti del colore primario. */
+.rz-scheduler-nav-views .rz-button.rz-primary {
+    color: var(--crm-text-secondary) !important;
+    background: var(--crm-surface-muted) !important;
+    border: 1px solid var(--crm-border) !important;
+}
+
+.rz-scheduler-nav-views .rz-button.rz-primary + .rz-button.rz-primary {
+    border-inline-start: 0 !important;
+}
+
+.rz-scheduler-nav-views .rz-button.rz-primary:hover {
+    background: var(--crm-surface-hover) !important;
+}
+
+.rz-scheduler-nav-views .rz-button.rz-primary.rz-state-active {
+    color: var(--crm-text-on-primary) !important;
+    background: var(--crm-primary) !important;
+    border-color: var(--crm-primary) !important;
+}
+
+/* Radzen nasconde le etichette sotto i 1400px di contenitore: troppo presto,
+   da 560px in su c'e' spazio per icona e parola. */
+@container scheduler (width >= 560px) {
+    /* Il foglio Radzen arriva dopo il nostro: serve piu' specificita' della sua regola. */
+    .rz-scheduler .rz-scheduler-nav .rz-scheduler-nav-views .rz-button .rz-button-text {
+        display: inline;
+    }
+}
+
+.rz-scheduler-nav .rz-button.rz-prev,
+.rz-scheduler-nav .rz-button.rz-next,
+.rz-scheduler-nav .rz-button.rz-today {
+    color: var(--crm-text-secondary);
+    background: var(--crm-surface-muted);
+    border: 1px solid var(--crm-border);
+}
+
+.rz-scheduler-nav .rz-button.rz-today {
+    font-weight: 600;
+}
+
+.rz-notification {
+    border: 1px solid var(--crm-border);
+}
+
+.rz-tooltip {
+    border-radius: var(--crm-radius-sm);
+}
+
+/* ---------------------------------------------------------------------
+   Componenti condivisi del CRM
+   --------------------------------------------------------------------- */
+
+/* Blocco superficie: la card standard di ogni pagina */
+.crm-panel {
+    color: var(--crm-text);
+    background: var(--crm-surface);
+    border: 1px solid var(--crm-border);
+    border-radius: var(--crm-radius);
+}
+
+.crm-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.1rem;
+    color: var(--crm-text);
+    font-weight: 600;
+    border-bottom: 1px solid var(--crm-border);
+}
+
+.crm-panel-header .material-icons {
+    font-size: 20px;
+    color: var(--crm-primary);
+}
+
+.crm-panel-body {
+    padding: 1.1rem;
+}
+
+.crm-section-label {
+    color: var(--crm-text-muted);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.crm-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    color: var(--crm-text-secondary);
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: var(--crm-surface-muted);
+    border: 1px solid var(--crm-border);
+    border-radius: var(--crm-radius-pill);
+}
+
+/* Stato del ticket: il colore arriva dalle impostazioni via style inline */
+.ticket-state-pill {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    border-radius: var(--crm-radius-pill);
+}
+
+.crm-chip-primary { color: var(--crm-primary); background: var(--crm-primary-soft); border-color: transparent; }
+.crm-chip-success { color: var(--crm-success); background: var(--crm-success-soft); border-color: transparent; }
+.crm-chip-warning { color: var(--crm-warning); background: var(--crm-warning-soft); border-color: transparent; }
+.crm-chip-danger  { color: var(--crm-danger);  background: var(--crm-danger-soft);  border-color: transparent; }
+.crm-chip-info    { color: var(--crm-info);    background: var(--crm-info-soft);    border-color: transparent; }
+
+/* Intestazione di pagina (PageHeader.razor) */
+.page-header-wrapper {
+    animation: crm-fade-down 0.25s ease-out;
+}
+
+.page-header-wrapper .breadcrumb {
+    padding: 0.25rem 0;
+    margin: 0;
+    font-size: 0.82rem;
+    background: transparent;
+    --bs-breadcrumb-divider-color: var(--crm-text-disabled);
+    --bs-breadcrumb-item-active-color: var(--crm-text-muted);
+}
+
+.page-header-wrapper .breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--crm-text-disabled);
+}
+
+.page-header-wrapper .breadcrumb-link {
+    color: var(--crm-text-muted);
+    cursor: pointer;
+    transition: color 120ms ease;
+}
+
+.page-header-wrapper .breadcrumb-link:hover {
+    color: var(--crm-primary);
+}
+
+.page-header-wrapper .breadcrumb-item.active {
+    color: var(--crm-text-secondary);
+    font-weight: 500;
+}
+
+.page-header-wrapper .header-icon-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 52px;
+    min-height: 52px;
+    color: var(--crm-primary);
+    background: var(--crm-primary-soft) !important;
+    border-radius: var(--crm-radius) !important;
+}
+
+.page-header-wrapper .header-icon-box .material-icons {
+    font-size: 28px !important;
+    color: var(--crm-primary) !important;
+}
+
+.page-header-wrapper h4,
+.page-header-wrapper h5 {
+    color: var(--crm-text) !important;
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.page-header-wrapper p {
+    color: var(--crm-text-muted) !important;
+    font-size: 0.9rem;
+}
+
+.page-header-wrapper .card {
+    box-shadow: none !important;
+}
+
+@keyframes crm-fade-down {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    .page-header-wrapper .header-icon-box {
+        min-width: 42px;
+        min-height: 42px;
+        padding: 0.5rem !important;
+    }
+
+    .page-header-wrapper .header-icon-box .material-icons {
+        font-size: 22px !important;
+    }
+
+    .page-header-wrapper h4 {
+        font-size: 1.15rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-header-wrapper {
+        animation: none;
+    }
+}

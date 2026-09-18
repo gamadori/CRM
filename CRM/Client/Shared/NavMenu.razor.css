@@ -1,232 +1,256 @@
-.modern-topbar,
-.modern-nav {
-    --nav-surface: #1d2227;
-    --nav-surface-muted: #242a30;
-    --nav-hover: #2b3239;
-    --nav-border: #343c44;
-    --nav-text: #eef2f6;
-    --nav-text-muted: #aeb8c2;
-    --nav-accent: #5aa7ff;
-}
+/* Barra laterale. I colori vengono da theme.css (--crm-nav-*) e seguono il tema. */
 
 .modern-topbar {
-    height: 60px;
-    padding: 0;
-    background: var(--nav-surface);
-    border-bottom: 1px solid var(--nav-border);
-    box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
+    display: flex;
+    align-items: center;
+    height: 3.5rem;
+    padding: 0 1rem;
+    background: var(--crm-nav-bg);
+    border-bottom: 1px solid var(--crm-nav-border);
 }
 
-.modern-topbar ::deep .navbar-brand {
+.navbar-brand {
     display: inline-flex;
     align-items: center;
-    color: var(--nav-text);
-    opacity: 0.96;
-    transition: opacity 160ms ease;
-}
-
-.modern-topbar ::deep .navbar-brand:hover {
-    opacity: 1;
-}
-
-.modern-topbar ::deep .navbar-toggler {
-    display: inline-grid;
-    width: 40px;
-    height: 40px;
+    gap: 0.6rem;
+    margin: 0;
     padding: 0;
-    place-items: center;
-    color: var(--nav-text);
-    background: transparent;
-    border-radius: 6px;
-}
-
-.modern-topbar ::deep .navbar-toggler:hover {
-    background: var(--nav-hover);
-}
-
-.modern-topbar ::deep .navbar-toggler .material-icons {
-    font-size: 26px;
-}
-
-.modern-nav {
-    height: calc(100vh - 60px);
-    padding: 12px 0;
-    overflow-y: auto;
-    color: var(--nav-text);
-    background: var(--nav-surface) !important;
-    border-right: 1px solid var(--nav-border);
-}
-
-.nav-section {
-    padding: 0 0 8px;
-    margin: 0 0 8px;
-    border-bottom: 1px solid var(--nav-border);
-}
-
-.nav-section:last-child {
-    margin-bottom: 0;
-    border-bottom: 0;
-}
-
-.modern-nav ::deep a.nav-link,
-.modern-nav ::deep .nav-link {
-    position: relative;
-    display: flex;
-    min-height: 44px;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    margin: 2px 10px;
-    overflow: hidden;
-    color: var(--nav-text) !important;
-    font-weight: 500;
-    line-height: 1.25;
     text-decoration: none;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background-color 150ms ease, color 150ms ease;
 }
 
-.modern-nav ::deep a.nav-link:hover,
-.modern-nav ::deep .nav-link:hover {
-    color: var(--nav-accent) !important;
-    background: var(--nav-hover);
+.brand-mark {
+    display: inline-grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    color: #fff;
+    background: linear-gradient(135deg, var(--crm-primary), var(--crm-primary-hover));
+    border-radius: 9px;
 }
 
-.modern-nav ::deep a.nav-link.active,
-.modern-nav ::deep .nav-link.active,
-.modern-nav ::deep a.nav-link[aria-current="page"] {
-    color: var(--nav-accent) !important;
-    font-weight: 600;
-    background: color-mix(in srgb, var(--nav-accent) 12%, var(--nav-surface));
-}
-
-.modern-nav ::deep a.nav-link.active::before,
-.modern-nav ::deep .nav-link.active::before,
-.modern-nav ::deep a.nav-link[aria-current="page"]::before {
-    position: absolute;
-    inset-block: 8px;
-    inset-inline-start: 0;
-    width: 3px;
-    content: "";
-    background: var(--nav-accent);
-    border-radius: 0 3px 3px 0;
-}
-
-.modern-nav ::deep .nav-icon,
-.modern-nav ::deep .nav-icon-small {
-    flex: 0 0 auto;
-    color: currentColor !important;
-}
-
-.modern-nav ::deep .nav-icon {
-    font-size: 22px;
-}
-
-.modern-nav ::deep .nav-icon-small {
-    font-size: 19px;
-}
-
-.modern-nav ::deep .nav-text {
-    min-width: 0;
-    flex: 1;
-    color: inherit !important;
-    font-size: 0.92rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.modern-nav ::deep .expand-icon,
-.modern-nav ::deep .expand-icon-small {
-    flex: 0 0 auto;
-    margin-left: auto;
-    color: var(--nav-text-muted) !important;
+.brand-mark .material-icons {
     font-size: 20px;
 }
 
-.nav-submenu,
-.nav-submenu-2 {
-    animation: reveal 160ms ease-out;
+.brand-text {
+    color: var(--crm-text);
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
-.nav-submenu {
-    margin-top: 2px;
-    padding-left: 8px;
+.navbar-toggler {
+    display: inline-grid;
+    width: 40px;
+    height: 40px;
+    margin-left: auto;
+    padding: 0;
+    place-items: center;
+    color: var(--crm-nav-text);
+    background: transparent;
+    border: 0;
+    border-radius: var(--crm-radius-sm);
 }
 
-.nav-submenu-2 {
-    margin-left: 28px;
-    padding-left: 4px;
-    border-left: 1px solid var(--nav-border);
+.navbar-toggler:hover {
+    background: var(--crm-nav-hover);
 }
 
-.modern-nav ::deep a.submenu-link,
-.modern-nav ::deep .submenu-link {
-    min-height: 40px;
-    padding-block: 8px;
-    color: var(--nav-text-muted) !important;
+.modern-nav {
+    height: calc(100vh - 3.5rem);
+    padding: 0.75rem 0.6rem 1rem;
+    overflow-y: auto;
+    color: var(--crm-nav-text);
+    background: var(--crm-nav-bg);
 }
 
-.modern-nav ::deep a.submenu-link-2,
-.modern-nav ::deep .submenu-link-2 {
+.nav-root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    gap: 2px;
+}
+
+.nav-spacer {
+    flex: 1 1 auto;
+}
+
+.nav-divider {
+    height: 1px;
+    margin: 0.5rem 0.4rem;
+    background: var(--crm-nav-border);
+}
+
+/* Link e intestazioni di gruppo hanno la stessa geometria, ma non lo stesso peso:
+   il link e' una destinazione, l'intestazione e' un contenitore e resta piu' tenue. */
+.modern-nav ::deep .nav-link,
+.nav-group-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
     min-height: 38px;
-    padding: 7px 10px;
-    margin-inline: 6px 10px;
-    color: var(--nav-text-muted) !important;
-    font-size: 0.875rem;
+    padding: 0.45rem 0.7rem;
+    color: var(--crm-nav-text);
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.25;
+    text-align: left;
+    text-decoration: none;
+    background: transparent;
+    border: 0;
+    border-radius: var(--crm-radius-sm);
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
 }
 
-.modern-nav ::deep .highlight-ai {
-    color: var(--nav-accent) !important;
-    background: color-mix(in srgb, var(--nav-accent) 8%, var(--nav-surface));
-    border: 1px solid color-mix(in srgb, var(--nav-accent) 25%, transparent);
+.modern-nav ::deep .nav-link:hover,
+.nav-group-header:hover {
+    color: var(--crm-nav-text);
+    background: var(--crm-nav-hover);
 }
 
-.modern-nav ::deep .highlight-ai:hover {
-    background: color-mix(in srgb, var(--nav-accent) 15%, var(--nav-surface));
+.modern-nav ::deep .nav-link.active {
+    color: var(--crm-nav-active-text);
+    font-weight: 600;
+    background: var(--crm-nav-active-bg);
 }
 
-.modern-nav ::deep .badge {
+.modern-nav ::deep .nav-link.active::before {
+    position: absolute;
+    inset-block: 9px;
+    inset-inline-start: -0.6rem;
+    width: 3px;
+    content: "";
+    background: var(--crm-primary);
+    border-radius: 0 3px 3px 0;
+}
+
+.modern-nav ::deep .nav-icon {
     flex: 0 0 auto;
+    font-size: 21px;
+    color: var(--crm-nav-text-muted);
+    transition: color 120ms ease;
+}
+
+.modern-nav ::deep .nav-link:hover .nav-icon,
+.nav-group-header:hover ::deep .nav-icon {
+    color: var(--crm-nav-text);
+}
+
+.modern-nav ::deep .nav-link.active .nav-icon {
+    color: var(--crm-nav-active-text);
+}
+
+.modern-nav ::deep .nav-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Intestazione di gruppo */
+.nav-group-header {
+    color: var(--crm-nav-text);
+}
+
+.nav-group.has-active > .nav-group-header {
+    color: var(--crm-nav-active-text);
+}
+
+.nav-group.has-active > .nav-group-header ::deep .nav-icon {
+    color: var(--crm-nav-active-text);
+}
+
+.nav-chevron {
+    flex: 0 0 auto;
+    margin-left: auto;
+    font-size: 18px;
+    color: var(--crm-nav-text-muted);
+    transition: transform 160ms ease;
+}
+
+.nav-group.is-open > .nav-group-header .nav-chevron {
+    transform: rotate(180deg);
+}
+
+/* Voci dentro un gruppo: rientrate e con una linea guida a sinistra */
+.nav-group-items {
+    position: relative;
+    margin: 2px 0 4px 1.05rem;
+    padding-left: 0.55rem;
+    border-left: 1px solid var(--crm-nav-border);
+    animation: nav-reveal 140ms ease-out;
+}
+
+.modern-nav ::deep .nav-sub {
+    min-height: 34px;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.86rem;
+    color: var(--crm-nav-text-muted);
+}
+
+.modern-nav ::deep .nav-sub .nav-icon {
+    font-size: 18px;
+}
+
+.modern-nav ::deep .nav-sub:hover {
+    color: var(--crm-nav-text);
+}
+
+.modern-nav ::deep .nav-sub.active::before {
+    inset-inline-start: calc(-0.55rem - 1px);
+    inset-block: 8px;
+}
+
+/* Sotto-etichette dentro un gruppo lungo (Commerciale) */
+.nav-sub-label {
+    padding: 0.55rem 0.6rem 0.15rem;
+    color: var(--crm-nav-section);
     font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* Contatore */
+.modern-nav ::deep .nav-badge {
+    flex: 0 0 auto;
+    min-width: 1.35rem;
+    padding: 0.1rem 0.4rem;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    background: var(--crm-danger);
+    border-radius: var(--crm-radius-pill);
+}
+
+/* Voce di servizio in fondo */
+.modern-nav ::deep .nav-quiet {
+    color: var(--crm-nav-text-muted);
+    font-size: 0.84rem;
 }
 
 .modern-nav::-webkit-scrollbar {
     width: 6px;
 }
 
-.modern-nav::-webkit-scrollbar-track {
-    background: transparent;
-}
-
 .modern-nav::-webkit-scrollbar-thumb {
-    background: var(--nav-border);
+    background: var(--crm-nav-border);
     border-radius: 6px;
 }
 
-.modern-nav::-webkit-scrollbar-thumb:hover {
-    background: var(--nav-text-muted);
-}
-
-.nav-item {
-    position: relative;
-}
-
-@keyframes reveal {
-    from {
-        opacity: 0;
-        transform: translateY(-4px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+@keyframes nav-reveal {
+    from { opacity: 0; transform: translateY(-3px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 @media (min-width: 641px) {
-    .modern-topbar ::deep .navbar-toggler {
+    .navbar-toggler {
         display: none;
     }
 
@@ -236,19 +260,16 @@
 }
 
 @media (max-width: 640px) {
-    .modern-topbar {
-        height: 56px;
-    }
-
     .modern-nav {
-        height: calc(100vh - 56px);
+        height: auto;
+        max-height: calc(100vh - 3.5rem);
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .modern-nav ::deep .nav-link,
-    .nav-submenu,
-    .nav-submenu-2 {
+    .nav-group-items,
+    .nav-chevron,
+    .modern-nav ::deep .nav-link {
         animation: none;
         transition: none;
     }

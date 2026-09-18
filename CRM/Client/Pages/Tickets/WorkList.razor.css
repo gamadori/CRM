@@ -19,10 +19,10 @@
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-    background: var(--crm-surface-raised, #ffffff);
-    border: 1px solid var(--crm-border, #eef0f3);
-    border-radius: 16px;
-    box-shadow: var(--crm-shadow, 0 1px 2px rgba(16, 24, 40, 0.04));
+    background: var(--crm-surface);
+    border: 1px solid var(--crm-border);
+    border-radius: 12px;
+    box-shadow: var(--crm-shadow));
     padding: 1rem 1.25rem;
 }
 
@@ -41,8 +41,8 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    background: color-mix(in srgb, #2563eb 15%, transparent);
-    color: #2563eb;
+    background: color-mix(in srgb, var(--crm-primary) 15%, transparent);
+    color: var(--crm-primary);
 }
 
 .work-head-icon .material-icons {
@@ -54,13 +54,13 @@
     font-size: 1.15rem;
     font-weight: 700;
     letter-spacing: -0.01em;
-    color: var(--crm-text, #1f2430);
+    color: var(--crm-text);
 }
 
 .work-head-title p {
     margin: 0.1rem 0 0;
     font-size: 0.82rem;
-    color: var(--crm-text-muted, #667085);
+    color: var(--crm-text-muted);
 }
 
 .work-head-side {
@@ -72,7 +72,7 @@
 
 /* Contatori: si vedono solo quando hanno qualcosa da dire. */
 .work-stat {
-    --stat-accent: #64748b;
+    --stat-accent: var(--crm-text-muted);
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
@@ -96,29 +96,29 @@
     line-height: 1;
 }
 
-.stat-late { --stat-accent: #dc2626; }
-.stat-free { --stat-accent: #ea580c; }
+.stat-late { --stat-accent: var(--crm-danger); }
+.stat-free { --stat-accent: var(--crm-warning); }
 
 /* ---------- Gruppo ---------- */
 .work-group {
-    --group-accent: #2563eb;
-    background: var(--crm-surface-raised, #ffffff);
-    border: 1px solid var(--crm-border, #eef0f3);
-    border-radius: 16px;
-    box-shadow: var(--crm-shadow, 0 1px 2px rgba(16, 24, 40, 0.04));
+    --group-accent: var(--crm-primary);
+    background: var(--crm-surface);
+    border: 1px solid var(--crm-border);
+    border-radius: 12px;
+    box-shadow: var(--crm-shadow));
     overflow: hidden;
 }
 
-.group-assistenza { --group-accent: #2563eb; }
-.group-commessa { --group-accent: #ea580c; }
-.group-bloccate { --group-accent: #64748b; }
+.group-assistenza { --group-accent: var(--crm-primary); }
+.group-commessa { --group-accent: var(--crm-warning); }
+.group-bloccate { --group-accent: var(--crm-text-muted); }
 
 .work-group-head {
     display: flex;
     align-items: center;
     gap: 0.7rem;
     padding: 0.8rem 1.1rem;
-    border-bottom: 1px solid var(--crm-border, #f1f3f6);
+    border-bottom: 1px solid var(--crm-border);
     background: linear-gradient(90deg, color-mix(in srgb, var(--group-accent) 9%, transparent), transparent 60%);
 }
 
@@ -143,7 +143,7 @@
     font-weight: 700;
     letter-spacing: 0.03em;
     text-transform: uppercase;
-    color: var(--crm-text, #1f2430);
+    color: var(--crm-text);
 }
 
 .work-group-count {
@@ -166,7 +166,7 @@
     margin-left: auto;
     font-size: 0.76rem;
     font-weight: 600;
-    color: var(--crm-text-muted, #667085);
+    color: var(--crm-text-muted);
 }
 
 /* ---------- Riga ---------- */
@@ -176,7 +176,7 @@
     align-items: center;
     gap: 0.85rem;
     padding: 0.7rem 1.1rem 0.7rem 0;
-    border-bottom: 1px solid var(--crm-border, #f1f3f6);
+    border-bottom: 1px solid var(--crm-border);
     cursor: pointer;
     transition: background 0.18s ease;
 }
@@ -186,7 +186,7 @@
 }
 
 .work-row:hover {
-    background: var(--crm-surface-hover, #f4f6f9);
+    background: var(--crm-surface-hover);
 }
 
 /* La barretta a sinistra: e' la sola cosa che cambia colore riga per riga. */
@@ -196,7 +196,7 @@
 }
 
 .work-row.in-ritardo .work-row-bar {
-    background: #dc2626;
+    background: var(--crm-danger);
 }
 
 .work-num {
@@ -205,9 +205,9 @@
     text-align: center;
     padding: 0.15rem 0.4rem;
     border-radius: 8px;
-    background: var(--crm-surface-muted, #f8fafc);
-    border: 1px solid var(--crm-border, #eef0f3);
-    color: var(--crm-text-muted, #667085);
+    background: var(--crm-surface-muted);
+    border: 1px solid var(--crm-border);
+    color: var(--crm-text-muted);
     font-size: 0.74rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -218,7 +218,7 @@
 }
 
 .work-row-title {
-    color: var(--crm-text, #1f2430);
+    color: var(--crm-text);
     font-size: 0.92rem;
     font-weight: 600;
     line-height: 1.3;
@@ -242,9 +242,9 @@
     max-width: 100%;
     padding: 0.1rem 0.5rem;
     border-radius: 999px;
-    background: var(--crm-surface-muted, #f8fafc);
-    border: 1px solid var(--crm-border, #eef0f3);
-    color: var(--crm-text-muted, #667085);
+    background: var(--crm-surface-muted);
+    border: 1px solid var(--crm-border);
+    color: var(--crm-text-muted);
     font-size: 0.75rem;
     font-weight: 600;
 }
@@ -267,9 +267,9 @@
 }
 
 .tag-blocco {
-    background: color-mix(in srgb, #b45309 12%, transparent);
-    border-color: color-mix(in srgb, #b45309 28%, transparent);
-    color: #b45309;
+    background: color-mix(in srgb, var(--crm-warning) 12%, transparent);
+    border-color: color-mix(in srgb, var(--crm-warning) 28%, transparent);
+    color: var(--crm-warning);
 }
 
 .work-row-side {
@@ -285,9 +285,9 @@
     gap: 0.3rem;
     padding: 0.2rem 0.55rem;
     border-radius: 999px;
-    background: var(--crm-surface-muted, #f8fafc);
-    border: 1px solid var(--crm-border, #eef0f3);
-    color: var(--crm-text-muted, #667085);
+    background: var(--crm-surface-muted);
+    border: 1px solid var(--crm-border);
+    color: var(--crm-text-muted);
     font-size: 0.76rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -298,13 +298,13 @@
 }
 
 .work-row.in-ritardo .work-scadenza {
-    background: color-mix(in srgb, #dc2626 12%, transparent);
-    border-color: color-mix(in srgb, #dc2626 30%, transparent);
-    color: #dc2626;
+    background: color-mix(in srgb, var(--crm-danger) 12%, transparent);
+    border-color: color-mix(in srgb, var(--crm-danger) 30%, transparent);
+    color: var(--crm-danger);
 }
 
 .work-row .work-arrow {
-    color: var(--crm-border-strong, #cbd5e1);
+    color: var(--crm-border-strong);
     font-size: 18px;
     transition: transform 0.18s ease, color 0.18s ease;
 }
@@ -317,7 +317,7 @@
 /* Le bloccate restano in secondo piano: si leggono, non si prendono. */
 .work-group.group-bloccate .work-row-title {
     font-weight: 500;
-    color: var(--crm-text-muted, #667085);
+    color: var(--crm-text-muted);
 }
 
 /* ---------- Stati ---------- */
@@ -325,26 +325,26 @@
     display: grid;
     justify-items: center;
     gap: 0.35rem;
-    background: var(--crm-surface-raised, #ffffff);
-    border: 1px solid color-mix(in srgb, #16a34a 26%, var(--crm-border, #eef0f3));
-    border-radius: 16px;
-    box-shadow: var(--crm-shadow, 0 1px 2px rgba(16, 24, 40, 0.04));
+    background: var(--crm-surface);
+    border: 1px solid color-mix(in srgb, var(--crm-success) 26%, var(--crm-border));
+    border-radius: 12px;
+    box-shadow: var(--crm-shadow));
     padding: 2.75rem 1.5rem;
     text-align: center;
 }
 
 .work-empty .material-icons {
     font-size: 44px;
-    color: #16a34a;
+    color: var(--crm-success);
 }
 
 .work-empty strong {
-    color: var(--crm-text, #1f2430);
+    color: var(--crm-text);
     font-size: 1rem;
 }
 
 .work-empty span:not(.material-icons) {
-    color: var(--crm-text-muted, #667085);
+    color: var(--crm-text-muted);
     font-size: 0.85rem;
 }
 
@@ -352,48 +352,12 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    border: 1px solid color-mix(in srgb, #dc2626 32%, transparent);
-    background: color-mix(in srgb, #dc2626 8%, var(--crm-surface-raised, #ffffff));
-    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--crm-danger) 32%, transparent);
+    background: color-mix(in srgb, var(--crm-danger) 8%, var(--crm-surface));
+    border-radius: 12px;
     padding: 0.9rem 1.1rem;
-    color: #b91c1c;
+    color: var(--crm-danger);
     font-weight: 600;
-}
-
-/* ---------- Tema scuro ---------- */
-:global(body.dark-theme) .work-num,
-:global(body.dark-theme) .work-tag,
-:global(body.dark-theme) .work-scadenza {
-    background: color-mix(in srgb, var(--crm-surface-raised, #242a30) 80%, #000000);
-}
-
-:global(body.dark-theme) .tag-commessa {
-    background: color-mix(in srgb, var(--group-accent) 16%, transparent);
-    color: color-mix(in srgb, var(--group-accent) 70%, #ffffff);
-}
-
-:global(body.dark-theme) .tag-blocco {
-    background: color-mix(in srgb, #f59e0b 14%, transparent);
-    border-color: color-mix(in srgb, #f59e0b 30%, transparent);
-    color: #f59e0b;
-}
-
-:global(body.dark-theme) .work-row.in-ritardo .work-scadenza {
-    background: color-mix(in srgb, #f87171 16%, transparent);
-    border-color: color-mix(in srgb, #f87171 34%, transparent);
-    color: #f87171;
-}
-
-:global(body.dark-theme) .work-row.in-ritardo .work-row-bar {
-    background: #f87171;
-}
-
-:global(body.dark-theme) .stat-late {
-    --stat-accent: #f87171;
-}
-
-:global(body.dark-theme) .work-error {
-    color: #f87171;
 }
 
 /* ---------- Schermi stretti ---------- */

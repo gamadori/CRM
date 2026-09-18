@@ -174,13 +174,13 @@ namespace CRM.Server.Controllers
                 
                 var result = await _ticketsService.GetPagingAsync(args);
 
+                // Totale righe calcolato dal servizio prima dello Skip/Take. Prima qui si contavano
+                // gli elementi della pagina: la griglia riceveva sempre 10 e non mostrava le pagine.
                 var paginationMetadata = new
                 {
-                    totalCount = result.Items?.Count ?? 0,
+                    totalCount = result.TotalCount,
                 };
 
-                // Ricalcola il totalCount dal result per il paging header
-                // Il service restituisce tutti gli items paginati, il count deve essere gestito
                 HttpContext.Response.Headers.Add("Paging-Header", JsonConvert.SerializeObject(paginationMetadata));
 
                 return result;

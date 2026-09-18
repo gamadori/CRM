@@ -149,7 +149,7 @@
 
             <RadzenDataGridColumn Context="item" TItem="TicketDTO" Property="@nameof(TicketDTO.State)" SortProperty="IdState" Title="@TranslateHelper.GetDisplayName(nameof(Ticket.IdState), typeof(Ticket))" Filterable="false" Sortable="true" TextAlign="Radzen.TextAlign.Center">
                 <Template Context="item">
-                    <span class="ticket-state-text" style="@GetStateTextStyle(item?.StateColor)">
+                    <span class="ticket-state-pill" style="@GetStateTextStyle(item?.StateColor)">
                         @DisplayState(item)
                     </span>
                     @if (item?.IsBlocked == true)

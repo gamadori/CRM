@@ -261,11 +261,11 @@
 
         if (args.Data.HasBlockingTickets)
         {
-            args.Attributes["style"] = "box-shadow: inset 4px 0 0 #dc3545; background-color: #fff8f8;";
+            args.Attributes["style"] = "box-shadow: inset 4px 0 0 var(--crm-danger); background-color: var(--crm-danger-soft);";
         }
         else if (args.Data.IsExpectedLate)
         {
-            args.Attributes["style"] = "box-shadow: inset 4px 0 0 #f97316; background-color: #fff7ed;";
+            args.Attributes["style"] = "box-shadow: inset 4px 0 0 var(--crm-warning); background-color: var(--crm-warning-soft);";
         }
     }
 

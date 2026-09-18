@@ -1,7 +1,10 @@
 ﻿@using Microsoft.Extensions.Localization
 
 <div class="top-row navbar modern-topbar">
-    <a class="navbar-brand" href=""><img src="/img/logoCrm.png?v=4" height="48" alt="CRM Logo" /></a>
+    <a class="navbar-brand brand" href="" aria-label="CRM">
+        <span class="brand-mark"><span class="material-icons">hub</span></span>
+        <span class="brand-text">CRM</span>
+    </a>
     <button class="navbar-toggler" aria-label="Apri o chiudi il menu" @onclick="ToggleNavMenu">
         <span class="material-icons">@(collapseNavMenu ? "menu" : "close")</span>
     </button>
@@ -31,8 +34,8 @@
                 <span class="material-icons">support_agent</span><span class="nav-text">@Localize["Tickets"]</span>
             </NavLink>
              <!-- AI Assistant (chat) -->
-            <NavLink class="nav-link highlight-ai" href="Tickets/Assistant" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
-                <span class="material-icons nav-icon-small">smart_toy</span>
+            <NavLink class="nav-link" href="Tickets/Assistant" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                <span class="material-icons">smart_toy</span>
                 <span class="nav-text">@Localize["Assistant"]</span>
             </NavLink>
             <NavLink class="nav-link" href="About" Match=@NavLinkMatch.All @onclick="CloseNavMenu">

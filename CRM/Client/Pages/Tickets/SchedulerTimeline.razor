@@ -11,20 +11,20 @@
         </div>
 
         <div class="toolbar-center">
-            <RadzenButton Click="@PreviousDay" Icon="chevron_left" ButtonStyle="ButtonStyle.Primary" 
+            <RadzenButton Click="@PreviousDay" Icon="chevron_left" ButtonStyle="ButtonStyle.Light" 
                          Variant="Variant.Flat" Size="ButtonSize.Medium" />
             
-            <RadzenButton Click="@Today" Text="@Localize["Oggi"]" ButtonStyle="ButtonStyle.Success" 
+            <RadzenButton Click="@Today" Text="@Localize["Oggi"]" ButtonStyle="ButtonStyle.Light" 
                          Variant="Variant.Flat" Size="ButtonSize.Medium" class="mx-2" />
             
             <h4 class="current-date-label">@DateCurrent.ToString("dddd, dd MMMM yyyy")</h4>
             
-            <RadzenButton Click="@NextDay" Icon="chevron_right" ButtonStyle="ButtonStyle.Primary" 
+            <RadzenButton Click="@NextDay" Icon="chevron_right" ButtonStyle="ButtonStyle.Light" 
                          Variant="Variant.Flat" Size="ButtonSize.Medium" />
         </div>
 
         <div class="toolbar-right">
-            <RadzenButton Click="@(() => NewTicket(null))" Icon="add" ButtonStyle="ButtonStyle.Success" 
+            <RadzenButton Click="@(() => NewTicket(null))" Icon="add" ButtonStyle="ButtonStyle.Primary" 
                          Variant="Variant.Flat" Size="ButtonSize.Medium" Text="@Localize["Nuovo Ticket"]" />
         </div>
     </div>
@@ -107,6 +107,14 @@
                 </div>
             }
 
+            @if (!_timeSlots.Any())
+            {
+                <div class="empty-slot" style="cursor: default;">
+                    <span class="material-icons">schedule</span>
+                    <span>@Localize["Nessuna fascia oraria: controlla l'orario di lavoro nelle impostazioni globali."]</span>
+                </div>
+            }
+
             <div class="timeline-grid">
                 @foreach (var slot in _timeSlots)
                 {
@@ -173,17 +181,16 @@
     }
 </div>
 
+@* Colori solo dalle variabili del tema (--crm-*). *@
 <style>
     .timeline-scheduler-container {
-        background: #f8fafc;
-        min-height: 100vh;
-        padding: 1.5rem;
+        padding: 0;
     }
 
     .timeline-toolbar {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        background: var(--crm-surface);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
         padding: 1rem 1.5rem;
         margin-bottom: 1.5rem;
         display: flex;
@@ -208,15 +215,15 @@
         margin: 0;
         font-size: 1.25rem;
         font-weight: 600;
-        color: #333;
+        color: var(--crm-text);
         min-width: 300px;
         text-align: center;
     }
 
     .timeline-filter {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        background: var(--crm-surface);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
         padding: 1.5rem;
         margin-bottom: 1.5rem;
     }
@@ -229,18 +236,18 @@
     }
 
     .timeline-content {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
+        background: var(--crm-surface);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
         padding: 1.5rem;
     }
 
     .no-time-section {
         margin-bottom: 2rem;
         padding: 1rem;
-        border: 1px solid #fde68a;
-        border-radius: 8px;
-        background: #fffbeb;
+        border: 1px solid color-mix(in srgb, var(--crm-warning) 35%, var(--crm-border));
+        border-radius: var(--crm-radius);
+        background: var(--crm-warning-soft);
     }
 
     .section-header {
@@ -248,7 +255,7 @@
         align-items: center;
         gap: 0.75rem;
         margin-bottom: 1rem;
-        color: #92400e;
+        color: var(--crm-warning);
     }
 
     .section-header .material-icons {
@@ -282,11 +289,11 @@
     }
 
     .timeline-slot:hover {
-        background: #f9fafb;
+        background: var(--crm-surface-hover);
     }
 
     .timeline-slot.has-tickets {
-        background: #f8fafc;
+        background: linear-gradient(90deg, var(--crm-primary-soft) 0%, transparent 25%);
     }
 
     .time-label {
@@ -295,19 +302,19 @@
         align-items: flex-end;
         justify-content: center;
         padding-right: 1rem;
-        border-right: 3px solid #2563eb;
+        border-right: 2px solid var(--crm-primary);
     }
 
     .time-text {
         font-size: 1.5rem;
         font-weight: 700;
-        color: #2563eb;
+        color: var(--crm-primary);
         line-height: 1;
     }
 
     .time-range {
         font-size: 0.75rem;
-        color: #9ca3af;
+        color: var(--crm-text-muted);
         margin-top: 0.25rem;
     }
 
@@ -319,26 +326,27 @@
     }
 
     .ticket-card {
-        background: white;
-        border-radius: 8px;
-        padding: 1rem;
-        border: 1px solid #e5e7eb;
-        border-left: 4px solid #2563eb;
+        background: var(--crm-surface-raised);
+        border-radius: var(--crm-radius-sm);
+        padding: 0.85rem 1rem;
+        border: 1px solid var(--crm-border);
+        border-left: 4px solid var(--crm-primary);
         transition: all 0.3s ease;
         cursor: pointer;
     }
 
     .ticket-card:hover {
-        border-color: #cbd5e1;
+        border-color: var(--crm-border-strong);
+        box-shadow: var(--crm-shadow);
         transform: translateX(4px);
     }
 
     .ticket-card.timed {
-        background: white;
+        background: var(--crm-surface-raised);
     }
 
     .ticket-card.no-time {
-        background: #fffdf5;
+        background: var(--crm-warning-soft);
     }
 
     .ticket-card-header {
@@ -352,14 +360,15 @@
     .ticket-time {
         font-size: 1rem;
         font-weight: 700;
-        color: #2563eb;
+        color: var(--crm-primary);
     }
 
     .ticket-id {
         font-size: 0.875rem;
         font-weight: 600;
-        color: #6b7280;
-        background: #f3f4f6;
+        color: var(--crm-text-muted);
+        background: var(--crm-surface-muted);
+        border: 1px solid var(--crm-border);
         padding: 0.25rem 0.5rem;
         border-radius: 4px;
     }
@@ -376,16 +385,16 @@
         justify-content: center;
         width: 28px;
         height: 28px;
-        background: #2563eb;
-        color: white;
+        background: var(--crm-primary);
+        color: var(--crm-text-on-primary);
         border-radius: 50%;
         font-size: 0.75rem;
         font-weight: 600;
-        border: 2px solid white;
+        border: 2px solid var(--crm-surface-raised);
     }
 
     .user-badge.more {
-        background: #9ca3af;
+        background: var(--crm-text-muted);
         font-size: 0.7rem;
     }
 
@@ -397,7 +406,7 @@
 
     .ticket-company {
         font-weight: 600;
-        color: #374151;
+        color: var(--crm-text);
         font-size: 0.95rem;
     }
 
@@ -405,7 +414,7 @@
         display: flex;
         align-items: center;
         gap: .35rem;
-        color: #4f46e5;
+        color: var(--crm-primary);
         font-size: .8rem;
         font-weight: 600;
         min-width: 0;
@@ -416,16 +425,16 @@
     }
 
     .phase-window {
-        color: #475569;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        color: var(--crm-text-secondary);
+        background: var(--crm-surface-muted);
+        border: 1px solid var(--crm-border);
         border-radius: 4px;
         padding: .05rem .3rem;
         font-weight: 600;
     }
 
     .ticket-description {
-        color: #6b7280;
+        color: var(--crm-text-muted);
         font-size: 0.875rem;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -439,17 +448,17 @@
         justify-content: center;
         gap: 0.5rem;
         padding: 1.5rem;
-        border: 2px dashed #e5e7eb;
-        border-radius: 8px;
-        color: #9ca3af;
+        border: 1px dashed var(--crm-border-strong);
+        border-radius: var(--crm-radius-sm);
+        color: var(--crm-text-muted);
         cursor: pointer;
         transition: all 0.3s ease;
     }
 
     .empty-slot:hover {
-        border-color: #2563eb;
-        background: #eff6ff;
-        color: #2563eb;
+        border-color: var(--crm-primary);
+        background: var(--crm-primary-soft);
+        color: var(--crm-primary);
     }
 
     .empty-slot .material-icons {
@@ -494,7 +503,7 @@
         .time-label {
             align-items: flex-start;
             border-right: none;
-            border-bottom: 2px solid #2563eb;
+            border-bottom: 2px solid var(--crm-primary);
             padding-right: 0;
             padding-bottom: 0.5rem;
         }

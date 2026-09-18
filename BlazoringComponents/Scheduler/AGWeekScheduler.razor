@@ -1,4 +1,4 @@
-﻿@using Models
+@using Models
 @typeparam TItem
 
 <div class="modern-scheduler-container week-view">
@@ -14,7 +14,7 @@
                 <div class="day-column-header">
                     <AGDayHead Day="@day" OnSelect="OnSelect"></AGDayHead>
                 </div>
-               
+
                 <!-- Contenuto ticket -->
                 <div class="day-column-content">
                     @if (day.Tickets.Any())
@@ -36,82 +36,64 @@
     </div>
 </div>
 
+@* Colori solo dalle variabili del tema (--crm-*). *@
 <style>
     .modern-scheduler-container.week-view {
-        background: #f8f9fa;
-        border-radius: 12px;
+        background: var(--crm-surface);
+        border: 1px solid var(--crm-border);
+        border-radius: var(--crm-radius);
         overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        padding: 0.5rem;
+        padding: 0.75rem;
     }
 
     /* Griglia settimana */
     .week-grid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        gap: 1rem;
-        background: white;
-        padding: 1rem;
-        border-radius: 8px;
+        gap: 0.6rem;
     }
 
     /* Colonne giorno */
     .day-column {
-        background: white;
-        border-radius: 8px;
+        background: var(--crm-surface);
+        border-radius: var(--crm-radius-sm);
         display: flex;
         flex-direction: column;
         /* Era 400px fissi per colonna: una settimana vuota occupava mezzo schermo per non dire
            niente. Le colonne crescono sul contenuto, con un minimo che resta un bersaglio comodo
            per il drop. */
         min-height: 160px;
-        border: 2px solid #e5e7eb;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid var(--crm-border);
+        transition: border-color 120ms ease, background-color 120ms ease;
         cursor: pointer;
         overflow: hidden;
     }
 
     .day-column:hover {
-        border-color: #667eea;
-        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
-        transform: translateY(-4px);
+        border-color: var(--crm-primary);
+        background: var(--crm-surface-hover);
     }
 
     /* Tipi di giorni */
     .day-column.holiday {
-        background: linear-gradient(180deg, #fef2f2 0%, #fff 100%);
-        border-color: #fecaca;
-    }
-
-    .day-column.holiday:hover {
-        border-color: #f87171;
-        box-shadow: 0 8px 24px rgba(248, 113, 113, 0.2);
+        background: color-mix(in srgb, var(--crm-danger) 5%, var(--crm-surface));
     }
 
     .day-column.today {
-        background: linear-gradient(180deg, #dbeafe 0%, #fff 100%);
-        border-color: #3b82f6;
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-    }
-
-    .day-column.today:hover {
-        border-color: #2563eb;
-        box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);
+        background: color-mix(in srgb, var(--crm-primary) 7%, var(--crm-surface));
+        border-color: color-mix(in srgb, var(--crm-primary) 45%, var(--crm-border));
     }
 
     /* Header colonna */
     .day-column-header {
         flex-shrink: 0;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 6px 6px 0 0;
-        margin: -2px -2px 0 -2px;
+        background: var(--crm-surface-muted);
     }
 
     /* Contenuto colonna */
     .day-column-content {
         flex: 1;
-        padding: 1rem;
+        padding: 0.5rem;
         overflow-y: auto;
         overflow-x: hidden;
     }
@@ -125,17 +107,13 @@
     }
 
     .day-column-content::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+        background: var(--crm-border-strong);
         border-radius: 3px;
-    }
-
-    .day-column-content::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
     }
 
     /* Ticket items */
     .ticket-item {
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.5rem;
         animation: slideIn 0.3s ease-out;
     }
 
@@ -153,39 +131,16 @@
     /* .empty-day rimossa insieme al segnaposto delle giornate libere */
 
     /* Responsive */
-    @@media (max-width: 1400px) {
-        .week-grid {
-            gap: 0.75rem;
-        }
-
-        .day-column {
-            min-height: 350px;
-        }
-    }
-
     @@media (max-width: 1200px) {
         .week-grid {
-            gap: 0.5rem;
-            padding: 0.75rem;
-        }
-
-        .day-column {
-            min-height: 300px;
-        }
-
-        .day-column-content {
-            padding: 0.75rem;
+            gap: 0.4rem;
         }
     }
 
     @@media (max-width: 900px) {
         .week-grid {
             grid-template-columns: 1fr;
-            gap: 1rem;
-        }
-
-        .day-column {
-            min-height: 200px;
+            gap: 0.75rem;
         }
 
         .modern-scheduler-container.week-view {

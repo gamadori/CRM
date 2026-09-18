@@ -1,29 +1,142 @@
-﻿
+
 @using Radzen
 @using Radzen.Blazor
 
-<div  class="row border-bottom border-1 border-secondary mb-3 @Day.BgHead text-center no-gutters ">
-    <div class="col scheduler-day" @onclick="(async()=>await OnSelectDate(Day.Date))">
-        @if (CurrentView == SchedulerViews.Week)
+@* Intestazione di una cella/colonna del calendario. I colori vengono dal tema (--crm-*):
+   il tipo di giorno (oggi, festivo, fuori mese) si legge dal colore del testo e da un filo
+   sotto, non piu' da un blocco pieno blu o rosso. *@
+<div class="day-head @Day.BgHead">
+    <div class="day-head-date" @onclick="(async()=>await OnSelectDate(Day.Date))">
+        @if (CurrentView == SchedulerViews.Month)
         {
-            <label>@Day.NameDay</label>
-            <label>@Day.Date.ToShortDateString()</label>
-
-        }
-        else if (CurrentView == SchedulerViews.Month)
-        {
-            <label>@Day.Date.ToShortDateString()</label>
+            <span class="day-head-number">@Day.Date.Day</span>
+            @if (Day.Date.Day == 1 || !Day.IsMonthCurrent)
+            {
+                <span class="day-head-month">@Day.Date.ToString("MMM")</span>
+            }
         }
         else
         {
-            <label>@Day.NameDay</label>
-            <label>@Day.Date.ToShortDateString()</label>
+            <span class="day-head-name">@Day.NameDay</span>
+            <span class="day-head-full">@Day.Date.ToShortDateString()</span>
         }
     </div>
     @if (ViewMode == SchedulerViewMode.Sheduler)
     {
-        <div class="col-auto">
-            <RadzenLink Icon="add_circle_outline"  Style="@_color" Path="javascript:void(0)"  @onclick=@(async ()=>await OnClickNewTicket(Day.Date))  />
-    </div>
+        <button type="button" class="day-head-add" title="@Localize["New"]" aria-label="@Localize["New"]"
+                @onclick=@(async ()=>await OnClickNewTicket(Day.Date)) @onclick:stopPropagation="true">
+            <span class="material-icons">add</span>
+        </button>
     }
 </div>
+
+<style>
+    .day-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.25rem;
+        min-height: 30px;
+        padding: 0.25rem 0.45rem;
+        color: var(--crm-text-secondary);
+        border-bottom: 1px solid var(--crm-border);
+    }
+
+    .day-head-date {
+        display: flex;
+        align-items: baseline;
+        gap: 0.35rem;
+        min-width: 0;
+        cursor: pointer;
+    }
+
+    .day-head-date:hover {
+        text-decoration: underline;
+    }
+
+    .day-head-number {
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .day-head-month,
+    .day-head-full {
+        font-size: 0.72rem;
+        color: var(--crm-text-muted);
+        white-space: nowrap;
+    }
+
+    .day-head-name {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    /* Settimana e giorno: nome sopra, data sotto. In riga la colonna del mercoledi'
+       non ci stava e la data finiva sotto il pulsante "+". */
+    .day-head-date:has(.day-head-name) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.05rem;
+    }
+
+    /* Oggi: numero dentro un tondo del colore primario */
+    .day-head-today {
+        color: var(--crm-primary);
+        border-bottom-color: var(--crm-primary);
+    }
+
+    .day-head-today .day-head-number {
+        display: inline-grid;
+        min-width: 24px;
+        height: 24px;
+        place-items: center;
+        color: var(--crm-text-on-primary);
+        background: var(--crm-primary);
+        border-radius: 999px;
+    }
+
+    .day-head-holiday {
+        color: var(--crm-danger);
+    }
+
+    .day-head-other {
+        color: var(--crm-text-disabled);
+    }
+
+    .day-head-other .day-head-month,
+    .day-head-other .day-head-full {
+        color: var(--crm-text-disabled);
+    }
+
+    .day-head-add {
+        display: inline-grid;
+        width: 24px;
+        height: 24px;
+        flex: 0 0 auto;
+        place-items: center;
+        padding: 0;
+        color: var(--crm-text-muted);
+        background: transparent;
+        border: 0;
+        border-radius: 6px;
+        opacity: 0.55;
+        transition: opacity 120ms ease, background-color 120ms ease, color 120ms ease;
+    }
+
+    .day-head-add .material-icons {
+        font-size: 18px;
+    }
+
+    .day-head:hover .day-head-add {
+        opacity: 1;
+    }
+
+    .day-head-add:hover {
+        color: var(--crm-primary);
+        background: var(--crm-primary-soft);
+        opacity: 1;
+    }
+</style>

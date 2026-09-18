@@ -456,13 +456,13 @@ namespace CRM.Server.Services
                 // Stato, permessi e pulsanti per tutta la pagina in blocco: vedi ApplyListStateAsync.
                 await ApplyListStateAsync(items);
 
-                var paginationMetadata = new PagingHeaderModel
-                {
-                    TotalCount = count,
-                };
-
+                // Il conteggio va restituito insieme agli elementi: prima finiva in un
+                // PagingHeaderModel locale che nessuno leggeva, e il controller scriveva
+                // nell'header le righe della pagina (10) al posto del totale. La griglia,
+                // vedendo Count uguale a PageSize, nascondeva il paginatore.
                 ObjectView<TicketDTO, string> ticketView = new ObjectView<TicketDTO, string>();
                 ticketView.Total = DateTimeHelper.MinuteFormat(totalWork);
+                ticketView.TotalCount = count;
                 ticketView.Items = items;
 
                 return ticketView;
