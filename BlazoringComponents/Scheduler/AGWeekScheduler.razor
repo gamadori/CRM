@@ -140,11 +140,23 @@
     @@media (max-width: 900px) {
         .week-grid {
             grid-template-columns: 1fr;
-            gap: 0.75rem;
+            gap: 0.5rem;
         }
 
         .modern-scheduler-container.week-view {
             border-radius: 0;
+        }
+
+        /* Un giorno sotto l'altro: un giorno vuoto e' alto quanto la sua intestazione piu'
+           un bersaglio minimo per il drop. Prima erano 200px l'uno, sette giorni vuoti =
+           uno scroll intero per non vedere niente. */
+        .day-column {
+            min-height: 0;
+        }
+
+        .day-column-content {
+            min-height: 44px;
+            padding: 0.4rem 0.5rem;
         }
     }
 </style>

@@ -1,0 +1,209 @@
+@using CRM.Shared.DTOs
+@inject HttpClient Http
+
+@* Assistenza remota della macchina: genera il codice da inserire sul pannello,
+   mostra lo stato, apre lo schermo via Guacamole e revoca l'abbinamento.
+   Il perimetro (chi vede la macchina) è già garantito dal controller.
+   Se l'assistenza remota non è configurata sul CRM (nessun provisioning/Guacamole),
+   il riquadro non compare affatto: niente rumore sulle schede macchina. *@
+@if (!_loading && _status.State != "Disabled")
+{
+    <div class="card shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-display"></i> Assistenza remota</h5>
+            <span class="badge @StateBadgeClass">@StateLabel</span>
+        </div>
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <div class="alert @(_error ? "alert-danger" : "alert-success") py-2">@_message</div>
+            }
+
+            @if (_code != null)
+            {
+                <div class="alert alert-info">
+                    <div>Codice per il pannello (Setup → Sistema → Assistenza remota):</div>
+                    <div class="fs-5 fw-bold text-break">@_code.Code</div>
+                    <small class="text-muted">Valido fino a @ExpiryText. Inseriscilo una sola volta sul pannello.</small>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(_sessionUrl))
+            {
+                <a class="btn btn-success mb-2" href="@_sessionUrl" target="_blank" rel="noopener">
+                    <i class="bi bi-box-arrow-up-right"></i> Apri lo schermo del pannello
+                </a>
+                <p class="small text-muted">Il collegamento vale 5 minuti. Lo schermo si apre in sola visione.</p>
+            }
+
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                <button class="btn btn-outline-secondary btn-sm" disabled="@_busy" @onclick="RefreshAsync">
+                    <i class="bi bi-arrow-clockwise"></i> Aggiorna stato
+                </button>
+
+                @* Il codice lo chiede il pannello da solo con "Attiva assistenza":
+                   dal CRM il tecnico apre solo lo schermo. La generazione manuale
+                   resta come ripiego nascosto per pannelli non collegati. *@
+                <AuthorizeView Policy="@ePolicy.StandardRole.ToString()">
+                    @if (_status.State == "Ready")
+                    {
+                        <button class="btn btn-success btn-sm" disabled="@_busy" @onclick="StartAsync">
+                            <i class="bi bi-display"></i> Avvia assistenza
+                        </button>
+                    }
+                    else
+                    {
+                        <details>
+                            <summary class="small text-muted">Genera codice a mano (ripiego)</summary>
+                            <button class="btn btn-outline-primary btn-sm mt-2" disabled="@_busy" @onclick="IssueCodeAsync">
+                                <i class="bi bi-key"></i> Genera codice
+                            </button>
+                        </details>
+                    }
+                </AuthorizeView>
+
+                <AuthorizeView Policy="@ePolicy.SuperUserRole.ToString()">
+                    @if (_status.State is "Ready" or "Offline" or "Pending" or "Expired")
+                    {
+                        <button class="btn btn-outline-danger btn-sm" disabled="@_busy" @onclick="RevokeAsync">
+                            <i class="bi bi-x-octagon"></i> Revoca
+                        </button>
+                    }
+                </AuthorizeView>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int ArticleId { get; set; }
+
+    private RemoteSupportStatusDTO _status = new() { State = "NotConfigured" };
+    private RemoteSupportCodeDTO? _code;
+    private string? _sessionUrl;
+    private bool _loading = true;
+    private bool _busy;
+    private bool _error;
+    private string? _message;
+
+    protected override async Task OnInitializedAsync() => await RefreshAsync();
+
+    private async Task RefreshAsync()
+    {
+        _busy = true;
+        try
+        {
+            _status = await Http.GetFromJsonAsync<RemoteSupportStatusDTO>($"api/RemoteSupport/status/{ArticleId}")
+                ?? new RemoteSupportStatusDTO { State = "NotConfigured" };
+        }
+        catch
+        {
+            _status = new RemoteSupportStatusDTO { State = "NotConfigured" };
+        }
+        finally
+        {
+            _loading = false;
+            _busy = false;
+        }
+    }
+
+    private async Task IssueCodeAsync()
+    {
+        _sessionUrl = null;
+        await RunAsync(async () =>
+        {
+            var response = await Http.PostAsync($"api/RemoteSupport/code/{ArticleId}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                _code = await response.Content.ReadFromJsonAsync<RemoteSupportCodeDTO>();
+                _message = "Codice generato. Inseriscilo sul pannello.";
+                _error = false;
+            }
+            else
+            {
+                _message = await response.Content.ReadAsStringAsync();
+                _error = true;
+            }
+        });
+    }
+
+    private async Task StartAsync()
+    {
+        _sessionUrl = null;
+        await RunAsync(async () =>
+        {
+            var request = new RemoteSupportStartRequest { ArticleIds = new() { ArticleId } };
+            var response = await Http.PostAsJsonAsync("api/RemoteSupport/start", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<RemoteSupportStartResultDTO>();
+                _sessionUrl = result?.Url;
+                _message = null;
+                _error = false;
+            }
+            else
+            {
+                _message = await response.Content.ReadAsStringAsync();
+                _error = true;
+            }
+        });
+    }
+
+    private async Task RevokeAsync()
+    {
+        await RunAsync(async () =>
+        {
+            var response = await Http.PostAsync($"api/RemoteSupport/revoke/{ArticleId}", null);
+            if (response.IsSuccessStatusCode)
+            {
+                _code = null;
+                _sessionUrl = null;
+                _message = "Abbinamento revocato.";
+                _error = false;
+            }
+            else
+            {
+                _message = await response.Content.ReadAsStringAsync();
+                _error = true;
+            }
+        });
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        _busy = true;
+        try
+        {
+            await action();
+            await RefreshAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string ExpiryText => _code is null
+        ? string.Empty
+        : DateTimeOffset.FromUnixTimeSeconds(_code.ExpiresAt).LocalDateTime.ToString("g");
+
+    private string StateLabel => _status.State switch
+    {
+        "Ready" => "Pronta",
+        "Offline" => "Non raggiungibile",
+        "Pending" => "In attesa del codice",
+        "Expired" => "Codice scaduto",
+        "Revoked" => "Revocata",
+        "NotConfigured" => "Da attivare",
+        _ => _status.State,
+    };
+
+    private string StateBadgeClass => _status.State switch
+    {
+        "Ready" => "bg-success",
+        "Offline" => "bg-warning text-dark",
+        "Revoked" => "bg-danger",
+        "Pending" or "Expired" => "bg-info text-dark",
+        _ => "bg-secondary",
+    };
+}

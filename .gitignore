@@ -357,3 +357,6 @@ CRM/Server/Archives/
 **/.verifybuild*/
 /docs
 /tools
+
+# Assistenza remota: config di deployment con i segreti, fuori dal repo
+CRM/Server/remote-support.json

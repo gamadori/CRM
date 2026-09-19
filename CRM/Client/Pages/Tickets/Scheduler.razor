@@ -92,9 +92,27 @@
         width: 100%;
     }
 
+    /* Etichetta sopra la tendina, piccola, come negli altri filtri (Agenda). Nel markup sta
+       dopo, per questo column-reverse: prima finiva SOTTO la casella e sembrava un valore. */
     .ticket-planning-filter {
+        display: flex;
+        flex-direction: column-reverse;
+        gap: .25rem;
         min-width: min(240px, 100%);
-        position: relative;
+    }
+
+    .ticket-planning-filter > label {
+        color: var(--crm-text-muted);
+        font-size: .74rem;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+
+    @@media (max-width: 768px) {
+        .ticket-planning-filter {
+            width: 100%;
+        }
     }
 
     /* Qui c'erano gli stili del filtro assistenza/commessa e della sua legenda a pallini.

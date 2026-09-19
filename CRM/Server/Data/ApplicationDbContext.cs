@@ -449,6 +449,13 @@ namespace CRM.Server.Data
                 entity.HasIndex(x => new { x.Feature, x.OccurredAt });
             });
 
+            // Assistenza remota: una riga per macchina, un GUID per pannello.
+            modelBuilder.Entity<CRM.Shared.MachineRemoteSupport>(entity =>
+            {
+                entity.HasIndex(x => x.IdArticle).IsUnique();
+                entity.HasIndex(x => x.DeviceId).IsUnique();
+            });
+
             base.OnModelCreating(modelBuilder);
             modelBuilder.UseOpenIddict();
 
@@ -1109,6 +1116,7 @@ namespace CRM.Server.Data
         public DbSet<ProductCatalogAsset> ProductCatalogAssets => Set<ProductCatalogAsset>();
 
         public DbSet<MachineBackup> MachineBackups => Set<MachineBackup>();
+        public DbSet<CRM.Shared.MachineRemoteSupport> MachineRemoteSupports => Set<MachineRemoteSupport>();
 
         public DbSet<MachineComponent> MachineComponents => Set<MachineComponent>();
 

@@ -22,6 +22,13 @@ using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Assistenza remota: impostazioni di deployment (provisioning + Guacamole) in un
+// file a parte, fuori dal repository, come nel portale e-SEW. Le variabili
+// d'ambiente e la riga di comando restano prioritarie.
+builder.Configuration.AddJsonFile("remote-support.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables()
+    .AddCommandLine(args);
+
 builder.Logging.ClearProviders();
 builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
 builder.Logging.AddConsole();
@@ -100,6 +107,7 @@ builder.Services.AddLocalization(options => options.ResourcesPath = "Resources")
 builder.Services.AddScoped<ILogEventService, LogEventService>();
 
 builder.Services.AddScoped<IPermitsService, PermitsService>();
+builder.Services.AddScoped<CRM.Server.Services.IRemoteSupportService, CRM.Server.Services.RemoteSupportService>();
 builder.Services.AddScoped<IEmailSender, EmailService>();
 builder.Services.AddScoped<IEmailSenderPlus, EmailService>();
 //builder.Services.AddSingleton<IAPIEmailSender>(sp =>

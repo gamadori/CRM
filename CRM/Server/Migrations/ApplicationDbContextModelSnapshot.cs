@@ -2811,6 +2811,34 @@ namespace CRM.Server.Migrations
                         });
                 });
 
+            modelBuilder.Entity("CRM.Shared.MachineRemoteSupport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("IdArticle")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceId")
+                        .IsUnique();
+
+                    b.HasIndex("IdArticle")
+                        .IsUnique();
+
+                    b.ToTable("MachineRemoteSupports");
+                });
+
             modelBuilder.Entity("CRM.Shared.MachineComponent", b =>
                 {
                     b.Property<int>("Id")

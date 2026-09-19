@@ -301,8 +301,8 @@
         }
 
         /* Telefono: griglia su due righe.
-           [ < ]  [ periodo, centrato ]  [ > ]
-           [ data                 ]  [ Oggi ]
+           prima riga: freccia indietro, periodo centrato, freccia avanti
+           seconda riga: data (larga) e Oggi
            Prima frecce e Oggi erano quattro barre a tutta larghezza una sotto l'altra. */
         .date-navigation {
             display: grid;
@@ -334,8 +334,11 @@
             flex: 1 1 0;
         }
 
-        /* Hide Month view option on mobile */
-        .month-view-option {
+        /* Niente vista Mese sul telefono: sette colonne in 375px non si leggono.
+           RadzenSelectBarItem non riporta la classe sul pulsante, quindi si nasconde il
+           primo pulsante del selettore, che e' sempre "Mese". */
+        .month-view-option,
+        .toolbar-right .view-selector .rz-button:first-child {
             display: none !important;
         }
     }

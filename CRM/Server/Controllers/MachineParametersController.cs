@@ -41,17 +41,44 @@ namespace CRM.Server.Controllers
         private readonly IApiKeyService _apiKeys;
         private readonly IMachineBackupsService _backups;
         private readonly IMachineStatusService _status;
+        private readonly IRemoteSupportService _remoteSupport;
 
         public MachineParametersController(
             ApplicationDbContext context,
             IApiKeyService apiKeys,
             IMachineBackupsService backups,
-            IMachineStatusService status)
+            IMachineStatusService status,
+            IRemoteSupportService remoteSupport)
         {
             _context = context;
             _apiKeys = apiKeys;
             _backups = backups;
             _status = status;
+            _remoteSupport = remoteSupport;
+        }
+
+        /// <summary>
+        /// Il pannello si auto-registra per l'assistenza remota: chiede lui il codice
+        /// di abbinamento con la sua chiave macchina e la sua matricola, cosi' nessuno
+        /// deve digitare a mano sul touch una stringa di 43 caratteri. Poi il pannello
+        /// lo usa subito per aprire il tunnel. Richiede una chiave in scrittura.
+        /// </summary>
+        [HttpPost("articles/{serialNumber}/remote-support/code")]
+        public async Task<ActionResult<RemoteSupportCodeDTO>> IssueRemoteSupportCode(string serialNumber)
+        {
+            var (apiKey, article, error) = await ResolveArticleAsync(serialNumber, ApiKeyPermission.ReadWrite);
+            if (error != null)
+                return error;
+
+            try
+            {
+                var actor = $"machine:{article!.SerialNumber}";
+                return Ok(await _remoteSupport.IssueCodeAsync(article.Id, actor, HttpContext.RequestAborted));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet("articles")]
