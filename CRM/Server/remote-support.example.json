@@ -1,0 +1,8 @@
+{
+  "RemoteSupport": {
+    "ProvisioningUrl": "https://service.bluegrape.net/provisioning",
+    "ProvisioningApiKey": "<chiave admin del provisioning>",
+    "GuacamoleUrl": "https://service.bluegrape.net/guacamole",
+    "JsonSecretKey": "<32 caratteri esadecimali, uguale al VPS>"
+  }
+}

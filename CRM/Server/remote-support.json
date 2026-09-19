@@ -1,0 +1,8 @@
+{
+  "RemoteSupport": {
+    "GuacamoleUrl": "https://service.bluegrape.net/guacamole",
+    "JsonSecretKey": "b09c19c8fe973f938768fc3145348adf",
+    "ProvisioningUrl": "https://service.bluegrape.net/provisioning",
+    "ProvisioningApiKey": "kJG0LOpxFTPwISjElCo1L_v5fwyhF2giqCdbcm0Ww58"
+  }
+}
